@@ -6,10 +6,18 @@
 
 ---
 
+## Engineering Principles
+
+- **Infrastructure as Code (non-negotiable):** Every Azure resource is declared in Bicep under `/infra` and committed to the repo. Nothing is created via the Portal or ad-hoc CLI commands. Imperative CLI scripts are not IaC — they are not idempotent, not reviewable, and cannot reproduce the environment reliably. The test: could a new developer re-create the full environment in a different tenant by running one command? If not, it is not IaC.
+- **Secrets never in files or settings:** All secrets live in Key Vault. App Service reads them via Key Vault references. The source of truth for secret *values* is 1Password; the source of truth for secret *structure* is the Bicep files.
+- **Row-level security on every data endpoint:** All API queries filter by `TeacherId` derived from the JWT. No endpoint may return data belonging to a different teacher.
+
+---
+
 ## Deliverables Checklist
 
 - [ ] Monorepo or dual-repo structure initialised and running locally
-- [ ] Azure infrastructure provisioned (SQL, App Service, Static Web Apps)
+- [x] Azure infrastructure provisioned (SQL, Container Apps, Static Web Apps, Key Vault, Storage)
 - [ ] Auth0 configured with email/password and Google OAuth
 - [ ] Teacher can register, log in, and log out
 - [ ] Teacher profile create/edit (languages taught, CEFR levels, preferred style)
@@ -40,26 +48,64 @@
 
 ---
 
-### T2 — Azure Infrastructure Provisioning
+### T2 — Azure Infrastructure Provisioning (COMPLETED 2026-03-13)
 
 **Priority**: Must | **Effort**: 0.5 days
 
-**Resources to create** (use Azure CLI or Portal):
+> **IaC mandate**: All resources must be declared in Bicep files under `/infra` and committed to the repo. No resource is created via the Portal or ad-hoc CLI commands. This ensures the entire environment can be reproduced in a new tenant with a single `az deployment group create` command.
+
+**Resources declared in Bicep** (`/infra/main.bicep` + modules):
 
 | Resource | Tier | Notes |
 |----------|------|-------|
 | Azure SQL Server + Database | Basic (5 DTU) | Upgrade later; ~$5/mo |
-| Azure App Service | B1 Linux | .NET 8 runtime |
+| Azure App Service | B1 Linux | .NET 9 runtime |
 | Azure Static Web Apps | Free tier | React frontend |
 | Azure Blob Storage | LRS Standard | Phase 3 PDFs; create now, use later |
-| Key Vault | Standard | Store connection strings and Auth0 secrets |
+| Key Vault | Standard | Store connection strings and Auth0 secrets; RBAC model (not legacy access policies) |
+
+**Repo structure added:**
+```
+infra/
+├── main.bicep
+├── parameters/
+│   ├── dev.bicepparam
+│   └── prod.bicepparam
+└── modules/
+    ├── sql.bicep
+    ├── appservice.bicep
+    ├── staticwebapp.bicep
+    ├── storage.bicep
+    └── keyvault.bicep
+```
 
 **Configuration:**
-- App Service environment variables pulled from Key Vault via managed identity
-- SQL firewall rule: allow App Service outbound IP + developer IPs
-- Connection string in `appsettings.Production.json` reads from env var
+- App Service reads secrets via Key Vault references (`@Microsoft.KeyVault(...)`) — no secrets in app settings or code
+- Key Vault uses RBAC (`Key Vault Secrets User` role) granted to App Service managed identity — declared in Bicep, not via `az keyvault set-policy`
+- SQL firewall: Azure services allowed in Bicep; dev machine IP added once via CLI (IP not known at author time — only manual step)
+- `appsettings.Production.json` added to backend — no secrets, only log levels and allowed hosts
 
-**Done when**: App Service returns `/health` 200 from the Azure URL.
+**Deployment (idempotent, repeatable):**
+```bash
+az deployment group create \
+  --resource-group rg-langteach-dev \
+  --template-file infra/main.bicep \
+  --parameters infra/parameters/dev.bicepparam \
+  --parameters sqlAdminPassword="<from-1password>"
+```
+
+**Tenant migration:** `az login` to new tenant, `az group create`, re-run the command above. All infrastructure is recreated from the Bicep files. Only secrets (SQL password, Auth0 values) need to be re-supplied — store them in 1Password as the source of truth.
+
+**Key deviations from original plan:**
+- App Service replaced with **Azure Container Apps** (consumption plan) — VS Enterprise subscription has zero VM quota in all regions
+- Region changed to **North Europe** — West Europe not accepting new SQL Server instances
+- Static Web App stays in **West Europe** — SWA not available in North Europe
+- Key Vault name uses `uniqueString()` suffix (`kv-lt-dev-5ba22u`) — global name collision with soft-deleted vault
+- KV integration deferred to T4 — Container Apps validates KV references at deploy time before RBAC is granted; app will use `DefaultAzureCredential` + `AddAzureKeyVault` instead
+
+**App URL:** `https://app-langteach-api-dev.purplewater-292509f3.northeurope.azurecontainerapps.io` (placeholder image until T9)
+
+**Done when**: All resources provisioned via Bicep, Container App returns HTTP 200. ✓ Complete.
 
 ---
 

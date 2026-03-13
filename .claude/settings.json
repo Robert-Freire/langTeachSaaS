@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write(plan/**)",
+      "Edit(plan/**)",
+      "Write(.claude/**)",
+      "Edit(.claude/**)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git add*)",
+      "Bash(git checkout*)",
+      "Bash(git branch*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(dotnet build*)",
+      "Bash(dotnet test*)",
+      "Bash(dotnet run*)",
+      "Bash(dotnet publish*)",
+      "Bash(npm run*)",
+      "Bash(npm test*)",
+      "Bash(npm ci*)",
+      "Bash(npm install*)",
+      "Bash(az bicep*)"
+    ],
+    "deny": [
+      "Bash(git push *main*)",
+      "Bash(git push *master*)",
+      "Bash(git commit* main*)"
+    ]
+  }
+}

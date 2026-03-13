@@ -28,6 +28,9 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Claude Code local session cache
+.claude/settings.local.json
+
 # Docker
 docker-compose.override.yml
 
