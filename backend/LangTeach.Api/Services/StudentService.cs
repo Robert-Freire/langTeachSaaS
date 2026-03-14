@@ -17,7 +17,7 @@ public class StudentService : IStudentService
         _logger = logger;
     }
 
-    public async Task<PagedResult<StudentDto>> ListAsync(Guid teacherId, StudentListQuery query)
+    public async Task<PagedResult<StudentDto>> ListAsync(Guid teacherId, StudentListQuery query, CancellationToken cancellationToken = default)
     {
         var page = Math.Max(query.Page, 1);
         var pageSize = query.PageSize;
@@ -30,13 +30,13 @@ public class StudentService : IStudentService
         if (!string.IsNullOrWhiteSpace(query.CefrLevel))
             q = q.Where(s => s.CefrLevel == query.CefrLevel);
 
-        var totalCount = await q.CountAsync();
+        var totalCount = await q.CountAsync(cancellationToken);
 
         var items = await q
             .OrderBy(s => s.Name)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return new PagedResult<StudentDto>(
             items.Select(MapToDto).ToList(),
@@ -46,15 +46,15 @@ public class StudentService : IStudentService
         );
     }
 
-    public async Task<StudentDto?> GetByIdAsync(Guid teacherId, Guid studentId)
+    public async Task<StudentDto?> GetByIdAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken = default)
     {
         var student = await _db.Students
-            .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted);
+            .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
 
         return student is null ? null : MapToDto(student);
     }
 
-    public async Task<StudentDto> CreateAsync(Guid teacherId, CreateStudentRequest request)
+    public async Task<StudentDto> CreateAsync(Guid teacherId, CreateStudentRequest request, CancellationToken cancellationToken = default)
     {
         var student = new Student
         {
@@ -70,17 +70,17 @@ public class StudentService : IStudentService
         };
 
         _db.Students.Add(student);
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Student created. TeacherId={TeacherId} StudentId={StudentId}",
             teacherId, student.Id);
 
         return MapToDto(student);
     }
 
-    public async Task<StudentDto?> UpdateAsync(Guid teacherId, Guid studentId, UpdateStudentRequest request)
+    public async Task<StudentDto?> UpdateAsync(Guid teacherId, Guid studentId, UpdateStudentRequest request, CancellationToken cancellationToken = default)
     {
         var student = await _db.Students
-            .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted);
+            .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
 
         if (student is null)
             return null;
@@ -92,24 +92,24 @@ public class StudentService : IStudentService
         student.Notes = request.Notes;
         student.UpdatedAt = DateTime.UtcNow;
 
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Student updated. TeacherId={TeacherId} StudentId={StudentId}",
             teacherId, student.Id);
 
         return MapToDto(student);
     }
 
-    public async Task<bool> DeleteAsync(Guid teacherId, Guid studentId)
+    public async Task<bool> DeleteAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken = default)
     {
         var student = await _db.Students
-            .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted);
+            .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
 
         if (student is null)
             return false;
 
         student.IsDeleted = true;
         student.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Student deleted. TeacherId={TeacherId} StudentId={StudentId}",
             teacherId, student.Id);
 

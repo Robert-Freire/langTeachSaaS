@@ -29,11 +29,11 @@ public class LessonsController : ControllerBase
     private string? Email => User.FindFirstValue(ClaimTypes.Email);
 
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] LessonListQuery query)
+    public async Task<IActionResult> List([FromQuery] LessonListQuery query, CancellationToken cancellationToken)
     {
         if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email!);
-        var result = await _lessonService.ListAsync(teacherId, query);
+        var result = await _lessonService.ListAsync(teacherId, query, cancellationToken);
         _logger.LogInformation(
             "GET /api/lessons. TeacherId={TeacherId} Status={Status} Search={Search} TotalCount={TotalCount}",
             teacherId, query.Status, query.Search, result.TotalCount);
@@ -41,7 +41,7 @@ public class LessonsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateLessonRequest request)
+    public async Task<IActionResult> Create([FromBody] CreateLessonRequest request, CancellationToken cancellationToken)
     {
         if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
         if (!ModelState.IsValid)
@@ -52,7 +52,7 @@ public class LessonsController : ControllerBase
         }
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-        var lesson = await _lessonService.CreateAsync(teacherId, request);
+        var lesson = await _lessonService.CreateAsync(teacherId, request, cancellationToken);
 
         if (lesson is null)
         {
@@ -64,11 +64,11 @@ public class LessonsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email!);
-        var lesson = await _lessonService.GetByIdAsync(teacherId, id);
+        var lesson = await _lessonService.GetByIdAsync(teacherId, id, cancellationToken);
 
         if (lesson is null)
         {
@@ -81,7 +81,7 @@ public class LessonsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateLessonRequest request)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateLessonRequest request, CancellationToken cancellationToken)
     {
         if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
         if (!ModelState.IsValid)
@@ -92,7 +92,7 @@ public class LessonsController : ControllerBase
         }
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-        var result = await _lessonService.UpdateAsync(teacherId, id, request);
+        var result = await _lessonService.UpdateAsync(teacherId, id, request, cancellationToken);
 
         return result switch
         {
@@ -104,7 +104,7 @@ public class LessonsController : ControllerBase
     }
 
     [HttpPut("{id:guid}/sections")]
-    public async Task<IActionResult> UpdateSections(Guid id, [FromBody] UpdateLessonSectionsRequest request)
+    public async Task<IActionResult> UpdateSections(Guid id, [FromBody] UpdateLessonSectionsRequest request, CancellationToken cancellationToken)
     {
         if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
         if (!ModelState.IsValid)
@@ -115,7 +115,7 @@ public class LessonsController : ControllerBase
         }
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-        var updated = await _lessonService.UpdateSectionsAsync(teacherId, id, request);
+        var updated = await _lessonService.UpdateSectionsAsync(teacherId, id, request, cancellationToken);
 
         if (updated is null)
         {
@@ -128,11 +128,11 @@ public class LessonsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email!);
-        var deleted = await _lessonService.DeleteAsync(teacherId, id);
+        var deleted = await _lessonService.DeleteAsync(teacherId, id, cancellationToken);
 
         if (!deleted)
         {
@@ -145,11 +145,11 @@ public class LessonsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/duplicate")]
-    public async Task<IActionResult> Duplicate(Guid id)
+    public async Task<IActionResult> Duplicate(Guid id, CancellationToken cancellationToken)
     {
         if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email!);
-        var copy = await _lessonService.DuplicateAsync(teacherId, id);
+        var copy = await _lessonService.DuplicateAsync(teacherId, id, cancellationToken);
 
         if (copy is null)
         {
