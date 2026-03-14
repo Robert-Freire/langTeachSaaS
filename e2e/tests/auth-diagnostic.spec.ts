@@ -1,31 +1,32 @@
 import { test, expect } from '@playwright/test'
 
-test('auth redirect diagnostic', async ({ page }) => {
-  const consoleLogs: string[] = []
-  const urlHistory: string[] = []
+test('GET /api/health returns 200 without token', async ({ request }) => {
+  const response = await request.get('http://localhost:5000/api/health')
+  expect(response.status()).toBe(200)
+})
 
-  page.on('console', msg => consoleLogs.push(`[${msg.type()}] ${msg.text()}`))
-  page.on('framenavigated', frame => {
-    if (frame === page.mainFrame()) urlHistory.push(frame.url())
-  })
+test('GET /api/auth/me returns 401 without token', async ({ request }) => {
+  const response = await request.get('http://localhost:5000/api/auth/me')
+  expect(response.status()).toBe(401)
+})
 
-  // Clear any cached Auth0 state from previous runs
+test('frontend redirects unauthenticated user to Auth0 login page', async ({ page }) => {
   await page.context().clearCookies()
   await page.evaluate(() => { localStorage.clear(); sessionStorage.clear() }).catch(() => {})
 
-  // Navigate and wait up to 5s to see what happens
   await page.goto('http://localhost:5173', { waitUntil: 'domcontentloaded' })
-  await page.waitForTimeout(5000)
+  await page.waitForURL(/auth0\.com/, { timeout: 10000 })
 
-  console.log('\n=== URL HISTORY ===')
-  urlHistory.forEach((url, i) => console.log(`  ${i + 1}. ${url}`))
+  await expect(page).toHaveURL(/langteach-dev\.eu\.auth0\.com/)
+  await expect(page.locator('body')).toContainText('Log in to langteach-dev')
+})
 
-  console.log('\n=== BROWSER CONSOLE LOGS ===')
-  consoleLogs.forEach(l => console.log(' ', l))
+test('Auth0 login page shows email/password and Google options', async ({ page }) => {
+  await page.context().clearCookies()
+  await page.goto('http://localhost:5173', { waitUntil: 'domcontentloaded' })
+  await page.waitForURL(/auth0\.com/, { timeout: 10000 })
+  await page.waitForLoadState('networkidle')
 
-  console.log('\n=== CURRENT URL ===')
-  console.log(' ', page.url())
-
-  console.log('\n=== PAGE CONTENT ===')
-  console.log(' ', await page.locator('body').innerText().catch(() => '[could not read]'))
+  await expect(page.locator('input[id="username"], input[autocomplete="username email"]')).toBeVisible({ timeout: 8000 })
+  await expect(page.locator('text=Continue with Google')).toBeVisible()
 })
