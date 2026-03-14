@@ -21,18 +21,14 @@ public class ProfileController : ControllerBase
     }
 
     private string Auth0Id => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
     [HttpGet]
     public async Task<IActionResult> Get()
     {
+        await _profileService.UpsertTeacherAsync(Auth0Id, Email);
         var profile = await _profileService.GetProfileAsync(Auth0Id);
-        if (profile is null)
-        {
-            _logger.LogWarning("GET /api/profile — teacher not found. Auth0Id={Auth0Id}", Auth0Id);
-            return NotFound();
-        }
-
-        _logger.LogInformation("GET /api/profile. TeacherId={TeacherId}", profile.Id);
+        _logger.LogInformation("GET /api/profile. TeacherId={TeacherId}", profile!.Id);
         return Ok(profile);
     }
 
@@ -46,6 +42,7 @@ public class ProfileController : ControllerBase
             return BadRequest(ModelState);
         }
 
+        await _profileService.UpsertTeacherAsync(Auth0Id, Email);
         var updated = await _profileService.UpdateProfileAsync(Auth0Id, request);
         _logger.LogInformation("PUT /api/profile. TeacherId={TeacherId} DisplayName={DisplayName}",
             updated.Id, updated.DisplayName);
