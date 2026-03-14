@@ -3,12 +3,11 @@ name: Backend CI/CD
 on:
   push:
     branches: [main]
-    paths: ['backend/**']
+    paths: ['backend/**', '.github/workflows/backend.yml']
   pull_request:
-    paths: ['backend/**']
+    paths: ['backend/**', '.github/workflows/backend.yml']
 
 permissions:
-  id-token: write
   contents: read
 
 env:
@@ -46,6 +45,9 @@ jobs:
     needs: ci
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -63,7 +65,7 @@ jobs:
             --image ${{ env.IMAGE_NAME }}:${{ github.sha }} \
             --image ${{ env.IMAGE_NAME }}:latest \
             -f backend/LangTeach.Api/Dockerfile \
-            .
+            backend
 
       - name: Configure ACR registry on Container App
         run: |

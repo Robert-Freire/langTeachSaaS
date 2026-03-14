@@ -3,12 +3,11 @@ name: Frontend CI/CD
 on:
   push:
     branches: [main]
-    paths: ['frontend/**']
+    paths: ['frontend/**', '.github/workflows/frontend.yml']
   pull_request:
-    paths: ['frontend/**']
+    paths: ['frontend/**', '.github/workflows/frontend.yml']
 
 permissions:
-  id-token: write
   contents: read
 
 jobs:
