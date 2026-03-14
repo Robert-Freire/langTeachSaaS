@@ -15,7 +15,7 @@ test('teacher can save and reload profile settings', async ({ browser }) => {
   const context = await createAuthenticatedContext(browser)
   const page = await context.newPage()
 
-  await page.goto('http://localhost:5173/settings')
+  await page.goto('/settings')
   await expect(page.locator('h1')).toHaveText('My Profile')
 
   // Wait for profile to finish loading (input becomes visible)

@@ -1,0 +1,116 @@
+import { apiClient } from '../lib/apiClient'
+
+export type LessonStatus = 'Draft' | 'Published'
+export type SectionType = 'WarmUp' | 'Presentation' | 'Practice' | 'Production' | 'WrapUp'
+
+export interface LessonSection {
+  id: string
+  sectionType: SectionType
+  orderIndex: number
+  notes: string | null
+}
+
+export interface Lesson {
+  id: string
+  title: string
+  language: string
+  cefrLevel: string
+  topic: string
+  durationMinutes: number
+  objectives: string | null
+  status: LessonStatus
+  studentId: string | null
+  templateId: string | null
+  sections: LessonSection[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface LessonListResponse {
+  items: Lesson[]
+  totalCount: number
+  page: number
+  pageSize: number
+}
+
+export interface LessonTemplate {
+  id: string
+  name: string
+  description: string
+}
+
+export interface CreateLessonRequest {
+  title: string
+  language: string
+  cefrLevel: string
+  topic: string
+  durationMinutes: number
+  objectives?: string | null
+  templateId?: string | null
+  studentId?: string | null
+}
+
+export interface UpdateLessonRequest {
+  title: string
+  language: string
+  cefrLevel: string
+  topic: string
+  durationMinutes?: number | null
+  objectives?: string | null
+  status?: LessonStatus | null
+  studentId?: string | null
+}
+
+export interface SectionInput {
+  sectionType: SectionType
+  orderIndex: number
+  notes?: string | null
+}
+
+export interface LessonListQuery {
+  language?: string
+  cefrLevel?: string
+  status?: string
+  search?: string
+  page?: number
+  pageSize?: number
+}
+
+export async function getLessons(query?: LessonListQuery): Promise<LessonListResponse> {
+  const res = await apiClient.get<LessonListResponse>('/api/lessons', { params: query })
+  return res.data
+}
+
+export async function getLesson(id: string): Promise<Lesson> {
+  const res = await apiClient.get<Lesson>(`/api/lessons/${id}`)
+  return res.data
+}
+
+export async function createLesson(data: CreateLessonRequest): Promise<Lesson> {
+  const res = await apiClient.post<Lesson>('/api/lessons', data)
+  return res.data
+}
+
+export async function updateLesson(id: string, data: UpdateLessonRequest): Promise<Lesson> {
+  const res = await apiClient.put<Lesson>(`/api/lessons/${id}`, data)
+  return res.data
+}
+
+export async function updateSections(id: string, sections: SectionInput[]): Promise<Lesson> {
+  const res = await apiClient.put<Lesson>(`/api/lessons/${id}/sections`, { sections })
+  return res.data
+}
+
+export async function deleteLesson(id: string): Promise<void> {
+  await apiClient.delete(`/api/lessons/${id}`)
+}
+
+export async function duplicateLesson(id: string): Promise<Lesson> {
+  const res = await apiClient.post<Lesson>(`/api/lessons/${id}/duplicate`)
+  return res.data
+}
+
+export async function getLessonTemplates(): Promise<LessonTemplate[]> {
+  const res = await apiClient.get<LessonTemplate[]>('/api/lesson-templates')
+  return res.data
+}

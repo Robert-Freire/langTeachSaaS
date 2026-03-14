@@ -30,6 +30,7 @@ Thumbs.db
 
 # Claude Code local session cache
 .claude/settings.local.json
+.claude/worktrees/
 
 # Docker
 docker-compose.override.yml

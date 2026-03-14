@@ -19,8 +19,8 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T5 | Teacher Profile API + UI | DONE — PR #11 merged to main |
 | T5.1 | Design System & UI Foundation (Tailwind, shadcn/ui, AppShell, restyle T5) | DONE — PR #12 open (rebased on main) |
 | T6 | Student Profiles API + UI | DONE — PR #13 open, all checks passed |
-| T7 | Lesson CRUD API | IN REVIEW — PR #20 open, fixes pushed (b0ddd9a addresses all 9 CodeRabbit comments) |
-| T8 | Lesson UI (Planner) | pending |
+| T7 | Lesson CRUD API | DONE — PR #20 merged to main (2026-03-14) |
+| T8 | Lesson UI (Planner) | IN REVIEW — PR #23 open, all checks passed (10/10 Playwright, 18/18 unit tests). |
 | T9 | CI/CD Pipeline (GitHub Actions) | pending |
 | T9.1 | Brand & Logo (icon, favicon, AppShell logomark) | pending — defer until T6-T8 done |
 
@@ -30,6 +30,11 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 - Key Vault integration deferred to T4 — Container Apps validates KV refs at deploy before RBAC is granted
 - KV name: `kv-lt-dev-5ba22u` (uniqueString suffix due to soft-delete collision)
 - App URL: `https://app-langteach-api-dev.purplewater-292509f3.northeurope.azurecontainerapps.io`
+
+## T8 Key Notes
+- `LessonsController` email guard: use `?? ""` fallback (same as StudentsController) — e2e test user JWT has no email claim
+- `DuplicateAsync` prefixes copied lesson title with `"Copy of "`
+- Docker API image must be rebuilt after backend changes (`docker compose build api`) before running Playwright
 
 ## Key T7 Notes (important for T8)
 - `GET /api/lesson-templates` is NOT in T7 — T8 adds it as a minimal read-only controller (direct DbContext, no service, no new tests)

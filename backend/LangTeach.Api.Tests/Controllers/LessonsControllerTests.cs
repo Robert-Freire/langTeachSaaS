@@ -237,7 +237,7 @@ public class LessonsControllerTests
         dupResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         var copy = await dupResponse.Content.ReadFromJsonAsync<LessonDto>();
         copy!.Id.Should().NotBe(created.Id);
-        copy.Title.Should().Be(created.Title);
+        copy.Title.Should().Be($"Copy of {created.Title}");
         copy.Status.Should().Be("Draft");
         copy.Sections.Should().HaveCount(1);
         copy.Sections[0].SectionType.Should().Be("WarmUp");
