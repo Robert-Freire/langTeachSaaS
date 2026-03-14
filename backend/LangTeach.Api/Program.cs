@@ -28,7 +28,7 @@ builder.Host.UseSerilog((ctx, services, config) => config
         outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}"));
 
 // Key Vault (production only — dev uses appsettings.Development.json)
-if (!builder.Environment.IsDevelopment())
+if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"))
 {
     var kvUri = builder.Configuration["KeyVault:Uri"]
                 ?? throw new InvalidOperationException("KeyVault:Uri is not configured.");
@@ -63,10 +63,23 @@ builder.Services.AddControllers(options =>
     options.Filters.Add(new AuthorizeFilter()));
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")
-        ?? throw new InvalidOperationException("Connection string 'Default' not found.")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default") ?? ""));
 
 var app = builder.Build();
+
+// Apply pending migrations and seed reference data on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    if (!app.Environment.IsEnvironment("Testing"))
+    {
+        startupLogger.LogInformation("Applying pending EF migrations...");
+        await db.Database.MigrateAsync();
+        startupLogger.LogInformation("Migrations applied successfully.");
+        await SeedData.SeedAsync(db, startupLogger);
+    }
+}
 
 app.UseSerilogRequestLogging(options =>
 {
