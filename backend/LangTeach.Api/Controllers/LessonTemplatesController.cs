@@ -12,10 +12,12 @@ namespace LangTeach.Api.Controllers;
 public class LessonTemplatesController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly ILogger<LessonTemplatesController> _logger;
 
-    public LessonTemplatesController(AppDbContext db)
+    public LessonTemplatesController(AppDbContext db, ILogger<LessonTemplatesController> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -26,6 +28,7 @@ public class LessonTemplatesController : ControllerBase
             .Select(t => new LessonTemplateDto(t.Id, t.Name, t.Description))
             .ToListAsync();
 
+        _logger.LogInformation("GET /api/lesson-templates. Count={Count}", templates.Count);
         return Ok(templates);
     }
 }

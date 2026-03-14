@@ -7,7 +7,6 @@ test('full lesson CRUD flow', async ({ browser }) => {
 
   // Navigate to lessons list
   await page.goto('/lessons')
-  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
   await expect(page.locator('h1')).toHaveText('Lessons', { timeout: 15000 })
 
   // Navigate to new lesson wizard
@@ -53,7 +52,6 @@ test('full lesson CRUD flow', async ({ browser }) => {
 
   // Reload and verify notes persisted
   await page.reload()
-  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
   await expect(page.getByTestId('section-presentation')).toHaveValue(presentationNotes, { timeout: 10000 })
 
   // Capture current URL for comparison after duplicate
@@ -69,13 +67,11 @@ test('full lesson CRUD flow', async ({ browser }) => {
   // Duplicated lesson title should start with "Copy of"
   await expect(page.getByTestId('lesson-title')).toContainText('Copy of', { timeout: 10000 })
 
-  // Navigate to lessons list — should show at least 2 lessons
+  // Navigate to lessons list — both original and copy should be visible
   await page.goto('/lessons')
-  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
-  const lessonCards = page.locator('[data-testid^="lesson-row-"]')
-  await expect(lessonCards).toHaveCount(await lessonCards.count(), { timeout: 5000 })
-  const count = await lessonCards.count()
-  expect(count).toBeGreaterThanOrEqual(2)
+  await expect(page.locator('h1')).toHaveText('Lessons', { timeout: 10000 })
+  await expect(page.locator(`[data-testid="lesson-title"]:text-is("${lessonTitle}")`)).toBeVisible({ timeout: 10000 })
+  await expect(page.locator(`[data-testid="lesson-title"]:text-is("Copy of ${lessonTitle}")`)).toBeVisible({ timeout: 10000 })
 
   await context.close()
 })

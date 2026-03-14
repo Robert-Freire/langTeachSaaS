@@ -174,8 +174,11 @@ export default function LessonEditor() {
     if (!sectionNotes) return
     const updated = { ...sectionNotes, [type]: value }
     setSectionNotes(updated)
+    if (isSaving) {
+      logger.warn('LessonEditor', 'concurrent save detected — previous save still in-flight', { id })
+    }
     doUpdateSections(updated)
-  }, [sectionNotes, doUpdateSections])
+  }, [sectionNotes, doUpdateSections, isSaving, id])
 
   const handleMetaSave = useCallback(() => {
     if (!lesson) return
@@ -238,6 +241,9 @@ export default function LessonEditor() {
           <h1
             className="text-2xl font-semibold text-zinc-900 flex-1 cursor-pointer hover:text-indigo-700 transition-colors"
             onClick={() => setEditingTitle(true)}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setEditingTitle(true)}
+            role="button"
+            tabIndex={0}
             data-testid="lesson-title"
           >
             {lesson.title}
@@ -288,7 +294,13 @@ export default function LessonEditor() {
 
       {/* Metadata strip */}
       <Card className="bg-white border border-zinc-200">
-        <CardHeader className="py-3 px-6 cursor-pointer" onClick={() => setMetaExpanded(!metaExpanded)}>
+        <CardHeader
+          className="py-3 px-6 cursor-pointer"
+          onClick={() => setMetaExpanded(!metaExpanded)}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setMetaExpanded(v => !v)}
+          role="button"
+          tabIndex={0}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">{lesson.language}</Badge>

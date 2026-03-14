@@ -76,7 +76,9 @@ public class ProfileService : IProfileService
         if (existing is not null)
             return existing.Id;
 
-        var displayName = email.Contains('@') ? email[..email.IndexOf('@')] : email;
+        var displayName = email.Contains('@') ? email[..email.IndexOf('@')]
+            : auth0UserId.Contains('|') ? auth0UserId[(auth0UserId.IndexOf('|') + 1)..]
+            : auth0UserId;
         var teacher = new Teacher
         {
             Id = Guid.NewGuid(),

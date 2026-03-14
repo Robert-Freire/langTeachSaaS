@@ -80,7 +80,7 @@ export default function Lessons() {
     },
   })
 
-  const { mutate: doDuplicate } = useMutation({
+  const { mutate: doDuplicate, isPending: isDuplicating } = useMutation({
     mutationFn: (id: string) => duplicateLesson(id),
     onSuccess: (copy) => {
       logger.info('Lessons', 'lesson duplicated', { id: copy.id })
@@ -217,6 +217,7 @@ export default function Lessons() {
                     variant="ghost"
                     size="icon"
                     onClick={() => doDuplicate(lesson.id)}
+                    disabled={isDuplicating}
                     aria-label={`Duplicate ${lesson.title}`}
                     data-testid="duplicate-lesson"
                   >

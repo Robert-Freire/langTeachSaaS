@@ -39,7 +39,7 @@ export default function LessonNew() {
   const [studentId, setStudentId] = useState<string | undefined>()
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const { data: templates, isLoading: templatesLoading } = useQuery({
+  const { data: templates, isLoading: templatesLoading, isError: templatesError, refetch: refetchTemplates } = useQuery({
     queryKey: ['lesson-templates'],
     queryFn: getLessonTemplates,
   })
@@ -85,6 +85,11 @@ export default function LessonNew() {
 
         {templatesLoading ? (
           <div className="text-sm text-zinc-500">Loading templates...</div>
+        ) : templatesError ? (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <p className="text-sm text-red-600 font-medium">Failed to load templates.</p>
+            <button onClick={() => refetchTemplates()} className="text-sm text-indigo-600 underline hover:text-indigo-800">Retry</button>
+          </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3" data-testid="template-grid">
             {(templates ?? []).map((t: LessonTemplate) => (
