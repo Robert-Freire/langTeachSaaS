@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "Bash(*)"
+    ],
+    "deny": [
+      "Bash(git push *main*)",
+      "Bash(git push *master*)",
+      "Bash(git commit* main*)"
+    ]
+  }
+}
