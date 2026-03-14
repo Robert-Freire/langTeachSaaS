@@ -7,6 +7,8 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import AppShell from './components/AppShell'
 import Dashboard from './pages/Dashboard'
 import Settings from './pages/Settings'
+import Students from './pages/Students'
+import StudentForm from './pages/StudentForm'
 
 const queryClient = new QueryClient()
 
@@ -29,6 +31,9 @@ export default function App() {
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/students" element={<Students />} />
+              <Route path="/students/new" element={<StudentForm />} />
+              <Route path="/students/:id/edit" element={<StudentForm />} />
             </Route>
           </Routes>
         </AuthSetup>

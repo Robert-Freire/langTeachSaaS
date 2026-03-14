@@ -309,7 +309,9 @@ POST   /api/lessons/{id}/duplicate     # Duplicate lesson + sections
 
 **Playwright test** (`e2e/tests/lessons.spec.ts`): Login, create a lesson from the Grammar template, fill in title/topic, edit the Presentation section notes, save, refresh, assert notes persisted. Then duplicate and confirm it appears as a new draft.
 
-**Done when**: Teacher can create a lesson from a template, edit all sections, switch status, duplicate, and delete. All changes persist. Playwright test passes.
+**Dashboard tiles (mandatory):** Wire the "Lessons this week" and "Active plans" cards in `Dashboard.tsx` as `<Link to="/lessons">` — same fix applied to the Students tile in T6. Also extend `e2e/tests/dashboard.spec.ts` to assert both tiles navigate correctly.
+
+**Done when**: Teacher can create a lesson from a template, edit all sections, switch status, duplicate, and delete. All changes persist. Dashboard tiles navigate to `/lessons`. Playwright tests pass.
 
 ---
 

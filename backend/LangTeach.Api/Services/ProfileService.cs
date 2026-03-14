@@ -66,11 +66,15 @@ public class ProfileService : IProfileService
         return MapToDto(teacher);
     }
 
-    public async Task UpsertTeacherAsync(string auth0UserId, string email)
+    public async Task<Guid> UpsertTeacherAsync(string auth0UserId, string email)
     {
-        var exists = await _db.Teachers.AnyAsync(t => t.Auth0UserId == auth0UserId);
-        if (exists)
-            return;
+        var existing = await _db.Teachers
+            .Where(t => t.Auth0UserId == auth0UserId)
+            .Select(t => new { t.Id })
+            .FirstOrDefaultAsync();
+
+        if (existing is not null)
+            return existing.Id;
 
         var displayName = email.Contains('@') ? email[..email.IndexOf('@')] : email;
         var teacher = new Teacher
@@ -83,9 +87,27 @@ public class ProfileService : IProfileService
             UpdatedAt = DateTime.UtcNow,
         };
 
-        _db.Teachers.Add(teacher);
-        await _db.SaveChangesAsync();
-        _logger.LogInformation("Teacher upserted. TeacherId={TeacherId} Email={Email}", teacher.Id, email);
+        try
+        {
+            _db.Teachers.Add(teacher);
+            await _db.SaveChangesAsync();
+            _logger.LogInformation("Teacher upserted. TeacherId={TeacherId}", teacher.Id);
+            return teacher.Id;
+        }
+        catch (DbUpdateException)
+        {
+            // Concurrent request inserted the same teacher — detach and fetch the winner.
+            _db.Entry(teacher).State = EntityState.Detached;
+            var winner = await _db.Teachers
+                .Where(t => t.Auth0UserId == auth0UserId)
+                .Select(t => new { t.Id })
+                .FirstOrDefaultAsync();
+
+            if (winner is not null)
+                return winner.Id;
+
+            throw; // not a duplicate-key race — propagate the original exception
+        }
     }
 
     private static ProfileDto MapToDto(Teacher teacher) => new(
