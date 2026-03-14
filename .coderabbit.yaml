@@ -1,0 +1,48 @@
+version: "2"
+
+language: "en-US"
+
+reviews:
+  profile: "chill"          # assertive | chill — chill avoids nitpick noise
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+
+  path_filters:
+    - "!**/*.lock"
+    - "!**/bin/**"
+    - "!**/obj/**"
+    - "!**/.next/**"
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!infra/**"          # Bicep infra files — skip unless you want infra review
+
+  path_instructions:
+    - path: "backend/**/*.cs"
+      instructions: |
+        This is a .NET 8 ASP.NET Core Web API.
+        Check for: missing input validation, improper use of async/await, missing cancellation tokens,
+        service lifetime mismatches (scoped vs singleton), and exposed sensitive data in responses.
+        Follow repository/service pattern conventions already in the codebase.
+
+    - path: "frontend/**/*.{ts,tsx}"
+      instructions: |
+        This is a React + TypeScript SPA using TailwindCSS and shadcn/ui components.
+        Check for: missing error boundaries, unhandled promise rejections, prop drilling that should
+        use context, and inline styles that should use Tailwind classes.
+        Do not flag missing JSDoc — we don't use it.
+
+    - path: "e2e/**/*.ts"
+      instructions: |
+        Playwright end-to-end tests. Check for: hardcoded timeouts (use waitFor instead),
+        missing assertions, and tests that only test the happy path without any negative case.
+
+chat:
+  auto_reply: true
