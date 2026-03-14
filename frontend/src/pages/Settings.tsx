@@ -31,7 +31,7 @@ function ToggleBadge({ label, selected, onToggle }: { label: string; selected: b
 }
 
 export default function Settings() {
-  const { data: profile, isLoading } = useProfile()
+  const { data: profile, isLoading, isError: isProfileError } = useProfile()
   const { mutate, isPending, isSuccess, isError } = useUpdateProfile()
 
   const [displayName, setDisplayName] = useState('')
@@ -72,6 +72,14 @@ export default function Settings() {
     return (
       <div className="flex items-center justify-center h-64 text-sm text-zinc-500">
         Loading profile...
+      </div>
+    )
+  }
+
+  if (isProfileError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="text-sm text-red-600 font-medium">Failed to load profile. Please try again.</span>
       </div>
     )
   }
