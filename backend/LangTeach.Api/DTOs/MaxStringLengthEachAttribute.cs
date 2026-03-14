@@ -15,7 +15,12 @@ public sealed class MaxStringLengthEachAttribute(int maxLength) : ValidationAttr
 
         foreach (var item in items)
         {
-            if (item is not null && item.Length > maxLength)
+            if (item is null)
+                return new ValidationResult(
+                    "Interests cannot contain null values.",
+                    [context.MemberName!]);
+
+            if (item.Length > maxLength)
                 return new ValidationResult(
                     $"Each interest cannot exceed {maxLength} characters.",
                     [context.MemberName!]);

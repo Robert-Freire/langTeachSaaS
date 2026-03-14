@@ -19,6 +19,9 @@ public class StudentService : IStudentService
 
     public async Task<PagedResult<StudentDto>> ListAsync(Guid teacherId, StudentListQuery query)
     {
+        var page = Math.Max(query.Page, 1);
+        var pageSize = query.PageSize;
+
         var q = _db.Students.Where(s => s.TeacherId == teacherId && !s.IsDeleted);
 
         if (!string.IsNullOrWhiteSpace(query.Language))
@@ -31,15 +34,15 @@ public class StudentService : IStudentService
 
         var items = await q
             .OrderBy(s => s.Name)
-            .Skip((query.Page - 1) * query.PageSize)
-            .Take(query.PageSize)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         return new PagedResult<StudentDto>(
             items.Select(MapToDto).ToList(),
             totalCount,
-            query.Page,
-            query.PageSize
+            page,
+            pageSize
         );
     }
 
@@ -68,8 +71,8 @@ public class StudentService : IStudentService
 
         _db.Students.Add(student);
         await _db.SaveChangesAsync();
-        _logger.LogInformation("Student created. TeacherId={TeacherId} StudentId={StudentId} Name={Name}",
-            teacherId, student.Id, student.Name);
+        _logger.LogInformation("Student created. TeacherId={TeacherId} StudentId={StudentId}",
+            teacherId, student.Id);
 
         return MapToDto(student);
     }
