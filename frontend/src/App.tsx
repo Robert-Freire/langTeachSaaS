@@ -6,6 +6,7 @@ import { setupAuthInterceptor } from './lib/apiClient'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
+import Settings from './pages/Settings'
 
 const queryClient = new QueryClient()
 
@@ -27,6 +28,7 @@ export default function App() {
           <Routes>
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
           </Routes>
         </AuthSetup>

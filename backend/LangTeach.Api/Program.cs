@@ -1,5 +1,6 @@
 using Azure.Identity;
 using LangTeach.Api.Data;
+using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -64,6 +65,8 @@ builder.Services.AddControllers(options =>
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default") ?? ""));
+
+builder.Services.AddScoped<IProfileService, ProfileService>();
 
 var app = builder.Build();
 
