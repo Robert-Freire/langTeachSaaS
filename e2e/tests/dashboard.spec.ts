@@ -24,9 +24,9 @@ test('dashboard tiles navigate to correct routes', async ({ browser }) => {
   await page.goto('/')
   await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: 10000 })
 
-  // Active plans tile -> /lessons
+  // Active plans tile -> /lessons?status=Published
   await page.getByTestId('active-plans-tile').click()
-  await expect(page).toHaveURL('/lessons', { timeout: 10000 })
+  await expect(page).toHaveURL('/lessons?status=Published', { timeout: 10000 })
   await expect(page.locator('h1')).toHaveText('Lessons', { timeout: 10000 })
 
   await context.close()

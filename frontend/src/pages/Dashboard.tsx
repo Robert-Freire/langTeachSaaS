@@ -59,7 +59,7 @@ export default function Dashboard() {
           </Card>
         </Link>
 
-        <Link to="/lessons" data-testid="active-plans-tile">
+        <Link to="/lessons?status=Published" data-testid="active-plans-tile">
           <Card className="cursor-pointer hover:ring-indigo-200 transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-zinc-500">Active plans</CardTitle>

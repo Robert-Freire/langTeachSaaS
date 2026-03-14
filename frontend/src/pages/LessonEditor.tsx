@@ -437,7 +437,9 @@ export default function LessonEditor() {
           <div className="px-6 pb-2">
             <Select value={linkStudentId} onValueChange={(v) => setLinkStudentId(v ?? '')}>
               <SelectTrigger data-testid="link-student-select">
-                <SelectValue placeholder="Select a student" />
+                {linkStudentId
+                  ? <span>{students.find(s => s.id === linkStudentId)?.name}</span>
+                  : <SelectValue placeholder="Select a student" />}
               </SelectTrigger>
               <SelectContent>
                 {students.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}

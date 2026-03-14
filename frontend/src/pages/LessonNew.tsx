@@ -228,7 +228,9 @@ export default function LessonNew() {
               <Label htmlFor="student">Link Student (optional)</Label>
               <Select value={studentId ?? 'none'} onValueChange={(v) => setStudentId(!v || v === 'none' ? undefined : v)}>
                 <SelectTrigger id="student" data-testid="select-student">
-                  <SelectValue placeholder="No student linked" />
+                  {studentId
+                    ? <span>{students.find(s => s.id === studentId)?.name}</span>
+                    : <SelectValue placeholder="No student linked" />}
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No student</SelectItem>

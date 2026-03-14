@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { BookOpen, Copy, Pencil, PlusCircle, Trash2 } from 'lucide-react'
 import { getLessons, deleteLesson, duplicateLesson, type Lesson } from '../api/lessons'
@@ -37,12 +37,13 @@ function formatDate(iso: string) {
 export default function Lessons() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [language, setLanguage] = useState<string | undefined>()
   const [cefrLevel, setCefrLevel] = useState<string | undefined>()
-  const [status, setStatus] = useState<string | undefined>()
+  const [status, setStatus] = useState<string | undefined>(searchParams.get('status') ?? undefined)
   const [lessonToDelete, setLessonToDelete] = useState<Lesson | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
