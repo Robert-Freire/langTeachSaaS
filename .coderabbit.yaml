@@ -15,6 +15,10 @@ reviews:
     base_branches:
       - main
 
+  finishing_touches:
+    docstrings:
+      enabled: false        # Project is C# + TypeScript; Python docstring coverage is not applicable
+
   path_filters:
     - "!**/*.lock"
     - "!**/bin/**"
