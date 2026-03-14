@@ -16,8 +16,8 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T2 | Azure Infrastructure (Bicep: Container Apps, SQL, SWA, Key Vault, Storage) | DONE (2026-03-13) |
 | T3 | Auth0 Setup & Integration (backend JWT, frontend Auth0Provider, Serilog, Playwright) | DONE — PR #2, login page confirmed working via Playwright |
 | T4 | Database Schema — EF Core migrations, Phase 1 tables, seed templates | DONE — PR #10 merged to main |
-| T5 | Teacher Profile API + UI | DONE — PR #11 open, targeting main |
-| T5.1 | Design System & UI Foundation (Tailwind, shadcn/ui, AppShell, restyle T5) | pending |
+| T5 | Teacher Profile API + UI | DONE — PR #11 merged to main |
+| T5.1 | Design System & UI Foundation (Tailwind, shadcn/ui, AppShell, restyle T5) | DONE — PR #12 open, depends on T5 PR #11 |
 | T6 | Student Profiles API + UI | pending |
 | T7 | Lesson CRUD API | pending |
 | T8 | Lesson UI (Planner) | pending |
