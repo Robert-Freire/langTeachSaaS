@@ -17,6 +17,8 @@ Base path: `C:\ws\PersonalOS\02_Library\personal-obsidian-vault\Projects\langTea
 | Phase 1 — T2 task file | `plan\langteach-phase1\task2-azure-infra.md` |
 | Phase 1 — T3 task file | `plan\langteach-phase1\task3-auth0-integration.md` |
 | Phase 1 — T5 task file | `plan\langteach-phase1\task5-teacher-profile.md` |
+| Phase 1 — T5.1 task file | `plan\langteach-phase1\task5.1-design-system.md` |
+| Phase 1 — T9.1 task file | `plan\langteach-phase1\task9.1-brand-logo.md` |
 | Phase 2 — AI Core (T1-T8 internal) | `plan\langteach-phase2\plan.md` |
 
 ## Naming Convention

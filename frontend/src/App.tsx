@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuth0 } from '@auth0/auth0-react'
 import { setupAuthInterceptor } from './lib/apiClient'
 import { ProtectedRoute } from './components/ProtectedRoute'
-import Layout from './components/Layout'
+import AppShell from './components/AppShell'
 import Dashboard from './pages/Dashboard'
 import Settings from './pages/Settings'
 
@@ -26,7 +26,7 @@ export default function App() {
       <BrowserRouter>
         <AuthSetup>
           <Routes>
-            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
