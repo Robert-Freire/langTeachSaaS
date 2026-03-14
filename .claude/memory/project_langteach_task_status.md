@@ -19,7 +19,7 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T5 | Teacher Profile API + UI | DONE — PR #11 merged to main |
 | T5.1 | Design System & UI Foundation (Tailwind, shadcn/ui, AppShell, restyle T5) | DONE — PR #12 open (rebased on main) |
 | T6 | Student Profiles API + UI | DONE — PR #13 open, all checks passed |
-| T7 | Lesson CRUD API | pending |
+| T7 | Lesson CRUD API | IN REVIEW — PR #20 open, fixes pushed (b0ddd9a addresses all 9 CodeRabbit comments) |
 | T8 | Lesson UI (Planner) | pending |
 | T9 | CI/CD Pipeline (GitHub Actions) | pending |
 | T9.1 | Brand & Logo (icon, favicon, AppShell logomark) | pending — defer until T6-T8 done |
@@ -30,6 +30,13 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 - Key Vault integration deferred to T4 — Container Apps validates KV refs at deploy before RBAC is granted
 - KV name: `kv-lt-dev-5ba22u` (uniqueString suffix due to soft-delete collision)
 - App URL: `https://app-langteach-api-dev.purplewater-292509f3.northeurope.azurecontainerapps.io`
+
+## Key T7 Notes (important for T8)
+- `GET /api/lesson-templates` is NOT in T7 — T8 adds it as a minimal read-only controller (direct DbContext, no service, no new tests)
+- `LessonUpdateResult` sealed record hierarchy (Success, NotFound, InvalidStudent) lives in `Services/LessonUpdateResult.cs` — use same pattern for any future service that needs discriminated outcomes
+- Template section seeding in tests: seed `LessonTemplate` directly via `_factory.Services.CreateScope()` + `AppDbContext` (SeedData does not run in Testing environment)
+- `UpdateLessonRequest.DurationMinutes` and `Status` are nullable — null means keep existing value
+- Issue #21 tracks adding `CancellationToken` to both `ILessonService` and `IStudentService`
 
 ## Key T6 Notes (important for T7/T8)
 - `PagedResult<T>` DTO is generic — reuse for T7 lessons list
