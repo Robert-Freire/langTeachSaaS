@@ -13,6 +13,7 @@ public class UpdateStudentRequest
     [Required]
     public string CefrLevel { get; set; } = "";
 
+    [MaxLength(50, ErrorMessage = "Cannot have more than 50 interests.")]
     public List<string> Interests { get; set; } = [];
 
     [MaxLength(2000)]

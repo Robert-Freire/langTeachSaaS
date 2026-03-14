@@ -87,10 +87,23 @@ public class ProfileService : IProfileService
             UpdatedAt = DateTime.UtcNow,
         };
 
-        _db.Teachers.Add(teacher);
-        await _db.SaveChangesAsync();
-        _logger.LogInformation("Teacher upserted. TeacherId={TeacherId} Email={Email}", teacher.Id, email);
-        return teacher.Id;
+        try
+        {
+            _db.Teachers.Add(teacher);
+            await _db.SaveChangesAsync();
+            _logger.LogInformation("Teacher upserted. TeacherId={TeacherId} Email={Email}", teacher.Id, email);
+            return teacher.Id;
+        }
+        catch (DbUpdateException)
+        {
+            // Concurrent request inserted the same teacher — detach and fetch the winner.
+            _db.Entry(teacher).State = EntityState.Detached;
+            var winner = await _db.Teachers
+                .Where(t => t.Auth0UserId == auth0UserId)
+                .Select(t => new { t.Id })
+                .FirstAsync();
+            return winner.Id;
+        }
     }
 
     private static ProfileDto MapToDto(Teacher teacher) => new(

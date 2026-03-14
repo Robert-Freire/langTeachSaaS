@@ -105,6 +105,7 @@ public class StudentsControllerTests
         updated!.Name.Should().Be("Updated Name");
         updated.CefrLevel.Should().Be("C1");
         updated.LearningLanguage.Should().Be("French");
+        updated.Interests.Should().BeEquivalentTo(["cinema"]);
     }
 
     [Fact]
