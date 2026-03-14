@@ -6,5 +6,5 @@ public interface IProfileService
 {
     Task<ProfileDto?> GetProfileAsync(string auth0UserId);
     Task<ProfileDto> UpdateProfileAsync(string auth0UserId, UpdateProfileRequest request);
-    Task UpsertTeacherAsync(string auth0UserId, string email);
+    Task<Guid> UpsertTeacherAsync(string auth0UserId, string email);
 }
