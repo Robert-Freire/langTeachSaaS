@@ -15,8 +15,8 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T1 | Repository & Tooling Setup (monorepo, Docker, React, .NET 9) | DONE (2026-03-12) |
 | T2 | Azure Infrastructure (Bicep: Container Apps, SQL, SWA, Key Vault, Storage) | DONE (2026-03-13) |
 | T3 | Auth0 Setup & Integration (backend JWT, frontend Auth0Provider, Serilog, Playwright) | DONE — PR #2, login page confirmed working via Playwright |
-| T4 | Database Schema — EF Core migrations, Phase 1 tables, seed templates | NEXT |
-| T5 | Teacher Profile API + UI | pending |
+| T4 | Database Schema — EF Core migrations, Phase 1 tables, seed templates | DONE — PR #10, all checks pass, migration applied to local SQL |
+| T5 | Teacher Profile API + UI | NEXT |
 | T6 | Student Profiles API + UI | pending |
 | T7 | Lesson CRUD API | pending |
 | T8 | Lesson UI (Planner) | pending |
@@ -34,7 +34,12 @@ Full AI Core plan already written (T1-T8 internal tasks) but saved at WRONG loca
 Should be at: `plan\langteach-phase2\plan.md` inside the project vault.
 Was incorrectly saved at: `obsidianVault\Personal-AI-OS\Plans\langteach-phase2\plan.md`
 
+## Key T4 Notes (important for T5)
+- Student→Lesson FK is NoAction (not SetNull) — SQL Server multiple cascade path constraint. Nullify StudentId in service layer when soft-deleting students if needed.
+- Teacher upsert in AuthController.Me() is NOT done — deferred to T5.
+- Migrations run automatically on startup via MigrateAsync; guarded with !IsEnvironment("Testing") for test host.
+- docker-compose mounts frontend/.env.local into container for Auth0 vars.
+- docs/ folder created: er-diagram.md, requirements-v1.md, competitor-analysis.md
+
 ## Current Session
-- Memory junction verified working (2026-03-14): memory loads on session start, writes propagate to project repo
-- PR #9 open: chore/memory-in-project branch (moves Claude memory into project .claude/memory/)
-- T4 is next: EF Core migrations, Phase 1 DB schema, seed lesson templates
+- T4 DONE (2026-03-14): PR #10 open, awaiting merge

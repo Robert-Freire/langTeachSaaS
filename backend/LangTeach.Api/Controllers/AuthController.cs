@@ -22,7 +22,7 @@ public class AuthController : ControllerBase
 
         _logger.LogInformation("Auth/Me called. Sub={Sub} Email={Email}", sub, email);
 
-        // T4 will inject ITeacherRepository and upsert teacher record here
+        // T5 will inject ITeacherService and upsert teacher record here
         return Ok(new { sub, email });
     }
 }
