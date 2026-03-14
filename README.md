@@ -59,6 +59,21 @@ VITE_API_BASE_URL=http://localhost:5000
 4. Create an **API** (Applications > APIs) with identifier `https://api.langteach.io`
 5. Enable Google social connection (Authentication > Social > Google)
 
+### 4. E2E test user (one-time, for Playwright)
+
+The Playwright tests log in with a dedicated test account — never your personal account.
+
+1. In the Auth0 dashboard, go to **User Management > Users > Create User**
+2. Set email to something like `e2e-test@langteach.dev`, choose a strong password, connection: `Username-Password-Authentication`
+3. Fill in `e2e/.env` (copy from `e2e/.env.example` if it doesn't exist):
+
+```
+E2E_TEST_EMAIL=e2e-test@langteach.dev
+E2E_TEST_PASSWORD=<the password you set>
+```
+
+> `e2e/.env` is git-ignored. Never commit it.
+
 ## Running Locally
 
 ### Option A — API + SQL in Docker, frontend on host (recommended for development)
