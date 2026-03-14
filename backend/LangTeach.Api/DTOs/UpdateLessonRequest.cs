@@ -18,13 +18,13 @@ public class UpdateLessonRequest
     public string Topic { get; set; } = "";
 
     [Range(1, 300)]
-    public int DurationMinutes { get; set; } = 60;
+    public int? DurationMinutes { get; set; }
 
     [MaxLength(2000)]
     public string? Objectives { get; set; }
 
     [RegularExpression(@"^(Draft|Published)$", ErrorMessage = "Status must be Draft or Published.")]
-    public string Status { get; set; } = "Draft";
+    public string? Status { get; set; }
 
     public Guid? StudentId { get; set; }
 }

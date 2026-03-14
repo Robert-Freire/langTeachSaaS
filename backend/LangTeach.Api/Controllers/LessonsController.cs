@@ -92,16 +92,15 @@ public class LessonsController : ControllerBase
         }
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-        var updated = await _lessonService.UpdateAsync(teacherId, id, request);
+        var result = await _lessonService.UpdateAsync(teacherId, id, request);
 
-        if (updated is null)
+        return result switch
         {
-            _logger.LogWarning("PUT /api/lessons/{LessonId} not found or forbidden. TeacherId={TeacherId}",
-                id, teacherId);
-            return NotFound();
-        }
-
-        return Ok(updated);
+            LessonUpdateResult.NotFound => NotFound(),
+            LessonUpdateResult.InvalidStudent => BadRequest("Invalid StudentId: student not found or does not belong to you."),
+            LessonUpdateResult.Success s => Ok(s.Lesson),
+            _ => StatusCode(500),
+        };
     }
 
     [HttpPut("{id:guid}/sections")]

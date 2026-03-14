@@ -1,8 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
+using LangTeach.Api.Data;
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Tests.Fixtures;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LangTeach.Api.Tests.Controllers;
 
@@ -48,28 +51,40 @@ public class LessonsControllerTests
     [Fact]
     public async Task CreateLesson_WithTemplate_CopiesSections()
     {
+        // Seed a LessonTemplate directly into the shared in-memory DB
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var templateId = Guid.NewGuid();
+        db.LessonTemplates.Add(new LessonTemplate
+        {
+            Id = templateId,
+            Name = "Test Grammar Template",
+            Description = "For template copy test",
+            DefaultSections = """[{"SectionType":"WarmUp","OrderIndex":0,"NotesPlaceholder":"Opener question."},{"SectionType":"Practice","OrderIndex":1,"NotesPlaceholder":"Gap-fill exercise."}]""",
+        });
+        await db.SaveChangesAsync();
+
         var client = _factory.CreateAuthenticatedClient("auth0|lesson-template", "lesson-template@example.com");
 
-        // First seed a template manually via a blank lesson, then query templates.
-        // Since the InMemory DB doesn't run SeedData, we create a lesson without template
-        // and verify section copying logic by seeding a template directly.
-        // Instead, create without template to verify empty sections, then test section update.
-        // For template copying we rely on the service unit behaviour — verified via UpdateSections.
-
-        // Create a lesson with no template — sections empty
         var request = new CreateLessonRequest
         {
-            Title = "Template Test Lesson",
-            Language = "French",
+            Title = "Grammar Template Lesson",
+            Language = "English",
             CefrLevel = "B1",
-            Topic = "Passé composé",
+            Topic = "Present Perfect",
             DurationMinutes = 60,
+            TemplateId = templateId,
         };
 
         var response = await client.PostAsJsonAsync("/api/lessons", request);
+
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var lesson = await response.Content.ReadFromJsonAsync<LessonDto>();
-        lesson!.Sections.Should().BeEmpty();
+        lesson!.TemplateId.Should().Be(templateId);
+        lesson.Sections.Should().HaveCount(2);
+        lesson.Sections[0].SectionType.Should().Be("WarmUp");
+        lesson.Sections[0].Notes.Should().Be("Opener question.");
+        lesson.Sections[1].SectionType.Should().Be("Practice");
     }
 
     [Fact]
@@ -197,12 +212,14 @@ public class LessonsControllerTests
 
         var created = await CreateLessonAsync(client, "Original for Dup");
 
-        // Add sections and publish original
+        // Add sections — capture the response to record original section IDs
         var sectionsRequest = new UpdateLessonSectionsRequest
         {
             Sections = [new SectionInput { SectionType = "WarmUp", OrderIndex = 0, Notes = "Opener." }]
         };
-        await client.PutAsJsonAsync($"/api/lessons/{created.Id}/sections", sectionsRequest);
+        var sectionsResponse = await client.PutAsJsonAsync($"/api/lessons/{created.Id}/sections", sectionsRequest);
+        var lessonWithSections = await sectionsResponse.Content.ReadFromJsonAsync<LessonDto>();
+        var originalSectionId = lessonWithSections!.Sections[0].Id;
 
         var updateRequest = new UpdateLessonRequest
         {
@@ -224,6 +241,8 @@ public class LessonsControllerTests
         copy.Status.Should().Be("Draft");
         copy.Sections.Should().HaveCount(1);
         copy.Sections[0].SectionType.Should().Be("WarmUp");
+        copy.Sections[0].Id.Should().NotBe(originalSectionId);
+        copy.Sections[0].Id.Should().NotBe(Guid.Empty);
     }
 
     [Fact]

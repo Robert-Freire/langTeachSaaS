@@ -14,6 +14,7 @@ public class SectionInput
         ErrorMessage = "SectionType must be one of: WarmUp, Presentation, Practice, Production, WrapUp.")]
     public string SectionType { get; set; } = "";
 
+    [Range(0, int.MaxValue, ErrorMessage = "OrderIndex must be non-negative.")]
     public int OrderIndex { get; set; }
 
     [MaxLength(5000)]

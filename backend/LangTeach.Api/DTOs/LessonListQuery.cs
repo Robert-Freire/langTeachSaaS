@@ -6,7 +6,12 @@ public class LessonListQuery
     public string? CefrLevel { get; set; }
     public string? Status { get; set; }
     public string? Search { get; set; }
-    public int Page { get; set; } = 1;
+    private int _page = 1;
+    public int Page
+    {
+        get => _page;
+        set => _page = Math.Max(value, 1);
+    }
 
     private int _pageSize = 20;
     public int PageSize

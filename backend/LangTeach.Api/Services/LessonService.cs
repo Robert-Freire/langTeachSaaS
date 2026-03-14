@@ -88,7 +88,7 @@ public class LessonService : ILessonService
             Id = Guid.NewGuid(),
             TeacherId = teacherId,
             StudentId = request.StudentId,
-            TemplateId = request.TemplateId,
+            TemplateId = null,
             Title = request.Title,
             Language = request.Language,
             CefrLevel = request.CefrLevel,
@@ -105,20 +105,25 @@ public class LessonService : ILessonService
             var template = await _db.LessonTemplates
                 .FirstOrDefaultAsync(t => t.Id == request.TemplateId.Value);
 
-            if (template is not null)
+            if (template is null)
             {
-                var templateSections = DeserializeTemplateSections(template.DefaultSections);
-                lesson.Sections = templateSections.Select(s => new LessonSection
-                {
-                    Id = Guid.NewGuid(),
-                    LessonId = lesson.Id,
-                    SectionType = s.SectionType,
-                    OrderIndex = s.OrderIndex,
-                    Notes = s.NotesPlaceholder,
-                    CreatedAt = now,
-                    UpdatedAt = now,
-                }).ToList();
+                _logger.LogWarning(
+                    "CreateLesson: TemplateId={TemplateId} not found. TeacherId={TeacherId}",
+                    request.TemplateId.Value, teacherId);
+                return null;
             }
+
+            lesson.TemplateId = request.TemplateId;
+            lesson.Sections = DeserializeTemplateSections(template.DefaultSections).Select(s => new LessonSection
+            {
+                Id = Guid.NewGuid(),
+                LessonId = lesson.Id,
+                SectionType = s.SectionType,
+                OrderIndex = s.OrderIndex,
+                Notes = s.NotesPlaceholder,
+                CreatedAt = now,
+                UpdatedAt = now,
+            }).ToList();
         }
 
         _db.Lessons.Add(lesson);
@@ -128,14 +133,14 @@ public class LessonService : ILessonService
         return MapToDto(lesson);
     }
 
-    public async Task<LessonDto?> UpdateAsync(Guid teacherId, Guid lessonId, UpdateLessonRequest request)
+    public async Task<LessonUpdateResult> UpdateAsync(Guid teacherId, Guid lessonId, UpdateLessonRequest request)
     {
         var lesson = await _db.Lessons
             .Include(l => l.Sections)
             .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted);
 
         if (lesson is null)
-            return null;
+            return new LessonUpdateResult.NotFound();
 
         if (request.StudentId.HasValue)
         {
@@ -147,7 +152,7 @@ public class LessonService : ILessonService
                 _logger.LogWarning(
                     "UpdateLesson: StudentId={StudentId} not found or belongs to another teacher. TeacherId={TeacherId}",
                     request.StudentId.Value, teacherId);
-                return null;
+                return new LessonUpdateResult.InvalidStudent();
             }
         }
 
@@ -155,16 +160,16 @@ public class LessonService : ILessonService
         lesson.Language = request.Language;
         lesson.CefrLevel = request.CefrLevel;
         lesson.Topic = request.Topic;
-        lesson.DurationMinutes = request.DurationMinutes;
+        if (request.DurationMinutes.HasValue) lesson.DurationMinutes = request.DurationMinutes.Value;
         lesson.Objectives = request.Objectives;
-        lesson.Status = request.Status;
+        if (request.Status is not null) lesson.Status = request.Status;
         lesson.StudentId = request.StudentId;
         lesson.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
         _logger.LogInformation("Lesson updated. TeacherId={TeacherId} LessonId={LessonId}", teacherId, lesson.Id);
 
-        return MapToDto(lesson);
+        return new LessonUpdateResult.Success(MapToDto(lesson));
     }
 
     public async Task<LessonDto?> UpdateSectionsAsync(Guid teacherId, Guid lessonId, UpdateLessonSectionsRequest request)
