@@ -101,8 +101,12 @@ public class ProfileService : IProfileService
             var winner = await _db.Teachers
                 .Where(t => t.Auth0UserId == auth0UserId)
                 .Select(t => new { t.Id })
-                .FirstAsync();
-            return winner.Id;
+                .FirstOrDefaultAsync();
+
+            if (winner is not null)
+                return winner.Id;
+
+            throw; // not a duplicate-key race — propagate the original exception
         }
     }
 
