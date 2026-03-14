@@ -29,6 +29,8 @@ var swaName       = 'swa-langteach-${env}'
 var storageName   = 'stlangteach${env}'
 // Key Vault names are globally unique — use a hash suffix to avoid collisions
 var keyVaultName  = 'kv-lt-${env}-${take(uniqueString(resourceGroup().id), 6)}'
+// ACR names: 5-50 chars, alphanumeric only, globally unique
+var acrName = 'crlangteach${env}'
 
 // ── Modules ───────────────────────────────────────────────────────────────────
 
@@ -49,6 +51,17 @@ module containerApp 'modules/containerapp.bicep' = {
     name: appName
     location: location
     keyVaultName: keyVaultName
+  }
+}
+
+// ACR is deployed after containerApp so it can use the managed identity principal ID.
+// The login server URL is computed above to avoid a circular dependency.
+module acr 'modules/acr.bicep' = {
+  name: 'acr'
+  params: {
+    name: acrName
+    location: location
+    containerAppPrincipalId: containerApp.outputs.principalId
   }
 }
 
@@ -82,8 +95,10 @@ module storage 'modules/storage.bicep' = {
 
 // ── Outputs ───────────────────────────────────────────────────────────────────
 
-output appUrl         string = containerApp.outputs.appUrl
-output sqlServerFqdn  string = sql.outputs.serverFqdn
-output keyVaultUri    string = kv.outputs.keyVaultUri
+output appUrl             string = containerApp.outputs.appUrl
+output sqlServerFqdn      string = sql.outputs.serverFqdn
+output keyVaultUri        string = kv.outputs.keyVaultUri
+output acrLoginServer     string = acr.outputs.loginServer
+output acrName            string = acr.outputs.acrName
 @secure()
 output swaDeploymentToken string = swa.outputs.deploymentToken
