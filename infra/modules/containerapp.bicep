@@ -1,8 +1,6 @@
 param name string
 param location string
 param keyVaultName string
-// Empty string means ACR not yet provisioned (first deploy); set after T9 infra deploy
-param acrLoginServer string = ''
 
 var keyVaultUri = 'https://${keyVaultName}${environment().suffixes.keyvaultDns}/'
 
@@ -44,12 +42,8 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
         external: true
         targetPort: 8080
       }
-      registries: empty(acrLoginServer) ? [] : [
-        {
-          server: acrLoginServer
-          identity: 'system'
-        }
-      ]
+      // ACR registry config is applied by the CI/CD workflow (az containerapp registry add)
+      // after ACR and AcrPull role assignment are provisioned.
     }
     template: {
       containers: [

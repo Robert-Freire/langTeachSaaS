@@ -30,9 +30,7 @@ var storageName   = 'stlangteach${env}'
 // Key Vault names are globally unique — use a hash suffix to avoid collisions
 var keyVaultName  = 'kv-lt-${env}-${take(uniqueString(resourceGroup().id), 6)}'
 // ACR names: 5-50 chars, alphanumeric only, globally unique
-var acrName          = 'crlangteach${env}'
-// Login server is deterministic — avoids circular dependency with containerApp module
-var acrLoginServer   = '${acrName}.azurecr.io'
+var acrName = 'crlangteach${env}'
 
 // ── Modules ───────────────────────────────────────────────────────────────────
 
@@ -53,7 +51,6 @@ module containerApp 'modules/containerapp.bicep' = {
     name: appName
     location: location
     keyVaultName: keyVaultName
-    acrLoginServer: acrLoginServer
   }
 }
 
