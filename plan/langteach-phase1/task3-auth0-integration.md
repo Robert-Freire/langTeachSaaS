@@ -1,11 +1,19 @@
-# T3 — Auth0 Setup & Integration
+# T3 — Auth0 Setup & Integration (COMPLETED 2026-03-14)
 
 **Phase**: 1 — Foundation
 **Priority**: Must
 **Effort**: 1 day
 **Branch**: `task/t3-auth0-integration`
+**PR**: #2
 **Depends on**: T1 (repo structure), T2 (Azure infra + Key Vault exists)
 **Blocks**: T5, T6, T7, T8 (all feature work requires auth working)
+
+## Deviations from Plan
+
+- **Auth loop bug**: `loginWithRedirect()` called during render caused an infinite redirect loop. Fixed by moving to `useEffect` and skipping the redirect when OAuth callback params (`code`/`error`) are present in the URL.
+- **Auth0 portal gotcha**: The SPA must have both **User Access** and **Client Access** authorized under the LangTeach API — authorizing only one causes an immediate `not authorized to access resource server` error before the login page loads.
+- **Logging added (beyond plan scope)**: Serilog (console + rolling file) added to backend; `logger.ts` utility added to frontend. Both needed to diagnose the redirect loop without manual browser testing.
+- **Playwright e2e added (beyond plan scope)**: `e2e/` folder with Chromium installed. `auth-diagnostic.spec.ts` used to diagnose and verify the auth flow. Confirmed login page loads correctly.
 
 ---
 

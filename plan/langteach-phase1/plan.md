@@ -11,15 +11,17 @@
 - **Infrastructure as Code (non-negotiable):** Every Azure resource is declared in Bicep under `/infra` and committed to the repo. Nothing is created via the Portal or ad-hoc CLI commands. Imperative CLI scripts are not IaC — they are not idempotent, not reviewable, and cannot reproduce the environment reliably. The test: could a new developer re-create the full environment in a different tenant by running one command? If not, it is not IaC.
 - **Secrets never in files or settings:** All secrets live in Key Vault. App Service reads them via Key Vault references. The source of truth for secret *values* is 1Password; the source of truth for secret *structure* is the Bicep files.
 - **Row-level security on every data endpoint:** All API queries filter by `TeacherId` derived from the JWT. No endpoint may return data belonging to a different teacher.
+- **Logging on every layer (non-negotiable):** Every task must include logging sufficient to diagnose failures without a human tester. Backend: Serilog structured logs (console + rolling file) on all controllers and services. Frontend: `logger.ts` utility called at key state transitions (auth, API calls, errors). Logs must answer "what happened and why" without needing to reproduce the issue manually.
+- **Playwright e2e test per task (non-negotiable):** Every task that produces user-facing behaviour must ship a Playwright test in `e2e/tests/`. Tests live alongside the feature and are run before the PR is opened. The test must cover the happy path at minimum. Use `auth-helper.ts` (created in T4) for authenticated test setup.
 
 ---
 
 ## Deliverables Checklist
 
-- [ ] Monorepo or dual-repo structure initialised and running locally
+- [x] Monorepo or dual-repo structure initialised and running locally
 - [x] Azure infrastructure provisioned (SQL, Container Apps, Static Web Apps, Key Vault, Storage)
-- [ ] Auth0 configured with email/password and Google OAuth
-- [ ] Teacher can register, log in, and log out
+- [x] Auth0 configured with email/password and Google OAuth
+- [x] Teacher can register, log in, and log out
 - [ ] Teacher profile create/edit (languages taught, CEFR levels, preferred style)
 - [ ] Student profiles CRUD (name, level, interests, notes)
 - [ ] Lesson CRUD with structured sections and template selection
@@ -109,7 +111,7 @@ az deployment group create \
 
 ---
 
-### T3 — Auth0 Setup & Integration
+### T3 — Auth0 Setup & Integration (COMPLETED 2026-03-14)
 
 **Priority**: Must | **Effort**: 1 day
 
@@ -180,7 +182,11 @@ LessonSections (Id, LessonId FK, SectionType [WarmUp|Presentation|Practice|Produ
 
 Each template defines default section structure (which sections to include and suggested notes placeholder).
 
-**Done when**: EF migrations run cleanly against local SQL and Azure SQL; seed data present.
+**Logging:** Log migration application on startup (`Information`). Log seed data insertion (skip if already seeded).
+
+**Playwright test** (`e2e/tests/auth-helper.ts`): Create a reusable helper that logs in a test user via Auth0 and returns an authenticated browser context. All future Playwright tests use this helper.
+
+**Done when**: EF migrations run cleanly against local SQL and Azure SQL; seed data present; `auth-helper.ts` available for use in T5+.
 
 ---
 
@@ -203,7 +209,11 @@ Request/response DTOs — no direct entity exposure.
 - Preferred content style: radio (Formal / Conversational / Exam-prep)
 - Save button with optimistic UI update
 
-**Done when**: Teacher can fill in and save profile; data persists across sessions.
+**Logging:** Log `GET /api/profile` and `PUT /api/profile` with teacher ID and outcome. Log validation errors at `Warning`.
+
+**Playwright test** (`e2e/tests/teacher-profile.spec.ts`): Login via `auth-helper`, navigate to `/settings`, fill in display name + languages + levels + style, save, refresh page, assert values persisted.
+
+**Done when**: Teacher can fill in and save profile; data persists across sessions; Playwright test passes.
 
 ---
 
@@ -228,7 +238,11 @@ Row-level security: all queries filter by `TeacherId` from JWT claim. A teacher 
 - Delete: confirmation dialog before API call
 - Empty state with "Add your first student" CTA
 
-**Done when**: Full CRUD working; teacher cannot access other teachers' data (verified by manual test with two accounts).
+**Logging:** Log create/update/delete with teacher ID and student ID. Log 403/404 outcomes at `Warning`.
+
+**Playwright test** (`e2e/tests/students.spec.ts`): Login, create a student (name + language + level + interests), verify it appears in the list, edit the level, delete it, confirm empty state returns.
+
+**Done when**: Full CRUD working; teacher cannot access other teachers' data; Playwright test passes.
 
 ---
 
@@ -257,6 +271,8 @@ POST   /api/lessons/{id}/duplicate     # Duplicate lesson + sections
 **Sections update:** PUT replaces all sections atomically (simpler than per-section endpoints in Phase 1).
 
 **Duplicate:** copies lesson metadata (resetting status to Draft) and all sections.
+
+**Logging:** Log create/update/delete/duplicate with teacher ID and lesson ID. Log row-level security violations at `Warning`.
 
 **Done when**: All endpoints return correct data; row-level security enforced; pagination working on list.
 
@@ -289,7 +305,11 @@ POST   /api/lessons/{id}/duplicate     # Duplicate lesson + sections
 - Sections save on blur (auto-save), with a "saved" indicator
 - "Link Student" button if no student is currently linked
 
-**Done when**: Teacher can create a lesson from a template, edit all sections, switch status, duplicate, and delete. All changes persist.
+**Logging:** Log key UI events via `logger.ts` — lesson created, section saved, status changed, duplicate triggered.
+
+**Playwright test** (`e2e/tests/lessons.spec.ts`): Login, create a lesson from the Grammar template, fill in title/topic, edit the Presentation section notes, save, refresh, assert notes persisted. Then duplicate and confirm it appears as a new draft.
+
+**Done when**: Teacher can create a lesson from a template, edit all sections, switch status, duplicate, and delete. All changes persist. Playwright test passes.
 
 ---
 
@@ -336,8 +356,13 @@ T1, T2, and T3 can be worked in parallel. T4 depends only on T1. Everything else
 
 ## Definition of Done — Phase 1
 
-A QA pass with two separate Auth0 test accounts confirms:
+### Automated (must all pass before PR is opened)
+- `dotnet build` — zero warnings, zero errors
+- `dotnet test` — all backend unit/integration tests pass
+- `npm run build` — zero errors
+- `npx playwright test` (from `e2e/`) — all e2e tests pass
 
+### Manual QA (two separate Auth0 test accounts)
 1. Register with email/password and with Google OAuth
 2. Complete teacher profile; re-open settings and confirm data persisted
 3. Create 3 student profiles with different levels and interests; edit one; delete one
@@ -345,17 +370,21 @@ A QA pass with two separate Auth0 test accounts confirms:
 5. Create a second lesson from blank; link it to a student; publish it
 6. Lesson list shows both lessons; search by title finds the correct one; filter by level works
 7. Duplicate a lesson; confirm it appears as a new draft
-8. Account B cannot see Account A's lessons or students (manual test)
+8. Account B cannot see Account A's lessons or students
 9. Push a trivial change to main; confirm Azure deploys automatically within 5 minutes
+
+### Observability check
+- Backend `logs/api-*.log` shows structured request logs for all API calls above
+- Browser DevTools console shows frontend logger output for all auth and navigation events
 
 ---
 
 ## Open Questions for Phase 1
 
-- [ ] Monorepo (one GitHub repo, two folders) vs. separate repos? Recommend: monorepo for simplicity in solo/small team.
-- [ ] Local dev: docker-compose SQL Server vs. LocalDB vs. SQLite? Recommend: docker-compose SQL Server to match production engine exactly.
+- [x] Monorepo (one GitHub repo, two folders) vs. separate repos? **Resolved: monorepo.**
+- [x] Local dev: docker-compose SQL Server vs. LocalDB vs. SQLite? **Resolved: docker-compose SQL Server (API + SQL via Docker, frontend via `npm run dev` directly).**
 - [ ] Auth0 free tier (7,500 MAU) is sufficient for beta. Confirm before launch whether paid tier is needed.
-- [ ] Section auto-save on blur vs. explicit Save button? Recommend: auto-save with visible "Saved" indicator (like Notion) for better UX.
+- [x] Section auto-save on blur vs. explicit Save button? **Resolved: auto-save with visible "Saved" indicator.**
 
 ---
 
