@@ -27,7 +27,7 @@ describe('Settings error states', () => {
       isLoading: false,
       isError: false,
       error: null,
-    } as ReturnType<typeof useProfile>)
+    } as unknown as ReturnType<typeof useProfile>)
   })
 
   it('shows loading indicator while profile is fetching', () => {
@@ -36,7 +36,7 @@ describe('Settings error states', () => {
       isLoading: true,
       isError: false,
       error: null,
-    } as ReturnType<typeof useProfile>)
+    } as unknown as ReturnType<typeof useProfile>)
 
     wrapper(<Settings />)
     expect(screen.getByText('Loading profile...')).toBeInTheDocument()
@@ -48,7 +48,7 @@ describe('Settings error states', () => {
       isLoading: false,
       isError: true,
       error: new Error('Network error'),
-    } as ReturnType<typeof useProfile>)
+    } as unknown as ReturnType<typeof useProfile>)
 
     wrapper(<Settings />)
     expect(screen.getByText('Failed to load profile. Please try again.')).toBeInTheDocument()
@@ -65,7 +65,7 @@ describe('Settings error states', () => {
       isLoading: false,
       isError: false,
       error: null,
-    } as ReturnType<typeof useProfile>)
+    } as unknown as ReturnType<typeof useProfile>)
 
     wrapper(<Settings />)
     expect(screen.getByRole('button', { name: 'Save Profile' })).toBeInTheDocument()
