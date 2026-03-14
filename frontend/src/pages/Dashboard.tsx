@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BookOpen, Users, CalendarDays } from 'lucide-react'
 
@@ -10,16 +11,18 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-500">Students</CardTitle>
-            <Users className="h-4 w-4 text-zinc-400" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold text-zinc-900">—</p>
-            <p className="text-xs text-zinc-400 mt-1">Coming in T6</p>
-          </CardContent>
-        </Card>
+        <Link to="/students">
+          <Card className="cursor-pointer hover:ring-indigo-200 transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-zinc-500">Students</CardTitle>
+              <Users className="h-4 w-4 text-zinc-400" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold text-zinc-900">—</p>
+              <p className="text-xs text-zinc-400 mt-1">View all students</p>
+            </CardContent>
+          </Card>
+        </Link>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
