@@ -69,7 +69,7 @@ jobs:
 
       - name: Configure ACR registry on Container App
         run: |
-          az containerapp registry add \
+          az containerapp registry set \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --server ${{ env.ACR_LOGIN_SERVER }} \
