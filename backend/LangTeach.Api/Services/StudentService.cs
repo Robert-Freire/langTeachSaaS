@@ -124,8 +124,11 @@ public class StudentService : IStudentService
         s.UpdatedAt
     );
 
-    private static List<string> Deserialize(string json) =>
-        JsonSerializer.Deserialize<List<string>>(json) ?? [];
+    private static List<string> Deserialize(string json)
+    {
+        try { return JsonSerializer.Deserialize<List<string>>(json) ?? []; }
+        catch { return []; }
+    }
 
     private static string Serialize(List<string> list) =>
         JsonSerializer.Serialize(list);

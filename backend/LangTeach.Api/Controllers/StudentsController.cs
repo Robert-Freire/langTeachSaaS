@@ -25,12 +25,13 @@ public class StudentsController : ControllerBase
         _logger = logger;
     }
 
-    private string Auth0Id => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    private string? Auth0Id => User.FindFirstValue(ClaimTypes.NameIdentifier);
     private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] StudentListQuery query)
     {
+        if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
         var result = await _studentService.ListAsync(teacherId, query);
         _logger.LogInformation(
@@ -42,6 +43,7 @@ public class StudentsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateStudentRequest request)
     {
+        if (Auth0Id is null) return Unauthorized();
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("POST /api/students validation failed. Auth0Id={Auth0Id} Errors={Errors}",
@@ -57,6 +59,7 @@ public class StudentsController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
+        if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
         var student = await _studentService.GetByIdAsync(teacherId, id);
 
@@ -73,6 +76,7 @@ public class StudentsController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateStudentRequest request)
     {
+        if (Auth0Id is null) return Unauthorized();
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("PUT /api/students/{StudentId} validation failed. Auth0Id={Auth0Id} Errors={Errors}",
@@ -96,6 +100,7 @@ public class StudentsController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
+        if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
         var deleted = await _studentService.DeleteAsync(teacherId, id);
 

@@ -11,9 +11,11 @@ public class UpdateStudentRequest
     public string LearningLanguage { get; set; } = "";
 
     [Required]
+    [RegularExpression(@"^(A1|A2|B1|B2|C1|C2)$", ErrorMessage = "CefrLevel must be one of: A1, A2, B1, B2, C1, C2.")]
     public string CefrLevel { get; set; } = "";
 
     [MaxLength(50, ErrorMessage = "Cannot have more than 50 interests.")]
+    [MaxStringLengthEach(100)]
     public List<string> Interests { get; set; } = [];
 
     [MaxLength(2000)]

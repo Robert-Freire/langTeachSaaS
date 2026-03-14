@@ -91,7 +91,7 @@ public class ProfileService : IProfileService
         {
             _db.Teachers.Add(teacher);
             await _db.SaveChangesAsync();
-            _logger.LogInformation("Teacher upserted. TeacherId={TeacherId} Email={Email}", teacher.Id, email);
+            _logger.LogInformation("Teacher upserted. TeacherId={TeacherId}", teacher.Id);
             return teacher.Id;
         }
         catch (DbUpdateException)

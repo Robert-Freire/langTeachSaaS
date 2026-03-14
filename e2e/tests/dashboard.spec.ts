@@ -9,8 +9,8 @@ test('dashboard tiles navigate to correct routes', async ({ browser }) => {
   await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
   await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: 15000 })
 
-  // Students tile -> /students
-  await page.getByRole('link', { name: /students/i }).first().click()
+  // Students tile -> /students (target the tile specifically via its subtitle text)
+  await page.locator('a[href="/students"]').filter({ hasText: 'View all students' }).click()
   await expect(page).toHaveURL('http://localhost:5173/students', { timeout: 10000 })
   await expect(page.locator('h1')).toHaveText('Students', { timeout: 10000 })
 
