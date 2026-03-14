@@ -1,0 +1,107 @@
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import Students from './Students'
+import * as studentsApi from '../api/students'
+
+vi.mock('../api/students', () => ({
+  getStudents: vi.fn(),
+  deleteStudent: vi.fn(),
+}))
+
+vi.mock('../lib/logger', () => ({
+  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
+}))
+
+function wrapper(ui: React.ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>
+  )
+}
+
+describe('Students error states', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('shows loading indicator while students are fetching', () => {
+    vi.mocked(studentsApi.getStudents).mockReturnValue(new Promise(() => {}))
+    wrapper(<Students />)
+    expect(screen.getByText('Loading students...')).toBeInTheDocument()
+  })
+
+  it('shows error message when student list fetch fails', async () => {
+    vi.mocked(studentsApi.getStudents).mockRejectedValue(new Error('Network error'))
+    wrapper(<Students />)
+    await screen.findByText('Failed to load students. Please try again.')
+  })
+
+  it('shows inline error when delete mutation fails', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue({
+      items: [
+        {
+          id: 'abc-123',
+          name: 'Ana García',
+          learningLanguage: 'Spanish',
+          cefrLevel: 'B2',
+          interests: [],
+          notes: null,
+          createdAt: '',
+          updatedAt: '',
+        },
+      ],
+      totalCount: 1,
+      page: 1,
+      pageSize: 20,
+    })
+    vi.mocked(studentsApi.deleteStudent).mockRejectedValue(new Error('Server error'))
+
+    wrapper(<Students />)
+
+    // Wait for the student card to appear
+    await screen.findByTestId('student-name')
+
+    // Open the delete dialog
+    fireEvent.click(screen.getByTestId('delete-student'))
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+
+    // Confirm deletion
+    fireEvent.click(screen.getByTestId('confirm-delete'))
+
+    // Error message should appear after the mutation fails
+    await waitFor(() => {
+      expect(screen.getByTestId('delete-error')).toBeInTheDocument()
+    })
+    expect(screen.getByTestId('delete-error')).toHaveTextContent(
+      'Failed to delete student. Please try again.'
+    )
+  })
+
+  it('renders student list when fetch succeeds', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue({
+      items: [
+        {
+          id: 'abc-123',
+          name: 'Ana García',
+          learningLanguage: 'Spanish',
+          cefrLevel: 'B2',
+          interests: ['travel'],
+          notes: null,
+          createdAt: '',
+          updatedAt: '',
+        },
+      ],
+      totalCount: 1,
+      page: 1,
+      pageSize: 20,
+    })
+
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText('Ana García')).toBeInTheDocument()
+  })
+})
