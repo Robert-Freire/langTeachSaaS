@@ -35,6 +35,6 @@ Should be at: `plan\langteach-phase2\plan.md` inside the project vault.
 Was incorrectly saved at: `obsidianVault\Personal-AI-OS\Plans\langteach-phase2\plan.md`
 
 ## Current Session
-- T3 implemented and PR #2 opened
-- T3 requires manual Auth0 tenant setup before end-to-end testing (see PR description)
+- Memory junction verified working (2026-03-14): memory loads on session start, writes propagate to project repo
+- PR #9 open: chore/memory-in-project branch (moves Claude memory into project .claude/memory/)
 - T4 is next: EF Core migrations, Phase 1 DB schema, seed lesson templates

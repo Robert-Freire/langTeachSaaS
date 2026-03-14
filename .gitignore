@@ -36,3 +36,10 @@ coverage/
 
 # Claude Code local settings (permissions, local overrides)
 .claude/settings.local.json
+
+# Playwright test results
+e2e/test-results/
+
+# Bicep compiled output
+infra/main.json
+infra/modules/*.json
