@@ -6,7 +6,7 @@ test('teacher can save and reload profile settings', async ({ browser }) => {
   const page = await context.newPage()
 
   await page.goto('http://localhost:5173/settings')
-  await expect(page.locator('h1')).toHaveText('My Profile')
+  await expect(page.locator('.settings-page h1')).toHaveText('My Profile')
 
   // Fill display name
   await page.fill('input[name="displayName"]', 'Test Teacher')

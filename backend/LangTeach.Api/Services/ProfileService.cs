@@ -41,7 +41,7 @@ public class ProfileService : IProfileService
 
         if (teacher.Settings is null)
         {
-            teacher.Settings = new TeacherSettings
+            var newSettings = new TeacherSettings
             {
                 Id = Guid.NewGuid(),
                 TeacherId = teacher.Id,
@@ -51,6 +51,8 @@ public class ProfileService : IProfileService
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
             };
+            _db.TeacherSettings.Add(newSettings);
+            teacher.Settings = newSettings;
         }
         else
         {
