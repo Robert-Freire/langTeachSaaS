@@ -22,9 +22,9 @@ export default function AppShell() {
   return (
     <div className="flex h-screen overflow-hidden bg-zinc-50">
       {/* Sidebar */}
-      <aside className="flex w-60 flex-col bg-zinc-900 text-zinc-400">
+      <aside className="flex w-60 flex-col bg-indigo-950 text-indigo-300">
         {/* Logo */}
-        <div className="px-6 py-5 border-b border-zinc-800">
+        <div className="px-6 py-5 border-b border-indigo-900">
           <span className="text-white font-semibold text-lg tracking-tight">LangTeach</span>
         </div>
 
@@ -39,8 +39,8 @@ export default function AppShell() {
                 className={cn(
                   'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                   active
-                    ? 'bg-zinc-800 text-white'
-                    : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                    ? 'bg-indigo-800 text-white'
+                    : 'text-indigo-300 hover:bg-indigo-900 hover:text-white'
                 )}
               >
                 <Icon className="h-5 w-5 shrink-0" />
@@ -51,17 +51,17 @@ export default function AppShell() {
         </nav>
 
         {/* User + Logout */}
-        <div className="border-t border-zinc-800 px-3 py-4 space-y-1">
+        <div className="border-t border-indigo-900 px-3 py-4 space-y-1">
           <div className="flex items-center gap-3 px-3 py-2">
             <Avatar className="h-7 w-7">
               <AvatarImage src={user?.picture} alt={user?.name} />
               <AvatarFallback className="bg-indigo-600 text-white text-xs">{initials}</AvatarFallback>
             </Avatar>
-            <span className="text-sm text-zinc-300 truncate">{user?.name ?? user?.email}</span>
+            <span className="text-sm text-indigo-200 truncate">{user?.name ?? user?.email}</span>
           </div>
           <button
             onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-indigo-300 hover:bg-indigo-900 hover:text-white transition-colors"
           >
             <LogOut className="h-5 w-5 shrink-0" />
             Log out
