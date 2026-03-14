@@ -5,6 +5,7 @@
 - [Task status and next steps](project_langteach_task_status.md) — T1/T2/T3 done, T4 next, Phase 2 plan summary
 - [Plan file locations](project_langteach_plans.md) — where to find each plan document
 - [Dev workflow conventions](project_langteach_dev_conventions.md) — local dev setup, ports, Auth0 tenant, Playwright, logs
+- [Design system decisions](project_langteach_design_system.md) — component library, colors, layout rationale, infrastructure notes
 
 ## Feedback
 - [Task start workflow](feedback_task_branch_workflow.md) — always pull main and create the feature branch before starting any task

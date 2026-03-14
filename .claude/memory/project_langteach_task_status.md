@@ -17,11 +17,12 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T3 | Auth0 Setup & Integration (backend JWT, frontend Auth0Provider, Serilog, Playwright) | DONE — PR #2, login page confirmed working via Playwright |
 | T4 | Database Schema — EF Core migrations, Phase 1 tables, seed templates | DONE — PR #10 merged to main |
 | T5 | Teacher Profile API + UI | DONE — PR #11 merged to main |
-| T5.1 | Design System & UI Foundation (Tailwind, shadcn/ui, AppShell, restyle T5) | DONE — PR #12 open, depends on T5 PR #11 |
+| T5.1 | Design System & UI Foundation (Tailwind, shadcn/ui, AppShell, restyle T5) | DONE — PR #12 open (rebased on main) |
 | T6 | Student Profiles API + UI | pending |
 | T7 | Lesson CRUD API | pending |
 | T8 | Lesson UI (Planner) | pending |
 | T9 | CI/CD Pipeline (GitHub Actions) | pending |
+| T9.1 | Brand & Logo (icon, favicon, AppShell logomark) | pending — defer until T6-T8 done |
 
 ## Key T2 Deviations (important for future tasks)
 - Azure Container Apps (not App Service) — VS Enterprise subscription has zero VM quota in all regions
