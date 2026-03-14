@@ -28,9 +28,8 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# Claude Code local session cache and memory (not source files)
+# Claude Code local session cache
 .claude/settings.local.json
-.claude/memory/
 .claude/worktrees/
 
 # Docker

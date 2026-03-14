@@ -25,6 +25,7 @@ reviews:
     - "!**/node_modules/**"
     - "!**/dist/**"
     - "!infra/**"          # Bicep infra files — skip unless you want infra review
+    - "!.claude/memory/**" # Claude Code internal memory — not source files
 
   path_instructions:
     - path: "backend/**/*.cs"
