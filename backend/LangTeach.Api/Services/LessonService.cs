@@ -238,7 +238,7 @@ public class LessonService : ILessonService
             TeacherId = teacherId,
             StudentId = original.StudentId,
             TemplateId = original.TemplateId,
-            Title = original.Title,
+            Title = $"Copy of {original.Title}",
             Language = original.Language,
             CefrLevel = original.CefrLevel,
             Topic = original.Topic,
