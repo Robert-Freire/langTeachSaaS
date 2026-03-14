@@ -6,12 +6,12 @@ test('full student CRUD flow', async ({ browser }) => {
   const page = await context.newPage()
 
   // Navigate to students list
-  await page.goto('http://localhost:5173/students')
+  await page.goto('/students')
   await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
   await expect(page.locator('h1')).toHaveText('Students', { timeout: 15000 })
 
   // Navigate directly to create form
-  await page.goto('http://localhost:5173/students/new')
+  await page.goto('/students/new')
   await expect(page.locator('h1')).toHaveText('Add Student', { timeout: 10000 })
 
   // Use a unique name to avoid conflicts with previous test runs
@@ -38,7 +38,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await page.getByRole('button', { name: 'Save Student' }).click()
 
   // Should redirect to list and show the new student
-  await expect(page).toHaveURL('http://localhost:5173/students', { timeout: 10000 })
+  await expect(page).toHaveURL('/students', { timeout: 10000 })
 
   // Find the student card using the per-row testid (scoped by student ID)
   const studentCard = page.locator('[data-testid^="student-row-"]').filter({
@@ -60,7 +60,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await page.getByRole('button', { name: 'Update Student' }).click()
 
   // Back on list — should show updated level
-  await expect(page).toHaveURL('http://localhost:5173/students', { timeout: 10000 })
+  await expect(page).toHaveURL('/students', { timeout: 10000 })
   const updatedCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })

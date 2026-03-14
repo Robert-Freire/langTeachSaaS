@@ -24,27 +24,31 @@ export default function Dashboard() {
           </Card>
         </Link>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-500">Lessons this week</CardTitle>
-            <CalendarDays className="h-4 w-4 text-zinc-400" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold text-zinc-900">—</p>
-            <p className="text-xs text-zinc-400 mt-1">Coming in T7</p>
-          </CardContent>
-        </Card>
+        <Link to="/lessons" data-testid="lessons-tile">
+          <Card className="cursor-pointer hover:ring-indigo-200 transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-zinc-500">Lessons this week</CardTitle>
+              <CalendarDays className="h-4 w-4 text-zinc-400" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold text-zinc-900">—</p>
+              <p className="text-xs text-zinc-400 mt-1">View all lessons</p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-500">Active plans</CardTitle>
-            <BookOpen className="h-4 w-4 text-zinc-400" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold text-zinc-900">—</p>
-            <p className="text-xs text-zinc-400 mt-1">Coming in T8</p>
-          </CardContent>
-        </Card>
+        <Link to="/lessons" data-testid="active-plans-tile">
+          <Card className="cursor-pointer hover:ring-indigo-200 transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-zinc-500">Active plans</CardTitle>
+              <BookOpen className="h-4 w-4 text-zinc-400" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold text-zinc-900">—</p>
+              <p className="text-xs text-zinc-400 mt-1">View all lessons</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   )

@@ -9,6 +9,9 @@ import Dashboard from './pages/Dashboard'
 import Settings from './pages/Settings'
 import Students from './pages/Students'
 import StudentForm from './pages/StudentForm'
+import Lessons from './pages/Lessons'
+import LessonNew from './pages/LessonNew'
+import LessonEditor from './pages/LessonEditor'
 
 const queryClient = new QueryClient()
 
@@ -34,6 +37,9 @@ export default function App() {
               <Route path="/students" element={<Students />} />
               <Route path="/students/new" element={<StudentForm />} />
               <Route path="/students/:id/edit" element={<StudentForm />} />
+              <Route path="/lessons" element={<Lessons />} />
+              <Route path="/lessons/new" element={<LessonNew />} />
+              <Route path="/lessons/:id" element={<LessonEditor />} />
             </Route>
           </Routes>
         </AuthSetup>
