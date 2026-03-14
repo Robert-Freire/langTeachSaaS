@@ -1,6 +1,7 @@
 param name string
 param location string
 param keyVaultName string
+param allowedOriginSwa string
 
 var keyVaultUri = 'https://${keyVaultName}${environment().suffixes.keyvaultDns}/'
 
@@ -40,7 +41,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
     configuration: {
       ingress: {
         external: true
-        targetPort: 8080
+        targetPort: 5000
       }
       // ACR registry config is applied by the CI/CD workflow (az containerapp registry add)
       // after ACR and AcrPull role assignment are provisioned.
@@ -62,8 +63,12 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
             }
             {
               // App reads secrets from Key Vault at runtime via DefaultAzureCredential (wired in T4)
-              name: 'KeyVaultUri'
+              name: 'KeyVault__Uri'
               value: keyVaultUri
+            }
+            {
+              name: 'AllowedOrigins__Swa'
+              value: allowedOriginSwa
             }
           ]
         }

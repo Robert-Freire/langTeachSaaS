@@ -20,6 +20,9 @@ param githubBranch string = 'main'
 @description('Azure region for Static Web Apps (limited availability: westeurope, westus2, eastus2, eastasia, centralus)')
 param swaLocation string = 'westeurope'
 
+@description('Frontend SWA origin URL for CORS (e.g. https://xxx.azurestaticapps.net)')
+param allowedOriginSwa string
+
 // ── Derived names ─────────────────────────────────────────────────────────────
 
 var sqlServerName = 'langteach-sql-${env}'
@@ -51,6 +54,7 @@ module containerApp 'modules/containerapp.bicep' = {
     name: appName
     location: location
     keyVaultName: keyVaultName
+    allowedOriginSwa: allowedOriginSwa
   }
 }
 
@@ -70,7 +74,7 @@ module kv 'modules/keyvault.bicep' = {
   params: {
     name: keyVaultName
     location: location
-    sqlConnectionString: 'Server=tcp:${sqlServerName}.${environment().suffixes.sqlServerHostname},1433;Initial Catalog=${sqlDbName};User ID=${sqlAdminUser};Password=${sqlAdminPassword};Encrypt=True;Connection Timeout=30;'
+    sqlConnectionString: 'Server=tcp:${sqlServerName}${environment().suffixes.sqlServerHostname},1433;Initial Catalog=${sqlDbName};User ID=${sqlAdminUser};Password=${sqlAdminPassword};Encrypt=True;Connection Timeout=30;'
     appPrincipalId: containerApp.outputs.principalId
   }
 }
