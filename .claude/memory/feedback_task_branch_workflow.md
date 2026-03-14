@@ -17,3 +17,8 @@ Before starting implementation on any task:
 Never create stacked branches (branching off an unmerged feature branch). Every task branch comes off main. Every PR targets main.
 
 Reason: stacked branches require PR retargeting after the dependency merges, which has caused friction twice. The user reviews and merges PRs — waiting for that merge before starting the next task is the intended workflow.
+
+## PR Body Must Include Issue Close Link
+
+Always include `Closes #N` in the PR body when a task has a corresponding GitHub issue.
+This auto-closes the issue the moment the PR is merged — the user only needs to approve and merge, nothing else.
