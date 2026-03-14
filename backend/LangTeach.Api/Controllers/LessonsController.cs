@@ -26,13 +26,13 @@ public class LessonsController : ControllerBase
     }
 
     private string? Auth0Id => User.FindFirstValue(ClaimTypes.NameIdentifier);
-    private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
+    private string? Email => User.FindFirstValue(ClaimTypes.Email);
 
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] LessonListQuery query)
     {
-        if (Auth0Id is null) return Unauthorized();
-        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email!);
         var result = await _lessonService.ListAsync(teacherId, query);
         _logger.LogInformation(
             "GET /api/lessons. TeacherId={TeacherId} Status={Status} Search={Search} TotalCount={TotalCount}",
@@ -43,7 +43,7 @@ public class LessonsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateLessonRequest request)
     {
-        if (Auth0Id is null) return Unauthorized();
+        if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("POST /api/lessons validation failed. Auth0Id={Auth0Id} Errors={Errors}",
@@ -66,8 +66,8 @@ public class LessonsController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        if (Auth0Id is null) return Unauthorized();
-        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email!);
         var lesson = await _lessonService.GetByIdAsync(teacherId, id);
 
         if (lesson is null)
@@ -83,7 +83,7 @@ public class LessonsController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateLessonRequest request)
     {
-        if (Auth0Id is null) return Unauthorized();
+        if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("PUT /api/lessons/{LessonId} validation failed. Auth0Id={Auth0Id} Errors={Errors}",
@@ -106,7 +106,7 @@ public class LessonsController : ControllerBase
     [HttpPut("{id:guid}/sections")]
     public async Task<IActionResult> UpdateSections(Guid id, [FromBody] UpdateLessonSectionsRequest request)
     {
-        if (Auth0Id is null) return Unauthorized();
+        if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("PUT /api/lessons/{LessonId}/sections validation failed. Auth0Id={Auth0Id} Errors={Errors}",
@@ -130,8 +130,8 @@ public class LessonsController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        if (Auth0Id is null) return Unauthorized();
-        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email!);
         var deleted = await _lessonService.DeleteAsync(teacherId, id);
 
         if (!deleted)
@@ -147,8 +147,8 @@ public class LessonsController : ControllerBase
     [HttpPost("{id:guid}/duplicate")]
     public async Task<IActionResult> Duplicate(Guid id)
     {
-        if (Auth0Id is null) return Unauthorized();
-        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        if (Auth0Id is null || string.IsNullOrEmpty(Email)) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email!);
         var copy = await _lessonService.DuplicateAsync(teacherId, id);
 
         if (copy is null)
