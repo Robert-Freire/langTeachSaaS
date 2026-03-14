@@ -18,3 +18,8 @@ When a task is marked complete:
 **Branch protection rules:**
 - Feature branches (`task/*`): commit and push freely
 - `main`: never commit or push directly unless the user explicitly asks in that message
+
+
+## Memory
+
+Claude's persistent memory for this project lives in `.claude/memory/`. These are not source files — do not read, modify, or include them in code searches or codebase exploration. Memory is managed separately via the auto-memory system.
