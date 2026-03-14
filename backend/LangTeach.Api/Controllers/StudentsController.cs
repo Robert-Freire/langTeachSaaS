@@ -29,11 +29,11 @@ public class StudentsController : ControllerBase
     private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] StudentListQuery query)
+    public async Task<IActionResult> List([FromQuery] StudentListQuery query, CancellationToken cancellationToken)
     {
         if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-        var result = await _studentService.ListAsync(teacherId, query);
+        var result = await _studentService.ListAsync(teacherId, query, cancellationToken);
         _logger.LogInformation(
             "GET /api/students. TeacherId={TeacherId} Language={Language} CefrLevel={CefrLevel} TotalCount={TotalCount}",
             teacherId, query.Language, query.CefrLevel, result.TotalCount);
@@ -41,7 +41,7 @@ public class StudentsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateStudentRequest request)
+    public async Task<IActionResult> Create([FromBody] CreateStudentRequest request, CancellationToken cancellationToken)
     {
         if (Auth0Id is null) return Unauthorized();
         if (!ModelState.IsValid)
@@ -52,16 +52,16 @@ public class StudentsController : ControllerBase
         }
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-        var student = await _studentService.CreateAsync(teacherId, request);
+        var student = await _studentService.CreateAsync(teacherId, request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = student.Id }, student);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-        var student = await _studentService.GetByIdAsync(teacherId, id);
+        var student = await _studentService.GetByIdAsync(teacherId, id, cancellationToken);
 
         if (student is null)
         {
@@ -74,7 +74,7 @@ public class StudentsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateStudentRequest request)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateStudentRequest request, CancellationToken cancellationToken)
     {
         if (Auth0Id is null) return Unauthorized();
         if (!ModelState.IsValid)
@@ -85,7 +85,7 @@ public class StudentsController : ControllerBase
         }
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-        var updated = await _studentService.UpdateAsync(teacherId, id, request);
+        var updated = await _studentService.UpdateAsync(teacherId, id, request, cancellationToken);
 
         if (updated is null)
         {
@@ -98,11 +98,11 @@ public class StudentsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-        var deleted = await _studentService.DeleteAsync(teacherId, id);
+        var deleted = await _studentService.DeleteAsync(teacherId, id, cancellationToken);
 
         if (!deleted)
         {

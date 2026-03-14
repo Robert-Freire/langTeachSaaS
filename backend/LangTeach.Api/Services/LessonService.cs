@@ -17,7 +17,7 @@ public class LessonService : ILessonService
         _logger = logger;
     }
 
-    public async Task<PagedResult<LessonDto>> ListAsync(Guid teacherId, LessonListQuery query)
+    public async Task<PagedResult<LessonDto>> ListAsync(Guid teacherId, LessonListQuery query, CancellationToken cancellationToken = default)
     {
         var page = Math.Max(query.Page, 1);
         var pageSize = query.PageSize;
@@ -41,13 +41,13 @@ public class LessonService : ILessonService
             q = q.Where(l => EF.Functions.Like(l.Title, term) || EF.Functions.Like(l.Topic, term));
         }
 
-        var totalCount = await q.CountAsync();
+        var totalCount = await q.CountAsync(cancellationToken);
 
         var items = await q
             .OrderByDescending(l => l.UpdatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return new PagedResult<LessonDto>(
             items.Select(MapToDto).ToList(),
@@ -57,21 +57,21 @@ public class LessonService : ILessonService
         );
     }
 
-    public async Task<LessonDto?> GetByIdAsync(Guid teacherId, Guid lessonId)
+    public async Task<LessonDto?> GetByIdAsync(Guid teacherId, Guid lessonId, CancellationToken cancellationToken = default)
     {
         var lesson = await _db.Lessons
             .Include(l => l.Sections)
-            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted);
+            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
         return lesson is null ? null : MapToDto(lesson);
     }
 
-    public async Task<LessonDto?> CreateAsync(Guid teacherId, CreateLessonRequest request)
+    public async Task<LessonDto?> CreateAsync(Guid teacherId, CreateLessonRequest request, CancellationToken cancellationToken = default)
     {
         if (request.StudentId.HasValue)
         {
             var studentExists = await _db.Students
-                .AnyAsync(s => s.Id == request.StudentId.Value && s.TeacherId == teacherId && !s.IsDeleted);
+                .AnyAsync(s => s.Id == request.StudentId.Value && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
 
             if (!studentExists)
             {
@@ -103,7 +103,7 @@ public class LessonService : ILessonService
         if (request.TemplateId.HasValue)
         {
             var template = await _db.LessonTemplates
-                .FirstOrDefaultAsync(t => t.Id == request.TemplateId.Value);
+                .FirstOrDefaultAsync(t => t.Id == request.TemplateId.Value, cancellationToken);
 
             if (template is null)
             {
@@ -127,17 +127,17 @@ public class LessonService : ILessonService
         }
 
         _db.Lessons.Add(lesson);
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Lesson created. TeacherId={TeacherId} LessonId={LessonId}", teacherId, lesson.Id);
 
         return MapToDto(lesson);
     }
 
-    public async Task<LessonUpdateResult> UpdateAsync(Guid teacherId, Guid lessonId, UpdateLessonRequest request)
+    public async Task<LessonUpdateResult> UpdateAsync(Guid teacherId, Guid lessonId, UpdateLessonRequest request, CancellationToken cancellationToken = default)
     {
         var lesson = await _db.Lessons
             .Include(l => l.Sections)
-            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted);
+            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
         if (lesson is null)
             return new LessonUpdateResult.NotFound();
@@ -145,7 +145,7 @@ public class LessonService : ILessonService
         if (request.StudentId.HasValue)
         {
             var studentExists = await _db.Students
-                .AnyAsync(s => s.Id == request.StudentId.Value && s.TeacherId == teacherId && !s.IsDeleted);
+                .AnyAsync(s => s.Id == request.StudentId.Value && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
 
             if (!studentExists)
             {
@@ -166,17 +166,17 @@ public class LessonService : ILessonService
         lesson.StudentId = request.StudentId;
         lesson.UpdatedAt = DateTime.UtcNow;
 
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Lesson updated. TeacherId={TeacherId} LessonId={LessonId}", teacherId, lesson.Id);
 
         return new LessonUpdateResult.Success(MapToDto(lesson));
     }
 
-    public async Task<LessonDto?> UpdateSectionsAsync(Guid teacherId, Guid lessonId, UpdateLessonSectionsRequest request)
+    public async Task<LessonDto?> UpdateSectionsAsync(Guid teacherId, Guid lessonId, UpdateLessonSectionsRequest request, CancellationToken cancellationToken = default)
     {
         var lesson = await _db.Lessons
             .Include(l => l.Sections)
-            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted);
+            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
         if (lesson is null)
             return null;
@@ -198,7 +198,7 @@ public class LessonService : ILessonService
         _db.LessonSections.AddRange(newSections);
         lesson.UpdatedAt = now;
 
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Lesson sections updated. TeacherId={TeacherId} LessonId={LessonId} SectionCount={Count}",
             teacherId, lessonId, newSections.Count);
 
@@ -206,27 +206,27 @@ public class LessonService : ILessonService
         return MapToDto(lesson);
     }
 
-    public async Task<bool> DeleteAsync(Guid teacherId, Guid lessonId)
+    public async Task<bool> DeleteAsync(Guid teacherId, Guid lessonId, CancellationToken cancellationToken = default)
     {
         var lesson = await _db.Lessons
-            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted);
+            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
         if (lesson is null)
             return false;
 
         lesson.IsDeleted = true;
         lesson.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Lesson deleted. TeacherId={TeacherId} LessonId={LessonId}", teacherId, lesson.Id);
 
         return true;
     }
 
-    public async Task<LessonDto?> DuplicateAsync(Guid teacherId, Guid lessonId)
+    public async Task<LessonDto?> DuplicateAsync(Guid teacherId, Guid lessonId, CancellationToken cancellationToken = default)
     {
         var original = await _db.Lessons
             .Include(l => l.Sections)
-            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted);
+            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
         if (original is null)
             return null;
@@ -259,7 +259,7 @@ public class LessonService : ILessonService
         };
 
         _db.Lessons.Add(copy);
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Lesson duplicated. TeacherId={TeacherId} OriginalId={OriginalId} CopyId={CopyId}",
             teacherId, lessonId, copy.Id);
 
