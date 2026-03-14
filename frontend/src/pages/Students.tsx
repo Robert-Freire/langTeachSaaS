@@ -23,10 +23,12 @@ export default function Students() {
   const queryClient = useQueryClient()
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError: isStudentsError } = useQuery({
     queryKey: ['students'],
     queryFn: () => getStudents(),
   })
+
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const { mutate: doDelete, isPending: isDeleting } = useMutation({
     mutationFn: (id: string) => deleteStudent(id),
@@ -34,8 +36,13 @@ export default function Students() {
       logger.info('Students', 'student deleted')
       queryClient.invalidateQueries({ queryKey: ['students'] })
       setStudentToDelete(null)
+      setDeleteError(null)
     },
-    onError: (err) => logger.error('Students', 'delete failed', err),
+    onError: (err) => {
+      logger.error('Students', 'delete failed', err)
+      setDeleteError('Failed to delete student. Please try again.')
+      setStudentToDelete(null)
+    },
   })
 
   const students = data?.items ?? []
@@ -44,6 +51,14 @@ export default function Students() {
     return (
       <div className="flex items-center justify-center h-64 text-sm text-zinc-500">
         Loading students...
+      </div>
+    )
+  }
+
+  if (isStudentsError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="text-sm text-red-600 font-medium">Failed to load students. Please try again.</span>
       </div>
     )
   }
@@ -64,6 +79,11 @@ export default function Students() {
           Add Student
         </Link>
       </div>
+
+      {/* Delete error */}
+      {deleteError && (
+        <span className="text-sm text-red-600 font-medium" data-testid="delete-error">{deleteError}</span>
+      )}
 
       {/* Empty state */}
       {students.length === 0 && (
