@@ -1,10 +1,15 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
-import App from './App'
+import Dashboard from './pages/Dashboard'
+import { MemoryRouter } from 'react-router-dom'
 
-describe('App', () => {
+describe('Dashboard', () => {
   it('renders the dashboard heading', () => {
-    render(<App />)
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    )
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
   })
 })
