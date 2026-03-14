@@ -20,31 +20,29 @@ AI-powered lesson planning workspace for independent language teachers.
 - Docker
 - Auth0 account (free tier)
 
-## Quick Start
+## First-Time Setup
+
+### 1. Root `.env` (docker-compose secrets)
 
 ```bash
-# Start SQL Server + API
-docker compose up sqlserver api -d
-
-# Frontend (run directly — not via Docker, to pick up .env.local)
-cd frontend
-cp .env.local.example .env.local   # fill in Auth0 values — see Auth0 Setup below
-npm install
-npm run dev   # http://localhost:5173
+cp .env.example .env
 ```
 
-API health check: http://localhost:5000/api/health
-SQL Server: `localhost:1434` (user: `sa`, password from `.env`)
+Fill in `.env`:
 
-## Auth0 Setup (one-time, per developer)
+```
+SA_PASSWORD=<choose a strong password>
+AUTH0_DOMAIN=your-tenant.eu.auth0.com
+AUTH0_AUDIENCE=https://api.langteach.io
+```
 
-1. Create an Auth0 tenant (free tier, EU region recommended)
-2. Create a **Single Page Application** named `LangTeach Frontend` — note the Client ID
-3. Set Allowed Callback/Logout/Web Origins to `http://localhost:5173`
-4. Create an **API** (Applications > APIs) with identifier `https://api.langteach.io`
-5. Under the SPA app > APIs tab, authorize the LangTeach API (toggle both User and Client access)
-6. Enable Google social connection (Authentication > Social > Google)
-7. Fill in `frontend/.env.local`:
+### 2. Frontend `.env.local` (Auth0 + API URL)
+
+```bash
+cp frontend/.env.local.example frontend/.env.local
+```
+
+Fill in `frontend/.env.local`:
 
 ```
 VITE_AUTH0_DOMAIN=your-tenant.eu.auth0.com
@@ -53,39 +51,52 @@ VITE_AUTH0_AUDIENCE=https://api.langteach.io
 VITE_API_BASE_URL=http://localhost:5000
 ```
 
-8. Fill in `Auth0:Domain` in `backend/LangTeach.Api/appsettings.Development.json`
+### 3. Auth0 tenant (one-time)
 
-## Environment Variables
+1. Create an Auth0 tenant (free tier, EU region recommended)
+2. Create a **Single Page Application** named `LangTeach Frontend` — note the Client ID
+3. Set Allowed Callback URLs, Logout URLs, and Web Origins to `http://localhost:5173`
+4. Create an **API** (Applications > APIs) with identifier `https://api.langteach.io`
+5. Enable Google social connection (Authentication > Social > Google)
 
-### Frontend (`frontend/.env.local`, git-ignored)
+## Running Locally
 
-| Variable | Description |
-|----------|-------------|
-| `VITE_AUTH0_DOMAIN` | Auth0 tenant domain |
-| `VITE_AUTH0_CLIENT_ID` | SPA application client ID |
-| `VITE_AUTH0_AUDIENCE` | API identifier (`https://api.langteach.io`) |
-| `VITE_API_BASE_URL` | Backend URL (default: `http://localhost:5000`) |
+### Option A — API + SQL in Docker, frontend on host (recommended for development)
 
-### Backend (`appsettings.Development.json`, git-tracked — no secrets)
+```bash
+# Start SQL Server + API
+docker compose up sqlserver api -d
 
-| Key | Description |
-|-----|-------------|
-| `Auth0:Domain` | Auth0 tenant domain |
-| `Auth0:Audience` | API identifier |
-| `ConnectionStrings:Default` | SQL Server connection string |
+# Frontend
+cd frontend
+npm install
+npm run dev   # http://localhost:5173
+```
 
-Production secrets come from Azure Key Vault via `DefaultAzureCredential` — never hardcoded.
+API: http://localhost:5000/api/health
+SQL Server: `localhost:1434` (user: `sa`, password from `.env`)
+
+### Option B — Everything in Docker
+
+```bash
+docker compose up -d
+```
+
+Frontend: http://localhost:5173 (HMR enabled via volume mount)
+API: http://localhost:5000
+
+> Note: `.env.local` is mounted into the frontend container automatically.
 
 ## Running Tests
 
 ```bash
-# Backend
+# Backend unit + integration tests
 cd backend && dotnet test
 
 # Frontend unit tests
 cd frontend && npm test
 
-# E2E (requires frontend running on :5173)
+# E2E (requires frontend running on :5173 and API on :5000)
 cd e2e && npx playwright test
 ```
 
@@ -100,25 +111,35 @@ cd e2e && npx playwright test
 langTeachSaaS/
 ├── frontend/                    # React + Vite
 │   └── src/
+│       ├── api/                 # Axios API clients (profileApi, ...)
 │       ├── components/          # Layout, ProtectedRoute
+│       ├── hooks/               # TanStack Query hooks (useProfile, ...)
 │       ├── lib/                 # apiClient (Axios + auth interceptor), logger
-│       ├── pages/               # Route-level components
-│       └── main.tsx             # Auth0Provider entry point
+│       ├── pages/               # Dashboard, Settings, ...
+│       └── types/               # Shared TypeScript types
 ├── backend/
 │   ├── LangTeach.Api/           # .NET 9 Web API
-│   │   ├── Controllers/         # AuthController, HealthController
-│   │   ├── Data/                # EF Core DbContext
+│   │   ├── Controllers/         # AuthController, HealthController, ProfileController
+│   │   ├── Data/
+│   │   │   ├── Models/          # EF Core entities (Teacher, TeacherSettings, ...)
+│   │   │   ├── AppDbContext.cs
+│   │   │   └── SeedData.cs
+│   │   ├── DTOs/                # ProfileDto, UpdateProfileRequest
+│   │   ├── Migrations/          # EF Core migrations
+│   │   ├── Services/            # IProfileService, ProfileService
 │   │   └── logs/                # Serilog rolling log files (git-ignored)
 │   └── LangTeach.Api.Tests/     # xUnit integration tests
 ├── e2e/                         # Playwright end-to-end tests
-│   └── tests/                   # auth-diagnostic.spec.ts + future tests
+│   ├── helpers/                 # auth-helper.ts
+│   └── tests/                   # teacher-profile.spec.ts, ...
 ├── infra/                       # Azure Bicep IaC
 │   ├── main.bicep
 │   ├── parameters/              # dev.bicepparam, prod.bicepparam
 │   └── modules/                 # sql, appservice, staticwebapp, storage, keyvault
 ├── plan/                        # Task plans
 │   └── langteach-phase1/
-└── docker-compose.yml           # SQL Server + API (frontend runs directly for dev)
+├── .env.example                 # Copy to .env — docker-compose secrets
+└── docker-compose.yml           # SQL Server + API + frontend (frontend optional — see above)
 ```
 
 ## Phase Status
@@ -135,10 +156,10 @@ langTeachSaaS/
 | Task | Description | Status |
 |------|-------------|--------|
 | T1 | Repo & tooling setup (monorepo, Docker, React, .NET 9) | Done |
-| T2 | Azure infrastructure (Bicep: Container Apps, SQL, SWA, Key Vault) | Done — PR #1 |
-| T3 | Auth0 integration (JWT, Auth0Provider, Serilog, Playwright e2e) | Done — PR #2 |
-| T4 | Database schema (EF Core migrations, Phase 1 tables, seed data) | Next |
-| T5 | Teacher profile API + UI | Pending |
+| T2 | Azure infrastructure (Bicep: Container Apps, SQL, SWA, Key Vault) | Done |
+| T3 | Auth0 integration (JWT, Auth0Provider, Serilog, Playwright e2e) | Done |
+| T4 | Database schema (EF Core migrations, Phase 1 tables, seed data) | Done |
+| T5 | Teacher profile API + UI | Done — PR #11 |
 | T6 | Student profiles API + UI | Pending |
 | T7 | Lesson CRUD API | Pending |
 | T8 | Lesson UI (planner, editor) | Pending |
