@@ -1,3 +1,4 @@
+using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -7,22 +8,25 @@ namespace LangTeach.Api.Controllers;
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
+    private readonly IProfileService _profileService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(ILogger<AuthController> logger)
+    public AuthController(IProfileService profileService, ILogger<AuthController> logger)
     {
+        _profileService = profileService;
         _logger = logger;
     }
 
     [HttpGet("me")]
-    public IActionResult Me()
+    public async Task<IActionResult> Me()
     {
-        var sub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var sub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
         var email = User.FindFirst(ClaimTypes.Email)?.Value ?? "";
 
         _logger.LogInformation("Auth/Me called. Sub={Sub} Email={Email}", sub, email);
 
-        // T5 will inject ITeacherService and upsert teacher record here
+        await _profileService.UpsertTeacherAsync(sub, email);
+
         return Ok(new { sub, email });
     }
 }

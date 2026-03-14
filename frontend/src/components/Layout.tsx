@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Link, Outlet } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 
 export default function Layout() {
@@ -10,6 +10,7 @@ export default function Layout() {
         <h1>LangTeach</h1>
         <div>
           <span>{user?.email}</span>
+          <Link to="/settings">Settings</Link>
           <button onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
             Log out
           </button>
