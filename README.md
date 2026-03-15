@@ -115,6 +115,21 @@ cd frontend && npm test
 cd e2e && npx playwright test
 ```
 
+## Seeding Demo Data
+
+After logging in at least once (so your teacher record exists), run the seeder to populate the dev database with 5 students and 5 lessons:
+
+```bash
+# By email
+dotnet run --project backend/LangTeach.Api -- --seed you@example.com
+
+# By Auth0 user ID
+dotnet run --project backend/LangTeach.Api -- --seed "auth0|<user-id>"
+```
+
+The seeder is idempotent — running it again on the same account is a no-op.
+The API does not need to be running when you execute this command.
+
 ## Logs
 
 - **Backend**: console + `backend/LangTeach.Api/logs/api-YYYY-MM-DD.log` (rolling daily, via Serilog)
@@ -138,7 +153,8 @@ langTeachSaaS/
 │   │   ├── Data/
 │   │   │   ├── Models/          # EF Core entities (Teacher, TeacherSettings, ...)
 │   │   │   ├── AppDbContext.cs
-│   │   │   └── SeedData.cs
+│   │   │   ├── SeedData.cs      # lesson template reference data (runs on startup)
+│   │   │   └── DemoSeeder.cs    # dev demo data (run manually via --seed flag)
 │   │   ├── DTOs/                # ProfileDto, UpdateProfileRequest
 │   │   ├── Migrations/          # EF Core migrations
 │   │   ├── Services/            # IProfileService, ProfileService
