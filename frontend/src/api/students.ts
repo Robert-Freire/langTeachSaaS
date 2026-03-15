@@ -7,6 +7,9 @@ export interface Student {
   cefrLevel: string
   interests: string[]
   notes: string | null
+  nativeLanguage: string | null
+  learningGoals: string[]
+  weaknesses: string[]
   createdAt: string
   updatedAt: string
 }
@@ -24,6 +27,9 @@ export interface StudentFormData {
   cefrLevel: string
   interests: string[]
   notes?: string | null
+  nativeLanguage?: string | null
+  learningGoals: string[]
+  weaknesses: string[]
 }
 
 export async function getStudents(params?: {

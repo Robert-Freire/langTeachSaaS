@@ -107,14 +107,21 @@ Add fields to the Student model that feed into AI prompts for personalization.
 - `Weaknesses` (string, nullable, JSON array): e.g. ["past tenses", "pronunciation", "articles"]. Lets the AI weave targeted practice into exercises.
 
 **UI changes:**
-- Add three fields to the student create/edit form (native language dropdown, learning goals multi-select, weaknesses free-text tags)
+- Add three fields to the student create/edit form (native language dropdown, learning goals multi-select, weaknesses multi-select)
 - Display new fields on student list cards
+
+**UI implementation decisions (T10):**
+- `LearningGoals` and `Weaknesses` use a multi-select from a predefined list of canonical options (not free-text tags). This prevents misspellings and ensures prompt service can rely on consistent values.
+- Options are defined as exported TS constants in `frontend/src/lib/studentOptions.ts` (not DB-driven, not inline in the component). Add options there when the list needs to grow. Migrate to a DB-backed or combobox pattern only if teachers need to define their own custom categories.
+- Storage stays as JSON array in nvarchar regardless of future UI changes — only the component needs to change.
 
 **Why this comes first**: The prompt service (T12) needs rich student data to generate personalized content. Without native language and goals, prompts are generic, and generic prompts produce generic content.
 
 **Playwright**: Extend `e2e/tests/students.spec.ts` to cover new fields.
 
-**Done when**: Student form captures and persists all new fields; existing students still work with nullable new columns.
+**Done when**: Student form captures and persists all new fields; existing students still work with nullable new columns; backend rejects `NativeLanguage` values outside the allowed list.
+
+**Note**: `IsApproved` on `Teachers` moved to T11 — it has no consumer or UI surface in T10 and belongs where the 403 guard is actually implemented.
 
 ---
 
@@ -164,6 +171,8 @@ public enum ClaudeModel { Haiku, Sonnet }
 - Log all calls: task type, model, token counts, latency
 
 **API key**: `appsettings.Development.json` for local dev, Azure Key Vault for production.
+
+**IsApproved enforcement**: All generation endpoints (T13) must verify the calling teacher has `IsApproved = true` before invoking `IClaudeClient`. Return 403 if not. The check lives in the controller or a shared authorization policy, not inside `IClaudeClient` itself.
 
 **Done when**: Integration test hits real Claude API with a minimal prompt; unit tests mock the interface.
 

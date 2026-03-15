@@ -1,8 +1,9 @@
+using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace LangTeach.Api.Controllers;
 
@@ -52,8 +53,15 @@ public class StudentsController : ControllerBase
         }
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-        var student = await _studentService.CreateAsync(teacherId, request, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = student.Id }, student);
+        try
+        {
+            var student = await _studentService.CreateAsync(teacherId, request, cancellationToken);
+            return CreatedAtAction(nameof(GetById), new { id = student.Id }, student);
+        }
+        catch (ValidationException ex)
+        {
+            return ValidationProblem(ex.Message);
+        }
     }
 
     [HttpGet("{id:guid}")]
@@ -85,16 +93,23 @@ public class StudentsController : ControllerBase
         }
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-        var updated = await _studentService.UpdateAsync(teacherId, id, request, cancellationToken);
-
-        if (updated is null)
+        try
         {
-            _logger.LogWarning("PUT /api/students/{StudentId} not found or forbidden. TeacherId={TeacherId}",
-                id, teacherId);
-            return NotFound();
-        }
+            var updated = await _studentService.UpdateAsync(teacherId, id, request, cancellationToken);
 
-        return Ok(updated);
+            if (updated is null)
+            {
+                _logger.LogWarning("PUT /api/students/{StudentId} not found or forbidden. TeacherId={TeacherId}",
+                    id, teacherId);
+                return NotFound();
+            }
+
+            return Ok(updated);
+        }
+        catch (ValidationException ex)
+        {
+            return ValidationProblem(ex.Message);
+        }
     }
 
     [HttpDelete("{id:guid}")]

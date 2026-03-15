@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X } from 'lucide-react'
+import { X, ChevronsUpDown, Check } from 'lucide-react'
 import { getStudent, createStudent, updateStudent, type StudentFormData } from '../api/students'
+import { LEARNING_GOALS, WEAKNESSES } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,9 +17,121 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { cn } from '@/lib/utils'
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+
+function MultiSelect({
+  options,
+  selected,
+  onChange,
+  placeholder,
+  triggerId,
+  chipTestId,
+}: {
+  options: { value: string; label: string }[]
+  selected: string[]
+  onChange: (values: string[]) => void
+  placeholder: string
+  triggerId: string
+  chipTestId: string
+}) {
+  const [open, setOpen] = useState(false)
+
+  function toggle(value: string) {
+    onChange(
+      selected.includes(value)
+        ? selected.filter((v) => v !== value)
+        : [...selected, value]
+    )
+  }
+
+  function remove(value: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    onChange(selected.filter((v) => v !== value))
+  }
+
+  return (
+    <div className="space-y-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger>
+          <button
+            type="button"
+            data-testid={triggerId}
+            className="flex w-full max-w-sm items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-50"
+          >
+            {selected.length === 0 ? placeholder : `${selected.length} selected`}
+            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64 p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search..." />
+            <CommandList>
+              <CommandEmpty>No options found.</CommandEmpty>
+              <CommandGroup>
+                {options.map((opt) => (
+                  <CommandItem
+                    key={opt.value}
+                    value={opt.value}
+                    onSelect={() => toggle(opt.value)}
+                  >
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4',
+                        selected.includes(opt.value) ? 'opacity-100' : 'opacity-0'
+                      )}
+                    />
+                    {opt.label}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selected.map((value) => {
+            const label = options.find((o) => o.value === value)?.label ?? value
+            return (
+              <span
+                key={value}
+                className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded px-2 py-0.5"
+                data-testid={chipTestId}
+              >
+                {label}
+                <button
+                  type="button"
+                  onClick={(e) => remove(value, e)}
+                  className="text-indigo-400 hover:text-indigo-700"
+                  aria-label={`Remove ${label}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function StudentForm() {
   const navigate = useNavigate()
@@ -31,6 +144,9 @@ export default function StudentForm() {
   const [cefrLevel, setCefrLevel] = useState('')
   const [interests, setInterests] = useState<string[]>([])
   const [interestInput, setInterestInput] = useState('')
+  const [nativeLanguage, setNativeLanguage] = useState<string>('')
+  const [learningGoals, setLearningGoals] = useState<string[]>([])
+  const [weaknesses, setWeaknesses] = useState<string[]>([])
   const [notes, setNotes] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const interestInputRef = useRef<HTMLInputElement>(null)
@@ -47,6 +163,9 @@ export default function StudentForm() {
       setLanguage(existing.learningLanguage)
       setCefrLevel(existing.cefrLevel)
       setInterests(existing.interests)
+      setNativeLanguage(existing.nativeLanguage ?? '')
+      setLearningGoals(existing.learningGoals)
+      setWeaknesses(existing.weaknesses)
       setNotes(existing.notes ?? '')
     }
   }, [existing])
@@ -99,7 +218,16 @@ export default function StudentForm() {
     const finalInterests = interestInput.trim()
       ? [...interests, interestInput.trim()]
       : interests
-    mutate({ name: name.trim(), learningLanguage: language, cefrLevel, interests: finalInterests, notes: notes.trim() || undefined })
+    mutate({
+      name: name.trim(),
+      learningLanguage: language,
+      cefrLevel,
+      interests: finalInterests,
+      nativeLanguage: nativeLanguage || null,
+      learningGoals,
+      weaknesses,
+      notes: notes.trim() || undefined,
+    })
   }
 
   if (isEdit && isLoading) {
@@ -181,7 +309,6 @@ export default function StudentForm() {
             <CardTitle className="text-base">Interests</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {/* Tag input */}
             <div
               className="flex flex-wrap gap-1.5 min-h-10 w-full max-w-sm rounded-md border border-zinc-200 bg-white px-3 py-2 cursor-text"
               onClick={() => interestInputRef.current?.focus()}
@@ -215,6 +342,58 @@ export default function StudentForm() {
               />
             </div>
             <p className="text-xs text-zinc-400">Press Enter or comma to add. Backspace to remove last.</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">AI Personalization</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-zinc-400 -mt-1">
+              Used to personalize AI-generated lesson content for this student.
+            </p>
+
+            {/* Native Language */}
+            <div className="space-y-1.5">
+              <Label>Native Language</Label>
+              <Select value={nativeLanguage} onValueChange={(v) => setNativeLanguage(v ?? '')}>
+                <SelectTrigger className="max-w-sm" data-testid="student-native-language">
+                  <SelectValue placeholder="Select native language (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.map((lang) => (
+                    <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Learning Goals */}
+            <div className="space-y-1.5">
+              <Label>Learning Goals</Label>
+              <MultiSelect
+                options={LEARNING_GOALS}
+                selected={learningGoals}
+                onChange={setLearningGoals}
+                placeholder="Select goals..."
+                triggerId="learning-goals-trigger"
+                chipTestId="learning-goal-chip"
+              />
+            </div>
+
+            {/* Weaknesses */}
+            <div className="space-y-1.5">
+              <Label>Areas to Improve</Label>
+              <MultiSelect
+                options={WEAKNESSES}
+                selected={weaknesses}
+                onChange={setWeaknesses}
+                placeholder="Select areas..."
+                triggerId="weaknesses-trigger"
+                chipTestId="weakness-chip"
+              />
+            </div>
           </CardContent>
         </Card>
 

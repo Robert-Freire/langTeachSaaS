@@ -137,6 +137,95 @@ public class StudentsControllerTests
         result.Items[0].LearningLanguage.Should().Be("Spanish");
     }
 
+    [Fact]
+    public async Task Create_WithEnrichmentFields_RoundTripsCorrectly()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|enrichment-create-test", "enrichment-create@example.com");
+
+        var request = new CreateStudentRequest
+        {
+            Name = "Maria Silva",
+            LearningLanguage = "Spanish",
+            CefrLevel = "B1",
+            NativeLanguage = "Portuguese",
+            LearningGoals = ["travel", "conversation"],
+            Weaknesses = ["past tenses", "articles"],
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var student = await response.Content.ReadFromJsonAsync<StudentDto>();
+        student!.NativeLanguage.Should().Be("Portuguese");
+        student.LearningGoals.Should().BeEquivalentTo(["travel", "conversation"]);
+        student.Weaknesses.Should().BeEquivalentTo(["past tenses", "articles"]);
+    }
+
+    [Fact]
+    public async Task Create_WithNullEnrichmentFields_ReturnsEmptyArraysAndNullLanguage()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|enrichment-null-test", "enrichment-null@example.com");
+
+        var request = new CreateStudentRequest
+        {
+            Name = "John Doe",
+            LearningLanguage = "English",
+            CefrLevel = "A1",
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var student = await response.Content.ReadFromJsonAsync<StudentDto>();
+        student!.NativeLanguage.Should().BeNull();
+        student.LearningGoals.Should().BeEmpty();
+        student.Weaknesses.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Update_WithEnrichmentFields_PersistsChanges()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|enrichment-update-test", "enrichment-update@example.com");
+
+        var created = await CreateStudentAsync(client, "Enrichment Update Student");
+
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.CefrLevel,
+            NativeLanguage = "German",
+            LearningGoals = ["business"],
+            Weaknesses = ["word order"],
+        };
+
+        var response = await client.PutAsJsonAsync($"/api/students/{created.Id}", updateRequest);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.NativeLanguage.Should().Be("German");
+        updated.LearningGoals.Should().BeEquivalentTo(["business"]);
+        updated.Weaknesses.Should().BeEquivalentTo(["word order"]);
+    }
+
+    [Fact]
+    public async Task Create_WithInvalidNativeLanguage_ReturnsBadRequest()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|invalid-language-test", "invalid-language@example.com");
+
+        var request = new CreateStudentRequest
+        {
+            Name = "Test Student",
+            LearningLanguage = "English",
+            CefrLevel = "B1",
+            NativeLanguage = "Klingon",
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     private static async Task<StudentDto> CreateStudentAsync(
         HttpClient client,
         string name,

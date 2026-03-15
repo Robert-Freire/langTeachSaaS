@@ -117,6 +117,11 @@ export default function Students() {
                     <Badge variant="outline" className="text-xs text-indigo-600 border-indigo-200 bg-indigo-50" data-testid="student-level">
                       {student.cefrLevel}
                     </Badge>
+                    {student.nativeLanguage && (
+                      <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200" data-testid="native-language-chip">
+                        {student.nativeLanguage} speaker
+                      </Badge>
+                    )}
                     {student.interests.slice(0, 3).map((interest) => (
                       <Badge
                         key={interest}

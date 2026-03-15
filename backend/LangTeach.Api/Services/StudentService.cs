@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
@@ -8,6 +9,12 @@ namespace LangTeach.Api.Services;
 
 public class StudentService : IStudentService
 {
+    private static readonly HashSet<string> AllowedNativeLanguages =
+    [
+        "English", "Spanish", "French", "German", "Italian",
+        "Portuguese", "Mandarin", "Japanese", "Arabic", "Other"
+    ];
+
     private readonly AppDbContext _db;
     private readonly ILogger<StudentService> _logger;
 
@@ -56,6 +63,8 @@ public class StudentService : IStudentService
 
     public async Task<StudentDto> CreateAsync(Guid teacherId, CreateStudentRequest request, CancellationToken cancellationToken = default)
     {
+        ValidateNativeLanguage(request.NativeLanguage);
+
         var student = new Student
         {
             Id = Guid.NewGuid(),
@@ -64,6 +73,9 @@ public class StudentService : IStudentService
             LearningLanguage = request.LearningLanguage,
             CefrLevel = request.CefrLevel,
             Interests = Serialize(request.Interests),
+            NativeLanguage = request.NativeLanguage,
+            LearningGoals = Serialize(request.LearningGoals),
+            Weaknesses = Serialize(request.Weaknesses),
             Notes = request.Notes,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
@@ -85,10 +97,15 @@ public class StudentService : IStudentService
         if (student is null)
             return null;
 
+        ValidateNativeLanguage(request.NativeLanguage);
+
         student.Name = request.Name;
         student.LearningLanguage = request.LearningLanguage;
         student.CefrLevel = request.CefrLevel;
         student.Interests = Serialize(request.Interests);
+        student.NativeLanguage = request.NativeLanguage;
+        student.LearningGoals = Serialize(request.LearningGoals);
+        student.Weaknesses = Serialize(request.Weaknesses);
         student.Notes = request.Notes;
         student.UpdatedAt = DateTime.UtcNow;
 
@@ -123,9 +140,18 @@ public class StudentService : IStudentService
         s.CefrLevel,
         Deserialize(s.Interests),
         s.Notes,
+        s.NativeLanguage,
+        Deserialize(s.LearningGoals),
+        Deserialize(s.Weaknesses),
         s.CreatedAt,
         s.UpdatedAt
     );
+
+    private static void ValidateNativeLanguage(string? nativeLanguage)
+    {
+        if (nativeLanguage is not null && !AllowedNativeLanguages.Contains(nativeLanguage))
+            throw new ValidationException($"NativeLanguage '{nativeLanguage}' is not in the allowed list.");
+    }
 
     private static List<string> Deserialize(string json)
     {
