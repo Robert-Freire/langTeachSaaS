@@ -88,7 +88,7 @@ public class PromptServiceIntegrationTests
         );
 
         var req = prompts.BuildVocabularyPrompt(ctx);
-        var response = await client.CompleteAsync(req);
+        var response = await client.CompleteAsync(req, CancellationToken.None);
 
         response.Content.Should().NotBeNullOrWhiteSpace();
         IsValidJson(response.Content).Should().BeTrue(
@@ -121,7 +121,7 @@ public class PromptServiceIntegrationTests
         );
 
         var req = prompts.BuildGrammarPrompt(ctx);
-        var response = await client.CompleteAsync(req);
+        var response = await client.CompleteAsync(req, CancellationToken.None);
 
         response.Content.Should().NotBeNullOrWhiteSpace();
         IsValidJson(response.Content).Should().BeTrue(
@@ -155,7 +155,7 @@ public class PromptServiceIntegrationTests
         );
 
         var req = prompts.BuildLessonPlanPrompt(ctx);
-        var response = await client.CompleteAsync(req);
+        var response = await client.CompleteAsync(req, CancellationToken.None);
 
         response.Content.Should().NotBeNullOrWhiteSpace();
         IsValidJson(response.Content).Should().BeTrue(

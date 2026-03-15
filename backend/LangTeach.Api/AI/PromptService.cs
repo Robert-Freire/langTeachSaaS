@@ -25,53 +25,68 @@ public class PromptService : IPromptService
     public ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx) =>
         new(BuildSystemPrompt(ctx), HomeworkUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 1024);
 
+    private static string Sanitize(string? value) =>
+        value is null ? string.Empty : string.Concat(value.Where(c => c >= ' ' || c == '\t')).Trim();
+
     private static string BuildSystemPrompt(GenerationContext ctx)
     {
+        var language      = Sanitize(ctx.Language);
+        var cefrLevel     = Sanitize(ctx.CefrLevel);
+        var topic         = Sanitize(ctx.Topic);
+        var style         = Sanitize(ctx.Style);
+        var studentName   = Sanitize(ctx.StudentName);
+        var nativeLang    = Sanitize(ctx.StudentNativeLanguage);
+        var existingNotes = Sanitize(ctx.ExistingNotes);
+
         var sb = new StringBuilder();
 
-        sb.AppendLine($"You are an expert {ctx.Language} teacher creating materials for a {ctx.CefrLevel} level lesson.");
-        sb.AppendLine($"Teaching style: {ctx.Style}. Topic: {ctx.Topic}. Duration: {ctx.DurationMinutes} minutes.");
+        sb.AppendLine($"You are an expert {language} teacher creating materials for a {cefrLevel} level lesson.");
+        sb.AppendLine($"Teaching style: {style}. Topic: {topic}. Duration: {ctx.DurationMinutes} minutes.");
         sb.AppendLine();
-        sb.AppendLine($"Write all examples, sentences, and instructions using vocabulary and grammar appropriate for {ctx.CefrLevel}. Do not use structures above this level in examples. Definitions and explanations aimed at the teacher may use higher-level language.");
+        sb.AppendLine($"Write all examples, sentences, and instructions using vocabulary and grammar appropriate for {cefrLevel}. Do not use structures above this level in examples. Definitions and explanations aimed at the teacher may use higher-level language.");
 
         if (ctx.StudentName is not null)
         {
+            var interests  = ctx.StudentInterests?.Select(Sanitize).Where(s => s.Length > 0).ToArray() ?? [];
+            var goals      = ctx.StudentGoals?.Select(Sanitize).Where(s => s.Length > 0).ToArray() ?? [];
+            var weaknesses = ctx.StudentWeaknesses?.Select(Sanitize).Where(s => s.Length > 0).ToArray() ?? [];
+
             sb.AppendLine();
             sb.AppendLine("Student profile:");
-            sb.AppendLine($"- Name: {ctx.StudentName}");
+            sb.AppendLine($"- Name: {studentName}");
 
             if (ctx.StudentNativeLanguage is not null)
-                sb.AppendLine($"- Native language: {ctx.StudentNativeLanguage}");
+                sb.AppendLine($"- Native language: {nativeLang}");
 
-            if (ctx.StudentInterests is { Length: > 0 })
-                sb.AppendLine($"- Interests: {string.Join(", ", ctx.StudentInterests)}");
+            if (interests.Length > 0)
+                sb.AppendLine($"- Interests: {string.Join(", ", interests)}");
 
-            if (ctx.StudentGoals is { Length: > 0 })
-                sb.AppendLine($"- Learning goals: {string.Join(", ", ctx.StudentGoals)}");
+            if (goals.Length > 0)
+                sb.AppendLine($"- Learning goals: {string.Join(", ", goals)}");
 
-            if (ctx.StudentWeaknesses is { Length: > 0 })
-                sb.AppendLine($"- Areas to improve: {string.Join(", ", ctx.StudentWeaknesses)}");
+            if (weaknesses.Length > 0)
+                sb.AppendLine($"- Areas to improve: {string.Join(", ", weaknesses)}");
 
             sb.AppendLine();
             sb.AppendLine($"Personalize content for this student. Reference their interests in examples.");
 
             if (ctx.StudentNativeLanguage is not null)
             {
-                sb.AppendLine($"The student's native language is {ctx.StudentNativeLanguage}.");
-                sb.AppendLine($"- Provide translations in {ctx.StudentNativeLanguage} for vocabulary items.");
-                sb.AppendLine($"- For grammar explanations, note where {ctx.Language} differs from {ctx.StudentNativeLanguage}.");
-                sb.AppendLine($"- Flag false cognates between {ctx.StudentNativeLanguage} and {ctx.Language} when relevant.");
-                sb.AppendLine($"- Be aware of common errors {ctx.StudentNativeLanguage} speakers make in {ctx.Language}.");
+                sb.AppendLine($"The student's native language is {nativeLang}.");
+                sb.AppendLine($"- Provide translations in {nativeLang} for vocabulary items.");
+                sb.AppendLine($"- For grammar explanations, note where {language} differs from {nativeLang}.");
+                sb.AppendLine($"- Flag false cognates between {nativeLang} and {language} when relevant.");
+                sb.AppendLine($"- Be aware of common errors {nativeLang} speakers make in {language}.");
             }
 
-            if (ctx.StudentWeaknesses is { Length: > 0 })
+            if (weaknesses.Length > 0)
                 sb.AppendLine("Focus practice on weak areas when relevant to the topic.");
         }
 
-        if (!string.IsNullOrWhiteSpace(ctx.ExistingNotes))
+        if (!string.IsNullOrWhiteSpace(existingNotes))
         {
             sb.AppendLine();
-            sb.AppendLine($"The teacher has already written these notes for context: {ctx.ExistingNotes}");
+            sb.AppendLine($"The teacher has already written these notes for context: {existingNotes}");
             sb.AppendLine("Build on these notes rather than replacing them entirely.");
         }
 
