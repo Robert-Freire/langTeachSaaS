@@ -41,6 +41,127 @@ public class GenerateController : ControllerBase
     private string? Auth0Id => User.FindFirstValue(ClaimTypes.NameIdentifier);
     private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
+    private static readonly IReadOnlyDictionary<string, Func<IPromptService, GenerationContext, ClaudeRequest>> PromptBuilders =
+        new Dictionary<string, Func<IPromptService, GenerationContext, ClaudeRequest>>
+        {
+            ["lesson-plan"]  = (svc, ctx) => svc.BuildLessonPlanPrompt(ctx),
+            ["vocabulary"]   = (svc, ctx) => svc.BuildVocabularyPrompt(ctx),
+            ["grammar"]      = (svc, ctx) => svc.BuildGrammarPrompt(ctx),
+            ["exercises"]    = (svc, ctx) => svc.BuildExercisesPrompt(ctx),
+            ["conversation"] = (svc, ctx) => svc.BuildConversationPrompt(ctx),
+            ["reading"]      = (svc, ctx) => svc.BuildReadingPrompt(ctx),
+            ["homework"]     = (svc, ctx) => svc.BuildHomeworkPrompt(ctx),
+        };
+
+    [HttpPost("{taskType}/stream")]
+    public async Task Stream(string taskType, [FromBody] GenerateRequest request, CancellationToken ct)
+    {
+        if (!PromptBuilders.TryGetValue(taskType, out var buildPrompt))
+        {
+            Response.StatusCode = 404;
+            return;
+        }
+
+        if (Auth0Id is null)
+        {
+            Response.StatusCode = 401;
+            return;
+        }
+
+        if (!ModelState.IsValid)
+        {
+            Response.StatusCode = 400;
+            return;
+        }
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var teacher = await _db.Teachers.FindAsync(new object[] { teacherId }, ct);
+        if (teacher is null || !teacher.IsApproved)
+        {
+            _logger.LogWarning("Stream/{TaskType} rejected: teacher not approved. TeacherId={TeacherId}", taskType, teacherId);
+            Response.StatusCode = 403;
+            return;
+        }
+
+        var lesson = await _db.Lessons.FindAsync(new object[] { request.LessonId }, ct);
+        if (lesson is null || lesson.TeacherId != teacherId || lesson.IsDeleted)
+        {
+            Response.StatusCode = 404;
+            await Response.WriteAsync("Lesson not found.", ct);
+            return;
+        }
+
+        StudentDto? student = null;
+        if (request.StudentId.HasValue)
+        {
+            student = await _studentService.GetByIdAsync(teacherId, request.StudentId.Value, ct);
+            if (student is null)
+            {
+                Response.StatusCode = 404;
+                await Response.WriteAsync("Student not found.", ct);
+                return;
+            }
+        }
+
+        var language = request.Language.Trim();
+        var cefrLevel = request.CefrLevel.Trim();
+        var topic = request.Topic.Trim();
+        if (language.Length == 0 || cefrLevel.Length == 0 || topic.Length == 0)
+        {
+            Response.StatusCode = 400;
+            await Response.WriteAsync("Language, CefrLevel, and Topic must not be blank.", ct);
+            return;
+        }
+
+        var ctx = new GenerationContext(
+            Language: language,
+            CefrLevel: cefrLevel,
+            Topic: topic,
+            Style: request.Style,
+            DurationMinutes: lesson.DurationMinutes,
+            StudentName: student?.Name,
+            StudentNativeLanguage: student?.NativeLanguage,
+            StudentInterests: student?.Interests.ToArray(),
+            StudentGoals: student?.LearningGoals.ToArray(),
+            StudentWeaknesses: student?.Weaknesses.ToArray(),
+            ExistingNotes: request.ExistingNotes
+        );
+
+        var claudeRequest = buildPrompt(_promptService, ctx);
+
+        Response.ContentType = "text/event-stream";
+        Response.Headers["Cache-Control"] = "no-cache";
+        Response.Headers["X-Accel-Buffering"] = "no";
+
+        try
+        {
+            await foreach (var token in _claudeClient.StreamAsync(claudeRequest, ct))
+            {
+                await Response.WriteAsync($"data: {JsonSerializer.Serialize(token)}\n\n", ct);
+                await Response.Body.FlushAsync(ct);
+            }
+            await Response.WriteAsync("data: [DONE]\n\n", ct);
+            await Response.Body.FlushAsync(ct);
+            _logger.LogInformation("Stream/{TaskType} succeeded. LessonId={LessonId}", taskType, lesson.Id);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // Client aborted — normal
+        }
+        catch (ClaudeRateLimitException ex)
+        {
+            _logger.LogWarning(ex, "Stream/{TaskType} rate limited. LessonId={LessonId}", taskType, lesson.Id);
+            await Response.WriteAsync("data: {\"error\":\"rate_limit\"}\n\n", CancellationToken.None);
+            await Response.Body.FlushAsync(CancellationToken.None);
+        }
+        catch (ClaudeApiException ex)
+        {
+            _logger.LogError(ex, "Stream/{TaskType} provider error. LessonId={LessonId}", taskType, lesson.Id);
+            await Response.WriteAsync("data: {\"error\":\"provider_error\"}\n\n", CancellationToken.None);
+            await Response.Body.FlushAsync(CancellationToken.None);
+        }
+    }
+
     [HttpPost("lesson-plan")]
     public Task<IActionResult> LessonPlan([FromBody] GenerateRequest request, CancellationToken ct) =>
         Generate(request, "lesson-plan", ctx => _promptService.BuildLessonPlanPrompt(ctx), ct);

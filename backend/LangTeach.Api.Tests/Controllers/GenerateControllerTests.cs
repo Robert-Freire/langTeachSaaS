@@ -234,4 +234,126 @@ public class GenerateControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
+
+    // --- Streaming endpoint tests ---
+
+    [Fact]
+    public async Task Stream_Returns200WithSseContentType_WhenRequestIsValid()
+    {
+        var auth0Id = "auth0|stream-ok";
+        var email = "stream-ok@example.com";
+        var lessonId = await SeedApprovedTeacherWithLesson(auth0Id, email);
+        var client = CreateClientWithFakeClaude(auth0Id, email);
+
+        var request = new GenerateRequest
+        {
+            LessonId = lessonId,
+            Language = "English",
+            CefrLevel = "B1",
+            Topic = "Food",
+        };
+
+        var response = await client.PostAsJsonAsync("/api/generate/vocabulary/stream", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType!.MediaType.Should().Be("text/event-stream");
+    }
+
+    [Fact]
+    public async Task Stream_ReturnsBodyWithDoneMarker()
+    {
+        var auth0Id = "auth0|stream-done";
+        var email = "stream-done@example.com";
+        var lessonId = await SeedApprovedTeacherWithLesson(auth0Id, email);
+        var client = CreateClientWithFakeClaude(auth0Id, email);
+
+        var request = new GenerateRequest
+        {
+            LessonId = lessonId,
+            Language = "Spanish",
+            CefrLevel = "A2",
+            Topic = "Numbers",
+        };
+
+        var response = await client.PostAsJsonAsync("/api/generate/grammar/stream", request);
+        var body = await response.Content.ReadAsStringAsync();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        body.Should().Contain("data: [DONE]");
+    }
+
+    [Fact]
+    public async Task Stream_Returns404_ForUnknownTaskType()
+    {
+        var auth0Id = "auth0|stream-unknown-type";
+        var email = "stream-unknown-type@example.com";
+        // Seed a real lesson so [ApiController] model validation passes; taskType check fires before any DB lookup
+        var lessonId = await SeedApprovedTeacherWithLesson(auth0Id, email);
+        var client = CreateClientWithFakeClaude(auth0Id, email);
+
+        var request = new GenerateRequest
+        {
+            LessonId = lessonId,
+            Language = "English",
+            CefrLevel = "B1",
+            Topic = "Food",
+        };
+
+        var response = await client.PostAsJsonAsync("/api/generate/nonexistent/stream", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Stream_Returns403_WhenTeacherNotApproved()
+    {
+        var auth0Id = "auth0|stream-unapproved";
+        var email = "stream-unapproved@example.com";
+
+        Guid lessonId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var teacher = new Teacher
+            {
+                Id = Guid.NewGuid(),
+                Auth0UserId = auth0Id,
+                Email = email,
+                DisplayName = "Unapproved",
+                IsApproved = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            };
+            db.Teachers.Add(teacher);
+            var lesson = new Lesson
+            {
+                Id = Guid.NewGuid(),
+                TeacherId = teacher.Id,
+                Title = "L",
+                Language = "English",
+                CefrLevel = "A1",
+                Topic = "T",
+                DurationMinutes = 30,
+                Status = "Draft",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            };
+            db.Lessons.Add(lesson);
+            await db.SaveChangesAsync();
+            lessonId = lesson.Id;
+        }
+
+        var client = CreateClientWithFakeClaude(auth0Id, email);
+        var request = new GenerateRequest
+        {
+            LessonId = lessonId,
+            Language = "English",
+            CefrLevel = "A1",
+            Topic = "Greetings",
+        };
+
+        var response = await client.PostAsJsonAsync("/api/generate/vocabulary/stream", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
 }
