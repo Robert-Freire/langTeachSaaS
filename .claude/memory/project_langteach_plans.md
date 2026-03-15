@@ -20,6 +20,7 @@ Base path: `C:\ws\PersonalOS\02_Library\personal-obsidian-vault\Projects\langTea
 | Phase 1 — T5.1 task file | `plan\langteach-phase1\task5.1-design-system.md` |
 | Phase 1 — T9.1 task file | `plan\langteach-phase1\task9.1-brand-logo.md` |
 | Phase 2 — AI Core (T1-T8 internal) | `plan\langteach-phase2\plan.md` |
+| Beta Plan (T10-T23, supersedes Phase 2 sequencing) | `plan\langteach-beta\plan.md` |
 
 ## Naming Convention
 - Feature subfolder per phase: `plan\langteach-phase1\`, `plan\langteach-phase2\`, etc.
