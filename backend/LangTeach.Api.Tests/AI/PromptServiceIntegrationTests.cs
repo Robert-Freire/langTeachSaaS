@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FluentAssertions;
 using LangTeach.Api.AI;
+using LangTeach.Api.Tests.Helpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -8,24 +9,23 @@ using Microsoft.Extensions.Options;
 
 namespace LangTeach.Api.Tests.AI;
 
-/// <summary>
-/// Integration tests that exercise PromptService + ClaudeApiClient against the real Anthropic API.
-/// Skipped automatically in CI (no key). Run locally via:
-///   dotnet user-secrets set "Claude:ApiKey" "sk-ant-..." --project backend/LangTeach.Api
-/// </summary>
 public class PromptServiceIntegrationTests
 {
-    private static (IClaudeClient client, IPromptService prompts, bool hasKey) BuildClients()
+    private sealed class TestClients(IClaudeClient client, IPromptService prompts, ServiceProvider provider)
+        : IDisposable
+    {
+        public IClaudeClient Client { get; } = client;
+        public IPromptService Prompts { get; } = prompts;
+        public void Dispose() => provider.Dispose();
+    }
+
+    private static TestClients BuildClients()
     {
         var config = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json", optional: true)
             .AddUserSecrets<Program>(optional: true)
             .AddEnvironmentVariables()
             .Build();
-
-        var apiKey = config["Claude:ApiKey"];
-        if (string.IsNullOrWhiteSpace(apiKey))
-            return (null!, null!, false);
 
         var services = new ServiceCollection();
         services.Configure<ClaudeClientOptions>(config.GetSection(ClaudeClientOptions.SectionName));
@@ -39,8 +39,7 @@ public class PromptServiceIntegrationTests
 
         var sp = services.BuildServiceProvider();
         var client = new ClaudeApiClient(sp.GetRequiredService<IHttpClientFactory>(), NullLogger<ClaudeApiClient>.Instance);
-        var prompts = new PromptService();
-        return (client, prompts, true);
+        return new TestClients(client, new PromptService(), sp);
     }
 
     /// <summary>
@@ -67,11 +66,10 @@ public class PromptServiceIntegrationTests
     }
 
     // Scenario 1: English A2, Portuguese speaker, Vocabulary
-    [Fact]
+    [SkipIfNoClaudeApiKey]
     public async Task Scenario1_Vocabulary_A2_PortugueseSpeaker()
     {
-        var (client, prompts, hasKey) = BuildClients();
-        if (!hasKey) return;
+        using var tc = BuildClients();
 
         var ctx = new GenerationContext(
             Language: "English",
@@ -87,8 +85,8 @@ public class PromptServiceIntegrationTests
             ExistingNotes: null
         );
 
-        var req = prompts.BuildVocabularyPrompt(ctx);
-        var response = await client.CompleteAsync(req, CancellationToken.None);
+        var req = tc.Prompts.BuildVocabularyPrompt(ctx);
+        var response = await tc.Client.CompleteAsync(req, CancellationToken.None);
 
         response.Content.Should().NotBeNullOrWhiteSpace();
         IsValidJson(response.Content).Should().BeTrue(
@@ -100,11 +98,10 @@ public class PromptServiceIntegrationTests
     }
 
     // Scenario 2: Spanish B1, English speaker, Grammar
-    [Fact]
+    [SkipIfNoClaudeApiKey]
     public async Task Scenario2_Grammar_B1_EnglishSpeaker_Subjunctive()
     {
-        var (client, prompts, hasKey) = BuildClients();
-        if (!hasKey) return;
+        using var tc = BuildClients();
 
         var ctx = new GenerationContext(
             Language: "Spanish",
@@ -120,8 +117,8 @@ public class PromptServiceIntegrationTests
             ExistingNotes: null
         );
 
-        var req = prompts.BuildGrammarPrompt(ctx);
-        var response = await client.CompleteAsync(req, CancellationToken.None);
+        var req = tc.Prompts.BuildGrammarPrompt(ctx);
+        var response = await tc.Client.CompleteAsync(req, CancellationToken.None);
 
         response.Content.Should().NotBeNullOrWhiteSpace();
         IsValidJson(response.Content).Should().BeTrue(
@@ -134,11 +131,10 @@ public class PromptServiceIntegrationTests
     }
 
     // Scenario 6: English B1, Full lesson plan, Japanese speaker
-    [Fact]
+    [SkipIfNoClaudeApiKey]
     public async Task Scenario6_LessonPlan_B1_JapaneseSpeaker()
     {
-        var (client, prompts, hasKey) = BuildClients();
-        if (!hasKey) return;
+        using var tc = BuildClients();
 
         var ctx = new GenerationContext(
             Language: "English",
@@ -154,8 +150,8 @@ public class PromptServiceIntegrationTests
             ExistingNotes: null
         );
 
-        var req = prompts.BuildLessonPlanPrompt(ctx);
-        var response = await client.CompleteAsync(req, CancellationToken.None);
+        var req = tc.Prompts.BuildLessonPlanPrompt(ctx);
+        var response = await tc.Client.CompleteAsync(req, CancellationToken.None);
 
         response.Content.Should().NotBeNullOrWhiteSpace();
         IsValidJson(response.Content).Should().BeTrue(
