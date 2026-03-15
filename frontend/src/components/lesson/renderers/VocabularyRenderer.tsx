@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { isVocabularyContent } from '../../../types/contentTypes'
 import type { VocabularyItem } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
@@ -24,7 +24,11 @@ function VocabTable({ children }: { children: React.ReactNode }) {
 
 const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded'
 
+let nextRowId = 0
+
 function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
+  const rowIdsRef = useRef<number[]>([])
+
   if (!isVocabularyContent(parsedContent)) {
     return (
       <textarea
@@ -37,6 +41,12 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   }
 
   const items = parsedContent.items
+
+  // Sync row IDs to match current item count (initial load)
+  while (rowIdsRef.current.length < items.length) {
+    rowIdsRef.current.push(nextRowId++)
+  }
+
   const emit = (newItems: VocabularyItem[]) => onChange(JSON.stringify({ items: newItems }))
 
   const handleCellChange = (index: number, field: keyof VocabularyItem, value: string) => {
@@ -45,10 +55,12 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   }
 
   const handleAdd = () => {
+    rowIdsRef.current.push(nextRowId++)
     emit([...items, { word: '', definition: '', exampleSentence: '', translation: '' }])
   }
 
   const handleRemove = (index: number) => {
+    rowIdsRef.current.splice(index, 1)
     emit(items.filter((_, i) => i !== index))
   }
 
@@ -66,7 +78,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
           </thead>
           <tbody>
             {items.map((item, i) => (
-              <tr key={i} className="hover:bg-zinc-50">
+              <tr key={rowIdsRef.current[i]} className="hover:bg-zinc-50">
                 <td className="border border-zinc-200 p-1">
                   <input value={item.word} onChange={(e) => handleCellChange(i, 'word', e.target.value)} className={inputClass} />
                 </td>
@@ -145,6 +157,8 @@ function Student({ parsedContent, rawContent }: StudentProps) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       if (e.key === 'ArrowLeft') prev()
       else if (e.key === 'ArrowRight') next()
       else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip() }
@@ -168,9 +182,13 @@ function Student({ parsedContent, rawContent }: StudentProps) {
       </div>
 
       <div
-        className="w-full max-w-md cursor-pointer"
+        className="w-full max-w-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-xl"
         style={{ perspective: '800px' }}
         onClick={flip}
+        onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip() } }}
+        tabIndex={0}
+        role="button"
+        aria-label={flipped ? `Flashcard showing definition for ${item.word}, click to flip` : `Flashcard showing ${item.word}, click to flip`}
         data-testid="flashcard-card"
       >
         <div
