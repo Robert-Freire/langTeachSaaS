@@ -39,10 +39,9 @@ test('teacher can save and reload profile settings', async ({ browser }) => {
   await page.click('button[type="submit"]')
   await expect(page.getByTestId('save-success')).toBeVisible()
 
-  // Reload and assert persistence
+  // Reload and assert persistence (wait for profile API to populate the field)
   await page.reload()
-  await page.waitForSelector('input[name="displayName"]')
-  await expect(page.locator('input[name="displayName"]')).toHaveValue('Test Teacher')
+  await expect(page.locator('input[name="displayName"]')).toHaveValue('Test Teacher', { timeout: 10000 })
   await expect(page.locator('button:has-text("English")').first()).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('button:has-text("Spanish")').first()).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('button:has-text("B1")').first()).toHaveAttribute('aria-pressed', 'true')
