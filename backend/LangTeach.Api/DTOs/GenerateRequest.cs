@@ -4,7 +4,7 @@ namespace LangTeach.Api.DTOs;
 
 public class GenerateRequest
 {
-    [Required]
+    [Required, NotEmptyGuid]
     public Guid LessonId { get; set; }
 
     [Required, MinLength(1)]

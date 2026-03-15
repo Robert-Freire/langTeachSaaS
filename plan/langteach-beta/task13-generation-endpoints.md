@@ -127,7 +127,7 @@ public class LessonContentBlock
 
 ## EF Migration
 
-```
+```bash
 cd backend && dotnet ef migrations add AddLessonContentBlocks --project LangTeach.Api --startup-project LangTeach.Api
 ```
 

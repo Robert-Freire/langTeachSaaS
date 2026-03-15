@@ -105,10 +105,17 @@ public class GenerateController : ControllerBase
             }
         }
 
+        var language = request.Language.Trim();
+        var cefrLevel = request.CefrLevel.Trim();
+        var topic = request.Topic.Trim();
+
+        if (language.Length == 0 || cefrLevel.Length == 0 || topic.Length == 0)
+            return BadRequest("Language, CefrLevel, and Topic must not be blank.");
+
         var ctx = new GenerationContext(
-            Language: request.Language,
-            CefrLevel: request.CefrLevel,
-            Topic: request.Topic,
+            Language: language,
+            CefrLevel: cefrLevel,
+            Topic: topic,
             Style: request.Style,
             DurationMinutes: lesson.DurationMinutes,
             StudentName: student?.Name,
@@ -120,7 +127,22 @@ public class GenerateController : ControllerBase
         );
 
         var claudeRequest = buildPrompt(ctx);
-        var response = await _claudeClient.CompleteAsync(claudeRequest, ct);
+
+        ClaudeResponse response;
+        try
+        {
+            response = await _claudeClient.CompleteAsync(claudeRequest, ct);
+        }
+        catch (ClaudeRateLimitException ex)
+        {
+            _logger.LogWarning(ex, "Generate/{BlockType} rate limited. LessonId={LessonId}", blockType, lesson.Id);
+            return StatusCode(503, "AI provider rate limit reached. Please try again shortly.");
+        }
+        catch (ClaudeApiException ex)
+        {
+            _logger.LogError(ex, "Generate/{BlockType} provider error. LessonId={LessonId}", blockType, lesson.Id);
+            return StatusCode(502, "AI provider returned an error. Please try again.");
+        }
 
         var block = new LessonContentBlock
         {

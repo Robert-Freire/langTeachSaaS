@@ -19,8 +19,8 @@ internal sealed class FakeClaudeClient : IClaudeClient
 
     public async IAsyncEnumerable<string> StreamAsync(ClaudeRequest request, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
+        await Task.Yield();
         yield return FixedContent;
-        await Task.CompletedTask;
     }
 }
 
