@@ -68,6 +68,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 
