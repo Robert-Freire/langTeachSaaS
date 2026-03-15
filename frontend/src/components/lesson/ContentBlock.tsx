@@ -75,11 +75,10 @@ export function ContentBlock({
     try {
       await deleteContentBlock(lessonId, block.id)
       onDelete(block.id)
+      // component unmounts here — no further state updates
     } catch {
       setDeleting(false)
       setActionError('Remove failed. Please try again.')
-    } finally {
-      setDeleting(false)
     }
   }
 
