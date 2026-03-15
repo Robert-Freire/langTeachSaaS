@@ -68,15 +68,12 @@ function MultiSelect({
   return (
     <div className="space-y-2">
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger>
-          <button
-            type="button"
-            data-testid={triggerId}
-            className="flex w-full max-w-sm items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-50"
-          >
-            {selected.length === 0 ? placeholder : `${selected.length} selected`}
-            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-          </button>
+        <PopoverTrigger
+          data-testid={triggerId}
+          className="flex w-full max-w-sm items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-50"
+        >
+          {selected.length === 0 ? placeholder : `${selected.length} selected`}
+          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </PopoverTrigger>
         <PopoverContent className="w-64 p-0" align="start">
           <Command>
