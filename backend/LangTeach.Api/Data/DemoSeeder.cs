@@ -7,7 +7,7 @@ public static class DemoSeeder
 {
     private const string DemoTag = "[demo]";
 
-    public static async Task SeedAsync(AppDbContext db, string teacherLookup, ILogger logger)
+    public static async Task<bool> SeedAsync(AppDbContext db, string teacherLookup, ILogger logger)
     {
         var teacher = teacherLookup.StartsWith("auth0|", StringComparison.OrdinalIgnoreCase)
             ? await db.Teachers.FirstOrDefaultAsync(t => t.Auth0UserId == teacherLookup)
@@ -16,14 +16,14 @@ public static class DemoSeeder
         if (teacher is null)
         {
             logger.LogError("No teacher found for '{Lookup}'. Log in at least once before seeding.", teacherLookup);
-            return;
+            return false;
         }
 
-        var alreadySeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.Notes != null && s.Notes.Contains(DemoTag));
+        var alreadySeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.Notes == DemoTag);
         if (alreadySeeded)
         {
             logger.LogInformation("Demo data already exists for teacher {Email} — skipping.", teacher.Email);
-            return;
+            return true;
         }
 
         logger.LogInformation("Seeding demo data for teacher {Email}...", teacher.Email);
@@ -78,13 +78,12 @@ public static class DemoSeeder
 
         db.Lessons.AddRange(lessons);
 
-        var sections = lessons.SelectMany(l => l.Sections).ToList();
-        db.LessonSections.AddRange(sections);
-
         await db.SaveChangesAsync();
 
+        var sectionCount = lessons.Sum(l => l.Sections.Count);
         logger.LogInformation("Demo data seeded: {Students} students, {Lessons} lessons, {Sections} sections.",
-            students.Count, lessons.Count, sections.Count);
+            students.Count, lessons.Count, sectionCount);
+        return true;
     }
 
     private static Lesson CreateLesson(

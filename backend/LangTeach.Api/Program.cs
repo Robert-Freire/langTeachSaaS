@@ -90,7 +90,7 @@ using (var scope = app.Services.CreateScope())
 var seedIndex = Array.IndexOf(args, "--seed");
 if (seedIndex >= 0)
 {
-    var teacherLookup = seedIndex + 1 < args.Length ? args[seedIndex + 1] : null;
+    var teacherLookup = (seedIndex + 1 < args.Length ? args[seedIndex + 1] : null)?.Trim();
     if (string.IsNullOrWhiteSpace(teacherLookup))
     {
         Console.Error.WriteLine("Usage: --seed <auth0-user-id|email>");
@@ -100,8 +100,8 @@ if (seedIndex >= 0)
     using var seedScope = app.Services.CreateScope();
     var seedDb     = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
     var seedLogger = seedScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    await DemoSeeder.SeedAsync(seedDb, teacherLookup, seedLogger);
-    return 0;
+    var seeded = await DemoSeeder.SeedAsync(seedDb, teacherLookup, seedLogger);
+    return seeded ? 0 : 1;
 }
 
 app.UseSerilogRequestLogging(options =>
