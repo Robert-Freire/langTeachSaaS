@@ -78,6 +78,7 @@ public class GenerateController : ControllerBase
         var teacher = await _db.Teachers.FindAsync(new object[] { teacherId }, ct);
         if (teacher is null || !teacher.IsApproved)
         {
+            _logger.LogWarning("Stream/{TaskType} rejected: teacher not approved. TeacherId={TeacherId}", taskType, teacherId);
             Response.StatusCode = 403;
             return;
         }
@@ -141,6 +142,7 @@ public class GenerateController : ControllerBase
             }
             await Response.WriteAsync("data: [DONE]\n\n", ct);
             await Response.Body.FlushAsync(ct);
+            _logger.LogInformation("Stream/{TaskType} succeeded. LessonId={LessonId}", taskType, lesson.Id);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
