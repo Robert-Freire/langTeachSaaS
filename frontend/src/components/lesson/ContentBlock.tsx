@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type FocusEvent, type KeyboardEvent } from 'react'
+import { useState, useEffect, useRef, type KeyboardEvent } from 'react'
 import {
   updateEditedContent,
   deleteContentBlock,
@@ -7,7 +7,6 @@ import {
 } from '../../api/generate'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
 import { getRenderer } from './contentRegistry'
 
 interface ContentBlockProps {
@@ -18,7 +17,7 @@ interface ContentBlockProps {
   onRegenerate: (blockType: string, generationParams: string | null) => void
 }
 
-type ViewMode = 'edit' | 'preview' | 'raw'
+type ViewMode = 'edit' | 'preview'
 
 export function ContentBlock({
   block,
@@ -61,14 +60,6 @@ export function ContentBlock({
       await doSave(value)
     }
     setMode(newMode)
-  }
-
-  // Blur-save for raw textarea mode — suppressed when focus moves to an action button
-  const handleRawBlur = async (e: FocusEvent<HTMLTextAreaElement>) => {
-    const nextFocused = e.relatedTarget as HTMLElement | null
-    if (nextFocused?.dataset.contentAction === 'true') return
-    if (actionInProgress.current) return
-    await doSave(value)
   }
 
   const markActionIntentFromKeyboard = (e: KeyboardEvent<HTMLButtonElement>) => {
@@ -135,7 +126,7 @@ export function ContentBlock({
 
         {/* Mode toggle */}
         <div className="ml-auto flex items-center gap-0.5 rounded border border-zinc-200 overflow-hidden">
-          {(['edit', 'preview', 'raw'] as ViewMode[]).map((m) => (
+          {(['edit', 'preview'] as ViewMode[]).map((m) => (
             <button
               key={m}
               data-content-action="true"
@@ -146,7 +137,7 @@ export function ContentBlock({
                   : 'text-zinc-500 hover:bg-zinc-50'
               }`}
             >
-              {m === 'edit' ? 'Edit' : m === 'preview' ? 'Preview' : 'Raw'}
+              {m === 'edit' ? 'Edit' : 'Preview'}
             </button>
           ))}
         </div>
@@ -165,16 +156,6 @@ export function ContentBlock({
       )}
       {mode === 'preview' && (
         <renderer.Preview rawContent={value} parsedContent={parsedContent} />
-      )}
-      {mode === 'raw' && (
-        <Textarea
-          value={value}
-          onChange={(e) => { setValue(e.target.value); if (actionError) setActionError(null) }}
-          onBlur={(e) => handleRawBlur(e)}
-          rows={6}
-          className="resize-none text-sm"
-          data-testid="content-block-textarea"
-        />
       )}
 
       {/* Action buttons */}

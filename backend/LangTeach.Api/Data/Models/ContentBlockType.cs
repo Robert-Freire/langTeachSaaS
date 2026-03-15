@@ -44,6 +44,9 @@ public class ContentBlockTypeJsonConverter : JsonConverter<ContentBlockType>
 {
     public override ContentBlockType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
+        if (reader.TokenType is not JsonTokenType.String)
+            throw new JsonException($"Expected string for {nameof(ContentBlockType)}.");
+
         var value = reader.GetString() ?? string.Empty;
         if (ContentBlockTypeExtensions.TryFromKebabCase(value, out var type))
             return type;

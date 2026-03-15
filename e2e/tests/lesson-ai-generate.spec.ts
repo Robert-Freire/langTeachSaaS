@@ -1,10 +1,14 @@
 import { test, expect } from '@playwright/test'
 import { createAuthenticatedContext } from '../helpers/auth-helper'
+import { approveTeacherByAuth0Id } from '../helpers/db-helper'
 
 test('generate AI content for lesson section, insert, and persist after refresh', async ({ browser }) => {
   test.setTimeout(90000) // streaming can take up to ~30s; allow 90s total
   const context = await createAuthenticatedContext(browser)
   const page = await context.newPage()
+
+  // Approve the e2e test teacher so the generate endpoint allows access
+  await approveTeacherByAuth0Id('auth0|69b54b07b54b77c525997d29')
 
   // Create a lesson via the wizard
   await page.goto('/lessons')

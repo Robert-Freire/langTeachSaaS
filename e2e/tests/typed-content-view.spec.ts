@@ -1,10 +1,14 @@
 import { test, expect } from '@playwright/test'
 import { createAuthenticatedContext } from '../helpers/auth-helper'
+import { approveTeacherByAuth0Id } from '../helpers/db-helper'
 
 test('vocabulary renders as table and student preview shows study view', async ({ browser }) => {
   test.setTimeout(90000)
   const context = await createAuthenticatedContext(browser)
   const page = await context.newPage()
+
+  // Approve the e2e test teacher so the generate endpoint allows access
+  await approveTeacherByAuth0Id('auth0|69b54b07b54b77c525997d29')
 
   // Create a lesson
   await page.goto('/lessons')

@@ -20,3 +20,15 @@ export async function deleteTeacherByAuth0Id(auth0UserId: string): Promise<void>
     await pool.close()
   }
 }
+
+export async function approveTeacherByAuth0Id(auth0UserId: string): Promise<void> {
+  const pool = await new sql.ConnectionPool(config).connect()
+  try {
+    await pool
+      .request()
+      .input('auth0UserId', sql.NVarChar, auth0UserId)
+      .query('UPDATE Teachers SET IsApproved = 1 WHERE Auth0UserId = @auth0UserId')
+  } finally {
+    await pool.close()
+  }
+}

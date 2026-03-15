@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Copy, Trash2, UserPlus, ChevronDown, ChevronUp, Save, Sparkles } from 'lucide-react'
 import {
@@ -343,13 +343,14 @@ export default function LessonEditor() {
             <Trash2 className="h-4 w-4 text-zinc-500" />
           </Button>
 
-          <Link
-            to={`/lessons/${id}/study`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 transition-colors"
+          <button
+            onClick={() => { if (!isSaving) navigate(`/lessons/${id}/study`) }}
+            disabled={isSaving}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="preview-student-btn"
           >
             Preview as Student
-          </Link>
+          </button>
 
           {savedAt && (
             <span className="text-xs text-green-600 flex items-center gap-1" data-testid="saved-indicator">

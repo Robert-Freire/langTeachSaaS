@@ -19,3 +19,4 @@
 - [No PR without verified changes](feedback_no_pr_without_verified_changes.md) — always write tests covering the changed behavior and confirm they pass before opening a PR; a passing build is not sufficient
 - [Always verify no open PR comments before declaring done](feedback_pr_comments_final_check.md) — fetch the full comment list after every push before saying all comments are resolved; CodeRabbit posts new comments after each push
 - [E2E coverage requirement](feedback_e2e_coverage_requirement.md) — every main functionality needs an e2e happy path test, planned at task start not added later; prerequisite for future CI adoption
+- [All tests green before push](feedback_all_tests_green_before_push.md) — never push code unless all tests pass (e2e, unit and integration); only exception is non-code files (memory, docs)
