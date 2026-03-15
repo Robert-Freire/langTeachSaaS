@@ -3,7 +3,6 @@ using System.Text;
 using FluentAssertions;
 using LangTeach.Api.AI;
 using LangTeach.Api.Tests.Helpers;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LangTeach.Api.Tests.AI;
@@ -14,12 +13,7 @@ public class ClaudeApiClientUnitTests
     {
         var handler    = new FakeHttpMessageHandler(fakeResponse);
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://api.anthropic.com") };
-
-        var factory = new ServiceCollection()
-            .AddSingleton<IHttpClientFactory>(new FakeHttpClientFactory(httpClient))
-            .BuildServiceProvider()
-            .GetRequiredService<IHttpClientFactory>();
-
+        var factory    = new FakeHttpClientFactory(httpClient);
         return new ClaudeApiClient(factory, NullLogger<ClaudeApiClient>.Instance);
     }
 
@@ -45,6 +39,27 @@ public class ClaudeApiClientUnitTests
         result.ModelUsed.Should().Be("claude-haiku-4-5-20251001");
         result.InputTokens.Should().Be(10);
         result.OutputTokens.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task CompleteAsync_EmptyContentArray_ReturnsEmptyContent()
+    {
+        var json = """
+            {
+              "model": "claude-haiku-4-5-20251001",
+              "content": [],
+              "usage": { "input_tokens": 5, "output_tokens": 0 }
+            }
+            """;
+
+        var client = BuildClient(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json"),
+        });
+
+        var result = await client.CompleteAsync(new ClaudeRequest("sys", "hi", ClaudeModel.Haiku));
+
+        result.Content.Should().BeEmpty();
     }
 
     [Fact]

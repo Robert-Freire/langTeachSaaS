@@ -33,7 +33,19 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
-        var text         = root.GetProperty("content")[0].GetProperty("text").GetString() ?? string.Empty;
+        var text = string.Empty;
+        if (root.TryGetProperty("content", out var contentArray) && contentArray.GetArrayLength() > 0)
+        {
+            foreach (var block in contentArray.EnumerateArray())
+            {
+                if (block.TryGetProperty("type", out var blockType) && blockType.GetString() == "text" &&
+                    block.TryGetProperty("text", out var textProp))
+                {
+                    text = textProp.GetString() ?? string.Empty;
+                    break;
+                }
+            }
+        }
         var usedModel    = root.GetProperty("model").GetString() ?? modelId;
         var inputTokens  = root.GetProperty("usage").GetProperty("input_tokens").GetInt32();
         var outputTokens = root.GetProperty("usage").GetProperty("output_tokens").GetInt32();

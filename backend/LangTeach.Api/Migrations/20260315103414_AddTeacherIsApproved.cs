@@ -16,6 +16,9 @@ namespace LangTeach.Api.Migrations
                 type: "bit",
                 nullable: false,
                 defaultValue: false);
+
+            // Backfill: existing teachers are already using the product, approve them.
+            migrationBuilder.Sql("UPDATE Teachers SET IsApproved = 1");
         }
 
         /// <inheritdoc />
