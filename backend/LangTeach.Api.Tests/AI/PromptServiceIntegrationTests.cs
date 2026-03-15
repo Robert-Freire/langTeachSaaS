@@ -85,7 +85,7 @@ public class PromptServiceIntegrationTests
             ExistingNotes: null
         );
 
-        var req = tc.Prompts.BuildVocabularyPrompt(ctx);
+        var req = tc.Prompts.BuildVocabularyPrompt(ctx) with { Model = ClaudeModel.Haiku };
         var response = await tc.Client.CompleteAsync(req, CancellationToken.None);
 
         response.Content.Should().NotBeNullOrWhiteSpace();
@@ -117,7 +117,7 @@ public class PromptServiceIntegrationTests
             ExistingNotes: null
         );
 
-        var req = tc.Prompts.BuildGrammarPrompt(ctx);
+        var req = tc.Prompts.BuildGrammarPrompt(ctx) with { Model = ClaudeModel.Haiku };
         var response = await tc.Client.CompleteAsync(req, CancellationToken.None);
 
         response.Content.Should().NotBeNullOrWhiteSpace();
@@ -150,7 +150,7 @@ public class PromptServiceIntegrationTests
             ExistingNotes: null
         );
 
-        var req = tc.Prompts.BuildLessonPlanPrompt(ctx);
+        var req = tc.Prompts.BuildLessonPlanPrompt(ctx) with { Model = ClaudeModel.Haiku };
         var response = await tc.Client.CompleteAsync(req, CancellationToken.None);
 
         response.Content.Should().NotBeNullOrWhiteSpace();
