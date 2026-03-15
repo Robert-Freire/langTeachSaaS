@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Copy, Trash2, UserPlus, ChevronDown, ChevronUp, Save } from 'lucide-react'
+import { Copy, Trash2, UserPlus, ChevronDown, ChevronUp, Save, Sparkles } from 'lucide-react'
 import {
   getLesson, updateLesson, updateSections, deleteLesson, duplicateLesson,
   type Lesson, type LessonStatus, type SectionType,
 } from '../api/lessons'
 import { getStudents } from '../api/students'
+import {
+  getContentBlocks,
+  type ContentBlockDto,
+} from '../api/generate'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,6 +29,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { GeneratePanel } from '@/components/lesson/GeneratePanel'
+import { ContentBlock } from '@/components/lesson/ContentBlock'
 
 const SECTION_ORDER: SectionType[] = ['WarmUp', 'Presentation', 'Practice', 'Production', 'WrapUp']
 const SECTION_LABELS: Record<SectionType, string> = {
@@ -71,6 +77,13 @@ export default function LessonEditor() {
   const [editingMeta, setEditingMeta] = useState(false)
   const [metaDraft, setMetaDraft] = useState({ language: '', cefrLevel: '', topic: '', durationMinutes: 60, objectives: '' })
 
+  // AI content blocks: keyed by sectionId
+  const [contentBlocks, setContentBlocks] = useState<Record<string, ContentBlockDto[]>>({})
+  // Which section has the generate panel open (by SectionType)
+  const [generateOpen, setGenerateOpen] = useState<SectionType | null>(null)
+  // When regenerating: which block is being replaced
+  const [regenerateParams, setRegenerateParams] = useState<{ sectionType: SectionType; blockType: string; existingParams: string | null } | null>(null)
+
   const { data: lesson, isLoading, isError } = useQuery({
     queryKey: ['lesson', id],
     queryFn: () => getLesson(id!),
@@ -96,6 +109,22 @@ export default function LessonEditor() {
       })
     }
   }, [lesson])
+
+  // Load content blocks once lesson id is available
+  useEffect(() => {
+    if (!id) return
+    getContentBlocks(id).then((blocks) => {
+      const grouped: Record<string, ContentBlockDto[]> = {}
+      for (const b of blocks) {
+        if (!b.lessonSectionId) continue
+        if (!grouped[b.lessonSectionId]) grouped[b.lessonSectionId] = []
+        grouped[b.lessonSectionId].push(b)
+      }
+      setContentBlocks(grouped)
+    }).catch((err) => {
+      logger.warn('LessonEditor', 'failed to load content blocks', { id, err })
+    })
+  }, [id])
 
   const { mutate: doUpdate } = useMutation({
     mutationFn: (data: Parameters<typeof updateLesson>[1]) => updateLesson(id!, data),
@@ -209,6 +238,32 @@ export default function LessonEditor() {
     })
     setLinkStudentOpen(false)
   }, [lesson, linkStudentId, doUpdate])
+
+  const handleBlockInsert = useCallback((block: ContentBlockDto) => {
+    if (!block.lessonSectionId) return
+    setContentBlocks(prev => {
+      const existing = prev[block.lessonSectionId!] ?? []
+      return { ...prev, [block.lessonSectionId!]: [...existing, block] }
+    })
+  }, [])
+
+  const handleBlockUpdate = useCallback((updated: ContentBlockDto) => {
+    if (!updated.lessonSectionId) return
+    setContentBlocks(prev => {
+      const existing = prev[updated.lessonSectionId!] ?? []
+      return {
+        ...prev,
+        [updated.lessonSectionId!]: existing.map(b => b.id === updated.id ? updated : b),
+      }
+    })
+  }, [])
+
+  const handleBlockDelete = useCallback((id: string, sectionId: string) => {
+    setContentBlocks(prev => {
+      const existing = prev[sectionId] ?? []
+      return { ...prev, [sectionId]: existing.filter(b => b.id !== id) }
+    })
+  }, [])
 
   const students = studentsData?.items ?? []
 
@@ -384,24 +439,88 @@ export default function LessonEditor() {
           {isSaving && <span className="text-xs text-zinc-400">Saving...</span>}
         </div>
 
-        {sectionNotes && SECTION_ORDER.map((type) => (
-          <Card key={type} className="bg-white border border-zinc-200">
-            <CardHeader className="py-3 px-6 pb-2">
-              <CardTitle className="text-sm font-medium text-zinc-700">{SECTION_LABELS[type]}</CardTitle>
-            </CardHeader>
-            <CardContent className="px-6 pb-4">
-              <Textarea
-                value={sectionNotes[type]}
-                onChange={(e) => setSectionNotes(n => n ? { ...n, [type]: e.target.value } : n)}
-                onBlur={(e) => handleSectionBlur(type, e.target.value)}
-                placeholder={`Add notes for ${SECTION_LABELS[type]}...`}
-                rows={4}
-                className="resize-none text-sm"
-                data-testid={`section-${type.toLowerCase()}`}
-              />
-            </CardContent>
-          </Card>
-        ))}
+        {sectionNotes && SECTION_ORDER.map((type) => {
+          const sectionId = lesson.sections.find(s => s.sectionType === type)?.id ?? null
+          const blocks = sectionId ? (contentBlocks[sectionId] ?? []) : []
+          const isGenerateOpen = generateOpen === type
+
+          return (
+            <Card key={type} className="bg-white border border-zinc-200">
+              <CardHeader className="py-3 px-6 pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-zinc-700">{SECTION_LABELS[type]}</CardTitle>
+                  {sectionId && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setRegenerateParams(null)
+                        setGenerateOpen(isGenerateOpen ? null : type)
+                      }}
+                      className="h-7 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                      data-testid={`generate-btn-${type.toLowerCase()}`}
+                    >
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Generate
+                    </Button>
+                  )}
+                  {!sectionId && (
+                    <span className="text-xs text-zinc-400" title="Save the lesson first to enable AI generation">Generate</span>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="px-6 pb-4 space-y-3">
+                <Textarea
+                  value={sectionNotes[type]}
+                  onChange={(e) => setSectionNotes(n => n ? { ...n, [type]: e.target.value } : n)}
+                  onBlur={(e) => handleSectionBlur(type, e.target.value)}
+                  placeholder={`Add notes for ${SECTION_LABELS[type]}...`}
+                  rows={4}
+                  className="resize-none text-sm"
+                  data-testid={`section-${type.toLowerCase()}`}
+                />
+
+                {blocks.map(block => (
+                  <ContentBlock
+                    key={block.id}
+                    block={block}
+                    lessonId={id!}
+                    onUpdate={handleBlockUpdate}
+                    onDelete={(blockId) => handleBlockDelete(blockId, sectionId!)}
+                    onRegenerate={(blockType, params) => {
+                      setRegenerateParams({ sectionType: type, blockType, existingParams: params })
+                      setGenerateOpen(type)
+                    }}
+                  />
+                ))}
+
+                {isGenerateOpen && sectionId && (
+                  <GeneratePanel
+                    lessonId={id!}
+                    sectionId={sectionId}
+                    sectionType={type}
+                    initialTaskType={regenerateParams?.sectionType === type ? regenerateParams.blockType : undefined}
+                    lessonContext={{
+                      language: lesson.language,
+                      cefrLevel: lesson.cefrLevel,
+                      topic: lesson.topic,
+                      studentId: lesson.studentId,
+                      existingNotes: sectionNotes[type] || null,
+                    }}
+                    onInsert={(block) => {
+                      handleBlockInsert(block)
+                      setRegenerateParams(null)
+                    }}
+                    onClose={() => {
+                      setGenerateOpen(null)
+                      setRegenerateParams(null)
+                    }}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {/* Delete confirmation */}
