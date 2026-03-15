@@ -32,8 +32,8 @@
 | Phase | Tasks | Status |
 |-------|-------|--------|
 | 2A Core Magic | T10-T16 | pending |
-| 2B Make It Real | T17-T19 | pending |
-| 2C Polish | T20-T22 | pending |
+| 2B Make It Real | T17-T19, T21, T24-T25 | pending |
+| 2C Polish | T20, T22 | pending |
 | Demo Prep | T23 | pending |
 
 ---
@@ -74,7 +74,7 @@ The original Phase 2 plan was designed for a production SaaS launch. This beta p
 
 **Kept from Phase 2**: Claude client, prompt service, generation endpoints, streaming, lesson editor AI UI, inline editing.
 **Deferred**: Generation caching (optimization), usage tracking/limits (monetization), GenerationCache table, GenerationUsage table.
-**Added**: Student profile enrichment (feeds prompt quality), one-click full lesson, PDF export (moved from Phase 3), student lesson notes, dashboard v2, brand polish, demo preparation task.
+**Added**: Student profile enrichment (feeds prompt quality), one-click full lesson, PDF export with teacher/student modes (moved from Phase 3), reading comprehension generation, adapt lesson for another student, AI-powered next topic suggestions, student lesson notes, dashboard v2, brand polish, demo preparation task.
 
 ---
 
@@ -156,6 +156,7 @@ public enum ClaudeModel { Haiku, Sonnet }
 | Conversation prompts | Haiku | Short, creative |
 | Grammar explanation | Sonnet | Nuanced, accurate |
 | Full lesson plan | Sonnet | Complex structure |
+| Reading passage + questions | Sonnet | Complex, nuanced |
 | Homework assignment | Sonnet | Needs lesson context |
 
 **Error handling:**
@@ -181,6 +182,7 @@ public interface IPromptService
     ClaudeRequest BuildGrammarPrompt(GenerationContext ctx);
     ClaudeRequest BuildExercisesPrompt(GenerationContext ctx);
     ClaudeRequest BuildConversationPrompt(GenerationContext ctx);
+    ClaudeRequest BuildReadingPrompt(GenerationContext ctx);
     ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx, string lessonSummary);
 }
 
@@ -230,6 +232,7 @@ Respond in valid JSON matching the schema provided.
 - Grammar: `{ title, explanation, examples: [{ sentence, note }], commonMistakes: [] }`
 - Exercises: `{ fillInBlank: [...], multipleChoice: [...], matching: [...] }`
 - Conversation: `{ scenarios: [{ setup, roleA, roleB, keyPhrases: [] }] }`
+- Reading: `{ passage, comprehensionQuestions: [{ question, answer, type }], vocabularyHighlights: [{ word, definition }] }`
 - Homework: `{ tasks: [{ type, instructions, examples }] }`
 - Full lesson plan: `{ title, objectives, sections: { warmUp, presentation, practice, production, wrapUp } }`
 
@@ -338,6 +341,7 @@ Our lesson templates follow the PPP (Presentation, Practice, Production) framewo
 - **Production**: Activities should be open-ended. Student uses the language creatively. Generate role-play scenarios, discussion questions, or writing prompts, not more drills.
 - **Vocabulary**: Limit to 10-15 new words per lesson. Include: the word, a clear definition, an example sentence in context, and a translation to the student's native language.
 - **Grammar**: Explain rules simply, give 3-5 examples, list 2-3 common mistakes students with this native language typically make.
+- **Reading**: Generate a passage at the target CEFR level using level-appropriate vocabulary and grammar. Include 3-5 comprehension questions (mix of factual, inferential, and vocabulary-in-context). Highlight 5-8 key vocabulary items from the passage with definitions.
 
 #### Prompt Design Guidelines
 
@@ -405,7 +409,7 @@ Test each prompt type with at least 3 scenarios. For each, verify:
 5. **Usability**: Could a teacher hand this directly to a student, or does it need heavy editing?
 6. **JSON validity**: Does every response parse as valid JSON matching the schema?
 
-**Test matrix (minimum 9 generations):**
+**Test matrix (minimum 10 generations):**
 
 | Scenario | Language | Level | Student | Type |
 |----------|----------|-------|---------|------|
@@ -418,6 +422,7 @@ Test each prompt type with at least 3 scenarios. For each, verify:
 | 7 | Spanish | A2 | English speaker, travel goals | Homework |
 | 8 | German | B1 | Spanish speaker, conversational style | Vocabulary |
 | 9 | English | A1 | Arabic speaker, likes music | Full lesson plan |
+| 10 | English | B2 | Chinese speaker, likes technology | Reading |
 
 ---
 
@@ -429,7 +434,7 @@ Test each prompt type with at least 3 scenarios. For each, verify:
 
 **Priority**: Must | **Effort**: 1 day
 
-Six POST endpoints under `/api/generate`. All require `[Authorize]`.
+Seven POST endpoints under `/api/generate`. All require `[Authorize]`.
 
 | Method | Path | Model |
 |--------|------|-------|
@@ -438,6 +443,7 @@ Six POST endpoints under `/api/generate`. All require `[Authorize]`.
 | POST | `/api/generate/grammar` | Sonnet |
 | POST | `/api/generate/exercises` | Haiku |
 | POST | `/api/generate/conversation` | Haiku |
+| POST | `/api/generate/reading` | Sonnet |
 | POST | `/api/generate/homework` | Sonnet |
 
 **Common request:**
@@ -477,7 +483,7 @@ LessonContentBlocks (
 )
 ```
 
-**Done when**: All 6 endpoints return valid structured JSON; content block persisted in DB.
+**Done when**: All 7 endpoints return valid structured JSON; content block persisted in DB.
 
 ---
 
@@ -518,7 +524,7 @@ The primary screen where teachers interact with AI.
 - Clicking opens a generation panel (not a modal, stays visible alongside section)
 
 **Generation panel:**
-- Task type selector (Vocabulary / Grammar / Exercises / Conversation)
+- Task type selector (Vocabulary / Grammar / Exercises / Conversation / Reading)
 - Style override (defaults to teacher's preferred style)
 - Student auto-populated if lesson links one
 - "Generate" button starts streaming
@@ -565,27 +571,38 @@ These features turn the demo from "cool tech" into "tool I'd use Monday morning.
 
 ---
 
-#### T17 — PDF Export
+#### T17 — PDF Export (Teacher + Student Modes)
 
-**Priority**: Should | **Effort**: 1 day
+**Priority**: Should | **Effort**: 1.5 days
 
-**Endpoint**: `GET /api/lessons/{id}/export/pdf`
+**Endpoints:**
+- `GET /api/lessons/{id}/export/pdf?mode=teacher` (default)
+- `GET /api/lessons/{id}/export/pdf?mode=student`
 
-Generates a clean, printable PDF of the lesson with:
-- Header: lesson title, language, CEFR level, topic, date
-- Student name (if linked)
-- Each section as a titled block with content
-- Vocabulary rendered as a table (word, definition, example, translation)
-- Exercises formatted appropriately (numbered, with blanks)
+**Teacher PDF** (full version for the teacher's own use):
+- Header: lesson title, language, CEFR level, topic, date, student name
+- Each section with content, timing notes, and teacher instructions
+- Vocabulary table: word, definition, example sentence, translation
+- Exercises with answer keys inline
+- Grammar explanations with common mistakes section
 - Footer: "Created with LangTeach"
 
-Use a .NET PDF library (QuestPDF or similar). No need for pixel-perfect design; clean and readable is enough.
+**Student PDF** (clean handout to give to the student):
+- Header: lesson title, topic, date (no CEFR level, no teacher metadata)
+- Vocabulary table: word, definition, example sentence (no translations, student discovers meaning)
+- Exercises with blanks and space to write (no answer keys)
+- Reading passages with comprehension questions (no answers)
+- Grammar reference without the "common mistakes" teacher notes
+- No section timing, no teacher instructions
+- Footer: "Created with LangTeach"
 
-**Frontend**: "Export PDF" button in lesson editor toolbar. Downloads the file.
+Use a .NET PDF library (QuestPDF or similar). Both modes share the same layout engine, differing only in which fields are included.
 
-**Why it matters**: Teachers think in physical materials. "I can print this and hand it to my student" is tangible, immediate value that ChatGPT alone doesn't provide.
+**Frontend**: "Export PDF" dropdown in lesson editor toolbar with two options: "Teacher Copy" and "Student Handout."
 
-**Done when**: PDF downloads with all lesson content cleanly formatted; vocabulary tables render correctly.
+**Why it matters**: Teachers think in physical materials. A student handout without answers is a basic expectation. Handing a student a sheet that shows the exercise answers defeats the purpose. Two modes, one click each.
+
+**Done when**: Both PDF modes download with correct content filtering; student PDF has no answer keys; teacher PDF has everything.
 
 ---
 
@@ -639,6 +656,84 @@ Replace the basic stat tiles with meaningful content:
 
 ---
 
+#### T21 — Regenerate with Direction
+
+**Priority**: Should | **Effort**: 0.5 days
+
+When regenerating a section, offer quick modifiers:
+- "Make it easier" (lower complexity within same CEFR)
+- "Make it harder" (push toward upper boundary)
+- "Make it shorter" / "Make it longer"
+- "More formal" / "More conversational"
+
+These modify the prompt parameters and regenerate. Shows the AI is a collaborator, not a one-shot tool.
+
+**Why promoted to Should**: The demo script (step 5) explicitly shows regeneration with "make it easier." Without this, the demo loses a key moment that demonstrates the AI as a collaborator.
+
+---
+
+#### T24 — Adapt Lesson for Another Student
+
+**Priority**: Should | **Effort**: 0.5 days
+
+Teachers reuse lesson topics constantly. A B1 restaurant lesson for Maria should be adaptable for Pedro (A2, different interests, different native language) without starting from scratch.
+
+**UX**: On any existing lesson, an "Adapt for Another Student" button opens a dialog:
+- Student selector (pre-populated list from the teacher's students)
+- CEFR level auto-fills from selected student but is overridable
+- "Adapt" button creates a new lesson (cloned structure) and regenerates all content blocks for the new student/level
+
+**Backend flow:**
+1. Clone the lesson (reuse Phase 1's duplicate logic)
+2. Link to the new student
+3. For each existing `LessonContentBlock`, call the same generation endpoint with the new student's context and level
+4. Original lesson remains untouched
+
+**Why it matters**: This is where the platform clearly beats ChatGPT. A teacher would have to re-type the entire prompt with different student details. Here, one click adapts a proven lesson structure for a different student. It also shows that student profiles aren't just metadata; they actively drive content personalization.
+
+**Playwright test**: Adapt a lesson for a different student; verify the new lesson has different generated content appropriate for the new student's level.
+
+**Done when**: Teacher can adapt an existing lesson for a different student in one click; new lesson has fully regenerated, personalized content.
+
+---
+
+#### T25 — AI-Powered "Suggest Next Topic"
+
+**Priority**: Should | **Effort**: 0.5 days
+
+After a few lessons with a student, the platform has enough context (level, goals, weaknesses, past lesson topics) to suggest what to teach next.
+
+**Endpoint**: `POST /api/students/{id}/suggest-next-topic`
+
+Uses Claude (Haiku, fast) with a prompt that includes:
+- Student's CEFR level, goals, weaknesses, interests
+- List of topics already covered (from past lesson titles/topics)
+- The student's learning goals
+
+**Response:**
+```json
+{
+  "suggestions": [
+    {
+      "topic": "Making travel plans and booking hotels",
+      "rationale": "Maria hasn't covered future tenses yet, which are essential for B1. Travel planning is a natural context for 'will' and 'going to', and connects to her interest in cooking through restaurant reservations.",
+      "cefrFocus": "Future tenses (will vs going to)",
+      "estimatedLevel": "B1"
+    }
+  ]
+}
+```
+
+Returns 3 suggestions, each with a rationale explaining why that topic is appropriate next.
+
+**UI**: On the student profile page, a "Suggest Next Topic" button below the lesson history. Suggestions appear as cards. Each card has a "Create Lesson" button that pre-fills a new lesson with that topic and student already linked.
+
+**Why it matters**: This transforms the platform from "generate what I ask for" to "help me decide what to teach." It shows the platform is thinking ahead, using accumulated context. A teacher seeing "Maria hasn't covered future tenses yet" will feel the platform genuinely understands her teaching journey.
+
+**Done when**: Button on student profile returns 3 contextual suggestions; clicking "Create Lesson" on a suggestion pre-fills lesson creation with the topic and student.
+
+---
+
 ### Phase 2C — Polish & Delight
 
 If time allows. Each adds incremental value but isn't required for the demo.
@@ -655,20 +750,6 @@ If time allows. Each adds incremental value but isn't required for the demo.
 - Empty state illustrations
 
 Replaces the deferred T9.1 from Phase 1.
-
----
-
-#### T21 — Regenerate with Direction
-
-**Priority**: Nice | **Effort**: 0.5 days
-
-When regenerating a section, offer quick modifiers:
-- "Make it easier" (lower complexity within same CEFR)
-- "Make it harder" (push toward upper boundary)
-- "Make it shorter" / "Make it longer"
-- "More formal" / "More conversational"
-
-These modify the prompt parameters and regenerate. Shows the AI is a collaborator, not a one-shot tool.
 
 ---
 
@@ -691,7 +772,7 @@ Instead of plain-text exercises, render them as interactive components:
 
 This is not a code task. It's preparation for showing the beta to the teacher.
 
-**Demo script (3-minute walkthrough):**
+**Demo script (5-minute walkthrough):**
 
 1. **Open** (15s): Log in, show dashboard with real student data pre-seeded. "This is your teaching hub."
 
@@ -699,18 +780,23 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 
 3. **Create lesson** (30s): New lesson from Grammar template, link to Maria, topic: "ordering at a restaurant." "30 seconds to set up."
 
-4. **The magic** (60s): Click "Generate Full Lesson." Watch all 5 sections stream in with personalized content. Point out: vocabulary avoids Portuguese false cognates, exercises target past tenses (her weakness), examples reference cooking (her interest). "This would have taken you 20 minutes."
+4. **The magic** (60s): Click "Generate Full Lesson." Watch all 5 sections stream in with personalized content. Point out: vocabulary avoids Portuguese false cognates, exercises target past tenses (her weakness), examples reference cooking (her interest), reading passage uses restaurant scenario. "This would have taken you 20 minutes."
 
 5. **Edit and refine** (30s): Edit a vocabulary word, regenerate the exercises section with "make it easier." "You're in control. The AI proposes, you decide."
 
-6. **Export** (15s): Click "Export PDF," show the clean printable. "Ready for your next class."
+6. **Two exports** (20s): Click "Export PDF > Student Handout," show the clean printable without answers. Then "Teacher Copy" with answer keys and timing. "One for you, one for the student."
 
-7. **Student history** (15s): Show lesson notes from a previous lesson on the student profile. "It remembers what you covered."
+7. **Adapt for Pedro** (30s): Click "Adapt for Another Student," select Pedro (A2, English speaker, likes football). Watch the lesson regenerate at A2 with football examples. "Same topic, different student, zero extra work."
+
+8. **Student history** (20s): Show lesson notes from a previous lesson on Maria's profile. "It remembers what you covered."
+
+9. **What's next?** (15s): Click "Suggest Next Topic" on Maria's profile. Show 3 AI suggestions with rationale (e.g., "Maria hasn't covered future tenses yet"). Click one to pre-fill a new lesson. "It thinks ahead so you don't have to."
 
 **Seed data to prepare:**
 - 3-5 realistic student profiles with varied levels (A1 to C1), languages, interests, and weaknesses
-- 2-3 completed lessons with generated content and lesson notes
+- 2-3 completed lessons with generated content and lesson notes (at least one per student, so "Suggest Next Topic" has context)
 - Teacher profile with languages and preferred style set
+- At least one lesson with content blocks suitable for demonstrating the "Adapt for Another Student" flow
 
 **Talking points for the conversation after the demo:**
 - What features would be most useful in your daily teaching?
@@ -718,7 +804,7 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 - How do you currently prepare lessons? (understand the workflow we're replacing)
 - Would your teacher friends pay for this? At what price point?
 - What would you want to customize (lesson structure, exercise types, output language)?
-- Any content types we're missing? (pronunciation guides, cultural notes, reading comprehension?)
+- Any content types we're missing? (pronunciation guides, cultural notes, writing prompts?)
 - How important is student-facing features? (sharing materials, homework portal, progress tracking)
 - Mobile usage: do you prep lessons on your phone?
 
@@ -756,9 +842,11 @@ T11 ──────────────────┤                   
 T14 + T13 ──── T15 (lesson editor AI UI) ──── T16 (full lesson)│
                       │                                        │
                       ├── T17 (PDF export, needs content)      │
-                      └── T15 also enables T21 (regen w/ direction)
+                      ├── T21 (regen w/ direction, needs T15)  │
+                      └── T24 (adapt lesson, needs T16)        │
                                                                │
 T10 ──── T18 (student lesson notes, needs enriched profiles)   │
+               └── T25 (suggest next topic, needs T18 + T11)   │
                                                                │
 T19 (dashboard v2) ── independent                              │
 T20 (brand polish) ── independent                              │
@@ -773,9 +861,10 @@ T23 (demo prep) ── LAST, after all others ───────────�
 3. T13 + T14 (parallel)
 4. T15
 5. T16 + T17 (parallel)
-6. T18 + T19 (parallel)
-7. T20, T21, T22 (as time allows)
-8. T23 (always last)
+6. T18 + T19 + T21 (parallel)
+7. T24 + T25 (parallel, after T16 and T18)
+8. T20, T22 (as time allows)
+9. T23 (always last)
 
 ---
 
@@ -794,11 +883,15 @@ T23 (demo prep) ── LAST, after all others ───────────�
 4. Generate vocabulary for one section, confirm streaming display
 5. Insert generated content, confirm it persists on refresh
 6. Edit generated content, confirm "modified" indicator
-7. Regenerate section, confirm new content replaces old
-8. Click "Generate Full Lesson," confirm all 5 sections populated
-9. Export PDF, confirm clean formatting with vocabulary table
-10. Add lesson notes, confirm they appear in student's lesson history
-11. Return to dashboard, confirm recent lessons shown
+7. Regenerate section with "make it easier" modifier, confirm new content at lower complexity
+8. Click "Generate Full Lesson," confirm all 5 sections populated (including reading passage)
+9. Export Teacher PDF, confirm answer keys and timing present
+10. Export Student PDF, confirm no answer keys, no teacher notes
+11. Click "Adapt for Another Student," select different student/level, confirm new lesson with regenerated content
+12. Add lesson notes, confirm they appear in student's lesson history
+13. Click "Suggest Next Topic" on student profile, confirm 3 suggestions with rationale appear
+14. Click "Create Lesson" on a suggestion, confirm lesson pre-filled with topic and student
+15. Return to dashboard, confirm recent lessons shown
 
 ### Quality bar
 - AI-generated content must be actually usable by a teacher (not generic filler)
