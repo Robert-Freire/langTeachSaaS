@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getStudyLesson } from '../api/lessons'
 import { getRenderer } from '../components/lesson/contentRegistry'
+import { ContentErrorBoundary } from '../components/lesson/ContentErrorBoundary'
 
 export default function StudyView() {
   const { id } = useParams<{ id: string }>()
@@ -57,10 +58,12 @@ export default function StudyView() {
             const renderer = getRenderer(block.blockType)
             return (
               <div key={block.id} className="bg-white border border-zinc-100 rounded-lg p-4">
-                <renderer.Student
-                  rawContent={block.displayContent}
-                  parsedContent={block.parsedContent}
-                />
+                <ContentErrorBoundary blockType={block.blockType}>
+                  <renderer.Student
+                    rawContent={block.displayContent}
+                    parsedContent={block.parsedContent}
+                  />
+                </ContentErrorBoundary>
               </div>
             )
           })}

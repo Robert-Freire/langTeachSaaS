@@ -8,6 +8,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getRenderer } from './contentRegistry'
+import { ContentErrorBoundary } from './ContentErrorBoundary'
 
 interface ContentBlockProps {
   block: ContentBlockDto
@@ -35,6 +36,7 @@ export function ContentBlock({
   const actionInProgress = useRef(false)
 
   const storedValue = block.editedContent ?? block.generatedContent
+  const isDirty = value !== storedValue
 
   useEffect(() => {
     setValue(block.editedContent ?? block.generatedContent)
@@ -70,6 +72,7 @@ export function ContentBlock({
 
   const handleReset = async () => {
     actionInProgress.current = false
+    if (isDirty && !window.confirm('You have unsaved changes. Discard them and reset to original?')) return
     setResetting(true)
     setActionError(null)
     try {
@@ -85,6 +88,7 @@ export function ContentBlock({
 
   const handleDelete = async () => {
     actionInProgress.current = false
+    if (isDirty && !window.confirm('You have unsaved changes. Discard them and remove this block?')) return
     setDeleting(true)
     setActionError(null)
     try {
@@ -96,8 +100,11 @@ export function ContentBlock({
     }
   }
 
-  const handleRegenerate = () => {
+  const handleRegenerate = async () => {
     actionInProgress.current = false
+    if (isDirty) {
+      await doSave(value)
+    }
     onRegenerate(block.blockType, block.generationParams)
   }
 
@@ -119,8 +126,10 @@ export function ContentBlock({
           AI-generated
         </Badge>
         <span className="text-xs text-zinc-400 capitalize">{block.blockType}</span>
-        {block.isEdited && (
-          <span className="text-xs text-amber-600 font-medium">Modified</span>
+        {(block.isEdited || isDirty) && (
+          <span className="text-xs text-amber-600 font-medium">
+            {isDirty ? 'Unsaved changes' : 'Modified'}
+          </span>
         )}
         {saving && <span className="text-xs text-zinc-400">Saving...</span>}
 
@@ -144,19 +153,21 @@ export function ContentBlock({
       </div>
 
       {/* Content area */}
-      {mode === 'edit' && (
-        <renderer.Editor
-          rawContent={value}
-          parsedContent={parsedContent}
-          onChange={(newRaw) => {
-            setValue(newRaw)
-            if (actionError) setActionError(null)
-          }}
-        />
-      )}
-      {mode === 'preview' && (
-        <renderer.Preview rawContent={value} parsedContent={parsedContent} />
-      )}
+      <ContentErrorBoundary blockType={block.blockType}>
+        {mode === 'edit' && (
+          <renderer.Editor
+            rawContent={value}
+            parsedContent={parsedContent}
+            onChange={(newRaw) => {
+              setValue(newRaw)
+              if (actionError) setActionError(null)
+            }}
+          />
+        )}
+        {mode === 'preview' && (
+          <renderer.Preview rawContent={value} parsedContent={parsedContent} />
+        )}
+      </ContentErrorBoundary>
 
       {/* Action buttons */}
       <div className="flex items-center gap-2 flex-wrap">
@@ -172,7 +183,7 @@ export function ContentBlock({
         >
           Regenerate
         </Button>
-        {block.isEdited && (
+        {(block.isEdited || isDirty) && (
           <Button
             variant="outline"
             size="sm"

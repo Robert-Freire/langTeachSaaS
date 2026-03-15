@@ -11,6 +11,7 @@ import {
   getContentBlocks,
   type ContentBlockDto,
 } from '../api/generate'
+import type { ContentBlockType } from '../types/contentTypes'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -82,7 +83,7 @@ export default function LessonEditor() {
   // Which section has the generate panel open (by SectionType)
   const [generateOpen, setGenerateOpen] = useState<SectionType | null>(null)
   // When regenerating: which block is being replaced
-  const [regenerateParams, setRegenerateParams] = useState<{ sectionType: SectionType; blockType: string; style?: string } | null>(null)
+  const [regenerateParams, setRegenerateParams] = useState<{ sectionType: SectionType; blockType: ContentBlockType; style?: string } | null>(null)
 
   const { data: lesson, isLoading, isError } = useQuery({
     queryKey: ['lesson', id],
@@ -130,7 +131,7 @@ export default function LessonEditor() {
     return () => { cancelled = true }
   }, [id])
 
-  const { mutate: doUpdate } = useMutation({
+  const { mutate: doUpdate, isPending: isUpdating } = useMutation({
     mutationFn: (data: Parameters<typeof updateLesson>[1]) => updateLesson(id!, data),
     onSuccess: (updated) => {
       queryClient.setQueryData(['lesson', id], updated)
@@ -344,8 +345,8 @@ export default function LessonEditor() {
           </Button>
 
           <button
-            onClick={() => { if (!isSaving) navigate(`/lessons/${id}/study`) }}
-            disabled={isSaving}
+            onClick={() => { if (!isSaving && !isUpdating) navigate(`/lessons/${id}/study`) }}
+            disabled={isSaving || isUpdating}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="preview-student-btn"
           >
@@ -505,7 +506,7 @@ export default function LessonEditor() {
                       if (params) {
                         try { style = (JSON.parse(params) as { style?: string }).style } catch { /* ignore */ }
                       }
-                      setRegenerateParams({ sectionType: type, blockType, style })
+                      setRegenerateParams({ sectionType: type, blockType: blockType as ContentBlockType, style })
                       setGenerateOpen(type)
                     }}
                   />
