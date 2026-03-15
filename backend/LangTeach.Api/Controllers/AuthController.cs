@@ -8,6 +8,9 @@ namespace LangTeach.Api.Controllers;
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
+    private const string CustomEmailClaim = "https://langteach.app/email";
+    private const string CustomNameClaim = "https://langteach.app/name";
+
     private readonly IProfileService _profileService;
     private readonly IUserInfoService _userInfoService;
     private readonly ILogger<AuthController> _logger;
@@ -34,8 +37,14 @@ public class AuthController : ControllerBase
 
     private async Task<Auth0UserInfo> ResolveUserInfoAsync()
     {
-        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email") ?? "";
-        var name  = User.FindFirstValue(ClaimTypes.Name)  ?? User.FindFirstValue("name")  ?? "";
+        var email = User.FindFirstValue(ClaimTypes.Email)
+                 ?? User.FindFirstValue("email")
+                 ?? User.FindFirstValue(CustomEmailClaim)
+                 ?? "";
+        var name  = User.FindFirstValue(ClaimTypes.Name)
+                 ?? User.FindFirstValue("name")
+                 ?? User.FindFirstValue(CustomNameClaim)
+                 ?? "";
         if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(name)) return new Auth0UserInfo(email, name);
 
         var authHeader = Request.Headers.Authorization.ToString();

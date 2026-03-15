@@ -7,6 +7,7 @@
 - [Dev workflow conventions](project_langteach_dev_conventions.md) — local dev setup, ports, Auth0 tenant, Playwright, logs
 - [Design system decisions](project_langteach_design_system.md) — component library, colors, layout rationale, infrastructure notes
 - [Demo audience and goals](project_langteach_demo_audience.md) — brother as potential PM, show teacher-to-student loop
+- [Flaky e2e test analysis](project_flaky_tests_analysis.md) — registration and typed-content-view tests fail on fresh DB (Auth0 unreachable from Docker, AI response format)
 
 ## Feedback
 - [Task start workflow](feedback_task_branch_workflow.md) — always pull main and create the feature branch before starting any task

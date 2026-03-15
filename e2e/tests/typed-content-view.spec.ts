@@ -1,12 +1,14 @@
 import { test, expect } from '@playwright/test'
 import { createAuthenticatedContext } from '../helpers/auth-helper'
 import { approveTeacherByAuth0Id, getTestAuth0UserId } from '../helpers/db-helper'
-import { TEST_TIMEOUT, AI_STREAM_TIMEOUT, NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
+import { mockAiStream, VOCABULARY_FIXTURE } from '../helpers/mock-ai-stream'
+import { TEST_TIMEOUT, NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
 
 test('vocabulary renders as table and student preview shows study view', async ({ browser }) => {
   test.setTimeout(TEST_TIMEOUT)
   const context = await createAuthenticatedContext(browser)
   const page = await context.newPage()
+  await mockAiStream(page, VOCABULARY_FIXTURE)
 
   // Create a lesson
   await page.goto('/lessons')
@@ -52,7 +54,7 @@ test('vocabulary renders as table and student preview shows study view', async (
   await page.getByTestId('generate-btn').click()
 
   // Wait for streaming to complete
-  await page.getByTestId('insert-btn').waitFor({ state: 'visible', timeout: AI_STREAM_TIMEOUT })
+  await page.getByTestId('insert-btn').waitFor({ state: 'visible', timeout: FEEDBACK_TIMEOUT })
   await page.getByTestId('insert-btn').click()
 
   // Content block should appear
