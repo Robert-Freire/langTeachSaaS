@@ -128,16 +128,10 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
 
-  if (!isVocabularyContent(parsedContent)) {
-    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
-  }
-
-  const items = parsedContent.items
-  if (items.length === 0) {
-    return <p className="text-sm text-zinc-500 italic">No vocabulary items yet.</p>
-  }
-
-  const item = items[currentIndex]
+  const isVocab = isVocabularyContent(parsedContent)
+  const items = isVocab ? parsedContent.items : []
+  const safeIndex = Math.min(currentIndex, Math.max(0, items.length - 1))
+  const item = items[safeIndex]
 
   const flip = useCallback(() => setFlipped(f => !f), [])
   const prev = useCallback(() => {
@@ -159,10 +153,18 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     return () => window.removeEventListener('keydown', handler)
   }, [prev, next, flip])
 
+  if (!isVocab) {
+    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
+  }
+
+  if (items.length === 0) {
+    return <p className="text-sm text-zinc-500 italic">No vocabulary items yet.</p>
+  }
+
   return (
     <div className="flex flex-col items-center gap-4 py-4" data-testid="flashcard-container">
       <div className="text-sm text-zinc-500" data-testid="flashcard-progress">
-        {currentIndex + 1} / {items.length}
+        {safeIndex + 1} / {items.length}
       </div>
 
       <div
@@ -210,7 +212,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
       <div className="flex gap-4">
         <button
           onClick={prev}
-          disabled={currentIndex === 0}
+          disabled={safeIndex === 0}
           className="px-4 py-2 text-sm font-medium rounded-lg border border-zinc-300 bg-white hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           data-testid="flashcard-prev"
         >
@@ -218,7 +220,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
         </button>
         <button
           onClick={next}
-          disabled={currentIndex === items.length - 1}
+          disabled={safeIndex === items.length - 1}
           className="px-4 py-2 text-sm font-medium rounded-lg border border-zinc-300 bg-white hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           data-testid="flashcard-next"
         >
