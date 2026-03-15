@@ -161,6 +161,8 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   }, [items.length])
 
   const handleContainerKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement
+    if (target.closest('button, a, input, textarea, select')) return
     if (e.key === 'ArrowLeft') { e.preventDefault(); prev() }
     else if (e.key === 'ArrowRight') { e.preventDefault(); next() }
     else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip() }
@@ -223,6 +225,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
 
       <div className="flex gap-4">
         <button
+          type="button"
           onClick={prev}
           disabled={safeIndex === 0}
           className="px-4 py-2 text-sm font-medium rounded-lg border border-zinc-300 bg-white hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -231,6 +234,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
           ← Previous
         </button>
         <button
+          type="button"
           onClick={next}
           disabled={safeIndex === items.length - 1}
           className="px-4 py-2 text-sm font-medium rounded-lg border border-zinc-300 bg-white hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
