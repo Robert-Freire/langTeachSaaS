@@ -24,19 +24,20 @@ public class ProfileController : ControllerBase
 
     private string Auth0Id => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-    private async Task<string> ResolveEmailAsync()
+    private async Task<Auth0UserInfo> ResolveUserInfoAsync()
     {
         var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email") ?? "";
-        if (!string.IsNullOrEmpty(email)) return email;
+        if (!string.IsNullOrEmpty(email)) return new Auth0UserInfo(email, "");
 
         var token = Request.Headers.Authorization.ToString()["Bearer ".Length..].Trim();
-        return await _userInfoService.GetEmailAsync(token);
+        return await _userInfoService.GetUserInfoAsync(token);
     }
 
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        await _profileService.UpsertTeacherAsync(Auth0Id, await ResolveEmailAsync());
+        var userInfo = await ResolveUserInfoAsync();
+        await _profileService.UpsertTeacherAsync(Auth0Id, userInfo.Email, userInfo.Name);
         var profile = await _profileService.GetProfileAsync(Auth0Id);
         _logger.LogInformation("GET /api/profile. TeacherId={TeacherId}", profile!.Id);
         return Ok(profile);
@@ -52,7 +53,8 @@ public class ProfileController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        await _profileService.UpsertTeacherAsync(Auth0Id, await ResolveEmailAsync());
+        var userInfo = await ResolveUserInfoAsync();
+        await _profileService.UpsertTeacherAsync(Auth0Id, userInfo.Email, userInfo.Name);
         var updated = await _profileService.UpdateProfileAsync(Auth0Id, request);
         _logger.LogInformation("PUT /api/profile. TeacherId={TeacherId} DisplayName={DisplayName}",
             updated.Id, updated.DisplayName);

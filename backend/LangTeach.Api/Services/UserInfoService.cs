@@ -3,9 +3,11 @@ using System.Text.Json;
 
 namespace LangTeach.Api.Services;
 
+public record Auth0UserInfo(string Email, string Name);
+
 public interface IUserInfoService
 {
-    Task<string> GetEmailAsync(string bearerToken);
+    Task<Auth0UserInfo> GetUserInfoAsync(string bearerToken);
 }
 
 public class UserInfoService : IUserInfoService
@@ -21,7 +23,7 @@ public class UserInfoService : IUserInfoService
         _logger = logger;
     }
 
-    public async Task<string> GetEmailAsync(string bearerToken)
+    public async Task<Auth0UserInfo> GetUserInfoAsync(string bearerToken)
     {
         try
         {
@@ -30,16 +32,17 @@ public class UserInfoService : IUserInfoService
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
 
             var response = await client.GetStringAsync($"https://{domain}/userinfo");
-            var doc = JsonDocument.Parse(response);
+            var doc      = JsonDocument.Parse(response);
 
-            return doc.RootElement.TryGetProperty("email", out var emailProp)
-                ? emailProp.GetString() ?? ""
-                : "";
+            var email = doc.RootElement.TryGetProperty("email", out var emailProp) ? emailProp.GetString() ?? "" : "";
+            var name  = doc.RootElement.TryGetProperty("name",  out var nameProp)  ? nameProp.GetString()  ?? "" : "";
+
+            return new Auth0UserInfo(email, name);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch email from /userinfo — teacher will be stored without email.");
-            return "";
+            _logger.LogWarning(ex, "Failed to fetch user info from /userinfo.");
+            return new Auth0UserInfo("", "");
         }
     }
 }

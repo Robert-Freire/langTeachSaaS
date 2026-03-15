@@ -22,22 +22,22 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     public async Task<IActionResult> Me()
     {
-        var sub   = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
-        var email = await ResolveEmailAsync();
+        var sub      = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+        var userInfo = await ResolveUserInfoAsync();
 
-        _logger.LogInformation("Auth/Me called. Sub={Sub} Email={Email}", sub, email);
+        _logger.LogInformation("Auth/Me called. Sub={Sub} Email={Email}", sub, userInfo.Email);
 
-        await _profileService.UpsertTeacherAsync(sub, email);
+        await _profileService.UpsertTeacherAsync(sub, userInfo.Email, userInfo.Name);
 
-        return Ok(new { sub, email });
+        return Ok(new { sub, email = userInfo.Email });
     }
 
-    private async Task<string> ResolveEmailAsync()
+    private async Task<Auth0UserInfo> ResolveUserInfoAsync()
     {
         var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email") ?? "";
-        if (!string.IsNullOrEmpty(email)) return email;
+        if (!string.IsNullOrEmpty(email)) return new Auth0UserInfo(email, "");
 
         var token = Request.Headers.Authorization.ToString()["Bearer ".Length..].Trim();
-        return await _userInfoService.GetEmailAsync(token);
+        return await _userInfoService.GetUserInfoAsync(token);
     }
 }
