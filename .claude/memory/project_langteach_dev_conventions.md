@@ -44,6 +44,18 @@ Enabling only one gives: `Client is not authorized to access resource server "ht
 - Planned for T4: `auth-helper.ts` — reusable authenticated browser context used by all future tests
 - All tasks T5+ must ship a Playwright test using `auth-helper.ts`
 
+## AI Integration Tests
+
+Tests decorated with `[SkipIfNoClaudeApiKey]` are **opt-in only** — skipped by default in CI and plain `dotnet test` runs.
+
+To run them locally (hits Claude API, consumes tokens):
+```powershell
+$env:AI_INTEGRATION_TESTS = "1"; dotnet test --project backend/LangTeach.Api.Tests
+```
+
+All AI integration tests use `ClaudeModel.Haiku` regardless of the production model, to minimize cost.
+The Claude API key is read from .NET user secrets (set via `dotnet user-secrets set "Claude:ApiKey" "sk-ant-..."`) — never committed to the repo.
+
 ## Logs
 - Backend: `backend/LangTeach.Api/logs/api-YYYY-MM-DD.log` (rolling daily, Serilog)
 - Frontend: browser DevTools console, prefixed `[TIMESTAMP] [LEVEL] [Context]`
