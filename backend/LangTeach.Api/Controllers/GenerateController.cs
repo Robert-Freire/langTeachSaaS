@@ -80,14 +80,14 @@ public class GenerateController : ControllerBase
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
 
-        var teacher = await _db.Teachers.FindAsync([teacherId], ct);
+        var teacher = await _db.Teachers.FindAsync(new object[] { teacherId }, ct);
         if (teacher is null || !teacher.IsApproved)
         {
             _logger.LogWarning("Generate/{BlockType} rejected: teacher not approved. TeacherId={TeacherId}", blockType, teacherId);
             return Forbid();
         }
 
-        var lesson = await _db.Lessons.FindAsync([request.LessonId], ct);
+        var lesson = await _db.Lessons.FindAsync(new object[] { request.LessonId }, ct);
         if (lesson is null || lesson.TeacherId != teacherId || lesson.IsDeleted)
         {
             _logger.LogWarning("Generate/{BlockType} lesson not found. LessonId={LessonId} TeacherId={TeacherId}", blockType, request.LessonId, teacherId);
