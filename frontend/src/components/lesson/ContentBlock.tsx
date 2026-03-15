@@ -56,8 +56,9 @@ export function ContentBlock({
     try {
       const updated = await updateEditedContent(lessonId, block.id, value)
       onUpdate(updated)
+      setActionError(null)
     } catch {
-      // non-fatal: saved indicator simply won't show; user can retry by blurring again
+      setActionError('Save failed. Your changes are local only — click away to retry.')
     } finally {
       setSaving(false)
     }
@@ -119,7 +120,7 @@ export function ContentBlock({
 
       <Textarea
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => { setValue(e.target.value); if (actionError) setActionError(null) }}
         onBlur={handleBlur}
         rows={6}
         className="resize-none text-sm"
