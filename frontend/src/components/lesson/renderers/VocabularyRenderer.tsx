@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { isVocabularyContent } from '../../../types/contentTypes'
 import type { VocabularyItem } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
@@ -73,7 +73,9 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
               {TABLE_HEADERS.map(h => (
                 <th key={h} className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">{h}</th>
               ))}
-              <th className="border border-zinc-200 px-3 py-2 w-10" />
+              <th className="border border-zinc-200 px-3 py-2 w-10">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -93,8 +95,10 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
                 </td>
                 <td className="border border-zinc-200 p-1 text-center">
                   <button
+                    type="button"
                     onClick={() => handleRemove(i)}
                     className="text-zinc-400 hover:text-red-500 transition-colors px-1"
+                    aria-label="Remove word"
                     title="Remove word"
                     data-testid={`vocab-remove-${i}`}
                   >
@@ -107,6 +111,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
         </table>
       </div>
       <button
+        type="button"
         onClick={handleAdd}
         className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
         data-testid="vocab-add-word"
@@ -155,16 +160,10 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     setCurrentIndex(i => Math.min(items.length - 1, i + 1))
   }, [items.length])
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-      if (e.key === 'ArrowLeft') prev()
-      else if (e.key === 'ArrowRight') next()
-      else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip() }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+  const handleContainerKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prev() }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); next() }
+    else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip() }
   }, [prev, next, flip])
 
   if (!isVocab) {
@@ -176,17 +175,20 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-4 py-4" data-testid="flashcard-container">
+    <div
+      className="flex flex-col items-center gap-4 py-4 focus:outline-none"
+      data-testid="flashcard-container"
+      tabIndex={0}
+      onKeyDown={handleContainerKeyDown}
+    >
       <div className="text-sm text-zinc-500" data-testid="flashcard-progress">
         {safeIndex + 1} / {items.length}
       </div>
 
       <div
-        className="w-full max-w-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-xl"
+        className="w-full max-w-md cursor-pointer rounded-xl"
         style={{ perspective: '800px' }}
         onClick={flip}
-        onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip() } }}
-        tabIndex={0}
         role="button"
         aria-label={flipped ? `Flashcard showing definition for ${item.word}, click to flip` : `Flashcard showing ${item.word}, click to flip`}
         data-testid="flashcard-card"
