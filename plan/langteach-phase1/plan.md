@@ -22,11 +22,11 @@
 - [x] Azure infrastructure provisioned (SQL, Container Apps, Static Web Apps, Key Vault, Storage)
 - [x] Auth0 configured with email/password and Google OAuth
 - [x] Teacher can register, log in, and log out
-- [ ] Teacher profile create/edit (languages taught, CEFR levels, preferred style)
-- [ ] Student profiles CRUD (name, level, interests, notes)
-- [ ] Lesson CRUD with structured sections and template selection
-- [ ] Lesson list with search and filter
-- [ ] CI/CD pipeline: push to main deploys to Azure
+- [x] Teacher profile create/edit (languages taught, CEFR levels, preferred style)
+- [x] Student profiles CRUD (name, level, interests, notes)
+- [x] Lesson CRUD with structured sections and template selection
+- [x] Lesson list with search and filter
+- [x] CI/CD pipeline: push to main deploys to Azure
 
 ---
 

@@ -8,21 +8,42 @@ type: project
 Tasks are numbered sequentially within a phase. Branch naming: `task/t<N>-<short-description>`.
 Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 
-## Phase 1 Task Status (as of 2026-03-14)
+## Phase 1 — COMPLETE (as of 2026-03-15)
 
 | Task | Description | Status |
 |------|-------------|--------|
-| T1 | Repository & Tooling Setup (monorepo, Docker, React, .NET 9) | DONE (2026-03-12) |
-| T2 | Azure Infrastructure (Bicep: Container Apps, SQL, SWA, Key Vault, Storage) | DONE (2026-03-13) |
-| T3 | Auth0 Setup & Integration (backend JWT, frontend Auth0Provider, Serilog, Playwright) | DONE — PR #2, login page confirmed working via Playwright |
-| T4 | Database Schema — EF Core migrations, Phase 1 tables, seed templates | DONE — PR #10 merged to main |
-| T5 | Teacher Profile API + UI | DONE — PR #11 merged to main |
-| T5.1 | Design System & UI Foundation (Tailwind, shadcn/ui, AppShell, restyle T5) | DONE — PR #12 open (rebased on main) |
-| T6 | Student Profiles API + UI | DONE — PR #13 open, all checks passed |
-| T7 | Lesson CRUD API | DONE — PR #20 merged to main (2026-03-14) |
-| T8 | Lesson UI (Planner) | IN REVIEW — PR #23 open, all checks passed (10/10 Playwright, 18/18 unit tests). |
-| T9 | CI/CD Pipeline (GitHub Actions) | pending |
-| T9.1 | Brand & Logo (icon, favicon, AppShell logomark) | pending — defer until T6-T8 done |
+| T1 | Repository & Tooling Setup | DONE |
+| T2 | Azure Infrastructure (Bicep, Container Apps, SQL, SWA, Key Vault) | DONE |
+| T3 | Auth0 Integration (JWT, Auth0Provider, Serilog, Playwright) | DONE |
+| T4 | Database Schema (EF Core migrations, seed templates) | DONE |
+| T5 | Teacher Profile API + UI | DONE |
+| T5.1 | Design System (Tailwind, shadcn/ui, AppShell) | DONE |
+| T6 | Student Profiles API + UI | DONE |
+| T7 | Lesson CRUD API | DONE |
+| T8 | Lesson UI (Planner, section editor, duplicate, publish) | DONE — PR #23 merged |
+| T9 | CI/CD Pipeline (GitHub Actions, ACR, OIDC) | DONE — PR #27 merged |
+| T9.1 | Brand & Logo | MOVED TO BETA T20 |
+
+## Beta Phase — CURRENT (as of 2026-03-15)
+
+**Next task: T10** (Student Profile Enrichment)
+
+| Task | Description | Status |
+|------|-------------|--------|
+| T10 | Student Profile Enrichment (NativeLanguage, LearningGoals, Weaknesses fields) | NEXT |
+| T11 | Claude API Client (IClaudeClient, model routing, error handling) | pending |
+| T12 | Prompt Construction Service (IPromptService, GenerationContext, quality validation) | pending |
+| T13 | Generation Endpoints (6x POST /api/generate/*) | pending |
+| T14 | Streaming SSE endpoint + useGenerate hook | pending |
+| T15 | Lesson Editor AI Integration (per-section generate, streaming UI, edit/regenerate) | pending |
+| T16 | One-Click Full Lesson Generation | pending |
+| T17 | PDF Export | pending |
+| T18 | Student Lesson Notes (post-lesson notes, lesson history on student profile) | pending |
+| T19 | Dashboard v2 (recent lessons, quick create, this week stats) | pending |
+| T20 | Brand & Visual Polish (icon, favicon, loading states — replaces T9.1) | pending |
+| T21 | Regenerate with Direction (make easier/harder/shorter/longer modifiers) | pending |
+| T22 | Interactive Exercise Rendering (fill-in-blank, MCQ, matching UI) | pending |
+| T23 | Beta Demo Preparation (seed data, demo script, talking points) | pending (always last) |
 
 ## Key T2 Deviations (important for future tasks)
 - Azure Container Apps (not App Service) — VS Enterprise subscription has zero VM quota in all regions
@@ -30,6 +51,12 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 - Key Vault integration deferred to T4 — Container Apps validates KV refs at deploy before RBAC is granted
 - KV name: `kv-lt-dev-5ba22u` (uniqueString suffix due to soft-delete collision)
 - App URL: `https://app-langteach-api-dev.purplewater-292509f3.northeurope.azurecontainerapps.io`
+
+## T9 Key Notes
+- ACR name: `crlangteachdev` / login server: `crlangteachdev.azurecr.io`
+- Backend CD: `az acr build` (builds in cloud) + `az containerapp update` — no Docker needed in runner
+- Frontend CD: pre-build in workflow, then `Azure/static-web-apps-deploy@v1` with `skip_app_build: true`
+- OIDC auth (not SP secret) — requires federated credential for `repo:Robert-Freire/langTeachSaaS:ref:refs/heads/main`
 
 ## T8 Key Notes
 - `LessonsController` email guard: use `?? ""` fallback (same as StudentsController) — e2e test user JWT has no email claim
@@ -41,7 +68,6 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 - `LessonUpdateResult` sealed record hierarchy (Success, NotFound, InvalidStudent) lives in `Services/LessonUpdateResult.cs` — use same pattern for any future service that needs discriminated outcomes
 - Template section seeding in tests: seed `LessonTemplate` directly via `_factory.Services.CreateScope()` + `AppDbContext` (SeedData does not run in Testing environment)
 - `UpdateLessonRequest.DurationMinutes` and `Status` are nullable — null means keep existing value
-- Issue #21 tracks adding `CancellationToken` to both `ILessonService` and `IStudentService`
 
 ## Key T6 Notes (important for T7/T8)
 - `PagedResult<T>` DTO is generic — reuse for T7 lessons list
@@ -50,11 +76,6 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 - EF Core InMemory dual-provider fix: directly register pre-built `DbContextOptions<AppDbContext>` singleton (don't call `AddDbContext` again in test factory — it stacks configure actions)
 - Button component uses Base UI (no `asChild`). For link-buttons, use `buttonVariants` directly on `<Link>` from react-router-dom
 - shadcn alert-dialog, select, textarea now installed in `frontend/src/components/ui/`
-
-## Phase 2 Plan (future)
-Full AI Core plan already written (T1-T8 internal tasks) but saved at WRONG location.
-Should be at: `plan\langteach-phase2\plan.md` inside the project vault.
-Was incorrectly saved at: `obsidianVault\Personal-AI-OS\Plans\langteach-phase2\plan.md`
 
 ## Key T4 Notes (important for T5+)
 - Student->Lesson FK is NoAction (not SetNull) — SQL Server multiple cascade path constraint. Nullify StudentId in service layer when soft-deleting students if needed.
