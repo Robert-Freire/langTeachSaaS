@@ -160,7 +160,7 @@ Props:
 ```
 
 Default task type per section:
-```
+```text
 WarmUp       -> conversation
 Presentation -> vocabulary
 Practice     -> exercises

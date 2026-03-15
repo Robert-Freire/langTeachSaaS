@@ -82,7 +82,7 @@ export default function LessonEditor() {
   // Which section has the generate panel open (by SectionType)
   const [generateOpen, setGenerateOpen] = useState<SectionType | null>(null)
   // When regenerating: which block is being replaced
-  const [regenerateParams, setRegenerateParams] = useState<{ sectionType: SectionType; blockType: string; existingParams: string | null } | null>(null)
+  const [regenerateParams, setRegenerateParams] = useState<{ sectionType: SectionType; blockType: string; style?: string } | null>(null)
 
   const { data: lesson, isLoading, isError } = useQuery({
     queryKey: ['lesson', id],
@@ -110,10 +110,12 @@ export default function LessonEditor() {
     }
   }, [lesson])
 
-  // Load content blocks once lesson id is available
+  // Load content blocks once lesson id is available; cleanup ignores stale responses
   useEffect(() => {
     if (!id) return
+    let cancelled = false
     getContentBlocks(id).then((blocks) => {
+      if (cancelled) return
       const grouped: Record<string, ContentBlockDto[]> = {}
       for (const b of blocks) {
         if (!b.lessonSectionId) continue
@@ -122,8 +124,10 @@ export default function LessonEditor() {
       }
       setContentBlocks(grouped)
     }).catch((err) => {
+      if (cancelled) return
       logger.warn('LessonEditor', 'failed to load content blocks', { id, err })
     })
+    return () => { cancelled = true }
   }, [id])
 
   const { mutate: doUpdate } = useMutation({
@@ -488,7 +492,11 @@ export default function LessonEditor() {
                     onUpdate={handleBlockUpdate}
                     onDelete={(blockId) => handleBlockDelete(blockId, sectionId!)}
                     onRegenerate={(blockType, params) => {
-                      setRegenerateParams({ sectionType: type, blockType, existingParams: params })
+                      let style: string | undefined
+                      if (params) {
+                        try { style = (JSON.parse(params) as { style?: string }).style } catch { /* ignore */ }
+                      }
+                      setRegenerateParams({ sectionType: type, blockType, style })
                       setGenerateOpen(type)
                     }}
                   />
@@ -500,6 +508,7 @@ export default function LessonEditor() {
                     sectionId={sectionId}
                     sectionType={type}
                     initialTaskType={regenerateParams?.sectionType === type ? regenerateParams.blockType : undefined}
+                    initialStyle={regenerateParams?.sectionType === type ? regenerateParams.style : undefined}
                     lessonContext={{
                       language: lesson.language,
                       cefrLevel: lesson.cefrLevel,

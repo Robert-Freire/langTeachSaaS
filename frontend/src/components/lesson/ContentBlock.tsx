@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   updateEditedContent,
   deleteContentBlock,
@@ -28,6 +28,8 @@ export function ContentBlock({
   const [saving, setSaving] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  // Prevents blur-save from firing when user is about to click an action button
+  const actionInProgress = useRef(false)
 
   const storedValue = block.editedContent ?? block.generatedContent
 
@@ -37,38 +39,48 @@ export function ContentBlock({
   }, [block.editedContent, block.generatedContent])
 
   const handleBlur = async () => {
+    if (actionInProgress.current) return
     if (value === storedValue) return
     setSaving(true)
     try {
       const updated = await updateEditedContent(lessonId, block.id, value)
       onUpdate(updated)
+    } catch {
+      // non-fatal: saved indicator simply won't show; user can retry by blurring again
     } finally {
       setSaving(false)
     }
   }
 
   const handleReset = async () => {
+    actionInProgress.current = false
     setResetting(true)
     try {
       const updated = await resetEditedContent(lessonId, block.id)
       setValue(updated.generatedContent)
       onUpdate(updated)
+    } catch {
+      // non-fatal
     } finally {
       setResetting(false)
     }
   }
 
   const handleDelete = async () => {
+    actionInProgress.current = false
     setDeleting(true)
     try {
       await deleteContentBlock(lessonId, block.id)
       onDelete(block.id)
+    } catch {
+      // non-fatal
     } finally {
       setDeleting(false)
     }
   }
 
   const handleRegenerate = () => {
+    actionInProgress.current = false
     onRegenerate(block.blockType, block.generationParams)
   }
 
@@ -105,6 +117,7 @@ export function ContentBlock({
         <Button
           variant="outline"
           size="sm"
+          onMouseDown={() => { actionInProgress.current = true }}
           onClick={handleRegenerate}
           className="text-xs h-7"
           data-testid="regenerate-btn"
@@ -115,6 +128,7 @@ export function ContentBlock({
           <Button
             variant="outline"
             size="sm"
+            onMouseDown={() => { actionInProgress.current = true }}
             onClick={handleReset}
             disabled={resetting}
             className="text-xs h-7"
@@ -124,6 +138,7 @@ export function ContentBlock({
           </Button>
         )}
         <button
+          onMouseDown={() => { actionInProgress.current = true }}
           onClick={handleDelete}
           disabled={deleting}
           className="text-xs text-zinc-400 underline hover:text-red-600 ml-auto"

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { SectionType } from '../../api/lessons'
 import {
   saveContentBlock,
@@ -39,6 +39,7 @@ interface GeneratePanelProps {
   sectionId: string
   sectionType: SectionType
   initialTaskType?: string
+  initialStyle?: string
   lessonContext: {
     language: string
     cefrLevel: string
@@ -55,27 +56,29 @@ export function GeneratePanel({
   sectionId,
   sectionType,
   initialTaskType,
+  initialStyle,
   lessonContext,
   onInsert,
   onClose,
 }: GeneratePanelProps) {
   const [taskType, setTaskType] = useState(initialTaskType ?? SECTION_DEFAULT_TASK[sectionType])
-  const [style, setStyle] = useState('Conversational')
+  const [style, setStyle] = useState(initialStyle ?? 'Conversational')
   const [inserting, setInserting] = useState(false)
   const [insertError, setInsertError] = useState<string | null>(null)
 
   const { status, output, error, generate, abort } = useGenerate()
 
+  const request: GenerateRequest = useMemo(() => ({
+    lessonId,
+    language: lessonContext.language,
+    cefrLevel: lessonContext.cefrLevel,
+    topic: lessonContext.topic,
+    style,
+    studentId: lessonContext.studentId ?? undefined,
+    existingNotes: lessonContext.existingNotes ?? undefined,
+  }), [lessonId, lessonContext, style])
+
   const handleGenerate = () => {
-    const request: GenerateRequest = {
-      lessonId,
-      language: lessonContext.language,
-      cefrLevel: lessonContext.cefrLevel,
-      topic: lessonContext.topic,
-      style,
-      studentId: lessonContext.studentId ?? undefined,
-      existingNotes: lessonContext.existingNotes ?? undefined,
-    }
     generate(taskType, request)
   }
 
@@ -84,15 +87,6 @@ export function GeneratePanel({
     setInserting(true)
     setInsertError(null)
     try {
-      const request: GenerateRequest = {
-        lessonId,
-        language: lessonContext.language,
-        cefrLevel: lessonContext.cefrLevel,
-        topic: lessonContext.topic,
-        style,
-        studentId: lessonContext.studentId ?? undefined,
-        existingNotes: lessonContext.existingNotes ?? undefined,
-      }
       const block = await saveContentBlock(lessonId, {
         lessonSectionId: sectionId,
         blockType: taskType,
