@@ -69,6 +69,7 @@ function MultiSelect({
     <div className="space-y-2">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
+          type="button"
           data-testid={triggerId}
           className="flex w-full max-w-sm items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-50"
         >
@@ -354,11 +355,12 @@ export default function StudentForm() {
             {/* Native Language */}
             <div className="space-y-1.5">
               <Label>Native Language</Label>
-              <Select value={nativeLanguage} onValueChange={(v) => setNativeLanguage(v ?? '')}>
+              <Select value={nativeLanguage || 'none'} onValueChange={(v) => setNativeLanguage(v === 'none' ? '' : (v ?? ''))}>
                 <SelectTrigger className="max-w-sm" data-testid="student-native-language">
                   <SelectValue placeholder="Select native language (optional)" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Not specified</SelectItem>
                   {LANGUAGES.map((lang) => (
                     <SelectItem key={lang} value={lang}>{lang}</SelectItem>
                   ))}
