@@ -70,11 +70,19 @@ public class ProfileService : IProfileService
     {
         var existing = await _db.Teachers
             .Where(t => t.Auth0UserId == auth0UserId)
-            .Select(t => new { t.Id })
             .FirstOrDefaultAsync();
 
         if (existing is not null)
+        {
+            if (!string.IsNullOrEmpty(email) && string.IsNullOrEmpty(existing.Email))
+            {
+                existing.Email = email;
+                existing.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+                _logger.LogInformation("Backfilled email for TeacherId={TeacherId}", existing.Id);
+            }
             return existing.Id;
+        }
 
         var displayName = email.Contains('@') ? email[..email.IndexOf('@')]
             : auth0UserId.Contains('|') ? auth0UserId[(auth0UserId.IndexOf('|') + 1)..]
