@@ -62,7 +62,19 @@ public class GenerateController : ControllerBase
             return;
         }
 
-        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id!, Email);
+        if (Auth0Id is null)
+        {
+            Response.StatusCode = 401;
+            return;
+        }
+
+        if (!ModelState.IsValid)
+        {
+            Response.StatusCode = 400;
+            return;
+        }
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
         var teacher = await _db.Teachers.FindAsync(new object[] { teacherId }, ct);
         if (teacher is null || !teacher.IsApproved)
         {
@@ -137,14 +149,14 @@ public class GenerateController : ControllerBase
         catch (ClaudeRateLimitException ex)
         {
             _logger.LogWarning(ex, "Stream/{TaskType} rate limited. LessonId={LessonId}", taskType, lesson.Id);
-            await Response.WriteAsync("data: {\"error\":\"rate_limit\"}\n\n", ct);
-            await Response.Body.FlushAsync(ct);
+            await Response.WriteAsync("data: {\"error\":\"rate_limit\"}\n\n", CancellationToken.None);
+            await Response.Body.FlushAsync(CancellationToken.None);
         }
         catch (ClaudeApiException ex)
         {
             _logger.LogError(ex, "Stream/{TaskType} provider error. LessonId={LessonId}", taskType, lesson.Id);
-            await Response.WriteAsync("data: {\"error\":\"provider_error\"}\n\n", ct);
-            await Response.Body.FlushAsync(ct);
+            await Response.WriteAsync("data: {\"error\":\"provider_error\"}\n\n", CancellationToken.None);
+            await Response.Body.FlushAsync(CancellationToken.None);
         }
     }
 

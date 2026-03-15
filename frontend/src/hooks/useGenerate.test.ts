@@ -88,6 +88,29 @@ describe('useGenerate', () => {
     expect(result.current.error).toContain('503')
   })
 
+  it('sets status to error when stream contains an error event', async () => {
+    server.use(
+      http.post(SSE_URL, () => {
+        const body = makeSseBody('data: {"error":"rate_limit"}\n\n')
+        return new HttpResponse(body, {
+          headers: { 'Content-Type': 'text/event-stream' },
+        })
+      }),
+    )
+
+    const { result } = renderHook(() => useGenerate())
+
+    act(() => {
+      result.current.generate('vocabulary', validRequest)
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('error'), {
+      timeout: 3000,
+    })
+
+    expect(result.current.error).toBe('rate_limit')
+  })
+
   it('resets status to idle when abort is called', async () => {
     server.use(
       http.post(SSE_URL, async () => {
