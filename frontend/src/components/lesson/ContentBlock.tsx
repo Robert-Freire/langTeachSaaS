@@ -5,9 +5,10 @@ import {
   resetEditedContent,
   type ContentBlockDto,
 } from '../../api/generate'
-import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import { getRenderer } from './contentRegistry'
 
 interface ContentBlockProps {
   block: ContentBlockDto
@@ -17,6 +18,8 @@ interface ContentBlockProps {
   onRegenerate: (blockType: string, generationParams: string | null) => void
 }
 
+type ViewMode = 'edit' | 'preview' | 'raw'
+
 export function ContentBlock({
   block,
   lessonId,
@@ -25,42 +28,52 @@ export function ContentBlock({
   onRegenerate,
 }: ContentBlockProps) {
   const [value, setValue] = useState(block.editedContent ?? block.generatedContent)
+  const [mode, setMode] = useState<ViewMode>('edit')
   const [saving, setSaving] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
-  // Prevents blur-save from firing when an action button is being activated
   const actionInProgress = useRef(false)
 
   const storedValue = block.editedContent ?? block.generatedContent
 
-  // Sync local value when block prop changes externally (e.g. after reset)
   useEffect(() => {
     setValue(block.editedContent ?? block.generatedContent)
   }, [block.editedContent, block.generatedContent])
 
-  // Set intent flag for keyboard activation (Enter/Space on action buttons)
-  const markActionIntentFromKeyboard = (e: KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      actionInProgress.current = true
-    }
-  }
-
-  const handleBlur = async (e: FocusEvent<HTMLTextAreaElement>) => {
-    // Cover keyboard/touch: if focus moved to an action button, suppress save
-    const nextFocused = e.relatedTarget as HTMLElement | null
-    if (nextFocused?.dataset.contentAction === 'true') return
-    if (actionInProgress.current) return
-    if (value === storedValue) return
+  const doSave = async (content: string) => {
+    if (content === storedValue) return
     setSaving(true)
     try {
-      const updated = await updateEditedContent(lessonId, block.id, value)
+      const updated = await updateEditedContent(lessonId, block.id, content)
       onUpdate(updated)
       setActionError(null)
     } catch {
       setActionError('Save failed. Your changes are local only — click away to retry.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleModeChange = async (newMode: ViewMode) => {
+    if (newMode === mode) return
+    if (mode !== 'preview' && !saving) {
+      await doSave(value)
+    }
+    setMode(newMode)
+  }
+
+  // Blur-save for raw textarea mode — suppressed when focus moves to an action button
+  const handleRawBlur = async (e: FocusEvent<HTMLTextAreaElement>) => {
+    const nextFocused = e.relatedTarget as HTMLElement | null
+    if (nextFocused?.dataset.contentAction === 'true') return
+    if (actionInProgress.current) return
+    await doSave(value)
+  }
+
+  const markActionIntentFromKeyboard = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      actionInProgress.current = true
     }
   }
 
@@ -86,7 +99,6 @@ export function ContentBlock({
     try {
       await deleteContentBlock(lessonId, block.id)
       onDelete(block.id)
-      // component unmounts here — no further state updates
     } catch {
       setDeleting(false)
       setActionError('Remove failed. Please try again.')
@@ -98,11 +110,15 @@ export function ContentBlock({
     onRegenerate(block.blockType, block.generationParams)
   }
 
+  const renderer = getRenderer(block.blockType)
+  const parsedContent = block.parsedContent
+
   return (
     <div
       className="border border-zinc-200 rounded-lg p-3 bg-white space-y-2"
       data-testid="content-block"
     >
+      {/* Header row */}
       <div className="flex items-center gap-2 flex-wrap">
         <Badge
           variant="outline"
@@ -116,17 +132,52 @@ export function ContentBlock({
           <span className="text-xs text-amber-600 font-medium">Modified</span>
         )}
         {saving && <span className="text-xs text-zinc-400">Saving...</span>}
+
+        {/* Mode toggle */}
+        <div className="ml-auto flex items-center gap-0.5 rounded border border-zinc-200 overflow-hidden">
+          {(['edit', 'preview', 'raw'] as ViewMode[]).map((m) => (
+            <button
+              key={m}
+              data-content-action="true"
+              onClick={() => handleModeChange(m)}
+              className={`px-2 py-0.5 text-xs transition-colors ${
+                mode === m
+                  ? 'bg-indigo-100 text-indigo-700 font-medium'
+                  : 'text-zinc-500 hover:bg-zinc-50'
+              }`}
+            >
+              {m === 'edit' ? 'Edit' : m === 'preview' ? 'Preview' : 'Raw'}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <Textarea
-        value={value}
-        onChange={(e) => { setValue(e.target.value); if (actionError) setActionError(null) }}
-        onBlur={handleBlur}
-        rows={6}
-        className="resize-none text-sm"
-        data-testid="content-block-textarea"
-      />
+      {/* Content area */}
+      {mode === 'edit' && (
+        <renderer.Editor
+          rawContent={value}
+          parsedContent={parsedContent}
+          onChange={(newRaw) => {
+            setValue(newRaw)
+            if (actionError) setActionError(null)
+          }}
+        />
+      )}
+      {mode === 'preview' && (
+        <renderer.Preview rawContent={value} parsedContent={parsedContent} />
+      )}
+      {mode === 'raw' && (
+        <Textarea
+          value={value}
+          onChange={(e) => { setValue(e.target.value); if (actionError) setActionError(null) }}
+          onBlur={(e) => handleRawBlur(e)}
+          rows={6}
+          className="resize-none text-sm"
+          data-testid="content-block-textarea"
+        />
+      )}
 
+      {/* Action buttons */}
       <div className="flex items-center gap-2 flex-wrap">
         <Button
           variant="outline"

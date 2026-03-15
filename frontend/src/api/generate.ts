@@ -1,4 +1,7 @@
 import { apiClient } from '../lib/apiClient'
+import type { ContentBlockType } from '../types/contentTypes'
+
+export type { ContentBlockType }
 
 export interface GenerateRequest {
   lessonId: string
@@ -15,11 +18,12 @@ export type GenerateStatus = 'idle' | 'streaming' | 'done' | 'error'
 export interface ContentBlockDto {
   id: string
   lessonSectionId: string | null
-  blockType: string
+  blockType: ContentBlockType
   generatedContent: string
   editedContent: string | null
   isEdited: boolean
   generationParams: string | null
+  parsedContent: unknown | null
   createdAt: string
 }
 

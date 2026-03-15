@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace LangTeach.Api.Controllers;
 
@@ -31,6 +32,22 @@ public class LessonContentBlocksController : ControllerBase
     private string? Auth0Id => User.FindFirstValue(ClaimTypes.NameIdentifier);
     private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
+    internal static object? TryParseContent(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return null;
+        var trimmed = content.Trim();
+        // Strip markdown code fences (e.g. ```json ... ```) that the AI may include
+        if (trimmed.StartsWith("```"))
+        {
+            var firstNewline = trimmed.IndexOf('\n');
+            var lastFence = trimmed.LastIndexOf("```");
+            if (firstNewline >= 0 && lastFence > firstNewline)
+                trimmed = trimmed[(firstNewline + 1)..lastFence].Trim();
+        }
+        try { return JsonSerializer.Deserialize<JsonElement>(trimmed); }
+        catch { return null; }
+    }
+
     private static ContentBlockDto ToDto(LessonContentBlock b) => new(
         b.Id,
         b.LessonSectionId,
@@ -39,6 +56,7 @@ public class LessonContentBlocksController : ControllerBase
         b.EditedContent,
         b.EditedContent != null,
         b.GenerationParams,
+        TryParseContent(b.EditedContent ?? b.GeneratedContent),
         b.CreatedAt);
 
     private async Task<(Guid teacherId, LessonContentBlock? block)> ResolveBlock(

@@ -6,6 +6,7 @@ using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Tests.Fixtures;
+using LangTeach.Api.Tests.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LangTeach.Api.Tests.Controllers;
@@ -106,9 +107,9 @@ public class GenerateControllerTests
         var response = await client.PostAsJsonAsync("/api/generate/vocabulary", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await response.Content.ReadFromJsonAsync<GenerationResultDto>();
+        var result = await response.Content.ReadFromJsonAsync<GenerationResultDto>(TestJsonOptions.Default);
         result.Should().NotBeNull();
-        result!.BlockType.Should().Be("vocabulary");
+        result!.BlockType.Should().Be(ContentBlockType.Vocabulary);
         result.GeneratedContent.Should().NotBeNullOrEmpty();
         result.Id.Should().NotBeEmpty();
 
@@ -117,7 +118,7 @@ public class GenerateControllerTests
         var block = db.LessonContentBlocks.FirstOrDefault(b => b.Id == result.Id);
         block.Should().NotBeNull();
         block!.LessonId.Should().Be(lessonId);
-        block.BlockType.Should().Be("vocabulary");
+        block.BlockType.Should().Be(ContentBlockType.Vocabulary);
     }
 
     [Fact]
@@ -140,8 +141,8 @@ public class GenerateControllerTests
         var response = await client.PostAsJsonAsync("/api/generate/grammar", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await response.Content.ReadFromJsonAsync<GenerationResultDto>();
-        result!.BlockType.Should().Be("grammar");
+        var result = await response.Content.ReadFromJsonAsync<GenerationResultDto>(TestJsonOptions.Default);
+        result!.BlockType.Should().Be(ContentBlockType.Grammar);
     }
 
     [Fact]

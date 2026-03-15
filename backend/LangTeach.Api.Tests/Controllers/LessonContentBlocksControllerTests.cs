@@ -5,6 +5,7 @@ using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Tests.Fixtures;
+using LangTeach.Api.Tests.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LangTeach.Api.Tests.Controllers;
@@ -79,17 +80,17 @@ public class LessonContentBlocksControllerTests
         var request = new SaveContentBlockRequest
         {
             LessonSectionId = null,
-            BlockType = "vocabulary",
+            BlockType = ContentBlockType.Vocabulary,
             GeneratedContent = "Word: travel. Definition: to go somewhere.",
             GenerationParams = null,
         };
 
-        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", request);
+        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", request, TestJsonOptions.Default);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var dto = await response.Content.ReadFromJsonAsync<ContentBlockDto>();
+        var dto = await response.Content.ReadFromJsonAsync<ContentBlockDto>(TestJsonOptions.Default);
         dto.Should().NotBeNull();
-        dto!.BlockType.Should().Be("vocabulary");
+        dto!.BlockType.Should().Be(ContentBlockType.Vocabulary);
         dto.GeneratedContent.Should().Be("Word: travel. Definition: to go somewhere.");
         dto.LessonSectionId.Should().BeNull();
         dto.EditedContent.Should().BeNull();
@@ -108,16 +109,35 @@ public class LessonContentBlocksControllerTests
         var request = new SaveContentBlockRequest
         {
             LessonSectionId = sectionId,
-            BlockType = "vocabulary",
+            BlockType = ContentBlockType.Vocabulary,
             GeneratedContent = "Generated vocabulary content.",
             GenerationParams = "{\"lessonId\":\"test\"}",
         };
 
-        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", request);
+        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", request, TestJsonOptions.Default);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var dto = await response.Content.ReadFromJsonAsync<ContentBlockDto>();
+        var dto = await response.Content.ReadFromJsonAsync<ContentBlockDto>(TestJsonOptions.Default);
         dto!.LessonSectionId.Should().Be(sectionId);
+    }
+
+    [Fact]
+    public async Task Post_InvalidBlockType_Returns400()
+    {
+        var auth0Id = "auth0|cb-post-invalid-type";
+        var email = "cb-post-invalid-type@example.com";
+        var (lessonId, _) = await SeedTeacherLessonAndSection(auth0Id, email);
+        var client = _factory.CreateAuthenticatedClient(auth0Id, email);
+
+        // Send raw JSON with an unrecognized block type string
+        var content = new StringContent(
+            "{\"blockType\":\"not-a-real-type\",\"generatedContent\":\"x\"}",
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        var response = await client.PostAsync($"/api/lessons/{lessonId}/content-blocks", content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]
@@ -128,19 +148,55 @@ public class LessonContentBlocksControllerTests
         var (lessonId, _) = await SeedTeacherLessonAndSection(auth0Id, email);
         var client = _factory.CreateAuthenticatedClient(auth0Id, email);
 
-        // Create two blocks
-        var req1 = new SaveContentBlockRequest { BlockType = "vocabulary", GeneratedContent = "First block." };
-        var req2 = new SaveContentBlockRequest { BlockType = "grammar", GeneratedContent = "Second block." };
-        await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", req1);
-        await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", req2);
+        var req1 = new SaveContentBlockRequest { BlockType = ContentBlockType.Vocabulary, GeneratedContent = "First block." };
+        var req2 = new SaveContentBlockRequest { BlockType = ContentBlockType.Grammar, GeneratedContent = "Second block." };
+        await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", req1, TestJsonOptions.Default);
+        await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", req2, TestJsonOptions.Default);
 
         var response = await client.GetAsync($"/api/lessons/{lessonId}/content-blocks");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var blocks = await response.Content.ReadFromJsonAsync<ContentBlockDto[]>();
+        var blocks = await response.Content.ReadFromJsonAsync<ContentBlockDto[]>(TestJsonOptions.Default);
         blocks.Should().HaveCount(2);
-        blocks![0].BlockType.Should().Be("vocabulary");
-        blocks[1].BlockType.Should().Be("grammar");
+        blocks![0].BlockType.Should().Be(ContentBlockType.Vocabulary);
+        blocks[1].BlockType.Should().Be(ContentBlockType.Grammar);
+    }
+
+    [Fact]
+    public async Task Get_ReturnsParsedContentForJsonBlocks()
+    {
+        var auth0Id = "auth0|cb-get-parsed";
+        var email = "cb-get-parsed@example.com";
+        var (lessonId, _) = await SeedTeacherLessonAndSection(auth0Id, email);
+        var client = _factory.CreateAuthenticatedClient(auth0Id, email);
+
+        var jsonContent = "{\"items\":[{\"word\":\"travel\",\"definition\":\"to go somewhere\"}]}";
+        var req = new SaveContentBlockRequest { BlockType = ContentBlockType.Vocabulary, GeneratedContent = jsonContent };
+        await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", req, TestJsonOptions.Default);
+
+        var response = await client.GetAsync($"/api/lessons/{lessonId}/content-blocks");
+        var blocks = await response.Content.ReadFromJsonAsync<ContentBlockDto[]>(TestJsonOptions.Default);
+
+        blocks.Should().HaveCount(1);
+        blocks![0].ParsedContent.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Get_ReturnsNullParsedContentForNonJsonBlocks()
+    {
+        var auth0Id = "auth0|cb-get-noparsed";
+        var email = "cb-get-noparsed@example.com";
+        var (lessonId, _) = await SeedTeacherLessonAndSection(auth0Id, email);
+        var client = _factory.CreateAuthenticatedClient(auth0Id, email);
+
+        var req = new SaveContentBlockRequest { BlockType = ContentBlockType.Grammar, GeneratedContent = "This is plain text, not JSON." };
+        await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", req, TestJsonOptions.Default);
+
+        var response = await client.GetAsync($"/api/lessons/{lessonId}/content-blocks");
+        var blocks = await response.Content.ReadFromJsonAsync<ContentBlockDto[]>(TestJsonOptions.Default);
+
+        blocks.Should().HaveCount(1);
+        blocks![0].ParsedContent.Should().BeNull();
     }
 
     [Fact]
@@ -167,8 +223,9 @@ public class LessonContentBlocksControllerTests
 
         var created = await (await client.PostAsJsonAsync(
             $"/api/lessons/{lessonId}/content-blocks",
-            new SaveContentBlockRequest { BlockType = "vocabulary", GeneratedContent = "Original." }
-        )).Content.ReadFromJsonAsync<ContentBlockDto>();
+            new SaveContentBlockRequest { BlockType = ContentBlockType.Vocabulary, GeneratedContent = "Original." },
+            TestJsonOptions.Default
+        )).Content.ReadFromJsonAsync<ContentBlockDto>(TestJsonOptions.Default);
 
         var editRequest = new UpdateEditedContentRequest { EditedContent = "Teacher edited this." };
         var response = await client.PutAsJsonAsync(
@@ -176,7 +233,7 @@ public class LessonContentBlocksControllerTests
             editRequest);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var updated = await response.Content.ReadFromJsonAsync<ContentBlockDto>();
+        var updated = await response.Content.ReadFromJsonAsync<ContentBlockDto>(TestJsonOptions.Default);
         updated!.EditedContent.Should().Be("Teacher edited this.");
         updated.IsEdited.Should().BeTrue();
         updated.GeneratedContent.Should().Be("Original.");
@@ -192,8 +249,9 @@ public class LessonContentBlocksControllerTests
 
         var created = await (await ownerClient.PostAsJsonAsync(
             $"/api/lessons/{lessonId}/content-blocks",
-            new SaveContentBlockRequest { BlockType = "vocabulary", GeneratedContent = "Content." }
-        )).Content.ReadFromJsonAsync<ContentBlockDto>();
+            new SaveContentBlockRequest { BlockType = ContentBlockType.Vocabulary, GeneratedContent = "Content." },
+            TestJsonOptions.Default
+        )).Content.ReadFromJsonAsync<ContentBlockDto>(TestJsonOptions.Default);
 
         var otherClient = _factory.CreateAuthenticatedClient("auth0|cb-put-other", "cb-put-other@example.com");
         var response = await otherClient.PutAsJsonAsync(
@@ -213,15 +271,16 @@ public class LessonContentBlocksControllerTests
 
         var created = await (await client.PostAsJsonAsync(
             $"/api/lessons/{lessonId}/content-blocks",
-            new SaveContentBlockRequest { BlockType = "vocabulary", GeneratedContent = "To be deleted." }
-        )).Content.ReadFromJsonAsync<ContentBlockDto>();
+            new SaveContentBlockRequest { BlockType = ContentBlockType.Vocabulary, GeneratedContent = "To be deleted." },
+            TestJsonOptions.Default
+        )).Content.ReadFromJsonAsync<ContentBlockDto>(TestJsonOptions.Default);
 
         var deleteResponse = await client.DeleteAsync(
             $"/api/lessons/{lessonId}/content-blocks/{created!.Id}");
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var listResponse = await client.GetAsync($"/api/lessons/{lessonId}/content-blocks");
-        var blocks = await listResponse.Content.ReadFromJsonAsync<ContentBlockDto[]>();
+        var blocks = await listResponse.Content.ReadFromJsonAsync<ContentBlockDto[]>(TestJsonOptions.Default);
         blocks.Should().NotContain(b => b.Id == created.Id);
     }
 
@@ -235,8 +294,9 @@ public class LessonContentBlocksControllerTests
 
         var created = await (await client.PostAsJsonAsync(
             $"/api/lessons/{lessonId}/content-blocks",
-            new SaveContentBlockRequest { BlockType = "vocabulary", GeneratedContent = "Original AI content." }
-        )).Content.ReadFromJsonAsync<ContentBlockDto>();
+            new SaveContentBlockRequest { BlockType = ContentBlockType.Vocabulary, GeneratedContent = "Original AI content." },
+            TestJsonOptions.Default
+        )).Content.ReadFromJsonAsync<ContentBlockDto>(TestJsonOptions.Default);
 
         await client.PutAsJsonAsync(
             $"/api/lessons/{lessonId}/content-blocks/{created!.Id}/edited-content",
@@ -246,7 +306,7 @@ public class LessonContentBlocksControllerTests
             $"/api/lessons/{lessonId}/content-blocks/{created.Id}/edited-content");
 
         resetResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var reset = await resetResponse.Content.ReadFromJsonAsync<ContentBlockDto>();
+        var reset = await resetResponse.Content.ReadFromJsonAsync<ContentBlockDto>(TestJsonOptions.Default);
         reset!.EditedContent.Should().BeNull();
         reset.IsEdited.Should().BeFalse();
         reset.GeneratedContent.Should().Be("Original AI content.");

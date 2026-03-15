@@ -1,6 +1,7 @@
 using Azure.Identity;
 using LangTeach.Api.AI;
 using LangTeach.Api.Data;
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.Services;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -63,7 +64,9 @@ builder.Services.AddAuthorization();
 
 // Require auth on all endpoints by default
 builder.Services.AddControllers(options =>
-    options.Filters.Add(new AuthorizeFilter()));
+    options.Filters.Add(new AuthorizeFilter()))
+    .AddJsonOptions(opts =>
+        opts.JsonSerializerOptions.Converters.Add(new ContentBlockTypeJsonConverter()));
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default") ?? ""));

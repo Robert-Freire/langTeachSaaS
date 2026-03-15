@@ -104,7 +104,11 @@ public class AppDbContext : DbContext
              .HasForeignKey(b => b.LessonSectionId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
-            e.Property(b => b.BlockType).HasMaxLength(50);
+            e.Property(b => b.BlockType)
+             .HasMaxLength(50)
+             .HasConversion(
+                 v => v.ToKebabCase(),
+                 v => ContentBlockTypeExtensions.FromKebabCase(v));
         });
     }
 }

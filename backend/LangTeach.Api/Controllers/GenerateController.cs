@@ -41,22 +41,23 @@ public class GenerateController : ControllerBase
     private string? Auth0Id => User.FindFirstValue(ClaimTypes.NameIdentifier);
     private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
-    private static readonly IReadOnlyDictionary<string, Func<IPromptService, GenerationContext, ClaudeRequest>> PromptBuilders =
-        new Dictionary<string, Func<IPromptService, GenerationContext, ClaudeRequest>>
+    private static readonly IReadOnlyDictionary<ContentBlockType, Func<IPromptService, GenerationContext, ClaudeRequest>> PromptBuilders =
+        new Dictionary<ContentBlockType, Func<IPromptService, GenerationContext, ClaudeRequest>>
         {
-            ["lesson-plan"]  = (svc, ctx) => svc.BuildLessonPlanPrompt(ctx),
-            ["vocabulary"]   = (svc, ctx) => svc.BuildVocabularyPrompt(ctx),
-            ["grammar"]      = (svc, ctx) => svc.BuildGrammarPrompt(ctx),
-            ["exercises"]    = (svc, ctx) => svc.BuildExercisesPrompt(ctx),
-            ["conversation"] = (svc, ctx) => svc.BuildConversationPrompt(ctx),
-            ["reading"]      = (svc, ctx) => svc.BuildReadingPrompt(ctx),
-            ["homework"]     = (svc, ctx) => svc.BuildHomeworkPrompt(ctx),
+            [ContentBlockType.LessonPlan]   = (svc, ctx) => svc.BuildLessonPlanPrompt(ctx),
+            [ContentBlockType.Vocabulary]   = (svc, ctx) => svc.BuildVocabularyPrompt(ctx),
+            [ContentBlockType.Grammar]      = (svc, ctx) => svc.BuildGrammarPrompt(ctx),
+            [ContentBlockType.Exercises]    = (svc, ctx) => svc.BuildExercisesPrompt(ctx),
+            [ContentBlockType.Conversation] = (svc, ctx) => svc.BuildConversationPrompt(ctx),
+            [ContentBlockType.Reading]      = (svc, ctx) => svc.BuildReadingPrompt(ctx),
+            [ContentBlockType.Homework]     = (svc, ctx) => svc.BuildHomeworkPrompt(ctx),
         };
 
     [HttpPost("{taskType}/stream")]
     public async Task Stream(string taskType, [FromBody] GenerateRequest request, CancellationToken ct)
     {
-        if (!PromptBuilders.TryGetValue(taskType, out var buildPrompt))
+        if (!ContentBlockTypeExtensions.TryFromKebabCase(taskType, out var blockTypeEnum) ||
+            !PromptBuilders.TryGetValue(blockTypeEnum, out var buildPrompt))
         {
             Response.StatusCode = 404;
             return;
@@ -164,35 +165,35 @@ public class GenerateController : ControllerBase
 
     [HttpPost("lesson-plan")]
     public Task<IActionResult> LessonPlan([FromBody] GenerateRequest request, CancellationToken ct) =>
-        Generate(request, "lesson-plan", ctx => _promptService.BuildLessonPlanPrompt(ctx), ct);
+        Generate(request, ContentBlockType.LessonPlan, ctx => _promptService.BuildLessonPlanPrompt(ctx), ct);
 
     [HttpPost("vocabulary")]
     public Task<IActionResult> Vocabulary([FromBody] GenerateRequest request, CancellationToken ct) =>
-        Generate(request, "vocabulary", ctx => _promptService.BuildVocabularyPrompt(ctx), ct);
+        Generate(request, ContentBlockType.Vocabulary, ctx => _promptService.BuildVocabularyPrompt(ctx), ct);
 
     [HttpPost("grammar")]
     public Task<IActionResult> Grammar([FromBody] GenerateRequest request, CancellationToken ct) =>
-        Generate(request, "grammar", ctx => _promptService.BuildGrammarPrompt(ctx), ct);
+        Generate(request, ContentBlockType.Grammar, ctx => _promptService.BuildGrammarPrompt(ctx), ct);
 
     [HttpPost("exercises")]
     public Task<IActionResult> Exercises([FromBody] GenerateRequest request, CancellationToken ct) =>
-        Generate(request, "exercises", ctx => _promptService.BuildExercisesPrompt(ctx), ct);
+        Generate(request, ContentBlockType.Exercises, ctx => _promptService.BuildExercisesPrompt(ctx), ct);
 
     [HttpPost("conversation")]
     public Task<IActionResult> Conversation([FromBody] GenerateRequest request, CancellationToken ct) =>
-        Generate(request, "conversation", ctx => _promptService.BuildConversationPrompt(ctx), ct);
+        Generate(request, ContentBlockType.Conversation, ctx => _promptService.BuildConversationPrompt(ctx), ct);
 
     [HttpPost("reading")]
     public Task<IActionResult> Reading([FromBody] GenerateRequest request, CancellationToken ct) =>
-        Generate(request, "reading", ctx => _promptService.BuildReadingPrompt(ctx), ct);
+        Generate(request, ContentBlockType.Reading, ctx => _promptService.BuildReadingPrompt(ctx), ct);
 
     [HttpPost("homework")]
     public Task<IActionResult> Homework([FromBody] GenerateRequest request, CancellationToken ct) =>
-        Generate(request, "homework", ctx => _promptService.BuildHomeworkPrompt(ctx), ct);
+        Generate(request, ContentBlockType.Homework, ctx => _promptService.BuildHomeworkPrompt(ctx), ct);
 
     private async Task<IActionResult> Generate(
         GenerateRequest request,
-        string blockType,
+        ContentBlockType blockType,
         Func<GenerationContext, ClaudeRequest> buildPrompt,
         CancellationToken ct)
     {

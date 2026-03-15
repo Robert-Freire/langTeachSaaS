@@ -1,4 +1,5 @@
 import { apiClient } from '../lib/apiClient'
+import type { ContentBlockType } from '../types/contentTypes'
 
 export type LessonStatus = 'Draft' | 'Published'
 export type SectionType = 'WarmUp' | 'Presentation' | 'Practice' | 'Production' | 'WrapUp'
@@ -112,5 +113,34 @@ export async function duplicateLesson(id: string): Promise<Lesson> {
 
 export async function getLessonTemplates(): Promise<LessonTemplate[]> {
   const res = await apiClient.get<LessonTemplate[]>('/api/lesson-templates')
+  return res.data
+}
+
+export interface StudyBlockDto {
+  id: string
+  blockType: ContentBlockType
+  parsedContent: unknown | null
+  displayContent: string
+}
+
+export interface StudySectionDto {
+  id: string
+  sectionType: string
+  orderIndex: number
+  notes: string | null
+  blocks: StudyBlockDto[]
+}
+
+export interface StudyLessonDto {
+  id: string
+  title: string
+  language: string
+  cefrLevel: string
+  topic: string
+  sections: StudySectionDto[]
+}
+
+export async function getStudyLesson(id: string): Promise<StudyLessonDto> {
+  const res = await apiClient.get<StudyLessonDto>(`/api/lessons/${id}/study`)
   return res.data
 }
