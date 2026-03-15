@@ -28,6 +28,7 @@ export function ContentBlock({
   const [saving, setSaving] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
   // Prevents blur-save from firing when user is about to click an action button
   const actionInProgress = useRef(false)
 
@@ -55,12 +56,13 @@ export function ContentBlock({
   const handleReset = async () => {
     actionInProgress.current = false
     setResetting(true)
+    setActionError(null)
     try {
       const updated = await resetEditedContent(lessonId, block.id)
       setValue(updated.generatedContent)
       onUpdate(updated)
     } catch {
-      // non-fatal
+      setActionError('Reset failed. Please try again.')
     } finally {
       setResetting(false)
     }
@@ -69,11 +71,13 @@ export function ContentBlock({
   const handleDelete = async () => {
     actionInProgress.current = false
     setDeleting(true)
+    setActionError(null)
     try {
       await deleteContentBlock(lessonId, block.id)
       onDelete(block.id)
     } catch {
-      // non-fatal
+      setDeleting(false)
+      setActionError('Remove failed. Please try again.')
     } finally {
       setDeleting(false)
     }
@@ -137,16 +141,22 @@ export function ContentBlock({
             {resetting ? 'Resetting...' : 'Reset to original'}
           </Button>
         )}
-        <button
+        <Button
+          variant="link"
+          size="sm"
           onMouseDown={() => { actionInProgress.current = true }}
           onClick={handleDelete}
           disabled={deleting}
-          className="text-xs text-zinc-400 underline hover:text-red-600 ml-auto"
+          className="text-xs text-zinc-400 hover:text-red-600 ml-auto h-auto p-0"
           data-testid="discard-btn"
         >
           {deleting ? 'Removing...' : 'Discard'}
-        </button>
+        </Button>
       </div>
+
+      {actionError && (
+        <p className="text-xs text-red-600">{actionError}</p>
+      )}
     </div>
   )
 }
