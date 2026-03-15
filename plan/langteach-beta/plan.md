@@ -31,7 +31,7 @@
 
 | Phase | Tasks | Status |
 |-------|-------|--------|
-| 2A Core Magic | T10-T16 | pending |
+| 2A Core Magic | T10, T10.1, T11-T16 | pending |
 | 2B Make It Real | T17-T19, T21, T24-T25 | pending |
 | 2C Polish | T20, T22 | pending |
 | Demo Prep | T23 | pending |
@@ -107,14 +107,43 @@ Add fields to the Student model that feed into AI prompts for personalization.
 - `Weaknesses` (string, nullable, JSON array): e.g. ["past tenses", "pronunciation", "articles"]. Lets the AI weave targeted practice into exercises.
 
 **UI changes:**
-- Add three fields to the student create/edit form (native language dropdown, learning goals multi-select, weaknesses free-text tags)
+- Add three fields to the student create/edit form (native language dropdown, learning goals multi-select, weaknesses multi-select)
 - Display new fields on student list cards
+
+**UI implementation decisions (T10):**
+- `LearningGoals` and `Weaknesses` use a multi-select from a predefined list of canonical options (not free-text tags). This prevents misspellings and ensures prompt service can rely on consistent values.
+- Options are defined as exported TS constants in `frontend/src/lib/studentOptions.ts` (not DB-driven, not inline in the component). Add options there when the list needs to grow. Migrate to a DB-backed or combobox pattern only if teachers need to define their own custom categories.
+- Storage stays as JSON array in nvarchar regardless of future UI changes — only the component needs to change.
 
 **Why this comes first**: The prompt service (T12) needs rich student data to generate personalized content. Without native language and goals, prompts are generic, and generic prompts produce generic content.
 
 **Playwright**: Extend `e2e/tests/students.spec.ts` to cover new fields.
 
-**Done when**: Student form captures and persists all new fields; existing students still work with nullable new columns.
+**Done when**: Student form captures and persists all new fields; existing students still work with nullable new columns; backend rejects `NativeLanguage` values outside the allowed list.
+
+**Note**: `IsApproved` on `Teachers` moved to T11 — it has no consumer or UI surface in T10 and belongs where the 403 guard is actually implemented.
+
+---
+
+#### T10.1 — Frontend Component Fixes (T10 follow-up)
+
+**Priority**: Must (blocks CI) | **Effort**: 0.5 days | **PR**: separate from T10
+
+Issues surfaced by CodeRabbit during T10 review. Must be resolved before T11 starts, as the frontend build is failing in CI.
+
+**1. Add `cmdk` to `frontend/package.json` (Critical — build failing)**
+
+`frontend/src/components/ui/command.tsx` imports from `cmdk` but the package is not declared as a dependency. It resolves locally via a transitive install but fails in CI (`TS2307: Cannot find module 'cmdk'`).
+
+Fix: add `"cmdk": "<version>"` to `dependencies` in `frontend/package.json` and run `npm install`.
+
+**2. Fix `PopoverTrigger` to use `@base-ui`'s render prop pattern (Major — invalid HTML)**
+
+`@base-ui/react` `Popover.Trigger` renders a native `<button>` by default. The Learning Goals and Weaknesses multi-selects in `StudentForm.tsx` nest another `<button>` inside it, producing invalid HTML and accessibility violations (button-in-button).
+
+Fix: update `PopoverTrigger` in `popover.tsx` to accept and forward a `render` prop. Update the multi-select trigger in `StudentForm.tsx` to use `<PopoverTrigger render={<button ...>...</button>} />` instead of nesting children.
+
+**Done when**: `npm run build` passes in CI with zero errors; no nested button violations in the student form.
 
 ---
 
@@ -164,6 +193,8 @@ public enum ClaudeModel { Haiku, Sonnet }
 - Log all calls: task type, model, token counts, latency
 
 **API key**: `appsettings.Development.json` for local dev, Azure Key Vault for production.
+
+**IsApproved enforcement**: All generation endpoints (T13) must verify the calling teacher has `IsApproved = true` before invoking `IClaudeClient`. Return 403 if not. The check lives in the controller or a shared authorization policy, not inside `IClaudeClient` itself.
 
 **Done when**: Integration test hits real Claude API with a minimal prompt; unit tests mock the interface.
 
@@ -748,6 +779,7 @@ If time allows. Each adds incremental value but isn't required for the demo.
 - Consistent color usage across all pages
 - Loading states and skeleton screens for AI generation
 - Empty state illustrations
+- Fix `InputGroupAddon` click handler to use a broader selector (`input, textarea` or `[data-slot="input-group-control"]`) instead of only `input`, so clicking an addon also focuses textarea-based controls. No current impact since no textarea input groups exist yet, but should be fixed before any are added.
 
 Replaces the deferred T9.1 from Phase 1.
 
@@ -831,7 +863,7 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 ## Dependency Order
 
 ```
-T10 (student enrichment) ──────────────────────────────────────┐
+T10 (student enrichment) ── T10.1 (frontend fixes, CI blocker) ─┐
 T11 (Claude client) ──┐                                        │
                       ├── T12 (prompt service, uses both) ─────┤
 T11 ──────────────────┤                                        │
@@ -856,7 +888,7 @@ T23 (demo prep) ── LAST, after all others ───────────�
 ```
 
 **Suggested execution order:**
-1. T10 + T11 (parallel)
+1. T10 then T10.1 (T10.1 unblocks CI), T11 can start in parallel with T10.1
 2. T12
 3. T13 + T14 (parallel)
 4. T15

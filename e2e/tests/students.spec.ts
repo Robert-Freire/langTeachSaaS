@@ -34,6 +34,20 @@ test('full student CRUD flow', async ({ browser }) => {
   await page.getByTestId('interest-input').fill('music')
   await page.getByTestId('interest-input').press('Enter')
 
+  // Select native language
+  await page.getByTestId('student-native-language').click()
+  await page.getByRole('option', { name: 'Portuguese' }).click()
+
+  // Select a learning goal
+  await page.getByTestId('learning-goals-trigger').click()
+  await page.getByRole('option', { name: 'Travel' }).click()
+  await page.keyboard.press('Escape')
+
+  // Select a weakness
+  await page.getByTestId('weaknesses-trigger').click()
+  await page.getByRole('option', { name: 'Past Tenses' }).click()
+  await page.keyboard.press('Escape')
+
   // Save
   await page.getByRole('button', { name: 'Save Student' }).click()
 
@@ -47,11 +61,16 @@ test('full student CRUD flow', async ({ browser }) => {
   await expect(studentCard).toBeVisible({ timeout: 10000 })
   await expect(studentCard.getByTestId('student-level')).toContainText('B2')
   await expect(studentCard.getByTestId('interest-chip').filter({ hasText: 'travel' })).toBeVisible()
+  await expect(studentCard.getByTestId('native-language-chip')).toContainText('Portuguese speaker')
 
   // Edit: click the edit button within this student's card
   await studentCard.getByTestId('edit-student').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: 10000 })
   await expect(page.getByTestId('student-name')).toHaveValue(studentName)
+
+  // Confirm enrichment fields round-trip correctly
+  await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'Travel' })).toBeVisible()
+  await expect(page.getByTestId('weakness-chip').filter({ hasText: 'Past Tenses' })).toBeVisible()
 
   // Change CEFR level to C1
   await page.getByTestId('student-cefr').click()

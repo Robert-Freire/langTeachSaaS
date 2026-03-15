@@ -18,6 +18,18 @@ public class CreateStudentRequest
     [MaxStringLengthEach(100)]
     public List<string> Interests { get; set; } = [];
 
+    // Validated server-side against the allowed language list in StudentService.AllowedNativeLanguages.
+    // Must stay in sync with the LANGUAGES constant in frontend/src/pages/StudentForm.tsx.
+    public string? NativeLanguage { get; set; }
+
+    [MaxCollectionCount(20)]
+    [MaxStringLengthEach(100)]
+    public List<string> LearningGoals { get; set; } = [];
+
+    [MaxCollectionCount(30)]
+    [MaxStringLengthEach(200)]
+    public List<string> Weaknesses { get; set; } = [];
+
     [MaxLength(2000)]
     public string? Notes { get; set; }
 }

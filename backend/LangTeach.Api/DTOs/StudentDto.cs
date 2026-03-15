@@ -7,6 +7,9 @@ public record StudentDto(
     string CefrLevel,
     List<string> Interests,
     string? Notes,
+    string? NativeLanguage,
+    List<string> LearningGoals,
+    List<string> Weaknesses,
     DateTime CreatedAt,
     DateTime UpdatedAt
 );
