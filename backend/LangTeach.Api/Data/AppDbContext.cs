@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<LessonTemplate> LessonTemplates => Set<LessonTemplate>();
     public DbSet<Lesson> Lessons => Set<Lesson>();
     public DbSet<LessonSection> LessonSections => Set<LessonSection>();
+    public DbSet<LessonContentBlock> LessonContentBlocks => Set<LessonContentBlock>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -87,6 +88,23 @@ public class AppDbContext : DbContext
              .WithMany(l => l.Sections)
              .HasForeignKey(ls => ls.LessonId)
              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // LessonContentBlock — cascade delete from Lesson, no-action from LessonSection (nullable)
+        modelBuilder.Entity<LessonContentBlock>(e =>
+        {
+            e.HasKey(b => b.Id);
+            e.HasIndex(b => b.LessonId);
+            e.HasOne(b => b.Lesson)
+             .WithMany()
+             .HasForeignKey(b => b.LessonId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(b => b.LessonSection)
+             .WithMany()
+             .HasForeignKey(b => b.LessonSectionId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.Property(b => b.BlockType).HasMaxLength(50);
         });
     }
 }
