@@ -7,9 +7,6 @@ test('generate AI content for lesson section, insert, and persist after refresh'
   const context = await createAuthenticatedContext(browser)
   const page = await context.newPage()
 
-  // Approve the e2e test teacher so the generate endpoint allows access
-  await approveTeacherByAuth0Id('auth0|69b54b07b54b77c525997d29')
-
   // Create a lesson via the wizard
   await page.goto('/lessons')
   await expect(page.locator('h1')).toHaveText('Lessons', { timeout: 15000 })
@@ -51,6 +48,9 @@ test('generate AI content for lesson section, insert, and persist after refresh'
   // Click Generate on the Presentation section
   await page.getByTestId('generate-btn-presentation').click()
   await expect(page.getByTestId('generate-panel')).toBeVisible({ timeout: 5000 })
+
+  // Approve the e2e test teacher right before generating (must happen after teacher exists)
+  await approveTeacherByAuth0Id('auth0|69b54b07b54b77c525997d29')
 
   // Vocabulary should be pre-selected for the Presentation section
   // Click Generate

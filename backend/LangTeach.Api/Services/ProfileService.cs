@@ -9,11 +9,13 @@ namespace LangTeach.Api.Services;
 public class ProfileService : IProfileService
 {
     private readonly AppDbContext _db;
+    private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly ILogger<ProfileService> _logger;
 
-    public ProfileService(AppDbContext db, ILogger<ProfileService> logger)
+    public ProfileService(AppDbContext db, IDbContextFactory<AppDbContext> dbFactory, ILogger<ProfileService> logger)
     {
         _db = db;
+        _dbFactory = dbFactory;
         _logger = logger;
     }
 
@@ -118,9 +120,12 @@ public class ProfileService : IProfileService
         }
         catch (DbUpdateException)
         {
-            // Concurrent request inserted the same teacher — detach and fetch the winner.
+            // After a failed SaveChangesAsync, the DbContext change tracker is
+            // unreliable. Use a fresh context to query for the winning row.
             _db.Entry(teacher).State = EntityState.Detached;
-            var winner = await _db.Teachers
+
+            await using var freshDb = await _dbFactory.CreateDbContextAsync();
+            var winner = await freshDb.Teachers
                 .Where(t => t.Auth0UserId == auth0UserId)
                 .Select(t => new { t.Id })
                 .FirstOrDefaultAsync();
@@ -128,7 +133,7 @@ public class ProfileService : IProfileService
             if (winner is not null)
                 return winner.Id;
 
-            throw; // not a duplicate-key race — propagate the original exception
+            throw; // not a duplicate-key race, propagate original exception
         }
     }
 

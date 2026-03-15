@@ -7,9 +7,6 @@ test('vocabulary renders as table and student preview shows study view', async (
   const context = await createAuthenticatedContext(browser)
   const page = await context.newPage()
 
-  // Approve the e2e test teacher so the generate endpoint allows access
-  await approveTeacherByAuth0Id('auth0|69b54b07b54b77c525997d29')
-
   // Create a lesson
   await page.goto('/lessons')
   await expect(page.locator('h1')).toHaveText('Lessons', { timeout: 15000 })
@@ -44,6 +41,9 @@ test('vocabulary renders as table and student preview shows study view', async (
   await presentationSection.fill('Travel vocabulary items.')
   await presentationSection.blur()
   await expect(page.getByTestId('saved-indicator')).toBeVisible({ timeout: 5000 })
+
+  // Approve the e2e test teacher right before generating (must happen after teacher exists)
+  await approveTeacherByAuth0Id('auth0|69b54b07b54b77c525997d29')
 
   // Generate vocabulary
   await page.getByTestId('generate-btn-presentation').click()

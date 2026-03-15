@@ -70,6 +70,7 @@ builder.Services.AddControllers(options =>
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default") ?? ""));
+builder.Services.AddDbContextFactory<AppDbContext>(lifetime: ServiceLifetime.Scoped);
 
 builder.Services.AddHttpClient();
 
