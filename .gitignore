@@ -47,3 +47,4 @@ e2e/test-results/
 # Bicep compiled output
 infra/main.json
 infra/modules/*.json
+secrets.md
