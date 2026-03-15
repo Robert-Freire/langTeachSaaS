@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using LangTeach.Api.Data.Models;
 
 namespace LangTeach.Api.DTOs;
 
@@ -6,8 +7,8 @@ public class SaveContentBlockRequest
 {
     public Guid? LessonSectionId { get; set; }
 
-    [Required, MinLength(1)]
-    public string BlockType { get; set; } = string.Empty;
+    [Required]
+    public ContentBlockType BlockType { get; set; }
 
     [Required, MinLength(1)]
     public string GeneratedContent { get; set; } = string.Empty;

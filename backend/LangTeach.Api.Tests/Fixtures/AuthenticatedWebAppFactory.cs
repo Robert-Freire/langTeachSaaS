@@ -41,11 +41,20 @@ public class AuthenticatedWebAppFactory : WebApplicationFactory<Program>
 
     public HttpClient CreateAuthenticatedClient(
         string auth0Id = TestAuthHandler.DefaultAuth0Id,
-        string email = TestAuthHandler.DefaultEmail)
+        string email = TestAuthHandler.DefaultEmail,
+        string? name = TestAuthHandler.DefaultName,
+        string? emailClaimType = null,
+        string? nameClaimType = null)
     {
         var client = CreateClient();
         client.DefaultRequestHeaders.Add("X-Test-Auth0Id", auth0Id);
         client.DefaultRequestHeaders.Add("X-Test-Email", email);
+        if (name != null)
+            client.DefaultRequestHeaders.Add("X-Test-Name", name);
+        if (emailClaimType != null)
+            client.DefaultRequestHeaders.Add("X-Test-EmailClaimType", emailClaimType);
+        if (nameClaimType != null)
+            client.DefaultRequestHeaders.Add("X-Test-NameClaimType", nameClaimType);
         return client;
     }
 }

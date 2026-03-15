@@ -6,6 +6,9 @@ import {
   type GenerateRequest,
 } from '../../api/generate'
 import { useGenerate } from '../../hooks/useGenerate'
+import { getRenderer } from './contentRegistry'
+import { ContentErrorBoundary } from './ContentErrorBoundary'
+import type { ContentBlockType } from '../../types/contentTypes'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -18,7 +21,7 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 
-const SECTION_DEFAULT_TASK: Record<SectionType, string> = {
+const SECTION_DEFAULT_TASK: Record<SectionType, ContentBlockType> = {
   WarmUp: 'conversation',
   Presentation: 'vocabulary',
   Practice: 'exercises',
@@ -26,7 +29,7 @@ const SECTION_DEFAULT_TASK: Record<SectionType, string> = {
   WrapUp: 'conversation',
 }
 
-const TASK_TYPES = [
+const TASK_TYPES: { value: ContentBlockType; label: string }[] = [
   { value: 'vocabulary', label: 'Vocabulary' },
   { value: 'grammar', label: 'Grammar' },
   { value: 'exercises', label: 'Exercises' },
@@ -38,7 +41,7 @@ interface GeneratePanelProps {
   lessonId: string
   sectionId: string
   sectionType: SectionType
-  initialTaskType?: string
+  initialTaskType?: ContentBlockType
   initialStyle?: string
   lessonContext: {
     language: string
@@ -61,7 +64,7 @@ export function GeneratePanel({
   onInsert,
   onClose,
 }: GeneratePanelProps) {
-  const [taskType, setTaskType] = useState(initialTaskType ?? SECTION_DEFAULT_TASK[sectionType])
+  const [taskType, setTaskType] = useState<ContentBlockType>(initialTaskType ?? SECTION_DEFAULT_TASK[sectionType])
   const [style, setStyle] = useState(initialStyle ?? 'Conversational')
   const [inserting, setInserting] = useState(false)
   const [insertError, setInsertError] = useState<string | null>(null)
@@ -125,7 +128,7 @@ export function GeneratePanel({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-xs">Task type</Label>
-          <Select value={taskType} onValueChange={(v) => v && setTaskType(v)} disabled={isStreaming}>
+          <Select value={taskType} onValueChange={(v) => v && setTaskType(v as ContentBlockType)} disabled={isStreaming}>
             <SelectTrigger className="h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -150,14 +153,48 @@ export function GeneratePanel({
         </div>
       </div>
 
-      {(isStreaming || isDone || isError || output) && (
+      {isStreaming && (
+        <div className="flex items-center gap-3 rounded-md bg-white border border-indigo-100 px-4 py-5" role="status" aria-live="polite" data-testid="generate-output">
+          <svg className="h-4 w-4 animate-spin text-indigo-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <span className="text-sm text-zinc-500">Generating {taskType} content...</span>
+        </div>
+      )}
+
+      {isDone && output && (() => {
+        let parsedContent: unknown = null
+        try {
+          const raw = output.replace(/^```json\s*/, '').replace(/```\s*$/, '')
+          parsedContent = JSON.parse(raw)
+        } catch { /* fall through to raw display */ }
+
+        const renderer = getRenderer(taskType)
+        return (
+          <div className="rounded-md bg-white border border-green-200 overflow-hidden" data-testid="generate-output">
+            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border-b border-green-200">
+              <svg className="h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-xs font-medium text-green-700">Generated preview</span>
+            </div>
+            <div className="p-4">
+              <ContentErrorBoundary blockType={taskType}>
+                <renderer.Preview rawContent={output} parsedContent={parsedContent} />
+              </ContentErrorBoundary>
+            </div>
+          </div>
+        )
+      })()}
+
+      {isError && output && (
         <Textarea
           value={output}
           readOnly
           rows={6}
           className="resize-none text-xs bg-white"
           placeholder="Generated content will appear here..."
-          data-testid="generate-output"
         />
       )}
 

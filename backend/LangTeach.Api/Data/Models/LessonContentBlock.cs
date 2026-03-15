@@ -5,7 +5,7 @@ public class LessonContentBlock
     public Guid Id { get; set; }
     public Guid LessonId { get; set; }
     public Guid? LessonSectionId { get; set; }
-    public string BlockType { get; set; } = string.Empty;
+    public ContentBlockType BlockType { get; set; }
     public string GeneratedContent { get; set; } = string.Empty;
     public string? EditedContent { get; set; }
     public string? GenerationParams { get; set; }

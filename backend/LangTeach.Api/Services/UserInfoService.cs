@@ -53,7 +53,7 @@ public class UserInfoService : IUserInfoService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch user info from /userinfo.");
+            _logger.LogError(ex, "Failed to fetch user info from /userinfo.");
             return new Auth0UserInfo("", "");
         }
     }

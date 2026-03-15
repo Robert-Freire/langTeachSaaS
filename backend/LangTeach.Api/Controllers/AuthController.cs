@@ -8,6 +8,9 @@ namespace LangTeach.Api.Controllers;
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
+    private const string CustomEmailClaim = "https://langteach.app/email";
+    private const string CustomNameClaim = "https://langteach.app/name";
+
     private readonly IProfileService _profileService;
     private readonly IUserInfoService _userInfoService;
     private readonly ILogger<AuthController> _logger;
@@ -29,19 +32,30 @@ public class AuthController : ControllerBase
 
         await _profileService.UpsertTeacherAsync(sub, userInfo.Email, userInfo.Name);
 
-        return Ok(new { sub, email = userInfo.Email });
+        return Ok(new { sub, email = userInfo.Email, name = userInfo.Name });
     }
 
     private async Task<Auth0UserInfo> ResolveUserInfoAsync()
     {
-        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email") ?? "";
-        var name  = User.FindFirstValue(ClaimTypes.Name)  ?? User.FindFirstValue("name")  ?? "";
-        if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(name)) return new Auth0UserInfo(email, name);
+        var email = User.FindFirstValue(ClaimTypes.Email)
+                 ?? User.FindFirstValue("email")
+                 ?? User.FindFirstValue(CustomEmailClaim)
+                 ?? "";
+        var name  = User.FindFirstValue(ClaimTypes.Name)
+                 ?? User.FindFirstValue("name")
+                 ?? User.FindFirstValue(CustomNameClaim)
+                 ?? "";
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(name))
+        {
+            var authHeader = Request.Headers.Authorization.ToString();
+            var token = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+                ? authHeader["Bearer ".Length..].Trim()
+                : "";
+            var fallback = await _userInfoService.GetUserInfoAsync(token);
+            if (string.IsNullOrEmpty(email)) email = fallback.Email;
+            if (string.IsNullOrEmpty(name))  name  = fallback.Name;
+        }
 
-        var authHeader = Request.Headers.Authorization.ToString();
-        var token = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
-            ? authHeader["Bearer ".Length..].Trim()
-            : "";
-        return await _userInfoService.GetUserInfoAsync(token);
+        return new Auth0UserInfo(email, name);
     }
 }

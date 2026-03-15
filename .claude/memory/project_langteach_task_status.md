@@ -26,7 +26,7 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 
 ## Beta Phase — CURRENT (as of 2026-03-15)
 
-**Next task: T15.1** (Typed Content Model Foundation)
+**Next task: T15.2** (Vocabulary Type — flashcards for student)
 
 | Task | Description | Status |
 |------|-------------|--------|
@@ -37,7 +37,7 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T13 | Generation Endpoints (7x POST /api/generate/*) | DONE — PR #42 merged |
 | T14 | Streaming SSE endpoint + useGenerate hook | DONE — PR #44 merged |
 | T15 | Lesson Editor AI Integration (per-section generate, streaming UI, edit/regenerate) | DONE — PR #45 open |
-| T15.1 | Typed Content Model Foundation (type registry, renderer dispatch, student view route) | pending |
+| T15.1 | Typed Content Model Foundation (type registry, renderer dispatch, student view route) | DONE — PR #46 open |
 | T15.2 | Vocabulary Type (editable table for teacher, flashcards for student) | pending |
 | T15.3 | Exercise/Quiz Type (quiz editor for teacher, interactive quiz for student) | pending |
 | T15.4 | Conversation Type (dialogue editor for teacher, dialogue view for student) | pending |

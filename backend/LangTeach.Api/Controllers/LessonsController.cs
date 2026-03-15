@@ -1,7 +1,9 @@
+using LangTeach.Api.Data;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace LangTeach.Api.Controllers;
@@ -13,15 +15,18 @@ public class LessonsController : ControllerBase
 {
     private readonly ILessonService _lessonService;
     private readonly IProfileService _profileService;
+    private readonly AppDbContext _db;
     private readonly ILogger<LessonsController> _logger;
 
     public LessonsController(
         ILessonService lessonService,
         IProfileService profileService,
+        AppDbContext db,
         ILogger<LessonsController> logger)
     {
         _lessonService = lessonService;
         _profileService = profileService;
+        _db = db;
         _logger = logger;
     }
 
@@ -159,5 +164,51 @@ public class LessonsController : ControllerBase
         }
 
         return CreatedAtAction(nameof(GetById), new { id = copy.Id }, copy);
+    }
+
+    [HttpGet("{lessonId:guid}/study")]
+    public async Task<IActionResult> GetStudy(Guid lessonId, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email!);
+
+        var lesson = await _db.Lessons
+            .Include(l => l.Sections)
+            .FirstOrDefaultAsync(l => l.Id == lessonId && !l.IsDeleted, cancellationToken);
+
+        if (lesson is null || lesson.TeacherId != teacherId)
+            return NotFound();
+
+        var blocks = await _db.LessonContentBlocks
+            .Where(b => b.LessonId == lessonId)
+            .OrderBy(b => b.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        var blocksBySectionId = blocks
+            .Where(b => b.LessonSectionId.HasValue)
+            .GroupBy(b => b.LessonSectionId!.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var sections = lesson.Sections
+            .OrderBy(s => s.OrderIndex)
+            .Select(s =>
+            {
+                var sectionBlocks = blocksBySectionId.TryGetValue(s.Id, out var sb) ? sb : [];
+                return new StudySectionDto(
+                    s.Id,
+                    s.SectionType,
+                    s.OrderIndex,
+                    s.Notes,
+                    sectionBlocks.Select(b => new StudyBlockDto(
+                        b.Id,
+                        b.BlockType,
+                        LessonContentBlocksController.TryParseContent(b.EditedContent ?? b.GeneratedContent),
+                        b.EditedContent ?? b.GeneratedContent)).ToList());
+            })
+            .ToList();
+
+        _logger.LogInformation("GET /api/lessons/{LessonId}/study. TeacherId={TeacherId}", lessonId, teacherId);
+
+        return Ok(new StudyLessonDto(lesson.Id, lesson.Title, lesson.Language, lesson.CefrLevel, lesson.Topic, sections));
     }
 }

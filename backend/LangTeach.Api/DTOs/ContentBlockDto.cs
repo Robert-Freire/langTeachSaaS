@@ -1,11 +1,14 @@
+using LangTeach.Api.Data.Models;
+
 namespace LangTeach.Api.DTOs;
 
 public record ContentBlockDto(
     Guid Id,
     Guid? LessonSectionId,
-    string BlockType,
+    ContentBlockType BlockType,
     string GeneratedContent,
     string? EditedContent,
     bool IsEdited,
     string? GenerationParams,
+    object? ParsedContent,
     DateTime CreatedAt);
