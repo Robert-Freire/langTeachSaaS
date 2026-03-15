@@ -96,49 +96,69 @@ public class PromptService : IPromptService
         return sb.ToString().TrimEnd();
     }
 
-    private static string VocabularyUserPrompt(GenerationContext ctx) =>
-        $$"""
-        Generate a vocabulary list for the lesson on "{{ctx.Topic}}". Return JSON:
+    private static string VocabularyUserPrompt(GenerationContext ctx)
+    {
+        var topic = Sanitize(ctx.Topic);
+        var level = Sanitize(ctx.CefrLevel);
+        return $$"""
+        Generate a vocabulary list for the lesson on "{{topic}}". Return JSON:
         {"items":[{"word":"","definition":"","exampleSentence":"","translation":""}]}
-        Limit to 10-15 items appropriate for {{ctx.CefrLevel}}.
+        Limit to 10-15 items appropriate for {{level}}.
         """;
+    }
 
-    private static string GrammarUserPrompt(GenerationContext ctx) =>
-        $$"""
-        Generate a grammar explanation for the lesson on "{{ctx.Topic}}". Return JSON:
+    private static string GrammarUserPrompt(GenerationContext ctx)
+    {
+        var topic = Sanitize(ctx.Topic);
+        return $$"""
+        Generate a grammar explanation for the lesson on "{{topic}}". Return JSON:
         {"title":"","explanation":"","examples":[{"sentence":"","note":""}],"commonMistakes":[""]}
         Include 3-5 examples and 2-3 common mistakes.
         """;
+    }
 
-    private static string ExercisesUserPrompt(GenerationContext ctx) =>
-        $$"""
-        Generate practice exercises for the lesson on "{{ctx.Topic}}". Return JSON:
+    private static string ExercisesUserPrompt(GenerationContext ctx)
+    {
+        var topic = Sanitize(ctx.Topic);
+        return $$"""
+        Generate practice exercises for the lesson on "{{topic}}". Return JSON:
         {"fillInBlank":[{"sentence":"","answer":"","hint":""}],"multipleChoice":[{"question":"","options":[""],"answer":""}],"matching":[{"left":"","right":""}]}
         Include at least 3 items of each type.
         """;
+    }
 
-    private static string ConversationUserPrompt(GenerationContext ctx) =>
-        $$"""
-        Generate conversation scenarios for the lesson on "{{ctx.Topic}}". Return JSON:
+    private static string ConversationUserPrompt(GenerationContext ctx)
+    {
+        var topic = Sanitize(ctx.Topic);
+        var level = Sanitize(ctx.CefrLevel);
+        return $$"""
+        Generate conversation scenarios for the lesson on "{{topic}}". Return JSON:
         {"scenarios":[{"setup":"","roleA":"","roleB":"","keyPhrases":[""]}]}
-        Include 2-3 scenarios using {{ctx.CefrLevel}}-appropriate language.
+        Include 2-3 scenarios using {{level}}-appropriate language.
         """;
+    }
 
-    private static string ReadingUserPrompt(GenerationContext ctx) =>
-        $$"""
-        Generate a reading passage for the lesson on "{{ctx.Topic}}". Return JSON:
+    private static string ReadingUserPrompt(GenerationContext ctx)
+    {
+        var topic = Sanitize(ctx.Topic);
+        var level = Sanitize(ctx.CefrLevel);
+        return $$"""
+        Generate a reading passage for the lesson on "{{topic}}". Return JSON:
         {"passage":"","comprehensionQuestions":[{"question":"","answer":"","type":"factual|inferential|vocabulary"}],"vocabularyHighlights":[{"word":"","definition":""}]}
-        Passage must use {{ctx.CefrLevel}} vocabulary and grammar. Include 3-5 questions and 5-8 vocabulary highlights.
+        Passage must use {{level}} vocabulary and grammar. Include 3-5 questions and 5-8 vocabulary highlights.
         """;
+    }
 
     private static string HomeworkUserPrompt(GenerationContext ctx)
     {
-        var lessonSummaryLine = !string.IsNullOrWhiteSpace(ctx.LessonSummary)
-            ? $"This homework follows a lesson where: {ctx.LessonSummary}\n"
+        var topic         = Sanitize(ctx.Topic);
+        var lessonSummary = Sanitize(ctx.LessonSummary);
+        var lessonSummaryLine = lessonSummary.Length > 0
+            ? $"This homework follows a lesson where: {lessonSummary}\n"
             : string.Empty;
 
         return $$"""
-        Generate homework tasks for the lesson on "{{ctx.Topic}}". Return JSON:
+        Generate homework tasks for the lesson on "{{topic}}". Return JSON:
         {"tasks":[{"type":"","instructions":"","examples":[""]}]}
         {{lessonSummaryLine}}Include 3-5 varied tasks the student can complete independently.
         """;
@@ -146,7 +166,8 @@ public class PromptService : IPromptService
 
     private static string LessonPlanUserPrompt(GenerationContext ctx)
     {
+        var topic = Sanitize(ctx.Topic);
         const string schema = """{"title":"","objectives":[""],"sections":{"warmUp":"","presentation":"","practice":"","production":"","wrapUp":""}}""";
-        return $"Generate a complete lesson plan for the lesson on \"{ctx.Topic}\". Return JSON:\n{schema}\nEach section should be detailed enough for the teacher to follow without additional preparation.";
+        return $"Generate a complete lesson plan for the lesson on \"{topic}\". Return JSON:\n{schema}\nEach section should be detailed enough for the teacher to follow without additional preparation.";
     }
 }

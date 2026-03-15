@@ -62,7 +62,7 @@ public class PromptServiceIntegrationTests
 
     private static bool IsValidJson(string text)
     {
-        try { JsonDocument.Parse(StripCodeFences(text)); return true; }
+        try { using var _ = JsonDocument.Parse(StripCodeFences(text)); return true; }
         catch { return false; }
     }
 
