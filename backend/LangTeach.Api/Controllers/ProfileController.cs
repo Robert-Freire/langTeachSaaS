@@ -12,21 +12,36 @@ namespace LangTeach.Api.Controllers;
 public class ProfileController : ControllerBase
 {
     private readonly IProfileService _profileService;
+    private readonly IUserInfoService _userInfoService;
     private readonly ILogger<ProfileController> _logger;
 
-    public ProfileController(IProfileService profileService, ILogger<ProfileController> logger)
+    public ProfileController(IProfileService profileService, IUserInfoService userInfoService, ILogger<ProfileController> logger)
     {
         _profileService = profileService;
+        _userInfoService = userInfoService;
         _logger = logger;
     }
 
     private string Auth0Id => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-    private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
+
+    private async Task<Auth0UserInfo> ResolveUserInfoAsync()
+    {
+        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email") ?? "";
+        var name  = User.FindFirstValue(ClaimTypes.Name)  ?? User.FindFirstValue("name")  ?? "";
+        if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(name)) return new Auth0UserInfo(email, name);
+
+        var authHeader = Request.Headers.Authorization.ToString();
+        var token = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? authHeader["Bearer ".Length..].Trim()
+            : "";
+        return await _userInfoService.GetUserInfoAsync(token);
+    }
 
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var userInfo = await ResolveUserInfoAsync();
+        await _profileService.UpsertTeacherAsync(Auth0Id, userInfo.Email, userInfo.Name);
         var profile = await _profileService.GetProfileAsync(Auth0Id);
         _logger.LogInformation("GET /api/profile. TeacherId={TeacherId}", profile!.Id);
         return Ok(profile);
@@ -42,7 +57,8 @@ public class ProfileController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var userInfo = await ResolveUserInfoAsync();
+        await _profileService.UpsertTeacherAsync(Auth0Id, userInfo.Email, userInfo.Name);
         var updated = await _profileService.UpdateProfileAsync(Auth0Id, request);
         _logger.LogInformation("PUT /api/profile. TeacherId={TeacherId} DisplayName={DisplayName}",
             updated.Id, updated.DisplayName);

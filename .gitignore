@@ -48,3 +48,4 @@ e2e/test-results/
 infra/main.json
 infra/modules/*.json
 secrets.md
+SECRETS.md

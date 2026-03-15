@@ -66,7 +66,9 @@ builder.Services.AddControllers(options =>
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default") ?? ""));
 
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 
@@ -86,6 +88,24 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Demo seeder: dotnet run -- --seed <auth0-user-id|email>
+var seedIndex = Array.IndexOf(args, "--seed");
+if (seedIndex >= 0)
+{
+    var teacherLookup = (seedIndex + 1 < args.Length ? args[seedIndex + 1] : null)?.Trim();
+    if (string.IsNullOrWhiteSpace(teacherLookup))
+    {
+        Console.Error.WriteLine("Usage: --seed <auth0-user-id|email>");
+        return 1;
+    }
+
+    using var seedScope = app.Services.CreateScope();
+    var seedDb     = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var seedLogger = seedScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var seeded = await DemoSeeder.SeedAsync(seedDb, teacherLookup, seedLogger);
+    return seeded ? 0 : 1;
+}
+
 app.UseSerilogRequestLogging(options =>
 {
     options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000}ms";
@@ -97,6 +117,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();
+return 0;
 
 public partial class Program { }

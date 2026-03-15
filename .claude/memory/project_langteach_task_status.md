@@ -57,6 +57,7 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 - Backend CD: `az acr build` (builds in cloud) + `az containerapp update` — no Docker needed in runner
 - Frontend CD: pre-build in workflow, then `Azure/static-web-apps-deploy@v1` with `skip_app_build: true`
 - OIDC auth (not SP secret) — requires federated credential for `repo:Robert-Freire/langTeachSaaS:ref:refs/heads/main`
+- Bicep circular dependency avoided by computing `acrLoginServer` as `${acrName}.azurecr.io` rather than using ACR module output
 
 ## T8 Key Notes
 - `LessonsController` email guard: use `?? ""` fallback (same as StudentsController) — e2e test user JWT has no email claim
@@ -76,6 +77,18 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 - EF Core InMemory dual-provider fix: directly register pre-built `DbContextOptions<AppDbContext>` singleton (don't call `AddDbContext` again in test factory — it stacks configure actions)
 - Button component uses Base UI (no `asChild`). For link-buttons, use `buttonVariants` directly on `<Link>` from react-router-dom
 - shadcn alert-dialog, select, textarea now installed in `frontend/src/components/ui/`
+
+## Beta Plan (supersedes Phase 2 sequencing)
+Plan at: `plan\langteach-beta\plan.md`
+Phase 2 AI Core plan (`plan\langteach-phase2\plan.md`) remains valid as technical reference but task sequencing now follows the beta plan (T10-T23), reorganized around demo impact for first beta tester.
+
+**Beta task overview:**
+- Phase 2A (Core Magic): T10 student enrichment, T11 Claude client, T12 prompt service, T13 generation endpoints, T14 streaming SSE, T15 lesson editor AI UI, T16 one-click full lesson
+- Phase 2B (Make It Real): T17 PDF export, T18 student lesson notes, T19 dashboard v2
+- Phase 2C (Polish): T20 brand, T21 regenerate with direction, T22 interactive exercises
+- T23: Beta demo preparation (seed data, demo script, talking points)
+
+**Deferred from original Phase 2:** generation caching (T3), usage tracking/limits (T8), Stripe, content library, shareable links.
 
 ## Key T4 Notes (important for T5+)
 - Student->Lesson FK is NoAction (not SetNull) — SQL Server multiple cascade path constraint. Nullify StudentId in service layer when soft-deleting students if needed.
