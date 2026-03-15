@@ -14,6 +14,15 @@ Before starting implementation on any task:
    `git fetch origin && git checkout main && git pull origin main`
    `git checkout -b task/t<N>-<short-description>`
 
+3. Write the detailed task plan file (e.g. `plan/langteach-beta/task11-claude-api-client.md`) with
+   step-by-step implementation, file list, and verification checklist. The high-level description
+   in `plan.md` is NOT sufficient — a dedicated task file is required before moving on.
+
+4. Run `/review-plan` (pass the task file path as argument) to validate the plan against the
+   actual codebase. Fix any MAJOR GAPS or NEEDS REVISION findings before writing any code.
+
+Only after steps 1-4 are done should implementation begin.
+
 Never create stacked branches (branching off an unmerged feature branch). Every task branch comes off main. Every PR targets main.
 
 ## Pre-push: code review step required
