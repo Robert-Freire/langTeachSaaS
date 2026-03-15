@@ -263,6 +263,28 @@ Value: `https://kv-lt-dev-5ba22u.vault.azure.net/`
 
 ---
 
+## Auth0 Post-Login Action (Custom Claims)
+
+A post-login Action was added in the Auth0 Dashboard to inject `email` and `name`
+as namespaced custom claims into the access token. This is necessary because the
+Auth0 `/userinfo` endpoint is unreachable from Docker containers during local
+development, causing flaky e2e tests.
+
+**Claims injected:**
+- `https://langteach.app/email` (from `event.user.email`)
+- `https://langteach.app/name` (from `event.user.name`)
+
+**Source:** [`infra/auth0-post-login-action.js`](../../infra/auth0-post-login-action.js) (reference copy, not auto-deployed)
+
+**Configuration:** Auth0 Dashboard > Actions > Flows > Login. The action must be
+deployed and added to the Login flow for claims to appear in the JWT.
+
+The backend reads these claims as a fallback in `AuthController.ResolveUserInfoAsync`,
+after checking standard claim types. If both email and name are still missing after
+checking all claim sources, it falls back to calling `/userinfo` via `UserInfoService`.
+
+---
+
 ## Pre-push Checklist
 
 - [ ] `az bicep build --file infra/main.bicep` — zero warnings, zero errors

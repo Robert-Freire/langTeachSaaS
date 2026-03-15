@@ -43,5 +43,33 @@ public class AuthControllerTests
         body!.Email.Should().Be("ns@example.com");
     }
 
-    private record MeResponse(string Sub, string Email);
+    [Fact]
+    public async Task Me_WithEmailButNoName_PreservesEmailFromClaims()
+    {
+        var client = _factory.CreateAuthenticatedClient(
+            "auth0|auth-partial", "partial@example.com",
+            name: null);
+
+        var response = await client.GetAsync("/api/auth/me");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<MeResponse>();
+        body!.Email.Should().Be("partial@example.com");
+    }
+
+    [Fact]
+    public async Task Me_ReturnsNameInResponse()
+    {
+        var client = _factory.CreateAuthenticatedClient(
+            "auth0|auth-name", "name@example.com",
+            name: "Jane Doe");
+
+        var response = await client.GetAsync("/api/auth/me");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<MeResponse>();
+        body!.Name.Should().Be("Jane Doe");
+    }
+
+    private record MeResponse(string Sub, string Email, string? Name);
 }

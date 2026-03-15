@@ -32,7 +32,7 @@ public class AuthController : ControllerBase
 
         await _profileService.UpsertTeacherAsync(sub, userInfo.Email, userInfo.Name);
 
-        return Ok(new { sub, email = userInfo.Email });
+        return Ok(new { sub, email = userInfo.Email, name = userInfo.Name });
     }
 
     private async Task<Auth0UserInfo> ResolveUserInfoAsync()
@@ -45,12 +45,17 @@ public class AuthController : ControllerBase
                  ?? User.FindFirstValue("name")
                  ?? User.FindFirstValue(CustomNameClaim)
                  ?? "";
-        if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(name)) return new Auth0UserInfo(email, name);
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(name))
+        {
+            var authHeader = Request.Headers.Authorization.ToString();
+            var token = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+                ? authHeader["Bearer ".Length..].Trim()
+                : "";
+            var fallback = await _userInfoService.GetUserInfoAsync(token);
+            if (string.IsNullOrEmpty(email)) email = fallback.Email;
+            if (string.IsNullOrEmpty(name))  name  = fallback.Name;
+        }
 
-        var authHeader = Request.Headers.Authorization.ToString();
-        var token = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
-            ? authHeader["Bearer ".Length..].Trim()
-            : "";
-        return await _userInfoService.GetUserInfoAsync(token);
+        return new Auth0UserInfo(email, name);
     }
 }
