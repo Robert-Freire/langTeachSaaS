@@ -527,6 +527,10 @@ The primary screen where teachers interact with AI.
 - Task type selector (Vocabulary / Grammar / Exercises / Conversation / Reading)
 - Style override (defaults to teacher's preferred style)
 - Student auto-populated if lesson links one
+- **"Use My Material" section** (collapsible):
+  - Large textarea: "Paste existing content (textbook passage, exercise, notes, etc.)"
+  - "Upload file (coming soon)" — disabled button, signals future feature
+  - Text: "The AI will build on your material rather than replacing it"
 - "Generate" button starts streaming
 
 **Streaming display:**
@@ -541,9 +545,11 @@ The primary screen where teachers interact with AI.
 - "Regenerate" re-runs with same params + `force: true`
 - "Reset to original" restores `GeneratedContent`
 
-**Playwright test**: Generate vocabulary for a lesson section, insert, refresh, confirm persisted.
+**Playwright test**: Generate vocabulary for a lesson section, insert, refresh, confirm persisted. Also test: paste a short passage in "Use My Material," generate exercises for it, confirm output references the pasted content.
 
-**Done when**: Teacher can generate content per-section, see it stream, insert, edit, and regenerate. All persists across refresh.
+**Demo moment** (optional, if time): Paste a paragraph from a textbook or an existing exercise into "Use My Material," generate comprehension questions or vocabulary exercises based on it. "Your course materials stay at the center. The AI adds to them."
+
+**Done when**: Teacher can generate content per-section, see it stream, insert, edit, and regenerate. All persists across refresh. "Use My Material" textarea is visible and functional (pasted content flows into the generation prompt). "Upload file (coming soon)" button is disabled but visible.
 
 ---
 
@@ -782,15 +788,17 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 
 4. **The magic** (60s): Click "Generate Full Lesson." Watch all 5 sections stream in with personalized content. Point out: vocabulary avoids Portuguese false cognates, exercises target past tenses (her weakness), examples reference cooking (her interest), reading passage uses restaurant scenario. "This would have taken you 20 minutes."
 
-5. **Edit and refine** (30s): Edit a vocabulary word, regenerate the exercises section with "make it easier." "You're in control. The AI proposes, you decide."
+5. **Your material, amplified** (30s): Click "Generate" on the Practice section. In the generation panel, paste a short paragraph from a textbook or exercise set into "Use My Material." Generate vocabulary/exercises based on it. "Your course materials stay at the center."
 
-6. **Two exports** (20s): Click "Export PDF > Student Handout," show the clean printable without answers. Then "Teacher Copy" with answer keys and timing. "One for you, one for the student."
+6. **Edit and refine** (30s): Edit a vocabulary word, regenerate the exercises section with "make it easier." "You're in control. The AI proposes, you decide."
 
-7. **Adapt for Pedro** (30s): Click "Adapt for Another Student," select Pedro (A2, English speaker, likes football). Watch the lesson regenerate at A2 with football examples. "Same topic, different student, zero extra work."
+7. **Two exports** (20s): Click "Export PDF > Student Handout," show the clean printable without answers. Then "Teacher Copy" with answer keys and timing. "One for you, one for the student."
 
-8. **Student history** (20s): Show lesson notes from a previous lesson on Maria's profile. "It remembers what you covered."
+8. **Adapt for Pedro** (30s): Click "Adapt for Another Student," select Pedro (A2, English speaker, likes football). Watch the lesson regenerate at A2 with football examples. "Same topic, different student, zero extra work."
 
-9. **What's next?** (15s): Click "Suggest Next Topic" on Maria's profile. Show 3 AI suggestions with rationale (e.g., "Maria hasn't covered future tenses yet"). Click one to pre-fill a new lesson. "It thinks ahead so you don't have to."
+9. **Student history** (20s): Show lesson notes from a previous lesson on Maria's profile. "It remembers what you covered."
+
+10. **What's next?** (15s): Click "Suggest Next Topic" on Maria's profile. Show 3 AI suggestions with rationale (e.g., "Maria hasn't covered future tenses yet"). Click one to pre-fill a new lesson. "It thinks ahead so you don't have to."
 
 **Seed data to prepare:**
 - 3-5 realistic student profiles with varied levels (A1 to C1), languages, interests, and weaknesses
