@@ -26,7 +26,7 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 
 ## Beta Phase — CURRENT (as of 2026-03-15)
 
-**Next task: T15** (Lesson Editor AI Integration)
+**Next task: T15.1** (Typed Content Model Foundation)
 
 | Task | Description | Status |
 |------|-------------|--------|
@@ -35,15 +35,18 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T11 | Claude API Client (IClaudeClient, model routing, error handling) | DONE — PR #40 |
 | T12 | Prompt Construction Service (IPromptService, GenerationContext, quality validation) | DONE — PR #41 merged |
 | T13 | Generation Endpoints (7x POST /api/generate/*) | DONE — PR #42 merged |
-| T14 | Streaming SSE endpoint + useGenerate hook | PR #44 open |
-| T15 | Lesson Editor AI Integration (per-section generate, streaming UI, edit/regenerate) | pending |
+| T14 | Streaming SSE endpoint + useGenerate hook | DONE — PR #44 merged |
+| T15 | Lesson Editor AI Integration (per-section generate, streaming UI, edit/regenerate) | DONE — PR #45 open |
+| T15.1 | Typed Content Model Foundation (type registry, renderer dispatch, student view route) | pending |
+| T15.2 | Vocabulary Type (editable table for teacher, flashcards for student) | pending |
+| T15.3 | Exercise/Quiz Type (quiz editor for teacher, interactive quiz for student) | pending |
+| T15.4 | Conversation Type (dialogue editor for teacher, dialogue view for student) | pending |
 | T16 | One-Click Full Lesson Generation | pending |
 | T17 | PDF Export | pending |
 | T18 | Student Lesson Notes (post-lesson notes, lesson history on student profile) | pending |
 | T19 | Dashboard v2 (recent lessons, quick create, this week stats) | pending |
 | T20 | Brand & Visual Polish (icon, favicon, loading states — replaces T9.1) | pending |
 | T21 | Regenerate with Direction (make easier/harder/shorter/longer modifiers) | pending |
-| T22 | Interactive Exercise Rendering (fill-in-blank, MCQ, matching UI) | pending |
 | T23 | Beta Demo Preparation (seed data, demo script, talking points) | pending (always last) |
 
 ## Key T2 Deviations (important for future tasks)
@@ -84,10 +87,15 @@ Plan at: `plan\langteach-beta\plan.md`
 Phase 2 AI Core plan (`plan\langteach-phase2\plan.md`) remains valid as technical reference but task sequencing now follows the beta plan (T10-T23), reorganized around demo impact for first beta tester.
 
 **Beta task overview:**
-- Phase 2A (Core Magic): T10 student enrichment, T11 Claude client, T12 prompt service, T13 generation endpoints, T14 streaming SSE, T15 lesson editor AI UI, T16 one-click full lesson
-- Phase 2B (Make It Real): T17 PDF export, T18 student lesson notes, T19 dashboard v2
-- Phase 2C (Polish): T20 brand, T21 regenerate with direction, T22 interactive exercises
+- Phase 2A (Core Magic): T10-T15 (all DONE)
+- Phase 2A.1 (Typed Content): T15.1 content model foundation, T15.2 vocabulary type, T15.3 exercise type, T15.4 conversation type
+- Phase 2B (Make It Real): T16 one-click full lesson, T17 PDF export, T18 student lesson notes, T19 dashboard v2, T21 regen with direction, T24 adapt lesson, T25 suggest next topic
+- Phase 2C (Polish): T20 brand
 - T23: Beta demo preparation (seed data, demo script, talking points)
+
+**Key architectural decision (2026-03-15):** Content blocks must be typed (vocabulary, exercises, conversation, reading, freeText) with per-type renderers for both teacher (editor) and student (interactive) views. T22 (Interactive Exercise Rendering) absorbed into T15.3. Old T16 (One-Click Full Lesson) renumbered but kept.
+
+**Demo audience:** Robert's brother, potential PM. Goal is to show the full teacher-to-student loop and sell the platform vision.
 
 **Deferred from original Phase 2:** generation caching (T3), usage tracking/limits (T8), Stripe, content library, shareable links.
 

@@ -1,9 +1,9 @@
 # LangTeach Beta Plan — "Show the Magic"
 
-> **Goal**: Build a compelling beta that a language teacher (self-employed, Preply-style) can use and immediately see the value. Not production-ready, but enough to spark interest and start a real conversation about useful features.
+> **Goal**: Build a compelling beta that demonstrates the full teacher-to-student loop: teacher creates structured lessons with AI, content renders as proper learning materials (not raw JSON), and a student can interact with the same content as flashcards, quizzes, and dialogues.
 > **Timeline**: Weeks 4-8 (after Phase 1 foundation)
-> **Audience**: Robert's brother (language teacher) as first beta tester
-> **Success metric**: The teacher watches a 3-minute demo and says "I want to use this Monday"
+> **Audience**: Robert's brother (language teacher, potential PM for the project)
+> **Success metric**: The brother sees the demo and wants to join as PM. He sees not just a tool, but a platform with a clear vision for growth.
 
 ---
 
@@ -27,13 +27,14 @@
 
 ### Beta Phase — IN PROGRESS
 
-**Next task: T10** (Student Profile Enrichment)
+**Next task: T15.1** (Typed Content Model)
 
 | Phase | Tasks | Status |
 |-------|-------|--------|
-| 2A Core Magic | T10, T10.1, T11-T16 | pending |
-| 2B Make It Real | T17-T19, T21, T24-T25 | pending |
-| 2C Polish | T20, T22 | pending |
+| 2A Core Magic | T10, T10.1, T11-T15 | T10-T15 DONE |
+| 2A.1 Typed Content | T15.1, T15.2, T15.3, T15.4 | pending |
+| 2B Make It Real | T16-T19, T21, T24-T25 | pending |
+| 2C Polish | T20 | pending |
 | Demo Prep | T23 | pending |
 
 ---
@@ -52,7 +53,9 @@ The foundation is solid but entirely manual:
 - Teacher profile settings (languages, CEFR levels, teaching style)
 - CI/CD pipeline (GitHub Actions)
 
-**The gap**: Lesson sections are empty textareas. There's no AI, no generated content, no export. It's a shell with good bones but no magic.
+**The gap** (as of Phase 1): Lesson sections are empty textareas. There's no AI, no generated content, no export. It's a shell with good bones but no magic.
+
+**The gap** (as of T15): AI generates structured JSON, but the frontend stores it as a text blob and displays it in a textarea. There's no typed content model. Vocabulary, exercises, and dialogues are all treated as opaque strings. This means: no proper rendering, no student-facing view, no path from "teacher creates" to "student learns." The typed content model (T15.1-T15.4) fixes this foundational issue.
 
 ### What a Preply Teacher Needs
 
@@ -578,6 +581,182 @@ The primary screen where teachers interact with AI.
 
 ---
 
+### Phase 2A.1 — Typed Content Model
+
+The AI generates structured JSON (vocabulary lists, exercises, dialogues), but without a typed content model, the frontend can only display raw JSON in a textarea. This phase introduces the foundational architecture that makes content type-aware: vocabulary renders as tables and flashcards, exercises render as interactive quizzes, conversations render as formatted dialogues.
+
+This is the architectural shift that everything else builds on. Without it, PDF export can't format content by type, student views can't render interactive experiences, and the demo shows JSON instead of learning materials.
+
+**Key principle**: Start with 3 core types that prove the architecture, then expand. The type system must be extensible so adding new types (infographics, pronunciation guides, writing prompts) later is just "add a schema + renderer," not a redesign.
+
+---
+
+#### T15.1 — Typed Content Model (Foundation)
+
+**Priority**: Must | **Effort**: 1.5 days
+
+The architectural foundation: content blocks become typed, with defined schemas, and the frontend gains a renderer registry that dispatches to the correct component based on type.
+
+**Backend changes:**
+
+Schema update to `LessonContentBlocks.BlockType`: enforce an enum of known types rather than free-form string. Current types:
+- `vocabulary` — word lists with definitions, examples, translations
+- `exercises` — fill-in-blank, multiple choice, matching
+- `conversation` — dialogue scenarios with roles and key phrases
+- `reading` — passages with comprehension questions and vocabulary highlights
+- `freeText` — teacher notes, instructions, anything unstructured
+
+Each type has a defined JSON schema for `GeneratedContent`. The prompt service (T12) already generates content matching these schemas. The change is that the frontend now *parses and validates* the JSON instead of treating it as a string.
+
+**Frontend changes:**
+
+1. **TypedContent registry**: A mapping from `BlockType` to `{ EditorComponent, PreviewComponent, StudentComponent }`. New types are added by registering a new entry.
+
+2. **ContentBlock rendering**: Replace the current textarea-based display with a dispatch:
+   ```
+   const { EditorComponent, PreviewComponent } = contentTypeRegistry[block.blockType]
+   ```
+
+3. **Edit/preview toggle**: Teacher can switch between structured editor (type-specific) and raw JSON (escape hatch for power users).
+
+4. **Student view route**: A read-only lesson view (`/lessons/:id/study`) that renders each content block using `StudentComponent` instead of `EditorComponent`.
+
+**API changes:**
+
+- `GET /api/lessons/{id}/study` — returns lesson with content blocks, no edit capabilities (future: auth as student)
+- Content block DTO gains a `parsedContent` field (typed JSON object) alongside the existing `generatedContent` string
+
+**Prompt service fix**: Update section description generation to avoid referencing physical classroom activities (video, whiteboard) that the platform cannot deliver. Section descriptions should suggest activities the platform supports (vocabulary drill, conversation practice, reading exercise).
+
+**Done when**: ContentBlock renderer dispatches by type; at least one type (vocabulary) renders as structured UI instead of textarea; student view route shows a read-only version; type registry is extensible.
+
+---
+
+#### T15.2 — Vocabulary Type (Teacher + Student)
+
+**Priority**: Must | **Effort**: 1 day
+
+The first content type fully implemented end-to-end.
+
+**JSON schema** (already generated by prompt service):
+```json
+{
+  "items": [
+    {
+      "word": "hello",
+      "definition": "a greeting word you say when you meet someone",
+      "exampleSentence": "Hello! My name is Carlos.",
+      "translation": "hola"
+    }
+  ]
+}
+```
+
+**Teacher view (EditorComponent):**
+- Editable table: columns for word, definition, example sentence, translation
+- Add/remove rows
+- Drag to reorder (stretch)
+- "AI-generated" badge with option to regenerate
+
+**Teacher view (PreviewComponent):**
+- Clean, formatted vocabulary list (how it will look to the student)
+
+**Student view (StudentComponent):**
+- **Flashcard mode**: Cards showing the word on front, definition + example + translation on back. Click/tap to flip.
+- Navigation: previous/next, or swipe
+- Progress indicator (3/10 cards reviewed)
+
+**Why this type first**: Vocabulary is the bread and butter of language teaching. Every lesson has it. The data is simple (list of objects), making it ideal for proving the architecture. The flashcard student view is immediately compelling and visually distinct from a textarea.
+
+**Done when**: Teacher sees an editable vocabulary table (not JSON); student sees flippable flashcards; both views source from the same ContentBlock data.
+
+---
+
+#### T15.3 — Exercise/Quiz Type (Teacher + Student)
+
+**Priority**: Must | **Effort**: 1.5 days
+
+**JSON schema** (already generated by prompt service):
+```json
+{
+  "fillInBlank": [
+    {
+      "sentence": "She ___ (go) to the store yesterday.",
+      "answer": "went",
+      "hint": "past simple of 'go'"
+    }
+  ],
+  "multipleChoice": [
+    {
+      "question": "Which word means 'happy'?",
+      "options": ["sad", "glad", "angry", "tired"],
+      "correctIndex": 1
+    }
+  ],
+  "matching": [
+    { "left": "hello", "right": "hola" },
+    { "left": "goodbye", "right": "adios" }
+  ]
+}
+```
+
+**Teacher view (EditorComponent):**
+- Grouped by exercise type (fill-in-blank, multiple choice, matching)
+- Editable fields for each question/answer
+- Add/remove questions within each group
+- Correct answer clearly marked (highlighted, checkmark)
+- Answer key visible
+
+**Teacher view (PreviewComponent):**
+- Rendered as the student would see it (without answers filled in)
+
+**Student view (StudentComponent):**
+- **Fill-in-blank**: Input fields in the sentence, submit to check
+- **Multiple choice**: Radio buttons, submit to check, green/red feedback
+- **Matching**: Click-to-pair or drag-and-drop (click-to-pair is simpler, prefer that for beta)
+- Score summary at the end ("You got 7/10")
+
+**Note**: This absorbs the old T22 (Interactive Exercise Rendering) which was marked as "Nice" in Phase 2C. It is now "Must" because without it, exercises are just JSON.
+
+**Done when**: Teacher sees a structured exercise editor with answer keys; student can interactively complete exercises and see their score; all three exercise sub-types render correctly.
+
+---
+
+#### T15.4 — Conversation Type (Teacher + Student)
+
+**Priority**: Should | **Effort**: 0.5 days
+
+**JSON schema** (already generated by prompt service):
+```json
+{
+  "scenarios": [
+    {
+      "setup": "You are at a restaurant. You want to order food.",
+      "roleA": "Waiter",
+      "roleB": "Customer",
+      "keyPhrases": ["I'd like to order...", "Could I have...?", "What do you recommend?"]
+    }
+  ]
+}
+```
+
+**Teacher view (EditorComponent):**
+- Scenario cards with editable setup, role labels, key phrases
+- Add/remove scenarios
+- Key phrases as editable tag list
+
+**Student view (StudentComponent):**
+- Dialogue format with role labels (colored differently)
+- Key phrases highlighted or shown as a reference sidebar
+- Setup text as context at the top
+- (Stretch) "Practice mode": student types responses for their assigned role
+
+**Why "Should" not "Must"**: Conversations are less structured than vocabulary or exercises. The student view is primarily display (formatted dialogue), which is useful but less interactive than flashcards or quizzes. If time is tight, vocabulary + exercises prove the concept.
+
+**Done when**: Teacher sees formatted dialogue cards (not JSON); student sees a clean dialogue view with highlighted key phrases.
+
+---
+
 #### T16 — One-Click Full Lesson Generation
 
 **Priority**: Must | **Effort**: 0.5 days
@@ -783,18 +962,7 @@ If time allows. Each adds incremental value but isn't required for the demo.
 
 Replaces the deferred T9.1 from Phase 1.
 
----
-
-#### T22 — Interactive Exercise Rendering
-
-**Priority**: Nice | **Effort**: 1 day
-
-Instead of plain-text exercises, render them as interactive components:
-- Fill-in-the-blank with input fields
-- Multiple choice with selectable options
-- Matching with drag-and-drop (or click-to-pair)
-
-**Why**: Visual wow factor for the demo. Shows the platform understands exercise pedagogy, not just text generation.
+~~T22 (Interactive Exercise Rendering) has been absorbed into T15.3.~~
 
 ---
 
@@ -804,7 +972,7 @@ Instead of plain-text exercises, render them as interactive components:
 
 This is not a code task. It's preparation for showing the beta to the teacher.
 
-**Demo script (5-minute walkthrough):**
+**Demo script (7-minute walkthrough):**
 
 1. **Open** (15s): Log in, show dashboard with real student data pre-seeded. "This is your teaching hub."
 
@@ -812,17 +980,23 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 
 3. **Create lesson** (30s): New lesson from Grammar template, link to Maria, topic: "ordering at a restaurant." "30 seconds to set up."
 
-4. **The magic** (60s): Click "Generate Full Lesson." Watch all 5 sections stream in with personalized content. Point out: vocabulary avoids Portuguese false cognates, exercises target past tenses (her weakness), examples reference cooking (her interest), reading passage uses restaurant scenario. "This would have taken you 20 minutes."
+4. **The magic** (60s): Click "Generate Full Lesson." Watch all 5 sections stream in with personalized content. Point out: vocabulary renders as a clean table (not JSON), exercises show as a formatted quiz, conversation shows as a dialogue. "This would have taken you 20 minutes."
 
-5. **Edit and refine** (30s): Edit a vocabulary word, regenerate the exercises section with "make it easier." "You're in control. The AI proposes, you decide."
+5. **Content types in action** (45s): Show the vocabulary section as an editable table (add a word, edit a definition). Show the exercises section with answer keys visible. "Each content type has its own editor. You're working with vocabulary as vocabulary, not as a wall of text."
 
-6. **Two exports** (20s): Click "Export PDF > Student Handout," show the clean printable without answers. Then "Teacher Copy" with answer keys and timing. "One for you, one for the student."
+6. **Edit and refine** (30s): Edit a vocabulary word, regenerate the exercises section with "make it easier." "You're in control. The AI proposes, you decide."
 
-7. **Adapt for Pedro** (30s): Click "Adapt for Another Student," select Pedro (A2, English speaker, likes football). Watch the lesson regenerate at A2 with football examples. "Same topic, different student, zero extra work."
+7. **The student experience** (45s): Switch to the student view of the same lesson. Show vocabulary as flippable flashcards (click to reveal definition). Show exercises as an interactive quiz (fill in blanks, select multiple choice, see score). "Same data, completely different experience. You create once, the student learns interactively."
 
-8. **Student history** (20s): Show lesson notes from a previous lesson on Maria's profile. "It remembers what you covered."
+8. **Two exports** (20s): Click "Export PDF > Student Handout," show the clean printable without answers. Then "Teacher Copy" with answer keys and timing. "One for you, one for the student."
 
-9. **What's next?** (15s): Click "Suggest Next Topic" on Maria's profile. Show 3 AI suggestions with rationale (e.g., "Maria hasn't covered future tenses yet"). Click one to pre-fill a new lesson. "It thinks ahead so you don't have to."
+9. **Adapt for Pedro** (30s): Click "Adapt for Another Student," select Pedro (A2, English speaker, likes football). Watch the lesson regenerate at A2 with football examples. "Same topic, different student, zero extra work."
+
+10. **Student history** (20s): Show lesson notes from a previous lesson on Maria's profile. "It remembers what you covered."
+
+11. **What's next?** (15s): Click "Suggest Next Topic" on Maria's profile. Show 3 AI suggestions with rationale (e.g., "Maria hasn't covered future tenses yet"). Click one to pre-fill a new lesson. "It thinks ahead so you don't have to."
+
+12. **The vision** (30s): "What you just saw is three content types. The architecture supports any number: pronunciation guides, writing prompts, infographics, cultural notes. Each one is just a new type in the system. And every type works the same way: teacher creates, AI assists, student interacts."
 
 **Seed data to prepare:**
 - 3-5 realistic student profiles with varied levels (A1 to C1), languages, interests, and weaknesses
@@ -863,40 +1037,48 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 ## Dependency Order
 
 ```
-T10 (student enrichment) ── T10.1 (frontend fixes, CI blocker) ─┐
+T10 (student enrichment) ── T10.1 (frontend fixes) ────────────┐
 T11 (Claude client) ──┐                                        │
-                      ├── T12 (prompt service, uses both) ─────┤
-T11 ──────────────────┤                                        │
+                      ├── T12 (prompt service) ────────────────┤
                       ├── T14 (streaming SSE)                  │
-                      │                                        │
-                      └── T13 (generation endpoints, needs T12)┤
+                      └── T13 (generation endpoints)───────────┤
                                                                │
-T14 + T13 ──── T15 (lesson editor AI UI) ──── T16 (full lesson)│
+T14 + T13 ──── T15 (lesson editor AI UI) ──────────────────────┤  ALL DONE
                       │                                        │
-                      ├── T17 (PDF export, needs content)      │
-                      ├── T21 (regen w/ direction, needs T15)  │
-                      └── T24 (adapt lesson, needs T16)        │
+                      │                                        │
+T15 ──── T15.1 (typed content model, foundation) ──────────────┤
+                      │                                        │
+                      ├── T15.2 (vocabulary type)              │
+                      ├── T15.3 (exercises type)               │
+                      └── T15.4 (conversation type)            │
                                                                │
-T10 ──── T18 (student lesson notes, needs enriched profiles)   │
+T15.1 ──── T16 (full lesson gen, benefits from typed model)    │
+T15.1 ──── T17 (PDF export, needs typed rendering)             │
+T15 ───── T21 (regen w/ direction)                             │
+T16 ───── T24 (adapt lesson)                                   │
+                                                               │
+T10 ──── T18 (student lesson notes)                            │
                └── T25 (suggest next topic, needs T18 + T11)   │
                                                                │
 T19 (dashboard v2) ── independent                              │
 T20 (brand polish) ── independent                              │
-T22 (exercise rendering) ── depends on T15                     │
                                                                │
 T23 (demo prep) ── LAST, after all others ─────────────────────┘
 ```
 
 **Suggested execution order:**
-1. T10 then T10.1 (T10.1 unblocks CI), T11 can start in parallel with T10.1
-2. T12
-3. T13 + T14 (parallel)
-4. T15
-5. T16 + T17 (parallel)
-6. T18 + T19 + T21 (parallel)
-7. T24 + T25 (parallel, after T16 and T18)
-8. T20, T22 (as time allows)
-9. T23 (always last)
+1. ~~T10 then T10.1, T11 in parallel~~ DONE
+2. ~~T12~~ DONE
+3. ~~T13 + T14 (parallel)~~ DONE
+4. ~~T15~~ DONE
+5. T15.1 (typed content model foundation)
+6. T15.2 + T15.3 (parallel: vocabulary + exercises types)
+7. T15.4 (conversation type, if time allows)
+8. T16 + T17 (parallel: full lesson gen + PDF export)
+9. T18 + T19 + T21 (parallel)
+10. T24 + T25 (parallel, after T16 and T18)
+11. T20 (as time allows)
+12. T23 (always last)
 
 ---
 
@@ -913,20 +1095,28 @@ T23 (demo prep) ── LAST, after all others ───────────�
 2. Open student profile, confirm all enriched fields displayed
 3. Create new lesson from template, link to student
 4. Generate vocabulary for one section, confirm streaming display
-5. Insert generated content, confirm it persists on refresh
-6. Edit generated content, confirm "modified" indicator
-7. Regenerate section with "make it easier" modifier, confirm new content at lower complexity
-8. Click "Generate Full Lesson," confirm all 5 sections populated (including reading passage)
-9. Export Teacher PDF, confirm answer keys and timing present
-10. Export Student PDF, confirm no answer keys, no teacher notes
-11. Click "Adapt for Another Student," select different student/level, confirm new lesson with regenerated content
-12. Add lesson notes, confirm they appear in student's lesson history
-13. Click "Suggest Next Topic" on student profile, confirm 3 suggestions with rationale appear
-14. Click "Create Lesson" on a suggestion, confirm lesson pre-filled with topic and student
-15. Return to dashboard, confirm recent lessons shown
+5. Confirm vocabulary renders as a structured table (not raw JSON)
+6. Insert generated content, confirm it persists on refresh
+7. Edit vocabulary in the table editor (add/remove/modify rows), confirm changes persist
+8. Generate exercises, confirm they render as formatted quiz with answer keys
+9. Edit generated content, confirm "modified" indicator
+10. Regenerate section with "make it easier" modifier, confirm new content at lower complexity
+11. Click "Generate Full Lesson," confirm all 5 sections populated with type-appropriate rendering
+12. Open student view (`/lessons/:id/study`), confirm vocabulary shows as flashcards
+13. In student view, confirm exercises are interactive (fill in answers, submit, see score)
+14. Export Teacher PDF, confirm answer keys and timing present
+15. Export Student PDF, confirm no answer keys, no teacher notes
+16. Click "Adapt for Another Student," select different student/level, confirm new lesson with regenerated content
+17. Add lesson notes, confirm they appear in student's lesson history
+18. Click "Suggest Next Topic" on student profile, confirm 3 suggestions with rationale appear
+19. Click "Create Lesson" on a suggestion, confirm lesson pre-filled with topic and student
+20. Return to dashboard, confirm recent lessons shown
 
 ### Quality bar
 - AI-generated content must be actually usable by a teacher (not generic filler)
+- No raw JSON visible anywhere in the teacher or student UI
+- Each content type renders with its own appropriate component (tables, flashcards, quizzes, dialogues)
+- Student view is a genuinely different experience from teacher view (not just read-only textarea)
 - PDF must be clean enough to hand to a student without embarrassment
 - No visible errors, loading spinners that never resolve, or broken layouts
 

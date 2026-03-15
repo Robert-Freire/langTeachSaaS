@@ -23,6 +23,7 @@ Plans live in the workspace repo under `plan\`. The Obsidian vault has a junctio
 | Phase 1 — T5.1 task file | `plan\langteach-phase1\task5.1-design-system.md` |
 | Phase 1 — T9.1 task file | `plan\langteach-phase1\task9.1-brand-logo.md` |
 | Phase 2 — AI Core (old, superseded) | `plan\langteach-phase2\plan.md` |
+| Product Vision & Roadmap (all phases) | `plan\langteach-vision.md` |
 | Beta — "Show the Magic" (T10-T23, active) | `plan\langteach-beta\plan.md` |
 | Beta — T10 task file | `plan\langteach-beta\task10-student-profile-enrichment.md` |
 
