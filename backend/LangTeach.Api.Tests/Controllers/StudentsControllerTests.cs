@@ -211,7 +211,7 @@ public class StudentsControllerTests
     [Fact]
     public async Task Create_WithInvalidNativeLanguage_ReturnsBadRequest()
     {
-        var client = _factory.CreateAuthenticatedClient("auth0|invalid-language-test", "invalid-language@example.com");
+        var client = _factory.CreateAuthenticatedClient("auth0|invalid-language-create-test", "invalid-language-create@example.com");
 
         var request = new CreateStudentRequest
         {
@@ -222,6 +222,26 @@ public class StudentsControllerTests
         };
 
         var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Update_WithInvalidNativeLanguage_ReturnsBadRequest()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|invalid-language-update-test", "invalid-language-update@example.com");
+
+        var created = await CreateStudentAsync(client, "Invalid Language Update Student");
+
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.CefrLevel,
+            NativeLanguage = "Klingon",
+        };
+
+        var response = await client.PutAsJsonAsync($"/api/students/{created.Id}", updateRequest);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
