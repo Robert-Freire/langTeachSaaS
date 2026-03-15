@@ -26,15 +26,16 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 
 ## Beta Phase — CURRENT (as of 2026-03-15)
 
-**Next task: T12** (Prompt Construction Service)
+**Next task: T13 in review; T14 next** (Streaming SSE)
 
 | Task | Description | Status |
 |------|-------------|--------|
 | T10 | Student Profile Enrichment (NativeLanguage, LearningGoals, Weaknesses fields) | DONE — PR #32 merged |
 | T10.1 | Frontend Component Fixes (cmdk dep, PopoverTrigger render prop) | DONE — folded into T10 PR |
 | T11 | Claude API Client (IClaudeClient, model routing, error handling) | DONE — PR #40 |
-| T12 | Prompt Construction Service (IPromptService, GenerationContext, quality validation) | pending |
-| T13 | Generation Endpoints (6x POST /api/generate/*) | pending |
+| T12 | Prompt Construction Service (IPromptService, GenerationContext, quality validation) | DONE — PR #41 merged |
+| T13 | Generation Endpoints (7x POST /api/generate/*) | PR #42 open |
+| T14 | Streaming SSE endpoint + useGenerate hook | pending |
 | T14 | Streaming SSE endpoint + useGenerate hook | pending |
 | T15 | Lesson Editor AI Integration (per-section generate, streaming UI, edit/regenerate) | pending |
 | T16 | One-Click Full Lesson Generation | pending |

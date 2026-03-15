@@ -1,0 +1,114 @@
+import { renderHook, act, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeAll, afterEach, afterAll } from 'vitest'
+import { setupServer } from 'msw/node'
+import { http, HttpResponse } from 'msw'
+import { useGenerate } from './useGenerate'
+
+vi.mock('@auth0/auth0-react', () => ({
+  useAuth0: () => ({
+    getAccessTokenSilently: vi.fn().mockResolvedValue('test-token'),
+  }),
+}))
+
+const SSE_URL = 'http://localhost:5000/api/generate/vocabulary/stream'
+
+const server = setupServer()
+
+beforeAll(() => server.listen())
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
+
+function makeSseBody(...lines: string[]): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder()
+  return new ReadableStream({
+    start(controller) {
+      for (const line of lines) {
+        controller.enqueue(encoder.encode(line))
+      }
+      controller.close()
+    },
+  })
+}
+
+const validRequest = {
+  lessonId: '00000000-0000-0000-0000-000000000001',
+  language: 'English',
+  cefrLevel: 'B1',
+  topic: 'Food',
+}
+
+describe('useGenerate', () => {
+  it('transitions status from streaming to done and accumulates output', async () => {
+    server.use(
+      http.post(SSE_URL, () => {
+        const body = makeSseBody(
+          'data: "hello"\n\n',
+          'data: " world"\n\n',
+          'data: [DONE]\n\n',
+        )
+        return new HttpResponse(body, {
+          headers: { 'Content-Type': 'text/event-stream' },
+        })
+      }),
+    )
+
+    const { result } = renderHook(() => useGenerate())
+
+    expect(result.current.status).toBe('idle')
+
+    act(() => {
+      result.current.generate('vocabulary', validRequest)
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('done'), {
+      timeout: 3000,
+    })
+
+    expect(result.current.output).toBe('hello world')
+    expect(result.current.error).toBeNull()
+  })
+
+  it('sets status to error when server returns non-ok response', async () => {
+    server.use(
+      http.post(SSE_URL, () => {
+        return new HttpResponse(null, { status: 503 })
+      }),
+    )
+
+    const { result } = renderHook(() => useGenerate())
+
+    act(() => {
+      result.current.generate('vocabulary', validRequest)
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('error'), {
+      timeout: 3000,
+    })
+
+    expect(result.current.error).toContain('503')
+  })
+
+  it('resets status to idle when abort is called', async () => {
+    server.use(
+      http.post(SSE_URL, async () => {
+        // Never resolves — simulates a slow stream
+        await new Promise(() => {})
+        return new HttpResponse(null)
+      }),
+    )
+
+    const { result } = renderHook(() => useGenerate())
+
+    act(() => {
+      result.current.generate('vocabulary', validRequest)
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('streaming'))
+
+    act(() => {
+      result.current.abort()
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('idle'))
+  })
+})
