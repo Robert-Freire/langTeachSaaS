@@ -186,25 +186,18 @@ function Student({ parsedContent, rawContent }: StudentProps) {
       </div>
 
       <div
-        className="w-full max-w-md cursor-pointer rounded-xl"
-        style={{ perspective: '800px' }}
+        className="w-full max-w-md cursor-pointer rounded-xl [perspective:800px]"
         onClick={flip}
         role="button"
         aria-label={flipped ? `Flashcard showing definition for ${item.word}, click to flip` : `Flashcard showing ${item.word}, click to flip`}
         data-testid="flashcard-card"
       >
         <div
-          className="relative w-full transition-transform duration-500"
-          style={{
-            transformStyle: 'preserve-3d',
-            transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-            minHeight: '200px',
-          }}
+          className={`relative w-full transition-transform duration-500 [transform-style:preserve-3d] min-h-[200px] ${flipped ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'}`}
         >
           {/* Front */}
           <div
-            className="absolute inset-0 flex items-center justify-center rounded-xl border-2 border-indigo-200 bg-white shadow-md p-6"
-            style={{ backfaceVisibility: 'hidden' }}
+            className="absolute inset-0 flex items-center justify-center rounded-xl border-2 border-indigo-200 bg-white shadow-md p-6 [backface-visibility:hidden]"
           >
             <span className="text-2xl font-semibold text-zinc-800" data-testid="flashcard-word">
               {item.word}
@@ -213,8 +206,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
 
           {/* Back */}
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center rounded-xl border-2 border-indigo-200 bg-indigo-50 shadow-md p-6 gap-2"
-            style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+            className="absolute inset-0 flex flex-col items-center justify-center rounded-xl border-2 border-indigo-200 bg-indigo-50 shadow-md p-6 gap-2 [backface-visibility:hidden] [transform:rotateY(180deg)]"
           >
             <p className="text-lg font-medium text-zinc-800" data-testid="flashcard-definition">
               {item.definition}
