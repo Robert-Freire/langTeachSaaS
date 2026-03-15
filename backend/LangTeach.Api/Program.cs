@@ -80,6 +80,7 @@ builder.Services.AddHttpClient("Claude", (sp, client) =>
     client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
 });
 builder.Services.AddScoped<IClaudeClient, ClaudeApiClient>();
+builder.Services.AddScoped<IPromptService, PromptService>();
 
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IUserInfoService, UserInfoService>();

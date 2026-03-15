@@ -1,5 +1,6 @@
 using FluentAssertions;
 using LangTeach.Api.AI;
+using LangTeach.Api.Tests.Helpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -7,25 +8,15 @@ using Microsoft.Extensions.Options;
 
 namespace LangTeach.Api.Tests.AI;
 
-/// <summary>
-/// Integration tests that call the real Anthropic API.
-/// Tests are skipped (return early) when Claude:ApiKey is absent from configuration,
-/// so CI passes cleanly without a key.
-/// To run locally: dotnet user-secrets set "Claude:ApiKey" "sk-ant-..." --project backend/LangTeach.Api
-/// </summary>
 public class ClaudeApiClientIntegrationTests
 {
-    private static (IClaudeClient client, bool hasKey) BuildRealClient()
+    private static IClaudeClient BuildRealClient()
     {
         var config = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json", optional: true)
             .AddUserSecrets<Program>(optional: true)
             .AddEnvironmentVariables()
             .Build();
-
-        var apiKey = config["Claude:ApiKey"];
-        if (string.IsNullOrWhiteSpace(apiKey))
-            return (null!, false);
 
         var services = new ServiceCollection();
         services.Configure<ClaudeClientOptions>(config.GetSection(ClaudeClientOptions.SectionName));
@@ -39,14 +30,13 @@ public class ClaudeApiClientIntegrationTests
 
         var sp = services.BuildServiceProvider();
         var factory = sp.GetRequiredService<IHttpClientFactory>();
-        return (new ClaudeApiClient(factory, NullLogger<ClaudeApiClient>.Instance), true);
+        return new ClaudeApiClient(factory, NullLogger<ClaudeApiClient>.Instance);
     }
 
-    [Fact]
+    [SkipIfNoClaudeApiKey]
     public async Task CompleteAsync_WithRealApi_ReturnsNonEmptyContent()
     {
-        var (client, hasKey) = BuildRealClient();
-        if (!hasKey) return;
+        var client = BuildRealClient();
 
         var result = await client.CompleteAsync(new ClaudeRequest(
             SystemPrompt: "You are a helpful assistant.",
@@ -59,11 +49,10 @@ public class ClaudeApiClientIntegrationTests
         result.ModelUsed.Should().StartWith("claude-haiku");
     }
 
-    [Fact]
+    [SkipIfNoClaudeApiKey]
     public async Task StreamAsync_WithRealApi_YieldsChunks()
     {
-        var (client, hasKey) = BuildRealClient();
-        if (!hasKey) return;
+        var client = BuildRealClient();
 
         var chunks = new List<string>();
         await foreach (var chunk in client.StreamAsync(new ClaudeRequest(
