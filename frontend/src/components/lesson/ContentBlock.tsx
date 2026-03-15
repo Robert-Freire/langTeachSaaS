@@ -171,6 +171,21 @@ export function ContentBlock({
 
       {/* Action buttons */}
       <div className="flex items-center gap-2 flex-wrap">
+        {isDirty && (
+          <Button
+            variant="default"
+            size="sm"
+            data-content-action="true"
+            onPointerDown={() => { actionInProgress.current = true }}
+            onKeyDown={markActionIntentFromKeyboard}
+            onClick={() => { actionInProgress.current = false; doSave(value) }}
+            disabled={saving}
+            className="text-xs h-7"
+            data-testid="save-btn"
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
