@@ -86,6 +86,24 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Demo seeder: dotnet run -- --seed <auth0-user-id|email>
+var seedIndex = Array.IndexOf(args, "--seed");
+if (seedIndex >= 0)
+{
+    var teacherLookup = seedIndex + 1 < args.Length ? args[seedIndex + 1] : null;
+    if (string.IsNullOrWhiteSpace(teacherLookup))
+    {
+        Console.Error.WriteLine("Usage: --seed <auth0-user-id|email>");
+        return 1;
+    }
+
+    using var seedScope = app.Services.CreateScope();
+    var seedDb     = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var seedLogger = seedScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await DemoSeeder.SeedAsync(seedDb, teacherLookup, seedLogger);
+    return 0;
+}
+
 app.UseSerilogRequestLogging(options =>
 {
     options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000}ms";
@@ -97,6 +115,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();
+return 0;
 
 public partial class Program { }
