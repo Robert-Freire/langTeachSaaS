@@ -130,6 +130,15 @@ dotnet run --project backend/LangTeach.Api -- --seed "auth0|<user-id>"
 The seeder is idempotent — running it again on the same account is a no-op.
 The API does not need to be running when you execute this command.
 
+To seed the **Azure dev database**, override the connection string via environment variable (get the value from Azure Key Vault or the portal):
+
+```bash
+ConnectionStrings__Default="Server=<your-server>.database.windows.net;Database=LangTeach;User Id=<user>;Password=<pass>;TrustServerCertificate=true" \
+  dotnet run --project backend/LangTeach.Api -- --seed r.freire@reply.eu
+```
+
+> The teacher record must already exist — log into the deployed app at least once before seeding.
+
 ## Logs
 
 - **Backend**: console + `backend/LangTeach.Api/logs/api-YYYY-MM-DD.log` (rolling daily, via Serilog)
