@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, type FocusEvent, type KeyboardEvent } from 'react'
 import {
   updateEditedContent,
   deleteContentBlock,
@@ -29,7 +29,7 @@ export function ContentBlock({
   const [resetting, setResetting] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
-  // Prevents blur-save from firing when user is about to click an action button
+  // Prevents blur-save from firing when an action button is being activated
   const actionInProgress = useRef(false)
 
   const storedValue = block.editedContent ?? block.generatedContent
@@ -39,7 +39,17 @@ export function ContentBlock({
     setValue(block.editedContent ?? block.generatedContent)
   }, [block.editedContent, block.generatedContent])
 
-  const handleBlur = async () => {
+  // Set intent flag for keyboard activation (Enter/Space on action buttons)
+  const markActionIntentFromKeyboard = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      actionInProgress.current = true
+    }
+  }
+
+  const handleBlur = async (e: FocusEvent<HTMLTextAreaElement>) => {
+    // Cover keyboard/touch: if focus moved to an action button, suppress save
+    const nextFocused = e.relatedTarget as HTMLElement | null
+    if (nextFocused?.dataset.contentAction === 'true') return
     if (actionInProgress.current) return
     if (value === storedValue) return
     setSaving(true)
@@ -120,7 +130,9 @@ export function ContentBlock({
         <Button
           variant="outline"
           size="sm"
-          onMouseDown={() => { actionInProgress.current = true }}
+          data-content-action="true"
+          onPointerDown={() => { actionInProgress.current = true }}
+          onKeyDown={markActionIntentFromKeyboard}
           onClick={handleRegenerate}
           className="text-xs h-7"
           data-testid="regenerate-btn"
@@ -131,7 +143,9 @@ export function ContentBlock({
           <Button
             variant="outline"
             size="sm"
-            onMouseDown={() => { actionInProgress.current = true }}
+            data-content-action="true"
+            onPointerDown={() => { actionInProgress.current = true }}
+            onKeyDown={markActionIntentFromKeyboard}
             onClick={handleReset}
             disabled={resetting}
             className="text-xs h-7"
@@ -143,7 +157,9 @@ export function ContentBlock({
         <Button
           variant="link"
           size="sm"
-          onMouseDown={() => { actionInProgress.current = true }}
+          data-content-action="true"
+          onPointerDown={() => { actionInProgress.current = true }}
+          onKeyDown={markActionIntentFromKeyboard}
           onClick={handleDelete}
           disabled={deleting}
           className="text-xs text-zinc-400 hover:text-red-600 ml-auto h-auto p-0"
