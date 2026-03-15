@@ -5,7 +5,7 @@ namespace LangTeach.Api.AI;
 public class PromptService : IPromptService
 {
     public ClaudeRequest BuildLessonPlanPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), LessonPlanUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 4096);
+        new(BuildSystemPrompt(ctx), LessonPlanUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 8192);
 
     public ClaudeRequest BuildVocabularyPrompt(GenerationContext ctx) =>
         new(BuildSystemPrompt(ctx), VocabularyUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 1024);

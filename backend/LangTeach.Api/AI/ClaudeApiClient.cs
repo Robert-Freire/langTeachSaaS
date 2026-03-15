@@ -46,6 +46,12 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
                 }
             }
         }
+        var stopReason   = root.TryGetProperty("stop_reason", out var sr) ? sr.GetString() : null;
+        if (stopReason == "max_tokens")
+            throw new ClaudeApiException(
+                System.Net.HttpStatusCode.OK,
+                $"Response truncated: max_tokens ({request.MaxTokens}) reached before completion.");
+
         var usedModel    = root.GetProperty("model").GetString() ?? modelId;
         var inputTokens  = root.GetProperty("usage").GetProperty("input_tokens").GetInt32();
         var outputTokens = root.GetProperty("usage").GetProperty("output_tokens").GetInt32();
