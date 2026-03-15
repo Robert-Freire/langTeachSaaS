@@ -10,10 +10,13 @@ const config: sql.config = {
 }
 
 export async function deleteTeacherByAuth0Id(auth0UserId: string): Promise<void> {
-  const pool = await sql.connect(config)
-  await pool
-    .request()
-    .input('auth0UserId', sql.NVarChar, auth0UserId)
-    .query('DELETE FROM Teachers WHERE Auth0UserId = @auth0UserId')
-  await pool.close()
+  const pool = await new sql.ConnectionPool(config).connect()
+  try {
+    await pool
+      .request()
+      .input('auth0UserId', sql.NVarChar, auth0UserId)
+      .query('DELETE FROM Teachers WHERE Auth0UserId = @auth0UserId')
+  } finally {
+    await pool.close()
+  }
 }

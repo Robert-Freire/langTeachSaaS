@@ -2,6 +2,9 @@ import { test, expect } from '@playwright/test'
 import { createAuthenticatedContext } from '../helpers/auth-helper'
 import { deleteTeacherByAuth0Id } from '../helpers/db-helper'
 
+// Runs serially — this test deletes and recreates the shared test teacher record
+test.describe.configure({ mode: 'serial' })
+
 /**
  * Registration happy path:
  * A user logs in for the first time → the app creates their teacher record
@@ -25,17 +28,17 @@ test('first login creates teacher record with email', async ({ browser }) => {
   })
 
   const profilePromise = setupPage.waitForResponse(
-    r => r.url() === `${apiBase}/api/profile` && r.request().method() === 'GET',
-    { timeout: 20000 }
+    r => r.url() === `${apiBase}/api/profile` && r.request().method() === 'GET'
   )
   await setupPage.goto('/settings')
   await profilePromise
 
   expect(bearerToken).toBeTruthy()
 
-  const meRes  = await setupContext.request.get(`${apiBase}/api/auth/me`, {
+  const meRes = await setupContext.request.get(`${apiBase}/api/auth/me`, {
     headers: { Authorization: `Bearer ${bearerToken}` },
   })
+  expect(meRes.status()).toBe(200)
   const { sub } = await meRes.json() as { sub: string }
   expect(sub).toBeTruthy()
 
@@ -56,8 +59,7 @@ test('first login creates teacher record with email', async ({ browser }) => {
   })
 
   const registrationProfilePromise = page.waitForResponse(
-    r => r.url() === `${apiBase}/api/profile` && r.request().method() === 'GET',
-    { timeout: 20000 }
+    r => r.url() === `${apiBase}/api/profile` && r.request().method() === 'GET'
   )
   await page.goto('/settings')
   const response = await registrationProfilePromise

@@ -25,7 +25,7 @@ public class AuthController : ControllerBase
         var sub      = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
         var userInfo = await ResolveUserInfoAsync();
 
-        _logger.LogInformation("Auth/Me called. Sub={Sub} Email={Email}", sub, userInfo.Email);
+        _logger.LogDebug("Auth/Me called. Sub={Sub}", sub);
 
         await _profileService.UpsertTeacherAsync(sub, userInfo.Email, userInfo.Name);
 
@@ -35,7 +35,8 @@ public class AuthController : ControllerBase
     private async Task<Auth0UserInfo> ResolveUserInfoAsync()
     {
         var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email") ?? "";
-        if (!string.IsNullOrEmpty(email)) return new Auth0UserInfo(email, "");
+        var name  = User.FindFirstValue(ClaimTypes.Name)  ?? User.FindFirstValue("name")  ?? "";
+        if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(name)) return new Auth0UserInfo(email, name);
 
         var authHeader = Request.Headers.Authorization.ToString();
         var token = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
