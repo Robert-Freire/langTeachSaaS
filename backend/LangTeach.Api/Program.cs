@@ -1,6 +1,8 @@
 using Azure.Identity;
+using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Services;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -67,6 +69,18 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default") ?? ""));
 
 builder.Services.AddHttpClient();
+
+builder.Services.Configure<ClaudeClientOptions>(
+    builder.Configuration.GetSection(ClaudeClientOptions.SectionName));
+builder.Services.AddHttpClient("Claude", (sp, client) =>
+{
+    var opts = sp.GetRequiredService<IOptions<ClaudeClientOptions>>().Value;
+    client.BaseAddress = new Uri(opts.BaseUrl);
+    client.DefaultRequestHeaders.Add("x-api-key", opts.ApiKey);
+    client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+});
+builder.Services.AddScoped<IClaudeClient, ClaudeApiClient>();
+
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
