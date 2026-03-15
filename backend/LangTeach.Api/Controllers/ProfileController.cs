@@ -29,7 +29,10 @@ public class ProfileController : ControllerBase
         var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email") ?? "";
         if (!string.IsNullOrEmpty(email)) return new Auth0UserInfo(email, "");
 
-        var token = Request.Headers.Authorization.ToString()["Bearer ".Length..].Trim();
+        var authHeader = Request.Headers.Authorization.ToString();
+        var token = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? authHeader["Bearer ".Length..].Trim()
+            : "";
         return await _userInfoService.GetUserInfoAsync(token);
     }
 

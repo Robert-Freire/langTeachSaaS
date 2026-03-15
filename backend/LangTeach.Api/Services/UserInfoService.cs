@@ -28,6 +28,18 @@ public class UserInfoService : IUserInfoService
         try
         {
             var domain = _configuration["Auth0:Domain"];
+            if (string.IsNullOrEmpty(domain))
+            {
+                _logger.LogWarning("Auth0:Domain is not configured — cannot fetch /userinfo.");
+                return new Auth0UserInfo("", "");
+            }
+
+            if (string.IsNullOrWhiteSpace(bearerToken))
+            {
+                _logger.LogWarning("Missing bearer token — cannot fetch /userinfo.");
+                return new Auth0UserInfo("", "");
+            }
+
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
 

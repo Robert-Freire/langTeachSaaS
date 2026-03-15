@@ -9,6 +9,13 @@ public static class DemoSeeder
 
     public static async Task<bool> SeedAsync(AppDbContext db, string teacherLookup, ILogger logger)
     {
+        if (string.IsNullOrWhiteSpace(teacherLookup))
+        {
+            logger.LogError("Seed target is required. Pass an Auth0 user ID or email.");
+            return false;
+        }
+        teacherLookup = teacherLookup.Trim();
+
         var teacher = teacherLookup.StartsWith("auth0|", StringComparison.OrdinalIgnoreCase)
             ? await db.Teachers.FirstOrDefaultAsync(t => t.Auth0UserId == teacherLookup)
             : await db.Teachers.FirstOrDefaultAsync(t => t.Email == teacherLookup);
