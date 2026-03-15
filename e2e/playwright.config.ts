@@ -11,4 +11,15 @@ export default defineConfig({
     baseURL,
     headless: true,
   },
+  projects: [
+    {
+      name: 'parallel',
+      testIgnore: ['**/teacher-profile.spec.ts'],
+    },
+    {
+      name: 'serial',
+      testMatch: ['**/teacher-profile.spec.ts'],
+      dependencies: ['parallel'],
+    },
+  ],
 })

@@ -26,6 +26,12 @@ public static class DemoSeeder
             return false;
         }
 
+        if (!teacher.IsApproved)
+        {
+            teacher.IsApproved = true;
+            logger.LogInformation("Approved teacher {Email}.", teacher.Email);
+        }
+
         var alreadySeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.Notes == DemoTag);
         if (alreadySeeded)
         {

@@ -71,6 +71,24 @@ test('vocabulary renders as table and student preview shows study view', async (
   // Study view should show the lesson title
   await expect(page.getByTestId('study-title')).toHaveText(lessonTitle, { timeout: UI_TIMEOUT })
 
-  // Vocabulary should be visible in student view as a table
-  await expect(page.getByTestId('vocabulary-table').first()).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  // Vocabulary should be visible in student view as flashcards
+  await expect(page.getByTestId('flashcard-container').first()).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+
+  // Verify initial state: first card, showing word
+  const container = page.getByTestId('flashcard-container').first()
+  await expect(container.getByTestId('flashcard-progress')).toHaveText('1 / 3', { timeout: UI_TIMEOUT })
+  await expect(container.getByTestId('flashcard-word')).toHaveText('departure', { timeout: UI_TIMEOUT })
+
+  // Flip the card
+  await container.getByTestId('flashcard-card').click()
+  await expect(container.getByTestId('flashcard-definition')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  // Navigate to next card
+  await container.getByTestId('flashcard-next').click()
+  await expect(container.getByTestId('flashcard-progress')).toHaveText('2 / 3', { timeout: UI_TIMEOUT })
+  await expect(container.getByTestId('flashcard-word')).toHaveText('itinerary', { timeout: UI_TIMEOUT })
+
+  // Navigate back
+  await container.getByTestId('flashcard-prev').click()
+  await expect(container.getByTestId('flashcard-progress')).toHaveText('1 / 3', { timeout: UI_TIMEOUT })
 })

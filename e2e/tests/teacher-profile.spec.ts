@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { createAuthenticatedContext } from '../helpers/auth-helper'
+import { UI_TIMEOUT } from '../helpers/timeouts'
 
 // Ensure a badge button is in the selected (aria-pressed="true") state.
 // If it's already selected, this is a no-op. If not, clicks to select it.
@@ -39,10 +40,9 @@ test('teacher can save and reload profile settings', async ({ browser }) => {
   await page.click('button[type="submit"]')
   await expect(page.getByTestId('save-success')).toBeVisible()
 
-  // Reload and assert persistence
+  // Reload and assert persistence (wait for profile API to populate the field)
   await page.reload()
-  await page.waitForSelector('input[name="displayName"]')
-  await expect(page.locator('input[name="displayName"]')).toHaveValue('Test Teacher')
+  await expect(page.locator('input[name="displayName"]')).toHaveValue('Test Teacher', { timeout: UI_TIMEOUT })
   await expect(page.locator('button:has-text("English")').first()).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('button:has-text("Spanish")').first()).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('button:has-text("B1")').first()).toHaveAttribute('aria-pressed', 'true')
