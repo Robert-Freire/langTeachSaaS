@@ -18,7 +18,8 @@ Never create stacked branches (branching off an unmerged feature branch). Every 
 
 ## Pre-push: code review step required
 
-After committing and passing all pre-push checks, run `/project:review` before pushing.
+After committing and passing all pre-push checks, run `/review` before pushing.
+Use the Skill tool: `Skill("review")` — do NOT delegate this to a subagent or Agent call.
 - Verdict **FAIL**: fix all critical issues, re-commit, re-run checks and review.
 - Verdict **PASS WITH NOTES**: address important items where reasonable, then push.
 - Verdict **PASS**: push immediately.
