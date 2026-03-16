@@ -271,7 +271,8 @@ public class LessonsController : ControllerBase
 
         var pdfBytes = _pdfExportService.GeneratePdf(pdfData, exportMode);
         var modeLabel = exportMode == PdfExportMode.Teacher ? "Teacher" : "Student";
-        var filename = $"{lesson.Title.Replace(" ", "_")}_{modeLabel}.pdf";
+        var safeTitle = string.Concat(lesson.Title.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+        var filename = $"{safeTitle.Replace(" ", "_")}_{modeLabel}.pdf";
 
         _logger.LogInformation(
             "GET /api/lessons/{LessonId}/export/pdf?mode={Mode}. TeacherId={TeacherId}",

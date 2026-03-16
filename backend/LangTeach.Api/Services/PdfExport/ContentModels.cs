@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 namespace LangTeach.Api.Services.PdfExport;
 
 // Vocabulary
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
 public record VocabularyItem(
     [property: JsonPropertyName("word")] string Word,
     [property: JsonPropertyName("definition")] string Definition,
@@ -14,6 +15,7 @@ public record VocabularyContent(
     [property: JsonPropertyName("items")] VocabularyItem[] Items);
 
 // Grammar
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
 public record GrammarExample(
     [property: JsonPropertyName("sentence")] string Sentence,
     [property: JsonPropertyName("note")] string? Note = null);
@@ -26,16 +28,19 @@ public record GrammarContent(
     [property: JsonPropertyName("commonMistakes")] string[] CommonMistakes);
 
 // Exercises
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
 public record ExercisesFillInBlank(
     [property: JsonPropertyName("sentence")] string Sentence,
     [property: JsonPropertyName("answer")] string Answer,
     [property: JsonPropertyName("hint")] string? Hint = null);
 
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
 public record ExercisesMultipleChoice(
     [property: JsonPropertyName("question")] string Question,
     [property: JsonPropertyName("options")] string[] Options,
     [property: JsonPropertyName("answer")] string Answer);
 
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
 public record ExercisesMatching(
     [property: JsonPropertyName("left")] string Left,
     [property: JsonPropertyName("right")] string Right);
@@ -47,6 +52,7 @@ public record ExercisesContent(
     [property: JsonPropertyName("matching")] ExercisesMatching[] Matching);
 
 // Conversation
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
 public record ConversationScenario(
     [property: JsonPropertyName("setup")] string Setup,
     [property: JsonPropertyName("roleA")] string RoleA,
@@ -60,10 +66,12 @@ public record ConversationContent(
     [property: JsonPropertyName("scenarios")] ConversationScenario[] Scenarios);
 
 // Reading
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
 public record ReadingVocabHighlight(
     [property: JsonPropertyName("word")] string Word,
     [property: JsonPropertyName("definition")] string Definition);
 
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
 public record ReadingQuestion(
     [property: JsonPropertyName("question")] string Question,
     [property: JsonPropertyName("answer")] string Answer,
@@ -76,6 +84,7 @@ public record ReadingContent(
     [property: JsonPropertyName("vocabularyHighlights")] ReadingVocabHighlight[] VocabularyHighlights);
 
 // Homework
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
 public record HomeworkTask(
     [property: JsonPropertyName("type")] string Type,
     [property: JsonPropertyName("instructions")] string Instructions,
@@ -86,6 +95,7 @@ public record HomeworkContent(
     [property: JsonPropertyName("tasks")] HomeworkTask[] Tasks);
 
 // Lesson Plan
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
 public record LessonPlanSections(
     [property: JsonPropertyName("warmUp")] string WarmUp,
     [property: JsonPropertyName("presentation")] string Presentation,
