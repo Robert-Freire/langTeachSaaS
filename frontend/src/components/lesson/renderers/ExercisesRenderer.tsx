@@ -307,11 +307,23 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null)
   const [checked, setChecked] = useState(false)
 
-  if (!isExercisesContent(parsedContent)) {
+  // Extract matching before the early return so useMemo is always called (Rules of Hooks)
+  const validContent = isExercisesContent(parsedContent) ? parsedContent as ExercisesContent : null
+
+  // Stable rotation of right-side options so they don't appear in the same order as left
+  const shuffledRight = useMemo(() => {
+    if (!validContent) return []
+    const items = validContent.matching.map((p, i) => ({ value: p.right, origIdx: i }))
+    // Rotate by half the length for a simple deterministic reorder
+    const mid = Math.ceil(items.length / 2)
+    return [...items.slice(mid), ...items.slice(0, mid)]
+  }, [validContent])
+
+  if (!validContent) {
     return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
   }
 
-  const { fillInBlank, multipleChoice, matching } = parsedContent as ExercisesContent
+  const { fillInBlank, multipleChoice, matching } = validContent
 
   // Ensure answer arrays are sized (safe on first render)
   const fibs = fibAnswers.length === fillInBlank.length
@@ -354,13 +366,6 @@ function Student({ parsedContent, rawContent }: StudentProps) {
 
   const resultClass = (correct: boolean) =>
     checked ? (correct ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50') : ''
-
-  // Stable shuffle of right-side options (seeded by content, not random per render)
-  const shuffledRight = useMemo(() => {
-    const items = matching.map((p, i) => ({ value: p.right, origIdx: i }))
-    // deterministic shuffle based on string lengths — good enough for UX
-    return [...items].sort((a, b) => a.value.length - b.value.length || a.origIdx - b.origIdx)
-  }, [matching])
 
   // Matching interaction handlers
   const handleLeftClick = (i: number) => {
