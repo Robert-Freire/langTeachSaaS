@@ -17,11 +17,14 @@ import StudyView from './pages/StudyView'
 const queryClient = new QueryClient()
 
 function AuthSetup({ children }: { children: React.ReactNode }) {
-  const { getAccessTokenSilently } = useAuth0()
+  const { getAccessTokenSilently, logout } = useAuth0()
 
   useEffect(() => {
-    setupAuthInterceptor(getAccessTokenSilently)
-  }, [getAccessTokenSilently])
+    setupAuthInterceptor(getAccessTokenSilently, () => {
+      localStorage.clear()
+      logout({ logoutParams: { returnTo: window.location.origin } })
+    })
+  }, [getAccessTokenSilently, logout])
 
   return <>{children}</>
 }
