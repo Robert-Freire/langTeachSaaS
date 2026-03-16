@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type KeyboardEvent } from 'react'
+import { useState, useEffect, useRef, useMemo, type KeyboardEvent } from 'react'
 import {
   updateEditedContent,
   deleteContentBlock,
@@ -109,7 +109,9 @@ export function ContentBlock({
   }
 
   const renderer = getRenderer(block.blockType)
-  const parsedContent = block.parsedContent
+  const parsedContent = useMemo(() => {
+    try { return JSON.parse(value) } catch { return null }
+  }, [value])
 
   return (
     <div
