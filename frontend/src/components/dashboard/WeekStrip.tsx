@@ -20,9 +20,11 @@ export function WeekStrip({ weekOffset, onPrev, onNext, lessons }: WeekStripProp
   for (const lesson of lessons) {
     if (!lesson.scheduledAt) continue
     const date = new Date(lesson.scheduledAt)
-    // Verify the lesson date falls within the displayed week
-    const dateStr = date.toISOString().slice(0, 10)
-    const dayIdx = days.findIndex(d => d.toISOString().slice(0, 10) === dateStr)
+    const dayIdx = days.findIndex(d =>
+      d.getFullYear() === date.getFullYear() &&
+      d.getMonth() === date.getMonth() &&
+      d.getDate() === date.getDate()
+    )
     if (dayIdx < 0) continue
     if (!lessonsByDay[dayIdx]) lessonsByDay[dayIdx] = []
     lessonsByDay[dayIdx].push(lesson)

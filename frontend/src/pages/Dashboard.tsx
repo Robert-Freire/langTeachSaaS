@@ -17,6 +17,8 @@ export default function Dashboard() {
     queryFn: () => getStudents({ pageSize: 1 }),
   })
 
+  // pageSize: 100 is sufficient for beta (teachers rarely have 100+ lessons per week or drafts).
+  // If this becomes limiting, add server-side pagination or a dedicated dashboard endpoint.
   const { data: weekLessonsData } = useQuery({
     queryKey: ['lessons', { scheduledFrom: toISODateString(start), scheduledTo: toISODateString(end) }],
     queryFn: () => getLessons({

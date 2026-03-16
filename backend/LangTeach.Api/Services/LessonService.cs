@@ -40,7 +40,10 @@ public class LessonService : ILessonService
             q = q.Where(l => l.ScheduledAt >= query.ScheduledFrom.Value);
 
         if (query.ScheduledTo.HasValue)
-            q = q.Where(l => l.ScheduledAt <= query.ScheduledTo.Value);
+        {
+            var scheduledToExclusive = query.ScheduledTo.Value.Date.AddDays(1);
+            q = q.Where(l => l.ScheduledAt.HasValue && l.ScheduledAt.Value < scheduledToExclusive);
+        }
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {

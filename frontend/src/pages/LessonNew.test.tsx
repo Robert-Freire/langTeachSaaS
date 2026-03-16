@@ -18,6 +18,12 @@ vi.mock('../api/students', () => ({
   getStudents: (...args: unknown[]) => mockGetStudents(...args),
 }))
 
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom')
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 function renderWithProviders() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -55,14 +61,21 @@ describe('LessonNew', () => {
     const blankBtn = await screen.findByTestId('template-blank')
     await userEvent.click(blankBtn)
 
-    // Fill required fields
+    // Fill required text fields
     await userEvent.type(screen.getByTestId('input-title'), 'Test Lesson')
     await userEvent.type(screen.getByTestId('input-topic'), 'Test Topic')
 
     // Set scheduled date
     const dateInput = screen.getByTestId('input-scheduled-at')
     await userEvent.type(dateInput, '2026-03-20T10:00')
-
     expect(dateInput).toHaveValue('2026-03-20T10:00')
+
+    // Submit button is disabled because Radix selects (language/cefrLevel) can't be
+    // set in jsdom, so we verify the scheduled date value is in the input.
+    // The actual request payload is verified by the E2E test.
+
+    // Verify the form has the date input with the correct value
+    const scheduledInput = screen.getByTestId('input-scheduled-at') as HTMLInputElement
+    expect(scheduledInput.value).toBe('2026-03-20T10:00')
   })
 })
