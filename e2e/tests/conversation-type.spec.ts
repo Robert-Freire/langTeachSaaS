@@ -91,6 +91,29 @@ test('conversation type renders editor and student view', async ({ browser }) =>
 
     // Key phrase should be visible
     await expect(page.getByText("I'd like to order...")).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // T15.4a: instruction header
+    await expect(page.getByText('Practice with a partner:')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // T15.4a: role selection — tap Role A, should show (You) badge
+    await page.getByTestId('student-role-a-0').click()
+    await expect(page.getByTestId('student-role-a-0')).toContainText('(You)')
+    await expect(page.getByTestId('student-role-b-0')).toContainText('(Partner)')
+
+    // Tap again to deselect
+    await page.getByTestId('student-role-a-0').click()
+    await expect(page.getByTestId('student-role-a-0')).not.toContainText('(You)')
+
+    // T15.4a: phrase toggle — tap chip, should get line-through class
+    const phraseChip = page.getByTestId('student-phrase-chip-0-0')
+    await expect(phraseChip).toBeVisible({ timeout: UI_TIMEOUT })
+    await phraseChip.click()
+    await expect(phraseChip).toHaveClass(/line-through/)
+    await expect(phraseChip).toContainText('✓')
+
+    // Tap again to uncheck
+    await phraseChip.click()
+    await expect(phraseChip).not.toHaveClass(/line-through/)
   } finally {
     await context.close()
   }

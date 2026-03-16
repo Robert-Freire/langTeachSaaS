@@ -236,6 +236,103 @@ function Preview({ parsedContent, rawContent }: PreviewProps) {
 
 // ─── Student ─────────────────────────────────────────────────────────────────
 
+function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; index: number }) {
+  const [selectedRole, setSelectedRole] = useState<'A' | 'B' | null>(null)
+  const [checkedPhrases, setCheckedPhrases] = useState<Set<number>>(new Set())
+
+  const toggleRole = (role: 'A' | 'B') =>
+    setSelectedRole(prev => (prev === role ? null : role))
+
+  const togglePhrase = (j: number) =>
+    setCheckedPhrases(prev => {
+      const next = new Set(prev)
+      next.has(j) ? next.delete(j) : next.add(j)
+      return next
+    })
+
+  const roleClass = (role: 'A' | 'B') => {
+    if (selectedRole === null)
+      return role === 'A'
+        ? 'bg-indigo-100 text-indigo-800'
+        : 'bg-slate-100 text-slate-700'
+    if (selectedRole === role)
+      return 'bg-indigo-500 text-white ring-2 ring-indigo-300'
+    return 'bg-zinc-100 text-zinc-400'
+  }
+
+  const dotClass = (role: 'A' | 'B') => {
+    if (selectedRole === role) return 'bg-white'
+    return role === 'A' ? 'bg-indigo-500' : 'bg-slate-400'
+  }
+
+  return (
+    <div className="border border-zinc-200 rounded-xl overflow-hidden">
+      {/* Setup callout */}
+      <div className="bg-zinc-50 border-b border-zinc-200 px-4 py-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 mb-1">Context</p>
+        <p className="text-zinc-700">{scenario.setup}</p>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* Role selection */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => toggleRole('A')}
+            className={`inline-flex items-center gap-1.5 font-semibold text-sm px-3 py-1 rounded-full transition-all ${roleClass('A')}`}
+            data-testid={`student-role-a-${index}`}
+          >
+            <span className={`w-2 h-2 rounded-full inline-block ${dotClass('A')}`} />
+            {scenario.roleA}
+            {selectedRole === 'A' && <span className="ml-1 text-xs font-bold">(You)</span>}
+            {selectedRole === 'B' && <span className="ml-1 text-xs">(Partner)</span>}
+          </button>
+          <span className="text-zinc-300 text-xs">vs</span>
+          <button
+            type="button"
+            onClick={() => toggleRole('B')}
+            className={`inline-flex items-center gap-1.5 font-semibold text-sm px-3 py-1 rounded-full transition-all ${roleClass('B')}`}
+            data-testid={`student-role-b-${index}`}
+          >
+            <span className={`w-2 h-2 rounded-full inline-block ${dotClass('B')}`} />
+            {scenario.roleB}
+            {selectedRole === 'B' && <span className="ml-1 text-xs font-bold">(You)</span>}
+            {selectedRole === 'A' && <span className="ml-1 text-xs">(Partner)</span>}
+          </button>
+        </div>
+
+        {/* Key phrases checklist */}
+        {scenario.keyPhrases.length > 0 && (
+          <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-400 mb-2">Key Phrases</p>
+            <div className="flex flex-wrap gap-2">
+              {scenario.keyPhrases.map((phrase, j) => {
+                const checked = checkedPhrases.has(j)
+                return (
+                  <button
+                    key={j}
+                    type="button"
+                    onClick={() => togglePhrase(j)}
+                    className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-all ${
+                      checked
+                        ? 'bg-indigo-200 text-indigo-400 border-indigo-200 line-through'
+                        : 'bg-white text-indigo-700 border-indigo-200'
+                    }`}
+                    data-testid={`student-phrase-chip-${index}-${j}`}
+                  >
+                    {checked && <span className="mr-1">✓</span>}
+                    {phrase}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function Student({ parsedContent, rawContent }: StudentProps) {
   if (!isConversationContent(parsedContent)) {
     return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
@@ -245,46 +342,13 @@ function Student({ parsedContent, rawContent }: StudentProps) {
 
   return (
     <div className="space-y-6 text-sm" data-testid="conversation-student">
+      {/* Activity instruction */}
+      <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3 text-sm text-indigo-800">
+        <span className="font-semibold">Practice with a partner:</span> Choose a role, read the context, and have a conversation using the key phrases below.
+      </div>
+
       {scenarios.map((scenario, i) => (
-        <div key={i} className="border border-zinc-200 rounded-xl overflow-hidden">
-          {/* Setup callout */}
-          <div className="bg-zinc-50 border-b border-zinc-200 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 mb-1">Context</p>
-            <p className="text-zinc-700">{scenario.setup}</p>
-          </div>
-
-          <div className="p-4 space-y-4">
-            {/* Role badges */}
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 bg-indigo-100 text-indigo-800 font-semibold text-sm px-3 py-1 rounded-full">
-                <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block" />
-                {scenario.roleA}
-              </span>
-              <span className="text-zinc-300 text-xs">vs</span>
-              <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 font-semibold text-sm px-3 py-1 rounded-full">
-                <span className="w-2 h-2 rounded-full bg-slate-400 inline-block" />
-                {scenario.roleB}
-              </span>
-            </div>
-
-            {/* Key phrases */}
-            {scenario.keyPhrases.length > 0 && (
-              <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-indigo-400 mb-2">Key Phrases</p>
-                <div className="flex flex-wrap gap-2">
-                  {scenario.keyPhrases.map((phrase, j) => (
-                    <span
-                      key={j}
-                      className="bg-white text-indigo-700 text-xs px-2.5 py-1 rounded-full border border-indigo-200 font-medium"
-                    >
-                      {phrase}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <ScenarioCard key={i} scenario={scenario} index={i} />
       ))}
     </div>
   )
