@@ -133,7 +133,7 @@ public class PromptService : IPromptService
         var level = Sanitize(ctx.CefrLevel);
         return $$"""
         Generate conversation scenarios for the lesson on "{{topic}}". Return JSON:
-        {"scenarios":[{"setup":"","roleA":"","roleB":"","keyPhrases":[""]}]}
+        {"scenarios":[{"setup":"","roleA":"","roleB":"","roleAPhrases":[""],"roleBPhrases":[""]}]}
         Include 2-3 scenarios using {{level}}-appropriate language.
         """;
     }

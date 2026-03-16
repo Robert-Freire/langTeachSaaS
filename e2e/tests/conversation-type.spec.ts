@@ -89,8 +89,37 @@ test('conversation type renders editor and student view', async ({ browser }) =>
     // Setup text should be visible
     await expect(page.getByText('You are at a restaurant and want to order food.')).toBeVisible({ timeout: UI_TIMEOUT })
 
-    // Key phrase should be visible
+    // T15.4a: instruction header
+    await expect(page.getByText('Practice with a partner:')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Role A is selected by default — Your Phrases visible immediately
+    await expect(page.getByTestId('student-role-a-0')).toContainText('(You)')
+    await expect(page.getByTestId('student-role-b-0')).toContainText('(Partner)')
+    await expect(page.getByText('Your Phrases')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByText('Here is your table.')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // T15.4a: switch to Role B (Customer)
+    await page.getByTestId('student-role-b-0').click()
+    await expect(page.getByTestId('student-role-b-0')).toContainText('(You)')
+    await expect(page.getByTestId('student-role-a-0')).toContainText('(Partner)')
+
+    // Customer (roleB) phrases now shown as "Your Phrases"
     await expect(page.getByText("I'd like to order...")).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Waiter (roleA) phrases shown dimmed as partner's
+    await expect(page.getByText('Here is your table.')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // T15.4a: phrase toggle — tap first "Your Phrases" chip
+    const phraseChip = page.getByTestId('student-phrase-chip-0-0')
+    await expect(phraseChip).toBeVisible({ timeout: UI_TIMEOUT })
+    await phraseChip.click()
+    await expect(phraseChip).toHaveClass(/line-through/)
+    await expect(phraseChip).toContainText('✓')
+
+    // Tap again to uncheck — both class and checkmark must clear
+    await phraseChip.click()
+    await expect(phraseChip).not.toHaveClass(/line-through/)
+    await expect(phraseChip).not.toContainText('✓')
   } finally {
     await context.close()
   }

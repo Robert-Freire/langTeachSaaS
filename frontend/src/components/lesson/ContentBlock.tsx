@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type KeyboardEvent } from 'react'
+import { useState, useEffect, useRef, useMemo, type KeyboardEvent } from 'react'
 import {
   updateEditedContent,
   deleteContentBlock,
@@ -72,7 +72,6 @@ export function ContentBlock({
 
   const handleReset = async () => {
     actionInProgress.current = false
-    if (isDirty && !window.confirm('You have unsaved changes. Discard them and reset to original?')) return
     setResetting(true)
     setActionError(null)
     try {
@@ -109,7 +108,12 @@ export function ContentBlock({
   }
 
   const renderer = getRenderer(block.blockType)
-  const parsedContent = block.parsedContent
+  const parsedContent = useMemo(() => {
+    try {
+      const raw = value.replace(/^```json\s*/i, '').replace(/```\s*$/, '')
+      return JSON.parse(raw)
+    } catch { return null }
+  }, [value])
 
   return (
     <div
@@ -126,10 +130,8 @@ export function ContentBlock({
           AI-generated
         </Badge>
         <span className="text-xs text-zinc-400 capitalize">{block.blockType}</span>
-        {(block.isEdited || isDirty) && (
-          <span className="text-xs text-amber-600 font-medium">
-            {isDirty ? 'Unsaved changes' : 'Modified'}
-          </span>
+        {isDirty && (
+          <span className="text-xs text-amber-600 font-medium">Unsaved changes</span>
         )}
         {saving && <span className="text-xs text-zinc-400">Saving...</span>}
 

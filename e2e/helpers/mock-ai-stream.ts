@@ -41,7 +41,8 @@ export const CONVERSATION_FIXTURE = {
       setup: 'You are at a restaurant and want to order food.',
       roleA: 'Waiter',
       roleB: 'Customer',
-      keyPhrases: ["I'd like to order...", 'Could I have...?', 'What do you recommend?'],
+      roleAPhrases: ['Here is your table.', 'Can I take your order?', 'I recommend the pasta.'],
+      roleBPhrases: ["I'd like to order...", 'Could I have...?', 'What do you recommend?'],
     },
   ],
 }
