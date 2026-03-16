@@ -24,22 +24,23 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T9 | CI/CD Pipeline (GitHub Actions, ACR, OIDC) | DONE — PR #27 merged |
 | T9.1 | Brand & Logo | MOVED TO BETA T20 |
 
-## Beta Phase — CURRENT (as of 2026-03-15)
+## Beta Phase — CURRENT (as of 2026-03-16)
 
-**Next task: T15.2** (Vocabulary Type — flashcards for student)
+**Next task: T15.4** (Conversation Type — scenario cards for teacher, dialogue view for student)
 
 | Task | Description | Status |
 |------|-------------|--------|
 | T10 | Student Profile Enrichment (NativeLanguage, LearningGoals, Weaknesses fields) | DONE — PR #32 merged |
 | T10.1 | Frontend Component Fixes (cmdk dep, PopoverTrigger render prop) | DONE — folded into T10 PR |
-| T11 | Claude API Client (IClaudeClient, model routing, error handling) | DONE — PR #40 |
+| T11 | Claude API Client (IClaudeClient, model routing, error handling) | DONE — PR #40 merged |
 | T12 | Prompt Construction Service (IPromptService, GenerationContext, quality validation) | DONE — PR #41 merged |
 | T13 | Generation Endpoints (7x POST /api/generate/*) | DONE — PR #42 merged |
 | T14 | Streaming SSE endpoint + useGenerate hook | DONE — PR #44 merged |
-| T15 | Lesson Editor AI Integration (per-section generate, streaming UI, edit/regenerate) | DONE — PR #45 open |
-| T15.1 | Typed Content Model Foundation (type registry, renderer dispatch, student view route) | DONE — PR #46 open |
-| T15.2 | Vocabulary Type (editable table for teacher, flashcards for student) | pending |
-| T15.3 | Exercise/Quiz Type (quiz editor for teacher, interactive quiz for student) | pending |
+| T15 | Lesson Editor AI Integration (per-section generate, streaming UI, edit/regenerate) | DONE — PR #45 merged |
+| T15.1 | Typed Content Model Foundation (type registry, renderer dispatch, student view route) | DONE — PR #46 merged |
+| T15.2 | Vocabulary Type (editable table for teacher, flashcards for student) | DONE — PR #48 merged |
+| T15.3 | Exercise/Quiz Type (quiz editor for teacher, interactive quiz for student) | DONE — PR #50 merged |
+| e2e-mock-auth | Mock-auth e2e architecture (decouple 6 tests from Auth0) | DONE — PR #51 merged |
 | T15.4 | Conversation Type (dialogue editor for teacher, dialogue view for student) | pending |
 | T16 | One-Click Full Lesson Generation | pending |
 | T17 | PDF Export | pending |
@@ -101,5 +102,6 @@ Phase 2 AI Core plan (`plan\langteach-phase2\plan.md`) remains valid as technica
 
 ## Key T4 Notes (important for T5+)
 - Student->Lesson FK is NoAction (not SetNull) — SQL Server multiple cascade path constraint. Nullify StudentId in service layer when soft-deleting students if needed.
-- Migrations run automatically on startup via MigrateAsync; guarded with !IsEnvironment("Testing") for test host.
+- Migrations run automatically on startup via MigrateAsync; guarded with !IsEnvironment("Testing") for test host. E2ETesting environment runs migrations (real DB) but uses E2ETestAuthHandler instead of JWT.
+- Mock-auth e2e: start API with ASPNETCORE_ENVIRONMENT=E2ETesting, frontend with npm run dev:e2e (VITE_E2E_TEST_MODE=true). Run: npx playwright test --project=mock-auth. Fixed identity: auth0|e2e-test-teacher / e2e-test@langteach.io.
 - docker-compose mounts frontend/.env.local into container for Auth0 vars.

@@ -35,6 +35,17 @@ export const EXERCISES_FIXTURE = {
   ],
 }
 
+export const CONVERSATION_FIXTURE = {
+  scenarios: [
+    {
+      setup: 'You are at a restaurant and want to order food.',
+      roleA: 'Waiter',
+      roleB: 'Customer',
+      keyPhrases: ["I'd like to order...", 'Could I have...?', 'What do you recommend?'],
+    },
+  ],
+}
+
 export const VOCABULARY_FIXTURE = {
   items: [
     {
