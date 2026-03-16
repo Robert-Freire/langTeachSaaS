@@ -70,6 +70,9 @@ public class ProfileService : IProfileService
 
     public async Task<Guid> UpsertTeacherAsync(string auth0UserId, string email, string name = "")
     {
+        if (string.IsNullOrWhiteSpace(auth0UserId))
+            throw new ArgumentException("auth0UserId must be provided.", nameof(auth0UserId));
+
         // 1. Email-first lookup: find existing teacher by email (stable across providers)
         Teacher? existing = null;
         if (!string.IsNullOrEmpty(email))
@@ -91,9 +94,11 @@ public class ProfileService : IProfileService
             // Provider switch: same email, different Auth0UserId
             if (existing.Auth0UserId != auth0UserId)
             {
+                var oldProvider = existing.Auth0UserId.Split('|', 2)[0];
+                var newProvider = auth0UserId.Split('|', 2)[0];
                 _logger.LogWarning(
-                    "Provider switch detected for {Email}: {OldAuth0UserId} -> {NewAuth0UserId}",
-                    email, existing.Auth0UserId, auth0UserId);
+                    "Provider switch detected for TeacherId={TeacherId}: {OldProvider} -> {NewProvider}",
+                    existing.Id, oldProvider, newProvider);
 
                 // Remove any stale teacher record that already holds the new Auth0UserId
                 // (e.g., a phantom record with empty email created by seeding)
@@ -112,8 +117,8 @@ public class ProfileService : IProfileService
                             $"Conflicting teacher {stale.Id} has dependents and requires manual merge.");
 
                     _logger.LogWarning(
-                        "Removing stale teacher {StaleTeacherId} with Auth0UserId={Auth0UserId} to resolve provider switch conflict",
-                        stale.Id, auth0UserId);
+                        "Removing stale teacher {StaleTeacherId} to resolve provider-switch conflict",
+                        stale.Id);
                     _db.Teachers.Remove(stale);
                 }
 
