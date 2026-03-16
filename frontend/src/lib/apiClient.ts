@@ -8,14 +8,15 @@ export function setupAuthInterceptor(
   getAccessToken: () => Promise<string>,
   onUnauthorized?: () => void,
 ) {
-  apiClient.interceptors.request.use(async (config) => {
+  const requestId = apiClient.interceptors.request.use(async (config) => {
     const token = await getAccessToken()
     config.headers.Authorization = `Bearer ${token}`
     return config
   })
 
+  let responseId: number | undefined
   if (onUnauthorized) {
-    apiClient.interceptors.response.use(
+    responseId = apiClient.interceptors.response.use(
       (response) => response,
       (error) => {
         if (axios.isAxiosError(error) && error.response?.status === 401) {
@@ -24,5 +25,12 @@ export function setupAuthInterceptor(
         return Promise.reject(error)
       },
     )
+  }
+
+  return () => {
+    apiClient.interceptors.request.eject(requestId)
+    if (responseId !== undefined) {
+      apiClient.interceptors.response.eject(responseId)
+    }
   }
 }

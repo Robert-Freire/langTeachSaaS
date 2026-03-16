@@ -23,10 +23,11 @@ export async function createMockAuthContext(browser: Browser): Promise<BrowserCo
  *   E2E_TEST_PASSWORD=<test user password>
  */
 export async function createAuthenticatedContext(browser: Browser): Promise<BrowserContext> {
+    const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5174';
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    await page.goto('http://localhost:5174');
+    await page.goto(baseURL);
     await page.fill('[name="username"]', process.env.E2E_TEST_EMAIL!);
     await page.fill('[name="password"]', process.env.E2E_TEST_PASSWORD!);
     await page.click('[name="action"]');
@@ -44,7 +45,7 @@ export async function createAuthenticatedContext(browser: Browser): Promise<Brow
     }
 
     // Wait until back on the app
-    await page.waitForURL('http://localhost:5174/**', { timeout: 30000 });
+    await page.waitForURL(`${baseURL}/**`, { timeout: 30000 });
     await page.close();
 
     return context;

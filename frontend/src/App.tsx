@@ -20,7 +20,7 @@ function AuthSetup({ children }: { children: React.ReactNode }) {
   const { getAccessTokenSilently, logout } = useAuth0()
 
   useEffect(() => {
-    setupAuthInterceptor(getAccessTokenSilently, () => {
+    return setupAuthInterceptor(getAccessTokenSilently, () => {
       localStorage.clear()
       logout({ logoutParams: { returnTo: window.location.origin } })
     })
