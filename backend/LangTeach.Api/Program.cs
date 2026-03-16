@@ -1,6 +1,8 @@
 using Azure.Identity;
 using LangTeach.Api.AI;
+using LangTeach.Api.Auth;
 using LangTeach.Api.Data;
+using Microsoft.AspNetCore.Authentication;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.Services;
 using Microsoft.Extensions.Options;
@@ -32,7 +34,7 @@ builder.Host.UseSerilog((ctx, services, config) => config
         outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}"));
 
 // Key Vault (production only — dev uses appsettings.Development.json)
-if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"))
+if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing") && !builder.Environment.IsEnvironment("E2ETesting"))
 {
     var kvUri = builder.Configuration["KeyVault:Uri"]
                 ?? throw new InvalidOperationException("KeyVault:Uri is not configured.");
@@ -49,16 +51,24 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()));
 
 // Authentication
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.Authority = $"https://{builder.Configuration["Auth0:Domain"]}/";
-        options.Audience = builder.Configuration["Auth0:Audience"];
-        options.TokenValidationParameters = new TokenValidationParameters
+if (builder.Environment.IsEnvironment("E2ETesting"))
+{
+    builder.Services.AddAuthentication(E2ETestAuthHandler.SchemeName)
+        .AddScheme<AuthenticationSchemeOptions, E2ETestAuthHandler>(E2ETestAuthHandler.SchemeName, _ => { });
+}
+else
+{
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
         {
-            NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier
-        };
-    });
+            options.Authority = $"https://{builder.Configuration["Auth0:Domain"]}/";
+            options.Audience = builder.Configuration["Auth0:Audience"];
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier
+            };
+        });
+}
 
 builder.Services.AddAuthorization();
 

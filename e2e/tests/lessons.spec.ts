@@ -1,9 +1,18 @@
 import { test, expect } from '@playwright/test'
-import { createAuthenticatedContext } from '../helpers/auth-helper'
+import { createMockAuthContext } from '../helpers/auth-helper'
+import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 import { UI_TIMEOUT } from '../helpers/timeouts'
 
+test.beforeAll(async ({ browser }) => {
+  const ctx = await createMockAuthContext(browser)
+  const page = await ctx.newPage()
+  await setupMockTeacher(page)
+  await page.close()
+  await ctx.close()
+})
+
 test('full lesson CRUD flow', async ({ browser }) => {
-  const context = await createAuthenticatedContext(browser)
+  const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
   // Navigate to lessons list

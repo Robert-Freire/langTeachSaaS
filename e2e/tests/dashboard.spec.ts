@@ -1,8 +1,17 @@
 import { test, expect } from '@playwright/test'
-import { createAuthenticatedContext } from '../helpers/auth-helper'
+import { createMockAuthContext } from '../helpers/auth-helper'
+import { setupMockTeacher } from '../helpers/mock-teacher-helper'
+
+test.beforeAll(async ({ browser }) => {
+  const ctx = await createMockAuthContext(browser)
+  const page = await ctx.newPage()
+  await setupMockTeacher(page)
+  await page.close()
+  await ctx.close()
+})
 
 test('dashboard tiles navigate to correct routes', async ({ browser }) => {
-  const context = await createAuthenticatedContext(browser)
+  const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
   await page.goto('/')
@@ -33,7 +42,7 @@ test('dashboard tiles navigate to correct routes', async ({ browser }) => {
 })
 
 test('dashboard tiles show real counts', async ({ browser }) => {
-  const context = await createAuthenticatedContext(browser)
+  const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
   await page.goto('/')
@@ -56,7 +65,7 @@ test('dashboard tiles show real counts', async ({ browser }) => {
 })
 
 test('sidebar nav links navigate to correct routes', async ({ browser }) => {
-  const context = await createAuthenticatedContext(browser)
+  const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
   await page.goto('/')

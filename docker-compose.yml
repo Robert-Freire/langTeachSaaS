@@ -23,7 +23,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ConnectionStrings__Default: "Server=sqlserver,1433;Database=LangTeach;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=true"
       Auth0__Domain: "${AUTH0_DOMAIN}"
       Auth0__Audience: "${AUTH0_AUDIENCE}"

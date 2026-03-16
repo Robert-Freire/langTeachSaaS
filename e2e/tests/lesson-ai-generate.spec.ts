@@ -1,13 +1,22 @@
 import { test, expect } from '@playwright/test'
-import { createAuthenticatedContext } from '../helpers/auth-helper'
-import { approveTeacherByAuth0Id, getTestAuth0UserId } from '../helpers/db-helper'
+import { createMockAuthContext } from '../helpers/auth-helper'
+import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 import { TEST_TIMEOUT, AI_STREAM_TIMEOUT, NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
+
+test.beforeAll(async ({ browser }) => {
+  const ctx = await createMockAuthContext(browser)
+  const page = await ctx.newPage()
+  await setupMockTeacher(page)
+  await page.close()
+  await ctx.close()
+})
 
 test('generate AI content for lesson section, insert, and persist after refresh', async ({ browser }) => {
   test.setTimeout(TEST_TIMEOUT)
-  const context = await createAuthenticatedContext(browser)
+  const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
+  try {
   // Create a lesson via the wizard
   await page.goto('/lessons')
   await expect(page.locator('h1')).toHaveText('Lessons', { timeout: NAV_TIMEOUT })
@@ -50,9 +59,6 @@ test('generate AI content for lesson section, insert, and persist after refresh'
   await page.getByTestId('generate-btn-presentation').click()
   await expect(page.getByTestId('generate-panel')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
-  // Approve the e2e test teacher right before generating (must happen after teacher exists)
-  await approveTeacherByAuth0Id(getTestAuth0UserId())
-
   // Vocabulary should be pre-selected for the Presentation section
   // Click Generate
   await page.getByTestId('generate-btn').click()
@@ -75,4 +81,7 @@ test('generate AI content for lesson section, insert, and persist after refresh'
   await page.reload()
   await expect(page.getByTestId('lesson-title')).toHaveText(lessonTitle, { timeout: UI_TIMEOUT })
   await expect(page.getByTestId('ai-block-badge').first()).toBeVisible({ timeout: UI_TIMEOUT })
+  } finally {
+    await context.close()
+  }
 })

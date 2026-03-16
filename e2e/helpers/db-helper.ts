@@ -30,10 +30,13 @@ export async function deleteTeacherByAuth0Id(auth0UserId: string): Promise<void>
 export async function deleteTeacherByEmail(email: string): Promise<void> {
   const pool = await new sql.ConnectionPool(config).connect()
   try {
-    await pool
+    const result = await pool
       .request()
       .input('email', sql.NVarChar, email)
       .query('DELETE FROM Teachers WHERE Email = @email')
+    if (result.rowsAffected[0] === 0) {
+      throw new Error(`deleteTeacherByEmail: no teacher found with Email "${email}"`)
+    }
   } finally {
     await pool.close()
   }
@@ -49,6 +52,35 @@ export async function updateTeacherAuth0Id(email: string, newAuth0UserId: string
       .query('UPDATE Teachers SET Auth0UserId = @newAuth0UserId WHERE Email = @email')
     if (result.rowsAffected[0] === 0) {
       throw new Error(`updateTeacherAuth0Id: no teacher found with Email "${email}"`)
+    }
+  } finally {
+    await pool.close()
+  }
+}
+
+export const E2E_TEST_EMAIL = 'e2e-test@langteach.io'
+
+export async function resetE2ETestTeacher(): Promise<void> {
+  const pool = await new sql.ConnectionPool(config).connect()
+  try {
+    await pool
+      .request()
+      .input('email', sql.NVarChar, E2E_TEST_EMAIL)
+      .query('DELETE FROM Teachers WHERE Email = @email')
+  } finally {
+    await pool.close()
+  }
+}
+
+export async function approveE2ETestTeacher(): Promise<void> {
+  const pool = await new sql.ConnectionPool(config).connect()
+  try {
+    const result = await pool
+      .request()
+      .input('email', sql.NVarChar, E2E_TEST_EMAIL)
+      .query('UPDATE Teachers SET IsApproved = 1 WHERE Email = @email')
+    if (result.rowsAffected[0] === 0) {
+      throw new Error(`approveE2ETestTeacher: no teacher found with Email "${E2E_TEST_EMAIL}"`)
     }
   } finally {
     await pool.close()

@@ -1,6 +1,15 @@
 import { test, expect } from '@playwright/test'
-import { createAuthenticatedContext } from '../helpers/auth-helper'
+import { createMockAuthContext } from '../helpers/auth-helper'
+import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 import { UI_TIMEOUT } from '../helpers/timeouts'
+
+test.beforeAll(async ({ browser }) => {
+  const ctx = await createMockAuthContext(browser)
+  const page = await ctx.newPage()
+  await setupMockTeacher(page)
+  await page.close()
+  await ctx.close()
+})
 
 // Ensure a badge button is in the selected (aria-pressed="true") state.
 // If it's already selected, this is a no-op. If not, clicks to select it.
@@ -13,7 +22,7 @@ async function ensureSelected(page: import('@playwright/test').Page, text: strin
 }
 
 test('teacher can save and reload profile settings', async ({ browser }) => {
-  const context = await createAuthenticatedContext(browser)
+  const context = await createMockAuthContext(browser)
   const page = await context.newPage()
   const apiBase = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 

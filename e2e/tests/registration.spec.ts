@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { createAuthenticatedContext } from '../helpers/auth-helper'
-import { deleteTeacherByAuth0Id } from '../helpers/db-helper'
+import { deleteTeacherByEmail } from '../helpers/db-helper'
 
 /**
  * Registration happy path:
@@ -36,13 +36,15 @@ test('first login creates teacher record with email', async ({ browser }) => {
     headers: { Authorization: `Bearer ${bearerToken}` },
   })
   expect(meRes.status()).toBe(200)
-  const { sub } = await meRes.json() as { sub: string }
+  const { sub, email } = await meRes.json() as { sub: string; email: string }
   expect(sub).toBeTruthy()
+  expect(email).toBeTruthy()
+  expect(email).toContain('@')
 
   await setupContext.close()
 
   // ── Step 2: delete teacher record — simulates first-time login ────────────
-  await deleteTeacherByAuth0Id(sub)
+  await deleteTeacherByEmail(email)
 
   // ── Step 3: log in again (no teacher record in DB) ────────────────────────
   const context = await createAuthenticatedContext(browser)
