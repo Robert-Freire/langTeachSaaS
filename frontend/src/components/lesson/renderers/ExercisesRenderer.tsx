@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { isExercisesContent } from '../../../types/contentTypes'
 import type {
   ExercisesContent,
@@ -288,10 +288,23 @@ function Preview({ parsedContent, rawContent }: PreviewProps) {
 
 // ─── Student ─────────────────────────────────────────────────────────────────
 
+// Pair colors — cycle through these for matched pairs
+const PAIR_COLORS = [
+  { bg: 'bg-violet-100', border: 'border-violet-400', text: 'text-violet-800' },
+  { bg: 'bg-sky-100', border: 'border-sky-400', text: 'text-sky-800' },
+  { bg: 'bg-amber-100', border: 'border-amber-400', text: 'text-amber-800' },
+  { bg: 'bg-emerald-100', border: 'border-emerald-400', text: 'text-emerald-800' },
+  { bg: 'bg-rose-100', border: 'border-rose-400', text: 'text-rose-800' },
+  { bg: 'bg-orange-100', border: 'border-orange-400', text: 'text-orange-800' },
+]
+
 function Student({ parsedContent, rawContent }: StudentProps) {
   const [fibAnswers, setFibAnswers] = useState<string[]>([])
   const [mcAnswers, setMcAnswers] = useState<(string | null)[]>([])
+  // matchAnswers[i] = right-side value paired with left[i], or null
   const [matchAnswers, setMatchAnswers] = useState<(string | null)[]>([])
+  // index of the left item currently selected (waiting for right pick)
+  const [selectedLeft, setSelectedLeft] = useState<number | null>(null)
   const [checked, setChecked] = useState(false)
 
   if (!isExercisesContent(parsedContent)) {
@@ -325,7 +338,6 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   ].filter(Boolean).length
 
   const handleCheck = () => {
-    // Freeze current sizes so checked state is consistent
     if (fibs !== fibAnswers) setFibAnswers(fibs)
     if (mcs !== mcAnswers) setMcAnswers(mcs)
     if (matches !== matchAnswers) setMatchAnswers(matches)
@@ -336,14 +348,53 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     setFibAnswers(Array(fillInBlank.length).fill(''))
     setMcAnswers(Array(multipleChoice.length).fill(null))
     setMatchAnswers(Array(matching.length).fill(null))
+    setSelectedLeft(null)
     setChecked(false)
   }
 
   const resultClass = (correct: boolean) =>
     checked ? (correct ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50') : ''
 
-  // Shuffled right column for matching (stable — derived from pair order, not random)
-  const rightOptions = matching.map((p) => p.right)
+  // Stable shuffle of right-side options (seeded by content, not random per render)
+  const shuffledRight = useMemo(() => {
+    const items = matching.map((p, i) => ({ value: p.right, origIdx: i }))
+    // deterministic shuffle based on string lengths — good enough for UX
+    return [...items].sort((a, b) => a.value.length - b.value.length || a.origIdx - b.origIdx)
+  }, [matching])
+
+  // Matching interaction handlers
+  const handleLeftClick = (i: number) => {
+    if (checked) return
+    if (selectedLeft === i) {
+      setSelectedLeft(null)
+      return
+    }
+    setSelectedLeft(i)
+  }
+
+  const handleRightClick = (value: string) => {
+    if (checked) return
+    const alreadyPairedAt = matches.findIndex((m) => m === value)
+    if (selectedLeft === null) {
+      // No left selected: if this right is already paired, unpair it
+      if (alreadyPairedAt !== -1) {
+        const next = [...matches]
+        next[alreadyPairedAt] = null
+        setMatchAnswers(next)
+      }
+      return
+    }
+    const next = [...matches]
+    // If right was paired elsewhere, free it first
+    if (alreadyPairedAt !== -1) next[alreadyPairedAt] = null
+    // If this left was already paired, free it (swap)
+    next[selectedLeft] = value
+    setMatchAnswers(next)
+    setSelectedLeft(null)
+  }
+
+  // color index per left item (only assigned once paired)
+  const pairColorIndex = (i: number) => i % PAIR_COLORS.length
 
   return (
     <div className="space-y-6 text-sm" data-testid="exercises-student">
@@ -446,40 +497,89 @@ function Student({ parsedContent, rawContent }: StudentProps) {
       {matching.length > 0 && (
         <div>
           <p className={sectionHeadingClass}>Matching</p>
-          <div className="grid gap-2" style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr) auto' }}>
-            {matching.map((pair, i) => (
-              <>
-                <span key={`left-${i}`} className="font-medium text-zinc-700 self-center">{pair.left}</span>
-                <select
-                  key={`sel-${i}`}
-                  value={matches[i] ?? ''}
-                  onChange={(e) => {
-                    const next = [...matches] as (string | null)[]
-                    next[i] = e.target.value || null
-                    setMatchAnswers(next)
-                  }}
-                  disabled={checked}
-                  className={`border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 w-full ${resultClass(matchCorrect[i])}`}
-                  data-testid={`match-select-${i}`}
-                >
-                  <option value="">-- select --</option>
-                  {rightOptions.map((opt, oi) => (
-                    <option key={oi} value={opt}>{opt}</option>
-                  ))}
-                </select>
-                <span key={`res-${i}`} className="self-center text-xs font-medium w-20">
-                  {checked && (
-                    <span
-                      className={matchCorrect[i] ? 'text-green-600' : 'text-red-600'}
-                      data-testid={`match-result-${i}`}
-                    >
-                      {matchCorrect[i] ? '✓' : `✗ ${pair.right}`}
-                    </span>
-                  )}
-                </span>
-              </>
-            ))}
+          {!checked && (
+            <p className="text-xs text-zinc-400 mb-3">Select a prompt, then select its match.</p>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Left column: prompts */}
+            <div className="space-y-2">
+              {matching.map((pair, i) => {
+                const paired = matches[i] !== null
+                const color = paired ? PAIR_COLORS[pairColorIndex(i)] : null
+                const isSelected = selectedLeft === i
+                let cls = 'rounded-lg border-2 px-3 py-2 text-sm font-medium cursor-pointer transition-all select-none'
+                if (checked) {
+                  cls += matchCorrect[i]
+                    ? ' border-green-400 bg-green-50 text-green-800'
+                    : ' border-red-400 bg-red-50 text-red-800'
+                } else if (isSelected) {
+                  cls += ' border-indigo-500 bg-indigo-50 text-indigo-800 ring-2 ring-indigo-300'
+                } else if (color) {
+                  cls += ` ${color.border} ${color.bg} ${color.text}`
+                } else {
+                  cls += ' border-zinc-200 bg-white text-zinc-700 hover:border-indigo-300 hover:bg-indigo-50/50'
+                }
+                return (
+                  <div
+                    key={i}
+                    className={cls}
+                    onClick={() => handleLeftClick(i)}
+                    data-testid={`match-left-${i}`}
+                  >
+                    {pair.left}
+                    {checked && (
+                      <span className="ml-2 text-xs font-semibold" data-testid={`match-result-${i}`}>
+                        {matchCorrect[i] ? '✓' : `✗`}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Right column: shuffled answers */}
+            <div className="space-y-2">
+              {shuffledRight.map(({ value }, si) => {
+                const pairedToLeftIdx = matches.findIndex((m) => m === value)
+                const isPaired = pairedToLeftIdx !== -1
+                const color = isPaired ? PAIR_COLORS[pairColorIndex(pairedToLeftIdx)] : null
+                let cls = 'rounded-lg border-2 px-3 py-2 text-sm cursor-pointer transition-all select-none'
+                if (checked) {
+                  const correct = isPaired && matchCorrect[pairedToLeftIdx]
+                  cls += isPaired
+                    ? correct
+                      ? ' border-green-400 bg-green-50 text-green-800'
+                      : ' border-red-400 bg-red-50 text-red-800'
+                    : ' border-zinc-200 bg-white text-zinc-400'
+                } else if (color) {
+                  cls += ` ${color.border} ${color.bg} ${color.text}`
+                } else {
+                  cls += selectedLeft !== null
+                    ? ' border-zinc-200 bg-white text-zinc-700 hover:border-indigo-300 hover:bg-indigo-50/50'
+                    : ' border-zinc-200 bg-white text-zinc-700'
+                }
+                return (
+                  <div
+                    key={si}
+                    className={cls}
+                    onClick={() => handleRightClick(value)}
+                    data-testid={`match-right-${si}`}
+                  >
+                    {value}
+                  </div>
+                )
+              })}
+            </div>
           </div>
+          {checked && (
+            <div className="mt-3 space-y-1">
+              {matching.map((pair, i) => !matchCorrect[i] && (
+                <p key={i} className="text-xs text-red-600">
+                  "{pair.left}" should match "{pair.right}"
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

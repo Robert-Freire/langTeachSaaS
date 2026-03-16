@@ -82,10 +82,12 @@ test('exercises render as quiz in editor and student can complete them', async (
   // Multiple choice: select "glad" (index 1)
   await student.getByTestId('mc-option-0-1').check()
 
-  // Matching: select "hola" for "hello"
-  await student.getByTestId('match-select-0').selectOption('hola')
-  // Select "adios" for "goodbye"
-  await student.getByTestId('match-select-1').selectOption('adios')
+  // Matching: click "hello" prompt, then click "hola" chip
+  await student.getByTestId('match-left-0').click()
+  await student.getByText('hola').click()
+  // Click "goodbye" prompt, then click "adios" chip
+  await student.getByTestId('match-left-1').click()
+  await student.getByText('adios').click()
 
   // Check all answers
   await student.getByTestId('check-answers-btn').click()
