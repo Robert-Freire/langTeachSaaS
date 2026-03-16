@@ -55,7 +55,7 @@ test('export PDF downloads a file for teacher and student modes', async ({ brows
     page.waitForEvent('download', { timeout: 15000 }),
     teacherOption.click(),
   ])
-  expect(teacherDownload.suggestedFilename()).toContain('.pdf')
+  expect(teacherDownload.suggestedFilename()).toContain('Teacher.pdf')
 
   // Student Handout export
   await exportBtn.click()
@@ -66,7 +66,7 @@ test('export PDF downloads a file for teacher and student modes', async ({ brows
     page.waitForEvent('download', { timeout: 15000 }),
     studentOption.click(),
   ])
-  expect(studentDownload.suggestedFilename()).toContain('.pdf')
+  expect(studentDownload.suggestedFilename()).toContain('Student.pdf')
 
   await context.close()
 })

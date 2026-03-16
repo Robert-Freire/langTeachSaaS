@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Download, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
@@ -12,8 +12,11 @@ interface ExportButtonProps {
 export function ExportButton({ lessonId }: ExportButtonProps) {
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
+  const exportingRef = useRef(false)
 
   const handleExport = async (mode: ExportMode) => {
+    if (exportingRef.current) return
+    exportingRef.current = true
     setLoading(true)
     setOpen(false)
     try {
@@ -22,6 +25,7 @@ export function ExportButton({ lessonId }: ExportButtonProps) {
       logger.error('ExportButton', 'PDF export failed', err)
     } finally {
       setLoading(false)
+      exportingRef.current = false
     }
   }
 

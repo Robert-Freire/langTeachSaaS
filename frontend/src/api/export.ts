@@ -13,7 +13,7 @@ export async function exportLessonPdf(lessonId: string, mode: ExportMode): Promi
   const anchor = document.createElement('a')
   anchor.href = url
   const disposition = response.headers['content-disposition']
-  const filenameMatch = disposition?.match(/filename="?([^"]+)"?/)
+  const filenameMatch = disposition?.match(/filename="([^"]+)"/) ?? disposition?.match(/filename=([^;\s]+)/)
   anchor.download = filenameMatch?.[1] ?? `lesson_${mode}.pdf`
   document.body.appendChild(anchor)
   anchor.click()

@@ -224,7 +224,8 @@ public class LessonsController : ControllerBase
         if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email!);
 
-        if (!Enum.TryParse<PdfExportMode>(mode, ignoreCase: true, out var exportMode))
+        if (!Enum.TryParse<PdfExportMode>(mode, ignoreCase: true, out var exportMode)
+            || !Enum.IsDefined(exportMode))
             return BadRequest("Invalid mode. Use 'teacher' or 'student'.");
 
         var lesson = await _db.Lessons

@@ -125,6 +125,9 @@ public class PdfExportService : IPdfExportService
 
     private static void RenderVocabulary(IContainer container, VocabularyContent content, PdfExportMode mode)
     {
+        var items = content.Items ?? [];
+        if (items.Length == 0) return;
+
         container.Column(col =>
         {
             col.Item().Text("Vocabulary").FontSize(11).SemiBold();
@@ -146,7 +149,7 @@ public class PdfExportService : IPdfExportService
                         h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Example").FontSize(9).SemiBold();
                         h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Translation").FontSize(9).SemiBold();
                     });
-                    foreach (var item in content.Items)
+                    foreach (var item in items)
                     {
                         table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.Word).FontSize(9);
                         table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.Definition).FontSize(9);
@@ -168,7 +171,7 @@ public class PdfExportService : IPdfExportService
                         h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Definition").FontSize(9).SemiBold();
                         h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Example").FontSize(9).SemiBold();
                     });
-                    foreach (var item in content.Items)
+                    foreach (var item in items)
                     {
                         table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.Word).FontSize(9);
                         table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.Definition).FontSize(9);
@@ -186,10 +189,11 @@ public class PdfExportService : IPdfExportService
             col.Item().Text(content.Title).FontSize(11).SemiBold();
             col.Item().PaddingTop(4).Text(content.Explanation).FontSize(10);
 
-            if (content.Examples.Length > 0)
+            var examples = content.Examples ?? [];
+            if (examples.Length > 0)
             {
                 col.Item().PaddingTop(4).Text("Examples:").FontSize(10).SemiBold();
-                foreach (var ex in content.Examples)
+                foreach (var ex in examples)
                 {
                     col.Item().PaddingLeft(12).Text(text =>
                     {
@@ -200,10 +204,11 @@ public class PdfExportService : IPdfExportService
                 }
             }
 
-            if (mode == PdfExportMode.Teacher && content.CommonMistakes.Length > 0)
+            var mistakes = content.CommonMistakes ?? [];
+            if (mode == PdfExportMode.Teacher && mistakes.Length > 0)
             {
                 col.Item().PaddingTop(4).Text("Common Mistakes:").FontSize(10).SemiBold().FontColor(Colors.Red.Darken1);
-                foreach (var mistake in content.CommonMistakes)
+                foreach (var mistake in mistakes)
                 {
                     col.Item().PaddingLeft(12).Text($"- {mistake}").FontSize(10).FontColor(Colors.Red.Darken1);
                 }
@@ -217,12 +222,13 @@ public class PdfExportService : IPdfExportService
         {
             col.Item().Text("Exercises").FontSize(11).SemiBold();
 
-            if (content.FillInBlank.Length > 0)
+            var fillInBlank = content.FillInBlank ?? [];
+            if (fillInBlank.Length > 0)
             {
                 col.Item().PaddingTop(4).Text("Fill in the Blank:").FontSize(10).SemiBold();
-                for (var i = 0; i < content.FillInBlank.Length; i++)
+                for (var i = 0; i < fillInBlank.Length; i++)
                 {
-                    var fb = content.FillInBlank[i];
+                    var fb = fillInBlank[i];
                     col.Item().PaddingLeft(12).Text(text =>
                     {
                         text.Span($"{i + 1}. {fb.Sentence}").FontSize(10);
@@ -232,14 +238,15 @@ public class PdfExportService : IPdfExportService
                 }
             }
 
-            if (content.MultipleChoice.Length > 0)
+            var multipleChoice = content.MultipleChoice ?? [];
+            if (multipleChoice.Length > 0)
             {
                 col.Item().PaddingTop(4).Text("Multiple Choice:").FontSize(10).SemiBold();
-                for (var i = 0; i < content.MultipleChoice.Length; i++)
+                for (var i = 0; i < multipleChoice.Length; i++)
                 {
-                    var mc = content.MultipleChoice[i];
+                    var mc = multipleChoice[i];
                     col.Item().PaddingLeft(12).Text($"{i + 1}. {mc.Question}").FontSize(10);
-                    foreach (var opt in mc.Options)
+                    foreach (var opt in mc.Options ?? [])
                     {
                         var isAnswer = mode == PdfExportMode.Teacher && opt == mc.Answer;
                         col.Item().PaddingLeft(24).Text(text =>
@@ -253,27 +260,51 @@ public class PdfExportService : IPdfExportService
                 }
             }
 
-            if (content.Matching.Length > 0)
+            var matching = content.Matching ?? [];
+            if (matching.Length > 0)
             {
                 col.Item().PaddingTop(4).Text("Matching:").FontSize(10).SemiBold();
-                col.Item().PaddingTop(2).Table(table =>
+                if (mode == PdfExportMode.Teacher)
                 {
-                    table.ColumnsDefinition(c =>
+                    col.Item().PaddingTop(2).Table(table =>
                     {
-                        c.RelativeColumn();
-                        c.RelativeColumn();
+                        table.ColumnsDefinition(c =>
+                        {
+                            c.RelativeColumn();
+                            c.RelativeColumn();
+                        });
+                        table.Header(h =>
+                        {
+                            h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Column A").FontSize(9).SemiBold();
+                            h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Column B").FontSize(9).SemiBold();
+                        });
+                        foreach (var m in matching)
+                        {
+                            table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(m.Left).FontSize(9);
+                            table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(m.Right).FontSize(9);
+                        }
                     });
-                    table.Header(h =>
+                }
+                else
+                {
+                    // Student mode: show columns separately so answers aren't revealed by adjacency
+                    col.Item().PaddingTop(2).Row(row =>
                     {
-                        h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Column A").FontSize(9).SemiBold();
-                        h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Column B").FontSize(9).SemiBold();
+                        row.RelativeItem().Column(left =>
+                        {
+                            left.Item().Text("Column A").FontSize(9).SemiBold();
+                            foreach (var m in matching)
+                                left.Item().PaddingTop(2).Text($"- {m.Left}").FontSize(9);
+                        });
+                        var shuffled = matching.OrderBy(_ => Guid.NewGuid()).ToArray();
+                        row.RelativeItem().Column(right =>
+                        {
+                            right.Item().Text("Column B").FontSize(9).SemiBold();
+                            foreach (var m in shuffled)
+                                right.Item().PaddingTop(2).Text($"- {m.Right}").FontSize(9);
+                        });
                     });
-                    foreach (var m in content.Matching)
-                    {
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(m.Left).FontSize(9);
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(m.Right).FontSize(9);
-                    }
-                });
+                }
             }
         });
     }
@@ -283,16 +314,16 @@ public class PdfExportService : IPdfExportService
         container.Column(col =>
         {
             col.Item().Text("Conversation").FontSize(11).SemiBold();
-            foreach (var scenario in content.Scenarios)
+            foreach (var scenario in content.Scenarios ?? [])
             {
                 col.Item().PaddingTop(4).PaddingLeft(8).Column(sc =>
                 {
                     sc.Item().Text($"Setup: {scenario.Setup}").FontSize(10).Italic();
                     sc.Item().PaddingTop(2).Text($"{scenario.RoleA}:").FontSize(10).SemiBold();
-                    foreach (var p in scenario.RoleAPhrases)
+                    foreach (var p in scenario.RoleAPhrases ?? [])
                         sc.Item().PaddingLeft(12).Text($"- {p}").FontSize(10);
                     sc.Item().PaddingTop(2).Text($"{scenario.RoleB}:").FontSize(10).SemiBold();
-                    foreach (var p in scenario.RoleBPhrases)
+                    foreach (var p in scenario.RoleBPhrases ?? [])
                         sc.Item().PaddingLeft(12).Text($"- {p}").FontSize(10);
                     if (scenario.KeyPhrases is { Length: > 0 })
                     {
@@ -312,12 +343,13 @@ public class PdfExportService : IPdfExportService
             col.Item().Text("Reading").FontSize(11).SemiBold();
             col.Item().PaddingTop(4).Text(content.Passage).FontSize(10);
 
-            if (content.ComprehensionQuestions.Length > 0)
+            var questions = content.ComprehensionQuestions ?? [];
+            if (questions.Length > 0)
             {
                 col.Item().PaddingTop(4).Text("Comprehension Questions:").FontSize(10).SemiBold();
-                for (var i = 0; i < content.ComprehensionQuestions.Length; i++)
+                for (var i = 0; i < questions.Length; i++)
                 {
-                    var q = content.ComprehensionQuestions[i];
+                    var q = questions[i];
                     col.Item().PaddingLeft(12).Text(text =>
                     {
                         text.Span($"{i + 1}. {q.Question}").FontSize(10);
@@ -327,10 +359,11 @@ public class PdfExportService : IPdfExportService
                 }
             }
 
-            if (content.VocabularyHighlights.Length > 0)
+            var highlights = content.VocabularyHighlights ?? [];
+            if (highlights.Length > 0)
             {
                 col.Item().PaddingTop(4).Text("Vocabulary Highlights:").FontSize(10).SemiBold();
-                foreach (var vh in content.VocabularyHighlights)
+                foreach (var vh in highlights)
                     col.Item().PaddingLeft(12).Text($"- {vh.Word}: {vh.Definition}").FontSize(10);
             }
         });
@@ -341,15 +374,16 @@ public class PdfExportService : IPdfExportService
         container.Column(col =>
         {
             col.Item().Text("Homework").FontSize(11).SemiBold();
-            foreach (var task in content.Tasks)
+            foreach (var task in content.Tasks ?? [])
             {
                 col.Item().PaddingTop(4).PaddingLeft(8).Column(tc =>
                 {
                     tc.Item().Text($"[{task.Type}] {task.Instructions}").FontSize(10);
-                    if (task.Examples.Length > 0)
+                    var examples = task.Examples ?? [];
+                    if (examples.Length > 0)
                     {
                         tc.Item().PaddingTop(2).Text("Examples:").FontSize(9).Italic();
-                        foreach (var ex in task.Examples)
+                        foreach (var ex in examples)
                             tc.Item().PaddingLeft(12).Text($"- {ex}").FontSize(9);
                     }
                 });
@@ -363,12 +397,15 @@ public class PdfExportService : IPdfExportService
         {
             col.Item().Text($"Lesson Plan: {content.Title}").FontSize(11).SemiBold();
 
-            if (content.Objectives.Length > 0)
+            var objectives = content.Objectives ?? [];
+            if (objectives.Length > 0)
             {
                 col.Item().PaddingTop(4).Text("Objectives:").FontSize(10).SemiBold();
-                foreach (var obj in content.Objectives)
+                foreach (var obj in objectives)
                     col.Item().PaddingLeft(12).Text($"- {obj}").FontSize(10);
             }
+
+            if (content.Sections is null) return;
 
             var phases = new (string Label, string Text)[]
             {
