@@ -3,7 +3,6 @@ import { isExercisesContent } from '../../../types/contentTypes'
 import type {
   ExercisesContent,
   ExercisesFillInBlank,
-  ExercisesMultipleChoice,
   ExercisesMatching,
 } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
