@@ -70,9 +70,11 @@ export function FullLessonGenerateButton({
   const disabled = !lessonContext.topic.trim() || !lessonContext.language.trim()
 
   const handleConfirm = async () => {
+    const activeSections = SECTION_ORDER.filter(t => sections.some(s => s.sectionType === t))
+
     setPhase('generating')
     setCurrentIndex(0)
-    setSectionStatus(Object.fromEntries(SECTION_ORDER.map(s => [s, 'pending'])))
+    setSectionStatus(Object.fromEntries(activeSections.map(s => [s, 'pending'])))
 
     const controller = new AbortController()
     abortRef.current = controller
@@ -86,15 +88,9 @@ export function FullLessonGenerateButton({
       return
     }
 
-    for (let i = 0; i < SECTION_ORDER.length; i++) {
-      const sectionType = SECTION_ORDER[i]
-      const section = sections.find(s => s.sectionType === sectionType)
-      if (!section) {
-        setSectionStatus(prev => ({ ...prev, [sectionType]: 'error' }))
-        setErrorMessage(`Section "${sectionType}" not found.`)
-        setPhase('error')
-        return
-      }
+    for (let i = 0; i < activeSections.length; i++) {
+      const sectionType = activeSections[i]
+      const section = sections.find(s => s.sectionType === sectionType)!
 
       const taskType = SECTION_TASK_MAP[sectionType]
       setSectionStatus(prev => ({ ...prev, [sectionType]: 'active' }))
@@ -186,10 +182,10 @@ export function FullLessonGenerateButton({
           {(phase === 'generating' || phase === 'done') && (
             <div className="px-1 py-2 space-y-2" data-testid="generation-progress">
               <div className="text-xs text-zinc-500 mb-1">
-                {phase === 'done' ? 'All sections complete' : `${currentIndex + 1} / ${SECTION_ORDER.length}`}
+                {phase === 'done' ? 'All sections complete' : `${currentIndex + 1} / ${sections.length}`}
               </div>
               <ol className="space-y-1">
-                {SECTION_ORDER.map((s) => {
+                {SECTION_ORDER.filter(s => sections.some(sec => sec.sectionType === s)).map((s) => {
                   const status = sectionStatus[s] ?? 'pending'
                   return (
                     <li key={s} className="flex items-center gap-2 text-sm">
