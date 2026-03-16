@@ -52,22 +52,22 @@ Exports `HomeworkRenderer: ContentRenderer` with three components:
 
 ### Registry update
 
-Add `homework: HomeworkRenderer` to the registry in `contentRegistry.tsx`.
+Add `homework: HomeworkRenderer` to the registry in `contentRegistry.tsx`. Insert it between `grammar` and `vocabulary` to maintain alphabetical key order.
 
 ### Unit test
 
 `HomeworkRenderer.test.tsx` next to the renderer:
 - Renders task type, instructions, and examples in preview mode
 - Editor mode shows editable fields and calls onChange
-- Falls back gracefully when parsedContent is null
+- Falls back gracefully when parsedContent is a non-conforming value (e.g. `{}` or a plain string), not specifically `null`
 - Student view renders all tasks
 
 ### Pattern reference
 
-Follow the same pattern as `VocabularyRenderer.tsx`:
+Follow the same pattern as `VocabularyRenderer.tsx` and `GrammarRenderer.tsx`:
 - Export a single `HomeworkRenderer` object with `{ Editor, Preview, Student }`
 - Use `isHomeworkContent` type guard for safe parsing
-- Fall back to FreeTextRenderer when JSON is invalid
+- Inline the fallback (raw `<textarea>` in Editor, `<pre>` in Preview/Student) — do NOT import or delegate to `FreeTextRenderer`; that is inconsistent with all existing renderers
 
 ## Scope
 

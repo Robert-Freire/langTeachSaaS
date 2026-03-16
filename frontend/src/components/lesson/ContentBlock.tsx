@@ -109,10 +109,20 @@ export function ContentBlock({
 
   const renderer = getRenderer(block.blockType)
   const parsedContent = useMemo(() => {
-    try {
-      const raw = value.replace(/^```json\s*/i, '').replace(/```\s*$/, '')
-      return JSON.parse(raw)
-    } catch { return null }
+    const trimmed = value.trim()
+    const candidates: string[] = [trimmed]
+    for (const m of trimmed.matchAll(/```json\s*\n?([\s\S]*?)\n?```/gi)) {
+      candidates.unshift(m[1].trim())
+    }
+    for (const m of trimmed.matchAll(/```\s*\n?([\s\S]*?)\n?```/g)) {
+      candidates.push(m[1].trim())
+    }
+    const openMatch = trimmed.match(/```(?:json)?\s*\n([\s\S]+)$/i)
+    if (openMatch) candidates.push(openMatch[1].trim())
+    for (const candidate of candidates) {
+      try { return JSON.parse(candidate) } catch { /* try next */ }
+    }
+    return null
   }, [value])
 
   return (

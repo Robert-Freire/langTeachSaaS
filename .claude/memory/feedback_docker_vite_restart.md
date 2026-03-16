@@ -1,22 +1,16 @@
 ---
-name: Docker Vite restart after new files
-description: When new frontend source files are added via git (cherry-pick, merge, etc.), restart the frontend Docker container before running e2e tests
+name: Docker Vite restart — HMR broken on Windows volume mounts
+description: Vite HMR does not work through Docker volume mounts on Windows. Any frontend file change (new or modified) requires a container restart.
 type: feedback
 ---
 
 ## Problem
 
-When new frontend files are added to `frontend/src/` via git operations (cherry-pick, merge, rebase), the Vite dev server running inside the Docker container does NOT automatically discover them. The container's module graph is stale from before the files existed.
-
-Symptoms:
-- The new component IS on disk (docker exec confirms files exist)
-- The importing file (e.g. `contentRegistry.tsx`) also reflects the change
-- But the renderer falls back to the FreeText/raw-textarea mode, as if the new component is missing
-- e2e tests fail because the new `data-testid` from the new component is not found
+Vite's HMR (hot module replacement) does NOT work through Docker volume mounts on Windows. Neither new files nor edits to existing files are picked up automatically. The container runs stale code until restarted.
 
 ## Fix
 
-Restart the frontend container after adding new source files via git:
+After ANY frontend file change (new file, edited file, or git operation), restart the container:
 
 ```powershell
 docker compose restart frontend
@@ -27,13 +21,11 @@ Then verify it's ready:
 docker compose logs frontend --tail=20
 ```
 
-Wait for `VITE vX.X.X  ready in NNN ms` before running tests.
+Wait for `VITE vX.X.X  ready in NNN ms` before testing.
 
 ## When to apply
 
-Always do this after:
-- `git cherry-pick` that adds new frontend component files
-- `git merge` or `git rebase` that brings in new files
-- Manually creating new files in `frontend/src/` if the container has been running for a while
-
-Normal file edits (modifying existing files) are picked up live via the volume mount — only NEW files require a restart.
+Always after:
+- Editing any existing file in `frontend/src/`
+- Adding new files to `frontend/src/`
+- `git cherry-pick`, `git merge`, or `git rebase` that touches frontend files

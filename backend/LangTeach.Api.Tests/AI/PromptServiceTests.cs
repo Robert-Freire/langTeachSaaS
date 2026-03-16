@@ -132,8 +132,8 @@ public class PromptServiceTests
         => _sut.BuildLessonPlanPrompt(BaseCtx()).MaxTokens.Should().Be(8192);
 
     [Fact]
-    public void VocabularyPrompt_HasMaxTokens1024()
-        => _sut.BuildVocabularyPrompt(BaseCtx()).MaxTokens.Should().Be(1024);
+    public void VocabularyPrompt_HasMaxTokens2048()
+        => _sut.BuildVocabularyPrompt(BaseCtx()).MaxTokens.Should().Be(2048);
 
     [Fact]
     public void GrammarPrompt_HasMaxTokens1500()
