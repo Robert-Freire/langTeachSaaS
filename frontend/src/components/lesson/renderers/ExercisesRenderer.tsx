@@ -446,11 +446,12 @@ function Student({ parsedContent, rawContent }: StudentProps) {
       {matching.length > 0 && (
         <div>
           <p className={sectionHeadingClass}>Matching</p>
-          <div className="space-y-2">
+          <div className="grid gap-2" style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr) auto' }}>
             {matching.map((pair, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="font-medium text-zinc-700 w-24 shrink-0">{pair.left}</span>
+              <>
+                <span key={`left-${i}`} className="font-medium text-zinc-700 self-center">{pair.left}</span>
                 <select
+                  key={`sel-${i}`}
                   value={matches[i] ?? ''}
                   onChange={(e) => {
                     const next = [...matches] as (string | null)[]
@@ -458,7 +459,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
                     setMatchAnswers(next)
                   }}
                   disabled={checked}
-                  className={`border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 ${resultClass(matchCorrect[i])}`}
+                  className={`border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 w-full ${resultClass(matchCorrect[i])}`}
                   data-testid={`match-select-${i}`}
                 >
                   <option value="">-- select --</option>
@@ -466,15 +467,17 @@ function Student({ parsedContent, rawContent }: StudentProps) {
                     <option key={oi} value={opt}>{opt}</option>
                   ))}
                 </select>
-                {checked && (
-                  <span
-                    className={`text-xs font-medium ${matchCorrect[i] ? 'text-green-600' : 'text-red-600'}`}
-                    data-testid={`match-result-${i}`}
-                  >
-                    {matchCorrect[i] ? '✓' : `✗ ${pair.right}`}
-                  </span>
-                )}
-              </div>
+                <span key={`res-${i}`} className="self-center text-xs font-medium w-20">
+                  {checked && (
+                    <span
+                      className={matchCorrect[i] ? 'text-green-600' : 'text-red-600'}
+                      data-testid={`match-result-${i}`}
+                    >
+                      {matchCorrect[i] ? '✓' : `✗ ${pair.right}`}
+                    </span>
+                  )}
+                </span>
+              </>
             ))}
           </div>
         </div>
