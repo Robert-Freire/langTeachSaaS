@@ -100,10 +100,12 @@ public class PromptService : IPromptService
     {
         var topic = Sanitize(ctx.Topic);
         var level = Sanitize(ctx.CefrLevel);
+        var seed = Guid.NewGuid().ToString("N")[..8];
         return $$"""
         Generate a vocabulary list for the lesson on "{{topic}}". Return JSON:
         {"items":[{"word":"","definition":"","exampleSentence":"","translation":""}]}
         Limit to 10-15 items appropriate for {{level}}.
+        Choose a varied and unexpected selection — avoid the most obvious or common words for this topic (seed: {{seed}}).
         """;
     }
 
