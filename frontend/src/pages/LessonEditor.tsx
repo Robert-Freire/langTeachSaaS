@@ -187,10 +187,10 @@ export default function LessonEditor() {
         objectives: lesson.objectives,
         status: lesson.status,
         studentId: lesson.studentId,
-        scheduledAt: lesson.scheduledAt ?? null,
+        scheduledAt: metaDraft.scheduledAt || null,
       })
     }
-  }, [lesson, titleDraft, doUpdate])
+  }, [lesson, titleDraft, metaDraft.scheduledAt, doUpdate])
 
   const handleStatusToggle = useCallback(() => {
     if (!lesson) return
@@ -205,9 +205,9 @@ export default function LessonEditor() {
       objectives: lesson.objectives,
       status: next,
       studentId: lesson.studentId,
-      scheduledAt: lesson.scheduledAt ?? null,
+      scheduledAt: metaDraft.scheduledAt || null,
     })
-  }, [lesson, doUpdate, id])
+  }, [lesson, metaDraft.scheduledAt, doUpdate, id])
 
   const handleSectionBlur = useCallback((type: SectionType, value: string) => {
     if (!sectionNotes) return
@@ -246,10 +246,10 @@ export default function LessonEditor() {
       objectives: lesson.objectives,
       status: lesson.status,
       studentId: linkStudentId,
-      scheduledAt: lesson.scheduledAt ?? null,
+      scheduledAt: metaDraft.scheduledAt || null,
     })
     setLinkStudentOpen(false)
-  }, [lesson, linkStudentId, doUpdate])
+  }, [lesson, linkStudentId, metaDraft.scheduledAt, doUpdate])
 
   const handleBlockInsert = useCallback((block: ContentBlockDto) => {
     if (!block.lessonSectionId) return

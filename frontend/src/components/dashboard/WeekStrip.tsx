@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { Lesson } from '../../api/lessons'
-import { getWeekDays, formatWeekDay, isToday, getDayOfWeek, formatWeekRange } from '../../lib/weekUtils'
+import { getWeekDays, formatWeekDay, isToday, formatWeekRange } from '../../lib/weekUtils'
 
 interface WeekStripProps {
   weekOffset: number
@@ -20,7 +20,10 @@ export function WeekStrip({ weekOffset, onPrev, onNext, lessons }: WeekStripProp
   for (const lesson of lessons) {
     if (!lesson.scheduledAt) continue
     const date = new Date(lesson.scheduledAt)
-    const dayIdx = getDayOfWeek(date)
+    // Verify the lesson date falls within the displayed week
+    const dateStr = date.toISOString().slice(0, 10)
+    const dayIdx = days.findIndex(d => d.toISOString().slice(0, 10) === dateStr)
+    if (dayIdx < 0) continue
     if (!lessonsByDay[dayIdx]) lessonsByDay[dayIdx] = []
     lessonsByDay[dayIdx].push(lesson)
   }
