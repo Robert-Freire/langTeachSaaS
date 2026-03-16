@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest'
 import { ConversationRenderer } from './ConversationRenderer'
 import type { ConversationContent } from '../../../types/contentTypes'
 
-function makeContent(overrides?: Partial<ConversationContent[' scenarios'][0]>): ConversationContent {
+function makeContent(overrides?: Partial<ConversationContent['scenarios'][0]>): ConversationContent {
   return {
     scenarios: [{
       setup: 'You are at a restaurant.',
