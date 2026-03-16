@@ -48,7 +48,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="homework-editor">
       {parsedContent.tasks.map((task, ti) => (
         <div key={ti} className="border border-zinc-200 rounded-lg p-3 space-y-2">
           <div className="flex items-center gap-2">

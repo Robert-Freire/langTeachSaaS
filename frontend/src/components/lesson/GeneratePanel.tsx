@@ -26,7 +26,7 @@ const SECTION_DEFAULT_TASK: Record<SectionType, ContentBlockType> = {
   Presentation: 'vocabulary',
   Practice: 'exercises',
   Production: 'grammar',
-  WrapUp: 'conversation',
+  WrapUp: 'homework',
 }
 
 const TASK_TYPES: { value: ContentBlockType; label: string }[] = [
@@ -35,6 +35,7 @@ const TASK_TYPES: { value: ContentBlockType; label: string }[] = [
   { value: 'exercises', label: 'Exercises' },
   { value: 'conversation', label: 'Conversation' },
   { value: 'reading', label: 'Reading' },
+  { value: 'homework', label: 'Homework' },
 ]
 
 interface GeneratePanelProps {
