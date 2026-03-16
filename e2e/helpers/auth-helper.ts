@@ -1,6 +1,20 @@
 import { Browser, BrowserContext } from '@playwright/test';
 
 /**
+ * Returns a BrowserContext that works with the MockAuth0Provider (VITE_E2E_TEST_MODE=true).
+ * The mock provider injects a fixed identity without hitting Auth0.
+ */
+export async function createMockAuthContext(browser: Browser): Promise<BrowserContext> {
+    const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173';
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(baseURL);
+    await page.waitForURL(`${baseURL}/**`, { timeout: 15000 });
+    await page.close();
+    return context;
+}
+
+/**
  * Returns a BrowserContext with a valid Auth0 session.
  * The context retains the session cookie so all pages opened from it are authenticated.
  *

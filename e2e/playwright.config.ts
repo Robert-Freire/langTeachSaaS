@@ -13,14 +13,36 @@ export default defineConfig({
   },
   projects: [
     {
+      name: 'mock-auth',
+      testMatch: [
+        '**/dashboard.spec.ts',
+        '**/lessons.spec.ts',
+        '**/students.spec.ts',
+        '**/typed-content-view.spec.ts',
+        '**/lesson-ai-generate.spec.ts',
+        '**/teacher-profile.spec.ts',
+      ],
+      fullyParallel: true,
+      workers: 8,
+    },
+    {
       name: 'parallel',
-      testIgnore: ['**/teacher-profile.spec.ts', '**/provider-switch.spec.ts', '**/registration.spec.ts'],
+      testIgnore: [
+        '**/teacher-profile.spec.ts',
+        '**/provider-switch.spec.ts',
+        '**/registration.spec.ts',
+        '**/dashboard.spec.ts',
+        '**/lessons.spec.ts',
+        '**/students.spec.ts',
+        '**/typed-content-view.spec.ts',
+        '**/lesson-ai-generate.spec.ts',
+      ],
       fullyParallel: true,
       workers: 4,
     },
     {
       name: 'serial',
-      testMatch: ['**/teacher-profile.spec.ts', '**/provider-switch.spec.ts'],
+      testMatch: ['**/provider-switch.spec.ts'],
       workers: 1,
       dependencies: ['parallel'],
     },

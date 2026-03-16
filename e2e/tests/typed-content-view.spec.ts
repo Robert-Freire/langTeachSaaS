@@ -1,12 +1,20 @@
 import { test, expect } from '@playwright/test'
-import { createAuthenticatedContext } from '../helpers/auth-helper'
-import { approveTeacherByAuth0Id, getTestAuth0UserId } from '../helpers/db-helper'
+import { createMockAuthContext } from '../helpers/auth-helper'
+import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 import { mockAiStream, VOCABULARY_FIXTURE } from '../helpers/mock-ai-stream'
 import { TEST_TIMEOUT, NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
 
+test.beforeAll(async ({ browser }) => {
+  const ctx = await createMockAuthContext(browser)
+  const page = await ctx.newPage()
+  await setupMockTeacher(page)
+  await page.close()
+  await ctx.close()
+})
+
 test('vocabulary renders as table and student preview shows study view', async ({ browser }) => {
   test.setTimeout(TEST_TIMEOUT)
-  const context = await createAuthenticatedContext(browser)
+  const context = await createMockAuthContext(browser)
   const page = await context.newPage()
   await mockAiStream(page, VOCABULARY_FIXTURE)
 
@@ -44,9 +52,6 @@ test('vocabulary renders as table and student preview shows study view', async (
   await presentationSection.fill('Travel vocabulary items.')
   await presentationSection.blur()
   await expect(page.getByTestId('saved-indicator')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
-
-  // Approve the e2e test teacher right before generating (must happen after teacher exists)
-  await approveTeacherByAuth0Id(getTestAuth0UserId())
 
   // Generate vocabulary
   await page.getByTestId('generate-btn-presentation').click()
