@@ -32,7 +32,12 @@ public class AuthController : ControllerBase
 
         await _profileService.UpsertTeacherAsync(sub, userInfo.Email, userInfo.Name);
 
-        return Ok(new { sub, email = userInfo.Email, name = userInfo.Name });
+        // Fall back to stored email when Auth0 couldn't resolve it (e.g. rate-limited)
+        var email = userInfo.Email;
+        if (string.IsNullOrEmpty(email))
+            email = await _profileService.GetStoredEmailAsync(sub);
+
+        return Ok(new { sub, email, name = userInfo.Name });
     }
 
     private async Task<Auth0UserInfo> ResolveUserInfoAsync()

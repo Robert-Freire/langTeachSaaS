@@ -70,13 +70,48 @@ public class ProfileService : IProfileService
 
     public async Task<Guid> UpsertTeacherAsync(string auth0UserId, string email, string name = "")
     {
-        var existing = await _db.Teachers
+        // 1. Email-first lookup: find existing teacher by email (stable across providers)
+        Teacher? existing = null;
+        if (!string.IsNullOrEmpty(email))
+        {
+            existing = await _db.Teachers
+                .Where(t => t.Email == email)
+                .FirstOrDefaultAsync();
+        }
+
+        // 2. Fall back to Auth0UserId lookup (handles empty-email tokens)
+        existing ??= await _db.Teachers
             .Where(t => t.Auth0UserId == auth0UserId)
             .FirstOrDefaultAsync();
 
         if (existing is not null)
         {
             var dirty = false;
+
+            // Provider switch: same email, different Auth0UserId
+            if (existing.Auth0UserId != auth0UserId)
+            {
+                _logger.LogWarning(
+                    "Provider switch detected for {Email}: {OldAuth0UserId} -> {NewAuth0UserId}",
+                    email, existing.Auth0UserId, auth0UserId);
+
+                // Remove any stale teacher record that already holds the new Auth0UserId
+                // (e.g., a phantom record with empty email created by seeding)
+                var stale = await _db.Teachers
+                    .Where(t => t.Auth0UserId == auth0UserId && t.Id != existing.Id)
+                    .FirstOrDefaultAsync();
+                if (stale is not null)
+                {
+                    _logger.LogWarning(
+                        "Removing stale teacher {StaleTeacherId} with Auth0UserId={Auth0UserId} to resolve provider switch conflict",
+                        stale.Id, auth0UserId);
+                    _db.Teachers.Remove(stale);
+                }
+
+                existing.Auth0UserId = auth0UserId;
+                dirty = true;
+            }
+
             if (!string.IsNullOrEmpty(email) && string.IsNullOrEmpty(existing.Email))
             {
                 existing.Email = email;
@@ -92,7 +127,7 @@ public class ProfileService : IProfileService
             {
                 existing.UpdatedAt = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
-                _logger.LogInformation("Backfilled profile for TeacherId={TeacherId}", existing.Id);
+                _logger.LogInformation("Updated profile for TeacherId={TeacherId}", existing.Id);
             }
             return existing.Id;
         }
@@ -125,9 +160,17 @@ public class ProfileService : IProfileService
             _db.Entry(teacher).State = EntityState.Detached;
 
             await using var freshDb = await _dbFactory.CreateDbContextAsync();
-            var winner = await freshDb.Teachers
+
+            // Try email-first in the race-condition handler too
+            Teacher? winner = null;
+            if (!string.IsNullOrEmpty(email))
+            {
+                winner = await freshDb.Teachers
+                    .Where(t => t.Email == email)
+                    .FirstOrDefaultAsync();
+            }
+            winner ??= await freshDb.Teachers
                 .Where(t => t.Auth0UserId == auth0UserId)
-                .Select(t => new { t.Id })
                 .FirstOrDefaultAsync();
 
             if (winner is not null)
@@ -135,6 +178,15 @@ public class ProfileService : IProfileService
 
             throw; // not a duplicate-key race, propagate original exception
         }
+    }
+
+    public async Task<string> GetStoredEmailAsync(string auth0UserId)
+    {
+        var email = await _db.Teachers
+            .Where(t => t.Auth0UserId == auth0UserId)
+            .Select(t => t.Email)
+            .FirstOrDefaultAsync();
+        return email ?? "";
     }
 
     private static ProfileDto MapToDto(Teacher teacher) => new(

@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
         {
             e.HasKey(t => t.Id);
             e.HasIndex(t => t.Auth0UserId).IsUnique();
+            e.HasIndex(t => t.Email).IsUnique();
             e.Property(t => t.Auth0UserId).IsRequired();
             e.Property(t => t.Email).IsRequired();
             e.Property(t => t.DisplayName).IsRequired();

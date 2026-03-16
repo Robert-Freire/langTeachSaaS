@@ -14,12 +14,21 @@ export default defineConfig({
   projects: [
     {
       name: 'parallel',
-      testIgnore: ['**/teacher-profile.spec.ts'],
+      testIgnore: ['**/teacher-profile.spec.ts', '**/provider-switch.spec.ts', '**/registration.spec.ts'],
+      fullyParallel: true,
+      workers: 4,
     },
     {
       name: 'serial',
-      testMatch: ['**/teacher-profile.spec.ts'],
+      testMatch: ['**/teacher-profile.spec.ts', '**/provider-switch.spec.ts'],
       dependencies: ['parallel'],
+    },
+    {
+      // Registration deletes and recreates the shared teacher record, so it
+      // must run after all other tests that depend on the teacher existing.
+      name: 'destructive',
+      testMatch: ['**/registration.spec.ts'],
+      dependencies: ['serial'],
     },
   ],
 })
