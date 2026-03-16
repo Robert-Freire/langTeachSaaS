@@ -3,7 +3,7 @@ import { isVocabularyContent } from '../../../types/contentTypes'
 import type { VocabularyItem } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
 
-const TABLE_HEADERS = ['Word', 'Definition', 'Example', 'Translation']
+const TABLE_HEADERS = ['Word', 'Definition', 'Example']
 
 function VocabTable({ children }: { children: React.ReactNode }) {
   return (
@@ -56,7 +56,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
 
   const handleAdd = () => {
     rowIdsRef.current.push(nextRowId++)
-    emit([...items, { word: '', definition: '', exampleSentence: '', translation: '' }])
+    emit([...items, { word: '', definition: '', exampleSentence: '' }])
   }
 
   const handleRemove = (index: number) => {
@@ -89,9 +89,6 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
                 </td>
                 <td className="border border-zinc-200 p-1">
                   <input value={item.exampleSentence ?? ''} onChange={(e) => handleCellChange(i, 'exampleSentence', e.target.value)} className={inputClass} />
-                </td>
-                <td className="border border-zinc-200 p-1">
-                  <input value={item.translation ?? ''} onChange={(e) => handleCellChange(i, 'translation', e.target.value)} className={inputClass} />
                 </td>
                 <td className="border border-zinc-200 p-1 text-center">
                   <button
@@ -134,7 +131,6 @@ function Preview({ parsedContent, rawContent }: PreviewProps) {
           <td className="border border-zinc-200 px-3 py-2 font-medium">{item.word}</td>
           <td className="border border-zinc-200 px-3 py-2">{item.definition}</td>
           <td className="border border-zinc-200 px-3 py-2 italic text-zinc-600">{item.exampleSentence}</td>
-          <td className="border border-zinc-200 px-3 py-2 text-zinc-500">{item.translation}</td>
         </tr>
       ))}
     </VocabTable>
@@ -215,9 +211,6 @@ function Student({ parsedContent, rawContent }: StudentProps) {
             </p>
             {item.exampleSentence && (
               <p className="text-sm italic text-zinc-600">"{item.exampleSentence}"</p>
-            )}
-            {item.translation && (
-              <p className="text-sm text-indigo-600 font-medium">{item.translation}</p>
             )}
           </div>
         </div>

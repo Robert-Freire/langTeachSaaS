@@ -100,19 +100,16 @@ export const VOCABULARY_FIXTURE = {
       word: 'departure',
       definition: 'The act of leaving a place, especially to start a journey.',
       exampleSentence: 'The departure of the train was delayed by thirty minutes.',
-      translation: 'salida',
     },
     {
       word: 'itinerary',
       definition: 'A planned route or journey, including a list of places to visit.',
       exampleSentence: 'She prepared a detailed itinerary for the trip to Spain.',
-      translation: 'itinerario',
     },
     {
       word: 'accommodation',
       definition: 'A place where travelers can sleep and stay, such as a hotel or hostel.',
       exampleSentence: 'We booked accommodation near the city center.',
-      translation: 'alojamiento',
     },
   ],
 }

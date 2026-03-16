@@ -73,7 +73,6 @@ public class PromptService : IPromptService
             if (ctx.StudentNativeLanguage is not null)
             {
                 sb.AppendLine($"The student's native language is {nativeLang}.");
-                sb.AppendLine($"- Provide translations in {nativeLang} for vocabulary items.");
                 sb.AppendLine($"- For grammar explanations, note where {language} differs from {nativeLang}.");
                 sb.AppendLine($"- Flag false cognates between {nativeLang} and {language} when relevant.");
                 sb.AppendLine($"- Be aware of common errors {nativeLang} speakers make in {language}.");
@@ -103,7 +102,7 @@ public class PromptService : IPromptService
         var seed = Guid.NewGuid().ToString("N")[..8];
         return $$"""
         Generate a vocabulary list for the lesson on "{{topic}}". Return JSON:
-        {"items":[{"word":"","definition":"","exampleSentence":"","translation":""}]}
+        {"items":[{"word":"","definition":"","exampleSentence":""}]}
         Limit to 10-15 items appropriate for {{level}}.
         Choose a varied and unexpected selection — avoid the most obvious or common words for this topic (seed: {{seed}}).
         """;

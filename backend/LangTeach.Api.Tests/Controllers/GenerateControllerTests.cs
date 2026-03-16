@@ -13,7 +13,7 @@ namespace LangTeach.Api.Tests.Controllers;
 
 internal sealed class FakeClaudeClient : IClaudeClient
 {
-    public string FixedContent { get; set; } = """{"items":[{"word":"hello","definition":"greeting","exampleSentence":"Hello!","translation":"hola"}]}""";
+    public string FixedContent { get; set; } = """{"items":[{"word":"hello","definition":"greeting","exampleSentence":"Hello!"}]}""";
 
     public Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default) =>
         Task.FromResult(new ClaudeResponse(FixedContent, "claude-haiku", 10, 20));
