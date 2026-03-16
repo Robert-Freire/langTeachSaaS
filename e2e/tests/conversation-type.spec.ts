@@ -89,22 +89,26 @@ test('conversation type renders editor and student view', async ({ browser }) =>
     // Setup text should be visible
     await expect(page.getByText('You are at a restaurant and want to order food.')).toBeVisible({ timeout: UI_TIMEOUT })
 
-    // Key phrase should be visible
-    await expect(page.getByText("I'd like to order...")).toBeVisible({ timeout: UI_TIMEOUT })
-
     // T15.4a: instruction header
     await expect(page.getByText('Practice with a partner:')).toBeVisible({ timeout: UI_TIMEOUT })
 
-    // T15.4a: role selection — tap Role A, should show (You) badge
-    await page.getByTestId('student-role-a-0').click()
-    await expect(page.getByTestId('student-role-a-0')).toContainText('(You)')
-    await expect(page.getByTestId('student-role-b-0')).toContainText('(Partner)')
+    // Before role selection: grouped phrases visible (both roles shown)
+    await expect(page.getByText("I'd like to order...")).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByText('Here is your table.')).toBeVisible({ timeout: UI_TIMEOUT })
 
-    // Tap again to deselect
-    await page.getByTestId('student-role-a-0').click()
-    await expect(page.getByTestId('student-role-a-0')).not.toContainText('(You)')
+    // T15.4a: role selection — tap Role B (Customer), should show (You) badge and "Your Phrases"
+    await page.getByTestId('student-role-b-0').click()
+    await expect(page.getByTestId('student-role-b-0')).toContainText('(You)')
+    await expect(page.getByTestId('student-role-a-0')).toContainText('(Partner)')
+    await expect(page.getByText('Your Phrases')).toBeVisible({ timeout: UI_TIMEOUT })
 
-    // T15.4a: phrase toggle — tap chip, should get line-through class
+    // Customer (roleB) phrases now shown as "Your Phrases"
+    await expect(page.getByText("I'd like to order...")).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Waiter (roleA) phrases shown dimmed as partner's
+    await expect(page.getByText('Here is your table.')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // T15.4a: phrase toggle — tap first "Your Phrases" chip
     const phraseChip = page.getByTestId('student-phrase-chip-0-0')
     await expect(phraseChip).toBeVisible({ timeout: UI_TIMEOUT })
     await phraseChip.click()
@@ -114,6 +118,10 @@ test('conversation type renders editor and student view', async ({ browser }) =>
     // Tap again to uncheck
     await phraseChip.click()
     await expect(phraseChip).not.toHaveClass(/line-through/)
+
+    // Deselect role: grouped view returns
+    await page.getByTestId('student-role-b-0').click()
+    await expect(page.getByTestId('student-role-b-0')).not.toContainText('(You)')
   } finally {
     await context.close()
   }

@@ -57,7 +57,10 @@ export interface ConversationScenario {
   setup: string
   roleA: string
   roleB: string
-  keyPhrases: string[]
+  roleAPhrases: string[]
+  roleBPhrases: string[]
+  /** @deprecated use roleAPhrases/roleBPhrases — kept for backward compat with old lessons */
+  keyPhrases?: string[]
 }
 
 export interface ConversationContent {

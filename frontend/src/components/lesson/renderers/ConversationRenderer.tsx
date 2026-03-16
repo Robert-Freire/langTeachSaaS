@@ -11,11 +11,75 @@ const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none f
 let nextId = 0
 function uid() { return nextId++ }
 
+// ─── Shared phrase tag list (editor) ─────────────────────────────────────────
+
+function PhraseList({
+  phrases,
+  phraseInput,
+  onAdd,
+  onRemove,
+  onInputChange,
+  addTestId,
+  chipTestIdPrefix,
+}: {
+  phrases: string[]
+  phraseInput: string
+  onAdd: () => void
+  onRemove: (j: number) => void
+  onInputChange: (v: string) => void
+  addTestId: string
+  chipTestIdPrefix: string
+}) {
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5 mb-2">
+        {phrases.map((phrase, j) => (
+          <span
+            key={j}
+            className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-full border border-indigo-200"
+            data-testid={`${chipTestIdPrefix}-${j}`}
+          >
+            {phrase}
+            <button
+              type="button"
+              onClick={() => onRemove(j)}
+              className="text-indigo-400 hover:text-indigo-700 leading-none"
+              aria-label="Remove phrase"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          value={phraseInput}
+          onChange={(e) => onInputChange(e.target.value)}
+          placeholder="Add a key phrase..."
+          className={`${inputClass} flex-1`}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { e.preventDefault(); onAdd() }
+          }}
+          data-testid={addTestId}
+        />
+        <button
+          type="button"
+          onClick={onAdd}
+          className="text-sm text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap"
+        >
+          Add
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Editor ──────────────────────────────────────────────────────────────────
 
 function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   const scenarioIdsRef = useRef<number[]>([])
-  const [phraseInputs, setPhraseInputs] = useState<string[]>([])
+  // Two phrase inputs per scenario: [roleA, roleB]
+  const [phraseInputs, setPhraseInputs] = useState<[string, string][]>([])
 
   if (!isConversationContent(parsedContent)) {
     return (
@@ -33,14 +97,14 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
 
   while (scenarioIdsRef.current.length < scenarios.length) scenarioIdsRef.current.push(uid())
 
-  // Keep phraseInputs in sync with scenarios count
-  const inputs = phraseInputs.length === scenarios.length
+  const inputs: [string, string][] = phraseInputs.length === scenarios.length
     ? phraseInputs
-    : Array(scenarios.length).fill('')
+    : Array(scenarios.length).fill(['', ''] as [string, string])
 
-  const setPhraseInput = (i: number, value: string) => {
-    const next = [...inputs]
-    next[i] = value
+  const setInput = (i: number, role: 0 | 1, value: string) => {
+    const next = inputs.map((pair, idx): [string, string] =>
+      idx === i ? (role === 0 ? [value, pair[1]] : [pair[0], value]) : pair
+    )
     setPhraseInputs(next)
   }
 
@@ -52,29 +116,25 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
     emit(next)
   }
 
-  const addPhrase = (i: number) => {
-    const value = inputs[i] ?? ''
+  const addPhrase = (i: number, role: 0 | 1) => {
+    const value = inputs[i]?.[role] ?? ''
     if (!value.trim()) return
-    const next = scenarios.map((s, idx) =>
-      idx === i ? { ...s, keyPhrases: [...s.keyPhrases, value.trim()] } : s
-    )
-    setPhraseInput(i, '')
-    emit(next)
+    const field = role === 0 ? 'roleAPhrases' : 'roleBPhrases'
+    const existing = role === 0 ? scenarios[i].roleAPhrases : scenarios[i].roleBPhrases
+    updateScenario(i, field, [...existing, value.trim()])
+    setInput(i, role, '')
   }
 
-  const removePhrase = (scenarioIdx: number, phraseIdx: number) => {
-    const next = scenarios.map((s, idx) =>
-      idx === scenarioIdx
-        ? { ...s, keyPhrases: s.keyPhrases.filter((_, j) => j !== phraseIdx) }
-        : s
-    )
-    emit(next)
+  const removePhrase = (scenarioIdx: number, phraseIdx: number, role: 0 | 1) => {
+    const field = role === 0 ? 'roleAPhrases' : 'roleBPhrases'
+    const existing = role === 0 ? scenarios[scenarioIdx].roleAPhrases : scenarios[scenarioIdx].roleBPhrases
+    updateScenario(scenarioIdx, field, existing.filter((_, j) => j !== phraseIdx))
   }
 
   const addScenario = () => {
     scenarioIdsRef.current.push(uid())
-    setPhraseInputs([...inputs, ''])
-    emit([...scenarios, { setup: '', roleA: '', roleB: '', keyPhrases: [] }])
+    setPhraseInputs([...inputs, ['', '']])
+    emit([...scenarios, { setup: '', roleA: '', roleB: '', roleAPhrases: [], roleBPhrases: [] }])
   }
 
   const removeScenario = (i: number) => {
@@ -135,48 +195,30 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
               </div>
             </div>
 
-            <div>
-              <label className="text-xs text-zinc-500 mb-1 block">Key Phrases</label>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {scenario.keyPhrases.map((phrase, j) => (
-                  <span
-                    key={j}
-                    className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-full border border-indigo-200"
-                    data-testid={`phrase-chip-${i}-${j}`}
-                  >
-                    {phrase}
-                    <button
-                      type="button"
-                      onClick={() => removePhrase(i, j)}
-                      className="text-indigo-400 hover:text-indigo-700 leading-none"
-                      aria-label="Remove phrase"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input
-                  value={inputs[i] ?? ''}
-                  onChange={(e) => setPhraseInput(i, e.target.value)}
-                  placeholder="Add a key phrase..."
-                  className={`${inputClass} flex-1`}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      addPhrase(i)
-                    }
-                  }}
-                  data-testid={`phrase-add-${i}`}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">Role A Phrases</label>
+                <PhraseList
+                  phrases={scenario.roleAPhrases}
+                  phraseInput={inputs[i]?.[0] ?? ''}
+                  onAdd={() => addPhrase(i, 0)}
+                  onRemove={(j) => removePhrase(i, j, 0)}
+                  onInputChange={(v) => setInput(i, 0, v)}
+                  addTestId={`phrase-add-a-${i}`}
+                  chipTestIdPrefix={`phrase-chip-a-${i}`}
                 />
-                <button
-                  type="button"
-                  onClick={() => addPhrase(i)}
-                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap"
-                >
-                  Add
-                </button>
+              </div>
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">Role B Phrases</label>
+                <PhraseList
+                  phrases={scenario.roleBPhrases}
+                  phraseInput={inputs[i]?.[1] ?? ''}
+                  onAdd={() => addPhrase(i, 1)}
+                  onRemove={(j) => removePhrase(i, j, 1)}
+                  onInputChange={(v) => setInput(i, 1, v)}
+                  addTestId={`phrase-add-b-${i}`}
+                  chipTestIdPrefix={`phrase-chip-b-${i}`}
+                />
               </div>
             </div>
           </div>
@@ -208,26 +250,32 @@ function Preview({ parsedContent, rawContent }: PreviewProps) {
       {scenarios.map((scenario, i) => (
         <div key={i} className="border border-zinc-200 rounded-lg p-4 space-y-2">
           <p className="text-zinc-700">{scenario.setup}</p>
-          <div className="flex gap-2">
-            <span className="inline-block bg-indigo-100 text-indigo-700 text-xs font-medium px-2 py-0.5 rounded">
-              {scenario.roleA}
-            </span>
-            <span className="inline-block bg-zinc-100 text-zinc-600 text-xs font-medium px-2 py-0.5 rounded">
-              {scenario.roleB}
-            </span>
-          </div>
-          {scenario.keyPhrases.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {scenario.keyPhrases.map((phrase, j) => (
-                <span
-                  key={j}
-                  className="bg-zinc-50 text-zinc-600 text-xs px-2 py-0.5 rounded-full border border-zinc-200"
-                >
-                  {phrase}
-                </span>
-              ))}
+          <div className="flex gap-4">
+            <div>
+              <span className="inline-block bg-indigo-100 text-indigo-700 text-xs font-medium px-2 py-0.5 rounded mb-1">
+                {scenario.roleA}
+              </span>
+              <div className="flex flex-wrap gap-1">
+                {scenario.roleAPhrases.map((phrase, j) => (
+                  <span key={j} className="bg-indigo-50 text-indigo-600 text-xs px-2 py-0.5 rounded-full border border-indigo-200">
+                    {phrase}
+                  </span>
+                ))}
+              </div>
             </div>
-          )}
+            <div>
+              <span className="inline-block bg-zinc-100 text-zinc-600 text-xs font-medium px-2 py-0.5 rounded mb-1">
+                {scenario.roleB}
+              </span>
+              <div className="flex flex-wrap gap-1">
+                {scenario.roleBPhrases.map((phrase, j) => (
+                  <span key={j} className="bg-zinc-50 text-zinc-600 text-xs px-2 py-0.5 rounded-full border border-zinc-200">
+                    {phrase}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       ))}
     </div>
@@ -238,25 +286,22 @@ function Preview({ parsedContent, rawContent }: PreviewProps) {
 
 function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; index: number }) {
   const [selectedRole, setSelectedRole] = useState<'A' | 'B' | null>(null)
-  const [checkedPhrases, setCheckedPhrases] = useState<Set<number>>(new Set())
+  const [checkedPhrases, setCheckedPhrases] = useState<Set<string>>(new Set())
 
   const toggleRole = (role: 'A' | 'B') =>
     setSelectedRole(prev => (prev === role ? null : role))
 
-  const togglePhrase = (j: number) =>
+  const togglePhrase = (key: string) =>
     setCheckedPhrases(prev => {
       const next = new Set(prev)
-      next.has(j) ? next.delete(j) : next.add(j)
+      next.has(key) ? next.delete(key) : next.add(key)
       return next
     })
 
   const roleClass = (role: 'A' | 'B') => {
     if (selectedRole === null)
-      return role === 'A'
-        ? 'bg-indigo-100 text-indigo-800'
-        : 'bg-slate-100 text-slate-700'
-    if (selectedRole === role)
-      return 'bg-indigo-500 text-white ring-2 ring-indigo-300'
+      return role === 'A' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-700'
+    if (selectedRole === role) return 'bg-indigo-500 text-white ring-2 ring-indigo-300'
     return 'bg-zinc-100 text-zinc-400'
   }
 
@@ -264,6 +309,20 @@ function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; ind
     if (selectedRole === role) return 'bg-white'
     return role === 'A' ? 'bg-indigo-500' : 'bg-slate-400'
   }
+
+  // Backward compat: old lessons with flat keyPhrases show all phrases ungrouped
+  const legacyPhrases = scenario.keyPhrases ?? []
+  const hasRolePhrases = scenario.roleAPhrases.length > 0 || scenario.roleBPhrases.length > 0
+
+  const myPhrases = selectedRole === 'A' ? scenario.roleAPhrases
+    : selectedRole === 'B' ? scenario.roleBPhrases
+    : null
+
+  const partnerPhrases = selectedRole === 'A' ? scenario.roleBPhrases
+    : selectedRole === 'B' ? scenario.roleAPhrases
+    : null
+
+  const partnerRoleName = selectedRole === 'A' ? scenario.roleB : scenario.roleA
 
   return (
     <div className="border border-zinc-200 rounded-xl overflow-hidden">
@@ -301,18 +360,91 @@ function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; ind
           </button>
         </div>
 
-        {/* Key phrases checklist */}
-        {scenario.keyPhrases.length > 0 && (
+        {/* Role-specific phrase checklist */}
+        {hasRolePhrases && selectedRole !== null && myPhrases && partnerPhrases && (
+          <div className="space-y-3">
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500 mb-2">Your Phrases</p>
+              <div className="flex flex-wrap gap-2">
+                {myPhrases.map((phrase, j) => {
+                  const key = `my-${j}`
+                  const checked = checkedPhrases.has(key)
+                  return (
+                    <button
+                      key={j}
+                      type="button"
+                      onClick={() => togglePhrase(key)}
+                      className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-all ${
+                        checked
+                          ? 'bg-indigo-200 text-indigo-400 border-indigo-200 line-through'
+                          : 'bg-white text-indigo-700 border-indigo-200'
+                      }`}
+                      data-testid={`student-phrase-chip-${index}-${j}`}
+                    >
+                      {checked && <span className="mr-1">✓</span>}
+                      {phrase}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            {partnerPhrases.length > 0 && (
+              <div className="rounded-lg p-3 border border-zinc-200">
+                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 mb-2">{partnerRoleName}'s Phrases</p>
+                <div className="flex flex-wrap gap-2">
+                  {partnerPhrases.map((phrase, j) => (
+                    <span key={j} className="text-xs px-2.5 py-1 rounded-full border border-zinc-200 text-zinc-400 bg-zinc-50">
+                      {phrase}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* No role selected yet — show all phrases grouped */}
+        {hasRolePhrases && selectedRole === null && (
+          <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-400 mb-2">Key Phrases — select a role to filter</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-indigo-500 font-medium mb-1">{scenario.roleA}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {scenario.roleAPhrases.map((phrase, j) => (
+                    <span key={j} className="bg-white text-indigo-700 text-xs px-2 py-0.5 rounded-full border border-indigo-200">
+                      {phrase}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium mb-1">{scenario.roleB}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {scenario.roleBPhrases.map((phrase, j) => (
+                    <span key={j} className="bg-white text-slate-600 text-xs px-2 py-0.5 rounded-full border border-slate-200">
+                      {phrase}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Backward compat: flat keyPhrases from old lessons */}
+        {!hasRolePhrases && legacyPhrases.length > 0 && (
           <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-indigo-400 mb-2">Key Phrases</p>
             <div className="flex flex-wrap gap-2">
-              {scenario.keyPhrases.map((phrase, j) => {
-                const checked = checkedPhrases.has(j)
+              {legacyPhrases.map((phrase, j) => {
+                const key = `legacy-${j}`
+                const checked = checkedPhrases.has(key)
                 return (
                   <button
                     key={j}
                     type="button"
-                    onClick={() => togglePhrase(j)}
+                    onClick={() => togglePhrase(key)}
                     className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-all ${
                       checked
                         ? 'bg-indigo-200 text-indigo-400 border-indigo-200 line-through'
