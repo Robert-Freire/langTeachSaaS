@@ -8,7 +8,7 @@ public record PdfLessonData(
     string CefrLevel,
     string Topic,
     string? StudentName,
-    DateTime CreatedAt,
+    DateTime LessonDate,
     List<PdfSectionData> Sections);
 
 public record PdfSectionData(

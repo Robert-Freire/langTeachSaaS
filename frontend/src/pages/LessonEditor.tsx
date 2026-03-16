@@ -78,7 +78,7 @@ export default function LessonEditor() {
 
   // Metadata edit state
   const [editingMeta, setEditingMeta] = useState(false)
-  const [metaDraft, setMetaDraft] = useState({ language: '', cefrLevel: '', topic: '', durationMinutes: 60, objectives: '' })
+  const [metaDraft, setMetaDraft] = useState({ language: '', cefrLevel: '', topic: '', durationMinutes: 60, objectives: '', scheduledAt: '' })
 
   // AI content blocks: keyed by sectionId
   const [contentBlocks, setContentBlocks] = useState<Record<string, ContentBlockDto[]>>({})
@@ -109,6 +109,7 @@ export default function LessonEditor() {
         topic: lesson.topic,
         durationMinutes: lesson.durationMinutes,
         objectives: lesson.objectives ?? '',
+        scheduledAt: lesson.scheduledAt ? lesson.scheduledAt.slice(0, 16) : '',
       })
     }
   }, [lesson])
@@ -186,6 +187,7 @@ export default function LessonEditor() {
         objectives: lesson.objectives,
         status: lesson.status,
         studentId: lesson.studentId,
+        scheduledAt: lesson.scheduledAt ?? null,
       })
     }
   }, [lesson, titleDraft, doUpdate])
@@ -203,6 +205,7 @@ export default function LessonEditor() {
       objectives: lesson.objectives,
       status: next,
       studentId: lesson.studentId,
+      scheduledAt: lesson.scheduledAt ?? null,
     })
   }, [lesson, doUpdate, id])
 
@@ -227,6 +230,7 @@ export default function LessonEditor() {
       objectives: metaDraft.objectives || null,
       status: lesson.status,
       studentId: lesson.studentId,
+      scheduledAt: metaDraft.scheduledAt || null,
     })
     setEditingMeta(false)
   }, [lesson, metaDraft, doUpdate])
@@ -242,6 +246,7 @@ export default function LessonEditor() {
       objectives: lesson.objectives,
       status: lesson.status,
       studentId: linkStudentId,
+      scheduledAt: lesson.scheduledAt ?? null,
     })
     setLinkStudentOpen(false)
   }, [lesson, linkStudentId, doUpdate])
@@ -392,6 +397,11 @@ export default function LessonEditor() {
               <Badge variant="outline" className="text-xs text-indigo-600 border-indigo-200 bg-indigo-50">{lesson.cefrLevel}</Badge>
               <span className="text-xs text-zinc-500">{lesson.topic}</span>
               <span className="text-xs text-zinc-400">{lesson.durationMinutes} min</span>
+              {lesson.scheduledAt && (
+                <Badge variant="outline" className="text-xs text-amber-600 border-amber-200 bg-amber-50">
+                  {new Date(lesson.scheduledAt).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </Badge>
+              )}
             </div>
             {metaExpanded ? <ChevronUp className="h-4 w-4 text-zinc-400" /> : <ChevronDown className="h-4 w-4 text-zinc-400" />}
           </div>
@@ -428,6 +438,15 @@ export default function LessonEditor() {
                   </Select>
                 </div>
                 <div className="space-y-2">
+                  <Label>Scheduled Date & Time</Label>
+                  <Input
+                    type="datetime-local"
+                    value={metaDraft.scheduledAt}
+                    onChange={(e) => setMetaDraft(d => ({ ...d, scheduledAt: e.target.value }))}
+                    data-testid="input-scheduled-at"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label>Objectives</Label>
                   <Textarea value={metaDraft.objectives} onChange={(e) => setMetaDraft(d => ({ ...d, objectives: e.target.value }))} rows={3} />
                 </div>
@@ -438,6 +457,12 @@ export default function LessonEditor() {
               </div>
             ) : (
               <div className="pt-4 space-y-2">
+                {lesson.scheduledAt && (
+                  <p className="text-sm text-zinc-600">
+                    <span className="font-medium">Scheduled:</span>{' '}
+                    {new Date(lesson.scheduledAt).toLocaleString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                )}
                 {lesson.objectives && <p className="text-sm text-zinc-600"><span className="font-medium">Objectives:</span> {lesson.objectives}</p>}
                 {lesson.studentId && students.find(s => s.id === lesson.studentId) && (
                   <p className="text-sm text-zinc-600"><span className="font-medium">Student:</span> {students.find(s => s.id === lesson.studentId)?.name}</p>

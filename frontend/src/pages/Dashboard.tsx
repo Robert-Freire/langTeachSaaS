@@ -1,77 +1,75 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { BookOpen, Users, CalendarDays } from 'lucide-react'
 import { getLessons } from '../api/lessons'
 import { getStudents } from '../api/students'
+import { getWeekBounds, toISODateString } from '../lib/weekUtils'
+import { WeekStrip } from '@/components/dashboard/WeekStrip'
+import { NeedsPreparation } from '@/components/dashboard/NeedsPreparation'
+import { QuickActions } from '@/components/dashboard/QuickActions'
+import { UnscheduledDrafts } from '@/components/dashboard/UnscheduledDrafts'
 
 export default function Dashboard() {
+  const [weekOffset, setWeekOffset] = useState(0)
+  const { start, end } = getWeekBounds(weekOffset)
+
   const { data: studentsData } = useQuery({
     queryKey: ['students', { pageSize: 1 }],
     queryFn: () => getStudents({ pageSize: 1 }),
   })
 
-  const { data: lessonsData } = useQuery({
-    queryKey: ['lessons', {}],
-    queryFn: () => getLessons(),
+  const { data: weekLessonsData } = useQuery({
+    queryKey: ['lessons', { scheduledFrom: toISODateString(start), scheduledTo: toISODateString(end) }],
+    queryFn: () => getLessons({
+      scheduledFrom: toISODateString(start),
+      scheduledTo: toISODateString(end),
+      pageSize: 100,
+    }),
   })
 
-  const { data: publishedData } = useQuery({
-    queryKey: ['lessons', { status: 'Published' }],
-    queryFn: () => getLessons({ status: 'Published' }),
+  const { data: draftsData } = useQuery({
+    queryKey: ['lessons', { status: 'Draft', pageSize: 100 }],
+    queryFn: () => getLessons({ status: 'Draft', pageSize: 100 }),
   })
 
-  const studentCount = studentsData?.totalCount ?? '—'
-  const lessonCount = lessonsData?.totalCount ?? '—'
-  const publishedCount = publishedData?.totalCount ?? '—'
+  const { data: totalData } = useQuery({
+    queryKey: ['lessons', { pageSize: 1 }],
+    queryFn: () => getLessons({ pageSize: 1 }),
+  })
+
+  const studentCount = studentsData?.totalCount ?? 0
+  const weekLessons = weekLessonsData?.items ?? []
+  const allDrafts = draftsData?.items ?? []
+  const totalLessonCount = totalData?.totalCount ?? 0
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-zinc-900">Dashboard</h1>
-        <p className="text-sm text-zinc-500 mt-1">Welcome back. Here's an overview of your teaching activity.</p>
+        <p className="text-sm text-zinc-500 mt-1">Your teaching command center.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Link to="/students">
-          <Card className="cursor-pointer hover:ring-indigo-200 transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-zinc-500">Students</CardTitle>
-              <Users className="h-4 w-4 text-zinc-400" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-semibold text-zinc-900" data-testid="students-count">{studentCount}</p>
-              <p className="text-xs text-zinc-400 mt-1">View all students</p>
-            </CardContent>
-          </Card>
-        </Link>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3 space-y-6">
+          <WeekStrip
+            weekOffset={weekOffset}
+            onPrev={() => setWeekOffset(o => o - 1)}
+            onNext={() => setWeekOffset(o => o + 1)}
+            lessons={weekLessons}
+          />
 
-        <Link to="/lessons" data-testid="lessons-tile">
-          <Card className="cursor-pointer hover:ring-indigo-200 transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-zinc-500">Lessons</CardTitle>
-              <CalendarDays className="h-4 w-4 text-zinc-400" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-semibold text-zinc-900" data-testid="lessons-count">{lessonCount}</p>
-              <p className="text-xs text-zinc-400 mt-1">View all lessons</p>
-            </CardContent>
-          </Card>
-        </Link>
+          <NeedsPreparation lessons={allDrafts} />
+        </div>
 
-        <Link to="/lessons?status=Published" data-testid="active-plans-tile">
-          <Card className="cursor-pointer hover:ring-indigo-200 transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-zinc-500">Active plans</CardTitle>
-              <BookOpen className="h-4 w-4 text-zinc-400" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-semibold text-zinc-900" data-testid="active-plans-count">{publishedCount}</p>
-              <p className="text-xs text-zinc-400 mt-1">View all lessons</p>
-            </CardContent>
-          </Card>
-        </Link>
+        <div className="space-y-6">
+          <QuickActions
+            studentCount={studentCount}
+            weekLessonCount={weekLessons.length}
+            totalLessonCount={totalLessonCount}
+          />
+        </div>
       </div>
+
+      <UnscheduledDrafts lessons={allDrafts} />
     </div>
   )
 }

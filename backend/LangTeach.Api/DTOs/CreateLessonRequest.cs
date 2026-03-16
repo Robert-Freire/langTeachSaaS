@@ -25,4 +25,5 @@ public class CreateLessonRequest
 
     public Guid? TemplateId { get; set; }
     public Guid? StudentId { get; set; }
+    public DateTime? ScheduledAt { get; set; }
 }

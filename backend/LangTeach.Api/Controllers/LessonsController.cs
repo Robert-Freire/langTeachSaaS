@@ -267,7 +267,7 @@ public class LessonsController : ControllerBase
             lesson.CefrLevel,
             lesson.Topic,
             lesson.Student?.Name,
-            lesson.CreatedAt,
+            lesson.ScheduledAt ?? lesson.CreatedAt,
             pdfSections);
 
         var pdfBytes = _pdfExportService.GeneratePdf(pdfData, exportMode);

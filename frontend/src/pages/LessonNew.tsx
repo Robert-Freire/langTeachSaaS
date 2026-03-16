@@ -37,6 +37,7 @@ export default function LessonNew() {
   const [duration, setDuration] = useState('60')
   const [objectives, setObjectives] = useState('')
   const [studentId, setStudentId] = useState<string | undefined>()
+  const [scheduledAt, setScheduledAt] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const { data: templates, isLoading: templatesLoading, isError: templatesError, refetch: refetchTemplates } = useQuery({
@@ -59,6 +60,7 @@ export default function LessonNew() {
       objectives: objectives || null,
       templateId: selectedTemplateId,
       studentId: studentId ?? null,
+      scheduledAt: scheduledAt || undefined,
     }),
     onSuccess: (lesson) => {
       logger.info('LessonNew', 'lesson created', { id: lesson.id, templateId: selectedTemplateId })
@@ -209,6 +211,17 @@ export default function LessonNew() {
                 {DURATIONS.map((d) => <SelectItem key={d} value={String(d)}>{d} min</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="scheduledAt">Scheduled Date & Time</Label>
+            <Input
+              id="scheduledAt"
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              data-testid="input-scheduled-at"
+            />
           </div>
 
           <div className="space-y-2">

@@ -288,6 +288,89 @@ public class LessonsControllerTests
         result.Items[0].Title.Should().Contain("XYZ");
     }
 
+    [Fact]
+    public async Task CreateLesson_WithScheduledAt_FiltersByDateRange()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|lesson-sched", "lesson-sched@example.com");
+
+        var scheduledDate = new DateTime(2026, 4, 15, 10, 0, 0, DateTimeKind.Utc);
+        var request = new CreateLessonRequest
+        {
+            Title = "Scheduled Lesson",
+            Language = "English",
+            CefrLevel = "B1",
+            Topic = "Conditionals",
+            DurationMinutes = 60,
+            ScheduledAt = scheduledDate,
+        };
+        var createResponse = await client.PostAsJsonAsync("/api/lessons", request);
+        createResponse.EnsureSuccessStatusCode();
+        var created = await createResponse.Content.ReadFromJsonAsync<LessonDto>();
+        created!.ScheduledAt.Should().Be(scheduledDate);
+
+        // Filter within range: should find it
+        var inRange = await client.GetAsync("/api/lessons?scheduledFrom=2026-04-14T00:00:00&scheduledTo=2026-04-16T00:00:00");
+        var inResult = await inRange.Content.ReadFromJsonAsync<PagedResult<LessonDto>>();
+        inResult!.Items.Should().Contain(l => l.Id == created.Id);
+
+        // Filter outside range: should not find it
+        var outRange = await client.GetAsync("/api/lessons?scheduledFrom=2026-05-01T00:00:00&scheduledTo=2026-05-07T00:00:00");
+        var outResult = await outRange.Content.ReadFromJsonAsync<PagedResult<LessonDto>>();
+        outResult!.Items.Should().NotContain(l => l.Id == created.Id);
+    }
+
+    [Fact]
+    public async Task GetLesson_IncludesStudentName()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var teacher = new Teacher
+        {
+            Id = Guid.NewGuid(),
+            Auth0UserId = "auth0|lesson-studname",
+            Email = "lesson-studname@example.com",
+            DisplayName = "Student Name Test",
+            IsApproved = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Teachers.Add(teacher);
+
+        var student = new Student
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            Name = "Alice Johnson",
+            LearningLanguage = "English",
+            CefrLevel = "B1",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Students.Add(student);
+        await db.SaveChangesAsync();
+
+        var client = _factory.CreateAuthenticatedClient("auth0|lesson-studname", "lesson-studname@example.com");
+
+        var request = new CreateLessonRequest
+        {
+            Title = "StudentName Test Lesson",
+            Language = "English",
+            CefrLevel = "B1",
+            Topic = "Test",
+            DurationMinutes = 60,
+            StudentId = student.Id,
+        };
+        var createResponse = await client.PostAsJsonAsync("/api/lessons", request);
+        createResponse.EnsureSuccessStatusCode();
+        var created = await createResponse.Content.ReadFromJsonAsync<LessonDto>();
+
+        var getResponse = await client.GetAsync($"/api/lessons/{created!.Id}");
+        getResponse.EnsureSuccessStatusCode();
+        var lesson = await getResponse.Content.ReadFromJsonAsync<LessonDto>();
+        lesson!.StudentName.Should().Be("Alice Johnson");
+    }
+
     private static async Task<LessonDto> CreateLessonAsync(
         HttpClient client,
         string title,

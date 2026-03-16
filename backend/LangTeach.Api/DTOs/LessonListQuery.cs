@@ -19,4 +19,7 @@ public class LessonListQuery
         get => _pageSize;
         set => _pageSize = Math.Clamp(value, 1, 100);
     }
+
+    public DateTime? ScheduledFrom { get; set; }
+    public DateTime? ScheduledTo { get; set; }
 }
