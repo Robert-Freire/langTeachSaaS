@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { isConversationContent } from '../../../types/contentTypes'
 import type { ConversationContent, ConversationScenario } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
@@ -15,6 +15,7 @@ function uid() { return nextId++ }
 
 function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   const scenarioIdsRef = useRef<number[]>([])
+  const [phraseInputs, setPhraseInputs] = useState<string[]>([])
 
   if (!isConversationContent(parsedContent)) {
     return (
@@ -32,6 +33,17 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
 
   while (scenarioIdsRef.current.length < scenarios.length) scenarioIdsRef.current.push(uid())
 
+  // Keep phraseInputs in sync with scenarios count
+  const inputs = phraseInputs.length === scenarios.length
+    ? phraseInputs
+    : Array(scenarios.length).fill('')
+
+  const setPhraseInput = (i: number, value: string) => {
+    const next = [...inputs]
+    next[i] = value
+    setPhraseInputs(next)
+  }
+
   const emit = (next: ConversationScenario[]) =>
     onChange(JSON.stringify({ scenarios: next }))
 
@@ -40,11 +52,13 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
     emit(next)
   }
 
-  const addPhrase = (i: number, value: string) => {
+  const addPhrase = (i: number) => {
+    const value = inputs[i] ?? ''
     if (!value.trim()) return
     const next = scenarios.map((s, idx) =>
       idx === i ? { ...s, keyPhrases: [...s.keyPhrases, value.trim()] } : s
     )
+    setPhraseInput(i, '')
     emit(next)
   }
 
@@ -59,11 +73,13 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
 
   const addScenario = () => {
     scenarioIdsRef.current.push(uid())
+    setPhraseInputs([...inputs, ''])
     emit([...scenarios, { setup: '', roleA: '', roleB: '', keyPhrases: [] }])
   }
 
   const removeScenario = (i: number) => {
     scenarioIdsRef.current.splice(i, 1)
+    setPhraseInputs(inputs.filter((_, idx) => idx !== i))
     emit(scenarios.filter((_, idx) => idx !== i))
   }
 
@@ -142,24 +158,21 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
               </div>
               <div className="flex gap-2">
                 <input
+                  value={inputs[i] ?? ''}
+                  onChange={(e) => setPhraseInput(i, e.target.value)}
                   placeholder="Add a key phrase..."
                   className={`${inputClass} flex-1`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
-                      addPhrase(i, (e.target as HTMLInputElement).value)
-                      ;(e.target as HTMLInputElement).value = ''
+                      addPhrase(i)
                     }
                   }}
                   data-testid={`phrase-add-${i}`}
                 />
                 <button
                   type="button"
-                  onClick={(e) => {
-                    const input = (e.currentTarget.previousElementSibling as HTMLInputElement)
-                    addPhrase(i, input.value)
-                    input.value = ''
-                  }}
+                  onClick={() => addPhrase(i)}
                   className="text-sm text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap"
                 >
                   Add
