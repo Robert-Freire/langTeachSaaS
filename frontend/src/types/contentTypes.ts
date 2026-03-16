@@ -115,7 +115,7 @@ export function isVocabularyContent(v: unknown): v is VocabularyContent {
 export function isGrammarContent(v: unknown): v is GrammarContent {
   if (typeof v !== 'object' || v === null) return false
   const c = v as Record<string, unknown>
-  return typeof c.explanation === 'string' && Array.isArray(c.examples) && Array.isArray(c.commonMistakes)
+  return typeof c.title === 'string' && typeof c.explanation === 'string' && Array.isArray(c.examples) && Array.isArray(c.commonMistakes)
 }
 
 export function isExercisesContent(v: unknown): v is ExercisesContent {
