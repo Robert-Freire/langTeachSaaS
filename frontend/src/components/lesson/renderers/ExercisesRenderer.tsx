@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { isExercisesContent } from '../../../types/contentTypes'
 import type {
   ExercisesContent,
@@ -306,6 +306,15 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   // index of the left item currently selected (waiting for right pick)
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null)
   const [checked, setChecked] = useState(false)
+
+  // Reset all answers when the content block changes (e.g. teacher edits the exercise)
+  useEffect(() => {
+    setFibAnswers([])
+    setMcAnswers([])
+    setMatchAnswers([])
+    setSelectedLeft(null)
+    setChecked(false)
+  }, [rawContent])
 
   // Extract matching before the early return so useMemo is always called (Rules of Hooks)
   const validContent = isExercisesContent(parsedContent) ? parsedContent as ExercisesContent : null
