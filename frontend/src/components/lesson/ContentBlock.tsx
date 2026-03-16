@@ -130,10 +130,8 @@ export function ContentBlock({
           AI-generated
         </Badge>
         <span className="text-xs text-zinc-400 capitalize">{block.blockType}</span>
-        {(block.isEdited || isDirty) && (
-          <span className="text-xs text-amber-600 font-medium">
-            {isDirty ? 'Unsaved changes' : 'Modified'}
-          </span>
+        {isDirty && (
+          <span className="text-xs text-amber-600 font-medium">Unsaved changes</span>
         )}
         {saving && <span className="text-xs text-zinc-400">Saving...</span>}
 
