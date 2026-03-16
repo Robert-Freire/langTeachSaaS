@@ -26,7 +26,7 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 
 ## Beta Phase — CURRENT (as of 2026-03-16)
 
-**Next task: T15.6 or T17** (T15.6 Homework type, or T17 PDF Export)
+**Next task: T17** (PDF Export)
 
 | Task | Description | Status |
 |------|-------------|--------|
@@ -42,8 +42,9 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T15.3 | Exercise/Quiz Type (quiz editor for teacher, interactive quiz for student) | DONE — PR #50 merged |
 | e2e-mock-auth | Mock-auth e2e architecture (decouple 6 tests from Auth0) | DONE — PR #51 merged |
 | T15.4 | Conversation Type (dialogue editor for teacher, dialogue view for student) | DONE — PR #52/#53 merged |
-| T15.5 | Grammar Type (styled renderer for teacher + student) | in review — PR #55 |
-| T16 | One-Click Full Lesson Generation | in review — PR #54 |
+| T15.5 | Grammar Type (styled renderer for teacher + student) | DONE — PR #55 merged |
+| T15.6 | Homework Type (assignment renderer for teacher + student) | DONE — PR #56 merged |
+| T16 | One-Click Full Lesson Generation | DONE — PR #54 merged |
 | T17 | PDF Export | pending |
 | T18 | Student Lesson Notes (post-lesson notes, lesson history on student profile) | pending |
 | T19 | Dashboard v2 (recent lessons, quick create, this week stats) | pending |
