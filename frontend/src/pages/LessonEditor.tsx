@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { GeneratePanel } from '@/components/lesson/GeneratePanel'
 import { ContentBlock } from '@/components/lesson/ContentBlock'
+import { FullLessonGenerateButton } from '@/components/lesson/FullLessonGenerateButton'
 
 const SECTION_ORDER: SectionType[] = ['WarmUp', 'Presentation', 'Practice', 'Production', 'WrapUp']
 const SECTION_LABELS: Record<SectionType, string> = {
@@ -343,6 +344,18 @@ export default function LessonEditor() {
           >
             <Trash2 className="h-4 w-4 text-zinc-500" />
           </Button>
+
+          <FullLessonGenerateButton
+            lessonId={id!}
+            sections={lesson.sections}
+            lessonContext={{
+              language: lesson.language,
+              cefrLevel: lesson.cefrLevel,
+              topic: lesson.topic,
+              studentId: lesson.studentId ?? undefined,
+            }}
+            onBlockSaved={handleBlockInsert}
+          />
 
           <button
             onClick={() => { if (!isSaving && !isUpdating) navigate(`/lessons/${id}/study`) }}
