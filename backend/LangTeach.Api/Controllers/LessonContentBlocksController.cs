@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using LangTeach.Api.Helpers;
 using System.Text.Json;
 
 namespace LangTeach.Api.Controllers;
@@ -34,17 +35,9 @@ public class LessonContentBlocksController : ControllerBase
 
     internal static object? TryParseContent(string? content)
     {
-        if (string.IsNullOrWhiteSpace(content)) return null;
-        var trimmed = content.Trim();
-        // Strip markdown code fences (e.g. ```json ... ```) that the AI may include
-        if (trimmed.StartsWith("```"))
-        {
-            var firstNewline = trimmed.IndexOf('\n');
-            var lastFence = trimmed.LastIndexOf("```");
-            if (firstNewline >= 0 && lastFence > firstNewline)
-                trimmed = trimmed[(firstNewline + 1)..lastFence].Trim();
-        }
-        try { return JsonSerializer.Deserialize<JsonElement>(trimmed); }
+        var stripped = ContentJsonHelper.StripFences(content);
+        if (stripped is null) return null;
+        try { return JsonSerializer.Deserialize<JsonElement>(stripped); }
         catch { return null; }
     }
 

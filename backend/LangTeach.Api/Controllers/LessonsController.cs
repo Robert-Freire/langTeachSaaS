@@ -1,6 +1,9 @@
 using LangTeach.Api.Data;
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 using LangTeach.Api.Services;
+using LangTeach.Api.Services.PdfExport;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,17 +19,20 @@ public class LessonsController : ControllerBase
     private readonly ILessonService _lessonService;
     private readonly IProfileService _profileService;
     private readonly AppDbContext _db;
+    private readonly IPdfExportService _pdfExportService;
     private readonly ILogger<LessonsController> _logger;
 
     public LessonsController(
         ILessonService lessonService,
         IProfileService profileService,
         AppDbContext db,
+        IPdfExportService pdfExportService,
         ILogger<LessonsController> logger)
     {
         _lessonService = lessonService;
         _profileService = profileService;
         _db = db;
+        _pdfExportService = pdfExportService;
         _logger = logger;
     }
 
@@ -210,5 +216,67 @@ public class LessonsController : ControllerBase
         _logger.LogInformation("GET /api/lessons/{LessonId}/study. TeacherId={TeacherId}", lessonId, teacherId);
 
         return Ok(new StudyLessonDto(lesson.Id, lesson.Title, lesson.Language, lesson.CefrLevel, lesson.Topic, sections));
+    }
+
+    [HttpGet("{lessonId:guid}/export/pdf")]
+    public async Task<IActionResult> ExportPdf(Guid lessonId, [FromQuery] string mode = "teacher", CancellationToken cancellationToken = default)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email!);
+
+        if (!Enum.TryParse<PdfExportMode>(mode, ignoreCase: true, out var exportMode))
+            return BadRequest("Invalid mode. Use 'teacher' or 'student'.");
+
+        var lesson = await _db.Lessons
+            .Include(l => l.Sections)
+            .Include(l => l.Student)
+            .FirstOrDefaultAsync(l => l.Id == lessonId && !l.IsDeleted, cancellationToken);
+
+        if (lesson is null || lesson.TeacherId != teacherId)
+            return NotFound();
+
+        var blocks = await _db.LessonContentBlocks
+            .Where(b => b.LessonId == lessonId)
+            .OrderBy(b => b.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        var blocksBySectionId = blocks
+            .Where(b => b.LessonSectionId.HasValue)
+            .GroupBy(b => b.LessonSectionId!.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var pdfSections = lesson.Sections
+            .OrderBy(s => s.OrderIndex)
+            .Select(s =>
+            {
+                var sectionBlocks = blocksBySectionId.TryGetValue(s.Id, out var sb) ? sb : [];
+                return new PdfSectionData(
+                    s.SectionType,
+                    s.OrderIndex,
+                    s.Notes,
+                    sectionBlocks.Select(b => new PdfBlockData(
+                        b.BlockType,
+                        b.EditedContent ?? b.GeneratedContent)).ToList());
+            })
+            .ToList();
+
+        var pdfData = new PdfLessonData(
+            lesson.Title,
+            lesson.Language,
+            lesson.CefrLevel,
+            lesson.Topic,
+            lesson.Student?.Name,
+            lesson.CreatedAt,
+            pdfSections);
+
+        var pdfBytes = _pdfExportService.GeneratePdf(pdfData, exportMode);
+        var modeLabel = exportMode == PdfExportMode.Teacher ? "Teacher" : "Student";
+        var filename = $"{lesson.Title.Replace(" ", "_")}_{modeLabel}.pdf";
+
+        _logger.LogInformation(
+            "GET /api/lessons/{LessonId}/export/pdf?mode={Mode}. TeacherId={TeacherId}",
+            lessonId, mode, teacherId);
+
+        return File(pdfBytes, "application/pdf", filename);
     }
 }

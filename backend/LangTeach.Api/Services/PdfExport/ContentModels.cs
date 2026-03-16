@@ -1,0 +1,100 @@
+using System.Text.Json.Serialization;
+
+namespace LangTeach.Api.Services.PdfExport;
+
+// Vocabulary
+public record VocabularyItem(
+    [property: JsonPropertyName("word")] string Word,
+    [property: JsonPropertyName("definition")] string Definition,
+    [property: JsonPropertyName("exampleSentence")] string? ExampleSentence = null,
+    [property: JsonPropertyName("translation")] string? Translation = null);
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
+public record VocabularyContent(
+    [property: JsonPropertyName("items")] VocabularyItem[] Items);
+
+// Grammar
+public record GrammarExample(
+    [property: JsonPropertyName("sentence")] string Sentence,
+    [property: JsonPropertyName("note")] string? Note = null);
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
+public record GrammarContent(
+    [property: JsonPropertyName("title")] string Title,
+    [property: JsonPropertyName("explanation")] string Explanation,
+    [property: JsonPropertyName("examples")] GrammarExample[] Examples,
+    [property: JsonPropertyName("commonMistakes")] string[] CommonMistakes);
+
+// Exercises
+public record ExercisesFillInBlank(
+    [property: JsonPropertyName("sentence")] string Sentence,
+    [property: JsonPropertyName("answer")] string Answer,
+    [property: JsonPropertyName("hint")] string? Hint = null);
+
+public record ExercisesMultipleChoice(
+    [property: JsonPropertyName("question")] string Question,
+    [property: JsonPropertyName("options")] string[] Options,
+    [property: JsonPropertyName("answer")] string Answer);
+
+public record ExercisesMatching(
+    [property: JsonPropertyName("left")] string Left,
+    [property: JsonPropertyName("right")] string Right);
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
+public record ExercisesContent(
+    [property: JsonPropertyName("fillInBlank")] ExercisesFillInBlank[] FillInBlank,
+    [property: JsonPropertyName("multipleChoice")] ExercisesMultipleChoice[] MultipleChoice,
+    [property: JsonPropertyName("matching")] ExercisesMatching[] Matching);
+
+// Conversation
+public record ConversationScenario(
+    [property: JsonPropertyName("setup")] string Setup,
+    [property: JsonPropertyName("roleA")] string RoleA,
+    [property: JsonPropertyName("roleB")] string RoleB,
+    [property: JsonPropertyName("roleAPhrases")] string[] RoleAPhrases,
+    [property: JsonPropertyName("roleBPhrases")] string[] RoleBPhrases,
+    [property: JsonPropertyName("keyPhrases")] string[]? KeyPhrases = null);
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
+public record ConversationContent(
+    [property: JsonPropertyName("scenarios")] ConversationScenario[] Scenarios);
+
+// Reading
+public record ReadingVocabHighlight(
+    [property: JsonPropertyName("word")] string Word,
+    [property: JsonPropertyName("definition")] string Definition);
+
+public record ReadingQuestion(
+    [property: JsonPropertyName("question")] string Question,
+    [property: JsonPropertyName("answer")] string Answer,
+    [property: JsonPropertyName("type")] string Type);
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
+public record ReadingContent(
+    [property: JsonPropertyName("passage")] string Passage,
+    [property: JsonPropertyName("comprehensionQuestions")] ReadingQuestion[] ComprehensionQuestions,
+    [property: JsonPropertyName("vocabularyHighlights")] ReadingVocabHighlight[] VocabularyHighlights);
+
+// Homework
+public record HomeworkTask(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("instructions")] string Instructions,
+    [property: JsonPropertyName("examples")] string[] Examples);
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
+public record HomeworkContent(
+    [property: JsonPropertyName("tasks")] HomeworkTask[] Tasks);
+
+// Lesson Plan
+public record LessonPlanSections(
+    [property: JsonPropertyName("warmUp")] string WarmUp,
+    [property: JsonPropertyName("presentation")] string Presentation,
+    [property: JsonPropertyName("practice")] string Practice,
+    [property: JsonPropertyName("production")] string Production,
+    [property: JsonPropertyName("wrapUp")] string WrapUp);
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
+public record LessonPlanContent(
+    [property: JsonPropertyName("title")] string Title,
+    [property: JsonPropertyName("objectives")] string[] Objectives,
+    [property: JsonPropertyName("sections")] LessonPlanSections Sections);

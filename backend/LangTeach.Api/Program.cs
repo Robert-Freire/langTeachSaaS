@@ -5,7 +5,9 @@ using LangTeach.Api.Data;
 using Microsoft.AspNetCore.Authentication;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.Services;
+using LangTeach.Api.Services.PdfExport;
 using Microsoft.Extensions.Options;
+using QuestPDF.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -100,6 +102,9 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
+
+QuestPDF.Settings.License = LicenseType.Community;
+builder.Services.AddScoped<IPdfExportService, PdfExportService>();
 
 var app = builder.Build();
 

@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { GeneratePanel } from '@/components/lesson/GeneratePanel'
 import { ContentBlock } from '@/components/lesson/ContentBlock'
+import { ExportButton } from '@/components/lesson/ExportButton'
 import { FullLessonGenerateButton } from '@/components/lesson/FullLessonGenerateButton'
 
 const SECTION_ORDER: SectionType[] = ['WarmUp', 'Presentation', 'Practice', 'Production', 'WrapUp']
@@ -344,6 +345,8 @@ export default function LessonEditor() {
           >
             <Trash2 className="h-4 w-4 text-zinc-500" />
           </Button>
+
+          <ExportButton lessonId={id!} />
 
           <FullLessonGenerateButton
             lessonId={id!}
