@@ -236,7 +236,10 @@ export function FullLessonGenerateButton({
               </button>
             )}
             {(phase === 'done' || phase === 'error') && (
-              <AlertDialogAction onClick={() => setPhase('idle')}>
+              <AlertDialogAction onClick={() => {
+                if (doneTimerRef.current) clearTimeout(doneTimerRef.current)
+                setPhase('idle')
+              }}>
                 Close
               </AlertDialogAction>
             )}

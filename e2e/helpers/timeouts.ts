@@ -14,3 +14,6 @@ export const UI_TIMEOUT = 10_000
 
 /** Brief feedback indicator wait. */
 export const FEEDBACK_TIMEOUT = 5_000
+
+/** Full-lesson generation: 5 sequential AI calls with mock streams. */
+export const GENERATION_TIMEOUT = 60_000

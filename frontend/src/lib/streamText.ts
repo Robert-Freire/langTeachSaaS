@@ -35,8 +35,8 @@ export async function streamText(
 
   while (true) {
     const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
+    buffer += done ? decoder.decode() : decoder.decode(value, { stream: true })
+    if (done && !buffer) break
 
     const lines = buffer.split('\n')
     buffer = lines.pop()!
@@ -58,6 +58,8 @@ export async function streamText(
         result += parsed
       }
     }
+
+    if (done) break
   }
 
   return result

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 import { mockFullLessonStreams } from '../helpers/mock-ai-stream'
-import { TEST_TIMEOUT, NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
+import { TEST_TIMEOUT, NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT, GENERATION_TIMEOUT } from '../helpers/timeouts'
 
 test.beforeAll(async ({ browser }) => {
   const ctx = await createMockAuthContext(browser)
@@ -59,7 +59,7 @@ test('generate full lesson populates all 5 sections', async ({ browser }) => {
     await expect(page.getByTestId('generation-progress')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
     // Wait for all 5 sections to complete (done dialog state)
-    await expect(page.getByText('Lesson generated!')).toBeVisible({ timeout: 60_000 })
+    await expect(page.getByText('Lesson generated!')).toBeVisible({ timeout: GENERATION_TIMEOUT })
 
     // Close the dialog
     await page.getByRole('button', { name: 'Close' }).click()
