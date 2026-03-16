@@ -142,6 +142,9 @@ public class LessonService : ILessonService
         await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Lesson created. TeacherId={TeacherId} LessonId={LessonId}", teacherId, lesson.Id);
 
+        if (lesson.StudentId.HasValue)
+            await _db.Entry(lesson).Reference(l => l.Student).LoadAsync(cancellationToken);
+
         return MapToDto(lesson);
     }
 
@@ -278,6 +281,9 @@ public class LessonService : ILessonService
         await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Lesson duplicated. TeacherId={TeacherId} OriginalId={OriginalId} CopyId={CopyId}",
             teacherId, lessonId, copy.Id);
+
+        if (copy.StudentId.HasValue)
+            await _db.Entry(copy).Reference(l => l.Student).LoadAsync(cancellationToken);
 
         return MapToDto(copy);
     }
