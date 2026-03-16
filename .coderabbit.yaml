@@ -17,6 +17,16 @@ reviews:
     docstrings:
       enabled: false        # Project is C# + TypeScript; Python docstring coverage is not applicable
 
+  tools:
+    markdownlint:
+      enabled: false        # Was generating repeated low-value comments (missing lang tags on fences, etc.)
+    languagetool:
+      enabled: false        # Not useful for code comments and config files
+    hadolint:
+      enabled: false        # No Dockerfiles in review scope
+    yamllint:
+      enabled: false        # Config files don't need lint reviews
+
   path_filters:
     - "!**/*.lock"
     - "!**/bin/**"
@@ -26,26 +36,31 @@ reviews:
     - "!**/dist/**"
     - "!infra/**"          # Bicep infra files — skip unless you want infra review
     - "!.claude/memory/**" # Claude Code internal memory — not source files
+    - "!plan/**"           # Plan documents, not source code
+    - "!**/*.md"           # Markdown docs don't need code review
 
   path_instructions:
     - path: "backend/**/*.cs"
       instructions: |
         This is a .NET 8 ASP.NET Core Web API.
-        Check for: missing input validation, improper use of async/await, missing cancellation tokens,
-        service lifetime mismatches (scoped vs singleton), and exposed sensitive data in responses.
+        Focus ONLY on: bugs, security issues (injection, auth bypass, data exposure), missing input validation,
+        improper async/await, missing cancellation tokens, service lifetime mismatches, race conditions,
+        and unhandled exceptions that would crash at runtime.
+        Do NOT comment on: naming style, comment formatting, code organization preferences, or minor readability suggestions.
         Follow repository/service pattern conventions already in the codebase.
 
     - path: "frontend/**/*.{ts,tsx}"
       instructions: |
         This is a React + TypeScript SPA using TailwindCSS and shadcn/ui components.
-        Check for: missing error boundaries, unhandled promise rejections, prop drilling that should
-        use context, and inline styles that should use Tailwind classes.
-        Do not flag missing JSDoc — we don't use it.
+        Focus ONLY on: bugs, security issues (XSS, unsafe data handling), race conditions, memory leaks,
+        unhandled promise rejections, and incorrect state management that would cause runtime errors.
+        Do NOT comment on: missing JSDoc, naming preferences, import ordering, or minor style suggestions.
 
     - path: "e2e/**/*.ts"
       instructions: |
-        Playwright end-to-end tests. Check for: hardcoded timeouts (use waitFor instead),
-        missing assertions, and tests that only test the happy path without any negative case.
+        Playwright end-to-end tests. Focus on: flaky test patterns (hardcoded timeouts instead of waitFor),
+        missing assertions that let failures pass silently, and incorrect selectors.
+        Do NOT comment on: test structure preferences, naming conventions, or stylistic choices.
 
 chat:
   auto_reply: true
