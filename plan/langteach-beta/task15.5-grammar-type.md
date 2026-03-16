@@ -35,7 +35,7 @@ Exports `GrammarRenderer: ContentRenderer` with three components:
 - Explanation: editable textarea (multi-line)
 - Examples: list of editable rows (sentence + note), add/remove buttons
 - Common Mistakes: editable list of strings, add/remove buttons
-- Falls back to `FreeTextRenderer.Editor` if `parsedContent` fails type guard
+- Falls back to an inline `<textarea>` rendering `rawContent` if `isGrammarContent(parsedContent)` returns false (same pattern as `VocabularyRenderer` — no `FreeTextRenderer` import)
 - On change: serialize back to JSON, call `onChange()`
 
 **Preview:**
@@ -43,7 +43,7 @@ Exports `GrammarRenderer: ContentRenderer` with three components:
 - Explanation as formatted paragraphs (split on `\n`)
 - Examples in a styled list: sentence in medium weight, note in muted/italic below
 - Common Mistakes in a callout/warning box with a distinct background color
-- Falls back to `FreeTextRenderer.Preview` if parse fails
+- Falls back to an inline `<pre>` rendering `rawContent` if `isGrammarContent(parsedContent)` returns false
 
 **Student:**
 - Same layout as Preview but without edit affordances
@@ -61,7 +61,7 @@ Add `grammar: GrammarRenderer` to the registry in `contentRegistry.tsx`.
 `GrammarRenderer.test.tsx` next to the renderer:
 - Renders title, explanation, examples, common mistakes in preview mode
 - Editor mode shows editable fields and calls onChange
-- Falls back gracefully when parsedContent is null (shows raw text)
+- Falls back gracefully when `isGrammarContent(parsedContent)` returns false (shows raw text)
 - Student view renders all sections
 
 ### Pattern reference
