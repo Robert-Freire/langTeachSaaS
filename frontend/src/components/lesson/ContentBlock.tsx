@@ -109,20 +109,20 @@ export function ContentBlock({
 
   const renderer = getRenderer(block.blockType)
   const parsedContent = useMemo(() => {
-    try {
-      const trimmed = value.trim()
-      // 1. Direct parse (clean JSON)
-      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-        return JSON.parse(trimmed)
-      }
-      // 2. Full code fence with closing backticks
-      const fenceMatch = trimmed.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/i)
-      if (fenceMatch) return JSON.parse(fenceMatch[1].trim())
-      // 3. Opening fence only (AI sometimes omits closing ```)
-      const openMatch = trimmed.match(/^```(?:json)?\s*\n([\s\S]+)$/i)
-      if (openMatch) return JSON.parse(openMatch[1].trim())
-      return JSON.parse(trimmed)
-    } catch { return null }
+    const trimmed = value.trim()
+    const candidates: string[] = [trimmed]
+    for (const m of trimmed.matchAll(/```json\s*\n?([\s\S]*?)\n?```/gi)) {
+      candidates.unshift(m[1].trim())
+    }
+    for (const m of trimmed.matchAll(/```\s*\n?([\s\S]*?)\n?```/g)) {
+      candidates.push(m[1].trim())
+    }
+    const openMatch = trimmed.match(/```(?:json)?\s*\n([\s\S]+)$/i)
+    if (openMatch) candidates.push(openMatch[1].trim())
+    for (const candidate of candidates) {
+      try { return JSON.parse(candidate) } catch { /* try next */ }
+    }
+    return null
   }, [value])
 
   return (

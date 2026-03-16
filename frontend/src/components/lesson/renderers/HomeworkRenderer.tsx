@@ -5,6 +5,17 @@ import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry
 const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200'
 const textareaClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200 resize-none'
 
+function normalizeTask(task: unknown): HomeworkTask {
+  const t = (typeof task === 'object' && task !== null ? task : {}) as Partial<HomeworkTask>
+  return {
+    type: typeof t.type === 'string' ? t.type : '',
+    instructions: typeof t.instructions === 'string' ? t.instructions : '',
+    examples: Array.isArray(t.examples)
+      ? t.examples.filter((ex): ex is string => typeof ex === 'string')
+      : [],
+  }
+}
+
 function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   if (!isHomeworkContent(parsedContent)) {
     return (
@@ -17,39 +28,40 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
     )
   }
 
-  const emit = (tasks: HomeworkTask[]) => onChange(JSON.stringify({ tasks }))
+  const tasks = parsedContent.tasks.map(normalizeTask)
+  const emit = (newTasks: HomeworkTask[]) => onChange(JSON.stringify({ tasks: newTasks }))
 
   const handleTaskChange = (index: number, field: keyof HomeworkTask, value: string | string[]) => {
-    const newTasks = parsedContent.tasks.map((t, i) => i === index ? { ...t, [field]: value } : t)
+    const newTasks = tasks.map((t, i) => i === index ? { ...t, [field]: value } : t)
     emit(newTasks)
   }
 
   const handleExampleChange = (taskIndex: number, exIndex: number, value: string) => {
-    const newExamples = parsedContent.tasks[taskIndex].examples.map((ex, i) => i === exIndex ? value : ex)
+    const newExamples = (tasks[taskIndex]?.examples ?? []).map((ex, i) => i === exIndex ? value : ex)
     handleTaskChange(taskIndex, 'examples', newExamples)
   }
 
   const handleAddExample = (taskIndex: number) => {
-    const newExamples = [...parsedContent.tasks[taskIndex].examples, '']
+    const newExamples = [...(tasks[taskIndex]?.examples ?? []), '']
     handleTaskChange(taskIndex, 'examples', newExamples)
   }
 
   const handleRemoveExample = (taskIndex: number, exIndex: number) => {
-    const newExamples = parsedContent.tasks[taskIndex].examples.filter((_, i) => i !== exIndex)
+    const newExamples = (tasks[taskIndex]?.examples ?? []).filter((_, i) => i !== exIndex)
     handleTaskChange(taskIndex, 'examples', newExamples)
   }
 
   const handleAddTask = () => {
-    emit([...parsedContent.tasks, { type: '', instructions: '', examples: [''] }])
+    emit([...tasks, { type: '', instructions: '', examples: [''] }])
   }
 
   const handleRemoveTask = (index: number) => {
-    emit(parsedContent.tasks.filter((_, i) => i !== index))
+    emit(tasks.filter((_, i) => i !== index))
   }
 
   return (
     <div className="space-y-4" data-testid="homework-editor">
-      {parsedContent.tasks.map((task, ti) => (
+      {tasks.map((task, ti) => (
         <div key={ti} className="border border-zinc-200 rounded-lg p-3 space-y-2">
           <div className="flex items-center gap-2">
             <input
@@ -127,9 +139,11 @@ function Preview({ parsedContent, rawContent }: PreviewProps) {
     return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
   }
 
+  const tasks = parsedContent.tasks.map(normalizeTask)
+
   return (
     <div className="space-y-4" data-testid="homework-preview">
-      {parsedContent.tasks.map((task, i) => (
+      {tasks.map((task, i) => (
         <div key={i} className="border border-zinc-200 rounded-lg p-4 space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -156,9 +170,11 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
   }
 
+  const tasks = parsedContent.tasks.map(normalizeTask)
+
   return (
     <div className="space-y-4" data-testid="homework-student">
-      {parsedContent.tasks.map((task, i) => (
+      {tasks.map((task, i) => (
         <div key={i} className="border border-zinc-200 rounded-lg p-4 space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-zinc-700">Task {i + 1}:</span>
