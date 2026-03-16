@@ -114,7 +114,9 @@ export function isGrammarContent(v: unknown): v is GrammarContent {
 }
 
 export function isExercisesContent(v: unknown): v is ExercisesContent {
-  return typeof v === 'object' && v !== null && 'fillInBlank' in v
+  if (typeof v !== 'object' || v === null) return false
+  const c = v as Record<string, unknown>
+  return Array.isArray(c.fillInBlank) && Array.isArray(c.multipleChoice) && Array.isArray(c.matching)
 }
 
 export function isConversationContent(v: unknown): v is ConversationContent {
