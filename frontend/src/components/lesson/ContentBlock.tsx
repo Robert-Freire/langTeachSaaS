@@ -110,8 +110,10 @@ export function ContentBlock({
   const renderer = getRenderer(block.blockType)
   const parsedContent = useMemo(() => {
     try {
-      const raw = value.replace(/^```json\s*/i, '').replace(/```\s*$/, '')
-      return JSON.parse(raw)
+      const trimmed = value.trim()
+      // Extract content from a code fence (handles prose before/after the fence)
+      const fenceMatch = trimmed.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/i)
+      return JSON.parse(fenceMatch ? fenceMatch[1].trim() : trimmed)
     } catch { return null }
   }, [value])
 
