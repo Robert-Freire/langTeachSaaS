@@ -15,17 +15,23 @@ async function ensureSelected(page: import('@playwright/test').Page, text: strin
 test('teacher can save and reload profile settings', async ({ browser }) => {
   const context = await createAuthenticatedContext(browser)
   const page = await context.newPage()
+  const apiBase = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 
   await page.goto('/settings')
   await expect(page.locator('h1')).toHaveText('My Profile')
 
-  // Wait for profile to finish loading (input becomes visible)
-  await page.waitForSelector('input[name="displayName"]')
+  // Wait for profile to finish loading AND populating the form.
+  // The input only appears after isLoading=false, but a React Query background
+  // refetch can trigger the useEffect([profile]) again, overwriting user input.
+  // Wait for the input to have a non-empty value to ensure all effects have settled.
+  const nameInput = page.locator('input[name="displayName"]')
+  await expect(nameInput).not.toHaveValue('', { timeout: UI_TIMEOUT })
+  await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {})
 
   // Fill display name
   await page.fill('input[name="displayName"]', 'Test Teacher')
 
-  // Select teaching languages (idempotent — no-op if already selected)
+  // Select teaching languages (idempotent)
   await ensureSelected(page, 'English')
   await ensureSelected(page, 'Spanish')
 
@@ -36,9 +42,16 @@ test('teacher can save and reload profile settings', async ({ browser }) => {
   // Select preferred style
   await ensureSelected(page, 'Conversational')
 
-  // Save
+  // Save: intercept the PUT response to confirm the server roundtrip completed
+  const saveResponse = page.waitForResponse(
+    r => r.url() === `${apiBase}/api/profile` && r.request().method() === 'PUT'
+  )
   await page.click('button[type="submit"]')
-  await expect(page.getByTestId('save-success')).toBeVisible()
+  const putResponse = await saveResponse
+  expect(putResponse.status()).toBe(200)
+
+  const saved = await putResponse.json()
+  expect(saved.displayName).toBe('Test Teacher')
 
   // Reload and assert persistence (wait for profile API to populate the field)
   await page.reload()

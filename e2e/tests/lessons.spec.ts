@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { createAuthenticatedContext } from '../helpers/auth-helper'
+import { UI_TIMEOUT } from '../helpers/timeouts'
 
 test('full lesson CRUD flow', async ({ browser }) => {
   const context = await createAuthenticatedContext(browser)
@@ -47,8 +48,8 @@ test('full lesson CRUD flow', async ({ browser }) => {
   await presentationSection.fill(presentationNotes)
   await presentationSection.blur()
 
-  // Wait for saved indicator
-  await expect(page.getByTestId('saved-indicator')).toBeVisible({ timeout: 5000 })
+  // Wait for saved indicator (auto-save on blur can be slow under parallel load)
+  await expect(page.getByTestId('saved-indicator')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Reload and verify notes persisted
   await page.reload()

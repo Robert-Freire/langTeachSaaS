@@ -2,9 +2,6 @@ import { test, expect } from '@playwright/test'
 import { createAuthenticatedContext } from '../helpers/auth-helper'
 import { deleteTeacherByAuth0Id } from '../helpers/db-helper'
 
-// Runs serially — this test deletes and recreates the shared test teacher record
-test.describe.configure({ mode: 'serial' })
-
 /**
  * Registration happy path:
  * A user logs in for the first time → the app creates their teacher record
