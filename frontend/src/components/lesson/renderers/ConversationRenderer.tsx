@@ -120,14 +120,14 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
     const value = inputs[i]?.[role] ?? ''
     if (!value.trim()) return
     const field = role === 0 ? 'roleAPhrases' : 'roleBPhrases'
-    const existing = role === 0 ? scenarios[i].roleAPhrases : scenarios[i].roleBPhrases
+    const existing = (role === 0 ? scenarios[i].roleAPhrases : scenarios[i].roleBPhrases) ?? []
     updateScenario(i, field, [...existing, value.trim()])
     setInput(i, role, '')
   }
 
   const removePhrase = (scenarioIdx: number, phraseIdx: number, role: 0 | 1) => {
     const field = role === 0 ? 'roleAPhrases' : 'roleBPhrases'
-    const existing = role === 0 ? scenarios[scenarioIdx].roleAPhrases : scenarios[scenarioIdx].roleBPhrases
+    const existing = (role === 0 ? scenarios[scenarioIdx].roleAPhrases : scenarios[scenarioIdx].roleBPhrases) ?? []
     updateScenario(scenarioIdx, field, existing.filter((_, j) => j !== phraseIdx))
   }
 
@@ -199,7 +199,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
               <div>
                 <label className="text-xs text-zinc-500 mb-1 block">Role A Phrases</label>
                 <PhraseList
-                  phrases={scenario.roleAPhrases}
+                  phrases={scenario.roleAPhrases ?? []}
                   phraseInput={inputs[i]?.[0] ?? ''}
                   onAdd={() => addPhrase(i, 0)}
                   onRemove={(j) => removePhrase(i, j, 0)}
@@ -211,7 +211,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
               <div>
                 <label className="text-xs text-zinc-500 mb-1 block">Role B Phrases</label>
                 <PhraseList
-                  phrases={scenario.roleBPhrases}
+                  phrases={scenario.roleBPhrases ?? []}
                   phraseInput={inputs[i]?.[1] ?? ''}
                   onAdd={() => addPhrase(i, 1)}
                   onRemove={(j) => removePhrase(i, j, 1)}
@@ -256,7 +256,7 @@ function Preview({ parsedContent, rawContent }: PreviewProps) {
                 {scenario.roleA}
               </span>
               <div className="flex flex-wrap gap-1">
-                {scenario.roleAPhrases.map((phrase, j) => (
+                {(scenario.roleAPhrases ?? []).map((phrase, j) => (
                   <span key={j} className="bg-indigo-50 text-indigo-600 text-xs px-2 py-0.5 rounded-full border border-indigo-200">
                     {phrase}
                   </span>
@@ -268,7 +268,7 @@ function Preview({ parsedContent, rawContent }: PreviewProps) {
                 {scenario.roleB}
               </span>
               <div className="flex flex-wrap gap-1">
-                {scenario.roleBPhrases.map((phrase, j) => (
+                {(scenario.roleBPhrases ?? []).map((phrase, j) => (
                   <span key={j} className="bg-zinc-50 text-zinc-600 text-xs px-2 py-0.5 rounded-full border border-zinc-200">
                     {phrase}
                   </span>
@@ -288,8 +288,10 @@ function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; ind
   const [selectedRole, setSelectedRole] = useState<'A' | 'B' | null>(null)
   const [checkedPhrases, setCheckedPhrases] = useState<Set<string>>(new Set())
 
-  const toggleRole = (role: 'A' | 'B') =>
+  const toggleRole = (role: 'A' | 'B') => {
     setSelectedRole(prev => (prev === role ? null : role))
+    setCheckedPhrases(new Set())
+  }
 
   const togglePhrase = (key: string) =>
     setCheckedPhrases(prev => {
@@ -312,14 +314,16 @@ function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; ind
 
   // Backward compat: old lessons with flat keyPhrases show all phrases ungrouped
   const legacyPhrases = scenario.keyPhrases ?? []
-  const hasRolePhrases = scenario.roleAPhrases.length > 0 || scenario.roleBPhrases.length > 0
+  const roleAPhrases = scenario.roleAPhrases ?? []
+  const roleBPhrases = scenario.roleBPhrases ?? []
+  const hasRolePhrases = roleAPhrases.length > 0 || roleBPhrases.length > 0
 
-  const myPhrases = selectedRole === 'A' ? scenario.roleAPhrases
-    : selectedRole === 'B' ? scenario.roleBPhrases
+  const myPhrases = selectedRole === 'A' ? roleAPhrases
+    : selectedRole === 'B' ? roleBPhrases
     : null
 
-  const partnerPhrases = selectedRole === 'A' ? scenario.roleBPhrases
-    : selectedRole === 'B' ? scenario.roleAPhrases
+  const partnerPhrases = selectedRole === 'A' ? roleBPhrases
+    : selectedRole === 'B' ? roleAPhrases
     : null
 
   const partnerRoleName = selectedRole === 'A' ? scenario.roleB : scenario.roleA
@@ -411,7 +415,7 @@ function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; ind
               <div>
                 <p className="text-xs text-indigo-500 font-medium mb-1">{scenario.roleA}</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {scenario.roleAPhrases.map((phrase, j) => (
+                  {roleAPhrases.map((phrase, j) => (
                     <span key={j} className="bg-white text-indigo-700 text-xs px-2 py-0.5 rounded-full border border-indigo-200">
                       {phrase}
                     </span>
@@ -421,7 +425,7 @@ function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; ind
               <div>
                 <p className="text-xs text-slate-500 font-medium mb-1">{scenario.roleB}</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {scenario.roleBPhrases.map((phrase, j) => (
+                  {roleBPhrases.map((phrase, j) => (
                     <span key={j} className="bg-white text-slate-600 text-xs px-2 py-0.5 rounded-full border border-slate-200">
                       {phrase}
                     </span>
