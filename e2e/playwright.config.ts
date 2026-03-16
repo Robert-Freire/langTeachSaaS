@@ -21,6 +21,7 @@ export default defineConfig({
         '**/typed-content-view.spec.ts',
         '**/lesson-ai-generate.spec.ts',
         '**/teacher-profile.spec.ts',
+        '**/conversation-type.spec.ts',
       ],
       fullyParallel: true,
       workers: 8,
