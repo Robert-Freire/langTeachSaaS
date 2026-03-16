@@ -27,12 +27,13 @@
 
 ### Beta Phase — IN PROGRESS
 
-**Next task: T15.1** (Typed Content Model)
+**Next task: T15.4a** (Conversation Classroom Mode)
 
 | Phase | Tasks | Status |
 |-------|-------|--------|
-| 2A Core Magic | T10, T10.1, T11-T15 | T10-T15 DONE |
-| 2A.1 Typed Content | T15.1, T15.2, T15.3, T15.4 | pending |
+| 2A Core Magic | T10, T10.1, T11-T15 | DONE |
+| 2A.1 Typed Content | T15.1, T15.2, T15.3, T15.4 | T15.1-T15.3 DONE, T15.4 in review |
+| 2A.2 Conversation UX | T15.4a (classroom), T15.4b (AI chat), T15.4c (voice) | T15.4a: pending (beta), T15.4b/c: future |
 | 2B Make It Real | T16-T19, T21, T24-T25 | pending |
 | 2C Polish | T20 | pending |
 | Demo Prep | T23 | pending |
@@ -55,7 +56,7 @@ The foundation is solid but entirely manual:
 
 **The gap** (as of Phase 1): Lesson sections are empty textareas. There's no AI, no generated content, no export. It's a shell with good bones but no magic.
 
-**The gap** (as of T15): AI generates structured JSON, but the frontend stores it as a text blob and displays it in a textarea. There's no typed content model. Vocabulary, exercises, and dialogues are all treated as opaque strings. This means: no proper rendering, no student-facing view, no path from "teacher creates" to "student learns." The typed content model (T15.1-T15.4) fixes this foundational issue.
+~~**The gap** (as of T15): no typed content model.~~ **Resolved by T15.1-T15.4**: Vocabulary renders as editable tables/flashcards, exercises as interactive quizzes, conversations as scenario cards. The remaining gap is student interactivity for conversations (T15.4a for classroom use, T15.4b/c for self-study, post-beta).
 
 ### What a Preply Teacher Needs
 
@@ -581,11 +582,9 @@ The primary screen where teachers interact with AI.
 
 ---
 
-### Phase 2A.1 — Typed Content Model
+### Phase 2A.1 — Typed Content Model (T15.1-T15.3 DONE, T15.4 IN REVIEW)
 
-The AI generates structured JSON (vocabulary lists, exercises, dialogues), but without a typed content model, the frontend can only display raw JSON in a textarea. This phase introduces the foundational architecture that makes content type-aware: vocabulary renders as tables and flashcards, exercises render as interactive quizzes, conversations render as formatted dialogues.
-
-This is the architectural shift that everything else builds on. Without it, PDF export can't format content by type, student views can't render interactive experiences, and the demo shows JSON instead of learning materials.
+The typed content model is now in place. Vocabulary renders as editable tables (teacher) and flashcards (student). Exercises render as structured quizzes with scoring. Conversations render as scenario cards. The architecture is extensible: adding a new content type means adding a schema + renderer to the registry.
 
 **Key principle**: Start with 3 core types that prove the architecture, then expand. The type system must be extensible so adding new types (infographics, pronunciation guides, writing prompts) later is just "add a schema + renderer," not a redesign.
 
@@ -749,11 +748,76 @@ The first content type fully implemented end-to-end.
 - Dialogue format with role labels (colored differently)
 - Key phrases highlighted or shown as a reference sidebar
 - Setup text as context at the top
-- (Stretch) "Practice mode": student types responses for their assigned role
 
-**Why "Should" not "Must"**: Conversations are less structured than vocabulary or exercises. The student view is primarily display (formatted dialogue), which is useful but less interactive than flashcards or quizzes. If time is tight, vocabulary + exercises prove the concept.
+**Student interactivity is split into follow-up tasks:**
+- T15.4a (beta): Classroom mode, add "Practice with a partner" instructions, role selection, phrase checklist
+- T15.4b (future): AI conversation practice partner (text chat)
+- T15.4c (future): Voice input/output on top of T15.4b
 
 **Done when**: Teacher sees formatted dialogue cards (not JSON); student sees a clean dialogue view with highlighted key phrases.
+
+---
+
+### Phase 2A.2 — Conversation UX
+
+Conversation scenarios need two layers of student interaction. T15.4a ships with the beta (classroom use). T15.4b is a future feature (self-study with AI).
+
+---
+
+#### T15.4a — Conversation Classroom Mode Improvements
+
+**Priority**: Should | **Effort**: 0.5 days | **Depends on**: T15.4
+
+The student view currently shows conversation scenarios but gives no clear signal about what the student should *do*. This task makes it an effective classroom activity reference.
+
+**Changes (frontend only):**
+1. **Activity instruction header** at the top: "Practice with a partner: Choose a role, read the context, and have a conversation using the key phrases below."
+2. **Role selection with feedback**: tapping a role marks it as "You" (highlighted) and the other as "Partner" (dimmed). Purely visual, local state only.
+3. **Key phrase checklist**: tapping a phrase chip toggles a checkmark. Lets students track which phrases they used during the in-class activity. Local state, no persistence.
+4. **Print-friendly layout** (stretch): `@media print` styles for projection or handouts.
+
+**Done when**: Student view has clear instructions, interactive role selection, and tappable phrase tracking. All existing and new e2e tests pass.
+
+See full spec: `plan/langteach-beta/task15.4a-conversation-classroom-mode.md`
+
+---
+
+#### T15.4b — AI Conversation Practice Partner
+
+**Priority**: Future (post-beta or premium) | **Effort**: 3-5 days | **Depends on**: T15.4a
+
+Transforms conversation scenarios from passive reference cards into interactive practice. The student picks a role, the AI plays the opposite role, and they have a text-based conversation within the scenario context. Key phrases appear as tappable hints and get checked off as the student uses them. A brief summary at the end shows which phrases were practiced.
+
+**Key components:**
+- New backend endpoint for streaming conversation practice responses
+- New `BuildConversationPracticePrompt()` in the prompt service
+- Chat UI component (message list, input, phrase hint strip)
+- Client-side phrase detection (fuzzy match)
+- Session summary (informational, no grading)
+
+**Design decisions deferred:** Chat UI placement (inline vs panel), message persistence, teacher visibility of practice sessions, token budget per session.
+
+See full spec: `plan/langteach-beta/task15.4b-conversation-ai-practice.md`
+
+---
+
+#### T15.4c — Voice Practice
+
+**Priority**: Future (post-beta, premium) | **Effort**: 2-3 days | **Depends on**: T15.4b
+
+Adds speech-to-text (student speaks) and text-to-speech (AI responds aloud) to the AI conversation practice. Turns text chat into spoken practice, targeting the hardest skill for solo learners: speaking.
+
+**v1 approach:** Use browser-native APIs (Web Speech API for STT, SpeechSynthesis for TTS). Zero backend cost, covers Chrome/Edge/Safari. Firefox falls back to text-only. Upgrade to Azure Speech Services later if quality or pronunciation scoring becomes a priority.
+
+**Key features:**
+- AI responses read aloud in the target language
+- Student speaks via microphone, transcription shown before sending
+- Mix voice and text freely within a session
+- Replay AI messages, re-record student messages
+- Slow playback (0.75x) for lower-level students
+- Graceful degradation: mic denied or unsupported browser falls back to text
+
+See full spec: `plan/langteach-beta/task15.4c-conversation-voice-practice.md`
 
 ---
 
@@ -986,7 +1050,7 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 
 6. **Edit and refine** (30s): Edit a vocabulary word, regenerate the exercises section with "make it easier." "You're in control. The AI proposes, you decide."
 
-7. **The student experience** (45s): Switch to the student view of the same lesson. Show vocabulary as flippable flashcards (click to reveal definition). Show exercises as an interactive quiz (fill in blanks, select multiple choice, see score). "Same data, completely different experience. You create once, the student learns interactively."
+7. **The student experience** (60s): Switch to the student view of the same lesson. Show vocabulary as flippable flashcards (click to reveal definition). Show exercises as an interactive quiz (fill in blanks, select multiple choice, see score). Show conversation scenarios as classroom activity cards: tap a role to mark it as "You," tap key phrases to check them off during practice. "Same data, completely different experience. You create once, the student learns interactively. The conversation cards are designed for pair work in class."
 
 8. **Two exports** (20s): Click "Export PDF > Student Handout," show the clean printable without answers. Then "Teacher Copy" with answer keys and timing. "One for you, one for the student."
 
@@ -996,7 +1060,7 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 
 11. **What's next?** (15s): Click "Suggest Next Topic" on Maria's profile. Show 3 AI suggestions with rationale (e.g., "Maria hasn't covered future tenses yet"). Click one to pre-fill a new lesson. "It thinks ahead so you don't have to."
 
-12. **The vision** (30s): "What you just saw is three content types. The architecture supports any number: pronunciation guides, writing prompts, infographics, cultural notes. Each one is just a new type in the system. And every type works the same way: teacher creates, AI assists, student interacts."
+12. **The vision** (30s): "What you just saw is three content types. The architecture supports any number: pronunciation guides, writing prompts, infographics, cultural notes. Each one is just a new type in the system. And every type works the same way: teacher creates, AI assists, student interacts. For conversations, the next step is an AI practice partner: the student picks a role and chats with the AI instead of needing a classmate. That's already planned."
 
 **Seed data to prepare:**
 - 3-5 realistic student profiles with varied levels (A1 to C1), languages, interests, and weaknesses
@@ -1011,6 +1075,7 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 - Would your teacher friends pay for this? At what price point?
 - What would you want to customize (lesson structure, exercise types, output language)?
 - Any content types we're missing? (pronunciation guides, cultural notes, writing prompts?)
+- For conversations: would students benefit more from AI practice (chat with AI partner) or is classroom pair work enough? Would you pay extra for AI conversation practice?
 - How important is student-facing features? (sharing materials, homework portal, progress tracking)
 - Mobile usage: do you prep lessons on your phone?
 
@@ -1031,6 +1096,8 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 | File attachments | Issue #26 | Phase 3, teachers can live without this |
 | Optimistic concurrency | Issue #25 | Technical debt, single-user beta won't have conflicts |
 | Frontend error logging | Issue #24 | Ops infrastructure, not user-facing |
+| AI conversation practice (T15.4b) | Phase 2A.2 | Post-beta or premium. Classroom mode (T15.4a) covers the beta demo. |
+| Voice practice (T15.4c) | Phase 2A.2 | Post-beta, premium. Depends on T15.4b being stable first. |
 
 ---
 
@@ -1045,12 +1112,18 @@ T11 (Claude client) ──┐                                        │
                                                                │
 T14 + T13 ──── T15 (lesson editor AI UI) ──────────────────────┤  ALL DONE
                       │                                        │
-                      │                                        │
 T15 ──── T15.1 (typed content model, foundation) ──────────────┤
                       │                                        │
-                      ├── T15.2 (vocabulary type)              │
+                      ├── T15.2 (vocabulary type)              │  ALL DONE
                       ├── T15.3 (exercises type)               │
-                      └── T15.4 (conversation type)            │
+                      └── T15.4 (conversation type) ───────────┤
+                                    │                          │
+                                    └── T15.4a (classroom UX)  │  BETA
+                                          │                    │
+                                          └── T15.4b (AI chat) │  FUTURE
+                                                │              │
+                                                └── T15.4c     │  FUTURE
+                                                   (voice)     │
                                                                │
 T15.1 ──── T16 (full lesson gen, benefits from typed model)    │
 T15.1 ──── T17 (PDF export, needs typed rendering)             │
@@ -1071,14 +1144,16 @@ T23 (demo prep) ── LAST, after all others ───────────�
 2. ~~T12~~ DONE
 3. ~~T13 + T14 (parallel)~~ DONE
 4. ~~T15~~ DONE
-5. T15.1 (typed content model foundation)
-6. T15.2 + T15.3 (parallel: vocabulary + exercises types)
-7. T15.4 (conversation type, if time allows)
-8. T16 + T17 (parallel: full lesson gen + PDF export)
-9. T18 + T19 + T21 (parallel)
-10. T24 + T25 (parallel, after T16 and T18)
-11. T20 (as time allows)
-12. T23 (always last)
+5. ~~T15.1 (typed content model foundation)~~ DONE
+6. ~~T15.2 + T15.3 (parallel: vocabulary + exercises types)~~ DONE
+7. ~~T15.4 (conversation type)~~ IN REVIEW
+8. T15.4a (conversation classroom UX)
+9. T16 + T17 (parallel: full lesson gen + PDF export)
+10. T18 + T19 + T21 (parallel)
+11. T24 + T25 (parallel, after T16 and T18)
+12. T20 (as time allows)
+13. T23 (always last)
+14. **Post-beta:** T15.4b (AI conversation practice), then T15.4c (voice)
 
 ---
 
@@ -1104,7 +1179,8 @@ T23 (demo prep) ── LAST, after all others ───────────�
 11. Click "Generate Full Lesson," confirm all 5 sections populated with type-appropriate rendering
 12. Open student view (`/lessons/:id/study`), confirm vocabulary shows as flashcards
 13. In student view, confirm exercises are interactive (fill in answers, submit, see score)
-14. Export Teacher PDF, confirm answer keys and timing present
+14. In student view, confirm conversation scenarios show "Practice with a partner" instruction, role selection works (tap to mark "You"/"Partner"), and key phrase chips are tappable as a checklist
+15. Export Teacher PDF, confirm answer keys and timing present
 15. Export Student PDF, confirm no answer keys, no teacher notes
 16. Click "Adapt for Another Student," select different student/level, confirm new lesson with regenerated content
 17. Add lesson notes, confirm they appear in student's lesson history
