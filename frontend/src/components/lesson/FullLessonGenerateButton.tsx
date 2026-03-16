@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -61,6 +61,11 @@ export function FullLessonGenerateButton({
   const [sectionStatus, setSectionStatus] = useState<Record<string, 'pending' | 'active' | 'done' | 'error'>>({})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const doneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (doneTimerRef.current) clearTimeout(doneTimerRef.current)
+  }, [])
 
   const disabled = !lessonContext.topic.trim() || !lessonContext.language.trim()
 
@@ -137,7 +142,7 @@ export function FullLessonGenerateButton({
     }
 
     setPhase('done')
-    setTimeout(() => setPhase('idle'), 2000)
+    doneTimerRef.current = setTimeout(() => setPhase('idle'), 2000)
   }
 
   const handleCancel = () => {
