@@ -1,25 +1,47 @@
 import { Page } from '@playwright/test'
 
+function makeSseBody(payload: Record<string, unknown>): string {
+  const token = JSON.stringify(JSON.stringify(payload))
+  return `data: ${token}\n\ndata: [DONE]\n\n`
+}
+
+function sseRoute(payload: Record<string, unknown>) {
+  return {
+    status: 200,
+    contentType: 'text/event-stream',
+    headers: { 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
+    body: makeSseBody(payload),
+  }
+}
+
 /**
- * Intercepts the AI stream endpoint and returns a deterministic SSE response.
- * Must be called before page.goto so the route is registered in time.
+ * Intercepts all AI stream endpoints with a single payload.
+ * Must be called before page.goto.
  */
 export async function mockAiStream(page: Page, payload: Record<string, unknown>): Promise<void> {
   await page.route('**/api/generate/*/stream', async (route) => {
-    const jsonPayload = JSON.stringify(payload)
-    const token = JSON.stringify(jsonPayload)
-    const body = `data: ${token}\n\ndata: [DONE]\n\n`
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'text/event-stream',
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
-      body,
-    })
+    await route.fulfill(sseRoute(payload))
   })
+}
+
+/**
+ * Intercepts each section's AI stream endpoint with a type-specific fixture.
+ * Used for full-lesson generation tests where 5 different task types are called.
+ * Must be called before page.goto.
+ */
+export async function mockFullLessonStreams(page: Page): Promise<void> {
+  const fixtures: Record<string, Record<string, unknown>> = {
+    vocabulary: VOCABULARY_FIXTURE,
+    grammar: GRAMMAR_FIXTURE,
+    exercises: EXERCISES_FIXTURE,
+    conversation: CONVERSATION_FIXTURE,
+    homework: HOMEWORK_FIXTURE,
+  }
+  for (const [taskType, payload] of Object.entries(fixtures)) {
+    await page.route(`**/api/generate/${taskType}/stream`, async (route) => {
+      await route.fulfill(sseRoute(payload))
+    })
+  }
 }
 
 export const EXERCISES_FIXTURE = {
@@ -43,6 +65,31 @@ export const CONVERSATION_FIXTURE = {
       roleB: 'Customer',
       roleAPhrases: ['Here is your table.', 'Can I take your order?', 'I recommend the pasta.'],
       roleBPhrases: ["I'd like to order...", 'Could I have...?', 'What do you recommend?'],
+    },
+  ],
+}
+
+export const GRAMMAR_FIXTURE = {
+  title: 'Present Simple',
+  explanation: 'Used to describe habits, facts, and routines.',
+  examples: [
+    { sentence: 'She drinks coffee every morning.', note: 'habit' },
+    { sentence: 'Water boils at 100°C.', note: 'fact' },
+  ],
+  commonMistakes: ['Forgetting the -s ending for he/she/it', 'Using present simple for temporary actions'],
+}
+
+export const HOMEWORK_FIXTURE = {
+  tasks: [
+    {
+      type: 'writing',
+      instructions: 'Write 5 sentences using the present simple to describe your daily routine.',
+      examples: ['I wake up at 7am.', 'She reads the news every day.'],
+    },
+    {
+      type: 'vocabulary',
+      instructions: 'Learn and practice the 10 vocabulary words from today\'s lesson.',
+      examples: [],
     },
   ],
 }
