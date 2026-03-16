@@ -21,6 +21,7 @@ export default defineConfig({
     {
       name: 'serial',
       testMatch: ['**/teacher-profile.spec.ts', '**/provider-switch.spec.ts'],
+      workers: 1,
       dependencies: ['parallel'],
     },
     {

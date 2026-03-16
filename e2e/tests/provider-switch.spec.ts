@@ -3,7 +3,8 @@ import { createAuthenticatedContext } from '../helpers/auth-helper'
 import { getTestAuth0UserId, updateTeacherAuth0Id } from '../helpers/db-helper'
 
 test('provider switch preserves teacher identity', async ({ browser }) => {
-  const email = process.env.E2E_TEST_EMAIL!
+  const email = process.env.E2E_TEST_EMAIL
+  if (!email) throw new Error('E2E_TEST_EMAIL env var is required for provider-switch test')
   const auth0UserId = getTestAuth0UserId()
 
   const context = await createAuthenticatedContext(browser)

@@ -36,6 +36,9 @@ public class AuthController : ControllerBase
         var email = userInfo.Email;
         if (string.IsNullOrEmpty(email))
             email = await _profileService.GetStoredEmailAsync(sub);
+        // Final fallback: use sub as email identifier when no email is available at all
+        if (string.IsNullOrEmpty(email))
+            email = sub;
 
         return Ok(new { sub, email, name = userInfo.Name });
     }

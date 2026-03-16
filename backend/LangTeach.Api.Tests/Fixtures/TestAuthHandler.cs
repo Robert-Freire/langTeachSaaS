@@ -12,6 +12,8 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
     public const string DefaultAuth0Id = "auth0|test-teacher-1";
     public const string DefaultEmail = "test@example.com";
     public const string DefaultName = "Test User";
+    // Sentinel sent via header to force the email claim to be absent (empty string headers are dropped by HttpClient)
+    public const string NoEmailSentinel = "__no_email__";
 
     public TestAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
@@ -22,7 +24,8 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var auth0Id = Request.Headers["X-Test-Auth0Id"].FirstOrDefault() ?? DefaultAuth0Id;
-        var email = Request.Headers["X-Test-Email"].FirstOrDefault() ?? DefaultEmail;
+        var rawEmail = Request.Headers["X-Test-Email"].FirstOrDefault() ?? DefaultEmail;
+        var email = rawEmail == NoEmailSentinel ? "" : rawEmail;
         var name = Request.Headers["X-Test-Name"].FirstOrDefault() ?? DefaultName;
         var emailClaimType = Request.Headers["X-Test-EmailClaimType"].FirstOrDefault() ?? ClaimTypes.Email;
         var nameClaimType = Request.Headers["X-Test-NameClaimType"].FirstOrDefault() ?? ClaimTypes.Name;

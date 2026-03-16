@@ -277,7 +277,8 @@ namespace LangTeach.Api.Migrations
                         .IsUnique();
 
                     b.HasIndex("Email")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[Email] <> ''");
 
                     b.ToTable("Teachers");
                 });

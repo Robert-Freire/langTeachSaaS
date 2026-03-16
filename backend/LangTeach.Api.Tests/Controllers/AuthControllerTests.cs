@@ -79,20 +79,25 @@ public class AuthControllerTests
             "auth0|provider-switch-1", "switch@example.com", name: "Switch User");
         var response1 = await client1.GetAsync("/api/auth/me");
         response1.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body1 = await response1.Content.ReadFromJsonAsync<MeResponse>();
+        body1!.Sub.Should().Be("auth0|provider-switch-1");
+        body1.Email.Should().Be("switch@example.com");
 
-        // Second login with Google provider, same email
+        // Second login with Google provider, same email — teacher identity must be preserved
         var client2 = _factory.CreateAuthenticatedClient(
             "google-oauth2|provider-switch-2", "switch@example.com", name: "Switch User");
         var response2 = await client2.GetAsync("/api/auth/me");
         response2.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        // Both should return the same sub (updated to the latest provider)
         var body2 = await response2.Content.ReadFromJsonAsync<MeResponse>();
-        body2!.Email.Should().Be("switch@example.com");
+        body2!.Sub.Should().Be("google-oauth2|provider-switch-2");
+        body2.Email.Should().Be("switch@example.com");
 
         // Third call with the new provider should still work (Auth0UserId was updated)
         var response3 = await client2.GetAsync("/api/auth/me");
         response3.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body3 = await response3.Content.ReadFromJsonAsync<MeResponse>();
+        body3!.Sub.Should().Be("google-oauth2|provider-switch-2");
+        body3.Email.Should().Be("switch@example.com");
     }
 
     [Fact]
@@ -110,6 +115,7 @@ public class AuthControllerTests
 
         var body = await response2.Content.ReadFromJsonAsync<MeResponse>();
         body!.Sub.Should().Be("auth0|empty-email-fallback");
+        body.Email.Should().Be("auth0|empty-email-fallback");
     }
 
     private record MeResponse(string Sub, string Email, string? Name);

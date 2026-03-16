@@ -18,11 +18,24 @@ namespace LangTeach.Api.Migrations
                 oldClrType: typeof(string),
                 oldType: "nvarchar(max)");
 
+            // Fail fast if non-empty duplicate emails already exist — requires manual deduplication before deploying
+            migrationBuilder.Sql("""
+                IF EXISTS (
+                    SELECT 1
+                    FROM Teachers
+                    WHERE Email <> ''
+                    GROUP BY Email
+                    HAVING COUNT(*) > 1
+                )
+                THROW 50001, 'Cannot create unique index IX_Teachers_Email: duplicate non-empty Teacher.Email values exist.', 1;
+                """);
+
             migrationBuilder.CreateIndex(
                 name: "IX_Teachers_Email",
                 table: "Teachers",
                 column: "Email",
-                unique: true);
+                unique: true,
+                filter: "[Email] <> ''");
         }
 
         /// <inheritdoc />

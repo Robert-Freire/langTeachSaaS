@@ -102,6 +102,15 @@ public class ProfileService : IProfileService
                     .FirstOrDefaultAsync();
                 if (stale is not null)
                 {
+                    var hasDependents =
+                        await _db.Lessons.AnyAsync(l => l.TeacherId == stale.Id) ||
+                        await _db.Students.AnyAsync(s => s.TeacherId == stale.Id) ||
+                        await _db.TeacherSettings.AnyAsync(ts => ts.TeacherId == stale.Id);
+
+                    if (hasDependents)
+                        throw new InvalidOperationException(
+                            $"Conflicting teacher {stale.Id} has dependents and requires manual merge.");
+
                     _logger.LogWarning(
                         "Removing stale teacher {StaleTeacherId} with Auth0UserId={Auth0UserId} to resolve provider switch conflict",
                         stale.Id, auth0UserId);

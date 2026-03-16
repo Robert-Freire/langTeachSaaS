@@ -48,8 +48,20 @@ public class UserInfoService : IUserInfoService
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
 
-                var response = await client.GetStringAsync($"https://{domain}/userinfo");
-                var doc = JsonDocument.Parse(response);
+                using var httpResponse = await client.GetAsync($"https://{domain}/userinfo");
+
+                // Permanent failures (4xx auth/client errors) — no retry
+                if (!httpResponse.IsSuccessStatusCode && (int)httpResponse.StatusCode < 500 && (int)httpResponse.StatusCode != 429)
+                {
+                    _logger.LogWarning("Auth0 /userinfo returned permanent error {StatusCode}.", (int)httpResponse.StatusCode);
+                    return new Auth0UserInfo("", "");
+                }
+
+                // Transient failures (429, 5xx) — treat as retriable via exception path
+                httpResponse.EnsureSuccessStatusCode();
+
+                await using var stream = await httpResponse.Content.ReadAsStreamAsync();
+                using var doc = await JsonDocument.ParseAsync(stream);
 
                 var email = doc.RootElement.TryGetProperty("email", out var emailProp) ? emailProp.GetString() ?? "" : "";
                 var name = doc.RootElement.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "" : "";

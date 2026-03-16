@@ -48,7 +48,8 @@ public class AuthenticatedWebAppFactory : WebApplicationFactory<Program>
     {
         var client = CreateClient();
         client.DefaultRequestHeaders.Add("X-Test-Auth0Id", auth0Id);
-        client.DefaultRequestHeaders.Add("X-Test-Email", email);
+        // HttpClient drops empty-value headers; use a sentinel so the test handler can distinguish "no email" from default
+        client.DefaultRequestHeaders.Add("X-Test-Email", string.IsNullOrEmpty(email) ? TestAuthHandler.NoEmailSentinel : email);
         if (name != null)
             client.DefaultRequestHeaders.Add("X-Test-Name", name);
         if (emailClaimType != null)
