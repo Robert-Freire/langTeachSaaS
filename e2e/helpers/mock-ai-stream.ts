@@ -22,6 +22,19 @@ export async function mockAiStream(page: Page, payload: Record<string, unknown>)
   })
 }
 
+export const EXERCISES_FIXTURE = {
+  fillInBlank: [
+    { sentence: 'She ___ to the store yesterday.', answer: 'went', hint: "past simple of 'go'" },
+  ],
+  multipleChoice: [
+    { question: 'Which word means happy?', options: ['sad', 'glad', 'angry'], answer: 'glad' },
+  ],
+  matching: [
+    { left: 'hello', right: 'hola' },
+    { left: 'goodbye', right: 'adios' },
+  ],
+}
+
 export const VOCABULARY_FIXTURE = {
   items: [
     {
