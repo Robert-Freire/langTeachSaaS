@@ -111,9 +111,17 @@ export function ContentBlock({
   const parsedContent = useMemo(() => {
     try {
       const trimmed = value.trim()
-      // Extract content from a code fence (handles prose before/after the fence)
+      // 1. Direct parse (clean JSON)
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        return JSON.parse(trimmed)
+      }
+      // 2. Full code fence with closing backticks
       const fenceMatch = trimmed.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/i)
-      return JSON.parse(fenceMatch ? fenceMatch[1].trim() : trimmed)
+      if (fenceMatch) return JSON.parse(fenceMatch[1].trim())
+      // 3. Opening fence only (AI sometimes omits closing ```)
+      const openMatch = trimmed.match(/^```(?:json)?\s*\n([\s\S]+)$/i)
+      if (openMatch) return JSON.parse(openMatch[1].trim())
+      return JSON.parse(trimmed)
     } catch { return null }
   }, [value])
 

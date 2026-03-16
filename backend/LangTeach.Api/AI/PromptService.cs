@@ -8,7 +8,7 @@ public class PromptService : IPromptService
         new(BuildSystemPrompt(ctx), LessonPlanUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 8192);
 
     public ClaudeRequest BuildVocabularyPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), VocabularyUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 1024);
+        new(BuildSystemPrompt(ctx), VocabularyUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 2048);
 
     public ClaudeRequest BuildGrammarPrompt(GenerationContext ctx) =>
         new(BuildSystemPrompt(ctx), GrammarUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 1500);
