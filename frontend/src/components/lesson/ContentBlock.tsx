@@ -72,7 +72,6 @@ export function ContentBlock({
 
   const handleReset = async () => {
     actionInProgress.current = false
-    if (isDirty && !window.confirm('You have unsaved changes. Discard them and reset to original?')) return
     setResetting(true)
     setActionError(null)
     try {
@@ -110,7 +109,10 @@ export function ContentBlock({
 
   const renderer = getRenderer(block.blockType)
   const parsedContent = useMemo(() => {
-    try { return JSON.parse(value) } catch { return null }
+    try {
+      const raw = value.replace(/^```json\s*/i, '').replace(/```\s*$/, '')
+      return JSON.parse(raw)
+    } catch { return null }
   }, [value])
 
   return (
