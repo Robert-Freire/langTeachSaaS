@@ -1,9 +1,9 @@
-import client from './client'
+import { apiClient } from '../lib/apiClient'
 
 export type ExportMode = 'teacher' | 'student'
 
 export async function exportLessonPdf(lessonId: string, mode: ExportMode): Promise<void> {
-  const response = await client.get(`/lessons/${lessonId}/export/pdf`, {
+  const response = await apiClient.get(`/api/lessons/${lessonId}/export/pdf`, {
     params: { mode },
     responseType: 'blob',
   })
