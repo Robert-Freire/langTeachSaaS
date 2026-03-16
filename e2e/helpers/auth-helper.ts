@@ -5,7 +5,7 @@ import { Browser, BrowserContext } from '@playwright/test';
  * The mock provider injects a fixed identity without hitting Auth0.
  */
 export async function createMockAuthContext(browser: Browser): Promise<BrowserContext> {
-    const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173';
+    const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5174';
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto(baseURL);
@@ -26,7 +26,7 @@ export async function createAuthenticatedContext(browser: Browser): Promise<Brow
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:5174');
     await page.fill('[name="username"]', process.env.E2E_TEST_EMAIL!);
     await page.fill('[name="password"]', process.env.E2E_TEST_PASSWORD!);
     await page.click('[name="action"]');
@@ -44,7 +44,7 @@ export async function createAuthenticatedContext(browser: Browser): Promise<Brow
     }
 
     // Wait until back on the app
-    await page.waitForURL('http://localhost:5173/**', { timeout: 30000 });
+    await page.waitForURL('http://localhost:5174/**', { timeout: 30000 });
     await page.close();
 
     return context;
