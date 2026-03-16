@@ -30,10 +30,13 @@ export async function deleteTeacherByAuth0Id(auth0UserId: string): Promise<void>
 export async function deleteTeacherByEmail(email: string): Promise<void> {
   const pool = await new sql.ConnectionPool(config).connect()
   try {
-    await pool
+    const result = await pool
       .request()
       .input('email', sql.NVarChar, email)
       .query('DELETE FROM Teachers WHERE Email = @email')
+    if (result.rowsAffected[0] === 0) {
+      throw new Error(`deleteTeacherByEmail: no teacher found with Email "${email}"`)
+    }
   } finally {
     await pool.close()
   }

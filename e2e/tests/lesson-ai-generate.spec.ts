@@ -16,6 +16,7 @@ test('generate AI content for lesson section, insert, and persist after refresh'
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
+  try {
   // Create a lesson via the wizard
   await page.goto('/lessons')
   await expect(page.locator('h1')).toHaveText('Lessons', { timeout: NAV_TIMEOUT })
@@ -80,6 +81,7 @@ test('generate AI content for lesson section, insert, and persist after refresh'
   await page.reload()
   await expect(page.getByTestId('lesson-title')).toHaveText(lessonTitle, { timeout: UI_TIMEOUT })
   await expect(page.getByTestId('ai-block-badge').first()).toBeVisible({ timeout: UI_TIMEOUT })
-
-  await context.close()
+  } finally {
+    await context.close()
+  }
 })
