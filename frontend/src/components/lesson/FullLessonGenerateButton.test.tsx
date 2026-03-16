@@ -173,6 +173,70 @@ describe('FullLessonGenerateButton', () => {
     await waitFor(() => expect(vi.mocked(generateApi.saveContentBlock)).toHaveBeenCalledTimes(5), { timeout: 3000 })
   })
 
+  it('succeeds when lesson has fewer than 5 sections (e.g. no Production)', async () => {
+    const user = userEvent.setup()
+    const onBlockSaved = vi.fn()
+    const streamMock = vi.mocked(streamText)
+    const saveMock = vi.mocked(generateApi.saveContentBlock)
+
+    streamMock.mockResolvedValue('{}')
+    saveMock.mockImplementation((_lessonId, req) =>
+      Promise.resolve(makeBlock(req.lessonSectionId!, req.blockType as string))
+    )
+
+    const FOUR_SECTIONS: LessonSection[] = SECTIONS.filter(s => s.sectionType !== 'Production')
+
+    render(
+      <FullLessonGenerateButton
+        lessonId="lesson-1"
+        sections={FOUR_SECTIONS}
+        lessonContext={LESSON_CONTEXT}
+        onBlockSaved={onBlockSaved}
+      />
+    )
+
+    await user.click(screen.getByTestId('generate-full-lesson-btn'))
+    await user.click(screen.getByTestId('confirm-generate-full-lesson'))
+
+    await waitFor(() => expect(screen.getByText('Lesson generated!')).toBeInTheDocument(), { timeout: 3000 })
+    // Only 4 blocks saved (Production skipped)
+    expect(onBlockSaved).toHaveBeenCalledTimes(4)
+    const blockTypes = onBlockSaved.mock.calls.map((c) => (c as [ContentBlockDto])[0].blockType)
+    expect(blockTypes).not.toContain('conversation')
+  })
+
+  it('progress counter reflects actual section count for partial lesson', async () => {
+    const user = userEvent.setup()
+    let resolveFirst: (v: string) => void
+    const firstStreamPromise = new Promise<string>(res => { resolveFirst = res })
+
+    vi.mocked(streamText).mockReturnValueOnce(firstStreamPromise).mockResolvedValue('{}')
+    vi.mocked(generateApi.saveContentBlock).mockImplementation((_lessonId, req) =>
+      Promise.resolve(makeBlock(req.lessonSectionId!, req.blockType as string))
+    )
+
+    const FOUR_SECTIONS: LessonSection[] = SECTIONS.filter(s => s.sectionType !== 'Production')
+
+    render(
+      <FullLessonGenerateButton
+        lessonId="lesson-1"
+        sections={FOUR_SECTIONS}
+        lessonContext={LESSON_CONTEXT}
+        onBlockSaved={vi.fn()}
+      />
+    )
+
+    await user.click(screen.getByTestId('generate-full-lesson-btn'))
+    await user.click(screen.getByTestId('confirm-generate-full-lesson'))
+
+    await waitFor(() => expect(screen.getByTestId('generation-progress')).toBeInTheDocument())
+    // Should show 1 / 4, not 1 / 5
+    expect(screen.getByText('1 / 4')).toBeInTheDocument()
+
+    resolveFirst!('{}')
+    await waitFor(() => expect(vi.mocked(generateApi.saveContentBlock)).toHaveBeenCalledTimes(4), { timeout: 3000 })
+  })
+
   it('error during section 2 stops generation and shows error state', async () => {
     const user = userEvent.setup()
     const streamMock = vi.mocked(streamText)
