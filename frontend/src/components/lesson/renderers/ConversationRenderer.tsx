@@ -99,7 +99,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
 
   const inputs: [string, string][] = phraseInputs.length === scenarios.length
     ? phraseInputs
-    : Array(scenarios.length).fill(['', ''] as [string, string])
+    : Array.from({ length: scenarios.length }, (): [string, string] => ['', ''])
 
   const setInput = (i: number, role: 0 | 1, value: string) => {
     const next = inputs.map((pair, idx): [string, string] =>
