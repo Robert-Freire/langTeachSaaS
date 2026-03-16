@@ -285,11 +285,12 @@ function Preview({ parsedContent, rawContent }: PreviewProps) {
 // ─── Student ─────────────────────────────────────────────────────────────────
 
 function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; index: number }) {
-  const [selectedRole, setSelectedRole] = useState<'A' | 'B' | null>(null)
+  const [selectedRole, setSelectedRole] = useState<'A' | 'B'>('A')
   const [checkedPhrases, setCheckedPhrases] = useState<Set<string>>(new Set())
 
-  const toggleRole = (role: 'A' | 'B') => {
-    setSelectedRole(prev => (prev === role ? null : role))
+  const selectRole = (role: 'A' | 'B') => {
+    if (role === selectedRole) return
+    setSelectedRole(role)
     setCheckedPhrases(new Set())
   }
 
@@ -300,17 +301,11 @@ function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; ind
       return next
     })
 
-  const roleClass = (role: 'A' | 'B') => {
-    if (selectedRole === null)
-      return role === 'A' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-700'
-    if (selectedRole === role) return 'bg-indigo-500 text-white ring-2 ring-indigo-300'
-    return 'bg-zinc-100 text-zinc-400'
-  }
+  const roleClass = (role: 'A' | 'B') =>
+    selectedRole === role ? 'bg-indigo-500 text-white ring-2 ring-indigo-300' : 'bg-zinc-100 text-zinc-400'
 
-  const dotClass = (role: 'A' | 'B') => {
-    if (selectedRole === role) return 'bg-white'
-    return role === 'A' ? 'bg-indigo-500' : 'bg-slate-400'
-  }
+  const dotClass = (role: 'A' | 'B') =>
+    selectedRole === role ? 'bg-white' : 'bg-zinc-300'
 
   // Backward compat: old lessons with flat keyPhrases show all phrases ungrouped
   const legacyPhrases = scenario.keyPhrases ?? []
@@ -318,14 +313,8 @@ function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; ind
   const roleBPhrases = scenario.roleBPhrases ?? []
   const hasRolePhrases = roleAPhrases.length > 0 || roleBPhrases.length > 0
 
-  const myPhrases = selectedRole === 'A' ? roleAPhrases
-    : selectedRole === 'B' ? roleBPhrases
-    : null
-
-  const partnerPhrases = selectedRole === 'A' ? roleBPhrases
-    : selectedRole === 'B' ? roleAPhrases
-    : null
-
+  const myPhrases = selectedRole === 'A' ? roleAPhrases : roleBPhrases
+  const partnerPhrases = selectedRole === 'A' ? roleBPhrases : roleAPhrases
   const partnerRoleName = selectedRole === 'A' ? scenario.roleB : scenario.roleA
 
   return (
@@ -341,31 +330,29 @@ function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; ind
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => toggleRole('A')}
+            onClick={() => selectRole('A')}
             className={`inline-flex items-center gap-1.5 font-semibold text-sm px-3 py-1 rounded-full transition-all ${roleClass('A')}`}
             data-testid={`student-role-a-${index}`}
           >
             <span className={`w-2 h-2 rounded-full inline-block ${dotClass('A')}`} />
             {scenario.roleA}
-            {selectedRole === 'A' && <span className="ml-1 text-xs font-bold">(You)</span>}
-            {selectedRole === 'B' && <span className="ml-1 text-xs">(Partner)</span>}
+            {selectedRole === 'A' ? <span className="ml-1 text-xs font-bold">(You)</span> : <span className="ml-1 text-xs">(Partner)</span>}
           </button>
           <span className="text-zinc-300 text-xs">vs</span>
           <button
             type="button"
-            onClick={() => toggleRole('B')}
+            onClick={() => selectRole('B')}
             className={`inline-flex items-center gap-1.5 font-semibold text-sm px-3 py-1 rounded-full transition-all ${roleClass('B')}`}
             data-testid={`student-role-b-${index}`}
           >
             <span className={`w-2 h-2 rounded-full inline-block ${dotClass('B')}`} />
             {scenario.roleB}
-            {selectedRole === 'B' && <span className="ml-1 text-xs font-bold">(You)</span>}
-            {selectedRole === 'A' && <span className="ml-1 text-xs">(Partner)</span>}
+            {selectedRole === 'B' ? <span className="ml-1 text-xs font-bold">(You)</span> : <span className="ml-1 text-xs">(Partner)</span>}
           </button>
         </div>
 
         {/* Role-specific phrase checklist */}
-        {hasRolePhrases && selectedRole !== null && myPhrases && partnerPhrases && (
+        {hasRolePhrases && (
           <div className="space-y-3">
             <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500 mb-2">Your Phrases</p>
@@ -404,35 +391,6 @@ function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; ind
                 </div>
               </div>
             )}
-          </div>
-        )}
-
-        {/* No role selected yet — show all phrases grouped */}
-        {hasRolePhrases && selectedRole === null && (
-          <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-400 mb-2">Key Phrases — select a role to filter</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-indigo-500 font-medium mb-1">{scenario.roleA}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {roleAPhrases.map((phrase, j) => (
-                    <span key={j} className="bg-white text-indigo-700 text-xs px-2 py-0.5 rounded-full border border-indigo-200">
-                      {phrase}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium mb-1">{scenario.roleB}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {roleBPhrases.map((phrase, j) => (
-                    <span key={j} className="bg-white text-slate-600 text-xs px-2 py-0.5 rounded-full border border-slate-200">
-                      {phrase}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
         )}
 

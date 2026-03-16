@@ -20,22 +20,21 @@ function makeContent(overrides?: Partial<ConversationContent[' scenarios'][0]>):
 const raw = (c: ConversationContent) => JSON.stringify(c)
 
 describe('ConversationRenderer.Student — role selection', () => {
-  it('shows (You)/(Partner) badges when a role is selected', async () => {
+  it('shows (You)/(Partner) badges with role A auto-selected', () => {
     const content = makeContent()
     render(<ConversationRenderer.Student rawContent={raw(content)} parsedContent={content} />)
 
-    await userEvent.click(screen.getByTestId('student-role-a-0'))
     expect(screen.getByTestId('student-role-a-0')).toHaveTextContent('(You)')
     expect(screen.getByTestId('student-role-b-0')).toHaveTextContent('(Partner)')
   })
 
-  it('deselects role when tapped again', async () => {
+  it('keeps role selected when tapped again (no deselect)', async () => {
     const content = makeContent()
     render(<ConversationRenderer.Student rawContent={raw(content)} parsedContent={content} />)
 
     await userEvent.click(screen.getByTestId('student-role-a-0'))
     await userEvent.click(screen.getByTestId('student-role-a-0'))
-    expect(screen.getByTestId('student-role-a-0')).not.toHaveTextContent('(You)')
+    expect(screen.getByTestId('student-role-a-0')).toHaveTextContent('(You)')
   })
 
   it('clears checked phrases when role changes', async () => {
@@ -55,14 +54,12 @@ describe('ConversationRenderer.Student — role selection', () => {
     expect(newChip).not.toHaveClass('line-through')
   })
 
-  it('shows Your Phrases section only after role is selected', async () => {
+  it('shows Your Phrases section immediately with role A auto-selected', () => {
     const content = makeContent()
     render(<ConversationRenderer.Student rawContent={raw(content)} parsedContent={content} />)
 
-    expect(screen.queryByText('Your Phrases')).toBeNull()
-
-    await userEvent.click(screen.getByTestId('student-role-a-0'))
     expect(screen.getByText('Your Phrases')).toBeInTheDocument()
+    expect(screen.getByTestId('student-role-a-0')).toHaveTextContent('(You)')
   })
 })
 
