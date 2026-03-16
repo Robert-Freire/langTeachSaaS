@@ -3,6 +3,7 @@ import { ConversationRenderer } from './renderers/ConversationRenderer'
 import { ExercisesRenderer } from './renderers/ExercisesRenderer'
 import { FreeTextRenderer } from './renderers/FreeTextRenderer'
 import { GrammarRenderer } from './renderers/GrammarRenderer'
+import { HomeworkRenderer } from './renderers/HomeworkRenderer'
 import { VocabularyRenderer } from './renderers/VocabularyRenderer'
 
 export interface EditorProps {
@@ -31,6 +32,7 @@ const registry: Partial<Record<ContentBlockType, ContentRenderer>> = {
   conversation: ConversationRenderer,
   exercises: ExercisesRenderer,
   grammar: GrammarRenderer,
+  homework: HomeworkRenderer,
   vocabulary: VocabularyRenderer,
 }
 
