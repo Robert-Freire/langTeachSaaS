@@ -11,7 +11,6 @@ export interface VocabularyItem {
   word: string
   definition: string
   exampleSentence?: string
-  translation?: string
 }
 
 export interface VocabularyContent {

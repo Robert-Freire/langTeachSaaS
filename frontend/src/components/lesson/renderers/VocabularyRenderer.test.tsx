@@ -7,8 +7,8 @@ import type { VocabularyContent } from '../../../types/contentTypes'
 function makeContent(overrides?: Partial<VocabularyContent>): VocabularyContent {
   return {
     items: [
-      { word: 'departure', definition: 'The act of leaving', exampleSentence: 'The departure was delayed.', translation: 'salida' },
-      { word: 'arrival', definition: 'The act of arriving', exampleSentence: 'We celebrated her arrival.', translation: 'llegada' },
+      { word: 'departure', definition: 'The act of leaving', exampleSentence: 'The departure was delayed.' },
+      { word: 'arrival', definition: 'The act of arriving', exampleSentence: 'We celebrated her arrival.' },
     ],
     ...overrides,
   }
@@ -24,7 +24,6 @@ describe('VocabularyRenderer.Preview', () => {
     expect(screen.getByTestId('vocabulary-table')).toBeInTheDocument()
     expect(screen.getByText('departure')).toBeInTheDocument()
     expect(screen.getByText('The act of leaving')).toBeInTheDocument()
-    expect(screen.getByText('salida')).toBeInTheDocument()
     expect(screen.getByText('arrival')).toBeInTheDocument()
   })
 
@@ -41,7 +40,7 @@ describe('VocabularyRenderer.Editor', () => {
 
     expect(screen.getByDisplayValue('departure')).toBeInTheDocument()
     expect(screen.getByDisplayValue('The act of leaving')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('salida')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('The departure was delayed.')).toBeInTheDocument()
   })
 
   it('calls onChange when a word is edited', async () => {
