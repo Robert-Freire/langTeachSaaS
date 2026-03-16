@@ -80,4 +80,6 @@ test('generate AI content for lesson section, insert, and persist after refresh'
   await page.reload()
   await expect(page.getByTestId('lesson-title')).toHaveText(lessonTitle, { timeout: UI_TIMEOUT })
   await expect(page.getByTestId('ai-block-badge').first()).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await context.close()
 })

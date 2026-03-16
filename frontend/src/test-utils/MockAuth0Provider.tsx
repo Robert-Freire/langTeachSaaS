@@ -7,18 +7,28 @@ const mockUser: User = {
   name: 'E2E Teacher',
 }
 
-const mockContext = {
+const mockContext: Auth0ContextInterface<User> = {
   isAuthenticated: true,
   isLoading: false,
   user: mockUser,
+  error: undefined,
   loginWithRedirect: async () => {},
   loginWithPopup: async () => {},
   logout: async () => {},
-  getAccessTokenSilently: async () => 'test-token',
+  getAccessTokenSilently: async () => 'test-token' as never,
   getAccessTokenWithPopup: async () => undefined,
   getIdTokenClaims: async () => undefined,
-  handleRedirectCallback: async () => ({ appState: undefined }),
-} as unknown as Auth0ContextInterface
+  handleRedirectCallback: async () => ({ appState: undefined }) as never,
+  connectAccountWithRedirect: async () => {},
+  createFetcher: () => (() => {}) as never,
+  generateDpopProof: async () => '',
+  getConfiguration: () => ({}) as never,
+  getDpopNonce: async () => undefined,
+  exchangeToken: async () => ({}) as never,
+  loginWithCustomTokenExchange: async () => ({}) as never,
+  mfa: {} as never,
+  setDpopNonce: async () => {},
+}
 
 export function MockAuth0Provider({ children }: { children: ReactNode }) {
   return (

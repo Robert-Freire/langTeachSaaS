@@ -5,7 +5,7 @@ import { MockAuth0Provider } from './test-utils/MockAuth0Provider'
 import './index.css'
 import App from './App'
 
-const isE2ETestMode = import.meta.env.VITE_E2E_TEST_MODE === 'true'
+const isE2ETestMode = import.meta.env.DEV && import.meta.env.VITE_E2E_TEST_MODE === 'true'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

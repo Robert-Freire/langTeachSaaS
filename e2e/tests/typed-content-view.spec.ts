@@ -96,4 +96,6 @@ test('vocabulary renders as table and student preview shows study view', async (
   // Navigate back
   await container.getByTestId('flashcard-prev').click()
   await expect(container.getByTestId('flashcard-progress')).toHaveText('1 / 3', { timeout: UI_TIMEOUT })
+
+  await context.close()
 })

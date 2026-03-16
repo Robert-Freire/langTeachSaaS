@@ -1,11 +1,9 @@
 import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
-import { resetE2ETestTeacher } from '../helpers/db-helper'
 import { UI_TIMEOUT } from '../helpers/timeouts'
 
 test.beforeAll(async ({ browser }) => {
-  await resetE2ETestTeacher()
   const ctx = await createMockAuthContext(browser)
   const page = await ctx.newPage()
   await setupMockTeacher(page)

@@ -38,6 +38,8 @@ test('first login creates teacher record with email', async ({ browser }) => {
   expect(meRes.status()).toBe(200)
   const { sub, email } = await meRes.json() as { sub: string; email: string }
   expect(sub).toBeTruthy()
+  expect(email).toBeTruthy()
+  expect(email).toContain('@')
 
   await setupContext.close()
 
