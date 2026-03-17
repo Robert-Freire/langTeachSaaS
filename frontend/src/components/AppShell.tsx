@@ -3,6 +3,7 @@ import { useAuth0 } from '@auth0/auth0-react'
 import { LayoutDashboard, UserCircle, Users, BookOpen, LogOut } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
+import LangTeachLogo from '@/components/LangTeachLogo'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -24,7 +25,8 @@ export default function AppShell() {
       {/* Sidebar */}
       <aside className="flex w-60 flex-col bg-white border-r border-zinc-200">
         {/* Logo */}
-        <div className="px-6 py-5 border-b border-zinc-100">
+        <div className="px-6 py-5 border-b border-zinc-100 flex items-center gap-2.5">
+          <LangTeachLogo size={28} />
           <span className="text-indigo-600 font-bold text-lg tracking-tight">LangTeach</span>
         </div>
 
