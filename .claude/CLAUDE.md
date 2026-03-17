@@ -19,7 +19,12 @@ When a task is marked complete:
    - If verdict is **PASS WITH NOTES**: address important items where reasonable, then proceed.
    - If verdict is **PASS**: proceed to push.
 5. Push the branch and open a PR against `main` with a summary of what was done and why
-6. Stop — do NOT merge. The user reviews the PR and merges manually.
+6. Start a CodeRabbit monitoring cron (every 5 minutes) that:
+   - Fetches all PR comments from CodeRabbit
+   - If no unresolved comments and review is clean: deletes the cron and notifies the user the PR is ready for their review
+   - If unresolved comments exist: **critically evaluates** each one (is it valid? does it contradict project conventions? does it over-engineer?), fixes only what genuinely improves the code, replies explaining reasoning for declined suggestions, runs pre-push checks, commits, and pushes
+   - Safety limits: max 3 fix-and-push rounds, stops on test failures or ambiguous/architectural comments, always notifies the user when stopping
+7. Stop — do NOT merge. The user reviews the PR and merges manually.
 
 **Pre-push checks (must all pass before pushing):**
 - `az bicep build --file infra/main.bicep` — zero warnings, zero errors

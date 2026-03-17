@@ -22,6 +22,12 @@ Reason: the user reads PR comments to understand what happened. An unanswered co
 ## Process (must follow in order)
 
 1. Fetch ALL top-level comments: `gh api repos/{owner}/{repo}/pulls/{pr}/comments --paginate | python3 -c "import sys,json; [print(c['id'], c['path']) for c in json.load(sys.stdin) if 'in_reply_to_id' not in c or not c['in_reply_to_id']]"`
-2. For each comment, decide: fix, acknowledge, or decline.
+2. For each comment, **critically evaluate before acting**:
+   - Is the suggestion valid in the project's context?
+   - Does it contradict established conventions or intentional design decisions?
+   - Does it over-engineer, add unnecessary complexity, or reduce readability?
+   - Is the reviewer missing context about why the code was written that way?
+   - **If valid and improves the code**: fix it, push, reply with commit SHA and explanation.
+   - **If not valid or not applicable**: reply explaining why we disagree, then resolve the thread. Do not change code just to satisfy a reviewer.
 3. Post a reply to **every single one** before moving on.
 4. Never assume "I'll come back to the minor ones" — do them all in the same pass.
