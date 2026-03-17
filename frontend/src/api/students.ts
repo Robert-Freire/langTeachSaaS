@@ -60,3 +60,19 @@ export async function updateStudent(id: string, data: StudentFormData): Promise<
 export async function deleteStudent(id: string): Promise<void> {
   await apiClient.delete(`/api/students/${id}`)
 }
+
+export interface LessonHistoryEntry {
+  lessonId: string
+  title: string
+  templateName: string | null
+  lessonDate: string
+  whatWasCovered: string | null
+  homeworkAssigned: string | null
+  areasToImprove: string | null
+  nextLessonIdeas: string | null
+}
+
+export async function getLessonHistory(studentId: string): Promise<LessonHistoryEntry[]> {
+  const res = await apiClient.get<LessonHistoryEntry[]>(`/api/students/${studentId}/lesson-history`)
+  return res.data
+}

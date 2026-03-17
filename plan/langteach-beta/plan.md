@@ -1018,7 +1018,9 @@ Use a .NET PDF library (QuestPDF or similar). Both modes share the same layout e
 
 **Priority**: Should | **Effort**: 0.5 days
 
-After-lesson notes attached to the student-lesson relationship.
+A structured post-lesson reflection that turns the platform from a one-shot lesson generator into a teaching companion that remembers across sessions.
+
+**The problem today:** After a teacher finishes a lesson, nothing is captured. The lesson editor shows what was *planned*, but not what *happened*. The student profile has static info (level, interests, goals) but zero history of actual teaching sessions. There is no continuity between lessons.
 
 **New table (EF migration):**
 ```sql
@@ -1038,15 +1040,67 @@ LessonNotes (
 
 **API**: `POST/PUT /api/lessons/{id}/notes`, `GET /api/students/{id}/lesson-history`
 
-**UI**:
-- "Lesson Notes" tab or section at the bottom of the lesson editor
-- On student profile page: "Lesson History" showing past notes chronologically
+---
 
-**Why it matters**: Shows the platform "remembers" across sessions. Builds the narrative that this isn't just a one-shot generator but a teaching companion.
+**UI Surface 1: "Lesson Notes" on the Lesson Editor**
 
-**Note**: Lesson history on student profile should sort by `ScheduledAt` (not `CreatedAt`) when available, giving a true chronological teaching timeline. The "Add Notes" prompt can show "Notes for [scheduled date] lesson" for temporal context.
+Location: New section at the bottom of the lesson editor (`/lessons/:id`), below the 5 PPP sections. Always visible when scrolling down (not a tab the teacher has to discover).
 
-**Done when**: Teacher can add notes after a lesson; notes appear in student's lesson history sorted by lesson date.
+Visible when: The lesson has a student linked. Hidden otherwise (notes without a student have no context).
+
+| Field | Input type | Placeholder |
+|-------|-----------|-------------|
+| What Was Covered | Textarea | "What did you actually cover in this lesson?" |
+| Homework Assigned | Textarea | "Any homework or practice for the student?" |
+| Areas to Improve | Textarea | "What does the student need to work on?" |
+| Next Lesson Ideas | Textarea | "Ideas for the next lesson with this student" |
+
+Behavior:
+- All fields free-text, all optional
+- Auto-saves (same pattern as lesson editor metadata, no separate Save button)
+- One set of notes per lesson (teacher edits the same notes if they return)
+- Distinct visual treatment (subtle background tint or icon) signaling "post-lesson reflection", separate from lesson content
+
+---
+
+**UI Surface 2: "Lesson History" on the Student Profile**
+
+Location: New section on the student page (`/students/:id/edit`), below the existing cards (Basic Info, Interests, AI Personalization, Notes).
+
+Content: Chronological timeline (newest first) of every lesson linked to this student that has notes.
+
+Each entry displays:
+- **Date**: `ScheduledAt` if set, otherwise `CreatedAt`, formatted as "Mon 14 Mar 2026"
+- **Lesson title** (clickable link to `/lessons/:id`)
+- **Template type** badge (Grammar, Conversation, etc.)
+- Only note fields that have content (skip empty ones)
+
+Empty state: "No lesson notes yet. Notes will appear here after you add them in the lesson editor."
+
+Not a list of all lessons for this student. Only lessons with notes appear. This keeps it meaningful.
+Not editable from here. Clicking the lesson title navigates to the editor.
+
+---
+
+**The demo moment:**
+1. Teacher opens a lesson they "just taught" to Maria
+2. Scrolls past the lesson content, sees the Lesson Notes section
+3. Types: "Covered travel vocabulary, she struggled with subjunctive conjugations. Assign exercises from unit 5. Next time: focus on past tense in travel context."
+4. Goes to Maria's student profile
+5. Sees the lesson history with that entry (plus 1-2 more from seed data)
+6. Story: "the platform remembers what happened, not just what was planned"
+
+**Why it matters**: Shows the platform "remembers" across sessions. Builds the narrative that this is not just a one-shot generator but a teaching companion that tracks the student's journey.
+
+**Out of scope (for T18):**
+- AI reading notes to improve future generations (future task, huge value)
+- Dashboard nudges ("You taught Maria yesterday, add notes?")
+- Lesson status "completed"
+- Homework tracking (checkbox/done states)
+
+**Seed data note:** T18 builds the feature. T23 (demo prep) should seed 2-3 lessons with pre-filled notes for the demo student so the Lesson History looks lived-in during the demo.
+
+**Done when**: Teacher can add/edit notes after a lesson; notes appear in student's lesson history sorted by lesson date (`ScheduledAt` with `CreatedAt` fallback).
 
 ---
 

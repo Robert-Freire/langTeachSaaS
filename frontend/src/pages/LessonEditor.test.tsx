@@ -33,12 +33,17 @@ const mockUpdateLesson = vi.fn()
 const mockGetStudents = vi.fn()
 const mockGetContentBlocks = vi.fn()
 
+const mockGetLessonNotes = vi.fn()
+const mockSaveLessonNotes = vi.fn()
+
 vi.mock('../api/lessons', () => ({
   getLesson: (...args: unknown[]) => mockGetLesson(...args),
   updateLesson: (...args: unknown[]) => mockUpdateLesson(...args),
   updateSections: vi.fn().mockResolvedValue({}),
   deleteLesson: vi.fn(),
   duplicateLesson: vi.fn(),
+  getLessonNotes: (...args: unknown[]) => mockGetLessonNotes(...args),
+  saveLessonNotes: (...args: unknown[]) => mockSaveLessonNotes(...args),
 }))
 
 vi.mock('../api/students', () => ({
@@ -69,6 +74,8 @@ describe('LessonEditor', () => {
     mockGetStudents.mockResolvedValue({ items: [], totalCount: 0 })
     mockGetContentBlocks.mockResolvedValue([])
     mockUpdateLesson.mockResolvedValue(mockLesson)
+    mockGetLessonNotes.mockResolvedValue(null)
+    mockSaveLessonNotes.mockResolvedValue({})
   })
 
   it('shows scheduled date badge in metadata strip', async () => {
@@ -106,5 +113,21 @@ describe('LessonEditor', () => {
 
     await screen.findByTestId('lesson-title')
     expect(screen.queryByText(/Scheduled:/)).not.toBeInTheDocument()
+  })
+
+  it('shows Lesson Notes card when studentId is present', async () => {
+    mockGetLesson.mockResolvedValue({ ...mockLesson, studentId: 'student-1' })
+    renderWithProviders()
+
+    await screen.findByTestId('lesson-title')
+    expect(screen.getByTestId('lesson-notes-card')).toBeInTheDocument()
+  })
+
+  it('hides Lesson Notes card when studentId is null', async () => {
+    mockGetLesson.mockResolvedValue({ ...mockLesson, studentId: null })
+    renderWithProviders()
+
+    await screen.findByTestId('lesson-title')
+    expect(screen.queryByTestId('lesson-notes-card')).not.toBeInTheDocument()
   })
 })

@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<Lesson> Lessons => Set<Lesson>();
     public DbSet<LessonSection> LessonSections => Set<LessonSection>();
     public DbSet<LessonContentBlock> LessonContentBlocks => Set<LessonContentBlock>();
+    public DbSet<LessonNote> LessonNotes => Set<LessonNote>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -89,6 +90,25 @@ public class AppDbContext : DbContext
              .WithMany(l => l.Sections)
              .HasForeignKey(ls => ls.LessonId)
              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // LessonNote — one-to-one with Lesson, cascade from Lesson, NoAction for Student/Teacher
+        modelBuilder.Entity<LessonNote>(e =>
+        {
+            e.HasKey(n => n.Id);
+            e.HasIndex(n => n.LessonId).IsUnique();
+            e.HasOne(n => n.Lesson)
+             .WithOne(l => l.Notes)
+             .HasForeignKey<LessonNote>(n => n.LessonId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(n => n.Student)
+             .WithMany()
+             .HasForeignKey(n => n.StudentId)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(n => n.Teacher)
+             .WithMany()
+             .HasForeignKey(n => n.TeacherId)
+             .OnDelete(DeleteBehavior.NoAction);
         });
 
         // LessonContentBlock — cascade delete from Lesson, no-action from LessonSection (nullable)

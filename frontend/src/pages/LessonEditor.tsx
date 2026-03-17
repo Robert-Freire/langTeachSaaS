@@ -34,6 +34,7 @@ import { GeneratePanel } from '@/components/lesson/GeneratePanel'
 import { ContentBlock } from '@/components/lesson/ContentBlock'
 import { ExportButton } from '@/components/lesson/ExportButton'
 import { FullLessonGenerateButton } from '@/components/lesson/FullLessonGenerateButton'
+import { LessonNotesCard } from '@/components/lesson/LessonNotesCard'
 
 const SECTION_ORDER: SectionType[] = ['WarmUp', 'Presentation', 'Practice', 'Production', 'WrapUp']
 const SECTION_LABELS: Record<SectionType, string> = {
@@ -635,6 +636,9 @@ export default function LessonEditor() {
           )
         })}
       </div>
+
+      {/* Lesson Notes */}
+      <LessonNotesCard lessonId={id!} studentId={lesson.studentId} />
 
       {/* Delete confirmation */}
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>

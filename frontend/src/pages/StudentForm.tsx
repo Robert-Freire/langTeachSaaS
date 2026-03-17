@@ -31,6 +31,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
+import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
@@ -422,6 +423,8 @@ export default function StudentForm() {
           </Button>
         </div>
       </form>
+
+      {isEdit && id && <LessonHistoryCard studentId={id} />}
     </div>
   )
 }
