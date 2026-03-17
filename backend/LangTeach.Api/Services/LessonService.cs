@@ -24,6 +24,7 @@ public class LessonService : ILessonService
 
         var q = _db.Lessons
             .Include(l => l.Sections)
+            .Include(l => l.Student)
             .Where(l => l.TeacherId == teacherId && !l.IsDeleted);
 
         if (!string.IsNullOrWhiteSpace(query.Language))
@@ -34,6 +35,15 @@ public class LessonService : ILessonService
 
         if (!string.IsNullOrWhiteSpace(query.Status))
             q = q.Where(l => l.Status == query.Status);
+
+        if (query.ScheduledFrom.HasValue)
+            q = q.Where(l => l.ScheduledAt >= query.ScheduledFrom.Value);
+
+        if (query.ScheduledTo.HasValue)
+        {
+            var scheduledToExclusive = query.ScheduledTo.Value.Date.AddDays(1);
+            q = q.Where(l => l.ScheduledAt.HasValue && l.ScheduledAt.Value < scheduledToExclusive);
+        }
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
@@ -61,6 +71,7 @@ public class LessonService : ILessonService
     {
         var lesson = await _db.Lessons
             .Include(l => l.Sections)
+            .Include(l => l.Student)
             .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
         return lesson is null ? null : MapToDto(lesson);
@@ -96,6 +107,7 @@ public class LessonService : ILessonService
             DurationMinutes = request.DurationMinutes,
             Objectives = request.Objectives,
             Status = "Draft",
+            ScheduledAt = request.ScheduledAt,
             CreatedAt = now,
             UpdatedAt = now,
         };
@@ -130,6 +142,9 @@ public class LessonService : ILessonService
         await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Lesson created. TeacherId={TeacherId} LessonId={LessonId}", teacherId, lesson.Id);
 
+        if (lesson.StudentId.HasValue)
+            await _db.Entry(lesson).Reference(l => l.Student).LoadAsync(cancellationToken);
+
         return MapToDto(lesson);
     }
 
@@ -137,6 +152,7 @@ public class LessonService : ILessonService
     {
         var lesson = await _db.Lessons
             .Include(l => l.Sections)
+            .Include(l => l.Student)
             .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
         if (lesson is null)
@@ -164,6 +180,7 @@ public class LessonService : ILessonService
         lesson.Objectives = request.Objectives;
         if (request.Status is not null) lesson.Status = request.Status;
         lesson.StudentId = request.StudentId;
+        lesson.ScheduledAt = request.ScheduledAt;
         lesson.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -176,6 +193,7 @@ public class LessonService : ILessonService
     {
         var lesson = await _db.Lessons
             .Include(l => l.Sections)
+            .Include(l => l.Student)
             .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
         if (lesson is null)
@@ -232,6 +250,7 @@ public class LessonService : ILessonService
             return null;
 
         var now = DateTime.UtcNow;
+        // ScheduledAt intentionally not copied: duplicate is for a different class time
         var copy = new Lesson
         {
             Id = Guid.NewGuid(),
@@ -263,6 +282,9 @@ public class LessonService : ILessonService
         _logger.LogInformation("Lesson duplicated. TeacherId={TeacherId} OriginalId={OriginalId} CopyId={CopyId}",
             teacherId, lessonId, copy.Id);
 
+        if (copy.StudentId.HasValue)
+            await _db.Entry(copy).Reference(l => l.Student).LoadAsync(cancellationToken);
+
         return MapToDto(copy);
     }
 
@@ -279,7 +301,9 @@ public class LessonService : ILessonService
         l.TemplateId,
         l.Sections.OrderBy(s => s.OrderIndex).Select(MapSectionToDto).ToList(),
         l.CreatedAt,
-        l.UpdatedAt
+        l.UpdatedAt,
+        l.ScheduledAt,
+        l.Student?.Name
     );
 
     private static LessonSectionDto MapSectionToDto(LessonSection s) => new(

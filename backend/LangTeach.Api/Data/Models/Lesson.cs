@@ -16,6 +16,7 @@ public class Lesson
     public bool IsDeleted { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public DateTime? ScheduledAt { get; set; }
 
     public Teacher Teacher { get; set; } = null!;
     public Student? Student { get; set; }

@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
+import { UI_TIMEOUT, NAV_TIMEOUT } from '../helpers/timeouts'
+
+const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
+const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 
 test.beforeAll(async ({ browser }) => {
   const ctx = await createMockAuthContext(browser)
@@ -10,58 +14,99 @@ test.beforeAll(async ({ browser }) => {
   await ctx.close()
 })
 
-test('dashboard tiles navigate to correct routes', async ({ browser }) => {
+async function createLessonViaApi(
+  page: import('@playwright/test').Page,
+  data: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const response = await page.request.post(`${API_BASE}/api/lessons`, {
+    headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
+    data,
+  })
+  expect(response.ok(), `createLesson failed: ${response.status()}`).toBeTruthy()
+  return response.json()
+}
+
+async function deleteLessonViaApi(
+  page: import('@playwright/test').Page,
+  lessonId: string,
+): Promise<void> {
+  const response = await page.request.delete(`${API_BASE}/api/lessons/${lessonId}`, {
+    headers: AUTH_HEADER,
+  })
+  if (!response.ok()) {
+    console.warn(`Cleanup failed for lesson ${lessonId}: ${response.status()}`)
+  }
+}
+
+test('dashboard shows week strip with scheduled lesson', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  await page.goto('/')
-  await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: 15000 })
+  // Create a lesson scheduled for today
+  const today = new Date()
+  const scheduledAt = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T10:00:00`
 
-  // Students tile -> /students
-  await page.locator('a[href="/students"]').filter({ hasText: 'View all students' }).click()
-  await expect(page).toHaveURL('/students', { timeout: 10000 })
-  await expect(page.locator('h1')).toHaveText('Students', { timeout: 10000 })
+  const lesson = await createLessonViaApi(page, {
+    title: `Dashboard E2E ${Date.now()}`,
+    language: 'English',
+    cefrLevel: 'B1',
+    topic: 'Dashboard test',
+    durationMinutes: 60,
+    scheduledAt,
+  }) as { id: string }
 
-  await page.goto('/')
-  await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: 10000 })
+  try {
+    // Navigate to dashboard
+    await page.goto('/')
+    await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: NAV_TIMEOUT })
 
-  // Lessons tile -> /lessons
-  await page.getByTestId('lessons-tile').click()
-  await expect(page).toHaveURL('/lessons', { timeout: 10000 })
-  await expect(page.locator('h1')).toHaveText('Lessons', { timeout: 10000 })
+    // Verify the lesson appears as a pill in the week strip
+    const pill = page.getByTestId(`lesson-pill-${lesson.id}`)
+    await expect(pill).toBeVisible({ timeout: UI_TIMEOUT })
 
-  await page.goto('/')
-  await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: 10000 })
-
-  // Active plans tile -> /lessons?status=Published
-  await page.getByTestId('active-plans-tile').click()
-  await expect(page).toHaveURL('/lessons?status=Published', { timeout: 10000 })
-  await expect(page.locator('h1')).toHaveText('Lessons', { timeout: 10000 })
-
-  await context.close()
+    // Click the pill, verify navigation to lesson editor
+    await pill.click()
+    await expect(page).toHaveURL(new RegExp(`/lessons/${lesson.id}`), { timeout: UI_TIMEOUT })
+  } finally {
+    await deleteLessonViaApi(page, lesson.id)
+    await context.close()
+  }
 })
 
-test('dashboard tiles show real counts', async ({ browser }) => {
+test('needs preparation shows draft lessons scheduled this week', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  await page.goto('/')
-  await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: 15000 })
+  // Create a draft lesson scheduled within this week (avoid boundary flakiness on Sat/Sun)
+  const today = new Date()
+  const dayOfWeek = today.getDay() // 0=Sun, 6=Sat
+  const targetDate = dayOfWeek >= 5 ? today : new Date(today.getTime() + 86400000)
+  const scheduledAt = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}T14:00:00`
 
-  // Wait for counts to load (no longer showing "—")
-  await expect(page.getByTestId('students-count')).not.toHaveText('—', { timeout: 10000 })
-  await expect(page.getByTestId('lessons-count')).not.toHaveText('—', { timeout: 10000 })
-  await expect(page.getByTestId('active-plans-count')).not.toHaveText('—', { timeout: 10000 })
+  const lesson = await createLessonViaApi(page, {
+    title: `Needs Prep E2E ${Date.now()}`,
+    language: 'Spanish',
+    cefrLevel: 'A2',
+    topic: 'Travel vocabulary',
+    durationMinutes: 45,
+    scheduledAt,
+  }) as { id: string }
 
-  // Counts must be numeric
-  const studentsText = await page.getByTestId('students-count').textContent()
-  const lessonsText = await page.getByTestId('lessons-count').textContent()
-  const activePlansText = await page.getByTestId('active-plans-count').textContent()
-  expect(Number(studentsText)).not.toBeNaN()
-  expect(Number(lessonsText)).not.toBeNaN()
-  expect(Number(activePlansText)).not.toBeNaN()
+  try {
+    // Navigate to dashboard
+    await page.goto('/')
+    await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: NAV_TIMEOUT })
 
-  await context.close()
+    // Verify the "Needs Preparation" section shows the draft lesson
+    const prepSection = page.getByTestId('needs-preparation')
+    await expect(prepSection).toBeVisible({ timeout: UI_TIMEOUT })
+
+    const prepItem = page.getByTestId(`needs-prep-${lesson.id}`)
+    await expect(prepItem).toBeVisible({ timeout: UI_TIMEOUT })
+  } finally {
+    await deleteLessonViaApi(page, lesson.id)
+    await context.close()
+  }
 })
 
 test('sidebar nav links navigate to correct routes', async ({ browser }) => {
@@ -69,28 +114,28 @@ test('sidebar nav links navigate to correct routes', async ({ browser }) => {
   const page = await context.newPage()
 
   await page.goto('/')
-  await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: 15000 })
+  await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: NAV_TIMEOUT })
 
   const nav = page.locator('nav')
 
   // Nav -> Students
   await nav.getByRole('link', { name: 'Students', exact: true }).click()
-  await expect(page).toHaveURL('/students', { timeout: 10000 })
-  await expect(page.locator('h1')).toHaveText('Students', { timeout: 10000 })
+  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+  await expect(page.locator('h1')).toHaveText('Students', { timeout: UI_TIMEOUT })
 
   // Nav -> Lessons
   await nav.getByRole('link', { name: 'Lessons', exact: true }).click()
-  await expect(page).toHaveURL('/lessons', { timeout: 10000 })
-  await expect(page.locator('h1')).toHaveText('Lessons', { timeout: 10000 })
+  await expect(page).toHaveURL('/lessons', { timeout: UI_TIMEOUT })
+  await expect(page.locator('h1')).toHaveText('Lessons', { timeout: UI_TIMEOUT })
 
   // Nav -> My Profile
   await nav.getByRole('link', { name: 'My Profile', exact: true }).click()
-  await expect(page).toHaveURL('/settings', { timeout: 10000 })
+  await expect(page).toHaveURL('/settings', { timeout: UI_TIMEOUT })
 
   // Nav -> Dashboard
   await nav.getByRole('link', { name: 'Dashboard', exact: true }).click()
-  await expect(page).toHaveURL('/', { timeout: 10000 })
-  await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: 10000 })
+  await expect(page).toHaveURL('/', { timeout: UI_TIMEOUT })
+  await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: UI_TIMEOUT })
 
   await context.close()
 })

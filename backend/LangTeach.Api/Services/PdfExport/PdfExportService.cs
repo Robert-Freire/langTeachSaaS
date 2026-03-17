@@ -43,7 +43,7 @@ public class PdfExportService : IPdfExportService
             {
                 row.AutoItem().Text($"{lesson.Language} | {lesson.CefrLevel}").FontSize(9).FontColor(Colors.Grey.Darken1);
                 row.AutoItem().PaddingHorizontal(8).Text($"Topic: {lesson.Topic}").FontSize(9).FontColor(Colors.Grey.Darken1);
-                row.AutoItem().Text(lesson.CreatedAt.ToString("yyyy-MM-dd")).FontSize(9).FontColor(Colors.Grey.Darken1);
+                row.AutoItem().Text(lesson.LessonDate.ToString("yyyy-MM-dd")).FontSize(9).FontColor(Colors.Grey.Darken1);
                 if (mode == PdfExportMode.Teacher && !string.IsNullOrWhiteSpace(lesson.StudentName))
                     row.AutoItem().PaddingLeft(8).Text($"Student: {lesson.StudentName}").FontSize(9).FontColor(Colors.Grey.Darken1);
             });

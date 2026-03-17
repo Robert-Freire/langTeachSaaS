@@ -27,16 +27,17 @@
 
 ### Beta Phase — IN PROGRESS
 
-**Next task: T15.5** (Grammar Type renderer)
+**Next task: T19.1** (Schedule from Dashboard)
 
 | Phase | Tasks | Status |
 |-------|-------|--------|
 | 2A Core Magic | T10, T10.1, T11-T15 | DONE |
-| 2A.1 Typed Content | T15.1, T15.2, T15.3, T15.4, T15.5, T15.6 | T15.1-T15.4 DONE, T15.4a DONE, T16 IN PROGRESS, T15.5-T15.6 TODO |
+| 2A.1 Typed Content | T15.1, T15.2, T15.3, T15.4, T15.5, T15.6, T15.7 | T15.1-T15.6 DONE, T15.7 pending |
 | 2A.2 Conversation UX | T15.4a (classroom), T15.4b (AI chat), T15.4c (voice) | T15.4a DONE, T15.4b/c: future |
-| 2B Make It Real | T16-T19, T21, T24-T25 | T16 IN PROGRESS |
-| 2C Polish | T20 | pending |
+| 2B Make It Real | T16-T19, T19.1, T20, T21, T24-T25 | T16 DONE, T17 DONE, T19 DONE (PR #60), T18/T19.1/T20/T21/T24-T25 pending |
+| 2C Polish | (T20 moved to 2B) | -- |
 | Demo Prep | T23 | pending |
+| Post-Demo | T26, Student Recurring Schedule, Classes Entity | pending |
 
 ---
 
@@ -46,7 +47,7 @@
 
 The foundation is solid but entirely manual:
 - Auth (Google OAuth via Auth0)
-- Dashboard with basic stats (student count, lessons, active plans)
+- ~~Dashboard with basic stats (student count, lessons, active plans)~~ Replaced by T19: weekly schedule view with WeekStrip, NeedsPreparation, QuickActions, UnscheduledDrafts
 - Student management (CRUD: name, language, level, interests, notes)
 - Lesson creation from 6 templates (Conversation, Grammar, Reading, Writing, Exam Prep, Blank)
 - Lesson planner with 5 structured phases (Warm Up, Presentation, Practice, Production, Wrap Up), each with manual textarea
@@ -78,7 +79,7 @@ The original Phase 2 plan was designed for a production SaaS launch. This beta p
 
 **Kept from Phase 2**: Claude client, prompt service, generation endpoints, streaming, lesson editor AI UI, inline editing.
 **Deferred**: Generation caching (optimization), usage tracking/limits (monetization), GenerationCache table, GenerationUsage table.
-**Added**: Student profile enrichment (feeds prompt quality), one-click full lesson, PDF export with teacher/student modes (moved from Phase 3), reading comprehension generation, adapt lesson for another student, AI-powered next topic suggestions, student lesson notes, dashboard v2, brand polish, demo preparation task.
+**Added**: Student profile enrichment (feeds prompt quality), one-click full lesson, PDF export with teacher/student modes (moved from Phase 3), reading comprehension generation, adapt lesson for another student, AI-powered next topic suggestions, student lesson notes, dashboard v2 with lesson scheduling (`ScheduledAt` field), brand polish, demo preparation task.
 
 ---
 
@@ -88,6 +89,27 @@ The original Phase 2 plan was designed for a production SaaS launch. This beta p
 - **Prompt quality over infrastructure**: Invest disproportionate time in T12 (Prompt Service). If the AI generates generic content, the demo fails regardless of how good the streaming UI is.
 - **Student context is the moat**: Any teacher can paste a prompt into ChatGPT. What they can't easily do is build a system where student context automatically flows into every generation.
 - **No premature monetization**: No usage limits, no caching, no Stripe. The beta is unlimited. These are easy to add later; they add zero demo value now.
+
+---
+
+## Template-to-Content-Type Mapping
+
+Each lesson template defines the *pedagogical purpose* of the lesson. The content types define *how the generated content is structured and rendered*. A single template uses multiple content types across its 5 PPP sections. This mapping drives what the prompt service generates and what renderers are needed per template.
+
+| Template | Warm Up | Presentation | Practice | Production | Wrap Up |
+|----------|---------|-------------|----------|------------|---------|
+| **Conversation** | vocabulary (key phrases) | conversation (dialogue scenarios) | exercises (gap-fill with phrases) | conversation (open scenario) | vocabulary (review) |
+| **Grammar** | exercises (diagnostic quiz) | grammar (rules + examples) | exercises (drills) | exercises (apply in context) | grammar (summary) |
+| **Reading** | vocabulary (pre-reading words) | reading (passage + questions) | exercises (comprehension) | freeText (discussion prompts) | vocabulary (review) |
+| **Writing** | vocabulary (topic phrases) | freeText (model text + structure guide) | exercises (sentence-level practice) | freeText (writing prompt + guidelines) | freeText (self-review checklist) |
+| **Exam Prep** | exercises (quick review) | grammar or reading (exam format explanation) | exercises (exam-style questions) | exercises (timed practice set) | freeText (study tips + plan) |
+| **Blank** | freeText | freeText | freeText | freeText | freeText |
+
+**Key takeaways:**
+- **vocabulary** and **exercises** appear in nearly every template. They are the workhorses.
+- **Writing** and **Exam Prep** lean on `exercises` + `freeText`, which already have renderers. No new content types needed.
+- **Blank** always uses `freeText`, giving teachers full manual control.
+- The prompt service (T12) should use this mapping when `BuildLessonPlanPrompt` decides which content type to generate per section.
 
 ---
 
@@ -582,7 +604,7 @@ The primary screen where teachers interact with AI.
 
 ---
 
-### Phase 2A.1 — Typed Content Model (T15.1-T15.4 DONE, T15.5-T15.6 TODO)
+### Phase 2A.1 — Typed Content Model (T15.1-T15.4 DONE, T15.5-T15.7 TODO)
 
 The typed content model is now in place. Vocabulary renders as editable tables (teacher) and flashcards (student). Exercises render as structured quizzes with scoring. Conversations render as scenario cards. The architecture is extensible: adding a new content type means adding a schema + renderer to the registry.
 
@@ -828,6 +850,48 @@ See full spec: `plan/langteach-beta/task15.6-homework-type.md`
 
 ---
 
+#### T15.7 — Reading Type (Teacher + Student)
+
+**Priority**: Must | **Effort**: 0.25 days | **Depends on**: T15.1
+
+The Reading template generates reading content as structured JSON (passage, comprehension questions, vocabulary highlights), but it falls through to FreeTextRenderer and shows raw JSON. This breaks the "no raw JSON" quality bar.
+
+**JSON schema** (already generated by prompt service):
+```json
+{
+  "passage": "Carlos walked into the small restaurant on the corner...",
+  "comprehensionQuestions": [
+    { "question": "Where did Carlos go?", "answer": "To a small restaurant on the corner", "type": "factual" },
+    { "question": "Why did he feel nervous?", "answer": "It was his first time ordering in Spanish", "type": "inferential" }
+  ],
+  "vocabularyHighlights": [
+    { "word": "pedir", "definition": "to order / to ask for" }
+  ]
+}
+```
+
+**Teacher view (EditorComponent):**
+- Passage as editable textarea (large, multi-line)
+- Comprehension questions as editable list (question + answer + type badge)
+- Vocabulary highlights as editable table (word + definition)
+- Add/remove rows for questions and vocabulary
+
+**Teacher view (PreviewComponent):**
+- Passage as formatted prose with vocabulary highlights underlined or bolded
+- Questions numbered below the passage
+- Vocabulary sidebar or footer
+
+**Student view (StudentComponent):**
+- Passage as readable prose (vocabulary highlights styled as tooltips or underlined)
+- Questions shown without answers (student reads and answers verbally or mentally)
+- "Show Answer" toggle per question (optional, can be stretch)
+
+**Implementation**: Single renderer file + registry entry + unit test. Frontend only.
+
+**Done when**: Reading blocks render as styled passage + questions (not JSON) in all three views; student view hides answers; unit tests pass.
+
+---
+
 ### Phase 2A.2 — Conversation UX
 
 Conversation scenarios need two layers of student interaction. T15.4a ships with the beta (classroom use). T15.4b is a future feature (self-study with AI).
@@ -924,7 +988,7 @@ These features turn the demo from "cool tech" into "tool I'd use Monday morning.
 - `GET /api/lessons/{id}/export/pdf?mode=student`
 
 **Teacher PDF** (full version for the teacher's own use):
-- Header: lesson title, language, CEFR level, topic, date, student name
+- Header: lesson title, language, CEFR level, topic, date (`ScheduledAt`, falls back to `CreatedAt`), student name
 - Each section with content, timing notes, and teacher instructions
 - Vocabulary table: word, definition, example sentence, translation
 - Exercises with answer keys inline
@@ -932,7 +996,7 @@ These features turn the demo from "cool tech" into "tool I'd use Monday morning.
 - Footer: "Created with LangTeach"
 
 **Student PDF** (clean handout to give to the student):
-- Header: lesson title, topic, date (no CEFR level, no teacher metadata)
+- Header: lesson title, topic, date (`ScheduledAt` or `CreatedAt` fallback; no CEFR level, no teacher metadata)
 - Vocabulary table: word, definition, example sentence (no translations, student discovers meaning)
 - Exercises with blanks and space to write (no answer keys)
 - Reading passages with comprehension questions (no answers)
@@ -980,23 +1044,90 @@ LessonNotes (
 
 **Why it matters**: Shows the platform "remembers" across sessions. Builds the narrative that this isn't just a one-shot generator but a teaching companion.
 
-**Done when**: Teacher can add notes after a lesson; notes appear in student's lesson history.
+**Note**: Lesson history on student profile should sort by `ScheduledAt` (not `CreatedAt`) when available, giving a true chronological teaching timeline. The "Add Notes" prompt can show "Notes for [scheduled date] lesson" for temporal context.
+
+**Done when**: Teacher can add notes after a lesson; notes appear in student's lesson history sorted by lesson date.
 
 ---
 
-#### T19 — Dashboard v2
+#### T19 — Dashboard v2 (Teacher's Command Center) ✅ DONE (PR #60)
+
+**Priority**: Should | **Effort**: 1 day
+
+**Prerequisite (included in T19):** Add `ScheduledAt` (nullable `DateTime?`) to the Lesson model. This is a data model gap: without a "when does this class happen?" field, no time-based view is possible. Nullable because lessons can exist without a date (templates, exploratory drafts). Small migration, but it also improves T17 (PDF date header), T18 (temporal context for notes), T23 (demo narrative), and T25 (schedule-aware suggestions).
+
+**What was delivered:**
+- EF migration: added `ScheduledAt` to Lessons table
+- Create/Update DTOs: accept `ScheduledAt`
+- Lessons API: `scheduledFrom`/`scheduledTo` query params for date-range filtering, `StudentName` in LessonDto
+- Lesson editor: date picker in metadata edit form, scheduled date badge in collapsed header
+- Lesson creation: date picker on step 2
+- PDF export: uses `ScheduledAt` as lesson date (falls back to `CreatedAt` if null), renamed `CreatedAt` to `LessonDate` in PdfLessonData
+- Dashboard: WeekStrip (7-day grid with lesson pills), NeedsPreparation, QuickActions, UnscheduledDrafts
+- Tests: 2 backend integration tests, 4 frontend test files, 3 E2E tests with cleanup
+
+**Dashboard layout:**
+- **Week strip** (full width, top): 7-day horizontal bar (Mon-Sun) with lessons as colored pills. Green = Published (ready), amber = Draft (needs prep). Multiple lessons per day stack vertically. Click to open editor. Today highlighted.
+- **Needs Preparation** (left): Draft lessons scheduled in the next 7 days, sorted by date. The teacher's actionable to-do list.
+- **Quick Create + Stats** (right): "New Lesson" button, student/lesson counts, total lesson count.
+- **Unscheduled Drafts** (bottom, collapsible): Draft lessons with no `ScheduledAt`, auto-expands when items exist.
+
+**Explicitly excluded (moved to T19.1)**: Scheduling directly from the dashboard ("+' button on day columns), calendar-style date picker. See T19.1 below.
+
+**Explicitly excluded (post-demo)**: Recurring lessons, drag-drop rescheduling, calendar sync, month view, student recurring schedule, classes as separate entity. See "Future Enhancements" section. All enabled by `ScheduledAt` without schema changes.
+
+See full spec: `plan/langteach-beta/task19-dashboard-v2.md`
+
+---
+
+#### T19.1 — Schedule from Dashboard
 
 **Priority**: Should | **Effort**: 0.5 days
 
-Replace the basic stat tiles with meaningful content:
-- **Recent Lessons**: Last 5 lessons with status, student name, quick-edit link
-- **Quick Create**: "New Lesson" shortcut with student pre-selector
-- **This Week**: Count of lessons created this week
-- **Students at a Glance**: Student cards with last lesson date and next suggested topic (stretch)
+**Problem**: T19 lets teachers schedule lessons, but the workflow is backwards. Teachers think "I have a class with Marco on Thursday at 10am, what should I teach?", not "I have a lesson, when should I schedule it?" The current flow requires creating a lesson first, then setting a date in the editor.
 
-**Why it matters**: First screen the teacher sees. Should feel like a command center, not a blank page.
+**What:**
+- **"+" button on each day column** in the WeekStrip. Small, unobtrusive, appears on hover or always visible if the day has no lessons.
+- Clicking "+" opens a popover/modal:
+  - Student dropdown (from teacher's students)
+  - Time picker
+  - Two actions: "Create New Lesson" (goes to LessonNew with student + scheduledAt pre-filled) or "Assign Existing Draft" (shows unscheduled drafts, clicking one sets its scheduledAt and student)
+- Assigning an existing draft removes it from the UnscheduledDrafts section and adds it to the WeekStrip.
 
-**Done when**: Dashboard shows actionable, real data; clicking tiles navigates to relevant pages.
+**Files modified:**
+- `frontend/src/components/dashboard/WeekStrip.tsx`: add "+" button per day column, popover trigger
+- `frontend/src/components/dashboard/SchedulePopover.tsx` (new): student selector, time picker, assign/create actions
+- `frontend/src/pages/LessonNew.tsx`: accept `scheduledAt` and `studentId` from URL query params to pre-fill
+- `frontend/src/pages/Dashboard.tsx`: pass students and unscheduled drafts to WeekStrip
+
+**Why it matters**: This matches the real teacher workflow. The dashboard becomes the entry point for "what am I teaching this week?" rather than just a read-only view. For the demo, it shows the platform understands how teachers think about scheduling.
+
+**Done when**: Teacher can click "+" on a day, pick a student and time, and either create a new pre-filled lesson or assign an existing draft. The WeekStrip updates immediately.
+
+---
+
+#### T20 — Brand & Visual Polish
+
+Moved here from Phase 2C since it now includes UX improvements alongside visual polish.
+
+**Priority**: Nice | **Effort**: 0.5 days
+
+- **Calendar-style date picker**: Replace native `<input type="datetime-local">` with a proper calendar component (shadcn DatePicker / react-day-picker) in both LessonNew and LessonEditor. The native input looks inconsistent across browsers and is not polished enough for the demo.
+- App icon and favicon (simple, clean, language-teaching themed)
+- Consistent color usage across all pages
+- Loading states and skeleton screens for AI generation
+- Empty state illustrations
+- Fix `InputGroupAddon` click handler to use a broader selector (`input, textarea` or `[data-slot="input-group-control"]`) instead of only `input`, so clicking an addon also focuses textarea-based controls. No current impact since no textarea input groups exist yet, but should be fixed before any are added.
+
+**Files modified:**
+- `frontend/src/pages/LessonNew.tsx`: replace `<input type="datetime-local">` with DatePicker component
+- `frontend/src/pages/LessonEditor.tsx`: replace `<input type="datetime-local">` with DatePicker component
+- `frontend/src/components/dashboard/SchedulePopover.tsx` (from T19.1): use same DatePicker for time selection
+- Various component files for loading states and empty states
+
+Replaces the deferred T9.1 from Phase 1.
+
+~~T22 (Interactive Exercise Rendering) has been absorbed into T15.3.~~
 
 ---
 
@@ -1028,7 +1159,7 @@ Teachers reuse lesson topics constantly. A B1 restaurant lesson for Maria should
 - "Adapt" button creates a new lesson (cloned structure) and regenerates all content blocks for the new student/level
 
 **Backend flow:**
-1. Clone the lesson (reuse Phase 1's duplicate logic)
+1. Clone the lesson (reuse Phase 1's duplicate logic). Do NOT copy `ScheduledAt` (the adapted lesson is for a different class at a different time).
 2. Link to the new student
 3. For each existing `LessonContentBlock`, call the same generation endpoint with the new student's context and level
 4. Original lesson remains untouched
@@ -1053,6 +1184,7 @@ Uses Claude (Haiku, fast) with a prompt that includes:
 - Student's CEFR level, goals, weaknesses, interests
 - List of topics already covered (from past lesson titles/topics)
 - The student's learning goals
+- Next scheduled lesson date with this student (from `ScheduledAt`), if available, to suggest time-appropriate topics
 
 **Response:**
 ```json
@@ -1082,33 +1214,31 @@ Returns 3 suggestions, each with a rationale explaining why that topic is approp
 
 If time allows. Each adds incremental value but isn't required for the demo.
 
----
-
-#### T20 — Brand & Visual Polish
-
-**Priority**: Nice | **Effort**: 0.5 days
-
-- App icon and favicon (simple, clean, language-teaching themed)
-- Consistent color usage across all pages
-- Loading states and skeleton screens for AI generation
-- Empty state illustrations
-- Fix `InputGroupAddon` click handler to use a broader selector (`input, textarea` or `[data-slot="input-group-control"]`) instead of only `input`, so clicking an addon also focuses textarea-based controls. No current impact since no textarea input groups exist yet, but should be fixed before any are added.
-
-Replaces the deferred T9.1 from Phase 1.
-
-~~T22 (Interactive Exercise Rendering) has been absorbed into T15.3.~~
+T20 (Brand & Visual Polish) has been moved up to Phase 2B since it now includes the calendar date picker UX improvement needed for T19.1.
 
 ---
 
 ### T23 — Beta Demo Preparation
 
-**Priority**: Must | **Effort**: 0.5 days (after all other tasks)
+**Priority**: Must | **Effort**: 1 day (after all other tasks)
 
 This is not a code task. It's preparation for showing the beta to the teacher.
 
-**Demo script (7-minute walkthrough):**
+**Pre-demo deployment verification:**
+- Deploy latest code to Azure staging (`https://white-cliff-02f270f03.4.azurestaticapps.net`)
+- Verify all pages load correctly on the deployed instance (not just localhost)
+- Confirm AI generation works end-to-end on staging (Claude API key configured in Key Vault)
+- Run through the full demo script on staging at least once before the live demo
+- Check mobile responsiveness on the staging URL (the brother may pull it up on his phone)
 
-1. **Open** (15s): Log in, show dashboard with real student data pre-seeded. "This is your teaching hub."
+**Demo fallback plan:**
+- Pre-generate all seed lesson content so the demo can proceed without live API calls
+- If Claude API is slow or unavailable during the live demo: show the pre-populated lesson first ("let me show you what a completed lesson looks like"), then attempt a single-section live generation later (smaller call, faster, less risk)
+- Have at least one fully populated backup lesson per template type
+
+**Demo script (7-10 minute walkthrough):**
+
+1. **Open** (20s): Log in. Dashboard shows the week at a glance: Maria on Tuesday (green, ready), Pedro on Wednesday (amber, needs prep), a new student on Friday. One unscheduled draft below. "This is your teaching week. You can see what's coming and what still needs work." *(T19 delivers the dashboard layout; T19.1 adds the "+" scheduling from dashboard if completed before demo.)*
 
 2. **Student context** (30s): Open a student profile (e.g., "Maria, B1 Spanish, interested in cooking and travel, struggles with past tenses, native Portuguese speaker"). "The platform knows your students."
 
@@ -1120,7 +1250,7 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 
 6. **Edit and refine** (30s): Edit a vocabulary word, regenerate the exercises section with "make it easier." "You're in control. The AI proposes, you decide."
 
-7. **The student experience** (60s): Switch to the student view of the same lesson. Show vocabulary as flippable flashcards (click to reveal definition). Show exercises as an interactive quiz (fill in blanks, select multiple choice, see score). Show conversation scenarios as classroom activity cards: tap a role to mark it as "You," tap key phrases to check them off during practice. "Same data, completely different experience. You create once, the student learns interactively. The conversation cards are designed for pair work in class."
+7. **The student experience** (60s): Switch to the student view of the same lesson. "This is what your student will see when the student portal launches. Right now you can preview it; soon students will log in and access their lessons directly." Show vocabulary as flippable flashcards (click to reveal definition). Show exercises as an interactive quiz (fill in blanks, select multiple choice, see score). Show conversation scenarios as classroom activity cards: tap a role to mark it as "You," tap key phrases to check them off during practice. "Same data, completely different experience. You create once, the student learns interactively. The conversation cards are designed for pair work in class."
 
 8. **Two exports** (20s): Click "Export PDF > Student Handout," show the clean printable without answers. Then "Teacher Copy" with answer keys and timing. "One for you, one for the student."
 
@@ -1135,6 +1265,7 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 **Seed data to prepare:**
 - 3-5 realistic student profiles with varied levels (A1 to C1), languages, interests, and weaknesses
 - 2-3 completed lessons with generated content and lesson notes (at least one per student, so "Suggest Next Topic" has context)
+- Lessons with `ScheduledAt` values spread across the demo week: at least 2 Published (green on dashboard), 1 Draft with date (orange, "needs prep"), 1 Draft without date (appears in unscheduled section)
 - Teacher profile with languages and preferred style set
 - At least one lesson with content blocks suitable for demonstrating the "Adapt for Another Student" flow
 
@@ -1148,6 +1279,96 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 - For conversations: would students benefit more from AI practice (chat with AI partner) or is classroom pair work enough? Would you pay extra for AI conversation practice?
 - How important is student-facing features? (sharing materials, homework portal, progress tracking)
 - Mobile usage: do you prep lessons on your phone?
+- Walk me through how you structure a typical 60-minute lesson. (validate whether the 5-section PPP model matches his real workflow, or if he uses a different structure)
+- When you reuse a lesson for a different student, what do you change and what stays the same?
+
+---
+
+### Post-Demo Enhancements
+
+Features that add value but should be built after the demo, informed by feedback from the demo session.
+
+---
+
+#### T26 — Section URL Attachments
+
+**Priority**: Should | **Effort**: 1 day
+
+Allow teachers to attach URLs (YouTube videos, articles, Google Docs, online exercises) to any lesson section. This turns LangTeach from "AI content generator" into "complete teaching workspace" where all class materials live in one place.
+
+**What:**
+- Each section can have zero or more URL attachments
+- Each attachment has: URL, label (teacher-provided title), optional note (e.g., "Play at 2:15 mark", "Students read for homework")
+- URLs display as a compact list below the section content in teacher view
+- Student view shows attachments as clickable links with labels
+- PDF export renders URLs as clickable hyperlinks (teacher copy) or QR codes (student handout)
+
+**Why after demo, not during:**
+- The demo story is "watch AI generate personalized content." URL attachments are passive data entry, not a wow moment.
+- Building it after the demo lets the brother (as incoming PM) weigh in on UX before implementation.
+- Zero architectural risk: attachments are a new section-level metadata field or a lightweight content block type, both fit the existing model.
+
+**What this is NOT:**
+- Not file uploads (deferred to Phase 2, requires Azure Blob storage infrastructure)
+- Not a media player or embed system (just links)
+- Not an LMS (no tracking of whether students visited the URL)
+
+**Done when**: Teacher can add/edit/remove URL attachments on any section; attachments persist and display in teacher view, student view, and PDF export.
+
+---
+
+### Future Enhancements (Post-Demo, Informed by Feedback)
+
+These features build on the scheduling foundation from T19/T19.1 and would be prioritized based on feedback from the demo session. They represent the evolution from "lesson planner with scheduling" to "full teaching management platform."
+
+---
+
+#### Student Recurring Schedule
+
+**Concept**: Each student profile stores their recurring class times (e.g., "Marco: Thursdays 10am, Saturdays 2pm"). The system uses these to:
+- Auto-suggest scheduling when creating a lesson for that student
+- Show upcoming empty slots on the dashboard ("Marco's Thursday slot has no lesson yet")
+- Pre-fill the schedule popover with the student's usual time when selected
+
+**What this adds over T19.1**: T19.1 is manual ("pick a student, pick a time"). This makes scheduling semi-automatic ("Marco's next slot is Thursday 10am, assign a lesson?"). Reduces friction for teachers with regular students.
+
+**Files involved:**
+- `backend/LangTeach.Api/Data/Models/Student.cs`: add `RecurringSchedule` (JSON column or related table)
+- `backend/LangTeach.Api/DTOs/StudentDto.cs`: expose schedule
+- `frontend/src/pages/StudentEditor.tsx`: UI for managing recurring times
+- `frontend/src/components/dashboard/WeekStrip.tsx`: show empty slots for expected classes
+
+---
+
+#### Classes as a Separate Entity
+
+**Concept**: Decouple "when/who" from "what to teach." A **Class** is a time slot + student. A **Lesson** is the content. The teacher schedules classes, then attaches lessons to them.
+
+**Why this matters long-term:**
+- A class can exist before the lesson content is decided ("I know Marco comes Thursday, I'll figure out what to teach later")
+- Multiple classes can share the same lesson content (teach the same material to different groups)
+- Cancellations, rescheduling, and attendance tracking become natural (they operate on classes, not lessons)
+- Opens the door to group classes (a class has multiple students)
+
+**What changes from current model:**
+- New `Class` entity: `Id`, `StudentId`, `TeacherId`, `ScheduledAt`, `LessonId` (nullable), `Status` (Scheduled/Completed/Cancelled)
+- `ScheduledAt` moves from Lesson to Class (or exists on both, with Class being authoritative)
+- Dashboard WeekStrip shows classes, not lessons directly
+- "Assign lesson to class" becomes a first-class action
+
+**Trade-off**: This is a significant model change. It's the right architecture for a production SaaS, but adds complexity. Best implemented after validating the simpler T19.1 approach with real teacher feedback.
+
+---
+
+#### Additional Scheduling Features (No Schema Changes Needed)
+
+These are enabled by the existing `ScheduledAt` field and the Class entity (if implemented):
+- **Drag-drop rescheduling** in the WeekStrip
+- **Month/day calendar views** (beyond the current week strip)
+- **Calendar sync** (Google Calendar, iCal export)
+- **Recurring lessons** (auto-create next week's class from a template)
+- **Conflict detection** (warn if two lessons overlap for the same teacher)
+- **Student notifications** (email/push when a lesson is scheduled or changed)
 
 ---
 
@@ -1163,7 +1384,8 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 | Content library | Phase 3 | "Save to library" isn't the demo moment. Lessons already persist. |
 | Shareable lesson links | Phase 3 | PDF export covers the sharing need for now |
 | CRM capabilities | Issue #17 | Enterprise feature, not relevant for solo teacher beta |
-| File attachments | Issue #26 | Phase 3, teachers can live without this |
+| File uploads (images, PDFs, audio) | Issue #26 | Phase 2. Requires Azure Blob storage. URL attachments (T26) cover the link-based use case first. |
+| Section content versioning (undo last generation) | Phase 2 | Save previous content before regeneration, allow one-click undo. Low effort (store previous `generatedContent` string), high safety net for teachers. |
 | Optimistic concurrency | Issue #25 | Technical debt, single-user beta won't have conflicts |
 | Frontend error logging | Issue #24 | Ops infrastructure, not user-facing |
 | AI conversation practice (T15.4b) | Phase 2A.2 | Post-beta or premium. Classroom mode (T15.4a) covers the beta demo. |
@@ -1194,11 +1416,12 @@ T15 ──── T15.1 (typed content model, foundation) ───────�
                       │                     │                  │
                       │                     └── T15.4c (voice) │  FUTURE
                       │                                        │
-                      ├── T15.5 (grammar type)                 │  TODO
-                      └── T15.6 (homework type)                │  TODO
+                      ├── T15.5 (grammar type)                 │  DONE
+                      ├── T15.6 (homework type)                │  DONE
+                      └── T15.7 (reading type)                 │  TODO
                                                                │
 T15.1 ──── T16 (full lesson gen, benefits from typed model)    │
-T15.5 + T15.6 ── completes T16 visual quality (no raw JSON)   │
+T15.5 + T15.6 + T15.7 ── completes T16 visual quality (no raw JSON) │
 T15.1 ──── T17 (PDF export, needs typed rendering)             │
 T15 ───── T21 (regen w/ direction)                             │
 T16 ───── T24 (adapt lesson)                                   │
@@ -1206,10 +1429,14 @@ T16 ───── T24 (adapt lesson)                                   │
 T10 ──── T18 (student lesson notes)                            │
                └── T25 (suggest next topic, needs T18 + T11)   │
                                                                │
-T19 (dashboard v2) ── independent                              │
-T20 (brand polish) ── independent                              │
+T19 (dashboard v2 + ScheduledAt migration) ─── T17 fixup (PDF date) │
+      └── T18 benefits (sort by ScheduledAt)                        │
+      └── T25 benefits (schedule-aware suggestions)                 │
+T20 (brand polish) ── independent                                   │
                                                                │
-T23 (demo prep) ── LAST, after all others ─────────────────────┘
+T23 (demo prep) ── LAST before demo ──────────────────────────┘
+                                                               │
+T23 ──── T26 (section URL attachments, post-demo) ────────────┘
 ```
 
 **Suggested execution order:**
@@ -1221,14 +1448,17 @@ T23 (demo prep) ── LAST, after all others ───────────�
 6. ~~T15.2 + T15.3 (parallel: vocabulary + exercises types)~~ DONE
 7. ~~T15.4 (conversation type)~~ DONE
 8. ~~T15.4a (conversation classroom UX)~~ DONE
-9. T16 (full lesson gen) IN PROGRESS
-10. T15.5 + T15.6 (parallel: grammar + homework renderers, completes T16 visual quality)
-11. T17 (PDF export)
-12. T18 + T19 + T21 (parallel)
-13. T24 + T25 (parallel, after T16 and T18)
-14. T20 (as time allows)
-15. T23 (always last)
-16. **Post-beta:** T15.4b (AI conversation practice), then T15.4c (voice)
+9. ~~T16 (full lesson gen)~~ DONE
+10. ~~T15.5 + T15.6 (parallel: grammar + homework renderers)~~ DONE
+11. ~~T17 (PDF export)~~ DONE
+12. T19 (dashboard v2, includes ScheduledAt migration + PDF date fixup)
+13. T15.7 (reading renderer, small task)
+14. T18 + T21 (parallel, after T19 lands the migration)
+15. T24 + T25 (parallel, after T16 and T18)
+16. T20 (as time allows)
+17. T23 (always last, seed data includes ScheduledAt values for demo week)
+18. T26 (section URL attachments, post-demo, informed by brother's feedback)
+19. **Post-beta:** T15.4b (AI conversation practice), then T15.4c (voice)
 
 ---
 
@@ -1241,7 +1471,7 @@ T23 (demo prep) ── LAST, after all others ───────────�
 - `npx playwright test` — all e2e tests pass
 
 ### Demo QA Script (manual, follows the demo script above)
-1. Log in, dashboard shows real data
+1. Log in, dashboard shows weekly schedule with lessons color-coded by prep status
 2. Open student profile, confirm all enriched fields displayed
 3. Create new lesson from template, link to student
 4. Generate vocabulary for one section, confirm streaming display
@@ -1254,16 +1484,18 @@ T23 (demo prep) ── LAST, after all others ───────────�
 11. Click "Generate Full Lesson," confirm all 5 sections populated with type-appropriate rendering (no raw JSON)
 12. Confirm grammar section renders as title + explanation + examples + common mistakes callout (not JSON)
 13. Confirm homework section renders as numbered task cards with type badges (not JSON)
-14. Open student view (`/lessons/:id/study`), confirm vocabulary shows as flashcards
-15. In student view, confirm exercises are interactive (fill in answers, submit, see score)
-14. In student view, confirm conversation scenarios show "Practice with a partner" instruction, role selection works (tap to mark "You"/"Partner"), and key phrase chips are tappable as a checklist
-15. Export Teacher PDF, confirm answer keys and timing present
-15. Export Student PDF, confirm no answer keys, no teacher notes
-16. Click "Adapt for Another Student," select different student/level, confirm new lesson with regenerated content
-17. Add lesson notes, confirm they appear in student's lesson history
-18. Click "Suggest Next Topic" on student profile, confirm 3 suggestions with rationale appear
-19. Click "Create Lesson" on a suggestion, confirm lesson pre-filled with topic and student
-20. Return to dashboard, confirm recent lessons shown
+14. Confirm reading section renders as prose passage + numbered questions + vocabulary highlights (not JSON)
+15. Open student view (`/lessons/:id/study`), confirm vocabulary shows as flashcards
+16. In student view, confirm exercises are interactive (fill in answers, submit, see score)
+17. In student view, confirm conversation scenarios show "Practice with a partner" instruction, role selection works (tap to mark "You"/"Partner"), and key phrase chips are tappable as a checklist
+18. In student view, confirm reading passage displays with questions visible but answers hidden
+19. Export Teacher PDF, confirm answer keys and timing present
+20. Export Student PDF, confirm no answer keys, no teacher notes
+21. Click "Adapt for Another Student," select different student/level, confirm new lesson with regenerated content
+22. Add lesson notes, confirm they appear in student's lesson history
+23. Click "Suggest Next Topic" on student profile, confirm 3 suggestions with rationale appear
+24. Click "Create Lesson" on a suggestion, confirm lesson pre-filled with topic and student
+25. Return to dashboard, confirm week strip shows scheduled lessons with correct status colors; confirm "Needs Preparation" list shows upcoming drafts
 
 ### Quality bar
 - AI-generated content must be actually usable by a teacher (not generic filler)

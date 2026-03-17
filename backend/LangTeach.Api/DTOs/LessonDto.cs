@@ -13,5 +13,7 @@ public record LessonDto(
     Guid? TemplateId,
     List<LessonSectionDto> Sections,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    DateTime? ScheduledAt,
+    string? StudentName
 );

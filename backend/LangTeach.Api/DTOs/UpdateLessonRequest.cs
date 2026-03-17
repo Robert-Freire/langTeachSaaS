@@ -27,4 +27,5 @@ public class UpdateLessonRequest
     public string? Status { get; set; }
 
     public Guid? StudentId { get; set; }
+    public DateTime? ScheduledAt { get; set; }
 }

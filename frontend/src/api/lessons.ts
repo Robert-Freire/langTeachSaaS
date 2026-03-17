@@ -25,6 +25,8 @@ export interface Lesson {
   sections: LessonSection[]
   createdAt: string
   updatedAt: string
+  scheduledAt: string | null
+  studentName: string | null
 }
 
 export interface LessonListResponse {
@@ -49,6 +51,7 @@ export interface CreateLessonRequest {
   objectives?: string | null
   templateId?: string | null
   studentId?: string | null
+  scheduledAt?: string | null
 }
 
 export interface UpdateLessonRequest {
@@ -60,6 +63,7 @@ export interface UpdateLessonRequest {
   objectives?: string | null
   status?: LessonStatus | null
   studentId?: string | null
+  scheduledAt?: string | null
 }
 
 export interface SectionInput {
@@ -75,6 +79,8 @@ export interface LessonListQuery {
   search?: string
   page?: number
   pageSize?: number
+  scheduledFrom?: string
+  scheduledTo?: string
 }
 
 export async function getLessons(query?: LessonListQuery): Promise<LessonListResponse> {
