@@ -1323,6 +1323,22 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 - Teacher profile with languages and preferred style set
 - At least one lesson with content blocks suitable for demonstrating the "Adapt for Another Student" flow
 
+**Demo recording & feedback capture:**
+
+The demo will be held on Google Meet. To capture feedback for later analysis:
+
+1. **Transcript** (primary artifact): Install [Tactiq](https://tactiq.io/) (free Chrome extension) before the call. It transcribes Google Meet in real-time and exports to `.txt`/`.docx`. After the meeting, export the transcript and drop it in `docs/demo/`. Claude can then analyze it: extract feedback themes, prioritize feature requests, identify concerns, and update the roadmap.
+2. **Screenshots**: Take a few manual screenshots during the demo whenever the brother reacts (confusion, excitement, suggestions). These provide visual context for which screens triggered which feedback.
+3. **Optional: Playwright baseline gallery**: Before the demo, run a Playwright script that captures screenshots of every key screen (dashboard, lesson editor, student view, PDF export). This creates a "before" reference so post-demo feedback can be mapped to specific UI states.
+
+**What to capture from the transcript:**
+- Features that excited him (what to double down on)
+- Points of confusion (UX issues to fix)
+- Questions he asked (gaps in the product story)
+- Feature requests or suggestions (roadmap input)
+- Comparisons to his current workflow (validation of problem-solution fit)
+- Willingness to join as PM (the success metric)
+
 **Talking points for the conversation after the demo:**
 - What features would be most useful in your daily teaching?
 - What's missing that would make you switch from your current workflow?
