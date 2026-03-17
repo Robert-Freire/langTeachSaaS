@@ -89,6 +89,12 @@ public class PromptService : IPromptService
             sb.AppendLine("Build on these notes rather than replacing them entirely.");
         }
 
+        if (!string.IsNullOrWhiteSpace(Sanitize(ctx.Direction)))
+        {
+            sb.AppendLine();
+            sb.AppendLine($"IMPORTANT DIRECTION: {Sanitize(ctx.Direction)}. Adjust the generated content accordingly while keeping the same topic and JSON format.");
+        }
+
         sb.AppendLine();
         sb.AppendLine("Respond ONLY with valid JSON matching the schema below. No markdown, no prose, no code fences. Start your response with { and end with }.");
 
