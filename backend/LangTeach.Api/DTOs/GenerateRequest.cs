@@ -22,5 +22,6 @@ public class GenerateRequest
 
     public string? ExistingNotes { get; set; }
 
+    [MaxLength(200)]
     public string? Direction { get; set; }
 }
