@@ -1317,6 +1317,43 @@ Allow teachers to attach URLs (YouTube videos, articles, Google Docs, online exe
 
 ---
 
+#### T19.2 — Dashboard Scheduling Redesign
+
+**Priority**: Post-demo | **Effort**: 2-3 days | **Depends on**: T19.1, demo feedback, possibly Classes Entity
+
+**Problem**: T19.1 delivers a working "+" button but the scheduling model is too simple for how teachers actually plan their week. The current popover has two actions (create new lesson, assign unscheduled draft), but real teacher workflows reveal at least five distinct use cases that the "+" button should support.
+
+**Use cases identified (from product review, 2026-03-17):**
+
+1. **Block a time slot** ("Marco wants a class Thursday at 10am, I'll decide what to teach later"). No lesson content needed, just student + time on the calendar. Currently requires creating a full lesson with placeholder values.
+
+2. **Create a new lesson from scratch** for this slot. Currently navigates away from the dashboard to LessonNew. Should stay on the dashboard (modal with the required form fields: title, language, CEFR, topic).
+
+3. **Assign an unscheduled draft** to this slot (move it here). T19.1 implements this, but only shows drafts without a `scheduledAt`. Teachers may also want to move a draft from one day to another.
+
+4. **Duplicate an existing lesson** into this slot. A teacher has a lesson assigned to another student (or another day) and wants to reuse it as a base. This is a copy, not a move. The original stays where it is.
+
+5. **Adapt a lesson from another student** into this slot. Overlaps with T24 (Adapt for Another Student). The teacher picks an existing lesson, selects a different student, and the system creates a copy with regenerated content for the new student's level/interests.
+
+**Key design decisions (to resolve post-demo with PM input):**
+
+- **Stay on dashboard**: All scheduling actions should keep the teacher on the dashboard. The week view is the context. Navigating away breaks the mental model.
+
+- **Slot vs. Lesson**: Should "block a time slot" create a minimal Lesson with placeholder values, or should it create a new entity (see "Classes as a Separate Entity" below)? The answer depends on whether the brother (PM) sees scheduling and content as the same thing or different things.
+
+- **Draft visibility in the popover**: Should "Assign Existing" show only unscheduled drafts, all drafts (including already-scheduled ones for rescheduling), or all lessons regardless of status? The answer shapes whether the popover is a "fill empty slots" tool or a "manage my calendar" tool.
+
+- **Duplicate vs. Adapt**: Case 4 (copy as-is) and case 5 (copy + regenerate) are different actions with different costs (adapt calls the AI). The UI needs to make this distinction clear without overwhelming the teacher.
+
+**Relationship to other features:**
+- T24 (Adapt for Another Student) could be triggered from the "+" popover as case 5, or remain a separate action on the lesson editor. Dashboard integration would be more powerful but couples the features.
+- "Classes as a Separate Entity" (below) is the clean architectural solution for case 1. If implemented, T19.2 should build on it rather than hacking placeholder lessons.
+- "Student Recurring Schedule" (below) feeds into the popover by pre-suggesting student + time combinations.
+
+**Done when**: All five use cases are supported from the dashboard without navigating away. The scheduling model (slot vs. lesson) is resolved. The popover/modal UX is validated with the PM.
+
+---
+
 ### Future Enhancements (Post-Demo, Informed by Feedback)
 
 These features build on the scheduling foundation from T19/T19.1 and would be prioritized based on feedback from the demo session. They represent the evolution from "lesson planner with scheduling" to "full teaching management platform."
