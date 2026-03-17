@@ -24,11 +24,11 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-function renderWithProviders() {
+function renderWithProviders(initialEntries?: string[]) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries ?? ['/lessons/new']}>
         <LessonNew />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -53,6 +53,24 @@ describe('LessonNew', () => {
     const dateInput = screen.getByTestId('input-scheduled-at')
     expect(dateInput).toBeInTheDocument()
     expect(dateInput).toHaveAttribute('type', 'datetime-local')
+  })
+
+  it('pre-fills studentId and scheduledAt from URL query params', async () => {
+    mockGetStudents.mockResolvedValue({
+      items: [{ id: 'stu-1', name: 'Marco', learningLanguage: 'English', cefrLevel: 'B1', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], createdAt: '', updatedAt: '' }],
+      totalCount: 1,
+    })
+
+    renderWithProviders(['/lessons/new?studentId=stu-1&scheduledAt=2026-03-20T10:00'])
+
+    const blankBtn = await screen.findByTestId('template-blank')
+    await userEvent.click(blankBtn)
+
+    const dateInput = screen.getByTestId('input-scheduled-at') as HTMLInputElement
+    expect(dateInput.value).toBe('2026-03-20T10:00')
+
+    // Student should be pre-selected (shown in the trigger)
+    expect(screen.getByText('Marco')).toBeInTheDocument()
   })
 
   it('includes scheduledAt in create request when provided', async () => {

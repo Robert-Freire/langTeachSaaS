@@ -3,16 +3,20 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { Lesson } from '../../api/lessons'
+import type { Student } from '../../api/students'
 import { getWeekDays, formatWeekDay, isToday, formatWeekRange } from '../../lib/weekUtils'
+import { SchedulePopover } from './SchedulePopover'
 
 interface WeekStripProps {
   weekOffset: number
   onPrev: () => void
   onNext: () => void
   lessons: Lesson[]
+  students: Student[]
+  unscheduledDrafts: Lesson[]
 }
 
-export function WeekStrip({ weekOffset, onPrev, onNext, lessons }: WeekStripProps) {
+export function WeekStrip({ weekOffset, onPrev, onNext, lessons, students, unscheduledDrafts }: WeekStripProps) {
   const navigate = useNavigate()
   const days = getWeekDays(weekOffset)
 
@@ -56,8 +60,9 @@ export function WeekStrip({ weekOffset, onPrev, onNext, lessons }: WeekStripProp
               }`}
               data-testid={`week-day-${idx}`}
             >
-              <div className={`text-xs font-medium mb-1 ${today ? 'text-indigo-700' : 'text-zinc-500'}`}>
-                {formatWeekDay(day)}
+              <div className={`text-xs font-medium mb-1 flex items-center justify-between ${today ? 'text-indigo-700' : 'text-zinc-500'}`}>
+                <span>{formatWeekDay(day)}</span>
+                <SchedulePopover date={day} students={students} unscheduledDrafts={unscheduledDrafts} />
               </div>
               <div className="space-y-1">
                 {dayLessons.map(lesson => (

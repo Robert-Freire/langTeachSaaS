@@ -13,8 +13,8 @@ export default function Dashboard() {
   const { start, end } = getWeekBounds(weekOffset)
 
   const { data: studentsData } = useQuery({
-    queryKey: ['students', { pageSize: 1 }],
-    queryFn: () => getStudents({ pageSize: 1 }),
+    queryKey: ['students', { pageSize: 100 }],
+    queryFn: () => getStudents({ pageSize: 100 }),
   })
 
   // pageSize: 100 is sufficient for beta (teachers rarely have 100+ lessons per week or drafts).
@@ -39,8 +39,10 @@ export default function Dashboard() {
   })
 
   const studentCount = studentsData?.totalCount ?? 0
+  const students = studentsData?.items ?? []
   const weekLessons = weekLessonsData?.items ?? []
   const allDrafts = draftsData?.items ?? []
+  const unscheduledDrafts = allDrafts.filter(l => !l.scheduledAt)
   const totalLessonCount = totalData?.totalCount ?? 0
 
   return (
@@ -57,6 +59,8 @@ export default function Dashboard() {
             onPrev={() => setWeekOffset(o => o - 1)}
             onNext={() => setWeekOffset(o => o + 1)}
             lessons={weekLessons}
+            students={students}
+            unscheduledDrafts={unscheduledDrafts}
           />
 
           <NeedsPreparation lessons={allDrafts} />
