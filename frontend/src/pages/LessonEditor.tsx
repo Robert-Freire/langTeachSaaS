@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Copy, Trash2, UserPlus, ChevronDown, ChevronUp, Save, Sparkles } from 'lucide-react'
+import { Copy, Trash2, UserPlus, ChevronDown, ChevronUp, Save, Sparkles, CalendarPlus } from 'lucide-react'
 import {
   getLesson, updateLesson, updateSections, deleteLesson, duplicateLesson,
   type Lesson, type LessonStatus, type SectionType,
@@ -64,6 +64,8 @@ export default function LessonEditor() {
 
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [metaExpanded, setMetaExpanded] = useState(false)
+  const [schedulingInline, setSchedulingInline] = useState(false)
+  const [inlineScheduleDate, setInlineScheduleDate] = useState('')
   const [linkStudentOpen, setLinkStudentOpen] = useState(false)
   const [linkStudentId, setLinkStudentId] = useState<string>('')
 
@@ -250,6 +252,23 @@ export default function LessonEditor() {
     })
     setLinkStudentOpen(false)
   }, [lesson, linkStudentId, doUpdate])
+
+  const handleQuickSchedule = useCallback(() => {
+    if (!lesson || !inlineScheduleDate) return
+    doUpdate({
+      title: lesson.title,
+      language: lesson.language,
+      cefrLevel: lesson.cefrLevel,
+      topic: lesson.topic,
+      durationMinutes: lesson.durationMinutes,
+      objectives: lesson.objectives,
+      status: lesson.status,
+      studentId: lesson.studentId,
+      scheduledAt: inlineScheduleDate,
+    })
+    setSchedulingInline(false)
+    setInlineScheduleDate('')
+  }, [lesson, inlineScheduleDate, doUpdate])
 
   const handleBlockInsert = useCallback((block: ContentBlockDto) => {
     if (!block.lessonSectionId) return
@@ -457,11 +476,45 @@ export default function LessonEditor() {
               </div>
             ) : (
               <div className="pt-4 space-y-2">
-                {lesson.scheduledAt && (
-                  <p className="text-sm text-zinc-600">
-                    <span className="font-medium">Scheduled:</span>{' '}
-                    {new Date(lesson.scheduledAt).toLocaleString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                {lesson.scheduledAt && !schedulingInline ? (
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-zinc-600">
+                      <span className="font-medium">Scheduled:</span>{' '}
+                      {new Date(lesson.scheduledAt).toLocaleString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setSchedulingInline(true); setInlineScheduleDate(lesson.scheduledAt ? lesson.scheduledAt.slice(0, 16) : '') }}
+                      className="text-xs text-indigo-600 hover:text-indigo-700 h-auto py-0.5 px-1.5"
+                    >
+                      Reschedule
+                    </Button>
+                  </div>
+                ) : schedulingInline ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="datetime-local"
+                      value={inlineScheduleDate}
+                      onChange={(e) => setInlineScheduleDate(e.target.value)}
+                      className="w-auto text-sm"
+                      autoFocus
+                      data-testid="inline-schedule-input"
+                    />
+                    <Button size="sm" onClick={handleQuickSchedule} disabled={!inlineScheduleDate} className="bg-indigo-600 hover:bg-indigo-700 text-white">Save</Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setSchedulingInline(false); setInlineScheduleDate('') }}>Cancel</Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSchedulingInline(true)}
+                    className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                    data-testid="quick-schedule-btn"
+                  >
+                    <CalendarPlus className="h-4 w-4 mr-1.5" />
+                    Schedule
+                  </Button>
                 )}
                 {lesson.objectives && <p className="text-sm text-zinc-600"><span className="font-medium">Objectives:</span> {lesson.objectives}</p>}
                 {lesson.studentId && students.find(s => s.id === lesson.studentId) && (

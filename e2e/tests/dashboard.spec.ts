@@ -30,9 +30,12 @@ async function deleteLessonViaApi(
   page: import('@playwright/test').Page,
   lessonId: string,
 ): Promise<void> {
-  await page.request.delete(`${API_BASE}/api/lessons/${lessonId}`, {
+  const response = await page.request.delete(`${API_BASE}/api/lessons/${lessonId}`, {
     headers: AUTH_HEADER,
   })
+  if (!response.ok()) {
+    console.warn(`Cleanup failed for lesson ${lessonId}: ${response.status()}`)
+  }
 }
 
 test('dashboard shows week strip with scheduled lesson', async ({ browser }) => {
@@ -74,10 +77,11 @@ test('needs preparation shows draft lessons scheduled this week', async ({ brows
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  // Create a draft lesson scheduled for tomorrow
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const scheduledAt = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}T14:00:00`
+  // Create a draft lesson scheduled within this week (avoid boundary flakiness on Sat/Sun)
+  const today = new Date()
+  const dayOfWeek = today.getDay() // 0=Sun, 6=Sat
+  const targetDate = dayOfWeek >= 5 ? today : new Date(today.getTime() + 86400000)
+  const scheduledAt = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}T14:00:00`
 
   const lesson = await createLessonViaApi(page, {
     title: `Needs Prep E2E ${Date.now()}`,
