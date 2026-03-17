@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { BookOpen } from 'lucide-react'
 import { getStudyLesson } from '../api/lessons'
 import { getRenderer } from '../components/lesson/contentRegistry'
 import { ContentErrorBoundary } from '../components/lesson/ContentErrorBoundary'
@@ -46,6 +47,20 @@ export default function StudyView() {
         <h1 className="text-2xl font-bold text-zinc-900" data-testid="study-title">{lesson.title}</h1>
         <p className="text-sm text-zinc-500">{lesson.language} · {lesson.cefrLevel} · {lesson.topic}</p>
       </div>
+
+      {lesson.sections.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <BookOpen className="h-12 w-12 text-zinc-300 mb-4" />
+          <h2 className="text-lg font-medium text-zinc-700 mb-1">No content yet</h2>
+          <p className="text-sm text-zinc-500 mb-4">This lesson doesn't have any generated content to preview.</p>
+          <Link
+            to={`/lessons/${id}`}
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+          >
+            Go to editor to add content
+          </Link>
+        </div>
+      )}
 
       {lesson.sections.map((section) => (
         <div key={section.id} className="space-y-3">

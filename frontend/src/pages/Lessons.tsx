@@ -226,7 +226,7 @@ export default function Lessons() {
       {lessons.length > 0 && (
         <div className="space-y-3">
           {lessons.map((lesson) => (
-            <Card key={lesson.id} className="bg-white border border-zinc-200" data-testid={`lesson-row-${lesson.id}`}>
+            <Card key={lesson.id} className="bg-white border border-zinc-200 transition-all hover:shadow-sm hover:border-zinc-300" data-testid={`lesson-row-${lesson.id}`}>
               <CardContent className="flex items-center justify-between py-4 px-6">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
