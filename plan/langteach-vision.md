@@ -68,6 +68,9 @@ Future                 Marketplace, mobile, analytics, integrations
 - Adapt lesson for another student (one-click re-personalization)
 - AI-powered "suggest next topic" based on student history
 
+**Post-Demo (T26)**
+- Section URL attachments (YouTube, articles, online resources) to make each lesson a complete teaching workspace
+
 **2C: Polish (T20, T22)**
 - Brand, favicon, consistent visual identity
 - Loading states, empty states, skeleton screens
@@ -98,6 +101,7 @@ Future                 Marketplace, mobile, analytics, integrations
 | **Performance** | Optimistic UI updates, prefetching, lazy loading | Feels fast at scale |
 | **Multi-tenant hardening** | Row-level security audit, data isolation verification | Ready for multiple real teachers |
 | **New content types** | Reading passages, grammar explanations, homework | Expand the type system based on beta feedback |
+| **File uploads** | Attach images, PDFs, and audio files to lesson sections (Azure Blob storage) | Complements URL attachments (added post-demo in beta) to make the platform a complete teaching workspace |
 
 ---
 

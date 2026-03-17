@@ -24,9 +24,9 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T9 | CI/CD Pipeline (GitHub Actions, ACR, OIDC) | DONE — PR #27 merged |
 | T9.1 | Brand & Logo | MOVED TO BETA T20 |
 
-## Beta Phase — CURRENT (as of 2026-03-16)
+## Beta Phase — CURRENT (as of 2026-03-17)
 
-**Next task: T17** (PDF Export)
+**Next task: T19.1** (Schedule from Dashboard)
 
 | Task | Description | Status |
 |------|-------------|--------|
@@ -47,7 +47,8 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T16 | One-Click Full Lesson Generation | DONE — PR #54 merged |
 | T17 | PDF Export | pending |
 | T18 | Student Lesson Notes (post-lesson notes, lesson history on student profile) | pending |
-| T19 | Dashboard v2 (recent lessons, quick create, this week stats) | pending |
+| T19 | Dashboard v2 (weekly schedule, WeekStrip, NeedsPrep, QuickActions) | DONE — PR #60 merged |
+| T19.1 | Schedule from Dashboard ("+" on day columns, assign draft or create new) | pending |
 | T20 | Brand & Visual Polish (icon, favicon, loading states — replaces T9.1) | pending |
 | T21 | Regenerate with Direction (make easier/harder/shorter/longer modifiers) | pending |
 | T23 | Beta Demo Preparation (seed data, demo script, talking points) | pending (always last) |
