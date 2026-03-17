@@ -30,6 +30,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
 
@@ -231,8 +232,25 @@ export default function StudentForm() {
 
   if (isEdit && isLoading) {
     return (
-      <div className="flex items-center justify-center h-64 text-sm text-zinc-500">
-        Loading student...
+      <div className="max-w-2xl space-y-6">
+        <div>
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-4 w-56 mt-2" />
+        </div>
+        <Card>
+          <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-8 w-full max-w-sm" />
+            <div className="grid grid-cols-2 gap-4 max-w-sm">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
+          <CardContent><Skeleton className="h-10 w-full max-w-sm" /></CardContent>
+        </Card>
       </div>
     )
   }
@@ -256,7 +274,7 @@ export default function StudentForm() {
           <CardContent className="space-y-4">
             {/* Name */}
             <div className="space-y-1.5">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">Name <span className="text-red-500">*</span></Label>
               <Input
                 id="name"
                 value={name}
@@ -269,36 +287,37 @@ export default function StudentForm() {
               {errors.name && <p className="text-xs text-red-600">{errors.name}</p>}
             </div>
 
-            {/* Language */}
-            <div className="space-y-1.5">
-              <Label>Learning Language</Label>
-              <Select value={language} onValueChange={(v) => v && setLanguage(v)}>
-                <SelectTrigger className="max-w-sm" data-testid="student-language">
-                  <SelectValue placeholder="Select a language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LANGUAGES.map((lang) => (
-                    <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.language && <p className="text-xs text-red-600">{errors.language}</p>}
-            </div>
+            {/* Language + CEFR Level side-by-side */}
+            <div className="grid grid-cols-2 gap-4 max-w-sm">
+              <div className="space-y-1.5">
+                <Label>Learning Language <span className="text-red-500">*</span></Label>
+                <Select value={language} onValueChange={(v) => v && setLanguage(v)}>
+                  <SelectTrigger data-testid="student-language">
+                    <SelectValue placeholder="Select a language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((lang) => (
+                      <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.language && <p className="text-xs text-red-600">{errors.language}</p>}
+              </div>
 
-            {/* CEFR Level */}
-            <div className="space-y-1.5">
-              <Label>CEFR Level</Label>
-              <Select value={cefrLevel} onValueChange={(v) => v && setCefrLevel(v)}>
-                <SelectTrigger className="max-w-sm" data-testid="student-cefr">
-                  <SelectValue placeholder="Select a level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CEFR_LEVELS.map((level) => (
-                    <SelectItem key={level} value={level}>{level}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.cefrLevel && <p className="text-xs text-red-600">{errors.cefrLevel}</p>}
+              <div className="space-y-1.5">
+                <Label>CEFR Level <span className="text-red-500">*</span></Label>
+                <Select value={cefrLevel} onValueChange={(v) => v && setCefrLevel(v)}>
+                  <SelectTrigger data-testid="student-cefr">
+                    <SelectValue placeholder="Select a level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CEFR_LEVELS.map((level) => (
+                      <SelectItem key={level} value={level}>{level}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.cefrLevel && <p className="text-xs text-red-600">{errors.cefrLevel}</p>}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -401,7 +420,7 @@ export default function StudentForm() {
           <CardHeader>
             <CardTitle className="text-base">Notes</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -411,17 +430,16 @@ export default function StudentForm() {
               className="max-w-sm resize-none"
               data-testid="student-notes"
             />
+            <div className="flex justify-end items-center gap-3 pt-2 border-t border-zinc-100">
+              <Button type="button" variant="outline" onClick={() => navigate('/students')}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                {isPending ? 'Saving...' : isEdit ? 'Update Student' : 'Save Student'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
-
-        <div className="flex items-center gap-3">
-          <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-            {isPending ? 'Saving...' : isEdit ? 'Update Student' : 'Save Student'}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/students')}>
-            Cancel
-          </Button>
-        </div>
       </form>
 
       {isEdit && id && <LessonHistoryCard studentId={id} />}

@@ -39,7 +39,9 @@ describe('Settings error states', () => {
     } as unknown as ReturnType<typeof useProfile>)
 
     wrapper(<Settings />)
-    expect(screen.getByText('Loading profile...')).toBeInTheDocument()
+    // Skeleton loading state renders skeleton elements instead of text
+    const skeletons = document.querySelectorAll('[data-slot="skeleton"]')
+    expect(skeletons.length).toBeGreaterThan(0)
   })
 
   it('shows error message when profile fetch fails', () => {

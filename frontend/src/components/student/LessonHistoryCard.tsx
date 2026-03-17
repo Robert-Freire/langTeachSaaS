@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getLessonHistory } from '../../api/students'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface LessonHistoryCardProps {
   studentId: string
@@ -27,7 +28,21 @@ export function LessonHistoryCard({ studentId }: LessonHistoryCardProps) {
         <CardTitle className="text-base">Lesson History</CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading && <p className="text-sm text-zinc-400">Loading...</p>}
+        {isLoading && (
+          <div className="space-y-3">
+            {[1, 2].map(i => (
+              <div key={i} className="border border-zinc-100 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-3/4" />
+              </div>
+            ))}
+          </div>
+        )}
         {!isLoading && (!entries || entries.length === 0) && (
           <p className="text-sm text-zinc-400" data-testid="lesson-history-empty">No lesson notes yet.</p>
         )}

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getStudyLesson } from '../api/lessons'
 import { getRenderer } from '../components/lesson/contentRegistry'
 import { ContentErrorBoundary } from '../components/lesson/ContentErrorBoundary'
+import { Badge } from '@/components/ui/badge'
 
 export default function StudyView() {
   const { id } = useParams<{ id: string }>()
@@ -38,7 +39,7 @@ export default function StudyView() {
           </svg>
           Back to editor
         </Link>
-        <span className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Preview</span>
+        <Badge variant="outline" className="text-xs font-medium text-zinc-500 border-zinc-300 uppercase tracking-wide">Preview</Badge>
       </div>
       <div className="max-w-2xl mx-auto space-y-8 py-8 px-4">
       <div className="space-y-1">

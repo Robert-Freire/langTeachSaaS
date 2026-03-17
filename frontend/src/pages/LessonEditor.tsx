@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   AlertDialog,
@@ -35,6 +36,7 @@ import { ContentBlock } from '@/components/lesson/ContentBlock'
 import { ExportButton } from '@/components/lesson/ExportButton'
 import { FullLessonGenerateButton } from '@/components/lesson/FullLessonGenerateButton'
 import { LessonNotesCard } from '@/components/lesson/LessonNotesCard'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const SECTION_ORDER: SectionType[] = ['WarmUp', 'Presentation', 'Practice', 'Production', 'WrapUp']
 const SECTION_LABELS: Record<SectionType, string> = {
@@ -300,7 +302,34 @@ export default function LessonEditor() {
   const students = studentsData?.items ?? []
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64 text-sm text-zinc-500">Loading lesson...</div>
+    return (
+      <div className="space-y-6 max-w-3xl">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 flex-1" />
+          <Skeleton className="h-8 w-20 rounded-full" />
+          <Skeleton className="h-8 w-8 rounded-md" />
+          <Skeleton className="h-8 w-8 rounded-md" />
+        </div>
+        <Card className="bg-white border border-zinc-200">
+          <CardHeader className="py-3 px-6">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-5 w-10 rounded-full" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </CardHeader>
+        </Card>
+        <div className="space-y-4">
+          <Skeleton className="h-5 w-32" />
+          {[1, 2, 3].map(i => (
+            <Card key={i} className="bg-white border border-zinc-200">
+              <CardHeader className="py-3 px-6"><Skeleton className="h-4 w-24" /></CardHeader>
+              <CardContent className="px-6 pb-4"><Skeleton className="h-24 w-full" /></CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
   }
   if (isError || !lesson) {
     return (
@@ -326,7 +355,7 @@ export default function LessonEditor() {
           />
         ) : (
           <h1
-            className="text-2xl font-semibold text-zinc-900 flex-1 cursor-pointer hover:text-indigo-700 transition-colors"
+            className="text-2xl font-semibold text-zinc-900 flex-1 truncate cursor-pointer hover:text-indigo-700 transition-colors"
             onClick={() => setEditingTitle(true)}
             onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setEditingTitle(true)}
             role="button"
@@ -459,10 +488,9 @@ export default function LessonEditor() {
                 </div>
                 <div className="space-y-2">
                   <Label>Scheduled Date & Time</Label>
-                  <Input
-                    type="datetime-local"
+                  <DateTimePicker
                     value={metaDraft.scheduledAt}
-                    onChange={(e) => setMetaDraft(d => ({ ...d, scheduledAt: e.target.value }))}
+                    onChange={(v) => setMetaDraft(d => ({ ...d, scheduledAt: v }))}
                     data-testid="input-scheduled-at"
                   />
                 </div>
@@ -494,11 +522,9 @@ export default function LessonEditor() {
                   </div>
                 ) : schedulingInline ? (
                   <div className="flex items-center gap-2">
-                    <Input
-                      type="datetime-local"
+                    <DateTimePicker
                       value={inlineScheduleDate}
-                      onChange={(e) => setInlineScheduleDate(e.target.value)}
-                      className="w-auto text-sm"
+                      onChange={setInlineScheduleDate}
                       autoFocus
                       data-testid="inline-schedule-input"
                     />

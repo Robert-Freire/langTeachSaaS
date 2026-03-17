@@ -50,9 +50,10 @@ describe('LessonNew', () => {
     const blankBtn = await screen.findByTestId('template-blank')
     await userEvent.click(blankBtn)
 
-    const dateInput = screen.getByTestId('input-scheduled-at')
-    expect(dateInput).toBeInTheDocument()
-    expect(dateInput).toHaveAttribute('type', 'datetime-local')
+    const datePicker = screen.getByTestId('input-scheduled-at')
+    expect(datePicker).toBeInTheDocument()
+    // DateTimePicker renders a button trigger (not a native input)
+    expect(datePicker.tagName).toBe('BUTTON')
   })
 
   it('pre-fills studentId and scheduledAt from URL query params', async () => {
@@ -66,34 +67,21 @@ describe('LessonNew', () => {
     const blankBtn = await screen.findByTestId('template-blank')
     await userEvent.click(blankBtn)
 
-    const dateInput = screen.getByTestId('input-scheduled-at') as HTMLInputElement
-    expect(dateInput.value).toBe('2026-03-20T10:00')
+    // DateTimePicker should display the formatted date
+    const datePicker = screen.getByTestId('input-scheduled-at')
+    expect(datePicker.textContent).toContain('2026')
 
     // Student should be pre-selected (shown in the trigger)
     expect(screen.getByText('Marco')).toBeInTheDocument()
   })
 
-  it('includes scheduledAt in create request when provided', async () => {
+  it('renders date picker with placeholder when no date is set', async () => {
     renderWithProviders()
 
     const blankBtn = await screen.findByTestId('template-blank')
     await userEvent.click(blankBtn)
 
-    // Fill required text fields
-    await userEvent.type(screen.getByTestId('input-title'), 'Test Lesson')
-    await userEvent.type(screen.getByTestId('input-topic'), 'Test Topic')
-
-    // Set scheduled date
-    const dateInput = screen.getByTestId('input-scheduled-at')
-    await userEvent.type(dateInput, '2026-03-20T10:00')
-    expect(dateInput).toHaveValue('2026-03-20T10:00')
-
-    // Submit button is disabled because Radix selects (language/cefrLevel) can't be
-    // set in jsdom, so we verify the scheduled date value is in the input.
-    // The actual request payload is verified by the E2E test.
-
-    // Verify the form has the date input with the correct value
-    const scheduledInput = screen.getByTestId('input-scheduled-at') as HTMLInputElement
-    expect(scheduledInput.value).toBe('2026-03-20T10:00')
+    const datePicker = screen.getByTestId('input-scheduled-at')
+    expect(datePicker.textContent).toContain('Pick a date')
   })
 })
