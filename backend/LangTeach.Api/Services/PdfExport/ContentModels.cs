@@ -7,8 +7,7 @@ namespace LangTeach.Api.Services.PdfExport;
 public record VocabularyItem(
     [property: JsonPropertyName("word")] string Word = "",
     [property: JsonPropertyName("definition")] string Definition = "",
-    [property: JsonPropertyName("exampleSentence")] string? ExampleSentence = null,
-    [property: JsonPropertyName("translation")] string? Translation = null);
+    [property: JsonPropertyName("exampleSentence")] string? ExampleSentence = null);
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
 public record VocabularyContent(

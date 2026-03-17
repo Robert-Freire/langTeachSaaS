@@ -26,7 +26,7 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 
 ## Beta Phase — CURRENT (as of 2026-03-17)
 
-**Next task: T19.1** (Schedule from Dashboard)
+**Next task: T18** (Student Lesson Notes)
 
 | Task | Description | Status |
 |------|-------------|--------|
@@ -45,10 +45,11 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T15.5 | Grammar Type (styled renderer for teacher + student) | DONE — PR #55 merged |
 | T15.6 | Homework Type (assignment renderer for teacher + student) | DONE — PR #56 merged |
 | T16 | One-Click Full Lesson Generation | DONE — PR #54 merged |
-| T17 | PDF Export | pending |
+| T17 | PDF Export | DONE — PR #63 open |
 | T18 | Student Lesson Notes (post-lesson notes, lesson history on student profile) | pending |
 | T19 | Dashboard v2 (weekly schedule, WeekStrip, NeedsPrep, QuickActions) | DONE — PR #60 merged |
-| T19.1 | Schedule from Dashboard ("+" on day columns, assign draft or create new) | pending |
+| T19.1 | Schedule from Dashboard ("+" on day columns, assign draft or create new) | DONE — PR #62 merged |
+| T19.2 | Dashboard Scheduling Redesign (stay on dashboard, block slots, duplicate, adapt) | post-demo |
 | T20 | Brand & Visual Polish (icon, favicon, loading states — replaces T9.1) | pending |
 | T21 | Regenerate with Direction (make easier/harder/shorter/longer modifiers) | pending |
 | T23 | Beta Demo Preparation (seed data, demo script, talking points) | pending (always last) |
