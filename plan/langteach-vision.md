@@ -112,6 +112,7 @@ Future                 Marketplace, mobile, analytics, integrations
 | Area | What | Why |
 |------|------|-----|
 | **Student portal** | Students log in, see assigned lessons, do exercises, track progress | Closes the loop: teacher creates, student learns, teacher sees results |
+| **1-to-1 Live Whiteboard + Call** | WebRTC peer-to-peer video call with shared interactive whiteboard, integrated with lesson content | Teachers need a visual teaching surface during live lessons. No paid service needed for 1-to-1 (WebRTC + SignalR). Pre-demo feedback from PM. |
 | **Content library** | Save and reuse content blocks across lessons | A vocabulary set for "restaurant vocabulary A2" shouldn't be regenerated every time |
 | **Sharing** | Shareable lesson links (view-only, no login required) | Teachers share materials with students via WhatsApp/email |
 | **Homework portal** | Students complete assigned exercises online, teacher sees results | Replaces the "send a PDF, hope they do it" workflow |
@@ -129,7 +130,7 @@ These are ideas, not commitments. Each depends on what beta and Phase 2/3 teach 
 |------|-----------------|
 | **Lesson marketplace** | Teachers publish and sell lesson packs to other teachers |
 | **Mobile app** | Prep lessons on the phone between classes |
-| **Classroom mode** | Real-time interaction: teacher projects, students respond on their devices |
+| **Group classroom mode** | Extend 1-to-1 live whiteboard (Phase 3) to support group lessons with multiple students. Requires a media server (SFU) for multi-party WebRTC. |
 | **Spaced repetition** | Vocabulary from past lessons resurfaces in future exercises automatically |
 | **AI tutor** | Student practices conversation with an AI partner using lesson vocabulary |
 | **Multi-language platform UI** | Platform itself available in Spanish, Portuguese, French (not just content) |

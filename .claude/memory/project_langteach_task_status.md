@@ -26,7 +26,7 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 
 ## Beta Phase — CURRENT (as of 2026-03-17)
 
-**Next task: T21** (Regenerate with Direction) or T20 (Brand & Visual Polish)
+**Next task: T20** (Brand & Visual Polish) or T23 (Beta Demo Preparation)
 
 | Task | Description | Status |
 |------|-------------|--------|
@@ -51,7 +51,7 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T19.1 | Schedule from Dashboard ("+" on day columns, assign draft or create new) | DONE — PR #62 merged |
 | T19.2 | Dashboard Scheduling Redesign (stay on dashboard, block slots, duplicate, adapt) | post-demo |
 | T20 | Brand & Visual Polish (icon, favicon, loading states — replaces T9.1) | pending |
-| T21 | Regenerate with Direction (make easier/harder/shorter/longer modifiers) | pending |
+| T21 | Regenerate with Direction (make easier/harder/shorter/longer modifiers) | DONE — PR #65 merged |
 | T23 | Beta Demo Preparation (seed data, demo script, talking points) | pending (always last) |
 
 ## Key T2 Deviations (important for future tasks)

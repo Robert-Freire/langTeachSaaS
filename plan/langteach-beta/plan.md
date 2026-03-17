@@ -1479,6 +1479,43 @@ These are enabled by the existing `ScheduledAt` field and the Class entity (if i
 
 ---
 
+#### 1-to-1 Live Whiteboard + Video Call
+
+**Priority**: Phase 3 (alongside Student Portal) | **Effort**: ~1.5 weeks | **Depends on**: Student Portal (student needs a login to join)
+
+**Origin**: Pre-demo feedback from brother (potential PM). For 1-to-1 online tutoring, teachers need an interactive shared whiteboard during live lessons. Most existing platforms (Preply, iTalki) have limited or no whiteboard support, so teachers resort to screen-sharing Google Docs or Jamboard.
+
+**What it delivers:**
+A "Live Lesson" mode where teacher and student share a video call with an interactive whiteboard. The whiteboard can pull in lesson content (vocabulary cards, exercises) as visual elements the teacher can annotate in real time.
+
+**Technical approach (no paid services needed for 1-to-1):**
+- **WebRTC peer-to-peer**: Video/audio streams go directly between the two browsers. No media server required for 1-to-1.
+- **Signaling via SignalR**: The backend relays WebRTC connection offers (ICE candidates, SDP). Lightweight, runs on existing App Service.
+- **STUN**: Free public servers (e.g. `stun.l.google.com:19302`) handle NAT traversal for ~85% of connections.
+- **TURN fallback**: Needed for ~15% of strict NAT cases. Free tiers (Metered, Xirsys) or self-hosted `coturn`. Not a blocker.
+- **Shared whiteboard**: Embed tldraw or Excalidraw (MIT, React components). Sync drawing strokes via SignalR. Both users see the same canvas in real time.
+- **Lesson content integration**: Teacher can drag vocabulary lists, exercises, or conversation prompts from the current lesson onto the whiteboard as visual blocks.
+
+**Infrastructure cost**: Effectively zero. WebRTC is peer-to-peer, SignalR runs on the existing App Service, STUN is free.
+
+**UI surface:**
+- "Start Live Lesson" button on the lesson editor (when a student is assigned)
+- Student receives a notification/link to join from their portal
+- Split view: video feeds (small, corner) + whiteboard (main area) + lesson content sidebar
+- Teacher can annotate, draw, type; student sees it live and can also draw/type
+
+**Why Phase 3 (not sooner):**
+- Requires Student Portal so the student has a page to join from
+- Whiteboard benefits from having all typed content renderers complete (vocabulary, exercises, conversation can all be dragged onto the board)
+- The beta demo proves the lesson prep loop; live teaching is the next evolution
+
+**Files involved (estimated):**
+- `backend/`: SignalR hub for signaling + whiteboard sync, endpoint to create/join a live session
+- `frontend/`: LiveLesson page with WebRTC hooks, whiteboard canvas component, video feed components
+- Shared: WebRTC connection management, ICE/SDP exchange protocol
+
+---
+
 ## Explicitly Deferred (not in beta scope)
 
 | Item | Original location | Reason for deferral |
