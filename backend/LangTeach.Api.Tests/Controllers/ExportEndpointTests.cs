@@ -74,7 +74,7 @@ public class ExportEndpointTests
         };
         db.LessonSections.Add(section);
 
-        var vocabJson = """{"items":[{"word":"travel","definition":"to go somewhere","exampleSentence":"I travel a lot.","translation":"viajar"}]}""";
+        var vocabJson = """{"items":[{"word":"travel","definition":"to go somewhere","exampleSentence":"I travel a lot."}]}""";
         var block = new LessonContentBlock
         {
             Id = Guid.NewGuid(),

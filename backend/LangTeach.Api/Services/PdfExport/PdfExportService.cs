@@ -133,50 +133,23 @@ public class PdfExportService : IPdfExportService
             col.Item().Text("Vocabulary").FontSize(11).SemiBold();
             col.Item().PaddingTop(4).Table(table =>
             {
-                if (mode == PdfExportMode.Teacher)
+                table.ColumnsDefinition(c =>
                 {
-                    table.ColumnsDefinition(c =>
-                    {
-                        c.RelativeColumn(2);
-                        c.RelativeColumn(3);
-                        c.RelativeColumn(3);
-                        c.RelativeColumn(2);
-                    });
-                    table.Header(h =>
-                    {
-                        h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Word").FontSize(9).SemiBold();
-                        h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Definition").FontSize(9).SemiBold();
-                        h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Example").FontSize(9).SemiBold();
-                        h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Translation").FontSize(9).SemiBold();
-                    });
-                    foreach (var item in items)
-                    {
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.Word).FontSize(9);
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.Definition).FontSize(9);
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.ExampleSentence ?? "").FontSize(9);
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.Translation ?? "").FontSize(9);
-                    }
-                }
-                else
+                    c.RelativeColumn(2);
+                    c.RelativeColumn(3);
+                    c.RelativeColumn(3);
+                });
+                table.Header(h =>
                 {
-                    table.ColumnsDefinition(c =>
-                    {
-                        c.RelativeColumn(2);
-                        c.RelativeColumn(3);
-                        c.RelativeColumn(3);
-                    });
-                    table.Header(h =>
-                    {
-                        h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Word").FontSize(9).SemiBold();
-                        h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Definition").FontSize(9).SemiBold();
-                        h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Example").FontSize(9).SemiBold();
-                    });
-                    foreach (var item in items)
-                    {
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.Word).FontSize(9);
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.Definition).FontSize(9);
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.ExampleSentence ?? "").FontSize(9);
-                    }
+                    h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Word").FontSize(9).SemiBold();
+                    h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Definition").FontSize(9).SemiBold();
+                    h.Cell().Background(Colors.Indigo.Lighten5).Padding(4).Text("Example").FontSize(9).SemiBold();
+                });
+                foreach (var item in items)
+                {
+                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.Word).FontSize(9);
+                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.Definition).FontSize(9);
+                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten3).Padding(4).Text(item.ExampleSentence ?? "").FontSize(9);
                 }
             });
         });
