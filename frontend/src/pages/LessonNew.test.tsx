@@ -52,8 +52,8 @@ describe('LessonNew', () => {
 
     const datePicker = screen.getByTestId('input-scheduled-at')
     expect(datePicker).toBeInTheDocument()
-    // DateTimePicker renders a button trigger (not a native input)
-    expect(datePicker.tagName).toBe('BUTTON')
+    // DateTimePicker renders a popover trigger with placeholder text
+    expect(datePicker.textContent).toContain('Pick a date')
   })
 
   it('pre-fills studentId and scheduledAt from URL query params', async () => {

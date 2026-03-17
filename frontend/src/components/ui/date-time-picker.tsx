@@ -31,6 +31,10 @@ function formatDisplay(value: string): string {
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
 const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'))
 
+function nearestMinute(min: number): string {
+  return String(Math.round(min / 5) * 5 % 60).padStart(2, '0')
+}
+
 export function DateTimePicker({ value, onChange, className, autoFocus, ...props }: DateTimePickerProps) {
   const [open, setOpen] = useState(autoFocus ?? false)
 
@@ -39,7 +43,7 @@ export function DateTimePicker({ value, onChange, className, autoFocus, ...props
 
   const selectedDate = isValid ? parsedDate : undefined
   const hour = isValid ? String(parsedDate.getHours()).padStart(2, '0') : '10'
-  const minute = isValid ? String(Math.floor(parsedDate.getMinutes() / 5) * 5).padStart(2, '0') : '00'
+  const minute = isValid ? nearestMinute(parsedDate?.getMinutes() ?? 0) : '00'
 
   function buildValue(date: Date | undefined, h: string, m: string): string {
     if (!date) return ''
@@ -55,15 +59,13 @@ export function DateTimePicker({ value, onChange, className, autoFocus, ...props
   }
 
   function handleHourChange(h: string | null) {
-    if (!h) return
-    const base = selectedDate ?? new Date()
-    onChange(buildValue(base, h, minute))
+    if (!h || !selectedDate) return
+    onChange(buildValue(selectedDate, h, minute))
   }
 
   function handleMinuteChange(m: string | null) {
-    if (!m) return
-    const base = selectedDate ?? new Date()
-    onChange(buildValue(base, hour, m))
+    if (!m || !selectedDate) return
+    onChange(buildValue(selectedDate, hour, m))
   }
 
   return (
@@ -129,7 +131,7 @@ interface TimePickerProps {
 export function TimePicker({ value, onChange, className, ...props }: TimePickerProps) {
   const [h, m] = (value || '10:00').split(':')
   const hour = h?.padStart(2, '0') ?? '10'
-  const minute = String(Math.floor(parseInt(m ?? '0') / 5) * 5).padStart(2, '0')
+  const minute = nearestMinute(parseInt(m ?? '0'))
 
   return (
     <div className={cn('flex items-center gap-1', className)} data-testid={props['data-testid']}>

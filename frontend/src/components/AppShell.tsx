@@ -45,7 +45,7 @@ export default function AppShell() {
                     : 'text-muted-foreground hover:bg-zinc-100 hover:text-foreground'
                 )}
               >
-                <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-indigo-600' : 'text-zinc-400')} />
+                <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-indigo-600' : 'text-muted-foreground/60')} />
                 {label}
               </Link>
             )
