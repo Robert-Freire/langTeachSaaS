@@ -48,6 +48,12 @@ export function LessonNotesCard({ lessonId, studentId }: LessonNotesCardProps) {
     }
   }, [notes])
 
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+    }
+  }, [])
+
   const { mutate: doSave } = useMutation({
     mutationFn: (data: SaveLessonNotesRequest) => saveLessonNotes(lessonId, data),
     onSuccess: (_result, variables) => {

@@ -48,6 +48,7 @@ public class LessonNotesController : ControllerBase
     public async Task<IActionResult> Upsert(Guid lessonId, [FromBody] SaveLessonNotesRequest request, CancellationToken cancellationToken)
     {
         if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
 
         try
