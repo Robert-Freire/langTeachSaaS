@@ -146,6 +146,33 @@ export interface StudyLessonDto {
   sections: StudySectionDto[]
 }
 
+export interface LessonNotesDto {
+  id: string
+  lessonId: string
+  whatWasCovered: string | null
+  homeworkAssigned: string | null
+  areasToImprove: string | null
+  nextLessonIdeas: string | null
+}
+
+export interface SaveLessonNotesRequest {
+  whatWasCovered?: string | null
+  homeworkAssigned?: string | null
+  areasToImprove?: string | null
+  nextLessonIdeas?: string | null
+}
+
+export async function getLessonNotes(lessonId: string): Promise<LessonNotesDto | null> {
+  const res = await apiClient.get(`/api/lessons/${lessonId}/notes`)
+  if (res.status === 204 || !res.data) return null
+  return res.data as LessonNotesDto
+}
+
+export async function saveLessonNotes(lessonId: string, data: SaveLessonNotesRequest): Promise<LessonNotesDto> {
+  const res = await apiClient.put<LessonNotesDto>(`/api/lessons/${lessonId}/notes`, data)
+  return res.data
+}
+
 export async function getStudyLesson(id: string): Promise<StudyLessonDto> {
   const res = await apiClient.get<StudyLessonDto>(`/api/lessons/${id}/study`)
   return res.data

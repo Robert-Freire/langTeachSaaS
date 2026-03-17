@@ -22,4 +22,5 @@ public class Lesson
     public Student? Student { get; set; }
     public LessonTemplate? Template { get; set; }
     public ICollection<LessonSection> Sections { get; set; } = [];
+    public LessonNote? Notes { get; set; }
 }

@@ -13,15 +13,18 @@ namespace LangTeach.Api.Controllers;
 public class StudentsController : ControllerBase
 {
     private readonly IStudentService _studentService;
+    private readonly ILessonNoteService _lessonNoteService;
     private readonly IProfileService _profileService;
     private readonly ILogger<StudentsController> _logger;
 
     public StudentsController(
         IStudentService studentService,
+        ILessonNoteService lessonNoteService,
         IProfileService profileService,
         ILogger<StudentsController> logger)
     {
         _studentService = studentService;
+        _lessonNoteService = lessonNoteService;
         _profileService = profileService;
         _logger = logger;
     }
@@ -110,6 +113,18 @@ public class StudentsController : ControllerBase
         {
             return ValidationProblem(ex.Message);
         }
+    }
+
+    [HttpGet("{studentId:guid}/lesson-history")]
+    public async Task<IActionResult> GetLessonHistory(Guid studentId, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var history = await _lessonNoteService.GetLessonHistoryAsync(teacherId, studentId, cancellationToken);
+        _logger.LogInformation(
+            "GET /api/students/{StudentId}/lesson-history. TeacherId={TeacherId} Count={Count}",
+            studentId, teacherId, history.Count);
+        return Ok(history);
     }
 
     [HttpDelete("{id:guid}")]
