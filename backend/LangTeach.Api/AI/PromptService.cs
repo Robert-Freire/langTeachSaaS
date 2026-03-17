@@ -161,6 +161,7 @@ public class PromptService : IPromptService
         return $$"""
         Generate homework tasks for the lesson on "{{topic}}". Return JSON:
         {"tasks":[{"type":"","instructions":"","examples":[""]}]}
+        Use human-readable type labels such as "Fill in the Blanks", "Sentence Writing", "Vocabulary in Context", "Matching", "Translation", or "Short Answer".
         {{lessonSummaryLine}}Include 3-5 varied tasks the student can complete independently.
         """;
     }
