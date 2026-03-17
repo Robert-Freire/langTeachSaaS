@@ -62,7 +62,12 @@ function renderDashboard() {
 describe('Dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetStudents.mockResolvedValue({ items: [], totalCount: 3 })
+    mockGetStudents.mockResolvedValue({
+      items: [
+        { id: 's1', name: 'Alice', learningLanguage: 'English', cefrLevel: 'B1', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], createdAt: '', updatedAt: '' },
+      ],
+      totalCount: 1,
+    })
     mockGetLessons.mockResolvedValue(makeLessonResponse([]))
   })
 
@@ -148,6 +153,13 @@ describe('Dashboard', () => {
     const pill = await screen.findByTestId('lesson-pill-nav-1')
     await userEvent.click(pill)
     expect(mockNavigate).toHaveBeenCalledWith('/lessons/nav-1')
+  })
+
+  it('renders schedule popover trigger in day columns', async () => {
+    renderDashboard()
+    await screen.findByTestId('week-strip')
+    const triggers = await screen.findAllByTestId('schedule-popover-trigger')
+    expect(triggers).toHaveLength(7)
   })
 
   it('shifts week on navigation button click', async () => {

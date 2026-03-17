@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { BookOpen, MessageSquare, FileText, PenLine, GraduationCap, Plus, ArrowLeft } from 'lucide-react'
 import { getLessonTemplates, createLesson, type LessonTemplate } from '../api/lessons'
@@ -27,6 +27,7 @@ const TEMPLATE_ICONS: Record<string, React.ReactNode> = {
 
 export default function LessonNew() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [step, setStep] = useState<1 | 2>(1)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
 
@@ -36,8 +37,8 @@ export default function LessonNew() {
   const [topic, setTopic] = useState('')
   const [duration, setDuration] = useState('60')
   const [objectives, setObjectives] = useState('')
-  const [studentId, setStudentId] = useState<string | undefined>()
-  const [scheduledAt, setScheduledAt] = useState('')
+  const [studentId, setStudentId] = useState<string | undefined>(searchParams.get('studentId') ?? undefined)
+  const [scheduledAt, setScheduledAt] = useState(searchParams.get('scheduledAt') ?? '')
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const { data: templates, isLoading: templatesLoading, isError: templatesError, refetch: refetchTemplates } = useQuery({
