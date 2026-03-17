@@ -11,6 +11,7 @@ export interface GenerateRequest {
   topic: string
   style?: string
   existingNotes?: string
+  direction?: string
 }
 
 export type GenerateStatus = 'idle' | 'streaming' | 'done' | 'error'

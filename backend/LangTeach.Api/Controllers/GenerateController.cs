@@ -125,7 +125,8 @@ public class GenerateController : ControllerBase
             StudentInterests: student?.Interests.ToArray(),
             StudentGoals: student?.LearningGoals.ToArray(),
             StudentWeaknesses: student?.Weaknesses.ToArray(),
-            ExistingNotes: request.ExistingNotes
+            ExistingNotes: request.ExistingNotes,
+            Direction: request.Direction
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -245,7 +246,8 @@ public class GenerateController : ControllerBase
             StudentInterests: student?.Interests.ToArray(),
             StudentGoals: student?.LearningGoals.ToArray(),
             StudentWeaknesses: student?.Weaknesses.ToArray(),
-            ExistingNotes: request.ExistingNotes
+            ExistingNotes: request.ExistingNotes,
+            Direction: request.Direction
         );
 
         var claudeRequest = buildPrompt(ctx);

@@ -37,6 +37,7 @@ public class PromptService : IPromptService
         var studentName   = Sanitize(ctx.StudentName);
         var nativeLang    = Sanitize(ctx.StudentNativeLanguage);
         var existingNotes = Sanitize(ctx.ExistingNotes);
+        var direction     = Sanitize(ctx.Direction);
 
         var sb = new StringBuilder();
 
@@ -87,6 +88,12 @@ public class PromptService : IPromptService
             sb.AppendLine();
             sb.AppendLine($"The teacher has already written these notes for context: {existingNotes}");
             sb.AppendLine("Build on these notes rather than replacing them entirely.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(direction))
+        {
+            sb.AppendLine();
+            sb.AppendLine($"IMPORTANT DIRECTION: {direction}. Adjust the generated content accordingly while keeping the same topic and JSON format.");
         }
 
         sb.AppendLine();

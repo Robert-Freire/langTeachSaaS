@@ -23,5 +23,6 @@ public record GenerationContext(
     string[]? StudentGoals,
     string[]? StudentWeaknesses,
     string? ExistingNotes,
-    string? LessonSummary = null
+    string? LessonSummary = null,
+    string? Direction = null
 );

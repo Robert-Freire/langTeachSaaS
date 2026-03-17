@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 
 const SECTION_DEFAULT_TASK: Record<SectionType, ContentBlockType> = {
@@ -44,6 +45,7 @@ interface GeneratePanelProps {
   sectionType: SectionType
   initialTaskType?: ContentBlockType
   initialStyle?: string
+  initialDirection?: string
   lessonContext: {
     language: string
     cefrLevel: string
@@ -61,12 +63,14 @@ export function GeneratePanel({
   sectionType,
   initialTaskType,
   initialStyle,
+  initialDirection,
   lessonContext,
   onInsert,
   onClose,
 }: GeneratePanelProps) {
   const [taskType, setTaskType] = useState<ContentBlockType>(initialTaskType ?? SECTION_DEFAULT_TASK[sectionType])
   const [style, setStyle] = useState(initialStyle ?? 'Conversational')
+  const [direction, setDirection] = useState<string | undefined>(initialDirection)
   const [inserting, setInserting] = useState(false)
   const [insertError, setInsertError] = useState<string | null>(null)
 
@@ -80,7 +84,8 @@ export function GeneratePanel({
     style,
     studentId: lessonContext.studentId ?? undefined,
     existingNotes: lessonContext.existingNotes ?? undefined,
-  }), [lessonId, lessonContext, style])
+    direction,
+  }), [lessonId, lessonContext, style, direction])
 
   const handleGenerate = () => {
     generate(taskType, request)
@@ -153,6 +158,22 @@ export function GeneratePanel({
           />
         </div>
       </div>
+
+      {direction && (
+        <div className="flex items-center gap-1.5" data-testid="direction-badge">
+          <span className="text-xs text-zinc-500">Direction:</span>
+          <Badge variant="outline" className="text-xs border-indigo-200 bg-indigo-50 text-indigo-700">
+            {direction}
+            <button
+              onClick={() => setDirection(undefined)}
+              className="ml-1 text-indigo-400 hover:text-indigo-700"
+              aria-label="Clear direction"
+            >
+              &times;
+            </button>
+          </Badge>
+        </div>
+      )}
 
       {isStreaming && (
         <div className="flex items-center gap-3 rounded-md bg-white border border-indigo-100 px-4 py-5" role="status" aria-live="polite" data-testid="generate-output">

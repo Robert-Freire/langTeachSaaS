@@ -125,6 +125,47 @@ public class PromptServiceTests
         req.UserPrompt.Should().NotContain("This homework follows a lesson where:");
     }
 
+    // --- Direction block ---
+
+    [Fact]
+    public void SystemPrompt_IncludesDirectionBlock_WhenDirectionProvided()
+    {
+        var ctx = BaseCtx() with { Direction = "Make it easier" };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("IMPORTANT DIRECTION");
+        req.SystemPrompt.Should().Contain("Make it easier");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsDirectionBlock_WhenDirectionIsNull()
+    {
+        var req = _sut.BuildVocabularyPrompt(BaseCtx());
+
+        req.SystemPrompt.Should().NotContain("IMPORTANT DIRECTION");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsDirectionBlock_WhenDirectionIsWhitespace()
+    {
+        var ctx = BaseCtx() with { Direction = "   " };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("IMPORTANT DIRECTION");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsDirectionBlock_WhenDirectionIsEmpty()
+    {
+        var ctx = BaseCtx() with { Direction = "" };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("IMPORTANT DIRECTION");
+    }
+
     // --- MaxTokens ---
 
     [Fact]

@@ -88,7 +88,7 @@ export default function LessonEditor() {
   // Which section has the generate panel open (by SectionType)
   const [generateOpen, setGenerateOpen] = useState<SectionType | null>(null)
   // When regenerating: which block is being replaced
-  const [regenerateParams, setRegenerateParams] = useState<{ sectionType: SectionType; blockType: ContentBlockType; style?: string } | null>(null)
+  const [regenerateParams, setRegenerateParams] = useState<{ sectionType: SectionType; blockType: ContentBlockType; style?: string; direction?: string } | null>(null)
 
   const { data: lesson, isLoading, isError } = useQuery({
     queryKey: ['lesson', id],
@@ -596,12 +596,12 @@ export default function LessonEditor() {
                     lessonId={id!}
                     onUpdate={handleBlockUpdate}
                     onDelete={(blockId) => handleBlockDelete(blockId, sectionId!)}
-                    onRegenerate={(blockType, params) => {
+                    onRegenerate={(blockType, params, direction) => {
                       let style: string | undefined
                       if (params) {
                         try { style = (JSON.parse(params) as { style?: string }).style } catch { /* ignore */ }
                       }
-                      setRegenerateParams({ sectionType: type, blockType: blockType as ContentBlockType, style })
+                      setRegenerateParams({ sectionType: type, blockType: blockType as ContentBlockType, style, direction })
                       setGenerateOpen(type)
                     }}
                   />
@@ -614,6 +614,7 @@ export default function LessonEditor() {
                     sectionType={type}
                     initialTaskType={regenerateParams?.sectionType === type ? regenerateParams.blockType : undefined}
                     initialStyle={regenerateParams?.sectionType === type ? regenerateParams.style : undefined}
+                    initialDirection={regenerateParams?.sectionType === type ? regenerateParams.direction : undefined}
                     lessonContext={{
                       language: lesson.language,
                       cefrLevel: lesson.cefrLevel,

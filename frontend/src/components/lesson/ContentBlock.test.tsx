@@ -103,6 +103,47 @@ describe('ContentBlock — parsedContent derivation', () => {
   })
 })
 
+describe('ContentBlock — regenerate with direction', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('calls onRegenerate without direction when clicking Regenerate button', async () => {
+    const block = makeBlock({ generationParams: '{"style":"Formal"}' })
+    const onRegenerate = vi.fn()
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={onRegenerate}
+      />
+    )
+
+    await userEvent.click(screen.getByTestId('regenerate-btn'))
+    expect(onRegenerate).toHaveBeenCalledWith('conversation', '{"style":"Formal"}', undefined)
+  })
+
+  it('calls onRegenerate with direction when clicking a direction option', async () => {
+    const block = makeBlock({ generationParams: '{"style":"Formal"}' })
+    const onRegenerate = vi.fn()
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={onRegenerate}
+      />
+    )
+
+    await userEvent.click(screen.getByTestId('direction-trigger'))
+    await waitFor(() => expect(screen.getByTestId('direction-options')).toBeVisible())
+
+    await userEvent.click(screen.getByTestId('direction-make-it-easier'))
+    expect(onRegenerate).toHaveBeenCalledWith('conversation', '{"style":"Formal"}', 'Make it easier')
+  })
+})
+
 describe('ContentBlock — dirty / save state', () => {
   beforeEach(() => vi.clearAllMocks())
 

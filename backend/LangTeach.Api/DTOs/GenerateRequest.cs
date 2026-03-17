@@ -21,4 +21,7 @@ public class GenerateRequest
     public Guid? StudentId { get; set; }
 
     public string? ExistingNotes { get; set; }
+
+    [MaxLength(200)]
+    public string? Direction { get; set; }
 }
