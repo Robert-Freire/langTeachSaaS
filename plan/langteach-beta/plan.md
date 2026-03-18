@@ -35,7 +35,7 @@
 | 2A.1 Typed Content | T15.1, T15.2, T15.3, T15.4, T15.5, T15.6, T15.7 | T15.1-T15.6 DONE, T15.7 pending |
 | 2A.2 Conversation UX | T15.4a (classroom), T15.4b (AI chat), T15.4c (voice) | T15.4a DONE, T15.4b/c: future |
 | 2B Make It Real | T16-T19, T19.1, T20, T21, T24-T25 | T16 DONE, T17 DONE, T19 DONE (PR #60), T18/T19.1/T20/T21/T24-T25 pending |
-| 2C Polish | (T20 moved to 2B) | -- |
+| 2C Polish | T20.1 (landing page) | pending |
 | Demo Prep | T23 | pending |
 | Post-Demo | T26, Student Recurring Schedule, Classes Entity | pending |
 
@@ -1266,9 +1266,47 @@ Returns 3 suggestions, each with a rationale explaining why that topic is approp
 
 ### Phase 2C — Polish & Delight
 
-If time allows. Each adds incremental value but isn't required for the demo.
-
 T20 (Brand & Visual Polish) has been moved up to Phase 2B since it now includes the calendar date picker UX improvement needed for T19.1.
+
+---
+
+#### T20.1 — Public Landing Page
+
+**Priority**: Should | **Effort**: 0.5 day | **Depends on**: T20 (brand assets)
+
+The app currently has no public-facing page. Every route is behind `ProtectedRoute`, which immediately redirects unauthenticated users to Auth0's generic login screen. For the demo, this means the brother's first impression is an Auth0 form, not the product. For future growth (Phase 2), there's no self-service entry point for new teachers.
+
+**What this delivers:**
+A single public landing page at `/` for unauthenticated users that:
+- Shows the LangTeach brand (logo, tagline from T20)
+- Communicates the value proposition: 3 concise benefit blocks (structured lessons, AI-powered personalization, student-ready output)
+- "Get Started Free" primary CTA that triggers Auth0 in sign-up mode (`loginWithRedirect({ authorizationParams: { screen_hint: 'signup' } })`)
+- "Log In" secondary link for returning users (triggers standard Auth0 login)
+- Optionally shows the 3 pricing tiers (Free / Solo $19 / Pro $39) as social proof of a real business model
+- Uses existing design system (indigo-600 primary, Geist font, zinc neutrals, Lucide icons)
+
+**Router changes:**
+- Split the router: `/` renders the landing page for unauthenticated users, redirects to `/dashboard` for authenticated users
+- All other routes remain behind `ProtectedRoute`
+- This establishes the public/private route split that Phase 3 will need (shareable links, student portal)
+
+**What this is NOT:**
+- Not a full marketing site (no testimonials, case studies, feature galleries)
+- Not the onboarding wizard (that's Phase 2, requires usage limits and guided first-run flow)
+- Not a student-facing sign-up (Phase 3, student portal)
+
+**Why it matters for the demo:**
+The vision doc's success metric is: "He sees not just a tool, but a platform with a clear vision for growth." A branded landing page with pricing tiers and a sign-up CTA signals product maturity. The demo script can start with "Here's what a new teacher sees" before logging in, instead of jumping straight into Auth0.
+
+**Why it matters for Phase 2:**
+Phase 2's goal is "make the beta safe to put in real teachers' hands." Self-service discovery and sign-up is a prerequisite. The landing page built here becomes the foundation; Phase 2 adds the post-registration onboarding wizard (req A3: languages taught, CEFR prefs) and free-tier messaging (req A4: "25 free generations/month, no credit card").
+
+**Files involved (estimated):**
+- `frontend/src/pages/LandingPage.tsx` (new)
+- `frontend/src/App.tsx` (router: public `/` route, authenticated redirect to `/dashboard`)
+- `frontend/src/components/ProtectedRoute.tsx` (minor: ensure it doesn't redirect when on landing page)
+
+**Done when**: Unauthenticated users see a branded landing page at `/`; "Get Started Free" opens Auth0 sign-up; "Log In" opens Auth0 login; authenticated users hitting `/` are redirected to `/dashboard`; existing authenticated routes unaffected.
 
 ---
 
@@ -1292,29 +1330,31 @@ This is not a code task. It's preparation for showing the beta to the teacher.
 
 **Demo script (7-10 minute walkthrough):**
 
-1. **Open** (20s): Log in. Dashboard shows the week at a glance: Maria on Tuesday (green, ready), Pedro on Wednesday (amber, needs prep), a new student on Friday. One unscheduled draft below. "This is your teaching week. You can see what's coming and what still needs work." *(T19 delivers the dashboard layout; T19.1 adds the "+" scheduling from dashboard if completed before demo.)*
+1. **First impression** (15s): Open the app (unauthenticated). The landing page shows the brand, value proposition, and pricing tiers. "This is what a new teacher sees. They can sign up free, no credit card." Click "Get Started Free" to enter. *(T20.1 delivers the landing page; skip this step if T20.1 is not completed before demo.)*
 
-2. **Student context** (30s): Open a student profile (e.g., "Maria, B1 Spanish, interested in cooking and travel, struggles with past tenses, native Portuguese speaker"). "The platform knows your students."
+2. **Dashboard** (20s): After login, the dashboard shows the week at a glance: Maria on Tuesday (green, ready), Pedro on Wednesday (amber, needs prep), a new student on Friday. One unscheduled draft below. "This is your teaching week. You can see what's coming and what still needs work." *(T19 delivers the dashboard layout; T19.1 adds the "+" scheduling from dashboard if completed before demo.)*
 
-3. **Create lesson** (30s): New lesson from Grammar template, link to Maria, topic: "ordering at a restaurant." "30 seconds to set up."
+3. **Student context** (30s): Open a student profile (e.g., "Maria, B1 Spanish, interested in cooking and travel, struggles with past tenses, native Portuguese speaker"). "The platform knows your students."
 
-4. **The magic** (60s): Click "Generate Full Lesson." Watch all 5 sections stream in with personalized content. Point out: vocabulary renders as a clean table, grammar as a structured explanation with examples and common mistakes, exercises as a formatted quiz, conversation as a dialogue, homework as task cards. "This would have taken you 20 minutes."
+4. **Create lesson** (30s): New lesson from Grammar template, link to Maria, topic: "ordering at a restaurant." "30 seconds to set up."
 
-5. **Content types in action** (45s): Show the vocabulary section as an editable table (add a word, edit a definition). Show the exercises section with answer keys visible. "Each content type has its own editor. You're working with vocabulary as vocabulary, not as a wall of text."
+5. **The magic** (60s): Click "Generate Full Lesson." Watch all 5 sections stream in with personalized content. Point out: vocabulary renders as a clean table, grammar as a structured explanation with examples and common mistakes, exercises as a formatted quiz, conversation as a dialogue, homework as task cards. "This would have taken you 20 minutes."
 
-6. **Edit and refine** (30s): Edit a vocabulary word, regenerate the exercises section with "make it easier." "You're in control. The AI proposes, you decide."
+6. **Content types in action** (45s): Show the vocabulary section as an editable table (add a word, edit a definition). Show the exercises section with answer keys visible. "Each content type has its own editor. You're working with vocabulary as vocabulary, not as a wall of text."
 
-7. **The student experience** (60s): Switch to the student view of the same lesson. "This is what your student will see when the student portal launches. Right now you can preview it; soon students will log in and access their lessons directly." Show vocabulary as flippable flashcards (click to reveal definition). Show exercises as an interactive quiz (fill in blanks, select multiple choice, see score). Show conversation scenarios as classroom activity cards: tap a role to mark it as "You," tap key phrases to check them off during practice. "Same data, completely different experience. You create once, the student learns interactively. The conversation cards are designed for pair work in class."
+7. **Edit and refine** (30s): Edit a vocabulary word, regenerate the exercises section with "make it easier." "You're in control. The AI proposes, you decide."
 
-8. **Two exports** (20s): Click "Export PDF > Student Handout," show the clean printable without answers. Then "Teacher Copy" with answer keys and timing. "One for you, one for the student."
+8. **The student experience** (60s): Switch to the student view of the same lesson. "This is what your student will see when the student portal launches. Right now you can preview it; soon students will log in and access their lessons directly." Show vocabulary as flippable flashcards (click to reveal definition). Show exercises as an interactive quiz (fill in blanks, select multiple choice, see score). Show conversation scenarios as classroom activity cards: tap a role to mark it as "You," tap key phrases to check them off during practice. "Same data, completely different experience. You create once, the student learns interactively. The conversation cards are designed for pair work in class."
 
-9. **Adapt for Pedro** (30s): Click "Adapt for Another Student," select Pedro (A2, English speaker, likes football). Watch the lesson regenerate at A2 with football examples. "Same topic, different student, zero extra work."
+9. **Two exports** (20s): Click "Export PDF > Student Handout," show the clean printable without answers. Then "Teacher Copy" with answer keys and timing. "One for you, one for the student."
 
-10. **Student history** (20s): Show lesson notes from a previous lesson on Maria's profile. "It remembers what you covered."
+10. **Adapt for Pedro** (30s): Click "Adapt for Another Student," select Pedro (A2, English speaker, likes football). Watch the lesson regenerate at A2 with football examples. "Same topic, different student, zero extra work."
 
-11. **What's next?** (15s): Click "Suggest Next Topic" on Maria's profile. Show 3 AI suggestions with rationale (e.g., "Maria hasn't covered future tenses yet"). Click one to pre-fill a new lesson. "It thinks ahead so you don't have to."
+11. **Student history** (20s): Show lesson notes from a previous lesson on Maria's profile. "It remembers what you covered."
 
-12. **The vision** (30s): "What you just saw is five content types, each with its own renderer. The architecture supports any number: pronunciation guides, writing prompts, infographics, cultural notes. Each one is just a new type in the system. And every type works the same way: teacher creates, AI assists, student interacts. For conversations, the next step is an AI practice partner: the student picks a role and chats with the AI instead of needing a classmate. That's already planned."
+12. **What's next?** (15s): Click "Suggest Next Topic" on Maria's profile. Show 3 AI suggestions with rationale (e.g., "Maria hasn't covered future tenses yet"). Click one to pre-fill a new lesson. "It thinks ahead so you don't have to."
+
+13. **The vision** (30s): "What you just saw is five content types, each with its own renderer. The architecture supports any number: pronunciation guides, writing prompts, infographics, cultural notes. Each one is just a new type in the system. And every type works the same way: teacher creates, AI assists, student interacts. For conversations, the next step is an AI practice partner: the student picks a role and chats with the AI instead of needing a classmate. That's already planned."
 
 **Seed data to prepare:**
 - 3-5 realistic student profiles with varied levels (A1 to C1), languages, interests, and weaknesses
@@ -1524,6 +1564,7 @@ A "Live Lesson" mode where teacher and student share a video call with an intera
 | Usage tracking / free-tier limits | Phase 2 T8 | Monetization infrastructure. No payments in beta. |
 | GenerationCache table | Phase 2 schema | Not needed without caching |
 | GenerationUsage table | Phase 2 schema | Not needed without limits |
+| Sign-up onboarding wizard (req A3) | Phase 2 | Landing page (T20.1) covers the demo entry point. Full post-registration wizard (languages, CEFR prefs, first student, first lesson) belongs in Phase 2 alongside usage limits. |
 | Stripe / payments | Phase 4 | No payments until beta validates demand |
 | Content library | Phase 3 | "Save to library" isn't the demo moment. Lessons already persist. |
 | Shareable lesson links | Phase 3 | PDF export covers the sharing need for now |
@@ -1577,8 +1618,9 @@ T19 (dashboard v2 + ScheduledAt migration) ─── T17 fixup (PDF date) │
       └── T18 benefits (sort by ScheduledAt)                        │
       └── T25 benefits (schedule-aware suggestions)                 │
 T20 (brand polish) ── independent                                   │
+      └── T20.1 (landing page, depends on T20 brand assets)         │
                                                                │
-T23 (demo prep) ── LAST before demo ──────────────────────────┘
+T20.1 + all features ──── T23 (demo prep) ── LAST before demo ┘
                                                                │
 T23 ──── T26 (section URL attachments, post-demo) ────────────┘
 ```
@@ -1600,8 +1642,9 @@ T23 ──── T26 (section URL attachments, post-demo) ───────�
 14. T18 + T21 (parallel, after T19 lands the migration)
 15. T24 + T25 (parallel, after T16 and T18)
 16. T20 (as time allows)
-17. T23 (always last, seed data includes ScheduledAt values for demo week)
-18. T26 (section URL attachments, post-demo, informed by brother's feedback)
+17. T20.1 (landing page, after T20 brand assets exist)
+18. T23 (always last, seed data includes ScheduledAt values for demo week)
+19. T26 (section URL attachments, post-demo, informed by brother's feedback)
 19. **Post-beta:** T15.4b (AI conversation practice), then T15.4c (voice)
 
 ---

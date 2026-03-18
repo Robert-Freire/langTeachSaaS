@@ -71,9 +71,10 @@ Future                 Marketplace, mobile, analytics, integrations
 **Post-Demo (T26)**
 - Section URL attachments (YouTube, articles, online resources) to make each lesson a complete teaching workspace
 
-**2C: Polish (T20, T22)**
+**2C: Polish (T20, T20.1)**
 - Brand, favicon, consistent visual identity
 - Loading states, empty states, skeleton screens
+- Public landing page with value proposition and sign-up CTA (T20.1, feeds demo first impression)
 
 **Demo Prep (T23)**
 - Seed data, demo script, talking points
@@ -99,6 +100,7 @@ Future                 Marketplace, mobile, analytics, integrations
 | **Monitoring** | Generation analytics (tokens, latency, model usage) | Understand costs and quality |
 | **Error handling** | Retry logic, graceful degradation when Claude is down | Teachers can't have a blank screen mid-lesson |
 | **Performance** | Optimistic UI updates, prefetching, lazy loading | Feels fast at scale |
+| **Sign-up & onboarding** | Branded sign-up flow (Auth0 sign-up hint, welcome screen), onboarding wizard (languages taught, CEFR prefs, first student, first lesson), free-tier messaging ("25 free AI generations/month, no credit card") | Req A1/A3/A4. Self-service acquisition for real teachers. Builds on landing page from Beta T20.1. Target: time-to-first-lesson < 5 min after sign-up. |
 | **Multi-tenant hardening** | Row-level security audit, data isolation verification | Ready for multiple real teachers |
 | **New content types** | Reading passages, grammar explanations, homework | Expand the type system based on beta feedback |
 | **File uploads** | Attach images, PDFs, and audio files to lesson sections (Azure Blob storage) | Complements URL attachments (added post-demo in beta) to make the platform a complete teaching workspace |
