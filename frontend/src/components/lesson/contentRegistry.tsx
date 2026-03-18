@@ -4,6 +4,7 @@ import { ExercisesRenderer } from './renderers/ExercisesRenderer'
 import { FreeTextRenderer } from './renderers/FreeTextRenderer'
 import { GrammarRenderer } from './renderers/GrammarRenderer'
 import { HomeworkRenderer } from './renderers/HomeworkRenderer'
+import { ReadingRenderer } from './renderers/ReadingRenderer'
 import { VocabularyRenderer } from './renderers/VocabularyRenderer'
 
 export interface EditorProps {
@@ -33,6 +34,7 @@ const registry: Partial<Record<ContentBlockType, ContentRenderer>> = {
   exercises: ExercisesRenderer,
   grammar: GrammarRenderer,
   homework: HomeworkRenderer,
+  reading: ReadingRenderer,
   vocabulary: VocabularyRenderer,
 }
 

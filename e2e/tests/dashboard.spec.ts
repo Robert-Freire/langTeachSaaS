@@ -188,8 +188,15 @@ test('schedule from dashboard via create new', async ({ browser }) => {
     await page.getByTestId('schedule-student-select').click()
     await page.getByRole('option', { name: student.name }).click()
 
-    // Set time
-    await page.getByTestId('schedule-time-input').fill('14:30')
+    // Set time via TimePicker selects (hour then minute)
+    const timePicker = page.getByTestId('schedule-time-input')
+    const selects = timePicker.locator('button[role="combobox"]')
+    // Set hour to 14
+    await selects.first().click()
+    await page.getByRole('option', { name: '14' }).click()
+    // Set minute to 30
+    await selects.last().click()
+    await page.getByRole('option', { name: '30' }).click()
 
     // Click Create New Lesson
     await page.getByTestId('schedule-create-new').click()
@@ -200,11 +207,11 @@ test('schedule from dashboard via create new', async ({ browser }) => {
     expect(url.searchParams.get('studentId')).toBe(student.id)
     expect(url.searchParams.get('scheduledAt')).toContain('T14:30')
 
-    // Verify the scheduled date input is pre-filled
-    const dateInput = page.getByTestId('input-scheduled-at')
-    // Go to step 2 first by clicking blank template
+    // Go to step 2 by clicking blank template
     await page.getByTestId('template-blank').click()
-    await expect(dateInput).toHaveValue(/2026.*T14:30/, { timeout: UI_TIMEOUT })
+    // Verify the scheduled date picker shows the pre-filled time
+    const dateBtn = page.getByTestId('input-scheduled-at')
+    await expect(dateBtn).toContainText(/0?2:30\s?PM/i, { timeout: UI_TIMEOUT })
   } finally {
     await deleteStudentViaApi(page, student.id)
     await context.close()
