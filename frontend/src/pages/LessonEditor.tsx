@@ -92,12 +92,14 @@ export default function LessonEditor() {
   const [generateOpen, setGenerateOpen] = useState<SectionType | null>(null)
   // Whether the open panel is actively streaming
   const [isGenerating, setIsGenerating] = useState(false)
-  // Reset streaming state whenever the panel is closed through any code path
-  useEffect(() => {
-    if (generateOpen === null) setIsGenerating(false)
-  }, [generateOpen])
   // When regenerating: which block is being replaced
   const [regenerateParams, setRegenerateParams] = useState<{ sectionType: SectionType; blockType: ContentBlockType; style?: string; direction?: string } | null>(null)
+
+  const closeGeneratePanel = useCallback(() => {
+    setGenerateOpen(null)
+    setRegenerateParams(null)
+    setIsGenerating(false)
+  }, [])
 
   const { data: lesson, isLoading, isError } = useQuery({
     queryKey: ['lesson', id],
@@ -343,13 +345,10 @@ export default function LessonEditor() {
           delete next[type]
           return next
         })
-        if (generateOpen === type) {
-          setGenerateOpen(null)
-          setRegenerateParams(null)
-        }
+        if (generateOpen === type) closeGeneratePanel()
       },
     })
-  }, [lesson, sectionNotes, doUpdateSections, generateOpen])
+  }, [lesson, sectionNotes, doUpdateSections, generateOpen, closeGeneratePanel])
 
   const students = studentsData?.items ?? []
 
@@ -654,13 +653,12 @@ export default function LessonEditor() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        if (isGenerateOpen && isGenerating) {
-                          // Closing the panel unmounts GeneratePanel, which triggers the
-                          // useEffect cleanup in useGenerate to abort the in-flight SSE request.
-                          setGenerateOpen(null)
+                        if (isGenerateOpen) {
+                          // Closing the panel unmounts GeneratePanel, which triggers abort cleanup in useGenerate.
+                          closeGeneratePanel()
                         } else {
                           setRegenerateParams(null)
-                          setGenerateOpen(isGenerateOpen ? null : type)
+                          setGenerateOpen(type)
                         }
                       }}
                       disabled={!isGenerateOpen && isGenerating}
@@ -751,10 +749,7 @@ export default function LessonEditor() {
                       handleBlockInsert(block)
                       setRegenerateParams(null)
                     }}
-                    onClose={() => {
-                      setGenerateOpen(null)
-                      setRegenerateParams(null)
-                    }}
+                    onClose={closeGeneratePanel}
                   />
                 )}
               </CardContent>
