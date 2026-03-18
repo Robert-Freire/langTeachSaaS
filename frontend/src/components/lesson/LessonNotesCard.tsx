@@ -35,6 +35,8 @@ export function LessonNotesCard({ lessonId, studentId }: LessonNotesCardProps) {
     enabled: !!studentId,
   })
 
+  // Sync server data to local form state
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (notes) {
       const loaded = {
@@ -47,6 +49,7 @@ export function LessonNotesCard({ lessonId, studentId }: LessonNotesCardProps) {
       lastSavedRef.current = JSON.stringify(loaded)
     }
   }, [notes])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     return () => {

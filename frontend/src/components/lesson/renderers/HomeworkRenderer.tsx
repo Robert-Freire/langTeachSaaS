@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { isHomeworkContent } from '../../../types/contentTypes'
 import type { HomeworkTask } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'

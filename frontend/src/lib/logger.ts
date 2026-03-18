@@ -6,7 +6,11 @@ function log(level: Level, context: string, message: string, data?: unknown) {
   if (!isDev && level === 'debug') return
   const prefix = `[${new Date().toISOString()}] [${level.toUpperCase()}] [${context}]`
   const fn = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log
-  data !== undefined ? fn(prefix, message, data) : fn(prefix, message)
+  if (data !== undefined) {
+    fn(prefix, message, data)
+  } else {
+    fn(prefix, message)
+  }
 }
 
 export const logger = {

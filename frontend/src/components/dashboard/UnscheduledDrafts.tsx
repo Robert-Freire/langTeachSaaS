@@ -18,10 +18,9 @@ export function UnscheduledDrafts({ lessons }: UnscheduledDraftsProps) {
   const [expanded, setExpanded] = useState(false)
   const [showAll, setShowAll] = useState(false)
 
-  // Auto-expand when unscheduled drafts first appear
-  useEffect(() => {
-    if (unscheduled.length > 0) setExpanded(true)
-  }, [unscheduled.length])
+  // Auto-expand when unscheduled drafts first appear (sync with derived data)
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { if (unscheduled.length > 0) setExpanded(true) }, [unscheduled.length])
 
   if (unscheduled.length === 0) return null
 

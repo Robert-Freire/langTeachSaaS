@@ -44,6 +44,8 @@ export default function Settings() {
     logger.info('Settings', 'settings page loaded')
   }, [])
 
+  // Sync server profile to local form state
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.displayName)
@@ -52,6 +54,7 @@ export default function Settings() {
       setPreferredStyle(profile.preferredStyle)
     }
   }, [profile])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function toggleItem(list: string[], setList: (v: string[]) => void, value: string) {
     setList(list.includes(value) ? list.filter(x => x !== value) : [...list, value])

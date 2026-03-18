@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useRef, useMemo, useEffect } from 'react'
 import { isExercisesContent } from '../../../types/contentTypes'
 import type {
@@ -15,12 +16,27 @@ const sectionHeadingClass = 'text-xs font-semibold uppercase tracking-wide text-
 let nextId = 0
 function uid() { return nextId++ }
 
+function syncIds(ids: number[], targetLength: number) {
+  while (ids.length < targetLength) ids.push(uid())
+  return ids
+}
+
 function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   const fibIdsRef = useRef<number[]>([])
   const mcIdsRef = useRef<number[]>([])
   const matchIdsRef = useRef<number[]>([])
 
-  if (!isExercisesContent(parsedContent)) {
+  const content = isExercisesContent(parsedContent) ? parsedContent as ExercisesContent : null
+
+  // Sync stable IDs (must run before early return so hooks are unconditional)
+  // Ref access during memo is intentional: these are append-only ID arrays used as React keys
+  /* eslint-disable react-hooks/refs */
+  const fibIds = useMemo(() => syncIds(fibIdsRef.current, content?.fillInBlank.length ?? 0), [content?.fillInBlank.length])
+  const mcIds = useMemo(() => syncIds(mcIdsRef.current, content?.multipleChoice.length ?? 0), [content?.multipleChoice.length])
+  const matchIds = useMemo(() => syncIds(matchIdsRef.current, content?.matching.length ?? 0), [content?.matching.length])
+  /* eslint-enable react-hooks/refs */
+
+  if (!content) {
     return (
       <textarea
         value={rawContent}
@@ -31,13 +47,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
     )
   }
 
-  const content = parsedContent as ExercisesContent
   const { fillInBlank, multipleChoice, matching } = content
-
-  // Sync stable IDs
-  while (fibIdsRef.current.length < fillInBlank.length) fibIdsRef.current.push(uid())
-  while (mcIdsRef.current.length < multipleChoice.length) mcIdsRef.current.push(uid())
-  while (matchIdsRef.current.length < matching.length) matchIdsRef.current.push(uid())
 
   const emit = (next: ExercisesContent) => onChange(JSON.stringify(next))
 
@@ -127,7 +137,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
           </thead>
           <tbody>
             {fillInBlank.map((item, i) => (
-              <tr key={fibIdsRef.current[i]} className="hover:bg-zinc-50">
+              <tr key={fibIds[i]} className="hover:bg-zinc-50">
                 <td className="border border-zinc-200 p-1">
                   <input value={item.sentence} onChange={(e) => updateFib(i, 'sentence', e.target.value)} className={inputClass} />
                 </td>
@@ -151,7 +161,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
       <p className={sectionHeadingClass}>Multiple Choice</p>
       <div className="space-y-3">
         {multipleChoice.map((q, qi) => (
-          <div key={mcIdsRef.current[qi]} className="border border-zinc-200 rounded p-3 space-y-2">
+          <div key={mcIds[qi]} className="border border-zinc-200 rounded p-3 space-y-2">
             <div className="flex items-start gap-2">
               <input
                 value={q.question}
@@ -166,7 +176,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
                 <div key={oi} className="flex items-center gap-2">
                   <input
                     type="radio"
-                    name={`mc-correct-${mcIdsRef.current[qi]}`}
+                    name={`mc-correct-${mcIds[qi]}`}
                     checked={q.answer === opt && opt !== ''}
                     onChange={() => setMcAnswer(qi, opt)}
                     className="accent-green-600 shrink-0"
@@ -201,7 +211,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
           </thead>
           <tbody>
             {matching.map((pair, i) => (
-              <tr key={matchIdsRef.current[i]} className="hover:bg-zinc-50">
+              <tr key={matchIds[i]} className="hover:bg-zinc-50">
                 <td className="border border-zinc-200 p-1">
                   <input value={pair.left} onChange={(e) => updateMatch(i, 'left', e.target.value)} className={inputClass} />
                 </td>
@@ -307,7 +317,8 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null)
   const [checked, setChecked] = useState(false)
 
-  // Reset all answers when the content block changes (e.g. teacher edits the exercise)
+  // Reset all answers when the content block changes (sync with external content updates)
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setFibAnswers([])
     setMcAnswers([])
@@ -315,6 +326,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     setSelectedLeft(null)
     setChecked(false)
   }, [rawContent])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Extract matching before the early return so useMemo is always called (Rules of Hooks)
   const validContent = isExercisesContent(parsedContent) ? parsedContent as ExercisesContent : null
