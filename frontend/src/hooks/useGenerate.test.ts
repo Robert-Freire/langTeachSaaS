@@ -134,4 +134,31 @@ describe('useGenerate', () => {
 
     await waitFor(() => expect(result.current.status).toBe('idle'))
   })
+
+  it('aborts the in-flight request when the hook unmounts during streaming', async () => {
+    let requestAborted = false
+
+    server.use(
+      http.post(SSE_URL, async ({ request }) => {
+        request.signal.addEventListener('abort', () => { requestAborted = true })
+        // Never resolves — simulates a slow stream
+        await new Promise(() => {})
+        return new HttpResponse(null)
+      }),
+    )
+
+    const { result, unmount } = renderHook(() => useGenerate())
+
+    act(() => {
+      result.current.generate('vocabulary', validRequest)
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('streaming'))
+
+    act(() => {
+      unmount()
+    })
+
+    await waitFor(() => expect(requestAborted).toBe(true))
+  })
 })

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Copy, Trash2, UserPlus, ChevronDown, ChevronUp, Save, Sparkles, CalendarPlus, Plus } from 'lucide-react'
+import { Copy, Trash2, UserPlus, ChevronDown, ChevronUp, Save, Sparkles, Square, CalendarPlus, Plus } from 'lucide-react'
 import {
   getLesson, updateLesson, updateSections, deleteLesson, duplicateLesson,
   type Lesson, type LessonStatus, type SectionType,
@@ -90,8 +90,16 @@ export default function LessonEditor() {
   const [contentBlocks, setContentBlocks] = useState<Record<string, ContentBlockDto[]>>({})
   // Which section has the generate panel open (by SectionType)
   const [generateOpen, setGenerateOpen] = useState<SectionType | null>(null)
+  // Whether the open panel is actively streaming
+  const [isGenerating, setIsGenerating] = useState(false)
   // When regenerating: which block is being replaced
   const [regenerateParams, setRegenerateParams] = useState<{ sectionType: SectionType; blockType: ContentBlockType; style?: string; direction?: string } | null>(null)
+
+  const closeGeneratePanel = useCallback(() => {
+    setGenerateOpen(null)
+    setRegenerateParams(null)
+    setIsGenerating(false)
+  }, [])
 
   const { data: lesson, isLoading, isError } = useQuery({
     queryKey: ['lesson', id],
@@ -337,13 +345,10 @@ export default function LessonEditor() {
           delete next[type]
           return next
         })
-        if (generateOpen === type) {
-          setGenerateOpen(null)
-          setRegenerateParams(null)
-        }
+        if (generateOpen === type) closeGeneratePanel()
       },
     })
-  }, [lesson, sectionNotes, doUpdateSections, generateOpen])
+  }, [lesson, sectionNotes, doUpdateSections, generateOpen, closeGeneratePanel])
 
   const students = studentsData?.items ?? []
 
@@ -648,14 +653,30 @@ export default function LessonEditor() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setRegenerateParams(null)
-                        setGenerateOpen(isGenerateOpen ? null : type)
+                        if (isGenerateOpen) {
+                          // Closing the panel unmounts GeneratePanel, which triggers abort cleanup in useGenerate.
+                          closeGeneratePanel()
+                        } else {
+                          setRegenerateParams(null)
+                          setGenerateOpen(type)
+                        }
                       }}
-                      className="h-7 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                      disabled={!isGenerateOpen && isGenerating}
+                      className="h-7 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                      title={!isGenerateOpen && isGenerating ? 'Generation in progress' : undefined}
                       data-testid={`generate-btn-${type.toLowerCase()}`}
                     >
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      Generate
+                      {isGenerateOpen && isGenerating ? (
+                        <>
+                          <Square className="h-3 w-3 mr-1" />
+                          Stop
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          Generate
+                        </>
+                      )}
                     </Button>
                     <Tooltip>
                       <TooltipTrigger render={<span />}>
@@ -723,14 +744,12 @@ export default function LessonEditor() {
                       studentId: lesson.studentId,
                       existingNotes: sectionNotes[type] || null,
                     }}
+                    onStreamingChange={setIsGenerating}
                     onInsert={(block) => {
                       handleBlockInsert(block)
                       setRegenerateParams(null)
                     }}
-                    onClose={() => {
-                      setGenerateOpen(null)
-                      setRegenerateParams(null)
-                    }}
+                    onClose={closeGeneratePanel}
                   />
                 )}
               </CardContent>
