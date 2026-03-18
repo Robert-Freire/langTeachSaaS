@@ -28,6 +28,7 @@ You are a code reviewer. Your job is to review all changes on the current branch
 - **Missing tests**: new behavior without test coverage, changed behavior with tests not updated
 - **Error handling**: swallowed exceptions, generic catch-all without logging, missing error responses
 - **API contract**: DTO fields not matching model, inconsistent naming between frontend/backend
+- **SQL Server dialect**: raw SQL using SQL Server-specific syntax (bracket-quoted identifiers, T-SQL functions like `GETDATE()`, `ISNULL()`, `NEWID()`, `TOP`), EF Core configurations with SQL Server-specific filter expressions, or provider-specific method calls. All database access must go through EF Core's provider-agnostic APIs to keep the project portable across database engines.
 
 ### Minor (nice to have)
 - **Dead code**: unused imports, unreachable branches, commented-out code, leftover debug logs
