@@ -16,6 +16,7 @@ Before answering, read these files to ground yourself:
 
 1. **Vision** (always read): `plan/langteach-vision.md`
 2. **Current phase plans** (discover dynamically): glob `plan/*/plan.md` and read whichever plans exist. These change over time.
+3. **Project task status** (always read): `.claude/memory/project_langteach_task_status.md` (from the parent conversation's memory). This file tracks which tasks are done, in progress, or next, so you can ground prioritization and scope answers in the actual project state.
 
 Do NOT skip this step. Your answer must be grounded in the actual vision and current plans, not generic PM advice.
 

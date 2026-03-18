@@ -26,6 +26,7 @@ Plans live in the workspace repo under `plan\`. The Obsidian vault has a junctio
 | Product Vision & Roadmap (all phases) | `plan\langteach-vision.md` |
 | Beta — "Show the Magic" (T10-T23, active) | `plan\langteach-beta\plan.md` |
 | Beta — T10 task file | `plan\langteach-beta\task10-student-profile-enrichment.md` |
+| Beta — First PM Feedback Analysis | `plan\langteach-beta\demo feedback 1\analysis.md` |
 
 ## Naming Convention
 - Feature subfolder per phase: `plan\langteach-phase1\`, `plan\langteach-beta\`, etc.

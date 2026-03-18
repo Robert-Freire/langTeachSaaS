@@ -24,9 +24,9 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T9 | CI/CD Pipeline (GitHub Actions, ACR, OIDC) | DONE — PR #27 merged |
 | T9.1 | Brand & Logo | MOVED TO BETA T20 |
 
-## Beta Phase — CURRENT (as of 2026-03-17)
+## Beta Phase — CURRENT (as of 2026-03-18)
 
-**Next task: T20** (Brand & Visual Polish) or T23 (Beta Demo Preparation)
+**Current phase: Demo Sprint** (bug fixes + polish, then T23 demo prep)
 
 | Task | Description | Status |
 |------|-------------|--------|
@@ -54,7 +54,39 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T20.5 | Mobile & Tablet Responsive Polish (hamburger drawer, responsive layouts) | DONE — PR #69 merged |
 | T21 | Regenerate with Direction (make easier/harder/shorter/longer modifiers) | DONE — PR #65 merged |
 | T23-e2e | E2E Tests: Grammar, Reading, Exercises (ReadingRenderer, mock-auth e2e) | DONE — PR #70 merged |
-| T23 | Beta Demo Preparation (seed data, demo script, talking points) | pending (always last) |
+| T23 | Beta Demo Preparation (seed data, demo script, talking points) | pending (after demo sprint) |
+
+## Demo Sprint (added 2026-03-18)
+
+Bug fixes and polish discovered during QA, must complete before T23.
+
+| Priority | Issue | Description | Status |
+|----------|-------|-------------|--------|
+| Tier 1 | #74 | Content lost when switching Generate panels during streaming | pending |
+| Tier 1 | #78 | Published unscheduled lessons vanish from dashboard | pending |
+| Tier 1 | #76 | Student name missing from Lessons list and Lesson editor | pending |
+| Tier 1 | #79 | Schedule Save button overflow | pending |
+| Tier 2 | #75 | Progressive streaming with rich renderers (the wow moment) | pending |
+| Tier 2 | #77 | Lesson editor header/metadata redesign | pending |
+| Tier 2 | #81 | Quick Actions sidebar review | pending |
+
+## Post-Demo Priorities (reshaped by first PM feedback, 2026-03-18)
+
+Brother's pre-demo feedback validates product direction and reshapes post-demo roadmap.
+Full analysis: `plan/langteach-beta/demo feedback 1/analysis.md`
+Updated vision: `plan/langteach-vision.md` (Phase 2 reorganized)
+
+| Priority | Feature | Why |
+|----------|---------|-----|
+| P1 | Course/Curriculum Planner | PM's #1 request. Teachers think in courses, not isolated lessons. New "Course" entity above lessons. |
+| P2 | Audio Post-Class Reflections | Zero-friction tracking via voice notes. Whisper transcription + progress update. |
+| P3 | Enhanced Difficulty Tracking | Structured per-student difficulties, auto-updated from reflections. |
+| P4 | Group Class Support | New "Group" entity. Mixed L1 backgrounds. Academy/institute use case. |
+| P5 | Material Upload | Upload PDFs/worksheets that inform AI generation. |
+| P6 | Evaluation/Text Correction | Categorized error analysis for student writing. Phase 3. |
+| P7-P9 | Placement tests, slides, adaptive style | Phase 3 / Future. |
+
+**Deferred original post-demo items**: T24 (adapt lesson), T25 (suggest next topic, subsumed by Course Planner), T26 (URL attachments, subsumed by Material Upload), T20.1 (landing page, after Course Planner)
 
 ## Key T2 Deviations (important for future tasks)
 - Azure Container Apps (not App Service) — VS Enterprise subscription has zero VM quota in all regions
@@ -95,10 +127,10 @@ Phase 2 AI Core plan (`plan\langteach-phase2\plan.md`) remains valid as technica
 
 **Beta task overview:**
 - Phase 2A (Core Magic): T10-T15 (all DONE)
-- Phase 2A.1 (Typed Content): T15.1 content model foundation, T15.2 vocabulary type, T15.3 exercise type, T15.4 conversation type
-- Phase 2B (Make It Real): T16 one-click full lesson, T17 PDF export, T18 student lesson notes, T19 dashboard v2, T21 regen with direction, T24 adapt lesson, T25 suggest next topic
-- Phase 2C (Polish): T20 brand
-- T23: Beta demo preparation (seed data, demo script, talking points)
+- Phase 2A.1 (Typed Content): T15.1-T15.6 (all DONE), T15.7 pending
+- Phase 2B (Make It Real): T16, T17, T18, T19, T19.1, T20, T20.5, T21 (all DONE). T24/T25 deferred post-demo.
+- Demo Sprint: GitHub issues #74, #78, #76, #79, #75, #77, #81 (IN PROGRESS)
+- T23: Beta demo preparation (after demo sprint)
 
 **Key architectural decision (2026-03-15):** Content blocks must be typed (vocabulary, exercises, conversation, reading, freeText) with per-type renderers for both teacher (editor) and student (interactive) views. T22 (Interactive Exercise Rendering) absorbed into T15.3. Old T16 (One-Click Full Lesson) renumbered but kept.
 

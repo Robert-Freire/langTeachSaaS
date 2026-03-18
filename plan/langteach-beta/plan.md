@@ -27,17 +27,19 @@
 
 ### Beta Phase — IN PROGRESS
 
-**Next task: T19.1** (Schedule from Dashboard)
+**Current phase: Demo Sprint** (bug fixes + polish before demo)
 
 | Phase | Tasks | Status |
 |-------|-------|--------|
 | 2A Core Magic | T10, T10.1, T11-T15 | DONE |
-| 2A.1 Typed Content | T15.1, T15.2, T15.3, T15.4, T15.5, T15.6, T15.7 | T15.1-T15.6 DONE, T15.7 pending |
+| 2A.1 Typed Content | T15.1-T15.6, T15.7 | T15.1-T15.6 DONE, T15.7 pending |
 | 2A.2 Conversation UX | T15.4a (classroom), T15.4b (AI chat), T15.4c (voice) | T15.4a DONE, T15.4b/c: future |
-| 2B Make It Real | T16-T19, T19.1, T20, T21, T24-T25 | T16 DONE, T17 DONE, T19 DONE (PR #60), T18/T19.1/T20/T21/T24-T25 pending |
-| 2C Polish | T20.1 (landing page) | pending |
-| Demo Prep | T23 | pending |
-| Post-Demo | T26, Student Recurring Schedule, Classes Entity | pending |
+| 2B Make It Real | T16-T19, T19.1, T20, T20.5, T21 | ALL DONE |
+| 2B remaining | T24 (adapt lesson), T25 (suggest next topic) | deferred post-demo |
+| 2C Polish | T20.1 (landing page) | pending (post-demo) |
+| **Demo Sprint** | Bug fixes (#74, #78, #79, #76) + high-impact polish (#75, #77, #81) | **IN PROGRESS** |
+| Demo Prep | T23 | pending (after demo sprint) |
+| Post-Demo | Roadmap reshuffle based on PM feedback (see below) | pending |
 
 ---
 
@@ -1646,6 +1648,72 @@ T23 ──── T26 (section URL attachments, post-demo) ───────�
 18. T23 (always last, seed data includes ScheduledAt values for demo week)
 19. T26 (section URL attachments, post-demo, informed by brother's feedback)
 19. **Post-beta:** T15.4b (AI conversation practice), then T15.4c (voice)
+
+---
+
+## Demo Sprint (added 2026-03-18)
+
+Based on QA testing and first PM feedback (voice notes from Robert's brother). Full feedback analysis in `plan/langteach-beta/demo feedback 1/analysis.md`.
+
+### Tier 1: Demo Blockers (must fix before demo)
+
+| Issue | What | Why demo-blocking |
+|-------|------|-------------------|
+| #74 | Content lost when switching Generate panels during streaming | Teacher loses work silently. If it happens during the live demo, it's a disaster. Also leaks API tokens via orphaned streams. |
+| #78 | Published unscheduled lessons vanish from dashboard | The dashboard is the demo's home screen. A lesson the teacher just published disappears. Breaks trust in the "command center." |
+| #79 | Schedule Save button overflows outside the metadata card | Visual glitch on the most-used screen. |
+| #76 | Student name missing from Lessons list and Lesson editor | Personalization is the story we're selling. If student names aren't visible, the demo can't show "this lesson is for Maria." |
+
+### Tier 2: High Demo Impact (strongly recommended before demo)
+
+| Issue | What | Why high-impact |
+|-------|------|-----------------|
+| #75 | Show streamed content progressively using rich renderers | THE wow moment. Teacher sees vocabulary words appearing one by one in a styled table instead of a spinner. This is the visual proof that "content types are real." Currently shows a spinner until generation completes, which undermines the streaming story. |
+| #77 | Rethink lesson editor header and metadata section | The editor is where the demo spends 60% of its time. Header/metadata layout needs to feel professional. |
+| #81 | Quick Actions sidebar: review layout and missing actions | Dashboard first impression. Quick actions should surface the most common teacher workflows. |
+
+### Not Demo-Blocking (defer)
+
+Issues #33-#39, #47 (low contrast, long names, validation, accessibility, mobile sidebar). These are real but not demo-impacting. Phase 2 polish.
+
+### Demo Sprint Sequence
+
+1. Fix #74 (content loss during generation, API token leak)
+2. Fix #78 (published lessons visible on dashboard)
+3. Fix #76 (student name in lesson list/editor)
+4. Fix #79 (schedule button overflow)
+5. Implement #75 (progressive streaming with rich renderers)
+6. Fix #77 (editor header redesign)
+7. Fix #81 (quick actions review)
+8. T23: Demo preparation (seed data, demo script, talking points)
+
+---
+
+## Post-Demo: Roadmap Reshuffle (added 2026-03-18)
+
+The brother's pre-demo feedback (see `plan/langteach-beta/demo feedback 1/analysis.md`) reshapes post-demo priorities significantly. His feedback validates the core product direction and reveals the next layer of teacher needs.
+
+### Priority Order (post-demo)
+
+| Priority | Feature | Description | Feedback signal |
+|----------|---------|-------------|-----------------|
+| **P1** | **Course/Curriculum Planner** | New "Course" entity wrapping multiple lessons. Given a student + target CEFR level + number of sessions + hours, generate a structured curriculum covering grammar and all 4 competencies (reading, writing, listening, speaking). Teacher can reorder/adjust and generate individual lessons from the plan. Also supports specialized courses (business, legal, conversation). | PM's single biggest request. Teachers think in courses, not lessons. |
+| **P2** | **Audio Post-Class Reflections** | Teacher records voice note after class. Whisper transcribes. System extracts observations, updates student progress, adapts next lesson plan. | Zero-friction tracking. Teachers already debrief mentally (often in the car). This captures it without admin burden. Technical complexity is low (Whisper + prompt). |
+| **P3** | **Enhanced Difficulty Tracking** | Extend student weaknesses from flat list to structured, trackable difficulties (e.g., grammar: ser/estar, pronunciation: /r/ sound). Feed granularly into generation. Auto-update from audio reflections. | Makes personalization operational. Currently decorative. |
+| **P4** | **Group Class Support** | New "Group" entity with multiple students. Lesson can target a group. Generation considers mixed L1 backgrounds. | Real-world need for academies and institutes. Model change: lesson -> group\|student. |
+| **P5** | **Material Upload** | Upload PDFs, worksheets, images, audio to Azure Blob. Uploaded materials inform AI generation. | Teachers have existing resources the system should build on. |
+| **P6** | **Evaluation/Text Correction** | New workflow: teacher uploads student text, AI returns categorized errors (grammar, vocabulary, punctuation, verb forms). Separate from lesson generation. | High value, used weekly. More structured than generic ChatGPT correction. |
+| **P7** | **Placement Test Generation** | Generate diagnostic CEFR assessments. Results feed into student profile and course planning. | Useful but many exist online already. Higher value when integrated with courses. |
+| **P8** | **Presentation/Slide Generation** | Infographics, crosswords, board games, slide decks. Visual/interactive materials beyond text. | High value but high complexity. Requires new rendering pipeline. |
+| **P9** | **Adaptive Teacher Style Learning** | System learns teacher's methodology, preferred formats, pedagogical sequences. Academy-level customization. | Impressive but requires significant ML/data infrastructure. Long-term differentiator. |
+
+### What Gets Deferred from Original Post-Demo
+
+- T24 (Adapt Lesson for Another Student): still planned, lower urgency than Course Planner
+- T25 (Suggest Next Topic): subsumed by Course Planner (which plans all topics upfront)
+- T26 (Section URL Attachments): subsumed by Material Upload (P5)
+- T20.1 (Landing Page): still needed for self-service, but after Course Planner proves the product
+- T19.2 (Dashboard Scheduling Redesign): post-demo polish, still relevant
 
 ---
 
