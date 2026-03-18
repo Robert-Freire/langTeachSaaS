@@ -14,7 +14,7 @@ test('frontend redirects unauthenticated user to Auth0 login page', async ({ pag
   await page.context().clearCookies()
   await page.evaluate(() => { localStorage.clear(); sessionStorage.clear() }).catch(() => {})
 
-  await page.goto('http://localhost:5174', { waitUntil: 'domcontentloaded' })
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
   await page.waitForURL(/auth0\.com/, { timeout: 10000 })
 
   await expect(page).toHaveURL(/langteach-dev\.eu\.auth0\.com/)
@@ -23,7 +23,7 @@ test('frontend redirects unauthenticated user to Auth0 login page', async ({ pag
 
 test('Auth0 login page shows email/password and Google options', async ({ page }) => {
   await page.context().clearCookies()
-  await page.goto('http://localhost:5174', { waitUntil: 'domcontentloaded' })
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
   await page.waitForURL(/auth0\.com/, { timeout: 10000 })
   await page.waitForLoadState('networkidle')
 

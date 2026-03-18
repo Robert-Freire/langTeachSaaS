@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { createAuthenticatedContext } from '../helpers/auth-helper'
 
 test('login creates teacher record with email populated', async ({ browser }) => {
+  test.skip(!!process.env.CI, 'Requires real Auth0 browser login — not runnable in CI')
   const context = await createAuthenticatedContext(browser)
   const page = await context.newPage()
 
