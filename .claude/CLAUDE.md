@@ -14,7 +14,7 @@ When a task is marked complete:
 1. Create a feature branch named `task/<task-id>-<short-description>` (e.g. `task/t2-azure-infra`)
 2. Stage all relevant changes **including any modified files in `.claude/memory/` and `plan/`** and commit with a message referencing the task
 3. Run pre-push checks (see below). Fix any failures before proceeding.
-4. Run `/review` to perform a code review of all changes vs `main`.
+4. Run the `review` agent to perform a code review of all changes vs `main`.
    - If verdict is **FAIL**: fix all critical issues, re-commit, re-run checks and review.
    - If verdict is **PASS WITH NOTES**: address important items where reasonable, then proceed.
    - If verdict is **PASS**: proceed to push.
