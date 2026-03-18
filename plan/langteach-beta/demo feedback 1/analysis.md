@@ -1,6 +1,6 @@
 # First PM Feedback Analysis (2026-03-18)
 
-> **Source**: Two WhatsApp voice notes from Robert's brother (language teacher, potential PM), transcribed in this folder. Plus his written annotations in `feedback1.md`.
+> **Source**: Four WhatsApp voice notes from Robert's brother (language teacher, potential PM), transcribed in this folder. Plus his written annotations in `feedback1.md`.
 > **Context**: He has NOT seen the app yet. Robert described the concept verbally and asked what he thought. This is pre-demo ideation, not usability feedback.
 
 ---
@@ -106,6 +106,30 @@ Given uploaded materials + student profile, generate curriculum plans or session
 
 **Phase**: Emerges from P1 + P2 + P5
 
+### 13. Emotional / Affective Dimension of Learning
+Language learning is deeply emotional. Students react differently to activities: some feel liberated, some disengage during drills, some light up during conversation tasks. The system should care about the student's emotional engagement, not just linguistic correctness. Learning should be enjoyable.
+
+**His quote**: "El aprendizaje debe ser un aprendizaje en el que disfruten, y se lo pasen bien, o se liberta, no solo aprender preposiciones vocabularios y estructuras gramaticales." (Learning should be an experience where they enjoy themselves and feel liberated, not just learn prepositions, vocabulary, and grammatical structures.)
+
+**What this means practically**: This is not a standalone feature. It is a dimension that threads through existing ones:
+- **Audio Reflections (P2)**: transcript extraction must pull emotional engagement signals explicitly ("how did the student react?"), not just topic coverage. A teacher's mental model after class is "X worked, Y didn't, the student was frustrated during the grammar drill" -- that signal is as valuable as what was covered.
+- **Generation prompts**: "engagement style" as a parameter alongside CEFR level and topic (more gamified, more conversational, less formal drill). Already partially served by T21 (regenerate with direction).
+
+**Assessment**: No new feature required. Highest impact is on the Audio Reflections design (P2) -- the emotional engagement loop is the "magic" moment that will resonate most with the teacher persona.
+
+**Phase**: Informs P2 design (Audio Reflections) and generation prompt design
+
+### 14. Exam Prep vs. General Learning: Two Curriculum Modes
+The Course Planner must support two fundamentally different planning modes:
+1. **General language learning**: fluency-oriented, driven by CEFR level progression, covering grammar + 4 competencies (reading, writing, listening, speaking).
+2. **Exam preparation**: goal is a specific certificate (DELE B2/C2, DALF, Cambridge CAE, TOEFL, etc.) by a specific exam date. Requires exam-format knowledge, timed practice, mock test sessions, oral interaction prep, and exam strategy sessions.
+
+**His quote**: "La planificación debería ser algo diferente. Una más orientada al aprendizaje y otra más orientada a sacarse el título." (The planning should be different. One more oriented toward learning, another toward getting the certificate.)
+
+**Assessment**: This is a concrete design constraint for the Course Planner (P1). When a teacher creates a Course, they choose a mode. The two modes have different generation prompts, different session types, and different success metrics. It is cheaper to design for both modes upfront than to retrofit exam prep after building a general-only planner. Also a strong commercial differentiator: exam prep teachers are motivated buyers with a concrete deadline.
+
+**Phase**: P1 design constraint (Course Planner must support both modes from the start)
+
 ### 12. Adaptive Teacher Style Learning
 The system should learn from the teacher's methodology, preferred activity formats, and pedagogical sequences. Academy-level customization.
 
@@ -121,12 +145,14 @@ The system should learn from the teacher's methodology, preferred activity forma
 
 | Theme | Feedback items | Phase |
 |-------|---------------|-------|
-| **Curriculum/Course Planning** | #1, #3, #4 | Phase 2A (P1) |
-| **Zero-Friction Tracking** | #7, #11 | Phase 2A (P2) |
+| **Curriculum/Course Planning** | #1, #3, #4, #14 | Phase 2A (P1) |
+| **Zero-Friction Tracking** | #7, #11, #13 | Phase 2A (P2) |
 | **Deeper Personalization** | #5, #6 | Phase 2A (P3, P4) |
 | **Teacher's Own Materials** | #9, #11, #12 | Phase 2A (P5) / Future (P9) |
 | **Evaluation Tools** | #2, #8 | Phase 3 |
 | **Rich Output Formats** | #10 | Future |
+| **Affective / Engagement** | #13 | P2 design dimension |
+| **Exam Prep Mode** | #14 | P1 design constraint |
 
 ---
 

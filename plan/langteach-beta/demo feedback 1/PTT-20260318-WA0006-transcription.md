@@ -1,0 +1,3 @@
+# PTT-20260318-WA0006 Transcription
+
+Hay un tema que hemos hablado, pero quizás también es importante que tengan cuenta. Ahora, sobre todo, hacer el seguimiento o de plantear actividades de seguimiento y tal. Y es que el aprendizaje de una lengua, todos los aprendizajes, pero de una lengua, es muy emocional. Por lo tanto, el estado anímico es algo que tenemos en el presente. Como el alumno va reaccionando a las diferentes actividades, si les gusta más, les gusta menos, disfrutan, no disfrutan. El aprendizaje debe ser un aprendizaje en el que disfruten, y se lo pasen bien, o se liberta, no solo aprender preposiciones vocabularios y estructuras gramaticales.

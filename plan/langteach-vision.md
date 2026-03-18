@@ -113,6 +113,14 @@ Text correction that categorizes errors by type (grammar, vocabulary, punctuatio
 **6. Richer Output Formats**
 Generate infographics, crossword puzzles, board games, presentation slides. Varied, engaging materials beyond text-based content.
 
+*(Items 7 and 8 added from second batch of voice notes, WA0006 and WA0007.)*
+
+**7. Emotional / Affective Tracking**
+Language learning is deeply emotional. Students react differently to activities. The post-class Audio Reflection system should extract emotional engagement signals (enjoyment, frustration, disengagement) alongside topic coverage. Generation should support an "engagement style" parameter so activities can be gamified, conversational, or drill-based as appropriate for that student's mood and preferences.
+
+**8. Exam Prep as a Distinct Curriculum Mode**
+Differentiate between general language learning (fluency-driven, CEFR progression) and exam preparation (certificate-driven: DELE, DALF, Cambridge, TOEFL). The Course Planner must support both modes from the start, as they require different session types, timed practice, mock tests, and exam-specific strategy content.
+
 ### What This Validates
 - The typed content model is the right architectural bet (he's asking for MORE types, not different ones)
 - CEFR awareness in prompts is exactly right, but needs to become a first-class planning tool
@@ -136,8 +144,8 @@ Generate infographics, crossword puzzles, board games, presentation slides. Vari
 
 | Area | What | Why | Feedback ref |
 |------|------|-----|-------------|
-| **Course/Curriculum Planner** | New "Course" entity wrapping multiple lessons. Given a student, target CEFR level, number of sessions, and hours, generate a structured curriculum covering grammar + 4 competencies. Teacher can reorder, adjust, and generate individual lessons from the plan. | PM's #1 request. Teachers think in courses, not isolated lessons. This becomes the new top-level organizing concept. | Feedback #1, #3, #4 |
-| **Audio Post-Class Reflections** | Teacher records a voice note after class. System transcribes (Whisper), extracts key observations, updates student progress, and adapts the next lesson plan. | Zero-friction tracking. Teachers already mentally debrief, this captures it. Low technical complexity, high perceived magic. | Feedback #7 |
+| **Course/Curriculum Planner** | New "Course" entity wrapping multiple lessons. Two modes: (1) **General learning** -- given student, target CEFR level, session count, and hours, generate a curriculum covering grammar + 4 competencies; (2) **Exam prep** -- given target exam (DELE, DALF, Cambridge, TOEFL) and exam date, generate an exam-specific curriculum with mock tests, timed practice, and strategy sessions. Teacher can reorder, adjust, and generate individual lessons from the plan. | PM's #1 request. Teachers think in courses, not isolated lessons. Exam prep mode is a strong commercial differentiator -- exam teachers have a concrete deadline and are motivated buyers. | Feedback #1, #3, #4, #14 |
+| **Audio Post-Class Reflections** | Teacher records a voice note after class. System transcribes (Whisper), extracts key observations -- including emotional engagement signals (what the student enjoyed, what frustrated them, what fell flat) -- updates student progress, and adapts the next lesson plan. | Zero-friction tracking. Teachers already mentally debrief. Capturing the affective dimension (not just topic coverage) is what makes the adaptation genuinely personalized. Low technical complexity, high perceived magic. | Feedback #7, #13 |
 | **Enhanced Difficulty Tracking** | Extend student weaknesses from a flat list to structured, trackable difficulties (grammar: ser/estar, pronunciation: specific sounds, etc.). Feed these granularly into generation prompts. Auto-update from class reflections. | Makes personalization operational, not just decorative. | Feedback #5, inline notes |
 | **Group Class Support** | New "Group" entity with multiple students. Lesson can target a group. Generation considers mixed L1 backgrounds and balances activities for the group while noting individual needs. | Real-world teaching includes group classes (academies, institutes). | Feedback #6, #9 |
 | **Material Upload** | Upload PDFs, worksheets, images, audio to lesson sections (Azure Blob storage). Uploaded materials inform AI generation ("use this vocabulary list as a base"). | Teachers have existing resources. The system should build on them, not ignore them. | Feedback #9, #11, #12 |
