@@ -70,6 +70,7 @@ jobs:
             "VITE_AUTH0_CLIENT_ID=${{ secrets.VITE_AUTH0_CLIENT_ID }}" \
             "VITE_AUTH0_AUDIENCE=${{ secrets.VITE_AUTH0_AUDIENCE }}" \
             "VITE_API_URL=http://localhost:5000" \
+            "VITE_E2E_TEST_MODE=true" \
             > frontend/.env.local
 
       - name: Start services

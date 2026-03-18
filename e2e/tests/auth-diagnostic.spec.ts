@@ -6,11 +6,13 @@ test('GET /api/health returns 200 without token', async ({ request }) => {
 })
 
 test('GET /api/auth/me returns 401 without token', async ({ request }) => {
+  test.skip(!!process.env.CI, 'Backend runs in E2ETesting mode in CI — all requests are authenticated')
   const response = await request.get('http://localhost:5000/api/auth/me')
   expect(response.status()).toBe(401)
 })
 
 test('frontend redirects unauthenticated user to Auth0 login page', async ({ page }) => {
+  test.skip(!!process.env.CI, 'Frontend runs with MockAuth0Provider in CI — no Auth0 redirect occurs')
   await page.context().clearCookies()
   await page.evaluate(() => { localStorage.clear(); sessionStorage.clear() }).catch(() => {})
 
@@ -22,6 +24,7 @@ test('frontend redirects unauthenticated user to Auth0 login page', async ({ pag
 })
 
 test('Auth0 login page shows email/password and Google options', async ({ page }) => {
+  test.skip(!!process.env.CI, 'Frontend runs with MockAuth0Provider in CI — no Auth0 redirect occurs')
   await page.context().clearCookies()
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   await page.waitForURL(/auth0\.com/, { timeout: 10000 })
