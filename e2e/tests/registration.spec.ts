@@ -11,6 +11,7 @@ import { deleteTeacherByEmail } from '../helpers/db-helper'
  * is in the same state as a genuine first-time login.
  */
 test('first login creates teacher record with email', async ({ browser }) => {
+  test.skip(!!process.env.CI, 'Requires real Auth0 browser login — not runnable in CI')
   const apiBase = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 
   // ── Step 1: log in and capture Auth0 sub + bearer token ──────────────────
