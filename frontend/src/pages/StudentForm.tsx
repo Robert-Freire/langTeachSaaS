@@ -157,6 +157,8 @@ export default function StudentForm() {
     enabled: isEdit,
   })
 
+  // Sync server student data to local form state
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (existing) {
       setName(existing.name)
@@ -169,6 +171,7 @@ export default function StudentForm() {
       setNotes(existing.notes ?? '')
     }
   }, [existing])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data: StudentFormData) =>

@@ -105,7 +105,8 @@ export default function LessonEditor() {
     queryFn: () => getStudents(),
   })
 
-  // Initialise local state from fetched lesson
+  // Initialise local state from fetched lesson (sync server data to form)
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (lesson) {
       setSectionNotes(initSectionNotes(lesson))
@@ -120,6 +121,7 @@ export default function LessonEditor() {
       })
     }
   }, [lesson])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Load content blocks once lesson id is available; cleanup ignores stale responses
   useEffect(() => {

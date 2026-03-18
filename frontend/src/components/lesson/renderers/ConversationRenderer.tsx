@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+/* eslint-disable react-refresh/only-export-components */
+import { useRef, useMemo, useState } from 'react'
 import { isConversationContent } from '../../../types/contentTypes'
 import type { ConversationContent, ConversationScenario } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
@@ -76,12 +77,21 @@ function PhraseList({
 
 // ─── Editor ──────────────────────────────────────────────────────────────────
 
+function syncIds(ids: number[], targetLength: number) {
+  while (ids.length < targetLength) ids.push(uid())
+  return ids
+}
+
 function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   const scenarioIdsRef = useRef<number[]>([])
   // Two phrase inputs per scenario: [roleA, roleB]
   const [phraseInputs, setPhraseInputs] = useState<[string, string][]>([])
 
-  if (!isConversationContent(parsedContent)) {
+  const content = isConversationContent(parsedContent) ? parsedContent as ConversationContent : null
+  // eslint-disable-next-line react-hooks/refs -- append-only ID array used as React keys
+  const scenarioIds = useMemo(() => syncIds(scenarioIdsRef.current, content?.scenarios.length ?? 0), [content?.scenarios.length])
+
+  if (!content) {
     return (
       <textarea
         value={rawContent}
@@ -92,10 +102,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
     )
   }
 
-  const content = parsedContent as ConversationContent
   const { scenarios } = content
-
-  while (scenarioIdsRef.current.length < scenarios.length) scenarioIdsRef.current.push(uid())
 
   const inputs: [string, string][] = phraseInputs.length === scenarios.length
     ? phraseInputs
@@ -147,7 +154,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
     <div data-testid="conversation-editor">
       <div className="space-y-4">
         {scenarios.map((scenario, i) => (
-          <div key={scenarioIdsRef.current[i]} className="border border-zinc-200 rounded-lg p-4 space-y-3" data-testid={`scenario-card-${i}`}>
+          <div key={scenarioIds[i]} className="border border-zinc-200 rounded-lg p-4 space-y-3" data-testid={`scenario-card-${i}`}>
             <div className="flex items-start justify-between gap-2">
               <p className={`${sectionHeadingClass} mt-0`}>Scenario {i + 1}</p>
               <button
@@ -297,7 +304,7 @@ function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; ind
   const togglePhrase = (key: string) =>
     setCheckedPhrases(prev => {
       const next = new Set(prev)
-      next.has(key) ? next.delete(key) : next.add(key)
+      if (next.has(key)) { next.delete(key) } else { next.add(key) }
       return next
     })
 

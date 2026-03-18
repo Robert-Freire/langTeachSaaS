@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { Textarea } from '@/components/ui/textarea'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
 

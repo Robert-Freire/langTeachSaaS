@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { isReadingContent } from '../../../types/contentTypes'
 import type { ReadingContent, ReadingQuestion, ReadingVocabHighlight } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'

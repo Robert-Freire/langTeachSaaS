@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef } from 'react'
+/* eslint-disable react-refresh/only-export-components */
+import { useState, useCallback, useRef, useMemo } from 'react'
 import { isVocabularyContent } from '../../../types/contentTypes'
 import type { VocabularyItem } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
@@ -25,11 +26,21 @@ function VocabTable({ children }: { children: React.ReactNode }) {
 const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded'
 
 let nextRowId = 0
+function rowUid() { return nextRowId++ }
+
+function syncRowIds(ids: number[], targetLength: number) {
+  while (ids.length < targetLength) ids.push(rowUid())
+  return ids
+}
 
 function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   const rowIdsRef = useRef<number[]>([])
 
-  if (!isVocabularyContent(parsedContent)) {
+  const vocabContent = isVocabularyContent(parsedContent) ? parsedContent : null
+  // eslint-disable-next-line react-hooks/refs -- append-only ID array used as React keys
+  const rowIds = useMemo(() => syncRowIds(rowIdsRef.current, vocabContent?.items.length ?? 0), [vocabContent?.items.length])
+
+  if (!vocabContent) {
     return (
       <textarea
         value={rawContent}
@@ -40,12 +51,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
     )
   }
 
-  const items = parsedContent.items
-
-  // Sync row IDs to match current item count (initial load)
-  while (rowIdsRef.current.length < items.length) {
-    rowIdsRef.current.push(nextRowId++)
-  }
+  const items = vocabContent.items
 
   const emit = (newItems: VocabularyItem[]) => onChange(JSON.stringify({ items: newItems }))
 
@@ -55,7 +61,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   }
 
   const handleAdd = () => {
-    rowIdsRef.current.push(nextRowId++)
+    rowIdsRef.current.push(rowUid())
     emit([...items, { word: '', definition: '', exampleSentence: '' }])
   }
 
@@ -80,7 +86,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
           </thead>
           <tbody>
             {items.map((item, i) => (
-              <tr key={rowIdsRef.current[i]} className="hover:bg-zinc-50">
+              <tr key={rowIds[i]} className="hover:bg-zinc-50">
                 <td className="border border-zinc-200 p-1">
                   <input value={item.word} onChange={(e) => handleCellChange(i, 'word', e.target.value)} className={inputClass} />
                 </td>

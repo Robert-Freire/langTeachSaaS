@@ -77,10 +77,9 @@ export default function AppShell() {
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  // Auto-close drawer on navigation
-  useEffect(() => {
-    setDrawerOpen(false)
-  }, [location.pathname])
+  // Auto-close drawer on navigation (sync with router state)
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setDrawerOpen(false) }, [location.pathname])
 
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)

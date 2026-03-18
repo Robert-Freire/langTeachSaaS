@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { isGrammarContent } from '../../../types/contentTypes'
 import type { GrammarExample } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
