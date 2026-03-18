@@ -84,7 +84,7 @@ export default function LessonNew() {
     return (
       <div className="space-y-6 max-w-3xl">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">New Lesson</h1>
+          <h1 className="text-2xl font-bold text-zinc-900">New Lesson</h1>
           <p className="text-sm text-zinc-500 mt-1">Choose a template to get started, or start from blank.</p>
         </div>
 
@@ -153,7 +153,7 @@ export default function LessonNew() {
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">Lesson Details</h1>
+          <h1 className="text-2xl font-bold text-zinc-900">Lesson Details</h1>
           <p className="text-sm text-zinc-500 mt-1">
             {selectedTemplateId
               ? `Using template: ${templates?.find(t => t.id === selectedTemplateId)?.name ?? ''}`

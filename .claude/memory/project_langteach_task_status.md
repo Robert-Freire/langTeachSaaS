@@ -53,6 +53,7 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T20 | Brand & Visual Polish (icon, favicon, loading states — replaces T9.1) | DONE — PR #67 merged |
 | T20.5 | Mobile & Tablet Responsive Polish (hamburger drawer, responsive layouts) | DONE — PR #69 merged |
 | T21 | Regenerate with Direction (make easier/harder/shorter/longer modifiers) | DONE — PR #65 merged |
+| T23-e2e | E2E Tests: Grammar, Reading, Exercises (ReadingRenderer, mock-auth e2e) | DONE — PR #70 merged |
 | T23 | Beta Demo Preparation (seed data, demo script, talking points) | pending (always last) |
 
 ## Key T2 Deviations (important for future tasks)

@@ -10,6 +10,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { getCefrBadgeClasses } from '@/lib/cefr-colors'
 import { cn } from '@/lib/utils'
 import {
   AlertDialog,
@@ -150,7 +152,7 @@ export default function Lessons() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">Lessons</h1>
+          <h1 className="text-2xl font-bold text-zinc-900">Lessons</h1>
           <p className="text-sm text-zinc-500 mt-1">Create and manage your lesson plans.</p>
         </div>
         <Link
@@ -177,7 +179,7 @@ export default function Lessons() {
             <SelectValue placeholder="Language" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All languages</SelectItem>
+            <SelectItem value="all">Language: All</SelectItem>
             {LANGUAGES.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -186,7 +188,7 @@ export default function Lessons() {
             <SelectValue placeholder="Level" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All levels</SelectItem>
+            <SelectItem value="all">Level: All</SelectItem>
             {CEFR_LEVELS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -195,7 +197,7 @@ export default function Lessons() {
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="all">Status: All</SelectItem>
             <SelectItem value="Draft">Draft</SelectItem>
             <SelectItem value="Published">Published</SelectItem>
           </SelectContent>
@@ -226,7 +228,7 @@ export default function Lessons() {
       {lessons.length > 0 && (
         <div className="space-y-3">
           {lessons.map((lesson) => (
-            <Card key={lesson.id} className="bg-white border border-zinc-200 transition-all hover:shadow-sm hover:border-zinc-300" data-testid={`lesson-row-${lesson.id}`}>
+            <Card key={lesson.id} className="bg-white border border-zinc-200 shadow-sm transition-all hover:shadow-md hover:border-zinc-300" data-testid={`lesson-row-${lesson.id}`}>
               <CardContent className="flex items-center justify-between py-4 px-4 sm:px-6">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
@@ -236,7 +238,7 @@ export default function Lessons() {
                     <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
                       {lesson.language}
                     </Badge>
-                    <Badge variant="outline" className="text-xs text-indigo-600 border-indigo-200 bg-indigo-50">
+                    <Badge variant="outline" className={`text-xs ${getCefrBadgeClasses(lesson.cefrLevel)}`}>
                       {lesson.cefrLevel}
                     </Badge>
                     <Badge variant="outline" className={cn('text-xs', statusBadgeClass(lesson.status))} data-testid="lesson-status">
@@ -248,36 +250,48 @@ export default function Lessons() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1 ml-2 sm:ml-4 shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => doDuplicate(lesson.id)}
-                    disabled={isDuplicating}
-                    aria-label={`Duplicate ${lesson.title}`}
-                    title="Clone"
-                    data-testid="duplicate-lesson"
-                  >
-                    <Copy className="h-4 w-4 text-zinc-400" />
-                  </Button>
-                  <Link
-                    to={`/lessons/${lesson.id}`}
-                    aria-label={`Edit ${lesson.title}`}
-                    title="Edit"
-                    className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }))}
-                    data-testid="edit-lesson"
-                  >
-                    <Pencil className="h-4 w-4 text-zinc-400" />
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setLessonToDelete(lesson)}
-                    aria-label={`Delete ${lesson.title}`}
-                    title="Delete"
-                    data-testid="delete-lesson"
-                  >
-                    <Trash2 className="h-4 w-4 text-zinc-400" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger render={<span />}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => doDuplicate(lesson.id)}
+                        disabled={isDuplicating}
+                        aria-label={`Duplicate ${lesson.title}`}
+                        data-testid="duplicate-lesson"
+                      >
+                        <Copy className="h-4 w-4 text-zinc-400" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Clone</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger render={<span />}>
+                      <Link
+                        to={`/lessons/${lesson.id}`}
+                        aria-label={`Edit ${lesson.title}`}
+                        className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }))}
+                        data-testid="edit-lesson"
+                      >
+                        <Pencil className="h-4 w-4 text-zinc-400" />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent>Edit</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger render={<span />}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setLessonToDelete(lesson)}
+                        aria-label={`Delete ${lesson.title}`}
+                        data-testid="delete-lesson"
+                      >
+                        <Trash2 className="h-4 w-4 text-zinc-400" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete</TooltipContent>
+                  </Tooltip>
                 </div>
               </CardContent>
             </Card>

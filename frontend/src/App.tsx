@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuth0 } from '@auth0/auth0-react'
 import { setupAuthInterceptor } from './lib/apiClient'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import AppShell from './components/AppShell'
 import Dashboard from './pages/Dashboard'
 import Settings from './pages/Settings'
@@ -32,23 +33,25 @@ function AuthSetup({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthSetup>
-          <Routes>
-            <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/students" element={<Students />} />
-              <Route path="/students/new" element={<StudentForm />} />
-              <Route path="/students/:id/edit" element={<StudentForm />} />
-              <Route path="/lessons" element={<Lessons />} />
-              <Route path="/lessons/new" element={<LessonNew />} />
-              <Route path="/lessons/:id" element={<LessonEditor />} />
-              <Route path="/lessons/:id/study" element={<StudyView />} />
-            </Route>
-          </Routes>
-        </AuthSetup>
-      </BrowserRouter>
+      <TooltipProvider>
+        <BrowserRouter>
+          <AuthSetup>
+            <Routes>
+              <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/students" element={<Students />} />
+                <Route path="/students/new" element={<StudentForm />} />
+                <Route path="/students/:id/edit" element={<StudentForm />} />
+                <Route path="/lessons" element={<Lessons />} />
+                <Route path="/lessons/new" element={<LessonNew />} />
+                <Route path="/lessons/:id" element={<LessonEditor />} />
+                <Route path="/lessons/:id/study" element={<StudyView />} />
+              </Route>
+            </Routes>
+          </AuthSetup>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   )
 }
