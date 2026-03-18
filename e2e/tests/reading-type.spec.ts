@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
-import { mockAiStream, READING_FIXTURE } from '../helpers/mock-ai-stream'
+import { READING_FIXTURE } from '../helpers/mock-ai-stream'
 import { TEST_TIMEOUT, NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
 
 test.beforeAll(async ({ browser }) => {
@@ -18,7 +18,16 @@ test('reading type renders editor and student view', async ({ browser }) => {
   const page = await context.newPage()
 
   try {
-    await mockAiStream(page, READING_FIXTURE)
+    // Mock only the reading stream endpoint (not wildcard) to verify correct task route
+    await page.route('**/api/generate/reading/stream', async (route) => {
+      const token = JSON.stringify(JSON.stringify(READING_FIXTURE))
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        headers: { 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
+        body: `data: ${token}\n\ndata: [DONE]\n\n`,
+      })
+    })
 
     // Create a lesson via the wizard
     await page.goto('/lessons')
@@ -94,7 +103,9 @@ test('reading type renders editor and student view', async ({ browser }) => {
     const readingStudent = page.getByTestId('reading-student').first()
     await expect(readingStudent).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
-    // Verify student content
+    // Verify student content: passage, questions, and vocabulary
+    await expect(readingStudent.getByText('Smartphones have changed the way we communicate.')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(readingStudent.getByText('How have smartphones changed communication?')).toBeVisible({ timeout: UI_TIMEOUT })
     await expect(readingStudent.getByText('Key Vocabulary')).toBeVisible({ timeout: UI_TIMEOUT })
     await expect(readingStudent.getByText('ubiquitous', { exact: true })).toBeVisible({ timeout: UI_TIMEOUT })
     await expect(readingStudent.getByText('revolutionize', { exact: true })).toBeVisible({ timeout: UI_TIMEOUT })

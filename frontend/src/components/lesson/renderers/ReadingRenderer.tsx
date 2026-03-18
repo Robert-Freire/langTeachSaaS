@@ -5,8 +5,21 @@ import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry
 const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200'
 const textareaClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200 resize-none'
 
-function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
-  if (!isReadingContent(parsedContent)) {
+function getReadingContent(value: unknown): ReadingContent | null {
+  if (!isReadingContent(value)) return null
+  if (
+    typeof value.passage !== 'string' ||
+    !Array.isArray(value.comprehensionQuestions) ||
+    !Array.isArray(value.vocabularyHighlights)
+  ) {
+    return null
+  }
+  return value
+}
+
+function Editor({ parsedContent: raw, rawContent, onChange }: EditorProps) {
+  const parsedContent = getReadingContent(raw)
+  if (!parsedContent) {
     return (
       <textarea
         value={rawContent}
@@ -163,8 +176,9 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   )
 }
 
-function Preview({ parsedContent, rawContent }: PreviewProps) {
-  if (!isReadingContent(parsedContent)) {
+function Preview({ parsedContent: raw, rawContent }: PreviewProps) {
+  const parsedContent = getReadingContent(raw)
+  if (!parsedContent) {
     return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
   }
 
@@ -207,8 +221,9 @@ function Preview({ parsedContent, rawContent }: PreviewProps) {
   )
 }
 
-function Student({ parsedContent, rawContent }: StudentProps) {
-  if (!isReadingContent(parsedContent)) {
+function Student({ parsedContent: raw, rawContent }: StudentProps) {
+  const parsedContent = getReadingContent(raw)
+  if (!parsedContent) {
     return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
   }
 

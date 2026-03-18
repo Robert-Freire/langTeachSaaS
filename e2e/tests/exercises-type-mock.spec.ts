@@ -107,6 +107,8 @@ test('exercises render as quiz in editor and student can complete them', async (
     await student.getByTestId('try-again-btn').click()
     await expect(student.getByTestId('check-answers-btn')).toBeVisible({ timeout: UI_TIMEOUT })
     await expect(student.getByTestId('fib-input-0')).toHaveValue('')
+    await expect(student.getByTestId('mc-option-0-1')).not.toBeChecked()
+    await expect(student.getByTestId('score-summary')).not.toBeVisible()
   } finally {
     await context.close()
   }

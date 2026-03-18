@@ -211,7 +211,7 @@ test('schedule from dashboard via create new', async ({ browser }) => {
     await page.getByTestId('template-blank').click()
     // Verify the scheduled date picker shows the pre-filled time
     const dateBtn = page.getByTestId('input-scheduled-at')
-    await expect(dateBtn).toContainText('2:30', { timeout: UI_TIMEOUT })
+    await expect(dateBtn).toContainText(/0?2:30\s?PM/i, { timeout: UI_TIMEOUT })
   } finally {
     await deleteStudentViaApi(page, student.id)
     await context.close()
