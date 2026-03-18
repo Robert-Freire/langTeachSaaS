@@ -50,7 +50,8 @@ Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 | T19 | Dashboard v2 (weekly schedule, WeekStrip, NeedsPrep, QuickActions) | DONE — PR #60 merged |
 | T19.1 | Schedule from Dashboard ("+" on day columns, assign draft or create new) | DONE — PR #62 merged |
 | T19.2 | Dashboard Scheduling Redesign (stay on dashboard, block slots, duplicate, adapt) | post-demo |
-| T20 | Brand & Visual Polish (icon, favicon, loading states — replaces T9.1) | DONE — PR pending |
+| T20 | Brand & Visual Polish (icon, favicon, loading states — replaces T9.1) | DONE — PR #67 merged |
+| T20.5 | Mobile & Tablet Responsive Polish (hamburger drawer, responsive layouts) | DONE — PR #69 merged |
 | T21 | Regenerate with Direction (make easier/harder/shorter/longer modifiers) | DONE — PR #65 merged |
 | T23 | Beta Demo Preparation (seed data, demo script, talking points) | pending (always last) |
 

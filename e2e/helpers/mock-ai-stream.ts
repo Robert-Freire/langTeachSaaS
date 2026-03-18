@@ -35,6 +35,7 @@ export async function mockFullLessonStreams(page: Page): Promise<void> {
     grammar: GRAMMAR_FIXTURE,
     exercises: EXERCISES_FIXTURE,
     conversation: CONVERSATION_FIXTURE,
+    reading: READING_FIXTURE,
     homework: HOMEWORK_FIXTURE,
   }
   for (const [taskType, payload] of Object.entries(fixtures)) {
@@ -77,6 +78,18 @@ export const GRAMMAR_FIXTURE = {
     { sentence: 'Water boils at 100°C.', note: 'fact' },
   ],
   commonMistakes: ['Forgetting the -s ending for he/she/it', 'Using present simple for temporary actions'],
+}
+
+export const READING_FIXTURE = {
+  passage: 'Smartphones have changed the way we communicate. Once considered a luxury, these devices have become ubiquitous in modern society. They have revolutionized how we access information, stay connected, and even conduct business. However, some experts warn that excessive smartphone use may reduce face-to-face interaction.',
+  comprehensionQuestions: [
+    { question: 'How have smartphones changed communication?', answer: 'They allow instant messaging and video calls.', type: 'detail' },
+    { question: 'What is a potential downside mentioned?', answer: 'Reduced face-to-face interaction.', type: 'inference' },
+  ],
+  vocabularyHighlights: [
+    { word: 'ubiquitous', definition: 'Found everywhere; very common.' },
+    { word: 'revolutionize', definition: 'To change something completely and fundamentally.' },
+  ],
 }
 
 export const HOMEWORK_FIXTURE = {
