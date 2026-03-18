@@ -28,6 +28,11 @@ services:
       Auth0__Domain: "${AUTH0_DOMAIN}"
       Auth0__Audience: "${AUTH0_AUDIENCE}"
       Claude__ApiKey: "${CLAUDE_API_KEY}"
+    healthcheck:
+      test: curl -sf http://localhost:5000/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       sqlserver:
         condition: service_healthy
