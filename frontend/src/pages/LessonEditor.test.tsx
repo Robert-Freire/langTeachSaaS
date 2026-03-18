@@ -121,6 +121,25 @@ describe('LessonEditor', () => {
     expect(screen.queryByTestId('editor-student-name')).not.toBeInTheDocument()
   })
 
+  it('renders Save and Cancel buttons when inline scheduling is active', async () => {
+    mockGetLesson.mockResolvedValue({ ...mockLessonFull, scheduledAt: null })
+    renderWithProviders()
+
+    await screen.findByTestId('lesson-title')
+
+    // Expand metadata strip
+    const metaStrip = screen.getByText('English').closest('[role="button"]') as HTMLElement
+    metaStrip.click()
+
+    const scheduleBtn = await screen.findByTestId('quick-schedule-btn')
+    scheduleBtn.click()
+
+    // Both Save and Cancel must be in the DOM (not overflow-clipped out of the DOM)
+    expect(await screen.findByRole('button', { name: /save/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument()
+    expect(screen.getByTestId('inline-schedule-input')).toBeInTheDocument()
+  })
+
   it('shows scheduled date badge in metadata strip', async () => {
     renderWithProviders()
 
