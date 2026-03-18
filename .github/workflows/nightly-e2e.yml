@@ -112,7 +112,7 @@ jobs:
           echo "Frontend is ready."
 
       - name: Run Playwright tests
-        run: npx playwright test --reporter=html --workers=auto
+        run: npx playwright test --reporter=html
         working-directory: e2e
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:5173
