@@ -106,6 +106,21 @@ describe('LessonEditor', () => {
     mockSaveLessonNotes.mockResolvedValue({})
   })
 
+  it('shows student name in metadata strip when present', async () => {
+    mockGetLesson.mockResolvedValue({ ...mockLessonFull, studentId: 'student-1', studentName: 'Carlos Mendez' })
+    renderWithProviders()
+
+    await screen.findByTestId('lesson-title')
+    expect(screen.getByTestId('editor-student-name')).toHaveTextContent('Carlos Mendez')
+  })
+
+  it('hides student name in metadata strip when null', async () => {
+    renderWithProviders()
+
+    await screen.findByTestId('lesson-title')
+    expect(screen.queryByTestId('editor-student-name')).not.toBeInTheDocument()
+  })
+
   it('shows scheduled date badge in metadata strip', async () => {
     renderWithProviders()
 

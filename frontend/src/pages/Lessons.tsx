@@ -231,10 +231,17 @@ export default function Lessons() {
             <Card key={lesson.id} className="bg-white border border-zinc-200 shadow-sm transition-all hover:shadow-md hover:border-zinc-300" data-testid={`lesson-row-${lesson.id}`}>
               <CardContent className="flex items-center justify-between py-4 px-4 sm:px-6">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-zinc-900 text-sm" data-testid="lesson-title">
                       {lesson.title}
                     </span>
+                    {lesson.studentName && (
+                      <span className="text-sm text-indigo-600 font-medium" data-testid="lesson-student-name">
+                        {lesson.studentName}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
                       {lesson.language}
                     </Badge>
@@ -244,10 +251,8 @@ export default function Lessons() {
                     <Badge variant="outline" className={cn('text-xs', statusBadgeClass(lesson.status))} data-testid="lesson-status">
                       {lesson.status}
                     </Badge>
+                    <span className="text-xs text-zinc-400">{lesson.topic} &middot; {lesson.durationMinutes} min &middot; Updated {formatDate(lesson.updatedAt)}</span>
                   </div>
-                  <p className="text-xs text-zinc-400 mt-1 truncate">
-                    {lesson.topic} &middot; {lesson.durationMinutes} min &middot; Updated {formatDate(lesson.updatedAt)}
-                  </p>
                 </div>
                 <div className="flex items-center gap-1 ml-2 sm:ml-4 shrink-0">
                   <Tooltip>

@@ -504,6 +504,9 @@ export default function LessonEditor() {
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 flex-wrap">
+              {lesson.studentName && (
+                <span className="text-sm font-medium text-indigo-600" data-testid="editor-student-name">{lesson.studentName}</span>
+              )}
               <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">{lesson.language}</Badge>
               <Badge variant="outline" className={`text-xs ${getCefrBadgeClasses(lesson.cefrLevel)}`}>{lesson.cefrLevel}</Badge>
               <span className="text-xs text-zinc-500">{lesson.topic}</span>
