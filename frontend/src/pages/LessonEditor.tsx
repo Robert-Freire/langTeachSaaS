@@ -586,15 +586,18 @@ export default function LessonEditor() {
                     </Button>
                   </div>
                 ) : schedulingInline ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <DateTimePicker
                       value={inlineScheduleDate}
                       onChange={setInlineScheduleDate}
                       autoFocus
+                      className="flex-1 min-w-0"
                       data-testid="inline-schedule-input"
                     />
-                    <Button size="sm" onClick={handleQuickSchedule} disabled={!inlineScheduleDate} className="bg-indigo-600 hover:bg-indigo-700 text-white">Save</Button>
-                    <Button variant="ghost" size="sm" onClick={() => { setSchedulingInline(false); setInlineScheduleDate('') }}>Cancel</Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button size="sm" onClick={handleQuickSchedule} disabled={!inlineScheduleDate} className="bg-indigo-600 hover:bg-indigo-700 text-white">Save</Button>
+                      <Button variant="ghost" size="sm" onClick={() => { setSchedulingInline(false); setInlineScheduleDate('') }}>Cancel</Button>
+                    </div>
                   </div>
                 ) : (
                   <Button
