@@ -3,6 +3,7 @@ import { createAuthenticatedContext } from '../helpers/auth-helper'
 import { getTestAuth0UserId, updateTeacherAuth0Id } from '../helpers/db-helper'
 
 test('provider switch preserves teacher identity', async ({ browser }) => {
+  test.skip(!!process.env.CI, 'Requires real Auth0 browser login — not runnable in CI')
   const email = process.env.E2E_TEST_EMAIL
   if (!email) throw new Error('E2E_TEST_EMAIL env var is required for provider-switch test')
   const auth0UserId = getTestAuth0UserId()
