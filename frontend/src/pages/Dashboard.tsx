@@ -52,8 +52,8 @@ export default function Dashboard() {
         <p className="text-sm text-zinc-500 mt-1">Your teaching command center.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3 space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="md:col-span-3 space-y-6">
           <WeekStrip
             weekOffset={weekOffset}
             onPrev={() => setWeekOffset(o => o - 1)}

@@ -89,7 +89,7 @@ export default function LessonNew() {
         </div>
 
         {templatesLoading ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="rounded-lg border border-zinc-200 bg-white p-4 space-y-2">
                 <Skeleton className="h-6 w-6" />
@@ -104,7 +104,7 @@ export default function LessonNew() {
             <button onClick={() => refetchTemplates()} className="text-sm text-indigo-600 underline hover:text-indigo-800">Retry</button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3" data-testid="template-grid">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3" data-testid="template-grid">
             {(templates ?? []).map((t: LessonTemplate) => (
               <button
                 key={t.id}

@@ -132,7 +132,7 @@ export default function Students() {
         <div className="space-y-3">
           {students.map((student) => (
             <Card key={student.id} className="bg-white border border-zinc-200" data-testid={`student-row-${student.id}`}>
-              <CardContent className="flex items-center justify-between py-4 px-6">
+              <CardContent className="flex items-center justify-between py-4 px-4 sm:px-6">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="font-medium text-zinc-900 text-sm" data-testid="student-name">
@@ -167,7 +167,7 @@ export default function Students() {
                     <p className="text-xs text-zinc-400 mt-1 truncate">{student.notes}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-1 ml-4 shrink-0">
+                <div className="flex items-center gap-1 ml-2 sm:ml-4 shrink-0">
                   <Link
                     to={`/students/${student.id}/edit`}
                     aria-label={`Edit ${student.name}`}
