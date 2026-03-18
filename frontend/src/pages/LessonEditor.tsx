@@ -328,15 +328,22 @@ export default function LessonEditor() {
       orderIndex: idx,
       notes: (sectionNotes[t] ?? '') || null,
     }))
-    setSectionNotes(prev => {
-      if (!prev) return prev
-      const next = { ...prev }
-      delete next[type]
-      return next
-    })
     setConfirmRemoveSection(null)
-    doUpdateSections(payload)
-  }, [lesson, sectionNotes, doUpdateSections])
+    doUpdateSections(payload, {
+      onSuccess: () => {
+        setSectionNotes(prev => {
+          if (!prev) return prev
+          const next = { ...prev }
+          delete next[type]
+          return next
+        })
+        if (generateOpen === type) {
+          setGenerateOpen(null)
+          setRegenerateParams(null)
+        }
+      },
+    })
+  }, [lesson, sectionNotes, doUpdateSections, generateOpen])
 
   const students = studentsData?.items ?? []
 

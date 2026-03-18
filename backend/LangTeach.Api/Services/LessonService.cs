@@ -199,9 +199,15 @@ public class LessonService : ILessonService
         if (lesson is null)
             return null;
 
+        // Reject empty section sets and duplicate section types
+        if (request.Sections.Count == 0)
+            return null;
+        var incomingTypes = new HashSet<string>(request.Sections.Select(s => s.SectionType));
+        if (incomingTypes.Count != request.Sections.Count)
+            return null;
+
         var now = DateTime.UtcNow;
         var existingByType = lesson.Sections.ToDictionary(s => s.SectionType);
-        var incomingTypes = new HashSet<string>(request.Sections.Select(s => s.SectionType));
 
         // Remove sections no longer present (and their content blocks, since FK is NoAction)
         var removedSections = lesson.Sections.Where(s => !incomingTypes.Contains(s.SectionType)).ToList();
