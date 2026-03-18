@@ -40,10 +40,10 @@ describe('UnscheduledDrafts', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('shows draft count in header', () => {
+  it('shows lesson count in header', () => {
     const drafts = Array.from({ length: 3 }, (_, i) => makeDraft({}, i))
     renderComponent(drafts)
-    expect(screen.getByText('Unscheduled Drafts (3)')).toBeInTheDocument()
+    expect(screen.getByText('Unscheduled Lessons (3)')).toBeInTheDocument()
   })
 
   it('does not show "Open" text in rows', () => {
@@ -96,5 +96,18 @@ describe('UnscheduledDrafts', () => {
       expect(screen.getByTestId(`unscheduled-d${i}`)).toBeInTheDocument()
     }
     expect(screen.queryByTestId('show-all-drafts')).not.toBeInTheDocument()
+  })
+
+  it('shows published unscheduled lessons with a Published badge', () => {
+    const published = makeDraft({ id: 'p1', title: 'Ready Lesson', status: 'Published', scheduledAt: null })
+    renderComponent([published])
+    expect(screen.getByTestId('unscheduled-p1')).toBeInTheDocument()
+    expect(screen.getByText('Published')).toBeInTheDocument()
+  })
+
+  it('excludes published lessons that are already scheduled', () => {
+    const scheduled = makeDraft({ id: 'p2', status: 'Published', scheduledAt: '2026-03-20T10:00:00Z' })
+    renderComponent([scheduled])
+    expect(screen.queryByTestId('unscheduled-p2')).not.toBeInTheDocument()
   })
 })
