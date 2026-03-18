@@ -1,0 +1,132 @@
+name: Nightly E2E Tests
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  check-changes:
+    name: Check for new commits
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "Manual trigger, always run."
+            exit 0
+          fi
+
+          LAST_SUCCESS_SHA=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/nightly-e2e.yml/runs?status=success&per_page=1" \
+            --jq '.workflow_runs[0].head_sha // empty' 2>/dev/null || true)
+
+          CURRENT_SHA="${{ github.sha }}"
+
+          if [ "$LAST_SUCCESS_SHA" = "$CURRENT_SHA" ]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "No new commits since last successful run ($CURRENT_SHA). Skipping."
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "New commits detected (last success: ${LAST_SUCCESS_SHA:-none}, current: $CURRENT_SHA). Running."
+          fi
+
+  e2e:
+    name: E2E Tests
+    needs: check-changes
+    if: needs.check-changes.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install e2e dependencies
+        run: npm ci
+        working-directory: e2e
+
+      - name: Install Playwright (chromium only)
+        run: npx playwright install --with-deps chromium
+        working-directory: e2e
+
+      - name: Create frontend .env.local
+        run: |
+          cat > frontend/.env.local <<EOF
+          VITE_AUTH0_DOMAIN=${{ secrets.VITE_AUTH0_DOMAIN }}
+          VITE_AUTH0_CLIENT_ID=${{ secrets.VITE_AUTH0_CLIENT_ID }}
+          VITE_AUTH0_AUDIENCE=${{ secrets.VITE_AUTH0_AUDIENCE }}
+          VITE_API_URL=http://localhost:5000
+          EOF
+
+      - name: Start services
+        run: docker compose up -d --build
+        env:
+          SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+          AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+
+      - name: Wait for SQL Server
+        run: |
+          timeout 120 bash -c '
+            until docker exec langteach-sql /opt/mssql-tools18/bin/sqlcmd \
+              -S localhost -U sa -P "$0" -C -Q "SELECT 1" &>/dev/null; do
+              echo "Waiting for SQL Server..."
+              sleep 2
+            done
+          ' "${{ secrets.SA_PASSWORD }}"
+          echo "SQL Server is ready."
+
+      - name: Wait for API
+        run: |
+          timeout 120 bash -c '
+            until curl -sf -o /dev/null -w "%{http_code}" http://localhost:5000/health 2>/dev/null | grep -qE "^[2-4]"; do
+              echo "Waiting for API..."
+              sleep 2
+            done
+          '
+          echo "API is ready."
+
+      - name: Wait for Frontend
+        run: |
+          timeout 60 bash -c '
+            until curl -sf -o /dev/null http://localhost:5173 2>/dev/null; do
+              echo "Waiting for Frontend..."
+              sleep 2
+            done
+          '
+          echo "Frontend is ready."
+
+      - name: Run Playwright tests
+        run: npx playwright test --reporter=html --workers=auto
+        working-directory: e2e
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:5173
+          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
+
+      - name: Stop services
+        if: always()
+        run: docker compose down -v
