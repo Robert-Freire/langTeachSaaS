@@ -65,12 +65,12 @@ jobs:
 
       - name: Create frontend .env.local
         run: |
-          cat > frontend/.env.local <<EOF
-          VITE_AUTH0_DOMAIN=${{ secrets.VITE_AUTH0_DOMAIN }}
-          VITE_AUTH0_CLIENT_ID=${{ secrets.VITE_AUTH0_CLIENT_ID }}
-          VITE_AUTH0_AUDIENCE=${{ secrets.VITE_AUTH0_AUDIENCE }}
-          VITE_API_URL=http://localhost:5000
-          EOF
+          printf '%s\n' \
+            "VITE_AUTH0_DOMAIN=${{ secrets.VITE_AUTH0_DOMAIN }}" \
+            "VITE_AUTH0_CLIENT_ID=${{ secrets.VITE_AUTH0_CLIENT_ID }}" \
+            "VITE_AUTH0_AUDIENCE=${{ secrets.VITE_AUTH0_AUDIENCE }}" \
+            "VITE_API_URL=http://localhost:5000" \
+            > frontend/.env.local
 
       - name: Start services
         run: docker compose up -d --build
@@ -94,7 +94,7 @@ jobs:
       - name: Wait for API
         run: |
           timeout 120 bash -c '
-            until curl -sf -o /dev/null -w "%{http_code}" http://localhost:5000/health 2>/dev/null | grep -qE "^[2-4]"; do
+            until curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health 2>/dev/null | grep -qE "^[2-4]"; do
               echo "Waiting for API..."
               sleep 2
             done
