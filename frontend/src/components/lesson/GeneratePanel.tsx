@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import type { SectionType } from '../../api/lessons'
 import {
   saveContentBlock,
@@ -55,6 +55,7 @@ interface GeneratePanelProps {
   }
   onInsert: (block: ContentBlockDto) => void
   onClose: () => void
+  onStreamingChange?: (isStreaming: boolean) => void
 }
 
 export function GeneratePanel({
@@ -67,6 +68,7 @@ export function GeneratePanel({
   lessonContext,
   onInsert,
   onClose,
+  onStreamingChange,
 }: GeneratePanelProps) {
   const [taskType, setTaskType] = useState<ContentBlockType>(initialTaskType ?? SECTION_DEFAULT_TASK[sectionType])
   const [style, setStyle] = useState(initialStyle ?? 'Conversational')
@@ -114,6 +116,10 @@ export function GeneratePanel({
   const isStreaming = status === 'streaming'
   const isDone = status === 'done'
   const isError = status === 'error'
+
+  useEffect(() => {
+    onStreamingChange?.(isStreaming)
+  }, [isStreaming, onStreamingChange])
 
   return (
     <div

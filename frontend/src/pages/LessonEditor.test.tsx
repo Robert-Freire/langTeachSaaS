@@ -1,9 +1,23 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import React from 'react'
 import LessonEditor from './LessonEditor'
+
+const mockPanelCallbacks = vi.hoisted(() => ({
+  onStreamingChange: undefined as ((v: boolean) => void) | undefined,
+  onClose: undefined as (() => void) | undefined,
+}))
+
+vi.mock('@/components/lesson/GeneratePanel', () => ({
+  GeneratePanel: (props: { onStreamingChange?: (v: boolean) => void; onClose: () => void }) => {
+    mockPanelCallbacks.onStreamingChange = props.onStreamingChange
+    mockPanelCallbacks.onClose = props.onClose
+    return React.createElement('div', { 'data-testid': 'generate-panel' })
+  },
+}))
 
 const mockLessonFull = {
   id: 'lesson-1',
@@ -253,6 +267,62 @@ describe('LessonEditor', () => {
           expect.objectContaining({ sectionType: 'Practice' }),
         ]),
       )
+    })
+  })
+
+  describe('Generate button streaming state', () => {
+    beforeEach(() => {
+      mockPanelCallbacks.onStreamingChange = undefined
+      mockPanelCallbacks.onClose = undefined
+    })
+
+    it('disables Generate buttons on other sections while one section is streaming', async () => {
+      renderWithProviders()
+      await screen.findByTestId('lesson-title')
+
+      const user = userEvent.setup()
+      await user.click(screen.getByTestId('generate-btn-warmup'))
+      await screen.findByTestId('generate-panel')
+
+      act(() => {
+        mockPanelCallbacks.onStreamingChange?.(true)
+      })
+
+      expect(screen.getByTestId('generate-btn-presentation')).toBeDisabled()
+      expect(screen.getByTestId('generate-btn-practice')).toBeDisabled()
+      expect(screen.getByTestId('generate-btn-production')).toBeDisabled()
+      expect(screen.getByTestId('generate-btn-wrapup')).toBeDisabled()
+    })
+
+    it('shows Stop on the active section Generate button while streaming', async () => {
+      renderWithProviders()
+      await screen.findByTestId('lesson-title')
+
+      const user = userEvent.setup()
+      await user.click(screen.getByTestId('generate-btn-warmup'))
+      await screen.findByTestId('generate-panel')
+
+      act(() => {
+        mockPanelCallbacks.onStreamingChange?.(true)
+      })
+
+      const activeBtn = screen.getByTestId('generate-btn-warmup')
+      expect(activeBtn).not.toBeDisabled()
+      expect(activeBtn).toHaveTextContent('Stop')
+    })
+
+    it('re-enables Generate buttons after streaming ends', async () => {
+      renderWithProviders()
+      await screen.findByTestId('lesson-title')
+
+      const user = userEvent.setup()
+      await user.click(screen.getByTestId('generate-btn-warmup'))
+      await screen.findByTestId('generate-panel')
+
+      act(() => { mockPanelCallbacks.onStreamingChange?.(true) })
+      act(() => { mockPanelCallbacks.onStreamingChange?.(false) })
+
+      expect(screen.getByTestId('generate-btn-presentation')).not.toBeDisabled()
     })
   })
 })

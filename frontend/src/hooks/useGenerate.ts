@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import type { GenerateRequest, GenerateStatus } from '../api/generate'
 
@@ -14,6 +14,12 @@ export function useGenerate() {
   const abort = useCallback(() => {
     controllerRef.current?.abort()
     setStatus('idle')
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      controllerRef.current?.abort()
+    }
   }, [])
 
   const generate = useCallback(
