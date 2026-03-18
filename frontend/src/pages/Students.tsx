@@ -8,6 +8,8 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { getCefrBadgeClasses } from '@/lib/cefr-colors'
 import { cn } from '@/lib/utils'
 import {
   AlertDialog,
@@ -95,7 +97,7 @@ export default function Students() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">Students</h1>
+          <h1 className="text-2xl font-bold text-zinc-900">Students</h1>
           <p className="text-sm text-zinc-500 mt-1">Manage your student profiles.</p>
         </div>
         <Link
@@ -131,7 +133,7 @@ export default function Students() {
       {students.length > 0 && (
         <div className="space-y-3">
           {students.map((student) => (
-            <Card key={student.id} className="bg-white border border-zinc-200" data-testid={`student-row-${student.id}`}>
+            <Card key={student.id} className="bg-white border border-zinc-200 shadow-sm transition-all hover:shadow-md hover:border-zinc-300" data-testid={`student-row-${student.id}`}>
               <CardContent className="flex items-center justify-between py-4 px-4 sm:px-6">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
@@ -141,7 +143,7 @@ export default function Students() {
                     <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
                       {student.learningLanguage}
                     </Badge>
-                    <Badge variant="outline" className="text-xs text-indigo-600 border-indigo-200 bg-indigo-50" data-testid="student-level">
+                    <Badge variant="outline" className={`text-xs ${getCefrBadgeClasses(student.cefrLevel)}`} data-testid="student-level">
                       {student.cefrLevel}
                     </Badge>
                     {student.nativeLanguage && (
@@ -168,23 +170,33 @@ export default function Students() {
                   )}
                 </div>
                 <div className="flex items-center gap-1 ml-2 sm:ml-4 shrink-0">
-                  <Link
-                    to={`/students/${student.id}/edit`}
-                    aria-label={`Edit ${student.name}`}
-                    className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }))}
-                    data-testid="edit-student"
-                  >
-                    <Pencil className="h-4 w-4 text-zinc-400" />
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setStudentToDelete(student)}
-                    aria-label={`Delete ${student.name}`}
-                    data-testid="delete-student"
-                  >
-                    <Trash2 className="h-4 w-4 text-zinc-400" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger render={<span />}>
+                      <Link
+                        to={`/students/${student.id}/edit`}
+                        aria-label={`Edit ${student.name}`}
+                        className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }))}
+                        data-testid="edit-student"
+                      >
+                        <Pencil className="h-4 w-4 text-zinc-400" />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent>Edit</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger render={<span />}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setStudentToDelete(student)}
+                        aria-label={`Delete ${student.name}`}
+                        data-testid="delete-student"
+                      >
+                        <Trash2 className="h-4 w-4 text-zinc-400" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete</TooltipContent>
+                  </Tooltip>
                 </div>
               </CardContent>
             </Card>

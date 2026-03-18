@@ -34,6 +34,8 @@ import {
 import { GeneratePanel } from '@/components/lesson/GeneratePanel'
 import { ContentBlock } from '@/components/lesson/ContentBlock'
 import { ExportButton } from '@/components/lesson/ExportButton'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { getCefrBadgeClasses } from '@/lib/cefr-colors'
 import { FullLessonGenerateButton } from '@/components/lesson/FullLessonGenerateButton'
 import { LessonNotesCard } from '@/components/lesson/LessonNotesCard'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -303,7 +305,7 @@ export default function LessonEditor() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-3xl">
+      <div className="space-y-6 max-w-4xl">
         <div className="flex items-center gap-3">
           <Skeleton className="h-8 flex-1" />
           <Skeleton className="h-8 w-20 rounded-full" />
@@ -340,7 +342,7 @@ export default function LessonEditor() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-4xl">
       {/* Top bar */}
       <div className="flex items-center gap-2 md:gap-3 flex-wrap">
         {editingTitle ? (
@@ -355,7 +357,7 @@ export default function LessonEditor() {
           />
         ) : (
           <h1
-            className="text-2xl font-semibold text-zinc-900 flex-1 truncate cursor-pointer hover:text-indigo-700 transition-colors"
+            className="text-2xl font-bold text-zinc-900 flex-1 cursor-pointer hover:text-indigo-700 transition-colors"
             onClick={() => setEditingTitle(true)}
             onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setEditingTitle(true)}
             role="button"
@@ -379,26 +381,36 @@ export default function LessonEditor() {
             {lesson.status}
           </button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => doDuplicate()}
-            disabled={isDuplicating}
-            aria-label="Duplicate lesson"
-            data-testid="duplicate-btn"
-          >
-            <Copy className="h-4 w-4 text-zinc-500" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger render={<span />}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => doDuplicate()}
+                disabled={isDuplicating}
+                aria-label="Duplicate lesson"
+                data-testid="duplicate-btn"
+              >
+                <Copy className="h-4 w-4 text-zinc-500" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Duplicate</TooltipContent>
+          </Tooltip>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setConfirmDelete(true)}
-            aria-label="Delete lesson"
-            data-testid="delete-btn"
-          >
-            <Trash2 className="h-4 w-4 text-zinc-500" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger render={<span />}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setConfirmDelete(true)}
+                aria-label="Delete lesson"
+                data-testid="delete-btn"
+              >
+                <Trash2 className="h-4 w-4 text-zinc-500" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Delete</TooltipContent>
+          </Tooltip>
 
           <ExportButton lessonId={id!} />
 
@@ -444,7 +456,7 @@ export default function LessonEditor() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">{lesson.language}</Badge>
-              <Badge variant="outline" className="text-xs text-indigo-600 border-indigo-200 bg-indigo-50">{lesson.cefrLevel}</Badge>
+              <Badge variant="outline" className={`text-xs ${getCefrBadgeClasses(lesson.cefrLevel)}`}>{lesson.cefrLevel}</Badge>
               <span className="text-xs text-zinc-500">{lesson.topic}</span>
               <span className="text-xs text-zinc-400">{lesson.durationMinutes} min</span>
               {lesson.scheduledAt && (
@@ -615,6 +627,10 @@ export default function LessonEditor() {
                   className="resize-none text-sm"
                   data-testid={`section-${type.toLowerCase()}`}
                 />
+
+                {!sectionNotes[type] && blocks.length === 0 && (
+                  <p className="text-xs text-zinc-400 italic">Use Generate to create content, or type your notes above.</p>
+                )}
 
                 {blocks.map(block => (
                   <ContentBlock

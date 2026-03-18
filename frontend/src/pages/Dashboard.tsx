@@ -48,7 +48,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-zinc-900">Dashboard</h1>
         <p className="text-sm text-zinc-500 mt-1">Your teaching command center.</p>
       </div>
 

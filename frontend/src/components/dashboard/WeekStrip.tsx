@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { getCefrBadgeClasses } from '@/lib/cefr-colors'
 import { Button } from '@/components/ui/button'
 import type { Lesson } from '../../api/lessons'
 import type { Student } from '../../api/students'
@@ -56,7 +57,7 @@ export function WeekStrip({ weekOffset, onPrev, onNext, lessons, students, unsch
             <div
               key={idx}
               className={`min-w-[120px] shrink-0 snap-start md:min-w-0 md:shrink min-h-[100px] rounded-lg border p-2 ${
-                today ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-zinc-200'
+                today ? 'bg-indigo-50 border-indigo-200 border-t-2 border-t-indigo-500' : 'bg-white border-zinc-200'
               }`}
               data-testid={`week-day-${idx}`}
             >
@@ -77,7 +78,7 @@ export function WeekStrip({ weekOffset, onPrev, onNext, lessons, students, unsch
                     data-testid={`lesson-pill-${lesson.id}`}
                   >
                     <div className="font-medium truncate">{lesson.studentName ?? 'No student'}</div>
-                    <Badge variant="outline" className="text-[10px] px-1 py-0 mt-0.5">{lesson.cefrLevel}</Badge>
+                    <Badge variant="outline" className={`text-[10px] px-1 py-0 mt-0.5 ${getCefrBadgeClasses(lesson.cefrLevel)}`}>{lesson.cefrLevel}</Badge>
                   </button>
                 ))}
               </div>
