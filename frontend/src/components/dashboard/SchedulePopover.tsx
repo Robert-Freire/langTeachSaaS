@@ -7,6 +7,7 @@ import type { Student } from '../../api/students'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { TimePicker } from '@/components/ui/date-time-picker'
 import { Label } from '@/components/ui/label'
 
 interface SchedulePopoverProps {
@@ -117,11 +118,9 @@ export function SchedulePopover({ date, students, unscheduledDrafts }: ScheduleP
 
             <div className="space-y-1.5">
               <Label className="text-xs">Time</Label>
-              <input
-                type="time"
+              <TimePicker
                 value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                onChange={setTime}
                 data-testid="schedule-time-input"
               />
             </div>
@@ -136,15 +135,22 @@ export function SchedulePopover({ date, students, unscheduledDrafts }: ScheduleP
                 Create New Lesson
               </Button>
               {unscheduledDrafts.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs"
-                  onClick={() => setView('drafts')}
-                  data-testid="schedule-assign-draft"
-                >
-                  Assign Existing Draft
-                </Button>
+                <>
+                  <div className="flex items-center gap-2 py-0.5">
+                    <div className="flex-1 border-t border-zinc-200" />
+                    <span className="text-xs text-zinc-400">or</span>
+                    <div className="flex-1 border-t border-zinc-200" />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs"
+                    onClick={() => setView('drafts')}
+                    data-testid="schedule-assign-draft"
+                  >
+                    Assign Existing Draft
+                  </Button>
+                </>
               )}
             </div>
           </div>

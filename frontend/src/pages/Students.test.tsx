@@ -28,10 +28,12 @@ describe('Students error states', () => {
     vi.clearAllMocks()
   })
 
-  it('shows loading indicator while students are fetching', () => {
+  it('shows loading skeleton while students are fetching', () => {
     vi.mocked(studentsApi.getStudents).mockReturnValue(new Promise(() => {}))
     wrapper(<Students />)
-    expect(screen.getByText('Loading students...')).toBeInTheDocument()
+    // Skeleton loading state renders skeleton elements instead of text
+    const skeletons = document.querySelectorAll('[data-slot="skeleton"]')
+    expect(skeletons.length).toBeGreaterThan(0)
   })
 
   it('shows error message when student list fetch fails', async () => {

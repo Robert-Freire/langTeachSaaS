@@ -10,7 +10,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
@@ -87,7 +89,15 @@ export default function LessonNew() {
         </div>
 
         {templatesLoading ? (
-          <div className="text-sm text-zinc-500">Loading templates...</div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="rounded-lg border border-zinc-200 bg-white p-4 space-y-2">
+                <Skeleton className="h-6 w-6" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-full" />
+              </div>
+            ))}
+          </div>
         ) : templatesError ? (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
             <p className="text-sm text-red-600 font-medium">Failed to load templates.</p>
@@ -101,7 +111,7 @@ export default function LessonNew() {
                 onClick={() => { setSelectedTemplateId(t.id); setStep(2) }}
                 data-testid={`template-${t.name.replace(/\s+/g, '-').toLowerCase()}`}
                 className={cn(
-                  'text-left rounded-lg border p-4 transition-all hover:border-indigo-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500',
+                  'text-left rounded-lg border p-4 transition-all hover:border-indigo-300 hover:shadow-md hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-indigo-500',
                   selectedTemplateId === t.id ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-zinc-200 bg-white'
                 )}
               >
@@ -117,7 +127,7 @@ export default function LessonNew() {
             <button
               onClick={() => { setSelectedTemplateId(null); setStep(2) }}
               data-testid="template-blank"
-              className="text-left rounded-lg border border-zinc-200 bg-white p-4 transition-all hover:border-indigo-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="text-left rounded-lg border border-dashed border-zinc-300 bg-white p-4 transition-all hover:border-indigo-300 hover:shadow-md hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <div className="text-zinc-400 mb-2">
                 <Plus className="h-6 w-6" />
@@ -215,12 +225,10 @@ export default function LessonNew() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="scheduledAt">Scheduled Date & Time</Label>
-            <Input
-              id="scheduledAt"
-              type="datetime-local"
+            <Label>Scheduled Date & Time</Label>
+            <DateTimePicker
               value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
+              onChange={setScheduledAt}
               data-testid="input-scheduled-at"
             />
           </div>

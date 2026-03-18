@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
@@ -70,8 +71,22 @@ export default function Settings() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64 text-sm text-zinc-500">
-        Loading profile...
+      <div className="max-w-2xl space-y-6">
+        <div>
+          <Skeleton className="h-7 w-32" />
+          <Skeleton className="h-4 w-64 mt-2" />
+        </div>
+        {[1, 2, 3, 4].map(i => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-3 w-56 mt-1" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-full max-w-sm" />
+            </CardContent>
+          </Card>
+        ))}
       </div>
     )
   }
@@ -158,7 +173,7 @@ export default function Settings() {
             <CardTitle className="text-base">Preferred Content Style</CardTitle>
             <CardDescription>This guides how lesson content is generated for your students.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {STYLES.map(style => (
                 <button
@@ -181,20 +196,19 @@ export default function Settings() {
                 </button>
               ))}
             </div>
+            <div className="flex items-center gap-4 pt-2 border-t border-zinc-100">
+              <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700">
+                {isPending ? 'Saving...' : 'Save Profile'}
+              </Button>
+              {isSuccess && (
+                <span className="text-sm text-emerald-600 font-medium" data-testid="save-success">Saved successfully</span>
+              )}
+              {isError && (
+                <span className="text-sm text-red-600 font-medium">Save failed. Please try again.</span>
+              )}
+            </div>
           </CardContent>
         </Card>
-
-        <div className="flex items-center gap-4">
-          <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700">
-            {isPending ? 'Saving...' : 'Save Profile'}
-          </Button>
-          {isSuccess && (
-            <span className="text-sm text-emerald-600 font-medium" data-testid="save-success">Saved successfully</span>
-          )}
-          {isError && (
-            <span className="text-sm text-red-600 font-medium">Save failed. Please try again.</span>
-          )}
-        </div>
       </form>
     </div>
   )

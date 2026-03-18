@@ -7,6 +7,7 @@ import { logger } from '../lib/logger'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import {
   AlertDialog,
@@ -49,8 +50,34 @@ export default function Students() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64 text-sm text-zinc-500">
-        Loading students...
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-7 w-32" />
+            <Skeleton className="h-4 w-48 mt-2" />
+          </div>
+          <Skeleton className="h-8 w-28" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <Card key={i} className="bg-white border border-zinc-200">
+              <CardContent className="flex items-center justify-between py-4 px-6">
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                    <Skeleton className="h-5 w-10 rounded-full" />
+                  </div>
+                  <Skeleton className="h-3 w-40" />
+                </div>
+                <div className="flex gap-1">
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     )
   }

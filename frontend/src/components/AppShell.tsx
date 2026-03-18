@@ -23,7 +23,7 @@ export default function AppShell() {
   return (
     <div className="flex h-screen overflow-hidden bg-zinc-50">
       {/* Sidebar */}
-      <aside className="flex w-60 flex-col bg-white border-r border-zinc-200">
+      <aside className="flex w-60 flex-col bg-white border-r border-border">
         {/* Logo */}
         <div className="px-6 py-5 border-b border-zinc-100 flex items-center gap-2.5">
           <LangTeachLogo size={28} />
@@ -42,10 +42,10 @@ export default function AppShell() {
                   'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                   active
                     ? 'bg-indigo-50 text-indigo-700'
-                    : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'
+                    : 'text-muted-foreground hover:bg-zinc-100 hover:text-foreground'
                 )}
               >
-                <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-indigo-600' : 'text-zinc-400')} />
+                <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-indigo-600' : 'text-muted-foreground/60')} />
                 {label}
               </Link>
             )
@@ -53,17 +53,17 @@ export default function AppShell() {
         </nav>
 
         {/* User + Logout */}
-        <div className="border-t border-zinc-100 px-3 py-4 space-y-0.5">
+        <div className="border-t border-border px-3 py-4 mt-2 space-y-0.5">
           <div className="flex items-center gap-3 px-3 py-2">
             <Avatar className="h-7 w-7">
               <AvatarImage src={user?.picture} alt={user?.name} />
               <AvatarFallback className="bg-indigo-600 text-white text-xs">{initials}</AvatarFallback>
             </Avatar>
-            <span className="text-sm text-zinc-600 truncate">{user?.name ?? user?.email}</span>
+            <span className="text-sm text-muted-foreground truncate" title={user?.email}>{user?.name ?? user?.email}</span>
           </div>
           <button
             onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-zinc-100 hover:text-foreground transition-colors"
           >
             <LogOut className="h-5 w-5 shrink-0 text-zinc-400" />
             Log out
