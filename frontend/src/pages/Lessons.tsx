@@ -33,6 +33,9 @@ function statusBadgeClass(status: string) {
     : 'text-zinc-500 border-zinc-200'
 }
 
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
 
 export default function Lessons() {
   const queryClient = useQueryClient()
@@ -248,7 +251,7 @@ export default function Lessons() {
                     <Badge variant="outline" className={cn('text-xs', statusBadgeClass(lesson.status))} data-testid="lesson-status">
                       {lesson.status}
                     </Badge>
-                    <span className="text-xs text-zinc-400">{lesson.topic} &middot; {lesson.durationMinutes} min</span>
+                    <span className="text-xs text-zinc-400">{lesson.topic} &middot; {lesson.durationMinutes} min &middot; Updated {formatDate(lesson.updatedAt)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 ml-2 sm:ml-4 shrink-0">
