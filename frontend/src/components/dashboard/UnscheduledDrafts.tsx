@@ -14,7 +14,7 @@ interface UnscheduledDraftsProps {
 }
 
 export function UnscheduledDrafts({ lessons }: UnscheduledDraftsProps) {
-  const unscheduled = lessons.filter(l => l.status === 'Draft' && !l.scheduledAt)
+  const unscheduled = lessons.filter(l => !l.scheduledAt)
   const [expanded, setExpanded] = useState(false)
   const [showAll, setShowAll] = useState(false)
 
@@ -38,7 +38,7 @@ export function UnscheduledDrafts({ lessons }: UnscheduledDraftsProps) {
       >
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-zinc-700">
-            Unscheduled Drafts ({unscheduled.length})
+            Unscheduled Lessons ({unscheduled.length})
           </CardTitle>
           {expanded ? <ChevronUp className="h-4 w-4 text-zinc-400" /> : <ChevronDown className="h-4 w-4 text-zinc-400" />}
         </div>
@@ -57,6 +57,9 @@ export function UnscheduledDrafts({ lessons }: UnscheduledDraftsProps) {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-zinc-800 truncate">{lesson.title}</span>
                     <Badge variant="outline" className={`text-xs ${getCefrBadgeClasses(lesson.cefrLevel)}`}>{lesson.cefrLevel}</Badge>
+                    {lesson.status === 'Published' && (
+                      <Badge variant="outline" className="text-xs text-green-700 border-green-300">Published</Badge>
+                    )}
                   </div>
                   <p className="text-xs text-zinc-500">{lesson.studentName ?? 'No student'}</p>
                 </div>

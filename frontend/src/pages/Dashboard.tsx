@@ -33,6 +33,11 @@ export default function Dashboard() {
     queryFn: () => getLessons({ status: 'Draft', pageSize: 100 }),
   })
 
+  const { data: publishedData } = useQuery({
+    queryKey: ['lessons', { status: 'Published', pageSize: 100 }],
+    queryFn: () => getLessons({ status: 'Published', pageSize: 100 }),
+  })
+
   const { data: totalData } = useQuery({
     queryKey: ['lessons', { pageSize: 1 }],
     queryFn: () => getLessons({ pageSize: 1 }),
@@ -42,7 +47,10 @@ export default function Dashboard() {
   const students = studentsData?.items ?? []
   const weekLessons = weekLessonsData?.items ?? []
   const allDrafts = draftsData?.items ?? []
+  const allPublished = publishedData?.items ?? []
   const unscheduledDrafts = allDrafts.filter(l => !l.scheduledAt)
+  const unscheduledPublished = allPublished.filter(l => !l.scheduledAt)
+  const allUnscheduled = [...unscheduledDrafts, ...unscheduledPublished]
   const totalLessonCount = totalData?.totalCount ?? 0
 
   return (
@@ -60,7 +68,7 @@ export default function Dashboard() {
             onNext={() => setWeekOffset(o => o + 1)}
             lessons={weekLessons}
             students={students}
-            unscheduledDrafts={unscheduledDrafts}
+            unscheduledDrafts={allUnscheduled}
           />
 
           <NeedsPreparation lessons={allDrafts} />
@@ -75,7 +83,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <UnscheduledDrafts lessons={allDrafts} />
+      <UnscheduledDrafts lessons={allUnscheduled} />
     </div>
   )
 }

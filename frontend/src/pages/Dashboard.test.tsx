@@ -118,11 +118,13 @@ describe('Dashboard', () => {
   })
 
   it('shows unscheduled drafts in collapsible section', async () => {
-    // Return unscheduled draft for ALL queries (simpler mock)
     const draftResponse = makeLessonResponse([
       { id: 'unsched-1', scheduledAt: null, status: 'Draft' as const, title: 'Unscheduled Lesson' },
     ])
-    mockGetLessons.mockResolvedValue(draftResponse)
+    mockGetLessons.mockImplementation((query?: Record<string, unknown>) => {
+      if (query?.status === 'Draft') return Promise.resolve(draftResponse)
+      return Promise.resolve(makeLessonResponse([]))
+    })
 
     await act(async () => {
       renderDashboard()
