@@ -77,11 +77,27 @@ describe('buildPartialContent – conversation', () => {
     expect(buildPartialContent('{"scenarios": [', 'conversation')).toBeNull()
   })
 
-  it('returns scenarios after first complete scenario', () => {
+  it('returns scenarios after first complete scenario with empty arrays', () => {
     const scenario = { setup: 'At a cafe', roleA: 'Customer', roleB: 'Waiter', roleAPhrases: [], roleBPhrases: [] }
     const json = `{"scenarios": [${JSON.stringify(scenario)}]}`
     const result = buildPartialContent(json, 'conversation') as Record<string, unknown>
     expect((result.scenarios as unknown[]).length).toBe(1)
+  })
+
+  it('correctly handles scenarios with nested non-empty arrays (roleAPhrases/roleBPhrases)', () => {
+    const scenario = {
+      setup: 'At a cafe',
+      roleA: 'Customer',
+      roleB: 'Waiter',
+      roleAPhrases: ['Excuse me', 'I would like'],
+      roleBPhrases: ['Welcome', 'Right away'],
+    }
+    const json = `{"scenarios": [${JSON.stringify(scenario)}]}`
+    const result = buildPartialContent(json, 'conversation') as Record<string, unknown>
+    expect(result).not.toBeNull()
+    const s = (result.scenarios as unknown[])[0] as Record<string, unknown>
+    expect((s.roleAPhrases as string[]).length).toBe(2)
+    expect((s.roleBPhrases as string[]).length).toBe(2)
   })
 })
 
