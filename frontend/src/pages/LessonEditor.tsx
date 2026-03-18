@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Copy, Trash2, UserPlus, ChevronDown, ChevronUp, Save, Sparkles, CalendarPlus } from 'lucide-react'
+import { Copy, Trash2, UserPlus, ChevronDown, ChevronUp, Save, Sparkles, CalendarPlus, Plus } from 'lucide-react'
 import {
   getLesson, updateLesson, updateSections, deleteLesson, duplicateLesson,
   type Lesson, type LessonStatus, type SectionType,
@@ -52,12 +52,10 @@ const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portugu
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 const DURATIONS = [30, 45, 60, 90]
 
-function initSectionNotes(lesson: Lesson): Record<SectionType, string> {
-  const notes: Record<SectionType, string> = {
-    WarmUp: '', Presentation: '', Practice: '', Production: '', WrapUp: '',
-  }
+function initSectionNotes(lesson: Lesson): Partial<Record<SectionType, string>> {
+  const notes: Partial<Record<SectionType, string>> = {}
   for (const s of lesson.sections) {
-    if (s.sectionType in notes) notes[s.sectionType as SectionType] = s.notes ?? ''
+    notes[s.sectionType as SectionType] = s.notes ?? ''
   }
   return notes
 }
@@ -79,7 +77,8 @@ export default function LessonEditor() {
   const [titleDraft, setTitleDraft] = useState('')
 
   // Section notes local state
-  const [sectionNotes, setSectionNotes] = useState<Record<SectionType, string> | null>(null)
+  const [sectionNotes, setSectionNotes] = useState<Partial<Record<SectionType, string>> | null>(null)
+  const [confirmRemoveSection, setConfirmRemoveSection] = useState<SectionType | null>(null)
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -151,12 +150,8 @@ export default function LessonEditor() {
   })
 
   const { mutate: doUpdateSections, isPending: isSaving } = useMutation({
-    mutationFn: (notes: Record<SectionType, string>) =>
-      updateSections(id!, SECTION_ORDER.map((type, idx) => ({
-        sectionType: type,
-        orderIndex: idx,
-        notes: notes[type] || null,
-      }))),
+    mutationFn: (payload: { sectionType: SectionType; orderIndex: number; notes: string | null }[]) =>
+      updateSections(id!, payload),
     onSuccess: (updated) => {
       queryClient.setQueryData(['lesson', id], updated)
       logger.info('LessonEditor', 'sections saved', { id })
@@ -219,14 +214,20 @@ export default function LessonEditor() {
   }, [lesson, doUpdate, id])
 
   const handleSectionBlur = useCallback((type: SectionType, value: string) => {
-    if (!sectionNotes) return
+    if (!sectionNotes || !lesson) return
     const updated = { ...sectionNotes, [type]: value }
     setSectionNotes(updated)
     if (isSaving) {
-      logger.warn('LessonEditor', 'concurrent save detected — previous save still in-flight', { id })
+      logger.warn('LessonEditor', 'concurrent save detected, previous save still in-flight', { id })
     }
-    doUpdateSections(updated)
-  }, [sectionNotes, doUpdateSections, isSaving, id])
+    const payload = lesson.sections
+      .map(s => ({
+        sectionType: s.sectionType as SectionType,
+        orderIndex: s.orderIndex,
+        notes: (s.sectionType === type ? value : updated[s.sectionType as SectionType]) || null,
+      }))
+    doUpdateSections(payload)
+  }, [sectionNotes, lesson, doUpdateSections, isSaving, id])
 
   const handleMetaSave = useCallback(() => {
     if (!lesson) return
@@ -302,6 +303,47 @@ export default function LessonEditor() {
       return { ...prev, [sectionId]: existing.filter(b => b.id !== id) }
     })
   }, [])
+
+  const handleAddSection = useCallback((type: SectionType) => {
+    if (!lesson || !sectionNotes) return
+    const existingTypes = lesson.sections.map(s => s.sectionType as SectionType)
+    const allTypes = [...existingTypes, type]
+    const sorted = SECTION_ORDER.filter(t => allTypes.includes(t))
+    const payload = sorted.map((t, idx) => ({
+      sectionType: t,
+      orderIndex: idx,
+      notes: (sectionNotes[t] ?? '') || null,
+    }))
+    doUpdateSections(payload)
+  }, [lesson, sectionNotes, doUpdateSections])
+
+  const handleRemoveSection = useCallback((type: SectionType) => {
+    if (!lesson || !sectionNotes) return
+    const remaining = lesson.sections
+      .filter(s => s.sectionType !== type)
+      .map(s => s.sectionType as SectionType)
+    const sorted = SECTION_ORDER.filter(t => remaining.includes(t))
+    const payload = sorted.map((t, idx) => ({
+      sectionType: t,
+      orderIndex: idx,
+      notes: (sectionNotes[t] ?? '') || null,
+    }))
+    setConfirmRemoveSection(null)
+    doUpdateSections(payload, {
+      onSuccess: () => {
+        setSectionNotes(prev => {
+          if (!prev) return prev
+          const next = { ...prev }
+          delete next[type]
+          return next
+        })
+        if (generateOpen === type) {
+          setGenerateOpen(null)
+          setRegenerateParams(null)
+        }
+      },
+    })
+  }, [lesson, sectionNotes, doUpdateSections, generateOpen])
 
   const students = studentsData?.items ?? []
 
@@ -589,17 +631,19 @@ export default function LessonEditor() {
           {isSaving && <span className="text-xs text-zinc-400">Saving...</span>}
         </div>
 
-        {sectionNotes && SECTION_ORDER.map((type) => {
-          const sectionId = lesson.sections.find(s => s.sectionType === type)?.id ?? null
-          const blocks = sectionId ? (contentBlocks[sectionId] ?? []) : []
+        {sectionNotes && [...lesson.sections].sort((a, b) => a.orderIndex - b.orderIndex).map((section) => {
+          const type = section.sectionType as SectionType
+          const sectionId = section.id
+          const blocks = contentBlocks[sectionId] ?? []
           const isGenerateOpen = generateOpen === type
+          const canRemove = lesson.sections.length > 1
 
           return (
-            <Card key={type} className="bg-white border border-zinc-200">
+            <Card key={type} className="bg-white border border-zinc-200" data-testid={`section-card-${type.toLowerCase()}`}>
               <CardHeader className="py-3 px-6 pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium text-zinc-700">{SECTION_LABELS[type]}</CardTitle>
-                  {sectionId && (
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -613,15 +657,27 @@ export default function LessonEditor() {
                       <Sparkles className="h-3 w-3 mr-1" />
                       Generate
                     </Button>
-                  )}
-                  {!sectionId && (
-                    <span className="text-xs text-zinc-400" title="Save the lesson first to enable AI generation">Generate</span>
-                  )}
+                    <Tooltip>
+                      <TooltipTrigger render={<span />}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-zinc-400 hover:text-red-600"
+                          disabled={!canRemove}
+                          onClick={() => setConfirmRemoveSection(type)}
+                          data-testid={`remove-section-${type.toLowerCase()}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{canRemove ? 'Remove section' : 'Cannot remove last section'}</TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="px-6 pb-4 space-y-3">
                 <Textarea
-                  value={sectionNotes[type]}
+                  value={sectionNotes[type] ?? ''}
                   onChange={(e) => setSectionNotes(n => n ? { ...n, [type]: e.target.value } : n)}
                   onBlur={(e) => handleSectionBlur(type, e.target.value)}
                   placeholder={`Add notes for ${SECTION_LABELS[type]}...`}
@@ -640,7 +696,7 @@ export default function LessonEditor() {
                     block={block}
                     lessonId={id!}
                     onUpdate={handleBlockUpdate}
-                    onDelete={(blockId) => handleBlockDelete(blockId, sectionId!)}
+                    onDelete={(blockId) => handleBlockDelete(blockId, sectionId)}
                     onRegenerate={(blockType, params, direction) => {
                       let style: string | undefined
                       if (params) {
@@ -652,7 +708,7 @@ export default function LessonEditor() {
                   />
                 ))}
 
-                {isGenerateOpen && sectionId && (
+                {isGenerateOpen && (
                   <GeneratePanel
                     lessonId={id!}
                     sectionId={sectionId}
@@ -681,6 +737,32 @@ export default function LessonEditor() {
             </Card>
           )
         })}
+
+        {/* Add Section dropdown */}
+        {(() => {
+          const existingTypes = new Set(lesson.sections.map(s => s.sectionType))
+          const missingTypes = SECTION_ORDER.filter(t => !existingTypes.has(t))
+          if (missingTypes.length === 0) return null
+          return (
+            <div data-testid="add-section-container">
+              <Select onValueChange={(v) => handleAddSection(v as SectionType)}>
+                <SelectTrigger className="w-48" data-testid="add-section-select">
+                  <div className="flex items-center gap-1.5 text-sm text-zinc-500">
+                    <Plus className="h-4 w-4" />
+                    <span>Add Section</span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {missingTypes.map(type => (
+                    <SelectItem key={type} value={type} data-testid={`add-section-${type.toLowerCase()}`}>
+                      {SECTION_LABELS[type]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )
+        })()}
       </div>
 
       {/* Lesson Notes */}
@@ -704,6 +786,31 @@ export default function LessonEditor() {
               data-testid="confirm-delete"
             >
               {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove section confirmation */}
+      <AlertDialog open={!!confirmRemoveSection} onOpenChange={(open) => { if (!open) setConfirmRemoveSection(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {confirmRemoveSection ? SECTION_LABELS[confirmRemoveSection] : ''} section?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmRemoveSection && lesson.sections.find(s => s.sectionType === confirmRemoveSection)?.id &&
+               contentBlocks[lesson.sections.find(s => s.sectionType === confirmRemoveSection)!.id]?.length
+                ? 'This section has generated content that will be permanently removed.'
+                : 'This section and its notes will be permanently removed.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmRemoveSection && handleRemoveSection(confirmRemoveSection)}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              data-testid="confirm-remove-section"
+            >
+              Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
