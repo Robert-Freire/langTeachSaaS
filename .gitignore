@@ -51,3 +51,5 @@ infra/main.json
 infra/modules/*.json
 secrets.md
 SECRETS.md
+.claude/scheduled_tasks.lock
+package-lock.json
