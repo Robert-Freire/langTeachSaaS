@@ -199,28 +199,57 @@ public class LessonService : ILessonService
         if (lesson is null)
             return null;
 
-        _db.LessonSections.RemoveRange(lesson.Sections);
-
         var now = DateTime.UtcNow;
-        var newSections = request.Sections.Select(s => new LessonSection
+        var existingByType = lesson.Sections.ToDictionary(s => s.SectionType);
+        var incomingTypes = new HashSet<string>(request.Sections.Select(s => s.SectionType));
+
+        // Remove sections no longer present (and their content blocks, since FK is NoAction)
+        var removedSections = lesson.Sections.Where(s => !incomingTypes.Contains(s.SectionType)).ToList();
+        if (removedSections.Count > 0)
         {
-            Id = Guid.NewGuid(),
-            LessonId = lessonId,
-            SectionType = s.SectionType,
-            OrderIndex = s.OrderIndex,
-            Notes = s.Notes,
-            CreatedAt = now,
-            UpdatedAt = now,
-        }).ToList();
+            var removedIds = removedSections.Select(s => s.Id).ToHashSet();
+            var orphanedBlocks = await _db.LessonContentBlocks
+                .Where(b => b.LessonSectionId.HasValue && removedIds.Contains(b.LessonSectionId.Value))
+                .ToListAsync(cancellationToken);
+            if (orphanedBlocks.Count > 0)
+                _db.LessonContentBlocks.RemoveRange(orphanedBlocks);
+            _db.LessonSections.RemoveRange(removedSections);
+        }
 
-        _db.LessonSections.AddRange(newSections);
+        // Upsert: update existing, create new
+        var resultSections = new List<LessonSection>();
+        foreach (var input in request.Sections)
+        {
+            if (existingByType.TryGetValue(input.SectionType, out var existing))
+            {
+                existing.Notes = input.Notes;
+                existing.OrderIndex = input.OrderIndex;
+                existing.UpdatedAt = now;
+                resultSections.Add(existing);
+            }
+            else
+            {
+                var newSection = new LessonSection
+                {
+                    Id = Guid.NewGuid(),
+                    LessonId = lessonId,
+                    SectionType = input.SectionType,
+                    OrderIndex = input.OrderIndex,
+                    Notes = input.Notes,
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                };
+                _db.LessonSections.Add(newSection);
+                resultSections.Add(newSection);
+            }
+        }
+
         lesson.UpdatedAt = now;
-
         await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Lesson sections updated. TeacherId={TeacherId} LessonId={LessonId} SectionCount={Count}",
-            teacherId, lessonId, newSections.Count);
+            teacherId, lessonId, resultSections.Count);
 
-        lesson.Sections = newSections;
+        lesson.Sections = resultSections;
         return MapToDto(lesson);
     }
 
