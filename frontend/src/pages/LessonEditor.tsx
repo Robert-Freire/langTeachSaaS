@@ -342,7 +342,7 @@ export default function LessonEditor() {
   return (
     <div className="space-y-6 max-w-3xl">
       {/* Top bar */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2 md:gap-3 flex-wrap">
         {editingTitle ? (
           <Input
             autoFocus
@@ -420,7 +420,8 @@ export default function LessonEditor() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="preview-student-btn"
           >
-            Preview as Student
+            <span className="hidden sm:inline">Preview as Student</span>
+            <span className="sm:hidden">Preview</span>
           </button>
 
           {savedAt && (

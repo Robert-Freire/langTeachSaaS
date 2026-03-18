@@ -169,11 +169,11 @@ export default function Lessons() {
           placeholder="Search by title or topic..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
+          className="w-full sm:max-w-xs"
           data-testid="search-input"
         />
         <Select value={language ?? 'all'} onValueChange={(v) => setLanguage(!v || v === 'all' ? undefined : v)}>
-          <SelectTrigger className="w-36" data-testid="filter-language">
+          <SelectTrigger className="w-full sm:w-36" data-testid="filter-language">
             <SelectValue placeholder="Language" />
           </SelectTrigger>
           <SelectContent>
@@ -182,7 +182,7 @@ export default function Lessons() {
           </SelectContent>
         </Select>
         <Select value={cefrLevel ?? 'all'} onValueChange={(v) => setCefrLevel(!v || v === 'all' ? undefined : v)}>
-          <SelectTrigger className="w-32" data-testid="filter-level">
+          <SelectTrigger className="w-full sm:w-32" data-testid="filter-level">
             <SelectValue placeholder="Level" />
           </SelectTrigger>
           <SelectContent>
@@ -191,7 +191,7 @@ export default function Lessons() {
           </SelectContent>
         </Select>
         <Select value={status ?? 'all'} onValueChange={(v) => setStatus(!v || v === 'all' ? undefined : v)}>
-          <SelectTrigger className="w-32" data-testid="filter-status">
+          <SelectTrigger className="w-full sm:w-32" data-testid="filter-status">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -227,7 +227,7 @@ export default function Lessons() {
         <div className="space-y-3">
           {lessons.map((lesson) => (
             <Card key={lesson.id} className="bg-white border border-zinc-200 transition-all hover:shadow-sm hover:border-zinc-300" data-testid={`lesson-row-${lesson.id}`}>
-              <CardContent className="flex items-center justify-between py-4 px-6">
+              <CardContent className="flex items-center justify-between py-4 px-4 sm:px-6">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="font-medium text-zinc-900 text-sm" data-testid="lesson-title">
@@ -247,7 +247,7 @@ export default function Lessons() {
                     {lesson.topic} &middot; {lesson.durationMinutes} min &middot; Updated {formatDate(lesson.updatedAt)}
                   </p>
                 </div>
-                <div className="flex items-center gap-1 ml-4 shrink-0">
+                <div className="flex items-center gap-1 ml-2 sm:ml-4 shrink-0">
                   <Button
                     variant="ghost"
                     size="icon"

@@ -48,14 +48,14 @@ export function WeekStrip({ weekOffset, onPrev, onNext, lessons, students, unsch
         </Button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="flex overflow-x-auto snap-x snap-mandatory pb-2 gap-1 md:grid md:grid-cols-7 md:overflow-visible md:snap-none md:pb-0">
         {days.map((day, idx) => {
           const dayLessons = lessonsByDay[idx] ?? []
           const today = isToday(day)
           return (
             <div
               key={idx}
-              className={`min-h-[100px] rounded-lg border p-2 ${
+              className={`min-w-[120px] shrink-0 snap-start md:min-w-0 md:shrink min-h-[100px] rounded-lg border p-2 ${
                 today ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-zinc-200'
               }`}
               data-testid={`week-day-${idx}`}
