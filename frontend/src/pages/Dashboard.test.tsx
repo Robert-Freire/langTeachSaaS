@@ -138,6 +138,26 @@ describe('Dashboard', () => {
     expect(screen.getByTestId('unscheduled-unsched-1')).toBeInTheDocument()
   })
 
+  it('shows published unscheduled lessons in unscheduled section', async () => {
+    const publishedResponse = makeLessonResponse([
+      { id: 'pub-1', scheduledAt: null, status: 'Published' as const, title: 'Ready Lesson' },
+    ])
+    mockGetLessons.mockImplementation((query?: Record<string, unknown>) => {
+      if (query?.status === 'Published') return Promise.resolve(publishedResponse)
+      return Promise.resolve(makeLessonResponse([]))
+    })
+
+    await act(async () => {
+      renderDashboard()
+    })
+    await screen.findByTestId('week-strip')
+    await waitFor(() => {
+      expect(screen.getByTestId('unscheduled-drafts')).toBeInTheDocument()
+    }, { timeout: 3000 })
+    expect(screen.getByTestId('unscheduled-pub-1')).toBeInTheDocument()
+    expect(screen.getByText('Published')).toBeInTheDocument()
+  })
+
   it('navigates to lesson editor when clicking a pill', async () => {
     const today = new Date()
     const todayISO = today.toISOString().slice(0, 10) + 'T10:00:00'

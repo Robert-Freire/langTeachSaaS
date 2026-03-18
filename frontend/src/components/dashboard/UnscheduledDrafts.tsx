@@ -14,7 +14,7 @@ interface UnscheduledDraftsProps {
 }
 
 export function UnscheduledDrafts({ lessons }: UnscheduledDraftsProps) {
-  const unscheduled = lessons.filter(l => !l.scheduledAt)
+  const unscheduled = lessons.filter(l => (l.status === 'Draft' || l.status === 'Published') && !l.scheduledAt)
   const [expanded, setExpanded] = useState(false)
   const [showAll, setShowAll] = useState(false)
 
