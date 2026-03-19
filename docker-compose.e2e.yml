@@ -1,8 +1,11 @@
 # Fully containerised e2e stack — works from any git worktree.
+# Uses project name "langteachsaas-e2e" so it never conflicts with the dev stack.
 #
 # Usage:
 #   cp .env.e2e.example .env.e2e   # fill in secrets once
 #   docker compose -f docker-compose.e2e.yml --env-file .env.e2e up --build --exit-code-from playwright
+
+name: langteachsaas-e2e
 #
 # Exit code mirrors playwright: 0 = all tests pass, non-zero = failures.
 # Reports and screenshots are written to e2e/playwright-report/ and e2e/test-results/.
