@@ -27,6 +27,7 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+.env.e2e
 
 # Claude Code local session cache
 .claude/settings.local.json

@@ -1,13 +1,15 @@
 import { test, expect } from '@playwright/test'
 
+const apiBase = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
+
 test('GET /api/health returns 200 without token', async ({ request }) => {
-  const response = await request.get('http://localhost:5000/api/health')
+  const response = await request.get(`${apiBase}/api/health`)
   expect(response.status()).toBe(200)
 })
 
 test('GET /api/auth/me returns 401 without token', async ({ request }) => {
   test.skip(!!process.env.CI, 'Backend runs in E2ETesting mode in CI — all requests are authenticated')
-  const response = await request.get('http://localhost:5000/api/auth/me')
+  const response = await request.get(`${apiBase}/api/auth/me`)
   expect(response.status()).toBe(401)
 })
 

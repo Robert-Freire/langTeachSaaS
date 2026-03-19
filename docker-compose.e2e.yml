@@ -1,0 +1,92 @@
+# Fully containerised e2e stack — works from any git worktree.
+#
+# Usage:
+#   cp .env.e2e.example .env.e2e   # fill in secrets once
+#   docker compose -f docker-compose.e2e.yml --env-file .env.e2e up --build --exit-code-from playwright
+#
+# Exit code mirrors playwright: 0 = all tests pass, non-zero = failures.
+# Reports and screenshots are written to e2e/playwright-report/ and e2e/test-results/.
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD}"
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${SA_PASSWORD}" -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - e2e-sqlserver-data:/var/opt/mssql
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: LangTeach.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: E2ETesting
+      ConnectionStrings__Default: "Server=sqlserver,1433;Database=LangTeach;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=true"
+      Auth0__Domain: "${AUTH0_DOMAIN}"
+      Auth0__Audience: "${AUTH0_AUDIENCE}"
+      Claude__ApiKey: "${CLAUDE_API_KEY}"
+      AllowedOrigins__E2e: "http://frontend:5174"
+    healthcheck:
+      test: curl -sf http://localhost:5000/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: e2e
+    environment:
+      # VITE_* process env vars override values baked into frontend/.env.e2e
+      VITE_E2E_TEST_MODE: "true"
+      VITE_API_URL: "http://api:5000"
+      VITE_API_PROXY_TARGET: "http://api:5000"
+      VITE_AUTH0_DOMAIN: "${AUTH0_DOMAIN}"
+      VITE_AUTH0_CLIENT_ID: "${VITE_AUTH0_CLIENT_ID}"
+      VITE_AUTH0_AUDIENCE: "${AUTH0_AUDIENCE}"
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:5174"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      api:
+        condition: service_healthy
+
+  playwright:
+    build:
+      context: ./e2e
+      dockerfile: Dockerfile
+    environment:
+      PLAYWRIGHT_BASE_URL: "http://frontend:5174"
+      VITE_API_BASE_URL: "http://api:5000"
+      CI: "true"
+      E2E_TEST_EMAIL: "${E2E_TEST_EMAIL}"
+      E2E_TEST_PASSWORD: "${E2E_TEST_PASSWORD}"
+      E2E_TEST_AUTH0_USER_ID: "${E2E_TEST_AUTH0_USER_ID}"
+      # Direct SQL access for test helpers (db-helper.ts)
+      DB_SERVER: "sqlserver"
+      DB_PORT: "1433"
+      DB_NAME: "LangTeach"
+      DB_USER: "sa"
+      DB_PASSWORD: "${SA_PASSWORD}"
+    depends_on:
+      frontend:
+        condition: service_healthy
+    volumes:
+      - ./e2e/test-results:/e2e/test-results
+      - ./e2e/playwright-report:/e2e/playwright-report
+
+volumes:
+  e2e-sqlserver-data:
