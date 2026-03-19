@@ -18,7 +18,7 @@ docker compose -f docker-compose.e2e.yml --env-file .env.e2e up -d --build
 Wait for the frontend to be healthy before proceeding:
 ```bash
 # Poll until frontend responds (up to 2 minutes)
-timeout 120 bash -c 'until curl -sf http://localhost:5174 > /dev/null 2>&1; do sleep 3; done'
+for i in $(seq 1 40); do curl -sf http://localhost:5174 > /dev/null 2>&1 && break; sleep 3; done
 ```
 For parallel agent isolation (multiple worktrees), add `--project-name langteachsaas-e2e-<worktree-name>` to all docker compose commands.
 
