@@ -62,8 +62,8 @@ When a task is marked complete:
    - If verdict is **FAIL**: fix all critical issues, re-commit, re-run checks and review.
    - If verdict is **PASS WITH NOTES**: address important items where reasonable, then proceed.
    - If verdict is **PASS**: proceed to UI review (or push if not applicable).
-5. **If the issue has `area:frontend` or `area:design` labels**, run the `review-ui` agent to evaluate visual and interaction quality. The app must be running locally before starting.
-   - In the agent prompt, list the specific routes and screens the feature modified so the agent runs in **focused review mode** (screenshots of changed screens + regression check on dashboard/lesson editor). Example prompt: *"Review UI for lesson editor header redesign. Changed screens: /lessons/:id (editor view), /lessons/:id/study (study view). The header layout and metadata section were restructured."*
+5. **If the issue has `area:frontend` or `area:design` labels**, run the `review-ui` agent to evaluate visual and interaction quality. The agent starts and stops the e2e stack automatically (do NOT start the app yourself or pass a URL).
+   - In the agent prompt, list the specific routes and screens the feature modified so the agent runs in **focused review mode** (screenshots of changed screens + regression check on dashboard/lesson editor). Do NOT include URLs or port numbers. Example prompt: *"Review UI for lesson editor header redesign. Changed screens: /lessons/:id (editor view), /lessons/:id/study (study view). The header layout and metadata section were restructured."*
    - If verdict is **NEEDS WORK**: fix critical and important visual/UX issues, re-commit, re-run pre-push checks, and re-run UI review.
    - If verdict is **GOOD** or **POLISHED**: proceed to push.
    - Skip this step for backend-only, infra-only, or e2e-only changes (no `area:frontend`/`area:design` labels).
