@@ -8,6 +8,10 @@ FROM base AS dev
 EXPOSE 5173
 CMD ["npm", "run", "dev", "--", "--host"]
 
+FROM base AS e2e
+EXPOSE 5174
+CMD ["npm", "run", "dev:e2e", "--", "--host"]
+
 FROM base AS build
 RUN npm run build
 

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
+import { sseRoute, GRAMMAR_FIXTURE } from '../helpers/mock-ai-stream'
 import { TEST_TIMEOUT, AI_STREAM_TIMEOUT, NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
 
 test.beforeAll(async ({ browser }) => {
@@ -17,6 +18,18 @@ test('regenerate with direction sends direction in request and shows badge', asy
   const page = await context.newPage()
 
   try {
+    // Mock the AI stream endpoint for both the initial generation and the
+    // direction regeneration — avoids real Claude API calls and captures
+    // the direction param from the request body.
+    let capturedDirection: string | undefined
+    await page.route('**/api/generate/*/stream', async (route) => {
+      const postData = route.request().postDataJSON()
+      if (postData?.direction !== undefined) {
+        capturedDirection = postData.direction
+      }
+      await route.fulfill(sseRoute(GRAMMAR_FIXTURE))
+    })
+
     // Create a lesson via the wizard
     await page.goto('/lessons')
     await expect(page.locator('h1')).toHaveText('Lessons', { timeout: NAV_TIMEOUT })
@@ -63,16 +76,6 @@ test('regenerate with direction sends direction in request and shows badge', asy
     await page.getByTestId('insert-btn').click()
     await expect(page.getByTestId('generate-panel')).not.toBeVisible({ timeout: FEEDBACK_TIMEOUT })
     await expect(page.getByTestId('ai-block-badge').first()).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
-
-    // Now test regenerate with direction
-    // Set up request interception to verify direction is sent
-    let capturedDirection: string | undefined
-    await page.route('**/api/generate/*/stream', async (route) => {
-      const postData = route.request().postDataJSON()
-      capturedDirection = postData?.direction
-      // Continue to the real server
-      await route.continue()
-    })
 
     // Click the direction dropdown (chevron button)
     await page.getByTestId('direction-trigger').click()
