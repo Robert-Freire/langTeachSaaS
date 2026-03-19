@@ -5,7 +5,7 @@ function makeSseBody(payload: Record<string, unknown>): string {
   return `data: ${token}\n\ndata: [DONE]\n\n`
 }
 
-function sseRoute(payload: Record<string, unknown>) {
+export function sseRoute(payload: Record<string, unknown>) {
   return {
     status: 200,
     contentType: 'text/event-stream',
