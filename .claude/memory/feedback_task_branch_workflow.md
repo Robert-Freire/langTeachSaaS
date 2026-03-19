@@ -33,7 +33,7 @@ Never create stacked branches (branching off an unmerged feature branch). Every 
 
 When multiple agents work in parallel, each must use a unique Docker project name for e2e tests to avoid conflicts:
 ```bash
-docker compose -f docker-compose.e2e.yml --project-name langteachsaas-e2e-<worktree-name> --env-file .env.e2e up --build --exit-code-from playwright
+docker compose -f docker-compose.e2e.yml --project-name langteachsaas-e2e-<worktree-name> --env-file .env.e2e --profile test up --build --exit-code-from playwright
 ```
 
 ## Pre-push: code review step required
