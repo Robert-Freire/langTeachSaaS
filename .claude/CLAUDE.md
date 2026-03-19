@@ -54,7 +54,7 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 When a task is marked complete:
 1. Stage all relevant changes **including any modified files in `.claude/memory/` and `plan/`** and commit with a message referencing the task
 2. Run pre-push checks (see below). Fix any failures before proceeding.
-3. Run the `qa` agent to verify all issue acceptance criteria are addressed.
+3. Run the `qa-verify` agent to verify all issue acceptance criteria are addressed (this is NOT the `/qa` skill, which checks issue readiness).
    - If verdict is **FAIL**: address unmet criteria or missing tests, re-commit, re-run checks and QA.
    - If verdict is **PASS WITH GAPS**: add missing test coverage, re-commit, re-run checks and QA.
    - If verdict is **PASS**: proceed to code review.
