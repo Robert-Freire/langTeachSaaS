@@ -515,7 +515,9 @@ export default function LessonEditor() {
           </Button>
         ) : null}
 
-        <span className="h-4 w-px bg-zinc-200 shrink-0" aria-hidden="true" />
+        {(lesson.studentName || students.length > 0) && (
+          <span className="h-4 w-px bg-zinc-200 shrink-0" aria-hidden="true" />
+        )}
 
         {/* Schedule slot */}
         {schedulingInline ? (
