@@ -201,9 +201,27 @@ Using the interaction-state screenshots, evaluate:
 - Would a first-time user feel confident using this app?
 - Does the app respect the user's time (fast, predictable, no unnecessary steps)?
 
-### 4. Cross-page comparison
+### 4. Cross-page UX consistency audit
 
-After reviewing individual pages, look across all screenshots for:
+After reviewing individual pages, systematically compare interaction patterns across all screenshots:
+
+**Save behavior consistency:**
+- Do all forms with discrete submit actions (Create, Edit, Profile) have explicit Save buttons?
+- Do auto-save screens (e.g., lesson editor) show a visible "Saved" indicator?
+- Is there any screen that mixes both patterns (explicit Save + auto-save)?
+- Flag any screen where the user cannot tell if their changes were saved.
+
+**Navigation consistency:**
+- Does every sub-page (anything deeper than a top-level list) have a Back button or breadcrumb?
+- Can the user navigate a full workflow (e.g., Dashboard > Create > Edit > Preview > Back) without relying on the sidebar or browser back button?
+- Flag any dead-end screen where the user has no in-page way to go back.
+
+**Action placement consistency:**
+- Are primary actions (Save, Create, Generate) in the same position (top-right) across all screens?
+- Are destructive actions (Delete) consistently placed secondary and always behind a confirmation?
+- Do similar screens (e.g., Students list vs Lessons list) use the same action layout?
+
+**Visual consistency:**
 - Pages that feel like they belong to a different app (inconsistent style)
 - Navigation elements that shift position between pages
 - Inconsistent use of the primary color for actions

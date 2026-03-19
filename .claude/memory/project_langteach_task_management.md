@@ -15,6 +15,19 @@ type: project
 - GitHub Projects board gives kanban view for PM visibility
 - AI agents can read/write issues via `gh` CLI
 
+### Issue Creation Checklist
+When creating a new issue via `gh issue create`, always complete these steps:
+1. Create the issue with `--title`, `--label`, `--milestone`, `--body` (or `--body-file`)
+2. **Add to GitHub Project board** (this is NOT automatic):
+   ```
+   item_id=$(gh project item-add 2 --owner Robert-Freire --url "<issue_url>" --format json | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+   ```
+3. **Set the project status** (typically "Ready" for qa:ready issues, "Backlog" otherwise):
+   ```
+   gh project item-edit --project-id PVT_kwHOAF1Pks4BSLsS --id "$item_id" --field-id PVTSSF_lAHOAF1Pks4BSLsSzg_ysiA --single-select-option-id <status_id>
+   ```
+   Status option IDs: Backlog=7cba4571, Ready=eec9fa45, In Progress=47fc9ee4, In Review=530fcec2, Done=61f69a4c
+
 ### Agent Workflow
 1. Check GitHub Issues for highest-priority unassigned issue in current milestone
 2. Assign itself, create worktree branch
