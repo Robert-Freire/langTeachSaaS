@@ -61,14 +61,19 @@ When a task is marked complete:
 4. Run the `review` agent to perform a code review of all changes vs `main`.
    - If verdict is **FAIL**: fix all critical issues, re-commit, re-run checks and review.
    - If verdict is **PASS WITH NOTES**: address important items where reasonable, then proceed.
-   - If verdict is **PASS**: proceed to push.
-5. Push the branch and open a PR against `main` with a summary of what was done and why
-6. Start a CodeRabbit monitoring cron (every 5 minutes) that:
+   - If verdict is **PASS**: proceed to UI review (or push if not applicable).
+5. **If the issue has `area:frontend` or `area:design` labels**, run the `review-ui` agent to evaluate visual and interaction quality. The app must be running locally before starting.
+   - In the agent prompt, list the specific routes and screens the feature modified so the agent runs in **focused review mode** (screenshots of changed screens + regression check on dashboard/lesson editor). Example prompt: *"Review UI for lesson editor header redesign. Changed screens: /lessons/:id (editor view), /lessons/:id/study (study view). The header layout and metadata section were restructured."*
+   - If verdict is **NEEDS WORK**: fix critical and important visual/UX issues, re-commit, re-run pre-push checks, and re-run UI review.
+   - If verdict is **GOOD** or **POLISHED**: proceed to push.
+   - Skip this step for backend-only, infra-only, or e2e-only changes (no `area:frontend`/`area:design` labels).
+6. Push the branch and open a PR against `main` with a summary of what was done and why
+7. Start a CodeRabbit monitoring cron (every 5 minutes) that:
    - Fetches all PR comments from CodeRabbit
    - If no unresolved comments and review is clean: deletes the cron and notifies the user the PR is ready for their review
    - If unresolved comments exist: **critically evaluates** each one (is it valid? does it contradict project conventions? does it over-engineer?), fixes only what genuinely improves the code, replies explaining reasoning for declined suggestions, runs pre-push checks, commits, and pushes
    - Safety limits: max 3 fix-and-push rounds, stops on test failures or ambiguous/architectural comments, always notifies the user when stopping
-7. Stop -- do NOT merge. The user reviews the PR and merges manually.
+8. Stop -- do NOT merge. The user reviews the PR and merges manually.
 
 **Pre-push checks (must all pass before pushing):**
 - `az bicep build --file infra/main.bicep` -- zero warnings, zero errors
