@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { usePartialJsonParse } from '../../hooks/usePartialJsonParse'
 import type { SectionType } from '../../api/lessons'
 import {
   saveContentBlock,
@@ -56,6 +57,20 @@ interface GeneratePanelProps {
   onInsert: (block: ContentBlockDto) => void
   onClose: () => void
   onStreamingChange?: (isStreaming: boolean) => void
+}
+
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-1 px-1" aria-label="Generating...">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce"
+          style={{ animationDelay: `${i * 150}ms` }}
+        />
+      ))}
+    </div>
+  )
 }
 
 export function GeneratePanel({
@@ -116,6 +131,9 @@ export function GeneratePanel({
   const isStreaming = status === 'streaming'
   const isDone = status === 'done'
   const isError = status === 'error'
+
+  const renderer = getRenderer(taskType)
+  const partialContent = usePartialJsonParse(output ?? '', taskType)
 
   useEffect(() => {
     onStreamingChange?.(isStreaming)
@@ -182,13 +200,26 @@ export function GeneratePanel({
       )}
 
       {isStreaming && (
-        <div className="flex items-center gap-3 rounded-md bg-white border border-indigo-100 px-4 py-5" role="status" aria-live="polite" data-testid="generate-output">
-          <svg className="h-4 w-4 animate-spin text-indigo-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          <span className="text-sm text-zinc-500">Generating {taskType} content...</span>
-        </div>
+        partialContent
+          ? (
+            <div className="rounded-md bg-white border border-indigo-100 overflow-hidden" data-testid="generate-output">
+              <div className="p-4 space-y-2">
+                <ContentErrorBoundary key={`${taskType}:${output?.length ?? 0}`} blockType={taskType}>
+                  <renderer.Preview rawContent={output ?? ''} parsedContent={partialContent} />
+                </ContentErrorBoundary>
+                <TypingIndicator />
+              </div>
+            </div>
+          )
+          : (
+            <div className="flex items-center gap-3 rounded-md bg-white border border-indigo-100 px-4 py-5" role="status" aria-live="polite" data-testid="generate-output">
+              <svg className="h-4 w-4 animate-spin text-indigo-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <span className="text-sm text-zinc-500">Generating {taskType} content...</span>
+            </div>
+          )
       )}
 
       {isDone && output && (() => {
@@ -198,7 +229,6 @@ export function GeneratePanel({
           parsedContent = JSON.parse(raw)
         } catch { /* fall through to raw display */ }
 
-        const renderer = getRenderer(taskType)
         return (
           <div className="rounded-md bg-white border border-green-200 overflow-hidden" data-testid="generate-output">
             <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border-b border-green-200">

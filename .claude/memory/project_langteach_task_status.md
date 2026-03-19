@@ -66,7 +66,7 @@ Bug fixes and polish discovered during QA, must complete before T23.
 | Tier 1 | #78 | Published unscheduled lessons vanish from dashboard | DONE — PR #88 merged |
 | Tier 1 | #76 | Student name missing from Lessons list and Lesson editor | DONE — PR #89 merged |
 | Tier 1 | #79 | Schedule Save button overflow | DONE — PR #91 merged |
-| Tier 2 | #75 | Progressive streaming with rich renderers (the wow moment) | pending |
+| Tier 2 | #75 | Progressive streaming with rich renderers (the wow moment) | DONE — PR #92 open |
 | Tier 2 | #77 | Lesson editor header/metadata redesign | pending |
 | Tier 2 | #81 | Quick Actions sidebar review | pending |
 
