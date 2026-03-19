@@ -204,7 +204,7 @@ export function GeneratePanel({
           ? (
             <div className="rounded-md bg-white border border-indigo-100 overflow-hidden" data-testid="generate-output">
               <div className="p-4 space-y-2">
-                <ContentErrorBoundary blockType={taskType}>
+                <ContentErrorBoundary key={`${taskType}:${output?.length ?? 0}`} blockType={taskType}>
                   <renderer.Preview rawContent={output ?? ''} parsedContent={partialContent} />
                 </ContentErrorBoundary>
                 <TypingIndicator />

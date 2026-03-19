@@ -69,14 +69,12 @@ function extractScalarString(json: string, key: string): string | null {
   const quoteStart = json.indexOf('"', colonIndex + 1)
   if (quoteStart === -1) return null
 
-  let result = ''
   let escaped = false
 
   for (let i = quoteStart + 1; i < json.length; i++) {
     const ch = json[i]
 
     if (escaped) {
-      result += ch
       escaped = false
       continue
     }
@@ -87,10 +85,12 @@ function extractScalarString(json: string, key: string): string | null {
     }
 
     if (ch === '"') {
-      return result
+      try {
+        return JSON.parse(json.slice(quoteStart, i + 1)) as string
+      } catch {
+        return null
+      }
     }
-
-    result += ch
   }
 
   return null // string not yet closed
