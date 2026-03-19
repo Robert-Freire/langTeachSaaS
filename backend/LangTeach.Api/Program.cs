@@ -44,13 +44,20 @@ if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("
 }
 
 // CORS
+var corsOrigins = new[]
+{
+    "http://localhost:5173",
+    "http://localhost:5174",
+    builder.Configuration["AllowedOrigins:Swa"],
+    builder.Configuration["AllowedOrigins:E2e"],
+}
+.Where(o => !string.IsNullOrWhiteSpace(o))
+.Distinct(StringComparer.OrdinalIgnoreCase)
+.ToArray();
+
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
-        policy.WithOrigins(
-                  "http://localhost:5173",
-                  "http://localhost:5174",
-                  builder.Configuration["AllowedOrigins:Swa"] ?? "",
-                  builder.Configuration["AllowedOrigins:E2e"] ?? "")
+        policy.WithOrigins(corsOrigins!)
               .AllowAnyHeader()
               .AllowAnyMethod()));
 
