@@ -48,7 +48,7 @@ cp .env.e2e.example .env.e2e   # fill in secrets from 1Password
 
 **Run e2e tests:**
 ```powershell
-docker compose -f docker-compose.e2e.yml --env-file .env.e2e up --build --exit-code-from playwright
+docker compose -f docker-compose.e2e.yml --env-file .env.e2e --profile test up --build --exit-code-from playwright
 ```
 
 **Wipe state between runs (fresh DB):**

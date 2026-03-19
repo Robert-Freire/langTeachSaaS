@@ -17,7 +17,7 @@ Never work directly in the main repo directory for task work (including planning
 
 When running `docker-compose.e2e.yml` from a worktree, use `--project-name` to avoid conflicts with other agents running e2e tests simultaneously:
 ```bash
-docker compose -f docker-compose.e2e.yml --project-name langteachsaas-e2e-<worktree-name> --env-file .env.e2e up --build --exit-code-from playwright
+docker compose -f docker-compose.e2e.yml --project-name langteachsaas-e2e-<worktree-name> --env-file .env.e2e --profile test up --build --exit-code-from playwright
 ```
 This gives each worktree its own Docker network and volumes. Teardown uses the same project name:
 ```bash
