@@ -53,7 +53,11 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 
 When a task is marked complete:
 1. Stage all relevant changes **including any modified files in `.claude/memory/` and `plan/`** and commit with a message referencing the task
-3. Run pre-push checks (see below). Fix any failures before proceeding.
+2. Run pre-push checks (see below). Fix any failures before proceeding.
+3. Run the `qa` agent to verify all issue acceptance criteria are addressed.
+   - If verdict is **FAIL**: address unmet criteria or missing tests, re-commit, re-run checks and QA.
+   - If verdict is **PASS WITH GAPS**: add missing test coverage, re-commit, re-run checks and QA.
+   - If verdict is **PASS**: proceed to code review.
 4. Run the `review` agent to perform a code review of all changes vs `main`.
    - If verdict is **FAIL**: fix all critical issues, re-commit, re-run checks and review.
    - If verdict is **PASS WITH NOTES**: address important items where reasonable, then proceed.
@@ -64,7 +68,7 @@ When a task is marked complete:
    - If no unresolved comments and review is clean: deletes the cron and notifies the user the PR is ready for their review
    - If unresolved comments exist: **critically evaluates** each one (is it valid? does it contradict project conventions? does it over-engineer?), fixes only what genuinely improves the code, replies explaining reasoning for declined suggestions, runs pre-push checks, commits, and pushes
    - Safety limits: max 3 fix-and-push rounds, stops on test failures or ambiguous/architectural comments, always notifies the user when stopping
-7. Stop — do NOT merge. The user reviews the PR and merges manually.
+7. Stop -- do NOT merge. The user reviews the PR and merges manually.
 
 **Pre-push checks (must all pass before pushing):**
 - `az bicep build --file infra/main.bicep` — zero warnings, zero errors
