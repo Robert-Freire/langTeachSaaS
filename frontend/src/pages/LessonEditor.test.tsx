@@ -127,10 +127,7 @@ describe('LessonEditor', () => {
 
     await screen.findByTestId('lesson-title')
 
-    // Expand metadata strip
-    const metaStrip = screen.getByText('English').closest('[role="button"]') as HTMLElement
-    metaStrip.click()
-
+    // Schedule button is directly visible in the context bar — no expansion needed
     const scheduleBtn = await screen.findByTestId('quick-schedule-btn')
     scheduleBtn.click()
 
@@ -140,29 +137,23 @@ describe('LessonEditor', () => {
     expect(screen.getByTestId('inline-schedule-input')).toBeInTheDocument()
   })
 
-  it('shows scheduled date badge in metadata strip', async () => {
+  it('shows scheduled date in context bar as a clickable button', async () => {
     renderWithProviders()
 
     await screen.findByTestId('lesson-title')
-    const badges = screen.getAllByText((_content, element) =>
-      element?.tagName === 'SPAN' &&
-      element.className.includes('amber') &&
-      element.textContent !== null &&
-      element.textContent.length > 0
-    )
-    expect(badges.length).toBeGreaterThan(0)
+    // The schedule button is always visible — no expansion needed
+    const scheduleBtn = screen.getByTestId('quick-schedule-btn')
+    expect(scheduleBtn).toBeInTheDocument()
+    // Should contain the date (mockLessonFull scheduledAt is 2026-03-20)
+    expect(scheduleBtn.textContent).toMatch(/Mar/)
   })
 
-  it('shows scheduled date in expanded metadata view', async () => {
+  it('shows Schedule button in context bar when no scheduledAt', async () => {
+    mockGetLesson.mockResolvedValue({ ...mockLessonFull, scheduledAt: null })
     renderWithProviders()
 
     await screen.findByTestId('lesson-title')
-
-    const metaStrip = screen.getByText('English').closest('[role="button"]') as HTMLElement
-    metaStrip.click()
-
-    const scheduledText = await screen.findByText(/Scheduled:/)
-    expect(scheduledText).toBeInTheDocument()
+    expect(screen.getByTestId('quick-schedule-btn')).toHaveTextContent('Schedule')
   })
 
   it('renders without scheduledAt when null', async () => {

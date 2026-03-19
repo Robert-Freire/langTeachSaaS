@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Copy, Trash2, UserPlus, ChevronDown, ChevronUp, Save, Sparkles, Square, CalendarPlus, Plus } from 'lucide-react'
+import { Copy, Trash2, UserPlus, Save, Sparkles, Square, CalendarPlus, Plus, Pencil } from 'lucide-react'
 import {
   getLesson, updateLesson, updateSections, deleteLesson, duplicateLesson,
   type Lesson, type LessonStatus, type SectionType,
@@ -66,7 +66,6 @@ export default function LessonEditor() {
   const queryClient = useQueryClient()
 
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [metaExpanded, setMetaExpanded] = useState(false)
   const [schedulingInline, setSchedulingInline] = useState(false)
   const [inlineScheduleDate, setInlineScheduleDate] = useState('')
   const [linkStudentOpen, setLinkStudentOpen] = useState(false)
@@ -493,146 +492,143 @@ export default function LessonEditor() {
         </div>
       </div>
 
-      {/* Metadata strip */}
-      <Card className="bg-white border border-zinc-200">
-        <CardHeader
-          className="py-3 px-6 cursor-pointer"
-          onClick={() => setMetaExpanded(!metaExpanded)}
-          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setMetaExpanded(v => !v)}
-          role="button"
-          tabIndex={0}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 flex-wrap">
-              {lesson.studentName && (
-                <span className="text-sm font-medium text-indigo-600" data-testid="editor-student-name">{lesson.studentName}</span>
-              )}
-              <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">{lesson.language}</Badge>
-              <Badge variant="outline" className={`text-xs ${getCefrBadgeClasses(lesson.cefrLevel)}`}>{lesson.cefrLevel}</Badge>
-              <span className="text-xs text-zinc-500">{lesson.topic}</span>
-              <span className="text-xs text-zinc-400">{lesson.durationMinutes} min</span>
-              {lesson.scheduledAt && (
-                <Badge variant="outline" className="text-xs text-amber-600 border-amber-200 bg-amber-50">
-                  {new Date(lesson.scheduledAt).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                </Badge>
-              )}
-            </div>
-            {metaExpanded ? <ChevronUp className="h-4 w-4 text-zinc-400" /> : <ChevronDown className="h-4 w-4 text-zinc-400" />}
+      {/* Context bar */}
+      <div className="flex items-center gap-3 flex-wrap rounded-lg border border-zinc-200 bg-white px-4 py-2.5">
+        {/* Student slot */}
+        {lesson.studentName ? (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <UserPlus className="h-4 w-4 text-indigo-400" />
+            <span className="text-sm font-medium text-indigo-700" data-testid="editor-student-name">
+              {lesson.studentName}
+            </span>
           </div>
-        </CardHeader>
-        {metaExpanded && (
-          <CardContent className="px-6 pb-6 pt-0 border-t border-zinc-100">
-            {editingMeta ? (
-              <div className="space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Language</Label>
-                    <Select value={metaDraft.language} onValueChange={(v) => setMetaDraft(d => ({ ...d, language: v ?? d.language }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{LANGUAGES.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>CEFR Level</Label>
-                    <Select value={metaDraft.cefrLevel} onValueChange={(v) => setMetaDraft(d => ({ ...d, cefrLevel: v ?? d.cefrLevel }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{CEFR_LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                </div>
+        ) : students.length > 0 ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLinkStudentOpen(true)}
+            className="h-7 px-2 text-xs text-zinc-500 hover:text-indigo-600 hover:bg-indigo-50"
+            data-testid="link-student-btn"
+          >
+            <UserPlus className="h-3.5 w-3.5 mr-1" />
+            Link student
+          </Button>
+        ) : null}
+
+        <span className="h-4 w-px bg-zinc-200 shrink-0" aria-hidden="true" />
+
+        {/* Schedule slot */}
+        {schedulingInline ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <DateTimePicker
+              value={inlineScheduleDate}
+              onChange={setInlineScheduleDate}
+              autoFocus
+              className="flex-1 min-w-0"
+              data-testid="inline-schedule-input"
+            />
+            <div className="flex items-center gap-2 shrink-0">
+              <Button size="sm" onClick={handleQuickSchedule} disabled={!inlineScheduleDate} className="bg-indigo-600 hover:bg-indigo-700 text-white">Save</Button>
+              <Button variant="ghost" size="sm" onClick={() => { setSchedulingInline(false); setInlineScheduleDate('') }}>Cancel</Button>
+            </div>
+          </div>
+        ) : lesson.scheduledAt ? (
+          <button
+            onClick={() => { setSchedulingInline(true); setInlineScheduleDate(lesson.scheduledAt!.slice(0, 16)) }}
+            className="flex items-center gap-1.5 text-xs font-medium text-amber-600 hover:text-amber-700 transition-colors shrink-0"
+            data-testid="quick-schedule-btn"
+          >
+            <CalendarPlus className="h-3.5 w-3.5" />
+            {new Date(lesson.scheduledAt).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSchedulingInline(true)}
+            className="h-7 px-2 text-xs text-indigo-600 border-indigo-200 hover:bg-indigo-50 shrink-0"
+            data-testid="quick-schedule-btn"
+          >
+            <CalendarPlus className="h-3.5 w-3.5 mr-1" />
+            Schedule
+          </Button>
+        )}
+
+        {/* Secondary metadata */}
+        <div className="flex items-center gap-2 ml-auto flex-wrap">
+          <Badge variant="outline" className={`text-xs ${getCefrBadgeClasses(lesson.cefrLevel)}`}>{lesson.cefrLevel}</Badge>
+          <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">{lesson.language}</Badge>
+          <span className="text-xs text-zinc-500">{lesson.topic}</span>
+          <span className="text-xs text-zinc-400">{lesson.durationMinutes} min</span>
+          <Tooltip>
+            <TooltipTrigger render={<span />}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-zinc-400 hover:text-zinc-700"
+                onClick={() => setEditingMeta(true)}
+                aria-label="Edit lesson details"
+                data-testid="edit-details-btn"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit details</TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+
+      {/* Edit details form */}
+      {editingMeta && (
+        <Card className="bg-white border border-zinc-200">
+          <CardContent className="px-6 py-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Topic</Label>
-                  <Input value={metaDraft.topic} onChange={(e) => setMetaDraft(d => ({ ...d, topic: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Duration</Label>
-                  <Select value={String(metaDraft.durationMinutes)} onValueChange={(v) => setMetaDraft(d => ({ ...d, durationMinutes: v ? parseInt(v) : d.durationMinutes }))}>
+                  <Label>Language</Label>
+                  <Select value={metaDraft.language} onValueChange={(v) => setMetaDraft(d => ({ ...d, language: v ?? d.language }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{DURATIONS.map(d => <SelectItem key={d} value={String(d)}>{d} min</SelectItem>)}</SelectContent>
+                    <SelectContent>{LANGUAGES.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Scheduled Date & Time</Label>
-                  <DateTimePicker
-                    value={metaDraft.scheduledAt}
-                    onChange={(v) => setMetaDraft(d => ({ ...d, scheduledAt: v }))}
-                    data-testid="input-scheduled-at"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Objectives</Label>
-                  <Textarea value={metaDraft.objectives} onChange={(e) => setMetaDraft(d => ({ ...d, objectives: e.target.value }))} rows={3} />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="outline" size="sm" onClick={() => setEditingMeta(false)}>Cancel</Button>
-                  <Button size="sm" onClick={handleMetaSave} className="bg-indigo-600 hover:bg-indigo-700 text-white">Save</Button>
+                  <Label>CEFR Level</Label>
+                  <Select value={metaDraft.cefrLevel} onValueChange={(v) => setMetaDraft(d => ({ ...d, cefrLevel: v ?? d.cefrLevel }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{CEFR_LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
+                  </Select>
                 </div>
               </div>
-            ) : (
-              <div className="pt-4 space-y-2">
-                {lesson.scheduledAt && !schedulingInline ? (
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-zinc-600">
-                      <span className="font-medium">Scheduled:</span>{' '}
-                      {new Date(lesson.scheduledAt).toLocaleString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => { setSchedulingInline(true); setInlineScheduleDate(lesson.scheduledAt ? lesson.scheduledAt.slice(0, 16) : '') }}
-                      className="text-xs text-indigo-600 hover:text-indigo-700 h-auto py-0.5 px-1.5"
-                    >
-                      Reschedule
-                    </Button>
-                  </div>
-                ) : schedulingInline ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <DateTimePicker
-                      value={inlineScheduleDate}
-                      onChange={setInlineScheduleDate}
-                      autoFocus
-                      className="flex-1 min-w-0"
-                      data-testid="inline-schedule-input"
-                    />
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button size="sm" onClick={handleQuickSchedule} disabled={!inlineScheduleDate} className="bg-indigo-600 hover:bg-indigo-700 text-white">Save</Button>
-                      <Button variant="ghost" size="sm" onClick={() => { setSchedulingInline(false); setInlineScheduleDate('') }}>Cancel</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSchedulingInline(true)}
-                    className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
-                    data-testid="quick-schedule-btn"
-                  >
-                    <CalendarPlus className="h-4 w-4 mr-1.5" />
-                    Schedule
-                  </Button>
-                )}
-                {lesson.objectives && <p className="text-sm text-zinc-600"><span className="font-medium">Objectives:</span> {lesson.objectives}</p>}
-                {lesson.studentId && students.find(s => s.id === lesson.studentId) && (
-                  <p className="text-sm text-zinc-600"><span className="font-medium">Student:</span> {students.find(s => s.id === lesson.studentId)?.name}</p>
-                )}
-                <Button variant="outline" size="sm" onClick={() => setEditingMeta(true)}>Edit details</Button>
+              <div className="space-y-2">
+                <Label>Topic</Label>
+                <Input value={metaDraft.topic} onChange={(e) => setMetaDraft(d => ({ ...d, topic: e.target.value }))} />
               </div>
-            )}
+              <div className="space-y-2">
+                <Label>Duration</Label>
+                <Select value={String(metaDraft.durationMinutes)} onValueChange={(v) => setMetaDraft(d => ({ ...d, durationMinutes: v ? parseInt(v) : d.durationMinutes }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{DURATIONS.map(d => <SelectItem key={d} value={String(d)}>{d} min</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Scheduled Date & Time</Label>
+                <DateTimePicker
+                  value={metaDraft.scheduledAt}
+                  onChange={(v) => setMetaDraft(d => ({ ...d, scheduledAt: v }))}
+                  data-testid="input-scheduled-at"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Objectives</Label>
+                <Textarea value={metaDraft.objectives} onChange={(e) => setMetaDraft(d => ({ ...d, objectives: e.target.value }))} rows={3} />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" size="sm" onClick={() => setEditingMeta(false)}>Cancel</Button>
+                <Button size="sm" onClick={handleMetaSave} className="bg-indigo-600 hover:bg-indigo-700 text-white">Save</Button>
+              </div>
+            </div>
           </CardContent>
-        )}
-      </Card>
-
-      {/* Link Student button */}
-      {!lesson.studentId && students.length > 0 && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setLinkStudentOpen(true)}
-          data-testid="link-student-btn"
-        >
-          <UserPlus className="h-4 w-4 mr-1.5" />
-          Link Student
-        </Button>
+        </Card>
       )}
 
       {/* Section panels */}
