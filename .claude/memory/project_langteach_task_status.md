@@ -1,145 +1,42 @@
 ---
 name: LangTeach SaaS — Task Status and Next Steps
-description: Which tasks are done, in progress, or next; task numbering convention
+description: Where to find current task state, historical task reference
 type: project
 ---
 
+## Live Tracker: GitHub Issues
+
+GitHub Issues is the single source of truth for task tracking (as of 2026-03-19).
+Use `gh issue list` to see current state. Key queries:
+
+- Current sprint: `gh issue list --milestone "Demo 1 (internal)" --label "demo-sprint"`
+- Must-haves: `gh issue list --label "P1:must"`
+- Ready to pick up: `gh issue list --label "qa:ready"`
+
+**Milestones:**
+- Demo 1 (internal): demo sprint issues + T23 demo prep
+- Phase 2A: Teacher Workflow (Course Planner, Audio Reflections, Difficulty Tracking, Group Classes, Material Upload)
+- Phase 2B: Production (onboarding, caching, usage limits, QA agent, CI pipeline)
+- Phase 3: Growth (student portal, evaluation, content library, payments)
+
 ## Task Numbering Convention
 Tasks are numbered sequentially within a phase. Branch naming: `task/t<N>-<short-description>`.
-Phase 1 tasks are T1-T9 (defined in `plan/langteach-phase1/plan.md`).
 
-## Phase 1 — COMPLETE (as of 2026-03-15)
+## Historical Reference (Phase 1 + Beta)
 
-| Task | Description | Status |
-|------|-------------|--------|
-| T1 | Repository & Tooling Setup | DONE |
-| T2 | Azure Infrastructure (Bicep, Container Apps, SQL, SWA, Key Vault) | DONE |
-| T3 | Auth0 Integration (JWT, Auth0Provider, Serilog, Playwright) | DONE |
-| T4 | Database Schema (EF Core migrations, seed templates) | DONE |
-| T5 | Teacher Profile API + UI | DONE |
-| T5.1 | Design System (Tailwind, shadcn/ui, AppShell) | DONE |
-| T6 | Student Profiles API + UI | DONE |
-| T7 | Lesson CRUD API | DONE |
-| T8 | Lesson UI (Planner, section editor, duplicate, publish) | DONE — PR #23 merged |
-| T9 | CI/CD Pipeline (GitHub Actions, ACR, OIDC) | DONE — PR #27 merged |
-| T9.1 | Brand & Logo | MOVED TO BETA T20 |
+All Phase 1 tasks (T1-T9) and most Beta tasks (T10-T21, T23-e2e) are DONE.
+See git history for details. Key completed milestones:
+- Phase 1: repo setup, Azure infra, Auth0, DB, CRUD APIs, lesson UI, CI/CD
+- Beta Phase 2A (AI Core): T10-T15 (Claude API, prompts, generation, streaming, typed content)
+- Beta Phase 2B (Make It Real): T16-T21 (one-click generation, PDF export, student notes, dashboard v2, brand polish, mobile responsive, regenerate with direction)
+- Demo Sprint: #74, #78, #76, #79 all fixed
 
-## Beta Phase — CURRENT (as of 2026-03-18)
+**Remaining demo sprint issues (now tracked as GitHub Issues):** #75, #77, #81, #95
+**Next after demo sprint:** T23 (issue #97)
 
-**Current phase: Demo Sprint** (bug fixes + polish, then T23 demo prep)
-
-| Task | Description | Status |
-|------|-------------|--------|
-| T10 | Student Profile Enrichment (NativeLanguage, LearningGoals, Weaknesses fields) | DONE — PR #32 merged |
-| T10.1 | Frontend Component Fixes (cmdk dep, PopoverTrigger render prop) | DONE — folded into T10 PR |
-| T11 | Claude API Client (IClaudeClient, model routing, error handling) | DONE — PR #40 merged |
-| T12 | Prompt Construction Service (IPromptService, GenerationContext, quality validation) | DONE — PR #41 merged |
-| T13 | Generation Endpoints (7x POST /api/generate/*) | DONE — PR #42 merged |
-| T14 | Streaming SSE endpoint + useGenerate hook | DONE — PR #44 merged |
-| T15 | Lesson Editor AI Integration (per-section generate, streaming UI, edit/regenerate) | DONE — PR #45 merged |
-| T15.1 | Typed Content Model Foundation (type registry, renderer dispatch, student view route) | DONE — PR #46 merged |
-| T15.2 | Vocabulary Type (editable table for teacher, flashcards for student) | DONE — PR #48 merged |
-| T15.3 | Exercise/Quiz Type (quiz editor for teacher, interactive quiz for student) | DONE — PR #50 merged |
-| e2e-mock-auth | Mock-auth e2e architecture (decouple 6 tests from Auth0) | DONE — PR #51 merged |
-| T15.4 | Conversation Type (dialogue editor for teacher, dialogue view for student) | DONE — PR #52/#53 merged |
-| T15.5 | Grammar Type (styled renderer for teacher + student) | DONE — PR #55 merged |
-| T15.6 | Homework Type (assignment renderer for teacher + student) | DONE — PR #56 merged |
-| T16 | One-Click Full Lesson Generation | DONE — PR #54 merged |
-| T17 | PDF Export | DONE — PR #63 merged |
-| T18 | Student Lesson Notes (post-lesson notes, lesson history on student profile) | DONE — PR #64 open |
-| T19 | Dashboard v2 (weekly schedule, WeekStrip, NeedsPrep, QuickActions) | DONE — PR #60 merged |
-| T19.1 | Schedule from Dashboard ("+" on day columns, assign draft or create new) | DONE — PR #62 merged |
-| T19.2 | Dashboard Scheduling Redesign (stay on dashboard, block slots, duplicate, adapt) | post-demo |
-| T20 | Brand & Visual Polish (icon, favicon, loading states — replaces T9.1) | DONE — PR #67 merged |
-| T20.5 | Mobile & Tablet Responsive Polish (hamburger drawer, responsive layouts) | DONE — PR #69 merged |
-| T21 | Regenerate with Direction (make easier/harder/shorter/longer modifiers) | DONE — PR #65 merged |
-| T23-e2e | E2E Tests: Grammar, Reading, Exercises (ReadingRenderer, mock-auth e2e) | DONE — PR #70 merged |
-| T23 | Beta Demo Preparation (seed data, demo script, talking points) | pending (after demo sprint) |
-
-## Demo Sprint (added 2026-03-18)
-
-Bug fixes and polish discovered during QA, must complete before T23.
-
-| Priority | Issue | Description | Status |
-|----------|-------|-------------|--------|
-| Tier 1 | #74 | Content lost when switching Generate panels during streaming | DONE — PR #86 merged |
-| Tier 1 | #78 | Published unscheduled lessons vanish from dashboard | DONE — PR #88 merged |
-| Tier 1 | #76 | Student name missing from Lessons list and Lesson editor | DONE — PR #89 merged |
-| Tier 1 | #79 | Schedule Save button overflow | DONE — PR #91 merged |
-| Tier 2 | #75 | Progressive streaming with rich renderers (the wow moment) | DONE — PR #92 open |
-| Tier 2 | #77 | Lesson editor header/metadata redesign | pending |
-| Tier 2 | #81 | Quick Actions sidebar review | pending |
-
-## Post-Demo Priorities (reshaped by first PM feedback, 2026-03-18)
-
-Brother's pre-demo feedback validates product direction and reshapes post-demo roadmap.
-Full analysis: `plan/langteach-beta/demo feedback 1/analysis.md`
-Updated vision: `plan/langteach-vision.md` (Phase 2 reorganized)
-
-| Priority | Feature | Why |
-|----------|---------|-----|
-| P1 | Course/Curriculum Planner | PM's #1 request. Teachers think in courses, not isolated lessons. New "Course" entity above lessons. |
-| P2 | Audio Post-Class Reflections | Zero-friction tracking via voice notes. Whisper transcription + progress update. |
-| P3 | Enhanced Difficulty Tracking | Structured per-student difficulties, auto-updated from reflections. |
-| P4 | Group Class Support | New "Group" entity. Mixed L1 backgrounds. Academy/institute use case. |
-| P5 | Material Upload | Upload PDFs/worksheets that inform AI generation. |
-| P6 | Evaluation/Text Correction | Categorized error analysis for student writing. Phase 3. |
-| P7-P9 | Placement tests, slides, adaptive style | Phase 3 / Future. |
-
-**Deferred original post-demo items**: T24 (adapt lesson), T25 (suggest next topic, subsumed by Course Planner), T26 (URL attachments, subsumed by Material Upload), T20.1 (landing page, after Course Planner)
-
-## Key T2 Deviations (important for future tasks)
-- Azure Container Apps (not App Service) — VS Enterprise subscription has zero VM quota in all regions
-- Region: North Europe (not West Europe — SQL Server unavailable there); SWA stays in West Europe
-- Key Vault integration deferred to T4 — Container Apps validates KV refs at deploy before RBAC is granted
-- KV name: `kv-lt-dev-5ba22u` (uniqueString suffix due to soft-delete collision)
-- App URL: `https://app-langteach-api-dev.purplewater-292509f3.northeurope.azurecontainerapps.io`
-
-## T9 Key Notes
-- ACR name: `crlangteachdev` / login server: `crlangteachdev.azurecr.io`
-- Backend CD: `az acr build` (builds in cloud) + `az containerapp update` — no Docker needed in runner
-- Frontend CD: pre-build in workflow, then `Azure/static-web-apps-deploy@v1` with `skip_app_build: true`
-- OIDC auth (not SP secret) — requires federated credential for `repo:Robert-Freire/langTeachSaaS:ref:refs/heads/main`
-- Bicep circular dependency avoided by computing `acrLoginServer` as `${acrName}.azurecr.io` rather than using ACR module output
-
-## T8 Key Notes
-- `LessonsController` email guard: use `?? ""` fallback (same as StudentsController) — e2e test user JWT has no email claim
-- `DuplicateAsync` prefixes copied lesson title with `"Copy of "`
-- Docker API image must be rebuilt after backend changes (`docker compose build api`) before running Playwright
-
-## Key T7 Notes (important for T8)
-- `GET /api/lesson-templates` is NOT in T7 — T8 adds it as a minimal read-only controller (direct DbContext, no service, no new tests)
-- `LessonUpdateResult` sealed record hierarchy (Success, NotFound, InvalidStudent) lives in `Services/LessonUpdateResult.cs` — use same pattern for any future service that needs discriminated outcomes
-- Template section seeding in tests: seed `LessonTemplate` directly via `_factory.Services.CreateScope()` + `AppDbContext` (SeedData does not run in Testing environment)
-- `UpdateLessonRequest.DurationMinutes` and `Status` are nullable — null means keep existing value
-
-## Key T6 Notes (important for T7/T8)
-- `PagedResult<T>` DTO is generic — reuse for T7 lessons list
-- `UpsertTeacherAsync` now returns `Task<Guid>` (teacher DB Id) — use this pattern in T7 controller
-- Test infrastructure: `TestAuthHandler` + `AuthenticatedWebAppFactory` + `ApiTestCollection` shared xUnit collection fixture. Use `[Collection("ApiTests")]` on all future test classes to share one factory and avoid Serilog/EF Core conflicts.
-- EF Core InMemory dual-provider fix: directly register pre-built `DbContextOptions<AppDbContext>` singleton (don't call `AddDbContext` again in test factory — it stacks configure actions)
-- Button component uses Base UI (no `asChild`). For link-buttons, use `buttonVariants` directly on `<Link>` from react-router-dom
-- shadcn alert-dialog, select, textarea now installed in `frontend/src/components/ui/`
-
-## Beta Plan (supersedes Phase 2 sequencing)
-Plan at: `plan\langteach-beta\plan.md`
-Phase 2 AI Core plan (`plan\langteach-phase2\plan.md`) remains valid as technical reference but task sequencing now follows the beta plan (T10-T23), reorganized around demo impact for first beta tester.
-
-**Beta task overview:**
-- Phase 2A (Core Magic): T10-T15 (all DONE)
-- Phase 2A.1 (Typed Content): T15.1-T15.6 (all DONE), T15.7 pending
-- Phase 2B (Make It Real): T16, T17, T18, T19, T19.1, T20, T20.5, T21 (all DONE). T24/T25 deferred post-demo.
-- Demo Sprint: GitHub issues #74, #78, #76, #79, #75, #77, #81 (IN PROGRESS)
-- T23: Beta demo preparation (after demo sprint)
-
-**Key architectural decision (2026-03-15):** Content blocks must be typed (vocabulary, exercises, conversation, reading, freeText) with per-type renderers for both teacher (editor) and student (interactive) views. T22 (Interactive Exercise Rendering) absorbed into T15.3. Old T16 (One-Click Full Lesson) renumbered but kept.
-
-**Demo audience:** Robert's brother, potential PM. Goal is to show the full teacher-to-student loop and sell the platform vision.
-
-**Deferred from original Phase 2:** generation caching (T3), usage tracking/limits (T8), Stripe, content library, shareable links.
-
-## Key T4 Notes (important for T5+)
-- Student->Lesson FK is NoAction (not SetNull) — SQL Server multiple cascade path constraint. Nullify StudentId in service layer when soft-deleting students if needed.
-- Migrations run automatically on startup via MigrateAsync; guarded with !IsEnvironment("Testing") for test host. E2ETesting environment runs migrations (real DB) but uses E2ETestAuthHandler instead of JWT.
-- Mock-auth e2e: start API with ASPNETCORE_ENVIRONMENT=E2ETesting, frontend with npm run dev:e2e (VITE_E2E_TEST_MODE=true). Run: npx playwright test --project=mock-auth. Fixed identity: auth0|e2e-test-teacher / e2e-test@langteach.io.
-- docker-compose mounts frontend/.env.local into container for Auth0 vars.
+## Key Architectural Notes
+- Azure Container Apps (not App Service), North Europe region, SWA in West Europe
+- ACR: `crlangteachdev.azurecr.io`, OIDC auth (not SP secret)
+- Content blocks are typed (vocabulary, exercises, conversation, reading, grammar, homework, freeText) with per-type renderers
+- Mock-auth e2e: ASPNETCORE_ENVIRONMENT=E2ETesting, VITE_E2E_TEST_MODE=true
+- Student->Lesson FK is NoAction (SQL Server cascade constraint)

@@ -2,11 +2,13 @@
 
 ## Project
 - [LangTeach SaaS overview](project_langteach_overview.md) — stack, phases, monetization, key files
-- [Task status and next steps](project_langteach_task_status.md) — beta phase: T10-T19 done, T19.1 next, then T17/T18/T21/T20/T23
+- [Task status and next steps](project_langteach_task_status.md) — GitHub Issues is live tracker; historical task tables for reference
+- [GitHub label taxonomy](project_langteach_github_labels.md) — complete label system with colors, meanings, and usage rules
 - [Plan file locations](project_langteach_plans.md) — where to find each plan document
 - [Dev workflow conventions](project_langteach_dev_conventions.md) — local dev setup, ports, Auth0 tenant, Playwright, logs
 - [Design system decisions](project_langteach_design_system.md) — component library, colors, layout rationale, infrastructure notes
-- [Demo audience and goals](project_langteach_demo_audience.md) — brother as potential PM, show teacher-to-student loop
+- [Demo strategy and audience](project_langteach_demo_audience.md) — periodic internal demos as QA checkpoints; brother is potential PM but not blocking
+- [Task management](project_langteach_task_management.md) — GitHub Issues as single source of truth; QA reviewer agent; agent workflow
 - [Flaky e2e test analysis](project_flaky_tests_analysis.md) — registration and typed-content-view tests fail on fresh DB (Auth0 unreachable from Docker, AI response format)
 
 ## Feedback

@@ -37,12 +37,41 @@ When creating a new Auth0 API and authorizing it for the SPA application, you mu
 
 Enabling only one gives: `Client is not authorized to access resource server "https://api.langteach.io"` — no hint about which toggle is missing.
 
-## Playwright E2E
-- Installed in `e2e/` folder, Chromium only
-- Run: `cd e2e && npx playwright test`
-- Current tests: `auth-diagnostic.spec.ts` (confirms login page loads)
-- Planned for T4: `auth-helper.ts` — reusable authenticated browser context used by all future tests
-- All tasks T5+ must ship a Playwright test using `auth-helper.ts`
+## E2E Testing — Docker Compose (Preferred)
+
+The project has a fully containerized e2e stack in `docker-compose.e2e.yml` with project name `langteachsaas-e2e` (isolated from the dev stack).
+
+**Setup (one-time):**
+```powershell
+cp .env.e2e.example .env.e2e   # fill in secrets from 1Password
+```
+
+**Run e2e tests:**
+```powershell
+docker compose -f docker-compose.e2e.yml --env-file .env.e2e up --build --exit-code-from playwright
+```
+
+**Wipe state between runs (fresh DB):**
+```powershell
+docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
+```
+
+**Services:** sqlserver, api (ASPNETCORE_ENVIRONMENT=E2ETesting, bypasses JWT validation), frontend (Vite dev server on port 5174), playwright (runs tests, outputs to `e2e/test-results/` and `e2e/playwright-report/`).
+
+**Environment variables:** All sourced from `.env.e2e` (see `.env.e2e.example` for the full list). Key vars: SA_PASSWORD, AUTH0_DOMAIN, AUTH0_AUDIENCE, VITE_AUTH0_CLIENT_ID, CLAUDE_API_KEY, E2E_TEST_EMAIL, E2E_TEST_PASSWORD, E2E_TEST_AUTH0_USER_ID.
+
+**CI=true on playwright service:** Skips Auth0-dependent tests (registration, auth-me, auth-diagnostic) that require a real browser session. Those run only locally or in nightly CI with injected credentials.
+
+**Parallel agent isolation:** When multiple agents run e2e tests from different worktrees, use `--project-name langteachsaas-e2e-<worktree-name>` to give each its own Docker network and volumes, avoiding conflicts. Single-agent runs can use the default project name.
+
+## E2E Testing — Local (Alternative)
+
+For running individual tests outside Docker:
+```powershell
+cd e2e && npx playwright test
+```
+
+Requires the dev stack (sqlserver + api + frontend) to be running locally.
 
 ## AI Integration Tests
 

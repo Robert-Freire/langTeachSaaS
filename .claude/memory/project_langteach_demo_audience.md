@@ -1,16 +1,28 @@
 ---
-name: LangTeach demo audience and goals
-description: Demo targets Robert's brother (language teacher) as potential PM; goal is to show full teacher-to-student loop and sell the platform vision
+name: LangTeach demo strategy and audience
+description: Demos are periodic internal quality checkpoints; brother is potential PM but not blocking; continuous development, no waiting for feedback
 type: project
 ---
 
-The beta demo audience is Robert's brother, a language teacher. Robert wants to bring him on as Product Manager for the project.
+## Demo Strategy (updated 2026-03-19)
 
-The demo needs to:
-1. Show the teacher creating structured content with AI (not just text generation)
-2. Show the same content rendered as a student learning experience (flashcards, interactive quizzes)
-3. Sell the vision of an extensible content type system (new types = new renderers, not a redesign)
+**Demos are periodic internal quality checkpoints**, not one-off events. Robert stops, walks through the app as a teacher would, finds what's broken, files issues. This is his QA process given the fast pace of development.
 
-Key content types teachers use in practice: presentations, flashcards, quizzes, infographics. The platform should demonstrate that it handles structured content natively, not as text blobs.
+- **Demo 1 (internal):** Close remaining Demo Sprint issues + T23-lite (seed data, self-QA walkthrough). No external audience.
+- **Demo 2+:** Future checkpoints, roughly after major feature milestones (e.g., after Course Planner ships).
+- Milestones in GitHub map to demo checkpoints.
 
-The brother needs to see a product with growth potential, not just a prototype.
+## Brother as PM
+
+Robert's brother (language teacher) is the target PM. He provided detailed voice note feedback (2026-03-18) without seeing the app. He may continue sending thoughts asynchronously.
+
+- Do NOT block development waiting for his feedback.
+- When he eventually sees a live demo (maybe Demo 2 or 3), the app will be stronger.
+- His voice note feedback validated the core product direction and reshaped Phase 2 priorities.
+
+## What demos prove
+
+1. The teacher loop works: create lesson, generate content, refine, export
+2. Content types are real: vocabulary renders as vocabulary, not JSON
+3. Personalization is the moat: content adapts to student level, interests, native language
+4. The platform thinks ahead: suggest next topic based on student history

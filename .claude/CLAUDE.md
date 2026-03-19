@@ -1,18 +1,58 @@
 # LangTeach SaaS — Project Rules
 
-## Plan Review Protocol
+## Worktree-First Workflow
 
-Before starting implementation of any task plan:
-1. Run `/review-plan` (optionally pass the plan file path as argument).
-2. If verdict is **MAJOR GAPS**: revise the plan before writing any code.
-3. If verdict is **NEEDS REVISION**: fix the flagged issues in the plan, then start.
-4. If verdict is **READY**: proceed to implementation.
+**All task work MUST happen inside a git worktree.** This includes planning, plan review, implementation, testing, and PR creation. The worktree keeps the main working directory clean and prevents conflicts when multiple agents work in parallel.
+
+Before starting any task:
+1. `git fetch origin && git checkout main && git pull origin main`
+2. `EnterWorktree` with `name: "task-t<N>-<short-description>"` (e.g. `task-t21-export-pdf`)
+3. Write the task plan, run `/review-plan`, iterate until READY
+4. Implement, test, commit, push, open PR (all from inside the worktree)
+5. After the PR is merged, exit and remove the worktree with `ExitWorktree(action: "remove")`
+
+Never work directly in the main repo directory for task work (including planning).
+
+## E2E Test Isolation (Parallel Agents)
+
+When running `docker-compose.e2e.yml` from a worktree, use `--project-name` to avoid conflicts with other agents running e2e tests simultaneously:
+```bash
+docker compose -f docker-compose.e2e.yml --project-name langteachsaas-e2e-<worktree-name> --env-file .env.e2e up --build --exit-code-from playwright
+```
+This gives each worktree its own Docker network and volumes. Teardown uses the same project name:
+```bash
+docker compose -f docker-compose.e2e.yml --project-name langteachsaas-e2e-<worktree-name> --env-file .env.e2e down -v
+```
+If only one agent is running, the default project name (`langteachsaas-e2e`) is fine.
+
+## Task Source: GitHub Issues
+
+GitHub Issues is the single source of truth for task tracking. Plan files remain as design documents.
+
+**Picking tasks:**
+- Work from GitHub Issues, highest priority (`P0` > `P1` > `P2`) in the current milestone
+- An issue must have the `qa:ready` label before implementation starts
+- Use `gh issue list --milestone "<milestone>" --label "qa:ready"` to find ready work
+
+**Closing issues via PR:**
+- PR body must include `Closes #N` to auto-close the issue on merge
+- Apply appropriate area/type labels when creating issues
+
+**After PR is merged (when user confirms merge):**
+- Move the issue to "Done" on the project board: `gh project item-edit --project-id PVT_kwHOAF1Pks4BSLsS --id <ITEM_ID> --field-id PVTSSF_lAHOAF1Pks4BSLsSzg_ysiA --single-select-option-id 61f69a4c`
+  - To find the item ID: `gh project item-list 2 --owner Robert-Freire --format json` and match by issue number
+- Exit and remove the worktree with `ExitWorktree(action: "remove")`
+
+**Labels overview:**
+- Priority: `P0:blocker`, `P1:must`, `P2:should`, `P3:nice` (mutually exclusive)
+- Area: `area:frontend`, `area:backend`, `area:e2e`, `area:infra`, `area:design`, `area:ai` (stackable)
+- Type: `type:polish`, `type:tech-debt`
+- Workflow: `qa:ready`, `demo-sprint`
 
 ## Task Completion Protocol
 
 When a task is marked complete:
-1. Create a feature branch named `task/<task-id>-<short-description>` (e.g. `task/t2-azure-infra`)
-2. Stage all relevant changes **including any modified files in `.claude/memory/` and `plan/`** and commit with a message referencing the task
+1. Stage all relevant changes **including any modified files in `.claude/memory/` and `plan/`** and commit with a message referencing the task
 3. Run pre-push checks (see below). Fix any failures before proceeding.
 4. Run the `review` agent to perform a code review of all changes vs `main`.
    - If verdict is **FAIL**: fix all critical issues, re-commit, re-run checks and review.
