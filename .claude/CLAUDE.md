@@ -1,4 +1,4 @@
-# LangTeach SaaS — Project Rules
+# LangTeach SaaS -- Project Rules
 
 ## Worktree-First Workflow
 
@@ -71,11 +71,11 @@ When a task is marked complete:
 7. Stop -- do NOT merge. The user reviews the PR and merges manually.
 
 **Pre-push checks (must all pass before pushing):**
-- `az bicep build --file infra/main.bicep` — zero warnings, zero errors
-- `cd backend && dotnet build` — zero warnings, zero errors
-- `cd backend && dotnet test` — all tests pass
-- `cd frontend && npm run build` — zero errors
-- `cd frontend && npm test` — all unit tests pass
+- `az bicep build --file infra/main.bicep` -- zero warnings, zero errors
+- `cd backend && dotnet build` -- zero warnings, zero errors
+- `cd backend && dotnet test` -- all tests pass
+- `cd frontend && npm run build` -- zero errors
+- `cd frontend && npm test` -- all unit tests pass
 - If any check fails, fix it before pushing. Never push with known failures or warnings.
 
 **Branch protection rules:**
@@ -85,4 +85,4 @@ When a task is marked complete:
 
 ## Memory
 
-Claude's persistent memory for this project lives in `.claude/memory/`. These are not source files — do not read, modify, or include them in code searches or codebase exploration. Memory is managed separately via the auto-memory system.
+Claude's persistent memory for this project lives in `.claude/memory/`. These are not source files -- do not read, modify, or include them in code searches or codebase exploration. Memory is managed separately via the auto-memory system.

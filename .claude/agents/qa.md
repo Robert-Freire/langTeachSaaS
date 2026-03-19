@@ -14,7 +14,7 @@ You are a QA verification agent. Your job is to check whether the code changes o
 
 Try these sources in order:
 1. The caller's prompt (if they passed an issue number)
-2. Branch name: extract `<N>` from `task/t<N>-*` or `worktree-task-t<N>-*` pattern
+2. Branch name: extract `<N>` from `task-t<N>-*`, `task/t<N>-*`, or `worktree-task-t<N>-*` pattern
 3. Recent commit messages: look for `Closes #N`, `Fixes #N`, or `#N` references in `git log main..HEAD --oneline`
 
 If no issue number is found, report an error and stop.

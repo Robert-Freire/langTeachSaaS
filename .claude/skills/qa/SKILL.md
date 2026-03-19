@@ -20,7 +20,7 @@ Review GitHub issues for completeness and quality before implementation. This sk
 Based on the argument:
 
 - **Specific issue**: `gh issue view <N> --json number,title,body,labels,milestone`
-- **All in milestone (no args)**: first determine current milestone from `gh milestone list`, then `gh issue list --milestone "<name>" --state open --json number,title,body,labels,milestone --limit 100`, filter out those already labeled `qa:ready`
+- **All in milestone (no args)**: run `gh milestone list --state open --json title,dueOn` and pick the milestone with the earliest due date (or the only open one). Then `gh issue list --milestone "<name>" --state open --json number,title,body,labels,milestone --limit 100`, filter out those already labeled `qa:ready`
 - **Named milestone**: `gh issue list --milestone "<name>" --state open --json number,title,body,labels,milestone --limit 100`, filter out those already labeled `qa:ready`
 
 ### Step 2: Evaluate Each Issue
@@ -54,7 +54,7 @@ Apply the quality rubric to each issue.
 3. Done
 
 **If must-have findings exist:**
-1. Invoke the PM agent with the following prompt:
+1. Use the Agent tool with `subagent_type: "pm"` to invoke the PM agent with the following prompt:
 
 ```
 QA has reviewed issue #<N> (<title>) and found these gaps:
@@ -73,7 +73,7 @@ For accepted findings, provide the exact text to add to the issue body. For stru
 
 2. Apply PM's accepted changes:
    - For label/milestone fixes: `gh issue edit <N> --add-label "<label>"` or `gh issue edit <N> --milestone "<name>"`
-   - For body content: `gh issue edit <N> --body "<updated body>"` (preserve existing content, append new sections)
+   - For body content: write the updated body to a temp file and use `gh issue edit <N> --body-file /tmp/issue-body.md` (preserve existing content, append new sections). This avoids shell escaping issues with markdown.
 3. For refuted content findings: note as "PM declined, flagged for user review" in the comment. Do NOT block `qa:ready` for PM-refuted content findings.
 4. For refuted structural findings (labels, milestone): these are non-negotiable. Keep as a gap.
 
