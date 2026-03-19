@@ -6,6 +6,15 @@
 #
 # Exit code mirrors playwright: 0 = all tests pass, non-zero = failures.
 # Reports and screenshots are written to e2e/playwright-report/ and e2e/test-results/.
+#
+# To wipe state between runs (fresh DB):
+#   docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
+#
+# Note: ASPNETCORE_ENVIRONMENT=E2ETesting bypasses JWT validation so mock-auth
+# tests can call the API with a synthetic token. Auth0-dependent tests
+# (registration, auth-me, auth-diagnostic) are skipped via CI=true on the
+# playwright service — they require a real Auth0 browser session and run only
+# when triggered locally or in the nightly CI workflow with injected credentials.
 
 services:
   sqlserver:
