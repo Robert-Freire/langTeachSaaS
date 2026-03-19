@@ -14,11 +14,12 @@ type: project
 
 ## Brother as PM
 
-Robert's brother (language teacher) is the target PM. He provided detailed voice note feedback (2026-03-18) without seeing the app. He may continue sending thoughts asynchronously.
+Robert's brother Jordi (jordim.freire@gmail.com, language teacher) is the target PM. He has been providing ongoing feedback since 2026-03-18 (voice notes, email). See `project_jordi_feedback_log.md` for the full log.
 
 - Do NOT block development waiting for his feedback.
 - When he eventually sees a live demo (maybe Demo 2 or 3), the app will be stronger.
-- His voice note feedback validated the core product direction and reshaped Phase 2 priorities.
+- His feedback validated the core product direction and reshaped Phase 2 priorities.
+- PM bot can email him directly; he knows to reply to robert.freire.bot@gmail.com.
 
 ## What demos prove
 
