@@ -176,28 +176,34 @@ export default function Lessons() {
         />
         <Select value={language ?? 'all'} onValueChange={(v) => setLanguage(!v || v === 'all' ? undefined : v)}>
           <SelectTrigger className="w-full sm:w-36" data-testid="filter-language">
-            <SelectValue placeholder="Language" />
+            <SelectValue placeholder="All Languages">
+              {(v: unknown) => v === 'all' ? 'All Languages' : String(v)}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Language: All</SelectItem>
+            <SelectItem value="all">All Languages</SelectItem>
             {LANGUAGES.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={cefrLevel ?? 'all'} onValueChange={(v) => setCefrLevel(!v || v === 'all' ? undefined : v)}>
           <SelectTrigger className="w-full sm:w-32" data-testid="filter-level">
-            <SelectValue placeholder="Level" />
+            <SelectValue placeholder="All Levels">
+              {(v: unknown) => v === 'all' ? 'All Levels' : String(v)}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Level: All</SelectItem>
+            <SelectItem value="all">All Levels</SelectItem>
             {CEFR_LEVELS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={status ?? 'all'} onValueChange={(v) => setStatus(!v || v === 'all' ? undefined : v)}>
           <SelectTrigger className="w-full sm:w-32" data-testid="filter-status">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder="All Statuses">
+              {(v: unknown) => v === 'all' ? 'All Statuses' : String(v)}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Status: All</SelectItem>
+            <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="Draft">Draft</SelectItem>
             <SelectItem value="Published">Published</SelectItem>
           </SelectContent>
