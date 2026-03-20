@@ -1,9 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Read",
-      "Write",
-      "Edit",
+      "Read(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
+      "Grep(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
+      "Glob(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
+      "Write(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
+      "Edit(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
       "Bash(*)"
     ],
     "deny": [

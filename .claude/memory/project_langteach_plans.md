@@ -28,6 +28,8 @@ Plans live in the workspace repo under `plan\`. The Obsidian vault has a junctio
 | Beta — T10 task file | `plan\langteach-beta\task10-student-profile-enrichment.md` |
 | Beta — First PM Feedback Analysis | `plan\langteach-beta\demo feedback 1\analysis.md` |
 
+| Beta 2 — Teacher Workflow Foundation (next sprint scope) | `plan\beta2-teacher-workflow\sprint-scope.md` |
+
 ## Naming Convention
 - Feature subfolder per phase: `plan\langteach-phase1\`, `plan\langteach-beta\`, etc.
 - Phase overview: `plan.md` inside the subfolder

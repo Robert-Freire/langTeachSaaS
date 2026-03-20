@@ -31,8 +31,13 @@ See git history for details. Key completed milestones:
 - Beta Phase 2B (Make It Real): T16-T21 (one-click generation, PDF export, student notes, dashboard v2, brand polish, mobile responsive, regenerate with direction)
 - Demo Sprint: #74, #78, #76, #79 all fixed
 
-**Remaining demo sprint issues (now tracked as GitHub Issues):** #75, #77, #81, #95
-**Next after demo sprint:** T23 (issue #97)
+**Demo 1 sprint open issues:** #95, #116, #117, #121, #122, #123, #124, #125, #126 (UX guidelines)
+**Next sprint:** Beta 2: Teacher Workflow Foundation (scope defined in plan/beta2-teacher-workflow/sprint-scope.md)
+- #98 Course/Curriculum Planner (P0)
+- #100 Enhanced Difficulty Tracking (P1)
+- #102 Material Upload (P1)
+- #127 Exercise Correction with Explanation (P1)
+- Audio Reflections (#99) deferred per Jordi's skepticism
 
 ## Key Architectural Notes
 - Azure Container Apps (not App Service), North Europe region, SWA in West Europe

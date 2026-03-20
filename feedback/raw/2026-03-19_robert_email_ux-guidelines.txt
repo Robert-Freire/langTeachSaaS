@@ -1,0 +1,9 @@
+Source: Email from Robert Freire (robert.freire@gmail.com)
+Date: 2026-03-19, 22:07 UTC
+Subject: UX guidelines
+Sent to: PM (robert.freire.bot@gmail.com)
+
+---
+
+Perhaps we have to ask the UI reviewer to look at the screens and generate
+some navigation and usability UX guides, and then to follow that guidelines.
