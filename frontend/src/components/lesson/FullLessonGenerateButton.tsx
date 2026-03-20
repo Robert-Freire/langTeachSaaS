@@ -57,7 +57,6 @@ export function FullLessonGenerateButton({
 }: FullLessonGenerateButtonProps) {
   const { getAccessTokenSilently } = useAuth0()
   const [phase, setPhase] = useState<Phase>('idle')
-  const [currentIndex, setCurrentIndex] = useState(0)
   const [sectionStatus, setSectionStatus] = useState<Record<string, 'pending' | 'active' | 'done' | 'error'>>({})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -73,8 +72,7 @@ export function FullLessonGenerateButton({
     const activeSections = SECTION_ORDER.filter(t => sections.some(s => s.sectionType === t))
 
     setPhase('generating')
-    setCurrentIndex(0)
-    setSectionStatus(Object.fromEntries(activeSections.map(s => [s, 'pending'])))
+    setSectionStatus(Object.fromEntries(activeSections.map(s => [s, 'active'])))
 
     const controller = new AbortController()
     abortRef.current = controller
@@ -88,13 +86,11 @@ export function FullLessonGenerateButton({
       return
     }
 
-    for (let i = 0; i < activeSections.length; i++) {
-      const sectionType = activeSections[i]
-      const section = sections.find(s => s.sectionType === sectionType)!
+    const errors: string[] = []
 
+    await Promise.allSettled(activeSections.map(async (sectionType) => {
+      const section = sections.find(s => s.sectionType === sectionType)!
       const taskType = SECTION_TASK_MAP[sectionType]
-      setSectionStatus(prev => ({ ...prev, [sectionType]: 'active' }))
-      setCurrentIndex(i)
 
       try {
         const content = await streamText(
@@ -126,19 +122,22 @@ export function FullLessonGenerateButton({
         onBlockSaved(block)
         setSectionStatus(prev => ({ ...prev, [sectionType]: 'done' }))
       } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') {
-          setPhase('idle')
-          return
-        }
+        if (err instanceof DOMException && err.name === 'AbortError') return
         setSectionStatus(prev => ({ ...prev, [sectionType]: 'error' }))
-        setErrorMessage(err instanceof Error ? err.message : 'Generation failed.')
-        setPhase('error')
-        return
+        const msg = err instanceof Error ? err.message : 'Generation failed.'
+        errors.push(`${SECTION_LABELS[sectionType]}: ${msg}`)
       }
-    }
+    }))
 
-    setPhase('done')
-    doneTimerRef.current = setTimeout(() => setPhase('idle'), 2000)
+    if (controller.signal.aborted) return
+
+    if (errors.length > 0) {
+      setErrorMessage(errors.join('; '))
+      setPhase('error')
+    } else {
+      setPhase('done')
+      doneTimerRef.current = setTimeout(() => setPhase('idle'), 2000)
+    }
   }
 
   const handleCancel = () => {
@@ -182,7 +181,7 @@ export function FullLessonGenerateButton({
           {(phase === 'generating' || phase === 'done') && (
             <div className="px-1 py-2 space-y-2" data-testid="generation-progress">
               <div className="text-xs text-zinc-500 mb-1">
-                {phase === 'done' ? 'All sections complete' : `${currentIndex + 1} / ${sections.length}`}
+                {phase === 'done' ? 'All sections complete' : `${Object.values(sectionStatus).filter(s => s === 'done' || s === 'error').length} / ${Object.keys(sectionStatus).length} complete`}
               </div>
               <ol className="space-y-1">
                 {SECTION_ORDER.filter(s => sections.some(sec => sec.sectionType === s)).map((s) => {

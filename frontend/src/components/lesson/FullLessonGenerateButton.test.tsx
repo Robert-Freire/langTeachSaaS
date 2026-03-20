@@ -148,15 +148,16 @@ describe('FullLessonGenerateButton', () => {
     await waitFor(() => expect(onBlockSaved).toHaveBeenCalledTimes(5), { timeout: 3000 })
 
     const blockTypes = onBlockSaved.mock.calls.map((c) => (c as [ContentBlockDto])[0].blockType)
-    expect(blockTypes).toEqual(['vocabulary', 'grammar', 'exercises', 'conversation', 'homework'])
+    expect(new Set(blockTypes)).toEqual(new Set(['vocabulary', 'grammar', 'exercises', 'conversation', 'homework']))
   })
 
-  it('progress indicator shows section count during generation', async () => {
+  it('all sections show active status simultaneously during generation', async () => {
     const user = userEvent.setup()
-    let resolveFirst: (v: string) => void
-    const firstStreamPromise = new Promise<string>(res => { resolveFirst = res })
+    const resolvers: Array<(v: string) => void> = []
 
-    vi.mocked(streamText).mockReturnValueOnce(firstStreamPromise).mockResolvedValue('{}')
+    vi.mocked(streamText).mockImplementation(() =>
+      new Promise<string>(res => { resolvers.push(res) })
+    )
     vi.mocked(generateApi.saveContentBlock).mockImplementation((_lessonId, req) =>
       Promise.resolve(makeBlock(req.lessonSectionId!, req.blockType as string))
     )
@@ -165,12 +166,42 @@ describe('FullLessonGenerateButton', () => {
     await user.click(screen.getByTestId('generate-full-lesson-btn'))
     await user.click(screen.getByTestId('confirm-generate-full-lesson'))
 
-    // While first section is in-flight, progress indicator should be visible
+    // Wait for progress to appear (all sections are in-flight)
     await waitFor(() => expect(screen.getByTestId('generation-progress')).toBeInTheDocument())
-    expect(screen.getByText('1 / 5')).toBeInTheDocument()
 
-    resolveFirst!('{}')
-    await waitFor(() => expect(vi.mocked(generateApi.saveContentBlock)).toHaveBeenCalledTimes(5), { timeout: 3000 })
+    // All 5 spinners should be visible (active status)
+    const spinners = screen.getAllByText((_, el) =>
+      el?.tagName === 'svg' && el.classList.contains('animate-spin')
+    )
+    expect(spinners).toHaveLength(5)
+
+    // Resolve all
+    resolvers.forEach(r => r('{}'))
+    await waitFor(() => expect(screen.getByText('Lesson generated!')).toBeInTheDocument(), { timeout: 3000 })
+  })
+
+  it('progress indicator shows completed count during generation', async () => {
+    const user = userEvent.setup()
+    const resolvers: Array<(v: string) => void> = []
+
+    vi.mocked(streamText).mockImplementation(() =>
+      new Promise<string>(res => { resolvers.push(res) })
+    )
+    vi.mocked(generateApi.saveContentBlock).mockImplementation((_lessonId, req) =>
+      Promise.resolve(makeBlock(req.lessonSectionId!, req.blockType as string))
+    )
+
+    renderButton()
+    await user.click(screen.getByTestId('generate-full-lesson-btn'))
+    await user.click(screen.getByTestId('confirm-generate-full-lesson'))
+
+    // While all sections are in-flight, 0 complete
+    await waitFor(() => expect(screen.getByTestId('generation-progress')).toBeInTheDocument())
+    expect(screen.getByText('0 / 5 complete')).toBeInTheDocument()
+
+    // Resolve first section
+    resolvers[0]('{}')
+    await waitFor(() => expect(screen.getByText('1 / 5 complete')).toBeInTheDocument())
   })
 
   it('succeeds when lesson has fewer than 5 sections (e.g. no Production)', async () => {
@@ -207,10 +238,11 @@ describe('FullLessonGenerateButton', () => {
 
   it('progress counter reflects actual section count for partial lesson', async () => {
     const user = userEvent.setup()
-    let resolveFirst: (v: string) => void
-    const firstStreamPromise = new Promise<string>(res => { resolveFirst = res })
+    const resolvers: Array<(v: string) => void> = []
 
-    vi.mocked(streamText).mockReturnValueOnce(firstStreamPromise).mockResolvedValue('{}')
+    vi.mocked(streamText).mockImplementation(() =>
+      new Promise<string>(res => { resolvers.push(res) })
+    )
     vi.mocked(generateApi.saveContentBlock).mockImplementation((_lessonId, req) =>
       Promise.resolve(makeBlock(req.lessonSectionId!, req.blockType as string))
     )
@@ -230,20 +262,23 @@ describe('FullLessonGenerateButton', () => {
     await user.click(screen.getByTestId('confirm-generate-full-lesson'))
 
     await waitFor(() => expect(screen.getByTestId('generation-progress')).toBeInTheDocument())
-    // Should show 1 / 4, not 1 / 5
-    expect(screen.getByText('1 / 4')).toBeInTheDocument()
+    // Should show 0 / 4, not 0 / 5
+    expect(screen.getByText('0 / 4 complete')).toBeInTheDocument()
 
-    resolveFirst!('{}')
+    resolvers.forEach(r => r('{}'))
     await waitFor(() => expect(vi.mocked(generateApi.saveContentBlock)).toHaveBeenCalledTimes(4), { timeout: 3000 })
   })
 
-  it('error during section 2 stops generation and shows error state', async () => {
+  it('error in one section does not stop other sections from completing', async () => {
     const user = userEvent.setup()
     const streamMock = vi.mocked(streamText)
 
     streamMock
       .mockResolvedValueOnce('{}')          // WarmUp ok
       .mockRejectedValueOnce(new Error('AI service unavailable')) // Presentation fails
+      .mockResolvedValueOnce('{}')          // Practice ok
+      .mockResolvedValueOnce('{}')          // Production ok
+      .mockResolvedValueOnce('{}')          // WrapUp ok
 
     vi.mocked(generateApi.saveContentBlock).mockImplementation((_lessonId, req) =>
       Promise.resolve(makeBlock(req.lessonSectionId!, req.blockType as string))
@@ -263,8 +298,8 @@ describe('FullLessonGenerateButton', () => {
     await user.click(screen.getByTestId('confirm-generate-full-lesson'))
 
     await waitFor(() => expect(screen.getByText('Generation failed')).toBeInTheDocument(), { timeout: 3000 })
-    expect(screen.getByText('AI service unavailable')).toBeInTheDocument()
-    // Only WarmUp should have saved
-    expect(onBlockSaved).toHaveBeenCalledTimes(1)
+    expect(screen.getByText(/AI service unavailable/)).toBeInTheDocument()
+    // 4 sections succeeded, only Presentation failed
+    expect(onBlockSaved).toHaveBeenCalledTimes(4)
   })
 })
