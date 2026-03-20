@@ -80,7 +80,7 @@ test('regenerate replaces existing content and sends direction', async ({ browse
     expect(initialBlockCount).toBeGreaterThan(0)
 
     // Click Regenerate on the content block to open the unified panel
-    await page.getByTestId('regenerate-btn').click()
+    await page.getByTestId('regenerate-btn').first().click()
 
     // Panel should open with replace indicator and direction textarea
     await expect(page.getByTestId('generate-panel')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
