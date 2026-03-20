@@ -92,7 +92,7 @@ test('regenerate replaces existing content and sends direction', async ({ browse
     const textarea = page.getByTestId('direction-textarea')
     await expect(textarea).toHaveValue('Make it easier')
 
-    // Button should say "Replace & insert"
+    // Insert button not visible until generation completes
     await expect(page.getByTestId('insert-btn')).not.toBeVisible()
 
     // Generate with direction
@@ -111,6 +111,8 @@ test('regenerate replaces existing content and sends direction', async ({ browse
 
     // Content block should still be visible (replaced, not duplicated)
     await expect(page.getByTestId('ai-block-badge').first()).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+    const finalBlockCount = await page.getByTestId('content-block').count()
+    expect(finalBlockCount).toBe(initialBlockCount)
   } finally {
     await context.close()
   }
