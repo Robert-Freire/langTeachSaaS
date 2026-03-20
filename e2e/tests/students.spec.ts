@@ -16,7 +16,10 @@ test('shows not-found message for invalid student edit URL', async ({ browser })
 
   await page.goto('/students/nonexistent-id/edit')
   await expect(page.getByText('Student not found.')).toBeVisible({ timeout: 15000 })
-  await expect(page.getByRole('button', { name: 'Go back' })).toBeVisible()
+  const goBack = page.getByRole('button', { name: 'Go back' })
+  await expect(goBack).toBeVisible()
+  await goBack.click()
+  await expect(page).toHaveURL('/students', { timeout: 15000 })
 
   await context.close()
 })
