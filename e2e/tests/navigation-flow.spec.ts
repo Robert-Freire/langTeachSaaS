@@ -94,7 +94,7 @@ test('navigation flow using in-page Back buttons and links', async ({ browser })
   // 5. Preview as Student: verify Back to editor
   await page.getByTestId('preview-student-btn').click()
   await expect(page.getByTestId('page-header-back')).toBeVisible({ timeout: 10000 })
-  await expect(page.getByTestId('page-header-back')).toHaveTextContent('Back to editor')
+  await expect(page.getByTestId('page-header-back')).toContainText('Back to editor')
   await expect(page.getByText('Preview')).toBeVisible()
 
   // Click Back to return to editor

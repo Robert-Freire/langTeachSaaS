@@ -36,6 +36,7 @@ export default function StudyView() {
           backTo={`/lessons/${id}`}
           backLabel="Back to editor"
           title={lesson.title}
+          titleTestId="study-title"
           actions={
             <Badge variant="outline" className="text-xs font-medium text-zinc-500 border-zinc-300 uppercase tracking-wide">Preview</Badge>
           }
