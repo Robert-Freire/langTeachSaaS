@@ -211,33 +211,20 @@ Using the interaction-state screenshots, evaluate:
 - Would a first-time user feel confident using this app?
 - Does the app respect the user's time (fast, predictable, no unnecessary steps)?
 
-### 4. Cross-page UX consistency audit
+### 4. UX guidelines compliance check
 
-After reviewing individual pages, systematically compare interaction patterns across all screenshots:
+Before this step, read `plan/ux-guidelines.md`. This file defines LangTeach-specific interaction rules (save behavior, navigation, action placement, empty states, page headers, loading, responsive, forms). For every screenshot, verify compliance with each applicable rule. Flag any violation as Important or Critical depending on severity.
 
-**Save behavior consistency:**
-- Do all forms with discrete submit actions (Create, Edit, Profile) have explicit Save buttons?
-- Do auto-save screens (e.g., lesson editor) show a visible "Saved" indicator?
-- Is there any screen that mixes both patterns (explicit Save + auto-save)?
-- Flag any screen where the user cannot tell if their changes were saved.
+### 5. Cross-page visual consistency audit
 
-**Navigation consistency:**
-- Does every sub-page (anything deeper than a top-level list) have a Back button or breadcrumb?
-- Can the user navigate a full workflow (e.g., Dashboard > Create > Edit > Preview > Back) without relying on the sidebar or browser back button?
-- Flag any dead-end screen where the user has no in-page way to go back.
+After checking guidelines compliance, compare visual patterns across all screenshots:
 
-**Action placement consistency:**
-- Are primary actions (Save, Create, Generate) in the same position (top-right) across all screens?
-- Are destructive actions (Delete) consistently placed secondary and always behind a confirmation?
-- Do similar screens (e.g., Students list vs Lessons list) use the same action layout?
-
-**Visual consistency:**
 - Pages that feel like they belong to a different app (inconsistent style)
 - Navigation elements that shift position between pages
 - Inconsistent use of the primary color for actions
 - Pages that are noticeably more polished than others
 
-### 5. Clean up
+### 6. Clean up
 
 Delete the temporary test file `e2e/tests/_ui-review.spec.ts` after the run.
 Keep the screenshots directory for the user to review.
@@ -281,8 +268,20 @@ docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
 | Error Recovery | Good/Needs Work | <observations> |
 | Flow & Dead Ends | Good/Needs Work | <observations> |
 
-### Cross-Page Consistency
-<observations about consistency across pages, positive and negative>
+### UX Guidelines Compliance (plan/ux-guidelines.md)
+| Rule | Status | Notes |
+|------|--------|-------|
+| Save behavior | Pass/Fail | <observations> |
+| Navigation (Back buttons) | Pass/Fail | <observations> |
+| Action placement | Pass/Fail | <observations> |
+| Empty states | Pass/Fail | <observations> |
+| Page header | Pass/Fail | <observations> |
+| Loading states | Pass/Fail | <observations> |
+| Responsive | Pass/Fail | <observations> |
+| Form patterns | Pass/Fail | <observations> |
+
+### Cross-Page Visual Consistency
+<observations about visual consistency across pages, positive and negative>
 
 ### Strongest Pages
 <which pages look the best and why, so the user knows what "good" looks like in their own app>
