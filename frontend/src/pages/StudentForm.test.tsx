@@ -107,4 +107,20 @@ describe('StudentForm', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(mockNavigate).toHaveBeenCalledWith('/students')
   })
+
+  it('shows "Student not found" when getStudent rejects', async () => {
+    mockGetStudent.mockRejectedValue(new Error('Not found'))
+    renderEdit()
+    expect(await screen.findByText(/Student not found/)).toBeInTheDocument()
+  })
+
+  it('"Go back" button navigates to /students on not-found', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockGetStudent.mockRejectedValue(new Error('Not found'))
+    renderEdit()
+    const goBack = await screen.findByRole('button', { name: 'Go back' })
+    await user.click(goBack)
+    expect(mockNavigate).toHaveBeenCalledWith('/students')
+  })
 })

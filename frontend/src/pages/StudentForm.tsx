@@ -152,7 +152,7 @@ export default function StudentForm() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const interestInputRef = useRef<HTMLInputElement>(null)
 
-  const { data: existing, isLoading } = useQuery({
+  const { data: existing, isLoading, isError } = useQuery({
     queryKey: ['students', id],
     queryFn: () => getStudent(id!),
     enabled: isEdit,
@@ -255,6 +255,14 @@ export default function StudentForm() {
           <CardHeader><Skeleton className="h-5 w-24" /></CardHeader>
           <CardContent><Skeleton className="h-10 w-full max-w-sm" /></CardContent>
         </Card>
+      </div>
+    )
+  }
+
+  if (isEdit && (isError || (!isLoading && !existing))) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="text-sm text-red-600 font-medium">Student not found. <button onClick={() => navigate('/students')} className="underline">Go back</button></span>
       </div>
     )
   }
