@@ -14,6 +14,7 @@ import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/PageHeader'
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
@@ -83,10 +84,12 @@ export default function LessonNew() {
   if (step === 1) {
     return (
       <div className="space-y-6 max-w-3xl">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900">New Lesson</h1>
-          <p className="text-sm text-zinc-500 mt-1">Choose a template to get started, or start from blank.</p>
-        </div>
+        <PageHeader
+          backTo="/lessons"
+          backLabel="Lessons"
+          title="New Lesson"
+          subtitle="Choose a template to get started, or start from blank."
+        />
 
         {templatesLoading ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">

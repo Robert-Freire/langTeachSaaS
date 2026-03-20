@@ -5,6 +5,7 @@ import { getStudyLesson } from '../api/lessons'
 import { getRenderer } from '../components/lesson/contentRegistry'
 import { ContentErrorBoundary } from '../components/lesson/ContentErrorBoundary'
 import { Badge } from '@/components/ui/badge'
+import { PageHeader } from '@/components/PageHeader'
 
 export default function StudyView() {
   const { id } = useParams<{ id: string }>()
@@ -30,23 +31,19 @@ export default function StudyView() {
 
   return (
     <>
-      <div className="sticky top-0 z-10 bg-zinc-50 border-b border-zinc-200 px-4 py-2 flex items-center justify-between">
-        <Link
-          to={`/lessons/${id}`}
-          className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-800 transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to editor
-        </Link>
-        <Badge variant="outline" className="text-xs font-medium text-zinc-500 border-zinc-300 uppercase tracking-wide">Preview</Badge>
+      <div className="sticky top-0 z-10 bg-zinc-50 border-b border-zinc-200 px-4 py-2">
+        <PageHeader
+          backTo={`/lessons/${id}`}
+          backLabel="Back to editor"
+          title={lesson.title}
+          titleTestId="study-title"
+          actions={
+            <Badge variant="outline" className="text-xs font-medium text-zinc-500 border-zinc-300 uppercase tracking-wide">Preview</Badge>
+          }
+        />
       </div>
       <div className="max-w-2xl mx-auto space-y-8 py-8 px-4">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-zinc-900" data-testid="study-title">{lesson.title}</h1>
-        <p className="text-sm text-zinc-500">{lesson.language} · {lesson.cefrLevel} · {lesson.topic}</p>
-      </div>
+      <p className="text-sm text-zinc-500">{lesson.language} · {lesson.cefrLevel} · {lesson.topic}</p>
 
       {lesson.sections.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">

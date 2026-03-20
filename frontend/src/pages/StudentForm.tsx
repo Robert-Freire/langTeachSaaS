@@ -33,6 +33,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
+import { PageHeader } from '@/components/PageHeader'
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
@@ -260,16 +261,24 @@ export default function StudentForm() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900">
-          {isEdit ? 'Edit Student' : 'Add Student'}
-        </h1>
-        <p className="text-sm text-zinc-500 mt-1">
-          {isEdit ? "Update this student's profile." : 'Create a new student profile.'}
-        </p>
-      </div>
+      <PageHeader
+        backTo="/students"
+        backLabel="Students"
+        title={isEdit ? 'Edit Student' : 'Add Student'}
+        subtitle={isEdit ? "Update this student's profile." : 'Create a new student profile.'}
+        actions={
+          <div className="flex items-center gap-3">
+            <Button type="button" variant="outline" onClick={() => navigate('/students')}>
+              Cancel
+            </Button>
+            <Button type="submit" form="student-form" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              {isPending ? 'Saving...' : isEdit ? 'Update Student' : 'Save Student'}
+            </Button>
+          </div>
+        }
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form id="student-form" onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Basic Info</CardTitle>
@@ -433,14 +442,6 @@ export default function StudentForm() {
               className="max-w-sm resize-none"
               data-testid="student-notes"
             />
-            <div className="flex justify-end items-center gap-3 pt-2 border-t border-zinc-100">
-              <Button type="button" variant="outline" onClick={() => navigate('/students')}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                {isPending ? 'Saving...' : isEdit ? 'Update Student' : 'Save Student'}
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </form>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Trash2, UserPlus, Users } from 'lucide-react'
+import { PageHeader } from '@/components/PageHeader'
 import { getStudents, deleteStudent, type Student } from '../api/students'
 import { logger } from '../lib/logger'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -94,20 +95,19 @@ export default function Students() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Students</h1>
-          <p className="text-sm text-zinc-500 mt-1">Manage your student profiles.</p>
-        </div>
-        <Link
-          to="/students/new"
-          className={cn(buttonVariants(), 'bg-indigo-600 hover:bg-indigo-700 text-white')}
-        >
-          <UserPlus className="h-4 w-4 mr-1.5" />
-          Add Student
-        </Link>
-      </div>
+      <PageHeader
+        title="Students"
+        subtitle="Manage your student profiles."
+        actions={
+          <Link
+            to="/students/new"
+            className={cn(buttonVariants(), 'bg-indigo-600 hover:bg-indigo-700 text-white')}
+          >
+            <UserPlus className="h-4 w-4 mr-1.5" />
+            Add Student
+          </Link>
+        }
+      />
 
       {/* Delete error */}
       {deleteError && (

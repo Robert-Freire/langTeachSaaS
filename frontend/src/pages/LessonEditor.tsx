@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Copy, Trash2, UserPlus, Save, Sparkles, Square, CalendarPlus, Plus, Pencil } from 'lucide-react'
+import { ArrowLeft, Copy, Trash2, UserPlus, CheckCircle, Sparkles, Square, CalendarPlus, Plus, Pencil } from 'lucide-react'
 import {
   getLesson, updateLesson, updateSections, deleteLesson, duplicateLesson,
   type Lesson, type LessonStatus, type SectionType,
@@ -77,8 +77,14 @@ export default function LessonEditor() {
   // Section notes local state
   const [sectionNotes, setSectionNotes] = useState<Partial<Record<SectionType, string>> | null>(null)
   const [confirmRemoveSection, setConfirmRemoveSection] = useState<SectionType | null>(null)
-  const [savedAt, setSavedAt] = useState<number | null>(null)
-  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [hasSavedOnce, setHasSavedOnce] = useState(false)
+
+  // Reset save indicator when navigating to a different lesson
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    setHasSavedOnce(false)
+  }, [id])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Metadata edit state
   const [editingMeta, setEditingMeta] = useState(false)
@@ -148,6 +154,7 @@ export default function LessonEditor() {
     mutationFn: (data: Parameters<typeof updateLesson>[1]) => updateLesson(id!, data),
     onSuccess: (updated) => {
       queryClient.setQueryData(['lesson', id], updated)
+      setHasSavedOnce(true)
     },
   })
 
@@ -157,9 +164,7 @@ export default function LessonEditor() {
     onSuccess: (updated) => {
       queryClient.setQueryData(['lesson', id], updated)
       logger.info('LessonEditor', 'sections saved', { id })
-      setSavedAt(Date.now())
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-      savedTimerRef.current = setTimeout(() => setSavedAt(null), 2500)
+      setHasSavedOnce(true)
     },
   })
 
@@ -394,6 +399,16 @@ export default function LessonEditor() {
 
   return (
     <div className="space-y-6 max-w-4xl">
+      {/* Back link */}
+      <Link
+        to="/lessons"
+        className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-800 transition-colors"
+        data-testid="page-header-back"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Lessons
+      </Link>
+
       {/* Top bar */}
       <div className="flex items-center gap-2 md:gap-3 flex-wrap">
         {editingTitle ? (
@@ -487,9 +502,14 @@ export default function LessonEditor() {
             <span className="sm:hidden">Preview</span>
           </button>
 
-          {savedAt && (
+          {(isSaving || isUpdating) && (
+            <span className="text-xs text-zinc-400 flex items-center gap-1 animate-pulse" data-testid="saved-indicator">
+              Saving...
+            </span>
+          )}
+          {hasSavedOnce && !isSaving && !isUpdating && (
             <span className="text-xs text-green-600 flex items-center gap-1" data-testid="saved-indicator">
-              <Save className="h-3 w-3" /> Saved
+              <CheckCircle className="h-3 w-3" /> All changes saved
             </span>
           )}
         </div>
@@ -638,10 +658,7 @@ export default function LessonEditor() {
 
       {/* Section panels */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-zinc-700">Lesson Sections</h2>
-          {isSaving && <span className="text-xs text-zinc-400">Saving...</span>}
-        </div>
+        <h2 className="text-sm font-medium text-zinc-700">Lesson Sections</h2>
 
         {sectionNotes && [...lesson.sections].sort((a, b) => a.orderIndex - b.orderIndex).map((section) => {
           const type = section.sectionType as SectionType
