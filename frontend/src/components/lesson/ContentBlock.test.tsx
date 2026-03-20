@@ -50,7 +50,7 @@ function makeBlock(overrides: Partial<ContentBlockDto> = {}): ContentBlockDto {
   }
 }
 
-describe('ContentBlock — parsedContent derivation', () => {
+describe('ContentBlock - parsedContent derivation', () => {
   it('derives parsedContent from local value, not stale block prop', async () => {
     const block = makeBlock()
     render(
@@ -66,7 +66,7 @@ describe('ContentBlock — parsedContent derivation', () => {
     // Initial parsedContent matches generatedContent
     expect(screen.getByTestId('parsed-snapshot').textContent).toContain('test')
 
-    // Simulate editor change — parsedContent should update immediately
+    // Simulate editor change
     await userEvent.click(screen.getByText('trigger-change'))
     expect(screen.getByTestId('parsed-snapshot').textContent).toBe('{"edited":true}')
   })
@@ -103,11 +103,11 @@ describe('ContentBlock — parsedContent derivation', () => {
   })
 })
 
-describe('ContentBlock — regenerate with direction', () => {
+describe('ContentBlock - regenerate', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('calls onRegenerate without direction when clicking Regenerate button', async () => {
-    const block = makeBlock({ generationParams: '{"style":"Formal"}' })
+  it('calls onRegenerate when clicking Regenerate button', async () => {
+    const block = makeBlock()
     const onRegenerate = vi.fn()
     render(
       <ContentBlock
@@ -120,31 +120,11 @@ describe('ContentBlock — regenerate with direction', () => {
     )
 
     await userEvent.click(screen.getByTestId('regenerate-btn'))
-    expect(onRegenerate).toHaveBeenCalledWith('conversation', '{"style":"Formal"}', undefined)
-  })
-
-  it('calls onRegenerate with direction when clicking a direction option', async () => {
-    const block = makeBlock({ generationParams: '{"style":"Formal"}' })
-    const onRegenerate = vi.fn()
-    render(
-      <ContentBlock
-        block={block}
-        lessonId="lesson-1"
-        onUpdate={vi.fn()}
-        onDelete={vi.fn()}
-        onRegenerate={onRegenerate}
-      />
-    )
-
-    await userEvent.click(screen.getByTestId('direction-trigger'))
-    await waitFor(() => expect(screen.getByTestId('direction-options')).toBeVisible())
-
-    await userEvent.click(screen.getByTestId('direction-make-it-easier'))
-    expect(onRegenerate).toHaveBeenCalledWith('conversation', '{"style":"Formal"}', 'Make it easier')
+    expect(onRegenerate).toHaveBeenCalledWith()
   })
 })
 
-describe('ContentBlock — dirty / save state', () => {
+describe('ContentBlock - dirty / save state', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('shows Save button only when dirty', async () => {
@@ -179,7 +159,7 @@ describe('ContentBlock — dirty / save state', () => {
     await userEvent.click(screen.getByTestId('save-btn'))
     await waitFor(() => expect(onUpdate).toHaveBeenCalledWith(updated))
 
-    // Simulate parent re-rendering with the saved block (as happens in the real app)
+    // Simulate parent re-rendering with the saved block
     rerender(<ContentBlock {...props} block={updated} />)
 
     expect(screen.queryByText('Unsaved changes')).toBeNull()

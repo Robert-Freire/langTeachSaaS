@@ -12,7 +12,7 @@ const mockPanelCallbacks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/components/lesson/GeneratePanel', () => ({
-  GeneratePanel: (props: { onStreamingChange?: (v: boolean) => void; onClose: () => void }) => {
+  GeneratePanel: (props: { onStreamingChange?: (v: boolean) => void; onClose: () => void; existingBlocks?: unknown[]; onReplace?: unknown }) => {
     mockPanelCallbacks.onStreamingChange = props.onStreamingChange
     mockPanelCallbacks.onClose = props.onClose
     return React.createElement('div', { 'data-testid': 'generate-panel' })

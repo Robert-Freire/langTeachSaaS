@@ -3,6 +3,7 @@ import { usePartialJsonParse } from '../../hooks/usePartialJsonParse'
 import type { SectionType } from '../../api/lessons'
 import {
   saveContentBlock,
+  deleteContentBlock,
   type ContentBlockDto,
   type GenerateRequest,
 } from '../../api/generate'
@@ -20,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 
 const SECTION_DEFAULT_TASK: Record<SectionType, ContentBlockType> = {
@@ -40,13 +40,20 @@ const TASK_TYPES: { value: ContentBlockType; label: string }[] = [
   { value: 'homework', label: 'Homework' },
 ]
 
+const DIRECTION_OPTIONS = [
+  'Make it easier',
+  'Make it harder',
+  'Make it shorter',
+  'Make it longer',
+  'More formal',
+  'More conversational',
+] as const
+
 interface GeneratePanelProps {
   lessonId: string
   sectionId: string
   sectionType: SectionType
-  initialTaskType?: ContentBlockType
-  initialStyle?: string
-  initialDirection?: string
+  existingBlocks: ContentBlockDto[]
   lessonContext: {
     language: string
     cefrLevel: string
@@ -54,7 +61,7 @@ interface GeneratePanelProps {
     studentId?: string | null
     existingNotes?: string | null
   }
-  onInsert: (block: ContentBlockDto) => void
+  onReplace: (newBlock: ContentBlockDto, replacedBlockIds: string[]) => void
   onClose: () => void
   onStreamingChange?: (isStreaming: boolean) => void
 }
@@ -77,17 +84,18 @@ export function GeneratePanel({
   lessonId,
   sectionId,
   sectionType,
-  initialTaskType,
-  initialStyle,
-  initialDirection,
+  existingBlocks,
   lessonContext,
-  onInsert,
+  onReplace,
   onClose,
   onStreamingChange,
 }: GeneratePanelProps) {
-  const [taskType, setTaskType] = useState<ContentBlockType>(initialTaskType ?? SECTION_DEFAULT_TASK[sectionType])
-  const [style, setStyle] = useState(initialStyle ?? 'Conversational')
-  const [direction, setDirection] = useState<string | undefined>(initialDirection)
+  const inferredType = (existingBlocks[0]?.blockType ?? null) as ContentBlockType | null
+  const [taskType, setTaskType] = useState<ContentBlockType>(
+    inferredType ?? SECTION_DEFAULT_TASK[sectionType]
+  )
+  const [style, setStyle] = useState('Conversational')
+  const [direction, setDirection] = useState<string | undefined>(undefined)
   const [inserting, setInserting] = useState(false)
   const [insertError, setInsertError] = useState<string | null>(null)
 
@@ -108,18 +116,31 @@ export function GeneratePanel({
     generate(taskType, request)
   }
 
-  const handleInsert = async () => {
+  const handleInsertOrReplace = async () => {
     if (!output) return
     setInserting(true)
     setInsertError(null)
     try {
+      // Save new block first to avoid data loss if delete fails
       const block = await saveContentBlock(lessonId, {
         lessonSectionId: sectionId,
         blockType: taskType,
         generatedContent: output,
         generationParams: JSON.stringify(request),
       })
-      onInsert(block)
+      // Then delete old blocks (if any fail, user has duplicates rather than data loss)
+      const removedIds: string[] = []
+      if (existingBlocks.length > 0) {
+        const results = await Promise.allSettled(
+          existingBlocks.map(b => deleteContentBlock(lessonId, b.id))
+        )
+        results.forEach((result, i) => {
+          if (result.status === 'fulfilled') {
+            removedIds.push(existingBlocks[i].id)
+          }
+        })
+      }
+      onReplace(block, removedIds)
       onClose()
     } catch {
       setInsertError('Failed to save. Please try again.')
@@ -155,7 +176,7 @@ export function GeneratePanel({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-xs">Task type</Label>
           <Select value={taskType} onValueChange={(v) => v && setTaskType(v as ContentBlockType)} disabled={isStreaming}>
@@ -183,19 +204,47 @@ export function GeneratePanel({
         </div>
       </div>
 
-      {direction && (
-        <div className="flex items-center gap-1.5" data-testid="direction-badge">
-          <span className="text-xs text-zinc-500">Direction:</span>
-          <Badge variant="outline" className="text-xs border-indigo-200 bg-indigo-50 text-indigo-700">
-            {direction}
-            <button
-              onClick={() => setDirection(undefined)}
-              className="ml-1 text-indigo-400 hover:text-indigo-700"
-              aria-label="Clear direction"
-            >
-              &times;
-            </button>
-          </Badge>
+      {existingBlocks.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2" data-testid="replace-indicator">
+            <svg className="h-4 w-4 text-amber-500 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+            </svg>
+            <span className="text-xs text-amber-700">
+              Generating will replace {existingBlocks.length} existing block{existingBlocks.length > 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Direction (optional)</Label>
+            <Textarea
+              value={direction ?? ''}
+              onChange={(e) => setDirection(e.target.value || undefined)}
+              disabled={isStreaming}
+              rows={2}
+              maxLength={200}
+              className="resize-none text-xs"
+              placeholder="e.g. Make it easier, focus on pronunciation..."
+              data-testid="direction-textarea"
+            />
+            <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap gap-1.5" data-testid="direction-chips">
+              {DIRECTION_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setDirection(opt)}
+                  disabled={isStreaming}
+                  className={`shrink-0 px-2 py-0.5 text-xs rounded-full border transition-colors disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 ${
+                    direction === opt
+                      ? 'bg-indigo-50 border-indigo-400 text-indigo-700 font-medium'
+                      : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50'
+                  }`}
+                  data-testid={`direction-chip-${opt.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -285,12 +334,14 @@ export function GeneratePanel({
           <>
             <Button
               size="sm"
-              onClick={handleInsert}
+              onClick={handleInsertOrReplace}
               disabled={inserting}
               className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
               data-testid="insert-btn"
             >
-              {inserting ? 'Inserting...' : 'Insert into section'}
+              {inserting
+                ? (existingBlocks.length > 0 ? 'Replacing...' : 'Inserting...')
+                : (existingBlocks.length > 0 ? 'Replace & insert' : 'Insert into section')}
             </Button>
             <button
               onClick={onClose}

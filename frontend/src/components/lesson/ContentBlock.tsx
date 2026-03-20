@@ -5,28 +5,17 @@ import {
   resetEditedContent,
   type ContentBlockDto,
 } from '../../api/generate'
-import { ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { getRenderer } from './contentRegistry'
 import { ContentErrorBoundary } from './ContentErrorBoundary'
-
-const DIRECTION_OPTIONS = [
-  'Make it easier',
-  'Make it harder',
-  'Make it shorter',
-  'Make it longer',
-  'More formal',
-  'More conversational',
-] as const
 
 interface ContentBlockProps {
   block: ContentBlockDto
   lessonId: string
   onUpdate: (updated: ContentBlockDto) => void
   onDelete: (id: string) => void
-  onRegenerate: (blockType: string, generationParams: string | null, direction?: string) => void
+  onRegenerate: () => void
 }
 
 type ViewMode = 'edit' | 'preview'
@@ -44,7 +33,6 @@ export function ContentBlock({
   const [resetting, setResetting] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
-  const [directionOpen, setDirectionOpen] = useState(false)
   const actionInProgress = useRef(false)
 
   const storedValue = block.editedContent ?? block.generatedContent
@@ -111,12 +99,12 @@ export function ContentBlock({
     }
   }
 
-  const handleRegenerate = async (direction?: string) => {
+  const handleRegenerate = async () => {
     actionInProgress.current = false
     if (isDirty) {
       await doSave(value)
     }
-    onRegenerate(block.blockType, block.generationParams, direction)
+    onRegenerate()
   }
 
   const renderer = getRenderer(block.blockType)
@@ -210,51 +198,18 @@ export function ContentBlock({
             {saving ? 'Saving...' : 'Save'}
           </Button>
         )}
-        <div className="inline-flex items-center rounded-md border border-zinc-200 overflow-hidden">
-          <Button
-            variant="ghost"
-            size="sm"
-            data-content-action="true"
-            onPointerDown={() => { actionInProgress.current = true }}
-            onKeyDown={markActionIntentFromKeyboard}
-            onClick={() => handleRegenerate()}
-            className="text-xs h-7 rounded-none border-0"
-            data-testid="regenerate-btn"
-          >
-            Regenerate
-          </Button>
-          <Popover open={directionOpen} onOpenChange={setDirectionOpen}>
-            <PopoverTrigger
-              render={
-                <button
-                  data-content-action="true"
-                  className="inline-flex items-center justify-center h-7 w-7 border-l border-zinc-200 text-zinc-500 hover:bg-zinc-50 transition-colors"
-                  data-testid="direction-trigger"
-                  aria-label="Regenerate with direction"
-                />
-              }
-            >
-              <ChevronDown className="h-3 w-3" />
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-48 p-1">
-              <div className="flex flex-col gap-0.5" data-testid="direction-options">
-                {DIRECTION_OPTIONS.map((dir) => (
-                  <button
-                    key={dir}
-                    className="text-left text-xs px-2 py-1.5 rounded hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
-                    data-testid={`direction-${dir.toLowerCase().replace(/\s+/g, '-')}`}
-                    onClick={() => {
-                      setDirectionOpen(false)
-                      handleRegenerate(dir)
-                    }}
-                  >
-                    {dir}
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          data-content-action="true"
+          onPointerDown={() => { actionInProgress.current = true }}
+          onKeyDown={markActionIntentFromKeyboard}
+          onClick={handleRegenerate}
+          className="text-xs h-7"
+          data-testid="regenerate-btn"
+        >
+          Regenerate
+        </Button>
         {(block.isEdited || isDirty) && (
           <Button
             variant="outline"

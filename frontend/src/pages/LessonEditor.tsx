@@ -11,7 +11,6 @@ import {
   getContentBlocks,
   type ContentBlockDto,
 } from '../api/generate'
-import type { ContentBlockType } from '../types/contentTypes'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -91,12 +90,8 @@ export default function LessonEditor() {
   const [generateOpen, setGenerateOpen] = useState<SectionType | null>(null)
   // Whether the open panel is actively streaming
   const [isGenerating, setIsGenerating] = useState(false)
-  // When regenerating: which block is being replaced
-  const [regenerateParams, setRegenerateParams] = useState<{ sectionType: SectionType; blockType: ContentBlockType; style?: string; direction?: string } | null>(null)
-
   const closeGeneratePanel = useCallback(() => {
     setGenerateOpen(null)
-    setRegenerateParams(null)
     setIsGenerating(false)
   }, [])
 
@@ -290,6 +285,14 @@ export default function LessonEditor() {
     setContentBlocks(prev => {
       const existing = prev[block.lessonSectionId!] ?? []
       return { ...prev, [block.lessonSectionId!]: [...existing, block] }
+    })
+  }, [])
+
+  const handleBlockReplace = useCallback((sectionId: string, newBlock: ContentBlockDto, removedIds: string[]) => {
+    setContentBlocks(prev => {
+      const existing = prev[sectionId] ?? []
+      const filtered = existing.filter(b => !removedIds.includes(b.id))
+      return { ...prev, [sectionId]: [...filtered, newBlock] }
     })
   }, [])
 
@@ -661,7 +664,6 @@ export default function LessonEditor() {
                           // Closing the panel unmounts GeneratePanel, which triggers abort cleanup in useGenerate.
                           closeGeneratePanel()
                         } else {
-                          setRegenerateParams(null)
                           setGenerateOpen(type)
                         }
                       }}
@@ -722,14 +724,7 @@ export default function LessonEditor() {
                     lessonId={id!}
                     onUpdate={handleBlockUpdate}
                     onDelete={(blockId) => handleBlockDelete(blockId, sectionId)}
-                    onRegenerate={(blockType, params, direction) => {
-                      let style: string | undefined
-                      if (params) {
-                        try { style = (JSON.parse(params) as { style?: string }).style } catch { /* ignore */ }
-                      }
-                      setRegenerateParams({ sectionType: type, blockType: blockType as ContentBlockType, style, direction })
-                      setGenerateOpen(type)
-                    }}
+                    onRegenerate={() => setGenerateOpen(type)}
                   />
                 ))}
 
@@ -738,9 +733,7 @@ export default function LessonEditor() {
                     lessonId={id!}
                     sectionId={sectionId}
                     sectionType={type}
-                    initialTaskType={regenerateParams?.sectionType === type ? regenerateParams.blockType : undefined}
-                    initialStyle={regenerateParams?.sectionType === type ? regenerateParams.style : undefined}
-                    initialDirection={regenerateParams?.sectionType === type ? regenerateParams.direction : undefined}
+                    existingBlocks={blocks}
                     lessonContext={{
                       language: lesson.language,
                       cefrLevel: lesson.cefrLevel,
@@ -749,10 +742,7 @@ export default function LessonEditor() {
                       existingNotes: sectionNotes[type] || null,
                     }}
                     onStreamingChange={setIsGenerating}
-                    onInsert={(block) => {
-                      handleBlockInsert(block)
-                      setRegenerateParams(null)
-                    }}
+                    onReplace={(block, removedIds) => handleBlockReplace(sectionId, block, removedIds)}
                     onClose={closeGeneratePanel}
                   />
                 )}
