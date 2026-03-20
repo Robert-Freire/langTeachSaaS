@@ -92,6 +92,9 @@ test('reading type renders editor and student view', async ({ browser }) => {
     const contentBlock = page.getByTestId('content-block').first()
     await contentBlock.getByText('Preview').click()
     await expect(page.getByTestId('reading-preview').first()).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+
+    // Verify passage text renders in preview (fixes #117: passage was empty during streaming)
+    await expect(page.getByText('Smartphones have changed the way we communicate.')).toBeVisible({ timeout: UI_TIMEOUT })
     await expect(page.getByText('How have smartphones changed communication?')).toBeVisible({ timeout: UI_TIMEOUT })
     await expect(page.getByText('ubiquitous', { exact: true })).toBeVisible({ timeout: UI_TIMEOUT })
 
