@@ -11,6 +11,7 @@
 - [Task management](project_langteach_task_management.md) — GitHub Issues as single source of truth; QA reviewer agent; agent workflow
 - [Flaky e2e test analysis](project_flaky_tests_analysis.md) — registration and typed-content-view tests fail on fresh DB (Auth0 unreachable from Docker, AI response format)
 - [Jordi feedback log](project_jordi_feedback_log.md) — running log of all feedback from Jordi (brother/teacher), mapped to roadmap, with open questions
+- [Unnamed teacher feedback](project_unnamed_teacher_feedback.md) — feedback from Jordi's colleague (name pending), gamification and ludic activities
 
 ## Feedback
 - [Task start workflow](feedback_task_branch_workflow.md) — always pull main and create the feature branch before starting any task
@@ -28,6 +29,7 @@
 - [Frontend unit test requirement](feedback_frontend_unit_tests.md) — any modified frontend component or hook must have a unit test added/updated; Vitest + RTL + msw, tests live next to source files
 - [Critically evaluate PR comments](feedback_critically_evaluate_pr_comments.md) — never blindly fix review comments; assess validity against project context before fixing or declining
 - [Email check and reply workflow](feedback_email_workflow.md) — when asked to check email: read, analyze, incorporate feedback into memory/plans, reply directly via SMTP
+- [Always save raw feedback](feedback_save_raw_feedback.md) — on any feedback (email, audio, message), save raw text to feedback/raw/ and update person's feedback log
 
 ## Reference
 - [Audio transcription method](reference_audio_transcription.md) — transcribe audio files locally using OpenAI Whisper + ffmpeg

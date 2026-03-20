@@ -1,0 +1,25 @@
+Source: Voice notes from Jordi Freire (jordim.freire@gmail.com) via WhatsApp
+Date: 2026-03-18
+Forwarded by: Robert Freire
+Format: .opus audio files, transcribed with OpenAI Whisper (base model)
+Files: WA0001.opus through WA0007.opus
+
+---
+
+NOTE: These transcriptions were processed from the original voice notes
+forwarded by Robert on 2026-03-18. The raw audio files were not preserved
+after transcription. The content below was used to build the initial
+feedback analysis in plan/langteach-beta/demo feedback 1/.
+
+Summary of feedback points (from transcriptions + Robert's written summary):
+
+1. Need a Course entity wrapping lessons toward CEFR goals
+2. Separate exam-prep mode (DELE, DALF, Cambridge, TOEFL)
+3. Zero-friction post-class audio notes (WhatsApp-style)
+4. Track specific difficulties at granular level (ser/estar, /r/ pronunciation)
+5. Accept teacher PDFs/worksheets, learn teacher's style
+6. Structured text correction with categorized errors (grammar, vocab, verb forms)
+7. Richer output formats: infographics, crosswords, board games, slides
+8. Capture emotional engagement signals in audio reflections
+
+See plan/langteach-beta/demo feedback 1/ for full transcriptions and detailed analysis.
