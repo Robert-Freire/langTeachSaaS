@@ -1,6 +1,6 @@
 ---
 name: Jordi Freire feedback log
-description: Running log of feedback from Jordi (Robert's brother, language teacher, potential PM) with status of each item
+description: Running log of feedback from Jordi (Robert's brother, language teacher, Head of Discovery) with status of each item
 type: project
 ---
 
@@ -8,7 +8,7 @@ type: project
 
 - **Name:** Jordi Freire
 - **Email:** jordim.freire@gmail.com
-- **Role:** Language teacher, potential PM for LangTeach
+- **Role:** Language teacher, Head of Discovery for LangTeach (market research, teacher interviews, feedback gathering)
 - **Language:** Communicates in Spanish
 
 ## Feedback Round 1 (2026-03-18, voice notes + summary)

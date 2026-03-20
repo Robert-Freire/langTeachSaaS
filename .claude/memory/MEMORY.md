@@ -10,7 +10,7 @@
 - [Demo strategy and audience](project_langteach_demo_audience.md) — periodic internal demos as QA checkpoints; brother is potential PM but not blocking
 - [Task management](project_langteach_task_management.md) — GitHub Issues as single source of truth; QA reviewer agent; agent workflow
 - [Flaky e2e test analysis](project_flaky_tests_analysis.md) — registration and typed-content-view tests fail on fresh DB (Auth0 unreachable from Docker, AI response format)
-- [Jordi feedback log](project_jordi_feedback_log.md) — running log of all feedback from Jordi (brother/teacher), mapped to roadmap, with open questions
+- [Jordi feedback log](project_jordi_feedback_log.md) — running log of all feedback from Jordi (brother/teacher, Head of Discovery), mapped to roadmap, with open questions
 - [Unnamed teacher feedback](project_unnamed_teacher_feedback.md) — feedback from Jordi's colleague (name pending), gamification and ludic activities
 
 ## Feedback
@@ -30,6 +30,9 @@
 - [Critically evaluate PR comments](feedback_critically_evaluate_pr_comments.md) — never blindly fix review comments; assess validity against project context before fixing or declining
 - [Email check and reply workflow](feedback_email_workflow.md) — when asked to check email: read, analyze, incorporate feedback into memory/plans, reply directly via SMTP
 - [Always save raw feedback](feedback_save_raw_feedback.md) — on any feedback (email, audio, message), save raw text to feedback/raw/ and update person's feedback log
+- [E2E stack coordination](feedback_e2e_stack_coordination.md) — only one e2e stack at a time; check before starting, notify user if busy, never tear down another agent's stack
+- [Batch related issues](feedback_issue_batching.md) — group related small fixes into single issues; don't create one issue per finding or one mega-issue for everything
+- [Add issues to project board](feedback_add_issues_to_project.md) — always add new issues to the project board immediately after creation; has been forgotten before
 
 ## Reference
 - [Audio transcription method](reference_audio_transcription.md) — transcribe audio files locally using OpenAI Whisper + ffmpeg
