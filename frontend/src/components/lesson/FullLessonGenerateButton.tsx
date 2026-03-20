@@ -81,10 +81,12 @@ export function FullLessonGenerateButton({
     try {
       token = await getAccessTokenSilently()
     } catch {
+      if (controller.signal.aborted) return
       setErrorMessage('Failed to get auth token.')
       setPhase('error')
       return
     }
+    if (controller.signal.aborted) return
 
     const errors: string[] = []
 
@@ -105,6 +107,7 @@ export function FullLessonGenerateButton({
           token,
           controller.signal,
         )
+        if (controller.signal.aborted) return
 
         const block = await saveContentBlock(lessonId, {
           lessonSectionId: section.id,
@@ -118,11 +121,12 @@ export function FullLessonGenerateButton({
             studentId: lessonContext.studentId,
           }),
         })
+        if (controller.signal.aborted) return
 
         onBlockSaved(block)
         setSectionStatus(prev => ({ ...prev, [sectionType]: 'done' }))
       } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') return
+        if (controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return
         setSectionStatus(prev => ({ ...prev, [sectionType]: 'error' }))
         const msg = err instanceof Error ? err.message : 'Generation failed.'
         errors.push(`${SECTION_LABELS[sectionType]}: ${msg}`)
