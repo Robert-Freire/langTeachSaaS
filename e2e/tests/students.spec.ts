@@ -10,6 +10,20 @@ test.beforeAll(async ({ browser }) => {
   await ctx.close()
 })
 
+test('shows not-found message for invalid student edit URL', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  await page.goto('/students/nonexistent-id/edit')
+  await expect(page.getByText('Student not found.')).toBeVisible({ timeout: 15000 })
+  const goBack = page.getByRole('button', { name: 'Go back' })
+  await expect(goBack).toBeVisible()
+  await goBack.click()
+  await expect(page).toHaveURL('/students', { timeout: 15000 })
+
+  await context.close()
+})
+
 test('full student CRUD flow', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()

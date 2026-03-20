@@ -38,3 +38,10 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Severity | Finding |
 |----------|---------|
 | Minor | Validation error "Display Name is required." appears in header area, far from the input field. Inline error near the field would improve discoverability on mobile. |
+
+### PR #TBD (2026-03-20) — Student 404 not-found (#123)
+
+| Severity | Finding |
+|----------|---------|
+| Minor | Not-found empty state (StudentForm and LessonEditor) has no icon or illustration, feels sparse. A subtle lucide icon above the text would improve polish. Pre-existing pattern. |
+| Minor | "Go back" button in not-found state has no visible hover color change. Consider adding hover:text-red-700 for clearer feedback. Pre-existing pattern. |
