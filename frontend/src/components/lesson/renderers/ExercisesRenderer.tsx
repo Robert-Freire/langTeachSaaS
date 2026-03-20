@@ -7,6 +7,7 @@ import type {
   ExercisesMatching,
 } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
+import { ContentParseError } from '../ContentParseError'
 
 const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded'
 const sectionHeadingClass = 'text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-2 mt-4 first:mt-0'
@@ -233,9 +234,9 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
 
 // ─── Preview ─────────────────────────────────────────────────────────────────
 
-function Preview({ parsedContent, rawContent }: PreviewProps) {
+function Preview({ parsedContent }: PreviewProps) {
   if (!isExercisesContent(parsedContent)) {
-    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
+    return <ContentParseError context="teacher" />
   }
 
   const { fillInBlank, multipleChoice, matching } = parsedContent as ExercisesContent
@@ -341,7 +342,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   }, [validContent])
 
   if (!validContent) {
-    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
+    return <ContentParseError context="student" />
   }
 
   const { fillInBlank, multipleChoice, matching } = validContent

@@ -3,6 +3,7 @@ import { useState, useCallback, useRef, useMemo } from 'react'
 import { isVocabularyContent } from '../../../types/contentTypes'
 import type { VocabularyItem } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
+import { ContentParseError } from '../ContentParseError'
 
 const TABLE_HEADERS = ['Word', 'Definition', 'Example']
 
@@ -125,9 +126,9 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   )
 }
 
-function Preview({ parsedContent, rawContent }: PreviewProps) {
+function Preview({ parsedContent }: PreviewProps) {
   if (!isVocabularyContent(parsedContent)) {
-    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
+    return <ContentParseError context="teacher" />
   }
 
   return (
@@ -143,7 +144,7 @@ function Preview({ parsedContent, rawContent }: PreviewProps) {
   )
 }
 
-function Student({ parsedContent, rawContent }: StudentProps) {
+function Student({ parsedContent }: StudentProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
 
@@ -171,7 +172,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   }, [prev, next, flip])
 
   if (!isVocab) {
-    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
+    return <ContentParseError context="student" />
   }
 
   if (items.length === 0) {

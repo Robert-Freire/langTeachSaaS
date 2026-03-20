@@ -39,9 +39,9 @@ describe('ExercisesRenderer.Preview', () => {
     expect(screen.getByText(/\[/)).toBeInTheDocument()
   })
 
-  it('falls back to raw text when parsedContent does not match schema', () => {
+  it('shows teacher error when parsedContent does not match schema', () => {
     render(<ExercisesRenderer.Preview rawContent="not valid" parsedContent={{}} />)
-    expect(screen.getByText('not valid')).toBeInTheDocument()
+    expect(screen.getByText(/could not be parsed/)).toBeInTheDocument()
   })
 })
 
@@ -155,8 +155,8 @@ describe('ExercisesRenderer.Student', () => {
     expect(screen.getByTestId('check-answers-btn')).toBeInTheDocument()
   })
 
-  it('falls back to raw text when parsedContent does not match schema', () => {
+  it('shows student error when parsedContent does not match schema', () => {
     render(<ExercisesRenderer.Student rawContent="not valid" parsedContent={42} />)
-    expect(screen.getByText('not valid')).toBeInTheDocument()
+    expect(screen.getByText(/could not be loaded/)).toBeInTheDocument()
   })
 })

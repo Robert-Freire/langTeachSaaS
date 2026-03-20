@@ -30,9 +30,9 @@ describe('GrammarRenderer.Preview', () => {
     expect(screen.getByText('Using past simple instead of past perfect')).toBeInTheDocument()
   })
 
-  it('falls back to raw text when isGrammarContent returns false', () => {
+  it('shows teacher error when isGrammarContent returns false', () => {
     render(<GrammarRenderer.Preview rawContent="not json" parsedContent={null} />)
-    expect(screen.getByText('not json')).toBeInTheDocument()
+    expect(screen.getByText(/could not be parsed/)).toBeInTheDocument()
   })
 })
 
@@ -106,8 +106,8 @@ describe('GrammarRenderer.Student', () => {
     expect(screen.getByText('Using past simple instead of past perfect')).toBeInTheDocument()
   })
 
-  it('falls back to raw text when isGrammarContent returns false', () => {
+  it('shows student error when isGrammarContent returns false', () => {
     render(<GrammarRenderer.Student rawContent="not json" parsedContent={null} />)
-    expect(screen.getByText('not json')).toBeInTheDocument()
+    expect(screen.getByText(/could not be loaded/)).toBeInTheDocument()
   })
 })

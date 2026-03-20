@@ -31,9 +31,9 @@ describe('ReadingRenderer.Preview', () => {
     expect(screen.getByText(/Found everywhere/)).toBeInTheDocument()
   })
 
-  it('falls back to raw text when isReadingContent returns false', () => {
+  it('shows teacher error when isReadingContent returns false', () => {
     render(<ReadingRenderer.Preview rawContent="not json" parsedContent={null} />)
-    expect(screen.getByText('not json')).toBeInTheDocument()
+    expect(screen.getByText(/could not be parsed/)).toBeInTheDocument()
   })
 })
 
@@ -117,8 +117,8 @@ describe('ReadingRenderer.Student', () => {
     expect(screen.getByText('ubiquitous')).toBeInTheDocument()
   })
 
-  it('falls back to raw text when isReadingContent returns false', () => {
+  it('shows student error when isReadingContent returns false', () => {
     render(<ReadingRenderer.Student rawContent="not json" parsedContent={null} />)
-    expect(screen.getByText('not json')).toBeInTheDocument()
+    expect(screen.getByText(/could not be loaded/)).toBeInTheDocument()
   })
 })

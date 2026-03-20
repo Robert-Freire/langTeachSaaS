@@ -3,6 +3,7 @@ import { useRef, useMemo, useState } from 'react'
 import { isConversationContent } from '../../../types/contentTypes'
 import type { ConversationContent, ConversationScenario } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
+import { ContentParseError } from '../ContentParseError'
 
 const sectionHeadingClass = 'text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-2 mt-4 first:mt-0'
 const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200'
@@ -245,9 +246,9 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
 
 // ─── Preview ─────────────────────────────────────────────────────────────────
 
-function Preview({ parsedContent, rawContent }: PreviewProps) {
+function Preview({ parsedContent }: PreviewProps) {
   if (!isConversationContent(parsedContent)) {
-    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
+    return <ContentParseError context="teacher" />
   }
 
   const { scenarios } = parsedContent as ConversationContent
@@ -434,9 +435,9 @@ function ScenarioCard({ scenario, index }: { scenario: ConversationScenario; ind
   )
 }
 
-function Student({ parsedContent, rawContent }: StudentProps) {
+function Student({ parsedContent }: StudentProps) {
   if (!isConversationContent(parsedContent)) {
-    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
+    return <ContentParseError context="student" />
   }
 
   const { scenarios } = parsedContent as ConversationContent

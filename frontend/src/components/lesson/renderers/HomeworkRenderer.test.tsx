@@ -43,9 +43,9 @@ describe('HomeworkRenderer.Preview', () => {
     expect(screen.getByText('Type B')).toBeInTheDocument()
   })
 
-  it('falls back to raw text when parsedContent does not match schema', () => {
+  it('shows teacher error when parsedContent does not match schema', () => {
     render(<HomeworkRenderer.Preview rawContent="not valid" parsedContent={{}} />)
-    expect(screen.getByText('not valid')).toBeInTheDocument()
+    expect(screen.getByText(/could not be parsed/)).toBeInTheDocument()
   })
 })
 
@@ -133,8 +133,8 @@ describe('HomeworkRenderer.Student', () => {
     expect(screen.getByText('Task 1:')).toBeInTheDocument()
   })
 
-  it('falls back to raw text when parsedContent does not match schema', () => {
+  it('shows student error when parsedContent does not match schema', () => {
     render(<HomeworkRenderer.Student rawContent="not valid" parsedContent={42} />)
-    expect(screen.getByText('not valid')).toBeInTheDocument()
+    expect(screen.getByText(/could not be loaded/)).toBeInTheDocument()
   })
 })

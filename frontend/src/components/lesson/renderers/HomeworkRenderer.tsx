@@ -2,6 +2,7 @@
 import { isHomeworkContent } from '../../../types/contentTypes'
 import type { HomeworkTask } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
+import { ContentParseError } from '../ContentParseError'
 
 const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200'
 const textareaClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200 resize-none'
@@ -135,9 +136,9 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   )
 }
 
-function Preview({ parsedContent, rawContent }: PreviewProps) {
+function Preview({ parsedContent }: PreviewProps) {
   if (!isHomeworkContent(parsedContent)) {
-    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
+    return <ContentParseError context="teacher" />
   }
 
   const tasks = parsedContent.tasks.map(normalizeTask)
@@ -166,9 +167,9 @@ function Preview({ parsedContent, rawContent }: PreviewProps) {
   )
 }
 
-function Student({ parsedContent, rawContent }: StudentProps) {
+function Student({ parsedContent }: StudentProps) {
   if (!isHomeworkContent(parsedContent)) {
-    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
+    return <ContentParseError context="student" />
   }
 
   const tasks = parsedContent.tasks.map(normalizeTask)
