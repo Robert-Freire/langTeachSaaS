@@ -27,9 +27,9 @@ describe('VocabularyRenderer.Preview', () => {
     expect(screen.getByText('arrival')).toBeInTheDocument()
   })
 
-  it('falls back to raw text when parsedContent does not match schema', () => {
+  it('shows teacher error when parsedContent does not match schema', () => {
     render(<VocabularyRenderer.Preview rawContent="not valid" parsedContent={{}} />)
-    expect(screen.getByText('not valid')).toBeInTheDocument()
+    expect(screen.getByText(/could not be parsed/)).toBeInTheDocument()
   })
 })
 
@@ -127,8 +127,8 @@ describe('VocabularyRenderer.Student', () => {
     expect(screen.getByText('No vocabulary items yet.')).toBeInTheDocument()
   })
 
-  it('falls back to raw text when parsedContent does not match schema', () => {
+  it('shows student error when parsedContent does not match schema', () => {
     render(<VocabularyRenderer.Student rawContent="not valid" parsedContent={42} />)
-    expect(screen.getByText('not valid')).toBeInTheDocument()
+    expect(screen.getByText(/could not be loaded/)).toBeInTheDocument()
   })
 })

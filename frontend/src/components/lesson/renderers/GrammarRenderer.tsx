@@ -2,6 +2,7 @@
 import { isGrammarContent } from '../../../types/contentTypes'
 import type { GrammarExample } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
+import { ContentParseError } from '../ContentParseError'
 
 const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200'
 const textareaClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200 resize-none'
@@ -151,9 +152,9 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
   )
 }
 
-function Preview({ parsedContent, rawContent }: PreviewProps) {
+function Preview({ parsedContent }: PreviewProps) {
   if (!isGrammarContent(parsedContent)) {
-    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
+    return <ContentParseError context="teacher" />
   }
 
   return (
@@ -188,9 +189,9 @@ function Preview({ parsedContent, rawContent }: PreviewProps) {
   )
 }
 
-function Student({ parsedContent, rawContent }: StudentProps) {
+function Student({ parsedContent }: StudentProps) {
   if (!isGrammarContent(parsedContent)) {
-    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
+    return <ContentParseError context="student" />
   }
 
   return (

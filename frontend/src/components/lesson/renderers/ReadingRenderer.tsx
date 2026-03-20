@@ -2,6 +2,7 @@
 import { isReadingContent } from '../../../types/contentTypes'
 import type { ReadingContent, ReadingQuestion, ReadingVocabHighlight } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
+import { ContentParseError } from '../ContentParseError'
 
 const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200'
 const textareaClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200 resize-none'
@@ -177,10 +178,10 @@ function Editor({ parsedContent: raw, rawContent, onChange }: EditorProps) {
   )
 }
 
-function Preview({ parsedContent: raw, rawContent }: PreviewProps) {
+function Preview({ parsedContent: raw }: PreviewProps) {
   const parsedContent = getReadingContent(raw)
   if (!parsedContent) {
-    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
+    return <ContentParseError context="teacher" />
   }
 
   return (
@@ -222,10 +223,10 @@ function Preview({ parsedContent: raw, rawContent }: PreviewProps) {
   )
 }
 
-function Student({ parsedContent: raw, rawContent }: StudentProps) {
+function Student({ parsedContent: raw }: StudentProps) {
   const parsedContent = getReadingContent(raw)
   if (!parsedContent) {
-    return <pre className="text-sm whitespace-pre-wrap">{rawContent}</pre>
+    return <ContentParseError context="student" />
   }
 
   return (
