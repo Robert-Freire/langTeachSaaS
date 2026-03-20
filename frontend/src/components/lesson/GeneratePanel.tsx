@@ -181,7 +181,9 @@ export function GeneratePanel({
           <Label className="text-xs">Task type</Label>
           <Select value={taskType} onValueChange={(v) => v && setTaskType(v as ContentBlockType)} disabled={isStreaming}>
             <SelectTrigger className="h-8 text-xs">
-              <SelectValue />
+              <SelectValue>
+                {(v: unknown) => TASK_TYPES.find(t => t.value === v)?.label ?? String(v)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {TASK_TYPES.map((t) => (
