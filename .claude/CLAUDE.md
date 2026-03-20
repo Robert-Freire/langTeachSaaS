@@ -13,17 +13,26 @@ Before starting any task:
 
 Never work directly in the main repo directory for task work (including planning).
 
-## E2E Test Isolation (Parallel Agents)
+## E2E Stack Coordination
 
-When running `docker-compose.e2e.yml` from a worktree, use `--project-name` to avoid conflicts with other agents running e2e tests simultaneously:
+The e2e stack (`docker-compose.e2e.yml`) uses mock auth and fixed ports. It can run alongside the dev stack (different compose file, different ports, different auth), but **only one e2e stack instance can run at a time.**
+
+**Before starting the e2e stack** (for e2e tests or review-ui), check if e2e containers are already running:
 ```bash
-docker compose -f docker-compose.e2e.yml --project-name langteachsaas-e2e-<worktree-name> --env-file .env.e2e --profile test up --build --exit-code-from playwright
+docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"
 ```
-This gives each worktree its own Docker network and volumes. Teardown uses the same project name:
+- If containers are running: **stop and notify the user.** Do not tear them down, do not retry. Another agent or test run owns them.
+- If no containers are running: proceed.
+
+**Starting the stack:**
 ```bash
-docker compose -f docker-compose.e2e.yml --project-name langteachsaas-e2e-<worktree-name> --env-file .env.e2e down -v
+docker compose -f docker-compose.e2e.yml --env-file .env.e2e --profile test up --build --exit-code-from playwright
 ```
-If only one agent is running, the default project name (`langteachsaas-e2e`) is fine.
+
+**Always tear down your own stack when done:**
+```bash
+docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
+```
 
 ## Task Source: GitHub Issues
 

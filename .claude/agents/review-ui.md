@@ -10,6 +10,12 @@ You are a UI/UX design reviewer. Your job is to navigate the running application
 
 **Prerequisites:** The e2e stack provides a deterministic mock-auth environment for UI review. The agent manages the stack lifecycle automatically.
 
+**Before starting, check for conflicts:**
+```bash
+docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"
+```
+If any containers are running, **stop and notify the user.** Do not tear them down or retry. Another agent or test run owns them. Only proceed if no e2e containers are running.
+
 **Stack startup:**
 ```bash
 # Run from the worktree root (or repo root) so Docker builds from the correct code
@@ -20,9 +26,8 @@ Wait for the frontend to be healthy before proceeding:
 # Poll until frontend responds (up to 2 minutes)
 for i in $(seq 1 40); do curl -sf http://localhost:5174 > /dev/null 2>&1 && break; sleep 3; done
 ```
-For parallel agent isolation (multiple worktrees), add `--project-name langteachsaas-e2e-<worktree-name>` to all docker compose commands.
 
-**Stack teardown** (after review is complete):
+**Stack teardown** (always tear down when done, even if the review fails):
 ```bash
 docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
 ```
@@ -62,7 +67,12 @@ Create a temporary file `e2e/tests/_ui-review.spec.ts` that does the following:
 
 a. Sets the viewport size
 b. Navigates to the page
-c. Waits for network idle
+c. Waits for network idle, then waits for skeleton/loading indicators to disappear:
+   ```typescript
+   await page.waitForLoadState('networkidle');
+   await page.waitForSelector('.animate-pulse', { state: 'detached', timeout: 10000 }).catch(() => {});
+   ```
+   This ensures API responses have rendered before taking screenshots. Without this, list pages (students, lessons) will show skeleton placeholders instead of real content.
 d. Takes a full-page screenshot saved to `e2e/screenshots/review-ui/<route-name>-<viewport>.png`
 
 The standard route list (used in full review, subset used in focused review):
