@@ -22,3 +22,9 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Minor | "Regenerate" vs "Generate" vocabulary difference between block-level and section-level buttons could confuse users. Both open the same panel. |
 | Minor | Direction textarea has maxLength={200} but no character count indicator. A subtle "42/200" counter would help users. |
 | Minor | GeneratePanel "Close" text link uses text-zinc-400 which is low contrast. Consider text-zinc-500. |
+
+### PR #TBD (2026-03-20) — Stale toast fix (#116)
+
+| Severity | Finding |
+|----------|---------|
+| Minor | Validation error "Display Name is required." appears in header area, far from the input field. Inline error near the field would improve discoverability on mobile. |
