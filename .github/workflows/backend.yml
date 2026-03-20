@@ -43,7 +43,7 @@ jobs:
   deploy:
     name: Build image and deploy
     needs: ci
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.DEPLOY_FROZEN != 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write

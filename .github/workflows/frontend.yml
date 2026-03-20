@@ -47,7 +47,7 @@ jobs:
   deploy:
     name: Deploy to Azure SWA
     needs: ci
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.DEPLOY_FROZEN != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
