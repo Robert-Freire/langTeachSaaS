@@ -23,6 +23,19 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Minor | Direction textarea has maxLength={200} but no character count indicator. A subtle "42/200" counter would help users. |
 | Minor | GeneratePanel "Close" text link uses text-zinc-400 which is low contrast. Consider text-zinc-500. |
 
+### PR #TBD (2026-03-20) — Parallel Generate All (#121)
+
+| Severity | Finding |
+|----------|---------|
+| Important | Section ordering in lesson editor is wrong when API returns all orderIndex: 0 (data issue, not this PR) |
+| Important | "Generate Full Lesson" button has no visible hover state change (pre-existing) |
+| Important | "Preview as Student" button pushed off-screen on mobile by header action density (pre-existing) |
+| Minor | Progress counter "X / Y complete" in text-xs is hard to read; consider text-sm or "X of Y sections complete" |
+| Minor | Pending section dots (centered dot in text-zinc-400) are subtle; consider a light gray circle icon |
+| Minor | Cancel link in progress dialog is understated text link; consider a ghost button |
+| Minor | Generate and Preview buttons in header have inconsistent border-radius (rounded-md vs rounded-full) |
+| Minor | Dashboard mobile week strip doesn't auto-scroll to current day |
+
 ### PR #117 (2026-03-20) — Reading stream order fix
 
 | Severity | Finding |
