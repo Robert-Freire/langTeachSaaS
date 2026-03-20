@@ -12,15 +12,13 @@ test.beforeAll(async ({ browser }) => {
   await ctx.close()
 })
 
-test('regenerate with direction sends direction in request and shows badge', async ({ browser }) => {
+test('regenerate replaces existing content and sends direction', async ({ browser }) => {
   test.setTimeout(TEST_TIMEOUT)
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
   try {
-    // Mock the AI stream endpoint for both the initial generation and the
-    // direction regeneration — avoids real Claude API calls and captures
-    // the direction param from the request body.
+    // Mock the AI stream endpoint and capture direction param
     let capturedDirection: string | undefined
     await page.route('**/api/generate/*/stream', async (route) => {
       const postData = route.request().postDataJSON()
@@ -42,7 +40,7 @@ test('regenerate with direction sends direction in request and shows badge', asy
 
     // Fill in lesson metadata
     await expect(page.locator('h1')).toHaveText('Lesson Details', { timeout: UI_TIMEOUT })
-    const lessonTitle = `Direction Test ${Date.now()}`
+    const lessonTitle = `Regen Replace Test ${Date.now()}`
     await page.getByTestId('input-title').fill(lessonTitle)
 
     await page.getByTestId('select-language').click()
@@ -77,24 +75,42 @@ test('regenerate with direction sends direction in request and shows badge', asy
     await expect(page.getByTestId('generate-panel')).not.toBeVisible({ timeout: FEEDBACK_TIMEOUT })
     await expect(page.getByTestId('ai-block-badge').first()).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
-    // Click the direction dropdown (chevron button)
-    await page.getByTestId('direction-trigger').click()
-    await expect(page.getByTestId('direction-options')).toBeVisible({ timeout: UI_TIMEOUT })
+    // Count initial content blocks
+    const initialBlockCount = await page.getByTestId('content-block').count()
+    expect(initialBlockCount).toBeGreaterThan(0)
 
-    // Click "Make it easier"
-    await page.getByTestId('direction-make-it-easier').click()
+    // Click Regenerate on the content block to open the unified panel
+    await page.getByTestId('regenerate-btn').click()
 
-    // GeneratePanel should open with direction badge visible
+    // Panel should open with replace indicator and direction textarea
     await expect(page.getByTestId('generate-panel')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
-    await expect(page.getByTestId('direction-badge')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
-    await expect(page.getByTestId('direction-badge')).toContainText('Make it easier')
+    await expect(page.getByTestId('replace-indicator')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByTestId('direction-textarea')).toBeVisible({ timeout: UI_TIMEOUT })
 
-    // Click Generate and verify streaming begins with direction in request
+    // Click a direction chip
+    await page.getByTestId('direction-chip-make-it-easier').click()
+    const textarea = page.getByTestId('direction-textarea')
+    await expect(textarea).toHaveValue('Make it easier')
+
+    // Button should say "Replace & insert"
+    await expect(page.getByTestId('insert-btn')).not.toBeVisible()
+
+    // Generate with direction
     await page.getByTestId('generate-btn').click()
     await page.getByTestId('insert-btn').waitFor({ state: 'visible', timeout: AI_STREAM_TIMEOUT })
 
+    // Verify insert button text
+    await expect(page.getByTestId('insert-btn')).toHaveText('Replace & insert')
+
+    // Click replace & insert
+    await page.getByTestId('insert-btn').click()
+    await expect(page.getByTestId('generate-panel')).not.toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+
     // Verify the direction was sent in the API request
     expect(capturedDirection).toBe('Make it easier')
+
+    // Content block should still be visible (replaced, not duplicated)
+    await expect(page.getByTestId('ai-block-badge').first()).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
   } finally {
     await context.close()
   }
