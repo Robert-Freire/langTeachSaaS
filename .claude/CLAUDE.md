@@ -70,8 +70,9 @@ When a task is marked complete:
    - **After the final verdict**, append any findings you did NOT fix (items you chose to skip or that were too minor to address) to `plan/ui-review-backlog.md` with PR number, date, severity, and a one-line description. Do not log findings you already fixed. Do not create GitHub issues for these individually; they get batched into polish tasks later.
 6. Push the branch and open a PR against `main` with a summary of what was done and why
 7. Start a CodeRabbit monitoring cron (every 5 minutes) that:
-   - Fetches all PR comments from CodeRabbit
-   - If no unresolved comments and review is clean: deletes the cron and notifies the user the PR is ready for their review
+   - Checks CI build status (`gh pr checks`) and fetches all PR comments from CodeRabbit
+   - If CI passes AND no unresolved comments: deletes the cron and notifies the user the PR is ready for their review
+   - If CI fails: investigate the failure, fix locally, run pre-push checks, commit, and push
    - If unresolved comments exist: **critically evaluates** each one (is it valid? does it contradict project conventions? does it over-engineer?), fixes only what genuinely improves the code, replies explaining reasoning for declined suggestions, runs pre-push checks, commits, and pushes
    - Safety limits: max 3 fix-and-push rounds, stops on test failures or ambiguous/architectural comments, always notifies the user when stopping
 8. Stop -- do NOT merge. The user reviews the PR and merges manually.
