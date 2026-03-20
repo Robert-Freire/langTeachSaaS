@@ -293,4 +293,27 @@ describe('GeneratePanel - replace on insert', () => {
     })
     expect(generateApi.saveContentBlock).not.toHaveBeenCalled()
   })
+
+  it('does not delete existing blocks when panel is closed via Discard', async () => {
+    const existingBlock = makeBlock()
+    const onClose = vi.fn()
+
+    mockUseGenerate.mockReturnValue({
+      status: 'done',
+      output: '{"items":[]}',
+      error: null,
+      generate: vi.fn(),
+      abort: vi.fn(),
+    })
+
+    render(<GeneratePanel {...defaultProps} existingBlocks={[existingBlock]} onClose={onClose} />)
+
+    const user = userEvent.setup()
+    // Click the Discard link (not the Replace & insert button)
+    await user.click(screen.getByText('Discard'))
+
+    expect(onClose).toHaveBeenCalled()
+    expect(generateApi.deleteContentBlock).not.toHaveBeenCalled()
+    expect(generateApi.saveContentBlock).not.toHaveBeenCalled()
+  })
 })
