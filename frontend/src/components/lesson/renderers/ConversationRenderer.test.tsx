@@ -19,6 +19,20 @@ function makeContent(overrides?: Partial<ConversationContent['scenarios'][0]>): 
 
 const raw = (c: ConversationContent) => JSON.stringify(c)
 
+describe('ConversationRenderer.Preview', () => {
+  it('shows teacher error when parsedContent does not match schema', () => {
+    render(<ConversationRenderer.Preview rawContent="not valid" parsedContent={{}} />)
+    expect(screen.getByText(/could not be parsed/)).toBeInTheDocument()
+  })
+})
+
+describe('ConversationRenderer.Student — fallback', () => {
+  it('shows student error when parsedContent does not match schema', () => {
+    render(<ConversationRenderer.Student rawContent="not valid" parsedContent={42} />)
+    expect(screen.getByText(/could not be loaded/)).toBeInTheDocument()
+  })
+})
+
 describe('ConversationRenderer.Student — role selection', () => {
   it('shows (You)/(Partner) badges with role A auto-selected', () => {
     const content = makeContent()
