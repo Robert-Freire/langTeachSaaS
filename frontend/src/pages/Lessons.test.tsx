@@ -79,4 +79,15 @@ describe('Lessons list', () => {
 
     await screen.findByText('Failed to load lessons. Please try again.')
   })
+
+  it('shows title-case defaults in filter dropdowns', async () => {
+    vi.mocked(lessonsApi.getLessons).mockResolvedValue({ items: [mockLesson], totalCount: 1, page: 1, pageSize: 20 })
+    wrapper(<Lessons />)
+
+    await screen.findByTestId('lesson-title')
+
+    expect(screen.getByTestId('filter-language')).toHaveTextContent('All Languages')
+    expect(screen.getByTestId('filter-level')).toHaveTextContent('All Levels')
+    expect(screen.getByTestId('filter-status')).toHaveTextContent('All Statuses')
+  })
 })

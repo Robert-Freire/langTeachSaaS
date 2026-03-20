@@ -321,3 +321,23 @@ describe('GeneratePanel - replace on insert', () => {
     expect(generateApi.saveContentBlock).not.toHaveBeenCalled()
   })
 })
+
+describe('GeneratePanel - task type dropdown casing', () => {
+  it('displays task type in Title Case in the trigger', () => {
+    mockUseGenerate.mockReturnValue({
+      status: 'idle',
+      output: null,
+      error: null,
+      generate: vi.fn(),
+      abort: vi.fn(),
+    })
+
+    render(<GeneratePanel {...defaultProps} sectionType="Presentation" />)
+
+    // Default task type for Presentation is "vocabulary", should display as "Vocabulary"
+    const label = screen.getByText('Task type')
+    const trigger = label.closest('.space-y-1')!.querySelector('[data-slot="select-trigger"]')!
+    expect(trigger).toHaveTextContent('Vocabulary')
+    expect(trigger.textContent).not.toMatch(/^vocabulary$/)
+  })
+})
