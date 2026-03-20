@@ -48,8 +48,9 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 - Apply appropriate area/type labels when creating issues
 
 **After PR is merged (when user confirms merge):**
-- Move the issue to "Done" on the project board: `gh project item-edit --project-id PVT_kwHOAF1Pks4BSLsS --id <ITEM_ID> --field-id PVTSSF_lAHOAF1Pks4BSLsSzg_ysiA --single-select-option-id 61f69a4c`
+- Move the issue to "Ready to Test" on the project board: `gh project item-edit --project-id PVT_kwHOAF1Pks4BSLsS --id <ITEM_ID> --field-id PVTSSF_lAHOAF1Pks4BSLsSzg_ysiA --single-select-option-id 530fcec2`
   - To find the item ID: `gh project item-list 2 --owner Robert-Freire --format json` and match by issue number
+- Never move issues to "Done." The user does sanity checks and moves to Done manually.
 - Exit and remove the worktree with `ExitWorktree(action: "remove")`
 
 **Labels overview:**
