@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { BookOpen, Copy, Pencil, PlusCircle, Trash2 } from 'lucide-react'
+import { PageHeader } from '@/components/PageHeader'
 import { getLessons, deleteLesson, duplicateLesson, type Lesson } from '../api/lessons'
 import { logger } from '../lib/logger'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -149,21 +150,20 @@ export default function Lessons() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Lessons</h1>
-          <p className="text-sm text-zinc-500 mt-1">Create and manage your lesson plans.</p>
-        </div>
-        <Link
-          to="/lessons/new"
-          className={cn(buttonVariants(), 'bg-indigo-600 hover:bg-indigo-700 text-white')}
-          data-testid="new-lesson-btn"
-        >
-          <PlusCircle className="h-4 w-4 mr-1.5" />
-          New Lesson
-        </Link>
-      </div>
+      <PageHeader
+        title="Lessons"
+        subtitle="Create and manage your lesson plans."
+        actions={
+          <Link
+            to="/lessons/new"
+            className={cn(buttonVariants(), 'bg-indigo-600 hover:bg-indigo-700 text-white')}
+            data-testid="new-lesson-btn"
+          >
+            <PlusCircle className="h-4 w-4 mr-1.5" />
+            New Lesson
+          </Link>
+        }
+      />
 
       {/* Search + filters */}
       <div className="flex flex-wrap gap-3">

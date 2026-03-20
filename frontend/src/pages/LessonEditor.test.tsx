@@ -350,4 +350,49 @@ describe('LessonEditor', () => {
       expect(screen.getByTestId('generate-btn-presentation')).not.toBeDisabled()
     })
   })
+
+  describe('Back link', () => {
+    it('renders a back link to /lessons', async () => {
+      renderWithProviders()
+      const back = await screen.findByTestId('page-header-back')
+      expect(back).toHaveAttribute('href', '/lessons')
+      expect(back).toHaveTextContent('Lessons')
+    })
+  })
+
+  describe('Save indicator', () => {
+    it('does not show indicator before any save', async () => {
+      renderWithProviders()
+      await screen.findByTestId('lesson-title')
+      expect(screen.queryByTestId('saved-indicator')).not.toBeInTheDocument()
+    })
+
+    it('shows "Saving..." while section mutation is in-flight', async () => {
+      // Make updateSections hang to keep isSaving true
+      mockUpdateSections.mockReturnValue(new Promise(() => {}))
+      renderWithProviders()
+      await screen.findByTestId('lesson-title')
+
+      const user = userEvent.setup()
+      const textarea = screen.getByTestId('section-warmup')
+      await user.clear(textarea)
+      await user.type(textarea, 'new notes')
+      await user.tab() // triggers blur -> save
+
+      expect(await screen.findByTestId('saved-indicator')).toHaveTextContent('Saving...')
+    })
+
+    it('shows "All changes saved" after a successful section save', async () => {
+      renderWithProviders()
+      await screen.findByTestId('lesson-title')
+
+      const user = userEvent.setup()
+      const textarea = screen.getByTestId('section-warmup')
+      await user.clear(textarea)
+      await user.type(textarea, 'updated notes')
+      await user.tab() // triggers blur -> save
+
+      expect(await screen.findByText('All changes saved')).toBeInTheDocument()
+    })
+  })
 })

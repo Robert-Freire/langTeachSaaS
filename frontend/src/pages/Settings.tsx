@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/PageHeader'
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
@@ -104,12 +105,25 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900">My Profile</h1>
-        <p className="text-sm text-zinc-500 mt-1">Configure how you appear to students and set your teaching preferences.</p>
-      </div>
+      <PageHeader
+        title="My Profile"
+        subtitle="Configure how you appear to students and set your teaching preferences."
+        actions={
+          <div className="flex items-center gap-3">
+            {isSuccess && (
+              <span className="text-sm text-emerald-600 font-medium" data-testid="save-success">Saved successfully</span>
+            )}
+            {isError && (
+              <span className="text-sm text-red-600 font-medium">Save failed. Please try again.</span>
+            )}
+            <Button type="submit" form="profile-form" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700">
+              {isPending ? 'Saving...' : 'Save Profile'}
+            </Button>
+          </div>
+        }
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form id="profile-form" onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Display Name</CardTitle>
@@ -198,17 +212,6 @@ export default function Settings() {
                   </Badge>
                 </button>
               ))}
-            </div>
-            <div className="flex items-center gap-4 pt-2 border-t border-zinc-100">
-              <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700">
-                {isPending ? 'Saving...' : 'Save Profile'}
-              </Button>
-              {isSuccess && (
-                <span className="text-sm text-emerald-600 font-medium" data-testid="save-success">Saved successfully</span>
-              )}
-              {isError && (
-                <span className="text-sm text-red-600 font-medium">Save failed. Please try again.</span>
-              )}
             </div>
           </CardContent>
         </Card>
