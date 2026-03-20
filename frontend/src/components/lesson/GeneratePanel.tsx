@@ -176,7 +176,7 @@ export function GeneratePanel({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-xs">Task type</Label>
           <Select value={taskType} onValueChange={(v) => v && setTaskType(v as ContentBlockType)} disabled={isStreaming}>
@@ -226,14 +226,18 @@ export function GeneratePanel({
               placeholder="e.g. Make it easier, focus on pronunciation..."
               data-testid="direction-textarea"
             />
-            <div className="flex flex-wrap gap-1.5" data-testid="direction-chips">
+            <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap gap-1.5" data-testid="direction-chips">
               {DIRECTION_OPTIONS.map((opt) => (
                 <button
                   key={opt}
                   type="button"
                   onClick={() => setDirection(opt)}
                   disabled={isStreaming}
-                  className="px-2 py-0.5 text-xs rounded-full border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-40"
+                  className={`shrink-0 px-2 py-0.5 text-xs rounded-full border transition-colors disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 ${
+                    direction === opt
+                      ? 'bg-indigo-50 border-indigo-400 text-indigo-700 font-medium'
+                      : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50'
+                  }`}
                   data-testid={`direction-chip-${opt.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   {opt}
