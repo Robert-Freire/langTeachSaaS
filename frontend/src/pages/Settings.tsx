@@ -151,6 +151,7 @@ export default function Settings() {
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
                 maxLength={100}
+                aria-required="true"
                 placeholder="e.g. María García"
                 className="max-w-sm"
               />
