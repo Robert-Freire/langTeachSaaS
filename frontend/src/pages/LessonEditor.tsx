@@ -80,6 +80,11 @@ export default function LessonEditor() {
   const [confirmRemoveSection, setConfirmRemoveSection] = useState<SectionType | null>(null)
   const [hasSavedOnce, setHasSavedOnce] = useState(false)
 
+  // Reset save indicator when navigating to a different lesson
+  useEffect(() => {
+    setHasSavedOnce(false)
+  }, [id])
+
   // Metadata edit state
   const [editingMeta, setEditingMeta] = useState(false)
   const [metaDraft, setMetaDraft] = useState({ language: '', cefrLevel: '', topic: '', durationMinutes: 60, objectives: '', scheduledAt: '' })
