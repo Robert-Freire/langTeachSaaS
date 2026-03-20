@@ -102,18 +102,36 @@ describe('buildPartialContent – conversation', () => {
 })
 
 describe('buildPartialContent – reading', () => {
-  it('returns null when no comprehension questions', () => {
-    expect(buildPartialContent('{"passage": "The fox", "comprehensionQuestions": [', 'reading')).toBeNull()
+  it('returns null when passage is still streaming (no closing quote)', () => {
+    expect(buildPartialContent('{"passage": "The fox', 'reading')).toBeNull()
   })
 
-  it('includes comprehension question with empty passage and vocabularyHighlights', () => {
+  it('returns passage with empty arrays when passage is complete but no questions yet', () => {
+    const json = '{"passage": "The fox runs.", "comprehensionQuestions": ['
+    const result = buildPartialContent(json, 'reading') as Record<string, unknown>
+    expect(result).not.toBeNull()
+    expect(result.passage).toBe('The fox runs.')
+    expect(result.comprehensionQuestions).toEqual([])
+    expect(result.vocabularyHighlights).toEqual([])
+  })
+
+  it('returns passage and comprehension questions when both are complete', () => {
     const q = { question: 'What is the main idea?', answer: 'The fox', type: 'open' }
     const json = `{"passage": "The fox runs.", "comprehensionQuestions": [${JSON.stringify(q)}]}`
     const result = buildPartialContent(json, 'reading') as Record<string, unknown>
     expect(result).not.toBeNull()
-    expect(result.passage).toBe('')
+    expect(result.passage).toBe('The fox runs.')
     expect((result.comprehensionQuestions as unknown[]).length).toBe(1)
-    expect(result.vocabularyHighlights).toEqual([])
+  })
+
+  it('extracts vocabulary highlights', () => {
+    const q = { question: 'What does ubiquitous mean?', answer: 'Found everywhere', type: 'vocabulary' }
+    const h = { word: 'ubiquitous', definition: 'Found everywhere; very common.' }
+    const json = `{"passage": "The fox runs.", "comprehensionQuestions": [${JSON.stringify(q)}], "vocabularyHighlights": [${JSON.stringify(h)}]}`
+    const result = buildPartialContent(json, 'reading') as Record<string, unknown>
+    expect(result).not.toBeNull()
+    expect((result.vocabularyHighlights as unknown[]).length).toBe(1)
+    expect((result.vocabularyHighlights as Array<{ word: string }>)[0].word).toBe('ubiquitous')
   })
 })
 

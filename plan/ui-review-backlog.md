@@ -23,6 +23,16 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Minor | Direction textarea has maxLength={200} but no character count indicator. A subtle "42/200" counter would help users. |
 | Minor | GeneratePanel "Close" text link uses text-zinc-400 which is low contrast. Consider text-zinc-500. |
 
+### PR #117 (2026-03-20) — Reading stream order fix
+
+| Severity | Finding |
+|----------|---------|
+| Important | Mobile lesson editor missing "Preview as Student" button from header toolbar |
+| Important | Generate panel task type dropdown shows lowercase ("reading") while option list shows Title Case ("Reading") |
+| Important | Lessons list filter dropdowns show "all" lowercase instead of "All" or "All Languages" etc. |
+| Minor | Reading editor "Passage" label is text-xs, could be text-sm given the textarea size |
+| Minor | Keyboard focus rings use browser default on nav links instead of consistent indigo ring pattern |
+
 ### PR #TBD (2026-03-20) — Stale toast fix (#116)
 
 | Severity | Finding |

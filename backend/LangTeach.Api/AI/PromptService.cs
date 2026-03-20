@@ -153,6 +153,7 @@ public class PromptService : IPromptService
         return $$"""
         Generate a reading passage for the lesson on "{{topic}}". Return JSON:
         {"passage":"","comprehensionQuestions":[{"question":"","answer":"","type":"factual|inferential|vocabulary"}],"vocabularyHighlights":[{"word":"","definition":""}]}
+        IMPORTANT: Emit the passage field completely before writing comprehensionQuestions.
         Passage must use {{level}} vocabulary and grammar. Include 3-5 questions and 5-8 vocabulary highlights.
         """;
     }
