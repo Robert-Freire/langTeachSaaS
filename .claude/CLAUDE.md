@@ -67,7 +67,7 @@ When a task is marked complete:
    - In the agent prompt, list the specific routes and screens the feature modified so the agent runs in **focused review mode** (screenshots of changed screens + regression check on dashboard/lesson editor). Example prompt: *"Review UI for lesson editor header redesign. Changed screens: /lessons/:id (editor view), /lessons/:id/study (study view). The header layout and metadata section were restructured."*
    - If verdict is **NEEDS WORK**: fix critical and important visual/UX issues, re-commit, re-run pre-push checks, and re-run UI review.
    - If verdict is **GOOD** or **POLISHED**: proceed to push.
-   - **After any verdict**, if there are non-blocking findings (Important or Minor), append them to `plan/ui-review-backlog.md` with PR number, date, severity, and a one-line description. Do not create GitHub issues for these individually; they get batched into polish tasks later.
+   - **After the final verdict**, append any findings you did NOT fix (items you chose to skip or that were too minor to address) to `plan/ui-review-backlog.md` with PR number, date, severity, and a one-line description. Do not log findings you already fixed. Do not create GitHub issues for these individually; they get batched into polish tasks later.
 6. Push the branch and open a PR against `main` with a summary of what was done and why
 7. Start a CodeRabbit monitoring cron (every 5 minutes) that:
    - Fetches all PR comments from CodeRabbit
