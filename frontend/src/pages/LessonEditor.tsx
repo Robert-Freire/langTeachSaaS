@@ -81,9 +81,11 @@ export default function LessonEditor() {
   const [hasSavedOnce, setHasSavedOnce] = useState(false)
 
   // Reset save indicator when navigating to a different lesson
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setHasSavedOnce(false)
   }, [id])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Metadata edit state
   const [editingMeta, setEditingMeta] = useState(false)
