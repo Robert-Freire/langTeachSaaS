@@ -126,10 +126,15 @@ export function buildPartialContent(rawOutput: string, blockType: ContentBlockTy
       return scenarios.length > 0 ? { scenarios } : null
     }
     case 'reading': {
+      const passage = extractScalarString(json, 'passage')
       const comprehensionQuestions = extractItemsFromArray(json, 'comprehensionQuestions')
-      return comprehensionQuestions.length > 0
-        ? { passage: '', comprehensionQuestions, vocabularyHighlights: [] }
-        : null
+      const vocabularyHighlights = extractItemsFromArray(json, 'vocabularyHighlights')
+      if (!passage && comprehensionQuestions.length === 0) return null
+      return {
+        passage: passage ?? '',
+        comprehensionQuestions,
+        vocabularyHighlights,
+      }
     }
     case 'homework': {
       const tasks = extractItemsFromArray(json, 'tasks')
