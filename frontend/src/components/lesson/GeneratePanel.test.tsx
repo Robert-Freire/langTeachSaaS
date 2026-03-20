@@ -244,7 +244,7 @@ describe('GeneratePanel - replace on insert', () => {
     expect(screen.getByTestId('insert-btn')).toHaveTextContent('Insert into section')
   })
 
-  it('deletes existing blocks then saves new block on replace', async () => {
+  it('saves new block first then deletes existing blocks on replace', async () => {
     const existingBlock = makeBlock()
     const newBlock = makeBlock({ id: 'new-block' })
     vi.mocked(generateApi.deleteContentBlock).mockResolvedValue()
@@ -265,15 +265,17 @@ describe('GeneratePanel - replace on insert', () => {
     await user.click(screen.getByTestId('insert-btn'))
 
     await waitFor(() => {
-      expect(generateApi.deleteContentBlock).toHaveBeenCalledWith('lesson-1', 'block-1')
       expect(generateApi.saveContentBlock).toHaveBeenCalled()
+      expect(generateApi.deleteContentBlock).toHaveBeenCalledWith('lesson-1', 'block-1')
       expect(onReplace).toHaveBeenCalledWith(newBlock, ['block-1'])
     })
   })
 
-  it('shows error and does not save if delete fails', async () => {
+  it('still completes replace when delete fails (saves new block, skips failed deletes)', async () => {
     const existingBlock = makeBlock()
+    const newBlock = makeBlock({ id: 'new-block' })
     vi.mocked(generateApi.deleteContentBlock).mockRejectedValue(new Error('fail'))
+    vi.mocked(generateApi.saveContentBlock).mockResolvedValue(newBlock)
 
     mockUseGenerate.mockReturnValue({
       status: 'done',
@@ -283,15 +285,17 @@ describe('GeneratePanel - replace on insert', () => {
       abort: vi.fn(),
     })
 
-    render(<GeneratePanel {...defaultProps} existingBlocks={[existingBlock]} />)
+    const onReplace = vi.fn()
+    render(<GeneratePanel {...defaultProps} existingBlocks={[existingBlock]} onReplace={onReplace} />)
 
     const user = userEvent.setup()
     await user.click(screen.getByTestId('insert-btn'))
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to replace existing content. Please try again.')).toBeInTheDocument()
+      // Save succeeds, delete fails gracefully, onReplace called with empty removedIds
+      expect(generateApi.saveContentBlock).toHaveBeenCalled()
+      expect(onReplace).toHaveBeenCalledWith(newBlock, [])
     })
-    expect(generateApi.saveContentBlock).not.toHaveBeenCalled()
   })
 
   it('does not delete existing blocks when panel is closed via Discard', async () => {

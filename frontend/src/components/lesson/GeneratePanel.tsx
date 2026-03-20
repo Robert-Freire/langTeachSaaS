@@ -90,8 +90,9 @@ export function GeneratePanel({
   onClose,
   onStreamingChange,
 }: GeneratePanelProps) {
+  const inferredType = (existingBlocks[0]?.blockType ?? null) as ContentBlockType | null
   const [taskType, setTaskType] = useState<ContentBlockType>(
-    existingBlocks[0]?.blockType as ContentBlockType ?? SECTION_DEFAULT_TASK[sectionType]
+    inferredType ?? SECTION_DEFAULT_TASK[sectionType]
   )
   const [style, setStyle] = useState('Conversational')
   const [direction, setDirection] = useState<string | undefined>(undefined)
@@ -120,22 +121,25 @@ export function GeneratePanel({
     setInserting(true)
     setInsertError(null)
     try {
-      if (existingBlocks.length > 0) {
-        try {
-          await Promise.all(existingBlocks.map(b => deleteContentBlock(lessonId, b.id)))
-        } catch {
-          setInsertError('Failed to replace existing content. Please try again.')
-          setInserting(false)
-          return
-        }
-      }
+      // Save new block first to avoid data loss if delete fails
       const block = await saveContentBlock(lessonId, {
         lessonSectionId: sectionId,
         blockType: taskType,
         generatedContent: output,
         generationParams: JSON.stringify(request),
       })
-      const removedIds = existingBlocks.map(b => b.id)
+      // Then delete old blocks (if any fail, user has duplicates rather than data loss)
+      const removedIds: string[] = []
+      if (existingBlocks.length > 0) {
+        const results = await Promise.allSettled(
+          existingBlocks.map(b => deleteContentBlock(lessonId, b.id))
+        )
+        results.forEach((result, i) => {
+          if (result.status === 'fulfilled') {
+            removedIds.push(existingBlocks[i].id)
+          }
+        })
+      }
       onReplace(block, removedIds)
       onClose()
     } catch {
