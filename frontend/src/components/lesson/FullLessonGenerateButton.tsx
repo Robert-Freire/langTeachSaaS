@@ -142,6 +142,7 @@ export function FullLessonGenerateButton({
 
   const handleCancel = () => {
     abortRef.current?.abort()
+    setSectionStatus({})
     setPhase('idle')
   }
 
@@ -181,7 +182,7 @@ export function FullLessonGenerateButton({
           {(phase === 'generating' || phase === 'done') && (
             <div className="px-1 py-2 space-y-2" data-testid="generation-progress">
               <div className="text-xs text-zinc-500 mb-1">
-                {phase === 'done' ? 'All sections complete' : `${Object.values(sectionStatus).filter(s => s === 'done' || s === 'error').length} / ${Object.keys(sectionStatus).length} complete`}
+                {phase === 'done' ? 'All sections complete' : `${Object.values(sectionStatus).filter(s => s === 'done').length} / ${Object.keys(sectionStatus).length} complete`}
               </div>
               <ol className="space-y-1">
                 {SECTION_ORDER.filter(s => sections.some(sec => sec.sectionType === s)).map((s) => {
