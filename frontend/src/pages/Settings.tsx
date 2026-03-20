@@ -34,7 +34,8 @@ function ToggleBadge({ label, selected, onToggle }: { label: string; selected: b
 
 export default function Settings() {
   const { data: profile, isLoading, isError: isProfileError } = useProfile()
-  const { mutate, isPending, isSuccess, isError } = useUpdateProfile()
+  const { mutate, isPending, isSuccess, isError, reset } = useUpdateProfile()
+  const [validationError, setValidationError] = useState<string | null>(null)
 
   const [displayName, setDisplayName] = useState('')
   const [teachingLanguages, setTeachingLanguages] = useState<string[]>([])
@@ -64,6 +65,14 @@ export default function Settings() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     logger.info('Settings', 'profile save submitted')
+
+    if (!displayName.trim()) {
+      reset()
+      setValidationError('Display Name is required.')
+      return
+    }
+
+    setValidationError(null)
     mutate(
       { displayName, teachingLanguages, cefrLevels, preferredStyle },
       {
@@ -110,10 +119,13 @@ export default function Settings() {
         subtitle="Configure how you appear to students and set your teaching preferences."
         actions={
           <div className="flex items-center gap-3">
-            {isSuccess && (
+            {validationError && (
+              <span className="text-sm text-red-600 font-medium" data-testid="validation-error">{validationError}</span>
+            )}
+            {!validationError && isSuccess && (
               <span className="text-sm text-emerald-600 font-medium" data-testid="save-success">Saved successfully</span>
             )}
-            {isError && (
+            {!validationError && isError && (
               <span className="text-sm text-red-600 font-medium">Save failed. Please try again.</span>
             )}
             <Button type="submit" form="profile-form" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700">
@@ -139,7 +151,7 @@ export default function Settings() {
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
                 maxLength={100}
-                required
+                aria-required="true"
                 placeholder="e.g. María García"
                 className="max-w-sm"
               />

@@ -32,3 +32,9 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Important | Lessons list filter dropdowns show "all" lowercase instead of "All" or "All Languages" etc. |
 | Minor | Reading editor "Passage" label is text-xs, could be text-sm given the textarea size |
 | Minor | Keyboard focus rings use browser default on nav links instead of consistent indigo ring pattern |
+
+### PR #TBD (2026-03-20) — Stale toast fix (#116)
+
+| Severity | Finding |
+|----------|---------|
+| Minor | Validation error "Display Name is required." appears in header area, far from the input field. Inline error near the field would improve discoverability on mobile. |
