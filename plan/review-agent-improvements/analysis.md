@@ -2,7 +2,8 @@
 
 ## Overview
 
-- **Total findings analyzed:** 210 across 42 merged PRs
+- **Total CodeRabbit comments:** 370 across 42 merged PRs (210 initial findings + 160 follow-up/resolution replies)
+- **Initial findings analyzed:** 210
 - **PRs with most findings:** PR#30 (13), PR#32 (11), PR#145 (11), PR#13 (11), PR#60 (10)
 - **Finding area breakdown:**
   - Backend (.cs): 69 (33%)

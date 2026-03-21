@@ -123,5 +123,4 @@ Each pattern that requires code changes (e.g., actually fixing all existing PII-
 
 ## Raw Data
 
-Full analysis with per-finding categorization saved to `/tmp/cr_analysis.md`.
-Condensed finding summaries saved to `/tmp/cr_findings.txt`.
+Full analysis with per-finding categorization saved to `plan/review-agent-improvements/analysis.md`.
