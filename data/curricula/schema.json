@@ -92,6 +92,10 @@
         }
       }
     },
+    "notes": {
+      "type": "string",
+      "description": "Free-text notes about the source document or extraction decisions for this level (e.g. column naming differences in C1-C2 Instituto Educativo files)"
+    },
     "exam_prep": {
       "type": ["object", "null"],
       "description": "Reserved for exam preparation curricula (DELE, DALF, etc.). null for general-learning courses.",

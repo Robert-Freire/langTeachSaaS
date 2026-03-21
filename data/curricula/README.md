@@ -33,10 +33,11 @@ data/curricula/
 - **Textbook:** Aula Internacional (A1-A2 levels only)
 - **Structure:** `communicative_objectives[]`, empty `units[]`
 
-### Instituto Educativo Espanol
+### Instituto Educativo Español
 - **Files:** 30 (A1.1-A1.3, A2.1-A2.4, B1.1-B1.5, B2.1-B2.6, C1.1-C1.6, C2.1-C2.6)
 - **Format:** 24-page multi-level document with 6-column per-unit table
 - **Textbook:** Aula Internacional (A1-B2); no textbook for C1-C2
+- **Hours:** Not specified in source document; `hours` field is absent from all Instituto Educativo files
 - **Structure:** `units[]` with `communicative_functions`, `grammar`, `vocabulary_themes`, `learning_strategies`, `cultural_content`
 - **Note:** C1-C2 source columns differ: `textbook_ref` and `overall_goal` are absent (null); `vocabulary_themes` maps to "Tipos de texto y léxico"; C2 `grammar` maps to "Contenidos lingüísticos"
 
