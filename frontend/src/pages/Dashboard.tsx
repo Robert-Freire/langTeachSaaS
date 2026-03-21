@@ -49,12 +49,12 @@ export default function Dashboard() {
     queryFn: () => getLessons({ pageSize: 1 }),
   })
 
-  const { data: coursesData } = useQuery({
+  const { data: coursesData, isLoading: coursesLoading } = useQuery({
     queryKey: ['courses'],
     queryFn: getCourses,
   })
 
-  const isLoading = studentsLoading || weekLoading || draftsLoading || publishedLoading || totalLoading
+  const isLoading = studentsLoading || weekLoading || draftsLoading || publishedLoading || totalLoading || coursesLoading
 
   const [showSlowMessage, setShowSlowMessage] = useState(false)
   useEffect(() => {
