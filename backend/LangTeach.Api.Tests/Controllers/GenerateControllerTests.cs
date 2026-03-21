@@ -5,6 +5,7 @@ using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Fixtures;
 using LangTeach.Api.Tests.Helpers;
 using Microsoft.Extensions.DependencyInjection;
@@ -303,6 +304,76 @@ public class GenerateControllerTests
         var response = await client.PostAsJsonAsync("/api/generate/nonexistent/stream", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Vocabulary_WithMaterials_Returns200()
+    {
+        var auth0Id = "auth0|gen-with-materials";
+        var email = "gen-with-materials@example.com";
+        var lessonId = await SeedApprovedTeacherWithLesson(auth0Id, email);
+
+        var fake = new FakeClaudeClient();
+        var factory = _factory.WithWebHostBuilder(b => b.ConfigureServices(services =>
+        {
+            var existing = services.FirstOrDefault(d => d.ServiceType == typeof(IClaudeClient));
+            if (existing is not null) services.Remove(existing);
+            services.AddScoped<IClaudeClient>(_ => fake);
+        }));
+
+        // Seed section + material using the same host's services
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var lesson = db.Lessons.First(l => l.Id == lessonId);
+            var section = new LessonSection
+            {
+                Id = Guid.NewGuid(),
+                LessonId = lessonId,
+                SectionType = "WarmUp",
+                OrderIndex = 0,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            };
+            db.LessonSections.Add(section);
+
+            var blobPath = $"{lesson.TeacherId}/{lessonId}/test-material.pdf";
+            var blobStorage = scope.ServiceProvider.GetRequiredService<IBlobStorageService>();
+            await using var ms = new MemoryStream(new byte[] { 0x25, 0x50, 0x44, 0x46 });
+            await blobStorage.UploadAsync(ms, blobPath, "application/pdf");
+
+            var material = new Material
+            {
+                Id = Guid.NewGuid(),
+                LessonSectionId = section.Id,
+                FileName = "test-material.pdf",
+                ContentType = "application/pdf",
+                SizeBytes = 4,
+                BlobPath = blobPath,
+                CreatedAt = DateTime.UtcNow,
+            };
+            db.Materials.Add(material);
+            await db.SaveChangesAsync();
+        }
+
+        var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Auth0Id", auth0Id);
+        client.DefaultRequestHeaders.Add("X-Test-Email", email);
+
+        var request = new GenerateRequest
+        {
+            LessonId = lessonId,
+            Language = "Spanish",
+            CefrLevel = "B1",
+            Topic = "Food",
+        };
+
+        var response = await client.PostAsJsonAsync("/api/generate/vocabulary", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<GenerationResultDto>(TestJsonOptions.Default);
+        result.Should().NotBeNull();
+        result!.GeneratedContent.Should().NotBeNullOrEmpty();
     }
 
     [Fact]

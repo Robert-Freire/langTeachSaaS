@@ -178,6 +178,49 @@ public class MaterialService : IMaterialService
         _logger.LogInformation("Deleted {Count} blobs for {SectionCount} removed sections", materials.Count, sectionIdSet.Count);
     }
 
+    private const long MaxTotalMaterialBytes = 20 * 1024 * 1024; // 20 MB
+
+    public async Task<List<MaterialContent>> GetMaterialContentsAsync(Guid teacherId, Guid lessonId, CancellationToken cancellationToken = default)
+    {
+        var materials = await _db.Materials
+            .Where(m => m.LessonSection.LessonId == lessonId
+                && m.LessonSection.Lesson.TeacherId == teacherId
+                && !m.LessonSection.Lesson.IsDeleted)
+            .OrderBy(m => m.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        var result = new List<MaterialContent>();
+        long totalSize = 0;
+
+        foreach (var m in materials)
+        {
+            if (totalSize + m.SizeBytes > MaxTotalMaterialBytes)
+            {
+                _logger.LogWarning(
+                    "Skipping material {MaterialId} ({FileName}, {SizeBytes} bytes): total size cap of {MaxBytes} bytes would be exceeded.",
+                    m.Id, m.FileName, m.SizeBytes, MaxTotalMaterialBytes);
+                break;
+            }
+
+            try
+            {
+                await using var stream = await _blobStorage.DownloadAsync(m.BlobPath, cancellationToken);
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms, cancellationToken);
+
+                result.Add(new MaterialContent(m.FileName, m.ContentType, ms.ToArray()));
+                totalSize += m.SizeBytes;
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to download blob {BlobPath} for material {MaterialId}. Skipping.", m.BlobPath, m.Id);
+            }
+        }
+
+        return result;
+    }
+
     public async Task EnrichWithPreviewUrls(List<LessonSectionDto> sections)
     {
         foreach (var section in sections)

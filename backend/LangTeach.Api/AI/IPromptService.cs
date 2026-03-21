@@ -38,5 +38,6 @@ public record GenerationContext(
     string[]? StudentWeaknesses,
     string? ExistingNotes,
     string? LessonSummary = null,
-    string? Direction = null
+    string? Direction = null,
+    string[]? MaterialFileNames = null
 );

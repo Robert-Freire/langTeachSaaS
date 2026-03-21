@@ -99,6 +99,15 @@ public class PromptService : IPromptService
             sb.AppendLine($"IMPORTANT DIRECTION: {direction}. Adjust the generated content accordingly while keeping the same topic and JSON format.");
         }
 
+        if (ctx.MaterialFileNames is { Length: > 0 })
+        {
+            sb.AppendLine();
+            sb.AppendLine("The teacher has uploaded the following reference materials (attached as files):");
+            foreach (var name in ctx.MaterialFileNames)
+                sb.AppendLine($"- {Sanitize(name)}");
+            sb.AppendLine("Use these materials as source/inspiration for the generated content. Adapt, reference, or build upon them as appropriate for the student's level.");
+        }
+
         sb.AppendLine();
         sb.AppendLine("Respond ONLY with valid JSON matching the schema below. No markdown, no prose, no code fences. Start your response with { and end with }.");
 

@@ -15,6 +15,13 @@ public class InMemoryBlobStorageService : IBlobStorageService
         return Task.FromResult(new Uri($"http://localhost:10000/devstoreaccount1/materials/{blobPath}"));
     }
 
+    public Task<Stream> DownloadAsync(string blobPath, CancellationToken cancellationToken = default)
+    {
+        if (!_blobs.TryGetValue(blobPath, out var data))
+            throw new InvalidOperationException($"Blob not found: {blobPath}");
+        return Task.FromResult<Stream>(new MemoryStream(data));
+    }
+
     public Task DeleteAsync(string blobPath, CancellationToken cancellationToken = default)
     {
         _blobs.TryRemove(blobPath, out _);
