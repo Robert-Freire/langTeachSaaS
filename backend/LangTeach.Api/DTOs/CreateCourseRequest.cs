@@ -29,4 +29,9 @@ public class CreateCourseRequest
     public int SessionCount { get; set; } = 10;
 
     public Guid? StudentId { get; set; }
+
+    // Optional: use a curriculum template instead of AI generation (general mode only)
+    [RegularExpression(@"^[ABC][12]\.\d+\+?$", ErrorMessage = "Invalid TemplateLevel format.")]
+    [MaxLength(10)]
+    public string? TemplateLevel { get; set; }
 }

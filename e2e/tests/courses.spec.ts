@@ -270,3 +270,85 @@ test('generate lesson from curriculum entry', async ({ browser }) => {
 
   await context.close()
 })
+
+test('create course from Instituto Cervantes template', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const TEMPLATE_COURSE_ID = '00000000-0000-0000-0000-000000000088'
+  const MOCK_TEMPLATES = [
+    { level: 'B1.1', cefrLevel: 'B1', unitCount: 5, sampleGrammar: ['Present subjunctive', 'Past tenses'] },
+    { level: 'B1.2', cefrLevel: 'B1', unitCount: 4, sampleGrammar: ['Conditional sentences'] },
+  ]
+  const TEMPLATE_COURSE = {
+    ...MOCK_COURSE,
+    id: TEMPLATE_COURSE_ID,
+    name: 'B1 Spanish from Template',
+    sessionCount: 5,
+    entries: [
+      { id: 't1', orderIndex: 1, topic: 'Presentarse: Dar y pedir los datos personales', grammarFocus: 'El género, Los verbos ser y llamarse', competencies: 'reading,writing,listening,speaking', lessonType: 'Communicative', lessonId: null, status: 'planned' },
+      { id: 't2', orderIndex: 2, topic: 'Nosotros: Conocer a los compañeros', grammarFocus: 'Las tres conjugaciones: -ar, -er, -ir', competencies: 'reading,writing,listening,speaking', lessonType: 'Communicative', lessonId: null, status: 'planned' },
+    ],
+  }
+
+  // Mock curriculum templates endpoint
+  await page.route('**/api/curriculum-templates', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_TEMPLATES) })
+  })
+
+  // Mock POST /api/courses - verify templateLevel is sent
+  await page.route('**/api/courses', async (route) => {
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON()
+      expect(body.templateLevel).toBe('B1.1')
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(TEMPLATE_COURSE) })
+    } else {
+      await route.continue()
+    }
+  })
+
+  await page.route(`**/api/courses/${TEMPLATE_COURSE_ID}`, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEMPLATE_COURSE) })
+  })
+
+  await page.goto('/courses/new')
+  await expect(page.locator('h1')).toHaveText('New Course', { timeout: NAV_TIMEOUT })
+
+  // Fill in form
+  await page.getByTestId('course-name').fill('B1 Spanish from Template')
+
+  await page.getByTestId('language-select').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await expect(page.getByTestId('language-select')).toContainText('Spanish', { timeout: UI_TIMEOUT })
+
+  await page.getByTestId('cefr-select').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+  await expect(page.getByTestId('cefr-select')).toContainText('B1', { timeout: UI_TIMEOUT })
+
+  // Toggle template use
+  await expect(page.getByTestId('use-template-checkbox')).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.getByTestId('use-template-checkbox').check()
+
+  // Select the template
+  await expect(page.getByTestId('template-select')).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.getByTestId('template-select').click()
+  await page.getByRole('option', { name: /B1\.1/ }).click()
+  await expect(page.getByTestId('template-select')).toContainText('B1.1', { timeout: UI_TIMEOUT })
+
+  // Session count picker should be hidden when template is selected
+  await expect(page.getByTestId('session-count-select')).not.toBeVisible()
+
+  // Template preview card should be visible with sample grammar
+  await expect(page.getByTestId('template-preview')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  // Button label changes
+  await expect(page.getByTestId('generate-curriculum-btn')).toHaveText('Create from Template')
+
+  // Submit
+  await page.getByTestId('generate-curriculum-btn').click()
+
+  // Should navigate to course detail
+  await expect(page).toHaveURL(new RegExp(`/courses/${TEMPLATE_COURSE_ID}`), { timeout: UI_TIMEOUT })
+
+  await context.close()
+})

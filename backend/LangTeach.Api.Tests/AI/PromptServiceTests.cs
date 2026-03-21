@@ -359,6 +359,41 @@ public class PromptServiceTests
         req.SystemPrompt.Should().NotContain("reference materials");
     }
 
+    // --- Grammar constraints ---
+
+    [Fact]
+    public void SystemPrompt_IncludesGrammarConstraints_WhenProvided()
+    {
+        var constraints = new List<string> { "Present simple", "Modal verbs: can/could" };
+        var ctx = BaseCtx() with { GrammarConstraints = constraints };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Target grammar structures");
+        req.SystemPrompt.Should().Contain("Present simple");
+        req.SystemPrompt.Should().Contain("Modal verbs: can/could");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsGrammarConstraints_WhenNotProvided()
+    {
+        var ctx = BaseCtx();
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Target grammar structures");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsGrammarConstraints_WhenListIsEmpty()
+    {
+        var ctx = BaseCtx() with { GrammarConstraints = new List<string>() };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Target grammar structures");
+    }
+
     // --- No phantom materials constraint ---
 
     [Fact]

@@ -49,6 +49,14 @@ public class PromptService : IPromptService
         sb.AppendLine();
         sb.AppendLine($"Write all examples, sentences, and instructions using vocabulary and grammar appropriate for {cefrLevel}. Do not use structures above this level in examples. Definitions and explanations aimed at the teacher may use higher-level language.");
 
+        if (ctx.GrammarConstraints is { Count: > 0 })
+        {
+            sb.AppendLine();
+            sb.AppendLine($"Target grammar structures for {cefrLevel} (from the course curriculum syllabus). Use only these and lower-level structures in examples:");
+            foreach (var g in ctx.GrammarConstraints)
+                sb.AppendLine($"- {Sanitize(g)}");
+        }
+
         if (ctx.StudentName is not null)
         {
             var interests  = ctx.StudentInterests?.Select(Sanitize).Where(s => s.Length > 0).ToArray() ?? [];

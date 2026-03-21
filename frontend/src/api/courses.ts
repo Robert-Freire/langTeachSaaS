@@ -57,6 +57,7 @@ export interface CreateCourseRequest {
   examDate?: string
   sessionCount: number
   studentId?: string
+  templateLevel?: string
 }
 
 export interface UpdateCurriculumEntryRequest {

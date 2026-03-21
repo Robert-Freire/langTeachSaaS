@@ -20,6 +20,7 @@ public class GenerateController : ControllerBase
     private readonly IPromptService _promptService;
     private readonly IClaudeClient _claudeClient;
     private readonly IMaterialService _materialService;
+    private readonly ICurriculumTemplateService _templateService;
     private readonly AppDbContext _db;
     private readonly ILogger<GenerateController> _logger;
 
@@ -29,6 +30,7 @@ public class GenerateController : ControllerBase
         IPromptService promptService,
         IClaudeClient claudeClient,
         IMaterialService materialService,
+        ICurriculumTemplateService templateService,
         AppDbContext db,
         ILogger<GenerateController> logger)
     {
@@ -37,6 +39,7 @@ public class GenerateController : ControllerBase
         _promptService = promptService;
         _claudeClient = claudeClient;
         _materialService = materialService;
+        _templateService = templateService;
         _db = db;
         _logger = logger;
     }
@@ -136,7 +139,8 @@ public class GenerateController : ControllerBase
             ExistingNotes: request.ExistingNotes,
             Direction: request.Direction,
             MaterialFileNames: materialFileNames,
-            StudentDifficulties: TopDifficulties(student)
+            StudentDifficulties: TopDifficulties(student),
+            GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel)
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -265,7 +269,8 @@ public class GenerateController : ControllerBase
             ExistingNotes: request.ExistingNotes,
             Direction: request.Direction,
             MaterialFileNames: materialFileNames,
-            StudentDifficulties: TopDifficulties(student)
+            StudentDifficulties: TopDifficulties(student),
+            GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel)
         );
 
         var claudeRequest = buildPrompt(ctx);
@@ -316,6 +321,14 @@ public class GenerateController : ControllerBase
             blockType, lesson.Id, block.Id, response.InputTokens, response.OutputTokens);
 
         return Ok(new GenerationResultDto(block.Id, block.BlockType, block.GeneratedContent));
+    }
+
+    private IReadOnlyList<string>? SpanishGrammarConstraints(string language, string cefrLevel)
+    {
+        if (!string.Equals(language, "Spanish", StringComparison.OrdinalIgnoreCase))
+            return null;
+        var list = _templateService.GetGrammarForCefrPrefix(cefrLevel);
+        return list.Count > 0 ? list : null;
     }
 
     private static DifficultyDto[]? TopDifficulties(StudentDto? student) =>
