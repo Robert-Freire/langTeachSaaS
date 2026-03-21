@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, ChevronsUpDown, Check } from 'lucide-react'
-import { getStudent, createStudent, updateStudent, type StudentFormData } from '../api/students'
-import { LEARNING_GOALS, WEAKNESSES } from '../lib/studentOptions'
+import { X, ChevronsUpDown, Check, Plus, Trash2 } from 'lucide-react'
+import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty } from '../api/students'
+import { LEARNING_GOALS, WEAKNESSES, DIFFICULTY_CATEGORIES, SEVERITY_LEVELS, TREND_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -148,6 +148,7 @@ export default function StudentForm() {
   const [nativeLanguage, setNativeLanguage] = useState<string>('')
   const [learningGoals, setLearningGoals] = useState<string[]>([])
   const [weaknesses, setWeaknesses] = useState<string[]>([])
+  const [difficulties, setDifficulties] = useState<Difficulty[]>([])
   const [notes, setNotes] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const interestInputRef = useRef<HTMLInputElement>(null)
@@ -169,6 +170,7 @@ export default function StudentForm() {
       setNativeLanguage(existing.nativeLanguage ?? '')
       setLearningGoals(existing.learningGoals)
       setWeaknesses(existing.weaknesses)
+      setDifficulties(existing.difficulties ?? [])
       setNotes(existing.notes ?? '')
     }
   }, [existing])
@@ -207,6 +209,26 @@ export default function StudentForm() {
     setInterests((prev) => prev.filter((i) => i !== interest))
   }
 
+  function addDifficulty() {
+    const id = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+    setDifficulties((prev) => [
+      ...prev,
+      { id, category: '', item: '', severity: '', trend: '' },
+    ])
+  }
+
+  function updateDifficulty(id: string, field: keyof Difficulty, value: string) {
+    setDifficulties((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d))
+    )
+  }
+
+  function removeDifficulty(id: string) {
+    setDifficulties((prev) => prev.filter((d) => d.id !== id))
+  }
+
   function validate(): boolean {
     const errs: Record<string, string> = {}
     if (!name.trim()) errs.name = 'Name is required'
@@ -222,6 +244,9 @@ export default function StudentForm() {
     const finalInterests = interestInput.trim()
       ? [...interests, interestInput.trim()]
       : interests
+    const validDifficulties = difficulties.filter(
+      (d) => d.category && d.item.trim() && d.severity && d.trend
+    )
     mutate({
       name: name.trim(),
       learningLanguage: language,
@@ -230,6 +255,7 @@ export default function StudentForm() {
       nativeLanguage: nativeLanguage || null,
       learningGoals,
       weaknesses,
+      difficulties: validDifficulties,
       notes: notes.trim() || undefined,
     })
   }
@@ -432,6 +458,95 @@ export default function StudentForm() {
                 triggerId="weaknesses-trigger"
                 chipTestId="weakness-chip"
               />
+            </div>
+
+            {/* Structured Difficulties */}
+            <div className="space-y-3 pt-2 border-t border-zinc-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Specific Difficulties</Label>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Track granular issues for targeted exercise generation.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addDifficulty}
+                  data-testid="add-difficulty"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add
+                </Button>
+              </div>
+
+              {difficulties.map((d) => (
+                <div
+                  key={d.id}
+                  className="grid grid-cols-[1fr_1fr] sm:grid-cols-[1fr_2fr_1fr_1fr_auto] gap-2 items-start"
+                  data-testid="difficulty-row"
+                >
+                  <Select value={d.category || undefined} onValueChange={(v) => v && updateDifficulty(d.id, 'category', v)}>
+                    <SelectTrigger data-testid="difficulty-category">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DIFFICULTY_CATEGORIES.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Input
+                    value={d.item}
+                    onChange={(e) => updateDifficulty(d.id, 'item', e.target.value)}
+                    placeholder="e.g. ser/estar in past tense"
+                    maxLength={200}
+                    data-testid="difficulty-item"
+                  />
+
+                  <Select value={d.severity || undefined} onValueChange={(v) => v && updateDifficulty(d.id, 'severity', v)}>
+                    <SelectTrigger data-testid="difficulty-severity">
+                      <SelectValue placeholder="Severity" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SEVERITY_LEVELS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={d.trend || undefined} onValueChange={(v) => v && updateDifficulty(d.id, 'trend', v)}>
+                    <SelectTrigger data-testid="difficulty-trend">
+                      <SelectValue placeholder="Trend" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TREND_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeDifficulty(d.id)}
+                    className="text-zinc-400 hover:text-red-600 h-9 w-9"
+                    data-testid="remove-difficulty"
+                    aria-label="Remove difficulty"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+
+              {difficulties.length === 0 && (
+                <p className="text-xs text-zinc-400 italic">
+                  No specific difficulties tracked yet.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

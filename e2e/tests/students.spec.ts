@@ -71,6 +71,28 @@ test('full student CRUD flow', async ({ browser }) => {
   await page.getByRole('option', { name: 'Past Tenses' }).click()
   await page.keyboard.press('Escape')
 
+  // Add a structured difficulty
+  const addDiffBtn = page.getByTestId('add-difficulty')
+  await addDiffBtn.scrollIntoViewIfNeeded()
+  await addDiffBtn.click()
+  const diffRow = page.getByTestId('difficulty-row').first()
+  await expect(diffRow).toBeVisible({ timeout: 10000 })
+
+  // Fill difficulty item text first (most reliable)
+  await diffRow.getByTestId('difficulty-item').fill('ser/estar in past tense')
+
+  // Select category
+  await diffRow.getByTestId('difficulty-category').click()
+  await page.getByRole('option', { name: 'Grammar' }).click()
+
+  // Select severity
+  await diffRow.getByTestId('difficulty-severity').click()
+  await page.getByRole('option', { name: 'High' }).click()
+
+  // Select trend
+  await diffRow.getByTestId('difficulty-trend').click()
+  await page.getByRole('option', { name: 'Stable' }).click()
+
   // Save
   await page.getByRole('button', { name: 'Save Student' }).click()
 
@@ -95,6 +117,14 @@ test('full student CRUD flow', async ({ browser }) => {
   await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'Travel' })).toBeVisible()
   await expect(page.getByTestId('weakness-chip').filter({ hasText: 'Past Tenses' })).toBeVisible()
 
+  // Verify difficulty persisted
+  const editDiffRow = page.getByTestId('difficulty-row')
+  await expect(editDiffRow).toBeVisible({ timeout: 5000 })
+  await expect(editDiffRow.getByTestId('difficulty-item')).toHaveValue('ser/estar in past tense')
+
+  // Modify the difficulty item text
+  await editDiffRow.getByTestId('difficulty-item').fill('ser/estar in all tenses')
+
   // Change CEFR level to C1
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'C1' }).click()
@@ -108,8 +138,37 @@ test('full student CRUD flow', async ({ browser }) => {
   })
   await expect(updatedCard.getByTestId('student-level')).toContainText('C1', { timeout: 10000 })
 
+  // Re-enter edit to verify difficulty was updated and remove it
+  await updatedCard.getByTestId('edit-student').click()
+  await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: 10000 })
+  const verifyDiffRow = page.getByTestId('difficulty-row')
+  await expect(verifyDiffRow.getByTestId('difficulty-item')).toHaveValue('ser/estar in all tenses')
+
+  // Remove the difficulty
+  await verifyDiffRow.getByTestId('remove-difficulty').click()
+  await expect(page.getByTestId('difficulty-row')).not.toBeVisible()
+
+  await page.getByRole('button', { name: 'Update Student' }).click()
+  await expect(page).toHaveURL('/students', { timeout: 10000 })
+
+  // Verify difficulty is gone by re-entering edit
+  const finalCard = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await finalCard.getByTestId('edit-student').click()
+  await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: 10000 })
+  await expect(page.getByTestId('difficulty-row')).not.toBeVisible()
+  await expect(page.getByText('No specific difficulties tracked yet.')).toBeVisible()
+
+  // Go back to list for delete step
+  await page.getByRole('button', { name: 'Cancel' }).click()
+  await expect(page).toHaveURL('/students', { timeout: 10000 })
+
   // Delete
-  await updatedCard.getByTestId('delete-student').click()
+  const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await deleteCard.getByTestId('delete-student').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
   await page.getByTestId('confirm-delete').click()
 

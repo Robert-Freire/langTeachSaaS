@@ -17,6 +17,21 @@ public class StudentService : IStudentService
         "Portuguese", "Mandarin", "Japanese", "Arabic", "Other"
     ];
 
+    private static readonly HashSet<string> AllowedDifficultyCategories =
+    [
+        "grammar", "vocabulary", "pronunciation", "writing", "comprehension"
+    ];
+
+    private static readonly HashSet<string> AllowedSeverityLevels =
+    [
+        "low", "medium", "high"
+    ];
+
+    private static readonly HashSet<string> AllowedTrends =
+    [
+        "improving", "stable", "declining"
+    ];
+
     private readonly AppDbContext _db;
     private readonly ILogger<StudentService> _logger;
 
@@ -66,6 +81,7 @@ public class StudentService : IStudentService
     public async Task<StudentDto> CreateAsync(Guid teacherId, CreateStudentRequest request, CancellationToken cancellationToken = default)
     {
         ValidateNativeLanguage(request.NativeLanguage);
+        ValidateDifficulties(request.Difficulties);
 
         var student = new Student
         {
@@ -78,6 +94,7 @@ public class StudentService : IStudentService
             NativeLanguage = request.NativeLanguage,
             LearningGoals = Serialize(request.LearningGoals),
             Weaknesses = Serialize(request.Weaknesses),
+            Difficulties = Serialize(request.Difficulties),
             Notes = request.Notes,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
@@ -100,6 +117,7 @@ public class StudentService : IStudentService
             return null;
 
         ValidateNativeLanguage(request.NativeLanguage);
+        ValidateDifficulties(request.Difficulties);
 
         student.Name = request.Name;
         student.LearningLanguage = request.LearningLanguage;
@@ -108,6 +126,7 @@ public class StudentService : IStudentService
         student.NativeLanguage = request.NativeLanguage;
         student.LearningGoals = Serialize(request.LearningGoals);
         student.Weaknesses = Serialize(request.Weaknesses);
+        student.Difficulties = Serialize(request.Difficulties);
         student.Notes = request.Notes;
         student.UpdatedAt = DateTime.UtcNow;
 
@@ -140,11 +159,12 @@ public class StudentService : IStudentService
         s.Name,
         s.LearningLanguage,
         s.CefrLevel,
-        Deserialize(s.Interests),
+        Deserialize<string>(s.Interests),
         s.Notes,
         s.NativeLanguage,
-        Deserialize(s.LearningGoals),
-        Deserialize(s.Weaknesses),
+        Deserialize<string>(s.LearningGoals),
+        Deserialize<string>(s.Weaknesses),
+        Deserialize<DifficultyDto>(s.Difficulties),
         s.CreatedAt,
         s.UpdatedAt
     );
@@ -155,12 +175,27 @@ public class StudentService : IStudentService
             throw new ValidationException($"NativeLanguage '{nativeLanguage}' is not in the allowed list.");
     }
 
-    private static List<string> Deserialize(string json)
+    private static void ValidateDifficulties(List<DifficultyDto> difficulties)
     {
-        try { return JsonSerializer.Deserialize<List<string>>(json) ?? []; }
+        foreach (var d in difficulties)
+        {
+            if (string.IsNullOrWhiteSpace(d.Item) || d.Item.Length > 200)
+                throw new ValidationException("Each difficulty item must be between 1 and 200 characters.");
+            if (!AllowedDifficultyCategories.Contains(d.Category))
+                throw new ValidationException($"Difficulty category '{d.Category}' is not valid. Allowed: {string.Join(", ", AllowedDifficultyCategories)}.");
+            if (!AllowedSeverityLevels.Contains(d.Severity))
+                throw new ValidationException($"Difficulty severity '{d.Severity}' is not valid. Allowed: {string.Join(", ", AllowedSeverityLevels)}.");
+            if (!AllowedTrends.Contains(d.Trend))
+                throw new ValidationException($"Difficulty trend '{d.Trend}' is not valid. Allowed: {string.Join(", ", AllowedTrends)}.");
+        }
+    }
+
+    private static List<T> Deserialize<T>(string json)
+    {
+        try { return JsonSerializer.Deserialize<List<T>>(json) ?? []; }
         catch { return []; }
     }
 
-    private static string Serialize(List<string> list) =>
+    private static string Serialize<T>(List<T> list) =>
         JsonSerializer.Serialize(list);
 }

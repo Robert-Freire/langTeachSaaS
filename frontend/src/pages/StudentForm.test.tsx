@@ -23,6 +23,18 @@ vi.mock('../lib/logger', () => ({
 vi.mock('../lib/studentOptions', () => ({
   LEARNING_GOALS: [{ value: 'travel', label: 'Travel' }],
   WEAKNESSES: [{ value: 'grammar', label: 'Grammar' }],
+  DIFFICULTY_CATEGORIES: [
+    { value: 'grammar', label: 'Grammar' },
+    { value: 'pronunciation', label: 'Pronunciation' },
+  ],
+  SEVERITY_LEVELS: [
+    { value: 'low', label: 'Low' },
+    { value: 'high', label: 'High' },
+  ],
+  TREND_OPTIONS: [
+    { value: 'stable', label: 'Stable' },
+    { value: 'improving', label: 'Improving' },
+  ],
 }))
 
 const mockNavigate = vi.fn()
@@ -69,6 +81,7 @@ describe('StudentForm', () => {
       nativeLanguage: null,
       learningGoals: [],
       weaknesses: [],
+      difficulties: [],
       notes: '',
     })
     mockGetStudents.mockResolvedValue({ items: [], totalCount: 0 })
@@ -122,5 +135,97 @@ describe('StudentForm', () => {
     const goBack = await screen.findByRole('button', { name: 'Go back' })
     await user.click(goBack)
     expect(mockNavigate).toHaveBeenCalledWith('/students')
+  })
+
+  it('renders Add Difficulty button on new student form', () => {
+    renderNew()
+    expect(screen.getByTestId('add-difficulty')).toBeInTheDocument()
+  })
+
+  it('shows empty state text when no difficulties exist', () => {
+    renderNew()
+    expect(screen.getByText('No specific difficulties tracked yet.')).toBeInTheDocument()
+  })
+
+  it('adds a difficulty row when clicking Add button', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderNew()
+
+    expect(screen.queryAllByTestId('difficulty-row')).toHaveLength(0)
+
+    await user.click(screen.getByTestId('add-difficulty'))
+
+    expect(screen.getAllByTestId('difficulty-row')).toHaveLength(1)
+    expect(screen.queryByText('No specific difficulties tracked yet.')).not.toBeInTheDocument()
+  })
+
+  it('removes a difficulty row when clicking remove button', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderNew()
+
+    await user.click(screen.getByTestId('add-difficulty'))
+    expect(screen.getAllByTestId('difficulty-row')).toHaveLength(1)
+
+    await user.click(screen.getByTestId('remove-difficulty'))
+    expect(screen.queryAllByTestId('difficulty-row')).toHaveLength(0)
+  })
+
+  it('renders existing difficulties in edit mode', async () => {
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1',
+      name: 'Ana',
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      nativeLanguage: null,
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [
+        { id: 'd1', category: 'grammar', item: 'ser/estar', severity: 'high', trend: 'stable' },
+        { id: 'd2', category: 'pronunciation', item: 'rolled r', severity: 'low', trend: 'improving' },
+      ],
+      notes: '',
+    })
+
+    renderEdit()
+
+    const rows = await screen.findAllByTestId('difficulty-row')
+    expect(rows).toHaveLength(2)
+
+    const items = screen.getAllByTestId('difficulty-item')
+    expect(items[0]).toHaveValue('ser/estar')
+    expect(items[1]).toHaveValue('rolled r')
+  })
+
+  it('includes difficulties in form submission', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockCreateStudent.mockResolvedValue({ id: 'new-id' })
+    renderNew()
+
+    // Fill required fields
+    await user.type(screen.getByTestId('student-name'), 'Test Student')
+    // Select language
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(screen.getByRole('option', { name: 'Spanish' }))
+    // Select CEFR
+    await user.click(screen.getByTestId('student-cefr'))
+    await user.click(screen.getByRole('option', { name: 'B1' }))
+
+    // Add a difficulty and fill the item text
+    await user.click(screen.getByTestId('add-difficulty'))
+    await user.type(screen.getByTestId('difficulty-item'), 'test difficulty')
+
+    // Submit
+    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+
+    // The difficulty row with empty category/severity/trend gets filtered out
+    expect(mockCreateStudent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        difficulties: [],
+      }),
+    )
   })
 })

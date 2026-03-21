@@ -10,6 +10,7 @@ public record StudentDto(
     string? NativeLanguage,
     List<string> LearningGoals,
     List<string> Weaknesses,
+    List<DifficultyDto> Difficulties,
     DateTime CreatedAt,
     DateTime UpdatedAt
 );

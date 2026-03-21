@@ -19,8 +19,8 @@ vi.mock('react-router-dom', async () => {
 })
 
 const mockStudents: Student[] = [
-  { id: 's1', name: 'Alice', learningLanguage: 'English', cefrLevel: 'B1', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], createdAt: '', updatedAt: '' },
-  { id: 's2', name: 'Bob', learningLanguage: 'Spanish', cefrLevel: 'A2', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], createdAt: '', updatedAt: '' },
+  { id: 's1', name: 'Alice', learningLanguage: 'English', cefrLevel: 'B1', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '', updatedAt: '' },
+  { id: 's2', name: 'Bob', learningLanguage: 'Spanish', cefrLevel: 'A2', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '', updatedAt: '' },
 ]
 
 function makeDraft(overrides: Partial<Lesson> = {}): Lesson {

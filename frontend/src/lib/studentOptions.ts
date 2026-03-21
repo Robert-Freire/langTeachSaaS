@@ -31,3 +31,23 @@ export const WEAKNESSES: { value: string; label: string }[] = [
   { value: 'reported speech', label: 'Reported Speech' },
   { value: 'vocabulary range', label: 'Vocabulary Range' },
 ]
+
+export const DIFFICULTY_CATEGORIES: { value: string; label: string }[] = [
+  { value: 'grammar', label: 'Grammar' },
+  { value: 'vocabulary', label: 'Vocabulary' },
+  { value: 'pronunciation', label: 'Pronunciation' },
+  { value: 'writing', label: 'Writing' },
+  { value: 'comprehension', label: 'Comprehension' },
+]
+
+export const SEVERITY_LEVELS: { value: string; label: string }[] = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+]
+
+export const TREND_OPTIONS: { value: string; label: string }[] = [
+  { value: 'improving', label: 'Improving' },
+  { value: 'stable', label: 'Stable' },
+  { value: 'declining', label: 'Declining' },
+]
