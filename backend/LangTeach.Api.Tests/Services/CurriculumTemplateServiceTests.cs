@@ -1,11 +1,12 @@
 using FluentAssertions;
 using LangTeach.Api.Services;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LangTeach.Api.Tests.Services;
 
 public class CurriculumTemplateServiceTests
 {
-    private readonly CurriculumTemplateService _sut = new();
+    private readonly CurriculumTemplateService _sut = new(NullLogger<CurriculumTemplateService>.Instance);
 
     [Fact]
     public void GetAll_ReturnsAtLeastTwentyFiveTemplates()

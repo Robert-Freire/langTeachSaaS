@@ -79,6 +79,7 @@ public class CoursesController : ControllerBase
         }
 
         List<CurriculumEntry> entries;
+        int resolvedSessionCount;
 
         if (!string.IsNullOrEmpty(request.TemplateLevel))
         {
@@ -104,8 +105,7 @@ public class CoursesController : ControllerBase
                 Status = "planned"
             }).ToList();
 
-            // Override session count to match template unit count
-            request.SessionCount = entries.Count;
+            resolvedSessionCount = entries.Count;
         }
         else
         {
@@ -120,6 +120,7 @@ public class CoursesController : ControllerBase
                 _logger.LogError(ex, "Curriculum generation failed for TeacherId={TeacherId}", teacherId);
                 return StatusCode(502, new { error = "Curriculum generation failed. Please try again." });
             }
+            resolvedSessionCount = request.SessionCount;
         }
 
         var now = DateTime.UtcNow;
@@ -135,7 +136,7 @@ public class CoursesController : ControllerBase
             TargetCefrLevel = request.TargetCefrLevel,
             TargetExam = request.TargetExam,
             ExamDate = request.ExamDate,
-            SessionCount = request.SessionCount,
+            SessionCount = resolvedSessionCount,
             CreatedAt = now,
             UpdatedAt = now,
         };

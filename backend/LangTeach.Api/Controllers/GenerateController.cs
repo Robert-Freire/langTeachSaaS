@@ -125,7 +125,11 @@ public class GenerateController : ControllerBase
             ? materials.Select(m => m.FileName).ToArray()
             : null;
 
-        var grammarConstraints = _templateService.GetGrammarForCefrPrefix(cefrLevel);
+        // Grammar constraints come from the Instituto Cervantes Spanish curriculum (Spanish-specific).
+        // Only inject for Spanish lessons to avoid polluting prompts for other languages.
+        var grammarConstraints = string.Equals(language, "Spanish", StringComparison.OrdinalIgnoreCase)
+            ? _templateService.GetGrammarForCefrPrefix(cefrLevel)
+            : [];
 
         var ctx = new GenerationContext(
             Language: language,
@@ -257,7 +261,11 @@ public class GenerateController : ControllerBase
             ? materials.Select(m => m.FileName).ToArray()
             : null;
 
-        var grammarConstraints = _templateService.GetGrammarForCefrPrefix(cefrLevel);
+        // Grammar constraints come from the Instituto Cervantes Spanish curriculum (Spanish-specific).
+        // Only inject for Spanish lessons to avoid polluting prompts for other languages.
+        var grammarConstraints = string.Equals(language, "Spanish", StringComparison.OrdinalIgnoreCase)
+            ? _templateService.GetGrammarForCefrPrefix(cefrLevel)
+            : [];
 
         var ctx = new GenerationContext(
             Language: language,

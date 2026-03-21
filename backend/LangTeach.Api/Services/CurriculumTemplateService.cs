@@ -18,14 +18,20 @@ public class CurriculumTemplateService : ICurriculumTemplateService
     private readonly Dictionary<string, IReadOnlyList<string>> _grammarByPrefix;
     private readonly IReadOnlyList<CurriculumTemplateSummary> _summaries;
 
-    public CurriculumTemplateService()
+    private readonly ILogger<CurriculumTemplateService> _log;
+
+    public CurriculumTemplateService(ILogger<CurriculumTemplateService> logger)
     {
+        _log = logger;
         var assembly = Assembly.GetExecutingAssembly();
         const string prefix = "LangTeach.Api.Curricula.";
 
         var resourceNames = assembly.GetManifestResourceNames()
             .Where(n => n.StartsWith(prefix, StringComparison.Ordinal) && n.EndsWith(".json", StringComparison.Ordinal))
             .ToList();
+
+        if (resourceNames.Count == 0)
+            _log.LogWarning("CurriculumTemplateService: no embedded curriculum JSON files found under prefix '{Prefix}'", prefix);
 
         var options = new JsonSerializerOptions
         {
@@ -43,7 +49,11 @@ public class CurriculumTemplateService : ICurriculumTemplateService
 
             using var stream = assembly.GetManifestResourceStream(name)!;
             var raw = JsonSerializer.Deserialize<RawTemplate>(stream, options);
-            if (raw is null) continue;
+            if (raw is null)
+            {
+                _log.LogWarning("CurriculumTemplateService: failed to deserialize embedded resource '{Name}'; skipping", name);
+                continue;
+            }
 
             loaded.Add((level, raw));
         }
