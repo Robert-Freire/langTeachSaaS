@@ -98,12 +98,29 @@ describe('FullLessonGenerateButton', () => {
     expect(screen.getByTestId('generate-full-lesson-btn')).not.toBeDisabled()
   })
 
-  it('clicking opens confirmation dialog', async () => {
+  it('clicking opens confirmation dialog with correct section count', async () => {
     const user = userEvent.setup()
     renderButton()
     await user.click(screen.getByTestId('generate-full-lesson-btn'))
     expect(screen.getByText('Generate Full Lesson?')).toBeInTheDocument()
-    expect(screen.getByText(/This will generate content/)).toBeInTheDocument()
+    expect(screen.getByText(/all 5 sections/)).toBeInTheDocument()
+  })
+
+  it('confirmation dialog shows correct count for fewer sections', async () => {
+    const user = userEvent.setup()
+    const THREE_SECTIONS: LessonSection[] = SECTIONS.filter(
+      s => ['WarmUp', 'Practice', 'WrapUp'].includes(s.sectionType)
+    )
+    render(
+      <FullLessonGenerateButton
+        lessonId="lesson-1"
+        sections={THREE_SECTIONS}
+        lessonContext={LESSON_CONTEXT}
+        onBlockSaved={vi.fn()}
+      />
+    )
+    await user.click(screen.getByTestId('generate-full-lesson-btn'))
+    expect(screen.getByText(/all 3 sections/)).toBeInTheDocument()
   })
 
   it('canceling dialog does not call onBlockSaved', async () => {

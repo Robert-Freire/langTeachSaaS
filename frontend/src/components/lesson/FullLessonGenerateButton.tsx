@@ -67,9 +67,9 @@ export function FullLessonGenerateButton({
   }, [])
 
   const disabled = !lessonContext.topic.trim() || !lessonContext.language.trim()
+  const activeSections = SECTION_ORDER.filter(t => sections.some(s => s.sectionType === t))
 
   const handleConfirm = async () => {
-    const activeSections = SECTION_ORDER.filter(t => sections.some(s => s.sectionType === t))
 
     setPhase('generating')
     setSectionStatus(Object.fromEntries(activeSections.map(s => [s, 'active'])))
@@ -177,7 +177,7 @@ export function FullLessonGenerateButton({
             </AlertDialogTitle>
             <AlertDialogDescription>
               {phase === 'confirming' && (
-                'This will generate content for all 5 sections. Existing notes will be preserved as context.'
+                `This will generate content for all ${activeSections.length} sections. Existing notes will be preserved as context.`
               )}
               {phase === 'error' && (errorMessage ?? 'An error occurred.')}
             </AlertDialogDescription>
