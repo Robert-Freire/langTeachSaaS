@@ -358,4 +358,35 @@ public class PromptServiceTests
 
         req.SystemPrompt.Should().NotContain("reference materials");
     }
+
+    // --- No phantom materials constraint ---
+
+    [Fact]
+    public void SystemPrompt_IncludesSelfContainedConstraint_WhenNoMaterials()
+    {
+        var req = _sut.BuildExercisesPrompt(BaseCtx());
+
+        req.SystemPrompt.Should().Contain("self-contained and work with text alone");
+        req.SystemPrompt.Should().Contain("Do not reference images, audio clips, videos, physical objects");
+    }
+
+    [Fact]
+    public void SystemPrompt_IncludesSelfContainedConstraint_WhenMaterialsEmpty()
+    {
+        var ctx = BaseCtx() with { MaterialFileNames = [] };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("self-contained and work with text alone");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsSelfContainedConstraint_WhenMaterialsProvided()
+    {
+        var ctx = BaseCtx() with { MaterialFileNames = ["worksheet.pdf"] };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("self-contained and work with text alone");
+    }
 }
