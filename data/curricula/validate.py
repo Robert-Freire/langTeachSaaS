@@ -34,6 +34,10 @@ def validate_file(path: Path, schema: dict) -> list[str]:
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
+    except FileNotFoundError:
+        return [f"File not found: {path}"]
+    except PermissionError:
+        return [f"Permission denied: {path}"]
     except json.JSONDecodeError as e:
         return [f"JSON parse error: {e}"]
 
@@ -64,7 +68,13 @@ def main():
     schema = load_schema()
 
     if args.file:
-        target = SCRIPT_DIR / args.file
+        target = Path(args.file) if Path(args.file).is_absolute() else SCRIPT_DIR / args.file
+        try:
+            target = target.resolve()
+            target.relative_to(SCRIPT_DIR.resolve())
+        except ValueError:
+            print(f"ERROR: --file path must be inside data/curricula/ ({args.file})")
+            sys.exit(1)
         files = [target]
     else:
         files = collect_json_files(SCRIPT_DIR)
