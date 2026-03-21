@@ -6,8 +6,12 @@ type: reference
 
 ## Plan Directory
 
-Plans live in the workspace repo under `plan\`. The Obsidian vault has a junction pointing to the same folder, so both paths resolve to the same files:
+**Task plan files must be written inside the active worktree**, not in the main repo directory. The worktree has its own `plan/` folder and the file travels with the branch into the PR.
 
+- Worktree path: `.claude/worktrees/task-t<N>-<name>/plan/langteach-beta/task<N>-<short-description>.md`
+- After merge, the file lands in the main repo under `plan\langteach-beta\`
+
+The main repo `plan\` directory (and its Obsidian junction) holds merged/historical plans only:
 - Canonical: `C:\ws\PersonalOS\03_Workspace\langTeachSaaS\plan\`
 - Obsidian junction: `C:\ws\PersonalOS\02_Library\personal-obsidian-vault\Projects\langTeachSaaS\plan\` (same files)
 

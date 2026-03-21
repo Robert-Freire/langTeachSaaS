@@ -29,14 +29,17 @@
 - [Docker Vite restart after new files](feedback_docker_vite_restart.md) — after adding new frontend files via git (cherry-pick/merge), restart `docker compose restart frontend` before running e2e tests or Vite won't discover the new modules
 - [Frontend unit test requirement](feedback_frontend_unit_tests.md) — any modified frontend component or hook must have a unit test added/updated; Vitest + RTL + msw, tests live next to source files
 - [Critically evaluate PR comments](feedback_critically_evaluate_pr_comments.md) — never blindly fix review comments; assess validity against project context before fixing or declining
+- [Re-run QA after editing a qa:ready issue](feedback_reqa_after_issue_edit.md) — check no implementation started, re-run QA agent after any body edit on a qa:ready issue
 - [Email check and reply workflow](feedback_email_workflow.md) — when asked to check email: read, analyze, incorporate feedback into memory/plans, reply directly via SMTP
 - [Always save raw feedback](feedback_save_raw_feedback.md) — on any feedback (email, audio, message), save raw text to feedback/raw/ and update person's feedback log
 - [E2E stack coordination](feedback_e2e_stack_coordination.md) — only one e2e stack at a time; check before starting, notify user if busy, never tear down another agent's stack
 - [Batch related issues](feedback_issue_batching.md) — group related small fixes into single issues; don't create one issue per finding or one mega-issue for everything
 - [Add issues to project board](feedback_add_issues_to_project.md) — always add new issues to the project board immediately after creation; has been forgotten before
 - [Verify project board after sprint prep](feedback_verify_project_board.md) — after preparing a sprint, verify the board matches expectations (columns, priorities, all items visible)
+- [Assign issue when picked](feedback_assign_issue_when_picked.md) — immediately self-assign the GitHub issue when picking a task, before any other work, so other agents don't pick it
 
 ## Reference
 - [Audio transcription method](reference_audio_transcription.md) — transcribe audio files locally using OpenAI Whisper + ffmpeg
 - [Gmail bot account access](reference_gmail_bot_access.md) — IMAP/SMTP credentials for robert.freire.bot@gmail.com; read and send emails via curl
 - [Agent transcript location](reference_agent_transcripts.md) — where to find subagent reasoning logs (JSONL files) to check agent status/progress
+- [Teacher B — Anonymous Philologist](reference_teacher_b_philologist.md) — Jordi's colleague, feedback file locations, naming convention for future audio batches
