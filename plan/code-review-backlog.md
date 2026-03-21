@@ -33,3 +33,9 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 |----------|---------|
 | Important | `backend/LangTeach.Api/Services/StudentService.cs`: `Deserialize<T>` silently swallows all exceptions and returns empty list. For `DifficultyDto`, a malformed JSON blob would silently drop all difficulties with no logging. Consider adding a log warning in the catch block. |
 | Minor | `frontend/src/pages/StudentForm.tsx` (submit handler): Incomplete difficulty rows (missing dropdown selection) are silently filtered out on submit with no user feedback. Could add a toast or inline warning when rows are dropped. |
+
+## PR #157 - 2026-03-21
+
+- **Minor** - `TargetedDifficulties.tsx:20`: Silent `catch {}` on JSON parse. Could add `console.warn` for debuggability.
+- **Minor** - `frontend/src/api/generate.ts`: `TargetedDifficulty` is intentionally a subset of backend `DifficultyDto` (omits `id`, `trend`). Not a bug but undocumented.
+- **Important** - `GenerateController.cs:300-312`: Manual field listing in `GenerationParams` serialization (non-streaming path). New request fields must be added here manually.

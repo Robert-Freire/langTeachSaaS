@@ -1,3 +1,5 @@
+using LangTeach.Api.DTOs;
+
 namespace LangTeach.Api.AI;
 
 public interface IPromptService
@@ -39,5 +41,6 @@ public record GenerationContext(
     string? ExistingNotes,
     string? LessonSummary = null,
     string? Direction = null,
-    string[]? MaterialFileNames = null
+    string[]? MaterialFileNames = null,
+    DifficultyDto[]? StudentDifficulties = null
 );

@@ -11,6 +11,8 @@ import { useGenerate } from '../../hooks/useGenerate'
 import { getRenderer } from './contentRegistry'
 import { ContentErrorBoundary } from './ContentErrorBoundary'
 import type { ContentBlockType } from '../../types/contentTypes'
+import type { TargetedDifficulty } from '../../api/generate'
+import { TargetedDifficulties } from './TargetedDifficulties'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -60,6 +62,7 @@ interface GeneratePanelProps {
     topic: string
     studentId?: string | null
     existingNotes?: string | null
+    studentDifficulties?: TargetedDifficulty[]
   }
   onReplace: (newBlock: ContentBlockDto, replacedBlockIds: string[]) => void
   onClose: () => void
@@ -126,7 +129,10 @@ export function GeneratePanel({
         lessonSectionId: sectionId,
         blockType: taskType,
         generatedContent: output,
-        generationParams: JSON.stringify(request),
+        generationParams: JSON.stringify({
+          ...request,
+          targetedDifficulties: lessonContext.studentDifficulties,
+        }),
       })
       // Then delete old blocks (if any fail, user has duplicates rather than data loss)
       const removedIds: string[] = []
@@ -287,6 +293,7 @@ export function GeneratePanel({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
               <span className="text-xs font-medium text-green-700">Generated preview</span>
+              <TargetedDifficulties difficulties={lessonContext.studentDifficulties} />
             </div>
             <div className="p-4">
               <ContentErrorBoundary blockType={taskType}>
