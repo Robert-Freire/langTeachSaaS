@@ -31,12 +31,14 @@ See git history for details. Key completed milestones:
 - Beta Phase 2B (Make It Real): T16-T21 (one-click generation, PDF export, student notes, dashboard v2, brand polish, mobile responsive, regenerate with direction)
 - Demo Sprint: all issues closed, milestone closed
 
-**Active sprint:** Phase 2A: Teacher Workflow (18 open issues)
+**Active sprint:** Phase 2A: Teacher Workflow
 - #98 Course/Curriculum Planner (P0)
 - #100 Enhanced Difficulty Tracking (P1)
 - #102 Material Upload (P1)
 - #127 Exercise Correction with Explanation (P1)
 - Audio Reflections (#99) deferred per Jordi's skepticism
+- #163 Extract curricula JSON from partner institution PDFs — DONE (PR #171 merged 2026-03-21). 45 JSON files at data/curricula/ (iberia 15, instituto_educativo 30, kingsbrook grammar map). Issue moved to Ready to Test.
+- #164 depends on data/curricula/ output from #163
 
 ## Key Architectural Notes
 - Azure Container Apps (not App Service), North Europe region, SWA in West Europe

@@ -1,6 +1,6 @@
 ---
 name: Azure deploy freeze mechanism
-description: DEPLOY_FROZEN repo variable controls Azure deployments; currently FROZEN as of 2026-03-20
+description: DEPLOY_FROZEN repo variable controls Azure deployments; currently UNFROZEN as of 2026-03-21
 type: project
 ---
 
@@ -14,6 +14,6 @@ GitHub repo variable `DEPLOY_FROZEN` controls whether the deploy jobs run in bac
 
 ## Current State
 
-**FROZEN** as of 2026-03-20. PRs can merge, CI runs, but nothing deploys to Azure.
+**UNFROZEN** as of 2026-03-21. Deployments to Azure are active.
 
 Update this memory when the freeze is lifted.
