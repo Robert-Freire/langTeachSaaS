@@ -4,6 +4,14 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 ---
 
+### PR (2026-03-21) — Dashboard loading skeletons (#111)
+
+| Severity | Finding |
+|----------|---------|
+| Minor | `frontend/src/pages/Dashboard.tsx:82-84`: Inline SVG icon for slow-connection warning banner. If project adopts an icon library (lucide-react), replace with library component for consistency. |
+
+---
+
 ### PR #136 (2026-03-20) — Capitalize dropdown defaults
 
 | Severity | Finding |
