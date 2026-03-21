@@ -70,6 +70,7 @@ export default function Onboarding() {
     enabled: initialStep === 3 && !createdStudent,
   })
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!isLoading && profile && !initialized) {
       setStep(initialStep)
@@ -83,6 +84,7 @@ export default function Onboarding() {
       setCreatedStudent(studentsData.items[0])
     }
   }, [step, createdStudent, studentsData])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (isLoading) {
     return (

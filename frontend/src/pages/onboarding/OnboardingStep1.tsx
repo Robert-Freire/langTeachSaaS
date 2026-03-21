@@ -44,6 +44,7 @@ export default function OnboardingStep1({ onNext }: OnboardingStep1Props) {
   const [preferredStyle, setPreferredStyle] = useState('Conversational')
   const [error, setError] = useState<string | null>(null)
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.displayName || user?.name || '')
@@ -54,6 +55,7 @@ export default function OnboardingStep1({ onNext }: OnboardingStep1Props) {
       setDisplayName(user.name)
     }
   }, [profile, user])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function toggleItem(list: string[], setList: (v: string[]) => void, value: string) {
     setList(list.includes(value) ? list.filter(x => x !== value) : [...list, value])
