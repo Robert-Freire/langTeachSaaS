@@ -4,6 +4,7 @@ using LangTeach.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LangTeach.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260321130155_AddStudentDifficulties")]
+    partial class AddStudentDifficulties
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -337,40 +340,6 @@ namespace LangTeach.Api.Migrations
                     b.ToTable("LessonTemplates");
                 });
 
-            modelBuilder.Entity("LangTeach.Api.Data.Models.Material", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("BlobPath")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("LessonSectionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<long>("SizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LessonSectionId");
-
-                    b.ToTable("Materials");
-                });
-
             modelBuilder.Entity("LangTeach.Api.Data.Models.Student", b =>
                 {
                     b.Property<Guid>("Id")
@@ -623,17 +592,6 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("Lesson");
                 });
 
-            modelBuilder.Entity("LangTeach.Api.Data.Models.Material", b =>
-                {
-                    b.HasOne("LangTeach.Api.Data.Models.LessonSection", "LessonSection")
-                        .WithMany("Materials")
-                        .HasForeignKey("LessonSectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("LessonSection");
-                });
-
             modelBuilder.Entity("LangTeach.Api.Data.Models.Student", b =>
                 {
                     b.HasOne("LangTeach.Api.Data.Models.Teacher", "Teacher")
@@ -666,11 +624,6 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("Notes");
 
                     b.Navigation("Sections");
-                });
-
-            modelBuilder.Entity("LangTeach.Api.Data.Models.LessonSection", b =>
-                {
-                    b.Navigation("Materials");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.LessonTemplate", b =>

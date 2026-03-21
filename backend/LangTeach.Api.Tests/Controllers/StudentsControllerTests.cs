@@ -246,6 +246,138 @@ public class StudentsControllerTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact]
+    public async Task Create_WithDifficulties_RoundTripsCorrectly()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|difficulty-create-test", "difficulty-create@example.com");
+
+        var request = new CreateStudentRequest
+        {
+            Name = "Maria Dificultades",
+            LearningLanguage = "Spanish",
+            CefrLevel = "B1",
+            Difficulties =
+            [
+                new DifficultyDto("d1", "grammar", "ser/estar in past tense", "high", "stable"),
+                new DifficultyDto("d2", "pronunciation", "rolled /r/", "medium", "improving"),
+            ],
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var student = await response.Content.ReadFromJsonAsync<StudentDto>();
+        student!.Difficulties.Should().HaveCount(2);
+        student.Difficulties[0].Category.Should().Be("grammar");
+        student.Difficulties[0].Item.Should().Be("ser/estar in past tense");
+        student.Difficulties[0].Severity.Should().Be("high");
+        student.Difficulties[0].Trend.Should().Be("stable");
+        student.Difficulties[1].Category.Should().Be("pronunciation");
+    }
+
+    [Fact]
+    public async Task Update_WithDifficulties_PersistsChanges()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|difficulty-update-test", "difficulty-update@example.com");
+
+        var created = await CreateStudentAsync(client, "Difficulty Update Student");
+
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.CefrLevel,
+            Difficulties =
+            [
+                new DifficultyDto("d1", "vocabulary", "academic register", "low", "declining"),
+            ],
+        };
+
+        var response = await client.PutAsJsonAsync($"/api/students/{created.Id}", updateRequest);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Difficulties.Should().HaveCount(1);
+        updated.Difficulties[0].Category.Should().Be("vocabulary");
+        updated.Difficulties[0].Item.Should().Be("academic register");
+
+        // Update again to remove all difficulties
+        var clearRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.CefrLevel,
+            Difficulties = [],
+        };
+
+        var clearResponse = await client.PutAsJsonAsync($"/api/students/{created.Id}", clearRequest);
+        clearResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var cleared = await clearResponse.Content.ReadFromJsonAsync<StudentDto>();
+        cleared!.Difficulties.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Create_WithInvalidDifficultyCategory_ReturnsBadRequest()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|difficulty-invalid-cat-test", "difficulty-invalid-cat@example.com");
+
+        var request = new CreateStudentRequest
+        {
+            Name = "Invalid Category",
+            LearningLanguage = "English",
+            CefrLevel = "A1",
+            Difficulties =
+            [
+                new DifficultyDto("d1", "invalid-category", "some item", "high", "stable"),
+            ],
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Create_WithInvalidDifficultySeverity_ReturnsBadRequest()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|difficulty-invalid-sev-test", "difficulty-invalid-sev@example.com");
+
+        var request = new CreateStudentRequest
+        {
+            Name = "Invalid Severity",
+            LearningLanguage = "English",
+            CefrLevel = "A1",
+            Difficulties =
+            [
+                new DifficultyDto("d1", "grammar", "some item", "extreme", "stable"),
+            ],
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Create_WithEmptyDifficulties_Succeeds()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|difficulty-empty-test", "difficulty-empty@example.com");
+
+        var request = new CreateStudentRequest
+        {
+            Name = "No Difficulties",
+            LearningLanguage = "English",
+            CefrLevel = "A1",
+            Difficulties = [],
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var student = await response.Content.ReadFromJsonAsync<StudentDto>();
+        student!.Difficulties.Should().BeEmpty();
+    }
+
     private static async Task<StudentDto> CreateStudentAsync(
         HttpClient client,
         string name,

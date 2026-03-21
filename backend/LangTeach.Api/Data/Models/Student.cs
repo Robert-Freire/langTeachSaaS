@@ -11,6 +11,7 @@ public class Student
     public string? NativeLanguage { get; set; }
     public string LearningGoals { get; set; } = "[]";
     public string Weaknesses { get; set; } = "[]";
+    public string Difficulties { get; set; } = "[]";
     public string? Notes { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime CreatedAt { get; set; }

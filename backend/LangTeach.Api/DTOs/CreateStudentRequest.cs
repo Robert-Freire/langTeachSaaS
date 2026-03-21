@@ -30,6 +30,9 @@ public class CreateStudentRequest
     [MaxStringLengthEach(200)]
     public List<string> Weaknesses { get; set; } = [];
 
+    [MaxCollectionCount(50)]
+    public List<DifficultyDto> Difficulties { get; set; } = [];
+
     [MaxLength(2000)]
     public string? Notes { get; set; }
 }

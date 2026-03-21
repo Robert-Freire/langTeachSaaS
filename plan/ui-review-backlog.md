@@ -66,3 +66,9 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Minor | Material preview row uses bg-muted/30 with subtle differentiation; download/delete icons have no tooltips |
 | Minor | No "Materials" or "Attachments" label above the upload button area; purpose unclear when section has no materials |
 | Minor | On mobile, 48x48px thumbnail takes significant horizontal space; consider 32x32 on small viewports |
+
+### PR (2026-03-21) — Structured Difficulty Management (#156)
+
+| Severity | Finding |
+|----------|---------|
+| Minor | Difficulty section "Specific Difficulties" label uses `<Label>` element (renders as `<label>`) but is not associated with any input; semantically should be a heading or `<span>` for accessibility |

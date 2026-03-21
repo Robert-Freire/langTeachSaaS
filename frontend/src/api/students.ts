@@ -1,5 +1,13 @@
 import { apiClient } from '../lib/apiClient'
 
+export interface Difficulty {
+  id: string
+  category: string
+  item: string
+  severity: string
+  trend: string
+}
+
 export interface Student {
   id: string
   name: string
@@ -10,6 +18,7 @@ export interface Student {
   nativeLanguage: string | null
   learningGoals: string[]
   weaknesses: string[]
+  difficulties: Difficulty[]
   createdAt: string
   updatedAt: string
 }
@@ -30,6 +39,7 @@ export interface StudentFormData {
   nativeLanguage?: string | null
   learningGoals: string[]
   weaknesses: string[]
+  difficulties: Difficulty[]
 }
 
 export async function getStudents(params?: {

@@ -24,3 +24,12 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 |----------|---------|
 | Important | `backend/LangTeach.Api/Services/MaterialService.cs:ListAsync`: sequential `GetDownloadUrlAsync` in loop for each material. For sections with many materials this could be slow. Consider parallel URL generation. |
 | Important | `backend/LangTeach.Api/Program.cs:114`: `BlobServiceClient` created with raw config string that could be null. If `AzureBlobStorage:ConnectionString` is missing, throws unclear `ArgumentNullException` at startup. Add null check or options validation. |
+
+---
+
+### PR (2026-03-21) — Structured difficulty management (#156)
+
+| Severity | Finding |
+|----------|---------|
+| Important | `backend/LangTeach.Api/Services/StudentService.cs`: `Deserialize<T>` silently swallows all exceptions and returns empty list. For `DifficultyDto`, a malformed JSON blob would silently drop all difficulties with no logging. Consider adding a log warning in the catch block. |
+| Minor | `frontend/src/pages/StudentForm.tsx` (submit handler): Incomplete difficulty rows (missing dropdown selection) are silently filtered out on submit with no user feedback. Could add a toast or inline warning when rows are dropped. |
