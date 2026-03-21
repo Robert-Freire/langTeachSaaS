@@ -135,7 +135,11 @@ public class GenerateController : ControllerBase
             StudentWeaknesses: student?.Weaknesses.ToArray(),
             ExistingNotes: request.ExistingNotes,
             Direction: request.Direction,
-            MaterialFileNames: materialFileNames
+            MaterialFileNames: materialFileNames,
+            StudentDifficulties: student?.Difficulties
+                .OrderByDescending(d => d.Severity switch { "high" => 3, "medium" => 2, _ => 1 })
+                .Take(3)
+                .ToArray()
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -263,7 +267,11 @@ public class GenerateController : ControllerBase
             StudentWeaknesses: student?.Weaknesses.ToArray(),
             ExistingNotes: request.ExistingNotes,
             Direction: request.Direction,
-            MaterialFileNames: materialFileNames
+            MaterialFileNames: materialFileNames,
+            StudentDifficulties: student?.Difficulties
+                .OrderByDescending(d => d.Severity switch { "high" => 3, "medium" => 2, _ => 1 })
+                .Take(3)
+                .ToArray()
         );
 
         var claudeRequest = buildPrompt(ctx);
@@ -292,7 +300,17 @@ public class GenerateController : ControllerBase
             LessonSectionId = null,
             BlockType = blockType,
             GeneratedContent = response.Content,
-            GenerationParams = JsonSerializer.Serialize(request),
+            GenerationParams = JsonSerializer.Serialize(new {
+                request.LessonId,
+                request.Language,
+                request.CefrLevel,
+                request.Topic,
+                request.Style,
+                request.StudentId,
+                request.ExistingNotes,
+                request.Direction,
+                targetedDifficulties = ctx.StudentDifficulties
+            }),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };

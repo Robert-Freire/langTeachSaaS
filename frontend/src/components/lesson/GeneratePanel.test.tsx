@@ -322,6 +322,67 @@ describe('GeneratePanel - replace on insert', () => {
   })
 })
 
+describe('GeneratePanel - difficulty targeting', () => {
+  it('includes targetedDifficulties in generationParams when saving', async () => {
+    const difficulties = [
+      { category: 'grammar', item: 'ser/estar', severity: 'high' },
+    ]
+    const newBlock = makeBlock({ id: 'new-block' })
+    vi.mocked(generateApi.saveContentBlock).mockResolvedValue(newBlock)
+
+    mockUseGenerate.mockReturnValue({
+      status: 'done',
+      output: '{"items":[]}',
+      error: null,
+      generate: vi.fn(),
+      abort: vi.fn(),
+    })
+
+    const onReplace = vi.fn()
+    render(
+      <GeneratePanel
+        {...defaultProps}
+        lessonContext={{ ...defaultProps.lessonContext, studentDifficulties: difficulties }}
+        onReplace={onReplace}
+      />
+    )
+
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('insert-btn'))
+
+    await waitFor(() => {
+      expect(generateApi.saveContentBlock).toHaveBeenCalled()
+      const savedCall = vi.mocked(generateApi.saveContentBlock).mock.calls[0]
+      const params = JSON.parse(savedCall[1].generationParams!)
+      expect(params.targetedDifficulties).toEqual(difficulties)
+    })
+  })
+
+  it('shows difficulty badges in generated preview', () => {
+    const difficulties = [
+      { category: 'grammar', item: 'articles', severity: 'medium' },
+    ]
+
+    mockUseGenerate.mockReturnValue({
+      status: 'done',
+      output: '{"items":[]}',
+      error: null,
+      generate: vi.fn(),
+      abort: vi.fn(),
+    })
+
+    render(
+      <GeneratePanel
+        {...defaultProps}
+        lessonContext={{ ...defaultProps.lessonContext, studentDifficulties: difficulties }}
+      />
+    )
+
+    expect(screen.getByTestId('targeted-difficulties')).toBeInTheDocument()
+    expect(screen.getByText('[grammar]')).toBeInTheDocument()
+  })
+})
+
 describe('GeneratePanel - task type dropdown casing', () => {
   it('displays task type in Title Case in the trigger', () => {
     mockUseGenerate.mockReturnValue({

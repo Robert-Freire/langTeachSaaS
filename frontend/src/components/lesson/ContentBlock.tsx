@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getRenderer } from './contentRegistry'
 import { ContentErrorBoundary } from './ContentErrorBoundary'
+import { TargetedDifficulties } from './TargetedDifficulties'
 
 interface ContentBlockProps {
   block: ContentBlockDto
@@ -140,6 +141,7 @@ export function ContentBlock({
           AI-generated
         </Badge>
         <span className="text-xs text-zinc-400 capitalize">{block.blockType}</span>
+        <TargetedDifficulties generationParams={block.generationParams} />
         {isDirty && (
           <span className="text-xs text-amber-600 font-medium">Unsaved changes</span>
         )}

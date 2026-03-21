@@ -1,5 +1,6 @@
 using FluentAssertions;
 using LangTeach.Api.AI;
+using LangTeach.Api.DTOs;
 
 namespace LangTeach.Api.Tests.AI;
 
@@ -285,6 +286,67 @@ public class PromptServiceTests
         var req = _sut.BuildVocabularyPrompt(BaseCtx());
 
         req.SystemPrompt.Should().NotContain("reference materials");
+    }
+
+    // --- Difficulty targeting ---
+
+    [Fact]
+    public void SystemPrompt_IncludesDifficultyBlock_WhenStudentDifficultiesProvided()
+    {
+        var ctx = BaseCtx("Maria") with
+        {
+            StudentDifficulties =
+            [
+                new DifficultyDto("d1", "grammar", "ser/estar in past tense", "high", "stable"),
+                new DifficultyDto("d2", "vocabulary", "false cognates with English", "medium", "improving"),
+                new DifficultyDto("d3", "pronunciation", "vowel reduction", "low", "stable"),
+            ]
+        };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Known difficulties");
+        req.SystemPrompt.Should().Contain("[high] grammar: ser/estar in past tense");
+        req.SystemPrompt.Should().Contain("[medium] vocabulary: false cognates with English");
+        req.SystemPrompt.Should().Contain("[low] pronunciation: vowel reduction");
+        req.SystemPrompt.Should().Contain("target these difficulty patterns");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsDifficultyBlock_WhenStudentDifficultiesIsNull()
+    {
+        var ctx = BaseCtx("Maria");
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Known difficulties");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsDifficultyBlock_WhenStudentDifficultiesIsEmpty()
+    {
+        var ctx = BaseCtx("Maria") with { StudentDifficulties = [] };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Known difficulties");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsDifficultyBlock_WhenNoStudent()
+    {
+        var ctx = BaseCtx() with
+        {
+            StudentDifficulties =
+            [
+                new DifficultyDto("d1", "grammar", "articles", "high", "stable"),
+            ]
+        };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        // Without a student name, the student block (and difficulties) should not appear
+        req.SystemPrompt.Should().NotContain("Known difficulties");
     }
 
     [Fact]

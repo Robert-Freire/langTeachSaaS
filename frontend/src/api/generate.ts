@@ -14,6 +14,12 @@ export interface GenerateRequest {
   direction?: string
 }
 
+export interface TargetedDifficulty {
+  category: string
+  item: string
+  severity: string
+}
+
 export type GenerateStatus = 'idle' | 'streaming' | 'done' | 'error'
 
 export interface ContentBlockDto {

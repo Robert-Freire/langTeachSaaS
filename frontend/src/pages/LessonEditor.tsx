@@ -360,6 +360,15 @@ export default function LessonEditor() {
   }, [lesson, sectionNotes, doUpdateSections, generateOpen, closeGeneratePanel])
 
   const students = studentsData?.items ?? []
+  const matchedStudent = lesson?.studentId
+    ? students.find(s => s.id === lesson.studentId)
+    : undefined
+  const topDifficulties = matchedStudent?.difficulties
+    ?.toSorted((a, b) => {
+      const rank = (sev: string) => sev === 'high' ? 3 : sev === 'medium' ? 2 : 1
+      return rank(b.severity) - rank(a.severity)
+    })
+    .slice(0, 3) ?? []
 
   if (isLoading) {
     return (
@@ -767,6 +776,7 @@ export default function LessonEditor() {
                       topic: lesson.topic,
                       studentId: lesson.studentId,
                       existingNotes: sectionNotes[type] || null,
+                      studentDifficulties: topDifficulties,
                     }}
                     onStreamingChange={setIsGenerating}
                     onReplace={(block, removedIds) => handleBlockReplace(sectionId, block, removedIds)}

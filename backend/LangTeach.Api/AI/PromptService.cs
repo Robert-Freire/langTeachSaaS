@@ -84,6 +84,15 @@ public class PromptService : IPromptService
 
             if (weaknesses.Length > 0)
                 sb.AppendLine("Focus practice on weak areas when relevant to the topic.");
+
+            if (ctx.StudentDifficulties is { Length: > 0 })
+            {
+                sb.AppendLine();
+                sb.AppendLine("Known difficulties (prioritize these in exercises and examples):");
+                foreach (var d in ctx.StudentDifficulties)
+                    sb.AppendLine($"- [{Sanitize(d.Severity)}] {Sanitize(d.Category)}: {Sanitize(d.Item)}");
+                sb.AppendLine("Design exercises that specifically target these difficulty patterns. For each exercise, ensure at least one item directly addresses a listed difficulty.");
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(existingNotes))

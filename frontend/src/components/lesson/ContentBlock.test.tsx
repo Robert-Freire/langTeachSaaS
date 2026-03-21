@@ -124,6 +124,45 @@ describe('ContentBlock - regenerate', () => {
   })
 })
 
+describe('ContentBlock - targeted difficulties', () => {
+  it('renders difficulty badges when generationParams contains targetedDifficulties', () => {
+    const params = JSON.stringify({
+      targetedDifficulties: [
+        { category: 'grammar', item: 'ser/estar', severity: 'high' },
+      ],
+    })
+    const block = makeBlock({ generationParams: params })
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+      />
+    )
+
+    expect(screen.getByTestId('targeted-difficulties')).toBeInTheDocument()
+    expect(screen.getByText('[grammar]')).toBeInTheDocument()
+    expect(screen.getByText('ser/estar')).toBeInTheDocument()
+  })
+
+  it('does not render difficulty badges when generationParams has no difficulties', () => {
+    const block = makeBlock({ generationParams: JSON.stringify({ lessonId: 'abc' }) })
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+      />
+    )
+
+    expect(screen.queryByTestId('targeted-difficulties')).toBeNull()
+  })
+})
+
 describe('ContentBlock - dirty / save state', () => {
   beforeEach(() => vi.clearAllMocks())
 
