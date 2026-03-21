@@ -1,4 +1,7 @@
+using Azure.Storage.Blobs;
 using LangTeach.Api.Data;
+using LangTeach.Api.Services;
+using LangTeach.Api.Tests.Helpers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +24,17 @@ public class WebAppFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseInMemoryDatabase("TestDb"));
+
+            // Replace blob storage with in-memory implementation
+            var blobDescriptors = services
+                .Where(d => d.ServiceType == typeof(BlobServiceClient)
+                         || d.ServiceType == typeof(BlobStorageService)
+                         || d.ServiceType == typeof(IBlobStorageService))
+                .ToList();
+            foreach (var d in blobDescriptors)
+                services.Remove(d);
+
+            services.AddSingleton<IBlobStorageService>(new InMemoryBlobStorageService());
         });
     }
 }

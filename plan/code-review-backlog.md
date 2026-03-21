@@ -18,6 +18,13 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 |----------|---------|
 | Important | `frontend/src/pages/Lessons.tsx:179,188,197`: filter render functions use `String(v)` for non-"all" values, returning raw value strings. Works today because values match display labels, but breaks if values ever differ from labels (e.g., i18n, status codes). Fragile pattern that needs a value-to-label lookup map. |
 
+### PR #148 (2026-03-21) — Material Upload
+
+| Severity | Finding |
+|----------|---------|
+| Important | `backend/LangTeach.Api/Services/MaterialService.cs:ListAsync`: sequential `GetDownloadUrlAsync` in loop for each material. For sections with many materials this could be slow. Consider parallel URL generation. |
+| Important | `backend/LangTeach.Api/Program.cs:114`: `BlobServiceClient` created with raw config string that could be null. If `AzureBlobStorage:ConnectionString` is missing, throws unclear `ArgumentNullException` at startup. Add null check or options validation. |
+
 ---
 
 ### PR (2026-03-21) — Structured difficulty management (#156)

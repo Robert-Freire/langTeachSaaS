@@ -4,5 +4,6 @@ public record LessonSectionDto(
     Guid Id,
     string SectionType,
     int OrderIndex,
-    string? Notes
+    string? Notes,
+    List<MaterialDto> Materials
 );

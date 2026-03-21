@@ -1,4 +1,7 @@
+using Azure.Storage.Blobs;
 using LangTeach.Api.Data;
+using LangTeach.Api.Services;
+using LangTeach.Api.Tests.Helpers;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -36,6 +39,19 @@ public class AuthenticatedWebAppFactory : WebApplicationFactory<Program>
             services.AddAuthentication(TestAuthHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                     TestAuthHandler.SchemeName, _ => { });
+
+            // Replace blob storage with in-memory implementation
+            var blobDescriptors = services
+                .Where(d => d.ServiceType == typeof(BlobServiceClient)
+                         || d.ServiceType == typeof(BlobStorageService)
+                         || d.ServiceType == typeof(IBlobStorageService))
+                .ToList();
+            foreach (var d in blobDescriptors)
+                services.Remove(d);
+
+            var inMemoryBlob = new InMemoryBlobStorageService();
+            services.AddSingleton<IBlobStorageService>(inMemoryBlob);
+            services.AddSingleton(inMemoryBlob);
         });
     }
 

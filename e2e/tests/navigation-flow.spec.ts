@@ -62,9 +62,9 @@ test('navigation flow using in-page Back buttons and links', async ({ browser })
   // Verify Back link on step 1
   await expect(page.getByTestId('page-header-back')).toHaveAttribute('href', '/lessons')
 
-  // Pick blank template to go to step 2
-  await expect(page.getByTestId('template-blank')).toBeVisible({ timeout: 10000 })
-  await page.getByTestId('template-blank').click()
+  // Pick Conversation template (has WarmUp section) to go to step 2
+  await expect(page.getByTestId('template-conversation')).toBeVisible({ timeout: 10000 })
+  await page.getByTestId('template-conversation').click()
   await expect(page.locator('h1')).toHaveText('Lesson Details', { timeout: 10000 })
 
   // Fill and create lesson
@@ -75,6 +75,8 @@ test('navigation flow using in-page Back buttons and links', async ({ browser })
   await page.getByTestId('select-level').click()
   await page.getByRole('option', { name: 'B1' }).click()
   await page.getByTestId('input-topic').fill('Navigation testing')
+  await page.getByTestId('select-duration').click()
+  await page.getByRole('option', { name: '60 min' }).click()
   await page.getByTestId('submit-lesson').click()
 
   // Should redirect to lesson editor

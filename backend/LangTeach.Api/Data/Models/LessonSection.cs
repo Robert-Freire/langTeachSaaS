@@ -11,4 +11,5 @@ public class LessonSection
     public DateTime UpdatedAt { get; set; }
 
     public Lesson Lesson { get; set; } = null!;
+    public ICollection<Material> Materials { get; set; } = new List<Material>();
 }

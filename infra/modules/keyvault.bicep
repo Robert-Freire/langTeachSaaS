@@ -3,6 +3,8 @@ param location string
 @secure()
 param sqlConnectionString string
 param appPrincipalId string
+@secure()
+param storageConnectionString string
 
 // Built-in role: Key Vault Secrets User — same ID in every Azure tenant
 var kvSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
@@ -56,6 +58,14 @@ resource auth0AudienceSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   name: 'Auth0--Audience'
   properties: {
     value: 'REPLACE_AFTER_T3'
+  }
+}
+
+resource storageConnStringSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: kv
+  name: 'AzureBlobStorage--ConnectionString'
+  properties: {
+    value: storageConnectionString
   }
 }
 

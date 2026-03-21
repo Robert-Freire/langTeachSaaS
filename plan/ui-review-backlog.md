@@ -58,6 +58,15 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Minor | Courses list — mode badge casing inconsistent ("General" vs "exam") — fix label mapping |
 | Minor | CourseNew — required fields not marked with asterisk |
 
+### PR #148 (2026-03-21) — Material Upload
+
+| Severity | Finding |
+|----------|---------|
+| Important | Mobile (375px) top bar wraps to two lines due to action button density (pre-existing, not introduced by this PR) |
+| Minor | Material preview row uses bg-muted/30 with subtle differentiation; download/delete icons have no tooltips |
+| Minor | No "Materials" or "Attachments" label above the upload button area; purpose unclear when section has no materials |
+| Minor | On mobile, 48x48px thumbnail takes significant horizontal space; consider 32x32 on small viewports |
+
 ### PR (2026-03-21) — Structured Difficulty Management (#156)
 
 | Severity | Finding |

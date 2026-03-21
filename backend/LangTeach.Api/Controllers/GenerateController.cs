@@ -19,6 +19,7 @@ public class GenerateController : ControllerBase
     private readonly IStudentService _studentService;
     private readonly IPromptService _promptService;
     private readonly IClaudeClient _claudeClient;
+    private readonly IMaterialService _materialService;
     private readonly AppDbContext _db;
     private readonly ILogger<GenerateController> _logger;
 
@@ -27,6 +28,7 @@ public class GenerateController : ControllerBase
         IStudentService studentService,
         IPromptService promptService,
         IClaudeClient claudeClient,
+        IMaterialService materialService,
         AppDbContext db,
         ILogger<GenerateController> logger)
     {
@@ -34,6 +36,7 @@ public class GenerateController : ControllerBase
         _studentService = studentService;
         _promptService = promptService;
         _claudeClient = claudeClient;
+        _materialService = materialService;
         _db = db;
         _logger = logger;
     }
@@ -114,6 +117,11 @@ public class GenerateController : ControllerBase
             return;
         }
 
+        var materials = await _materialService.GetMaterialContentsAsync(teacherId, lesson.Id, ct);
+        var materialFileNames = materials.Count > 0
+            ? materials.Select(m => m.FileName).ToArray()
+            : null;
+
         var ctx = new GenerationContext(
             Language: language,
             CefrLevel: cefrLevel,
@@ -126,10 +134,12 @@ public class GenerateController : ControllerBase
             StudentGoals: student?.LearningGoals.ToArray(),
             StudentWeaknesses: student?.Weaknesses.ToArray(),
             ExistingNotes: request.ExistingNotes,
-            Direction: request.Direction
+            Direction: request.Direction,
+            MaterialFileNames: materialFileNames
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
+        claudeRequest = AttachMaterials(claudeRequest, materials);
 
         Response.ContentType = "text/event-stream";
         Response.Headers["Cache-Control"] = "no-cache";
@@ -235,6 +245,11 @@ public class GenerateController : ControllerBase
         if (language.Length == 0 || cefrLevel.Length == 0 || topic.Length == 0)
             return BadRequest("Language, CefrLevel, and Topic must not be blank.");
 
+        var materials = await _materialService.GetMaterialContentsAsync(teacherId, lesson.Id, ct);
+        var materialFileNames = materials.Count > 0
+            ? materials.Select(m => m.FileName).ToArray()
+            : null;
+
         var ctx = new GenerationContext(
             Language: language,
             CefrLevel: cefrLevel,
@@ -247,10 +262,12 @@ public class GenerateController : ControllerBase
             StudentGoals: student?.LearningGoals.ToArray(),
             StudentWeaknesses: student?.Weaknesses.ToArray(),
             ExistingNotes: request.ExistingNotes,
-            Direction: request.Direction
+            Direction: request.Direction,
+            MaterialFileNames: materialFileNames
         );
 
         var claudeRequest = buildPrompt(ctx);
+        claudeRequest = AttachMaterials(claudeRequest, materials);
 
         ClaudeResponse response;
         try
@@ -287,5 +304,26 @@ public class GenerateController : ControllerBase
             blockType, lesson.Id, block.Id, response.InputTokens, response.OutputTokens);
 
         return Ok(new GenerationResultDto(block.Id, block.BlockType, block.GeneratedContent));
+    }
+
+    private static ClaudeRequest AttachMaterials(ClaudeRequest claudeRequest, List<MaterialContent> materials)
+    {
+        if (materials.Count == 0)
+            return claudeRequest;
+
+        var attachments = materials
+            .Select(m => new ContentAttachment(m.ContentType, m.Data, m.FileName))
+            .ToArray();
+
+        claudeRequest = claudeRequest with { Attachments = attachments };
+
+        // Haiku does not support PDF document blocks; upgrade to Sonnet when PDFs are present
+        if (claudeRequest.Model == ClaudeModel.Haiku &&
+            materials.Any(m => string.Equals(m.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase)))
+        {
+            claudeRequest = claudeRequest with { Model = ClaudeModel.Sonnet };
+        }
+
+        return claudeRequest;
     }
 }

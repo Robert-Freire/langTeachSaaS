@@ -263,4 +263,37 @@ public class PromptServiceTests
     [Fact]
     public void SonnetUsed_ForHomework() =>
         _sut.BuildHomeworkPrompt(BaseCtx()).Model.Should().Be(ClaudeModel.Sonnet);
+
+    // --- Material file names ---
+
+    [Fact]
+    public void SystemPrompt_IncludesMaterialBlock_WhenMaterialFileNamesProvided()
+    {
+        var ctx = BaseCtx() with { MaterialFileNames = ["worksheet.pdf", "vocab-list.png"] };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("reference materials");
+        req.SystemPrompt.Should().Contain("worksheet.pdf");
+        req.SystemPrompt.Should().Contain("vocab-list.png");
+        req.SystemPrompt.Should().Contain("Adapt, reference, or build upon them");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsMaterialBlock_WhenMaterialFileNamesIsNull()
+    {
+        var req = _sut.BuildVocabularyPrompt(BaseCtx());
+
+        req.SystemPrompt.Should().NotContain("reference materials");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsMaterialBlock_WhenMaterialFileNamesIsEmpty()
+    {
+        var ctx = BaseCtx() with { MaterialFileNames = [] };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("reference materials");
+    }
 }

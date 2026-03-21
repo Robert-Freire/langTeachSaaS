@@ -1,4 +1,5 @@
 using Azure.Identity;
+using Azure.Storage.Blobs;
 using LangTeach.Api.AI;
 using LangTeach.Api.Auth;
 using LangTeach.Api.Data;
@@ -110,6 +111,11 @@ builder.Services.AddScoped<IPromptService, PromptService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
+builder.Services.AddSingleton(_ =>
+    new BlobServiceClient(builder.Configuration["AzureBlobStorage:ConnectionString"]));
+builder.Services.AddSingleton<BlobStorageService>();
+builder.Services.AddSingleton<IBlobStorageService>(sp => sp.GetRequiredService<BlobStorageService>());
+builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<ILessonNoteService, LessonNoteService>();
 builder.Services.AddScoped<ICurriculumGenerationService, CurriculumGenerationService>();
@@ -131,6 +137,10 @@ using (var scope = app.Services.CreateScope())
         startupLogger.LogInformation("Migrations applied successfully.");
         await SeedData.SeedAsync(db, startupLogger);
     }
+
+    var blobService = scope.ServiceProvider.GetService<BlobStorageService>();
+    if (blobService is not null)
+        await blobService.InitializeAsync();
 }
 
 // Demo seeder: dotnet run -- --seed <auth0-user-id|email>
