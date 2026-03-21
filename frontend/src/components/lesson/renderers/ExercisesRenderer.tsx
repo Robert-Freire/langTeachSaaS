@@ -133,6 +133,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Sentence (use ___ for blank)</th>
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600 text-green-700">Answer</th>
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Hint</th>
+              <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Explanation</th>
               <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -147,6 +148,9 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
                 </td>
                 <td className="border border-zinc-200 p-1">
                   <input value={item.hint ?? ''} onChange={(e) => updateFib(i, 'hint', e.target.value)} className={inputClass} />
+                </td>
+                <td className="hidden sm:table-cell border border-zinc-200 p-1">
+                  <span className="px-2 py-1 text-xs text-zinc-400 italic">{item.explanation ?? '—'}</span>
                 </td>
                 <td className="border border-zinc-200 p-1 text-center">
                   <button type="button" onClick={() => removeFib(i)} className="text-zinc-400 hover:text-red-500 transition-colors px-1" aria-label="Remove item">✕</button>
@@ -194,6 +198,9 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
               ))}
               <button type="button" onClick={() => addMcOption(qi)} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-1">+ Add option</button>
             </div>
+            {q.explanation && (
+              <p className="text-xs text-zinc-400 italic mt-2 pl-1 border-t border-zinc-100 pt-2">{q.explanation}</p>
+            )}
           </div>
         ))}
       </div>
@@ -207,6 +214,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
             <tr className="bg-zinc-50">
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Left</th>
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Right</th>
+              <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Explanation</th>
               <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -218,6 +226,9 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
                 </td>
                 <td className="border border-zinc-200 p-1">
                   <input value={pair.right} onChange={(e) => updateMatch(i, 'right', e.target.value)} className={inputClass} />
+                </td>
+                <td className="hidden sm:table-cell border border-zinc-200 p-1">
+                  <span className="px-2 py-1 text-xs text-zinc-400 italic">{pair.explanation ?? '—'}</span>
                 </td>
                 <td className="border border-zinc-200 p-1 text-center">
                   <button type="button" onClick={() => removeMatch(i)} className="text-zinc-400 hover:text-red-500 transition-colors px-1" aria-label="Remove pair">✕</button>
@@ -456,6 +467,11 @@ function Student({ parsedContent, rawContent }: StudentProps) {
                       {fibCorrect[i] ? '✓' : `✗ ${item.answer}`}
                     </span>
                   )}
+                  {checked && !fibCorrect[i] && item.explanation && (
+                    <p className="w-full text-xs text-zinc-500 mt-1" data-testid={`fib-explanation-${i}`}>
+                      {item.explanation}
+                    </p>
+                  )}
                 </li>
               )
             })}
@@ -507,12 +523,19 @@ function Student({ parsedContent, rawContent }: StudentProps) {
                   })}
                 </ul>
                 {checked && (
-                  <span
-                    className={`text-xs font-medium ml-4 mt-1 inline-block ${mcCorrect[qi] ? 'text-green-600' : 'text-red-600'}`}
-                    data-testid={`mc-result-${qi}`}
-                  >
-                    {mcCorrect[qi] ? '✓ Correct' : `✗ Answer: ${q.answer}`}
-                  </span>
+                  <div className="ml-4 mt-1">
+                    <span
+                      className={`text-xs font-medium ${mcCorrect[qi] ? 'text-green-600' : 'text-red-600'}`}
+                      data-testid={`mc-result-${qi}`}
+                    >
+                      {mcCorrect[qi] ? '✓ Correct' : `✗ Answer: ${q.answer}`}
+                    </span>
+                    {!mcCorrect[qi] && q.explanation && (
+                      <p className="text-xs text-zinc-500 mt-0.5" data-testid={`mc-explanation-${qi}`}>
+                        {q.explanation}
+                      </p>
+                    )}
+                  </div>
                 )}
               </li>
             ))}
@@ -599,11 +622,18 @@ function Student({ parsedContent, rawContent }: StudentProps) {
             </div>
           </div>
           {checked && (
-            <div className="mt-3 space-y-1">
+            <div className="mt-3 space-y-2">
               {matching.map((pair, i) => !matchCorrect[i] && (
-                <p key={i} className="text-xs text-red-600">
-                  "{pair.left}" should match "{pair.right}"
-                </p>
+                <div key={i}>
+                  <p className="text-xs text-red-600">
+                    "{pair.left}" should match "{pair.right}"
+                  </p>
+                  {pair.explanation && (
+                    <p className="text-xs text-zinc-500 mt-0.5" data-testid={`match-explanation-${i}`}>
+                      {pair.explanation}
+                    </p>
+                  )}
+                </div>
               ))}
             </div>
           )}

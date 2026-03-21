@@ -196,6 +196,16 @@ public class PromptServiceTests
     public void HomeworkPrompt_HasMaxTokens1024()
         => _sut.BuildHomeworkPrompt(BaseCtx()).MaxTokens.Should().Be(1024);
 
+    // --- Exercises explanation ---
+
+    [Fact]
+    public void ExercisesPrompt_IncludesExplanationField_InJsonSchema()
+    {
+        var req = _sut.BuildExercisesPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("\"explanation\":\"\"");
+    }
+
     // --- JSON schema injected ---
 
     [Theory]

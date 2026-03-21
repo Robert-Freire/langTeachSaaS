@@ -113,3 +113,75 @@ test('exercises render as quiz in editor and student can complete them', async (
     await context.close()
   }
 })
+
+test('wrong exercise answer shows correct answer and AI explanation', async ({ browser }) => {
+  test.setTimeout(TEST_TIMEOUT)
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    await mockAiStream(page, EXERCISES_FIXTURE)
+
+    // Create a lesson and generate exercises (same flow as above)
+    await page.goto('/lessons')
+    await expect(page.locator('h1')).toHaveText('Lessons', { timeout: NAV_TIMEOUT })
+    await page.getByTestId('new-lesson-btn').click()
+    await expect(page.locator('h1')).toHaveText('New Lesson', { timeout: UI_TIMEOUT })
+
+    await expect(page.getByTestId('template-grid')).toBeVisible({ timeout: UI_TIMEOUT })
+    await page.getByTestId('template-grammar-focus').click()
+
+    await expect(page.locator('h1')).toHaveText('Lesson Details', { timeout: UI_TIMEOUT })
+    await page.getByTestId('input-title').fill(`Explanation Test ${Date.now()}`)
+    await page.getByTestId('select-language').click()
+    await page.getByRole('option', { name: 'English' }).click()
+    await page.getByTestId('select-level').click()
+    await page.getByRole('option', { name: 'B1' }).click()
+    await page.getByTestId('input-topic').fill('Past simple')
+    await page.getByTestId('select-duration').click()
+    await page.getByRole('option', { name: '45 min' }).click()
+    await page.getByTestId('submit-lesson').click()
+
+    await expect(page).toHaveURL(/\/lessons\/[0-9a-f-]+$/, { timeout: UI_TIMEOUT })
+
+    const practiceSection = page.getByTestId('section-practice')
+    await practiceSection.fill('Practice exercises.')
+    await practiceSection.blur()
+    await expect(page.getByTestId('saved-indicator')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+
+    await page.getByTestId('generate-btn-practice').click()
+    await expect(page.getByTestId('generate-panel')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+    await page.getByTestId('generate-btn').click()
+    await page.getByTestId('insert-btn').waitFor({ state: 'visible', timeout: FEEDBACK_TIMEOUT })
+    await page.getByTestId('insert-btn').click()
+    await expect(page.getByTestId('generate-panel')).not.toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+
+    // Navigate to student view
+    await page.getByTestId('preview-student-btn').click()
+    await expect(page).toHaveURL(/\/lessons\/[0-9a-f-]+\/study$/, { timeout: UI_TIMEOUT })
+
+    const student = page.getByTestId('exercises-student').first()
+    await expect(student).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+
+    // Answer fill-in-blank incorrectly
+    await student.getByTestId('fib-input-0').fill('go')
+
+    // Answer multiple choice incorrectly (select 'sad' which is wrong, 'glad' is correct)
+    await student.getByTestId('mc-option-0-0').check()
+
+    // Check answers
+    await student.getByTestId('check-answers-btn').click()
+
+    // FIB: correct answer and explanation shown
+    await expect(student.getByTestId('fib-result-0')).toHaveText('✗ went', { timeout: UI_TIMEOUT })
+    await expect(student.getByTestId('fib-explanation-0')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(student.getByTestId('fib-explanation-0')).toContainText('past simple', { timeout: UI_TIMEOUT })
+
+    // MC: correct answer and explanation shown
+    await expect(student.getByTestId('mc-result-0')).toContainText('✗ Answer: glad', { timeout: UI_TIMEOUT })
+    await expect(student.getByTestId('mc-explanation-0')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(student.getByTestId('mc-explanation-0')).toContainText('Glad', { timeout: UI_TIMEOUT })
+  } finally {
+    await context.close()
+  }
+})

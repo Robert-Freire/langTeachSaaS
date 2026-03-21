@@ -133,8 +133,9 @@ public class PromptService : IPromptService
         var topic = Sanitize(ctx.Topic);
         return $$"""
         Generate practice exercises for the lesson on "{{topic}}". Return JSON:
-        {"fillInBlank":[{"sentence":"","answer":"","hint":""}],"multipleChoice":[{"question":"","options":[""],"answer":""}],"matching":[{"left":"","right":""}]}
+        {"fillInBlank":[{"sentence":"","answer":"","hint":"","explanation":""}],"multipleChoice":[{"question":"","options":[""],"answer":"","explanation":""}],"matching":[{"left":"","right":"","explanation":""}]}
         Include at least 3 items of each type.
+        For each exercise, include a concise explanation (2-3 sentences) of why the correct answer is correct, considering the student's level and common L1 interference patterns.
         """;
     }
 
