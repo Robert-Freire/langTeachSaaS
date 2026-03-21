@@ -54,6 +54,7 @@ These patterns were derived from analyzing 210 CodeRabbit findings across 42 mer
 | Important | `JsonDocument` not disposed | `JsonDocument.Parse`/`ParseAsync` without `using` statement or `.Dispose()`. Memory leak. |
 | Important | CancellationToken not propagated | Controller action has `CancellationToken` parameter not passed to service method calls or DB queries. |
 | Important | Cancelled token used in catch block | After catching `OperationCanceledException`, using the same `cancellationToken` for error writes (it's already cancelled). |
+| Important | Unhandled exception in singleton constructor | `JsonSerializer.Deserialize`, file I/O, or network calls in a singleton/DI constructor without try/catch. An exception kills app startup entirely. Log and skip/degrade gracefully. |
 
 ### Frontend (.tsx/.ts) files
 
@@ -66,12 +67,13 @@ These patterns were derived from analyzing 210 CodeRabbit findings across 42 mer
 | Important | `useEffect` timer not cleaned up | `setInterval`/`setTimeout` in `useEffect` without a return cleanup function. Memory leak on unmount. |
 | Critical | Unsanitized AI prompt inputs | User-supplied fields interpolated directly into prompt template strings without sanitization. Prompt injection is a real attack vector in an AI-first product. |
 
-### Test (.spec.ts) files
+### Test (.spec.ts, .test.tsx, .test.ts, Tests.cs) files
 
 | Severity | Pattern | What to look for |
 |----------|---------|-----------------|
 | Important | `beforeAll` with DB mutations | `beforeAll` calling helpers that INSERT/DELETE/reset data that individual tests also mutate. Shared read-only seed data in `beforeAll` is fine; flag shared mutable state. |
 | Important | Cleanup without assertion | afterAll/afterEach delete calls without asserting the deletion succeeded (row count check). |
+| Important | Test name doesn't match behavior | The test name claims to test X but the code tests Y. Common cases: (1) test says "case insensitive" but input uses canonical casing, (2) test says "unknown X" but input fails format validation before reaching the "unknown" logic, (3) test says "submit without X" but never triggers a form submission. The test must exercise the exact condition its name describes. |
 | Minor | Weak assertions | Assertions on shape only (e.g., checking array length > 0 instead of specific content), or tests that never exercise the branch they claim to test. |
 
 ### Infrastructure (.bicep) files
