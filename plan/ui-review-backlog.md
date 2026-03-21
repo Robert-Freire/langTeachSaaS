@@ -37,6 +37,14 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Minor | Not-found empty state (StudentForm and LessonEditor) has no icon or illustration, feels sparse. A subtle lucide icon above the text would improve polish. Pre-existing pattern. |
 | Minor | "Go back" button in not-found state has no visible hover color change. Consider adding hover:text-red-700 for clearer feedback. Pre-existing pattern. |
 
+### PR (2026-03-21) — Dashboard loading skeletons (#111)
+
+| Severity | Finding |
+|----------|---------|
+| Minor | Skeleton title bars (h-7 w-40, h-4 w-56) may produce a small vertical shift when real h1 content loads; consider matching PageHeader dimensions exactly |
+
+---
+
 ## PR #TBD — Course/Curriculum Planner (2026-03-21)
 
 | Severity | Description |

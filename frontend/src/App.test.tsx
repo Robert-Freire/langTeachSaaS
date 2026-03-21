@@ -17,8 +17,8 @@ function wrapper(ui: React.ReactElement) {
 }
 
 describe('Dashboard', () => {
-  it('renders the dashboard heading', () => {
+  it('renders the dashboard skeleton while loading', () => {
     wrapper(<Dashboard />)
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
+    expect(screen.getByTestId('dashboard-skeleton')).toBeInTheDocument()
   })
 })
