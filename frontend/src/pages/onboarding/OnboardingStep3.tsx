@@ -28,7 +28,12 @@ export default function OnboardingStep3({ student, onBack }: OnboardingStep3Prop
     onSuccess: async (lesson) => {
       queryClient.invalidateQueries({ queryKey: ['lessons'] })
       queryClient.invalidateQueries({ queryKey: ['profile'] })
-      await completeOnboarding()
+      try {
+        await completeOnboarding()
+      } catch {
+        // Lesson was created successfully; onboarding flag will be retried on next visit.
+        // Don't block navigation for a non-critical side effect.
+      }
       navigate(`/lessons/${lesson.id}`)
     },
     onError: () => setError('Failed to create lesson. Please try again.'),
