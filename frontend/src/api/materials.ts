@@ -5,7 +5,6 @@ export interface Material {
   fileName: string
   contentType: string
   sizeBytes: number
-  blobPath: string
   previewUrl: string | null
   createdAt: string
 }
@@ -15,8 +14,7 @@ export async function uploadMaterial(lessonId: string, sectionId: string, file: 
   formData.append('file', file)
   const res = await apiClient.post<Material>(
     `/api/lessons/${lessonId}/sections/${sectionId}/materials`,
-    formData,
-    { headers: { 'Content-Type': 'multipart/form-data' } }
+    formData
   )
   return res.data
 }

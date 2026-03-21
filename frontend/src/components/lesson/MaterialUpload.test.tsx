@@ -62,7 +62,6 @@ describe('MaterialUpload', () => {
       fileName: 'test.png',
       contentType: 'image/png',
       sizeBytes: 1024,
-      blobPath: 'path/test.png',
       previewUrl: 'http://localhost/test.png',
       createdAt: '2026-03-21T00:00:00Z',
     })

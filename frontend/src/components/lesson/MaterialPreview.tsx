@@ -73,7 +73,7 @@ export function MaterialPreview({ material, lessonId, sectionId }: MaterialPrevi
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-destructive hover:text-destructive"
-          onClick={() => doDelete()}
+          onClick={() => { if (window.confirm(`Delete "${material.fileName}"?`)) doDelete() }}
           disabled={isDeleting}
           data-testid="material-delete-btn"
         >

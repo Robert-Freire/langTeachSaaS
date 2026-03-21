@@ -21,7 +21,6 @@ const imageMaterial: Material = {
   fileName: 'photo.jpg',
   contentType: 'image/jpeg',
   sizeBytes: 2048,
-  blobPath: 'teacher/lesson/mat-1_photo.jpg',
   previewUrl: 'http://localhost:10000/photo.jpg',
   createdAt: '2026-03-21T00:00:00Z',
 }
@@ -31,7 +30,6 @@ const pdfMaterial: Material = {
   fileName: 'worksheet.pdf',
   contentType: 'application/pdf',
   sizeBytes: 5 * 1024 * 1024,
-  blobPath: 'teacher/lesson/mat-2_worksheet.pdf',
   previewUrl: 'http://localhost:10000/worksheet.pdf',
   createdAt: '2026-03-21T00:00:00Z',
 }
@@ -54,8 +52,9 @@ describe('MaterialPreview', () => {
     expect(screen.getByText('5.0 MB')).toBeInTheDocument()
   })
 
-  it('delete button calls delete API', async () => {
+  it('delete button calls delete API after confirmation', async () => {
     mockDeleteMaterial.mockResolvedValue(undefined)
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
     renderWithProviders(<MaterialPreview material={imageMaterial} lessonId="l1" sectionId="s1" />)
 
     const deleteBtn = screen.getByTestId('material-delete-btn')
@@ -63,7 +62,21 @@ describe('MaterialPreview', () => {
       await userEvent.click(deleteBtn)
     })
 
+    expect(window.confirm).toHaveBeenCalled()
     expect(mockDeleteMaterial).toHaveBeenCalledWith('l1', 's1', 'mat-1')
+  })
+
+  it('delete button does not call API when confirmation is cancelled', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    renderWithProviders(<MaterialPreview material={imageMaterial} lessonId="l1" sectionId="s1" />)
+
+    const deleteBtn = screen.getByTestId('material-delete-btn')
+    await act(async () => {
+      await userEvent.click(deleteBtn)
+    })
+
+    expect(window.confirm).toHaveBeenCalled()
+    expect(mockDeleteMaterial).not.toHaveBeenCalled()
   })
 
   it('download button has correct href', () => {

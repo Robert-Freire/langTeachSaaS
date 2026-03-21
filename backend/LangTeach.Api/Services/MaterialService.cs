@@ -20,6 +20,14 @@ public class MaterialService : IMaterialService
         "image/webp"
     };
 
+    private static readonly Dictionary<string, HashSet<string>> AllowedExtensionsByType = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["application/pdf"] = new(StringComparer.OrdinalIgnoreCase) { ".pdf" },
+        ["image/jpeg"] = new(StringComparer.OrdinalIgnoreCase) { ".jpg", ".jpeg" },
+        ["image/png"] = new(StringComparer.OrdinalIgnoreCase) { ".png" },
+        ["image/webp"] = new(StringComparer.OrdinalIgnoreCase) { ".webp" },
+    };
+
     private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
 
     public MaterialService(AppDbContext db, IBlobStorageService blobStorage, ILogger<MaterialService> logger)
@@ -43,6 +51,10 @@ public class MaterialService : IMaterialService
 
         if (!AllowedContentTypes.Contains(file.ContentType))
             throw new InvalidOperationException($"File type '{file.ContentType}' is not supported. Allowed types: PDF, JPEG, PNG, WebP.");
+
+        var extension = Path.GetExtension(file.FileName);
+        if (!AllowedExtensionsByType.TryGetValue(file.ContentType, out var allowedExts) || !allowedExts.Contains(extension))
+            throw new InvalidOperationException($"File extension '{extension}' does not match content type '{file.ContentType}'.");
 
         var materialId = Guid.NewGuid();
         var sanitizedFileName = Path.GetFileName(file.FileName);
@@ -117,9 +129,18 @@ public class MaterialService : IMaterialService
 
         if (material is null) return false;
 
-        await _blobStorage.DeleteAsync(material.BlobPath, cancellationToken);
+        var blobPath = material.BlobPath;
         _db.Materials.Remove(material);
         await _db.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _blobStorage.DeleteAsync(blobPath, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to delete blob {BlobPath} after removing DB record. Orphaned blob may remain.", blobPath);
+        }
 
         _logger.LogInformation("Material deleted. MaterialId={MaterialId} SectionId={SectionId}", materialId, sectionId);
         return true;

@@ -55,7 +55,8 @@ test('upload a material, see preview, then delete it', async ({ browser }) => {
   const filename = page.getByTestId('material-filename').first()
   await expect(filename).toHaveText('test-image.png')
 
-  // Delete the material
+  // Delete the material (accept confirmation dialog)
+  page.on('dialog', dialog => dialog.accept())
   const deleteBtn = page.getByTestId('material-delete-btn').first()
   await deleteBtn.click()
 

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace LangTeach.Api.DTOs;
 
 public record MaterialDto(
@@ -5,7 +7,7 @@ public record MaterialDto(
     string FileName,
     string ContentType,
     long SizeBytes,
-    string BlobPath,
+    [property: JsonIgnore] string BlobPath,
     string? PreviewUrl,
     DateTime CreatedAt
 );
