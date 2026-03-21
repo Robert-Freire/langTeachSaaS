@@ -51,7 +51,7 @@ export function CoursesOverview({ courses }: CoursesOverviewProps) {
                     <div className="w-24 h-1.5 rounded-full bg-zinc-100 overflow-hidden">
                       <div
                         className="h-full bg-blue-500 rounded-full"
-                        style={{ width: `${(course.lessonsCreated / course.sessionCount) * 100}%` }}
+                        style={{ width: `${course.sessionCount > 0 ? (course.lessonsCreated / course.sessionCount) * 100 : 0}%` }}
                       />
                     </div>
                     <span className="text-xs text-zinc-400">

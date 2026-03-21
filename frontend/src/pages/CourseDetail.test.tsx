@@ -9,6 +9,7 @@ vi.mock('../api/courses', () => ({
   getCourse: vi.fn(),
   reorderCurriculum: vi.fn(),
   updateCurriculumEntry: vi.fn(),
+  markEntryAsTaught: vi.fn(),
   generateLessonFromEntry: vi.fn(),
 }))
 

@@ -161,7 +161,7 @@ export default function CourseDetail() {
         <div className="flex-1 h-2 rounded-full bg-zinc-100 overflow-hidden">
           <div
             className="h-full bg-blue-500 rounded-full transition-all"
-            style={{ width: `${(course.lessonsCreated / course.sessionCount) * 100}%` }}
+            style={{ width: `${course.sessionCount > 0 ? (course.lessonsCreated / course.sessionCount) * 100 : 0}%` }}
           />
         </div>
         <span className="text-sm text-zinc-500 shrink-0" data-testid="course-progress">{progress}</span>

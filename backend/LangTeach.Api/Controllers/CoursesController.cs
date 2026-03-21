@@ -58,6 +58,12 @@ public class CoursesController : ControllerBase
         if (Auth0Id is null) return Unauthorized();
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
+        if (request.Mode == "exam-prep" && string.IsNullOrWhiteSpace(request.TargetExam))
+            return BadRequest("TargetExam is required when Mode is 'exam-prep'.");
+
+        if (request.Mode == "general" && string.IsNullOrWhiteSpace(request.TargetCefrLevel))
+            return BadRequest("TargetCefrLevel is required when Mode is 'general'.");
+
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
 
         Student? student = null;
@@ -181,8 +187,9 @@ public class CoursesController : ControllerBase
         if (course is null) return NotFound();
 
         var entryMap = course.Entries.ToDictionary(e => e.Id);
-        if (request.OrderedEntryIds.Any(eid => !entryMap.ContainsKey(eid)))
-            return BadRequest("One or more entry IDs do not belong to this course.");
+        if (request.OrderedEntryIds.Count != entryMap.Count ||
+            request.OrderedEntryIds.Any(eid => !entryMap.ContainsKey(eid)))
+            return BadRequest("OrderedEntryIds must contain all entry IDs for this course exactly once.");
 
         for (var i = 0; i < request.OrderedEntryIds.Count; i++)
             entryMap[request.OrderedEntryIds[i]].OrderIndex = i + 1;

@@ -64,6 +64,7 @@ export interface UpdateCurriculumEntryRequest {
   grammarFocus?: string
   competencies?: string
   lessonType?: string
+  status?: EntryStatus
 }
 
 export async function getCourses(): Promise<CourseSummary[]> {
