@@ -154,7 +154,7 @@ public class LessonService : ILessonService
     public async Task<LessonUpdateResult> UpdateAsync(Guid teacherId, Guid lessonId, UpdateLessonRequest request, CancellationToken cancellationToken = default)
     {
         var lesson = await _db.Lessons
-            .Include(l => l.Sections)
+            .Include(l => l.Sections).ThenInclude(s => s.Materials)
             .Include(l => l.Student)
             .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
@@ -195,7 +195,7 @@ public class LessonService : ILessonService
     public async Task<LessonDto?> UpdateSectionsAsync(Guid teacherId, Guid lessonId, UpdateLessonSectionsRequest request, CancellationToken cancellationToken = default)
     {
         var lesson = await _db.Lessons
-            .Include(l => l.Sections)
+            .Include(l => l.Sections).ThenInclude(s => s.Materials)
             .Include(l => l.Student)
             .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
@@ -214,15 +214,13 @@ public class LessonService : ILessonService
 
         // Remove sections no longer present (and their content blocks + material blobs)
         var removedSections = lesson.Sections.Where(s => !incomingTypes.Contains(s.SectionType)).ToList();
+        var removedSectionIds = new HashSet<Guid>();
         if (removedSections.Count > 0)
         {
-            var removedIds = removedSections.Select(s => s.Id).ToHashSet();
-
-            // Clean up material blobs before removing sections
-            await _materialService.DeleteBlobsForSectionsAsync(removedIds, cancellationToken);
+            removedSectionIds = removedSections.Select(s => s.Id).ToHashSet();
 
             var orphanedBlocks = await _db.LessonContentBlocks
-                .Where(b => b.LessonSectionId.HasValue && removedIds.Contains(b.LessonSectionId.Value))
+                .Where(b => b.LessonSectionId.HasValue && removedSectionIds.Contains(b.LessonSectionId.Value))
                 .ToListAsync(cancellationToken);
             if (orphanedBlocks.Count > 0)
                 _db.LessonContentBlocks.RemoveRange(orphanedBlocks);
@@ -259,6 +257,11 @@ public class LessonService : ILessonService
 
         lesson.UpdatedAt = now;
         await _db.SaveChangesAsync(cancellationToken);
+
+        // Clean up material blobs after DB commit (DB-first pattern)
+        if (removedSectionIds.Count > 0)
+            await _materialService.DeleteBlobsForSectionsAsync(removedSectionIds, cancellationToken);
+
         _logger.LogInformation("Lesson sections updated. TeacherId={TeacherId} LessonId={LessonId} SectionCount={Count}",
             teacherId, lessonId, resultSections.Count);
 

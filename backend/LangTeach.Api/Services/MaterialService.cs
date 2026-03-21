@@ -75,7 +75,16 @@ public class MaterialService : IMaterialService
         };
 
         _db.Materials.Add(material);
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            try { await _blobStorage.DeleteAsync(blobPath, CancellationToken.None); }
+            catch (Exception cleanupEx) { _logger.LogWarning(cleanupEx, "Failed to clean up blob {BlobPath} after DB insert failure.", blobPath); }
+            throw;
+        }
 
         _logger.LogInformation("Material uploaded. MaterialId={MaterialId} SectionId={SectionId} FileName={FileName}", materialId, sectionId, sanitizedFileName);
 
@@ -155,7 +164,15 @@ public class MaterialService : IMaterialService
 
         foreach (var m in materials)
         {
-            await _blobStorage.DeleteAsync(m.BlobPath, cancellationToken);
+            try
+            {
+                await _blobStorage.DeleteAsync(m.BlobPath, cancellationToken);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete blob {BlobPath} for removed section {SectionId}.", m.BlobPath, m.LessonSectionId);
+            }
         }
 
         _logger.LogInformation("Deleted {Count} blobs for {SectionCount} removed sections", materials.Count, sectionIdSet.Count);

@@ -28,6 +28,7 @@ export function MaterialUpload({ lessonId, sectionId }: MaterialUploadProps) {
     onError: (err: unknown) => {
       const message = err instanceof Error ? err.message : 'Upload failed'
       setError(message)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     },
   })
 

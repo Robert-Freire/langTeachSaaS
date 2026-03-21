@@ -1,10 +1,11 @@
+using System.Collections.Concurrent;
 using LangTeach.Api.Services;
 
 namespace LangTeach.Api.Tests.Helpers;
 
 public class InMemoryBlobStorageService : IBlobStorageService
 {
-    private readonly Dictionary<string, byte[]> _blobs = new();
+    private readonly ConcurrentDictionary<string, byte[]> _blobs = new();
 
     public Task<Uri> UploadAsync(Stream stream, string blobPath, string contentType, CancellationToken cancellationToken = default)
     {
@@ -16,7 +17,7 @@ public class InMemoryBlobStorageService : IBlobStorageService
 
     public Task DeleteAsync(string blobPath, CancellationToken cancellationToken = default)
     {
-        _blobs.Remove(blobPath);
+        _blobs.TryRemove(blobPath, out _);
         return Task.CompletedTask;
     }
 

@@ -91,7 +91,14 @@ public class LessonsController : ControllerBase
             return NotFound();
         }
 
-        await _materialService.EnrichWithPreviewUrls(lesson.Sections);
+        try
+        {
+            await _materialService.EnrichWithPreviewUrls(lesson.Sections);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to enrich material preview URLs for LessonId={LessonId}. Returning lesson without preview URLs.", id);
+        }
         return Ok(lesson);
     }
 

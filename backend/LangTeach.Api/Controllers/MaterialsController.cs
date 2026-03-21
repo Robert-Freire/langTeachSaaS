@@ -28,7 +28,7 @@ public class MaterialsController : ControllerBase
     private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
     [HttpPost]
-    [RequestSizeLimit(10_485_760)]
+    [RequestSizeLimit(11 * 1024 * 1024)]
     public async Task<IActionResult> Upload(Guid lessonId, Guid sectionId, IFormFile file, CancellationToken cancellationToken)
     {
         if (Auth0Id is null) return Unauthorized();
