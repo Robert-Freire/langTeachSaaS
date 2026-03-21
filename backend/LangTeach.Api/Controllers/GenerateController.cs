@@ -20,6 +20,7 @@ public class GenerateController : ControllerBase
     private readonly IPromptService _promptService;
     private readonly IClaudeClient _claudeClient;
     private readonly IMaterialService _materialService;
+    private readonly ICurriculumTemplateService _templateService;
     private readonly AppDbContext _db;
     private readonly ILogger<GenerateController> _logger;
 
@@ -29,6 +30,7 @@ public class GenerateController : ControllerBase
         IPromptService promptService,
         IClaudeClient claudeClient,
         IMaterialService materialService,
+        ICurriculumTemplateService templateService,
         AppDbContext db,
         ILogger<GenerateController> logger)
     {
@@ -37,6 +39,7 @@ public class GenerateController : ControllerBase
         _promptService = promptService;
         _claudeClient = claudeClient;
         _materialService = materialService;
+        _templateService = templateService;
         _db = db;
         _logger = logger;
     }
@@ -122,6 +125,8 @@ public class GenerateController : ControllerBase
             ? materials.Select(m => m.FileName).ToArray()
             : null;
 
+        var grammarConstraints = _templateService.GetGrammarForCefrPrefix(cefrLevel);
+
         var ctx = new GenerationContext(
             Language: language,
             CefrLevel: cefrLevel,
@@ -136,7 +141,8 @@ public class GenerateController : ControllerBase
             ExistingNotes: request.ExistingNotes,
             Direction: request.Direction,
             MaterialFileNames: materialFileNames,
-            StudentDifficulties: TopDifficulties(student)
+            StudentDifficulties: TopDifficulties(student),
+            GrammarConstraints: grammarConstraints.Count > 0 ? grammarConstraints : null
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -251,6 +257,8 @@ public class GenerateController : ControllerBase
             ? materials.Select(m => m.FileName).ToArray()
             : null;
 
+        var grammarConstraints = _templateService.GetGrammarForCefrPrefix(cefrLevel);
+
         var ctx = new GenerationContext(
             Language: language,
             CefrLevel: cefrLevel,
@@ -265,7 +273,8 @@ public class GenerateController : ControllerBase
             ExistingNotes: request.ExistingNotes,
             Direction: request.Direction,
             MaterialFileNames: materialFileNames,
-            StudentDifficulties: TopDifficulties(student)
+            StudentDifficulties: TopDifficulties(student),
+            GrammarConstraints: grammarConstraints.Count > 0 ? grammarConstraints : null
         );
 
         var claudeRequest = buildPrompt(ctx);

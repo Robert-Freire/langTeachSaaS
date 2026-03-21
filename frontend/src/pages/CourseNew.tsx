@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { GraduationCap, BookOpen, Loader2 } from 'lucide-react'
 import { createCourse, type CreateCourseRequest, type CourseMode } from '../api/courses'
+import { getCurriculumTemplates } from '../api/curricula'
 import { getStudents } from '../api/students'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,12 +29,23 @@ export default function CourseNew() {
   const [examDate, setExamDate] = useState('')
   const [sessionCount, setSessionCount] = useState('10')
   const [studentId, setStudentId] = useState<string | undefined>()
+  const [useTemplate, setUseTemplate] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const { data: studentsData } = useQuery({
     queryKey: ['students'],
     queryFn: () => getStudents(),
   })
+
+  const { data: allTemplates } = useQuery({
+    queryKey: ['curriculum-templates'],
+    queryFn: getCurriculumTemplates,
+    enabled: useTemplate && !!targetCefrLevel && mode === 'general',
+  })
+
+  const templates = allTemplates?.filter(t => t.cefrLevel === targetCefrLevel) ?? []
+  const selectedTemplateData = templates.find(t => t.level === selectedTemplate)
 
   const students = studentsData?.items ?? []
 
@@ -43,11 +55,14 @@ export default function CourseNew() {
         name,
         language,
         mode,
-        sessionCount: parseInt(sessionCount),
+        sessionCount: useTemplate && selectedTemplateData
+          ? selectedTemplateData.unitCount
+          : parseInt(sessionCount),
         studentId: studentId || undefined,
         targetCefrLevel: mode === 'general' ? targetCefrLevel || undefined : undefined,
         targetExam: mode === 'exam-prep' ? targetExam || undefined : undefined,
         examDate: mode === 'exam-prep' && examDate ? examDate : undefined,
+        templateLevel: useTemplate && selectedTemplate ? selectedTemplate : undefined,
       }
       return createCourse(req)
     },
@@ -61,7 +76,9 @@ export default function CourseNew() {
   })
 
   const isValid = name.trim() && language &&
-    (mode === 'general' ? !!targetCefrLevel : !!targetExam)
+    (mode === 'general'
+      ? !!targetCefrLevel && (!useTemplate || !!selectedTemplate)
+      : !!targetExam)
 
   return (
     <div className="max-w-xl mx-auto space-y-8">
@@ -75,7 +92,9 @@ export default function CourseNew() {
       {isPending ? (
         <div className="flex flex-col items-center justify-center py-24 gap-4 text-zinc-500" data-testid="generating-curriculum">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-sm">Generating your curriculum...</p>
+          <p className="text-sm">
+            {useTemplate && selectedTemplate ? 'Creating course from template...' : 'Generating your curriculum...'}
+          </p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -145,18 +164,86 @@ export default function CourseNew() {
 
           {/* Mode-specific fields */}
           {mode === 'general' ? (
-            <div className="space-y-1.5">
-              <Label>Target CEFR level</Label>
-              <Select value={targetCefrLevel} onValueChange={v => setTargetCefrLevel(v ?? '')}>
-                <SelectTrigger data-testid="cefr-select">
-                  <SelectValue placeholder="Select level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CEFR_LEVELS.map(l => (
-                    <SelectItem key={l} value={l}>{l}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Target CEFR level</Label>
+                <Select
+                  value={targetCefrLevel}
+                  onValueChange={v => {
+                    setTargetCefrLevel(v ?? '')
+                    setSelectedTemplate('')
+                  }}
+                >
+                  <SelectTrigger data-testid="cefr-select">
+                    <SelectValue placeholder="Select level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CEFR_LEVELS.map(l => (
+                      <SelectItem key={l} value={l}>{l}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Template picker (only when CEFR level is selected) */}
+              {targetCefrLevel && (
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      id="use-template"
+                      data-testid="use-template-checkbox"
+                      checked={useTemplate}
+                      onChange={e => {
+                        setUseTemplate(e.target.checked)
+                        setSelectedTemplate('')
+                      }}
+                      className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-normal text-zinc-700">
+                      Use Instituto Cervantes curriculum template
+                    </span>
+                  </label>
+
+                  {useTemplate && (
+                    <div className="space-y-3 pl-6">
+                      <div className="space-y-1.5">
+                        <Select
+                          value={selectedTemplate}
+                          onValueChange={v => setSelectedTemplate(v ?? '')}
+                        >
+                          <SelectTrigger data-testid="template-select">
+                            <SelectValue placeholder="Select a template" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {templates.map(t => (
+                              <SelectItem key={t.level} value={t.level}>
+                                {t.level} ({t.unitCount} units)
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {selectedTemplateData && selectedTemplateData.sampleGrammar.length > 0 && (
+                        <Card className="border-zinc-100 bg-zinc-50" data-testid="template-preview">
+                          <CardContent className="p-3 space-y-1">
+                            <p className="text-xs font-medium text-zinc-600">Sample grammar</p>
+                            <ul className="text-xs text-zinc-500 space-y-0.5">
+                              {selectedTemplateData.sampleGrammar.map((g, i) => (
+                                <li key={i}>{g}</li>
+                              ))}
+                            </ul>
+                            <p className="text-xs text-zinc-400 pt-1">
+                              {selectedTemplateData.unitCount} sessions will be created from the template
+                            </p>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -186,20 +273,22 @@ export default function CourseNew() {
             </div>
           )}
 
-          {/* Session count */}
-          <div className="space-y-1.5">
-            <Label>Number of sessions</Label>
-            <Select value={sessionCount} onValueChange={v => setSessionCount(v ?? '10')}>
-              <SelectTrigger data-testid="session-count-select">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SESSION_COUNTS.map(n => (
-                  <SelectItem key={n} value={String(n)}>{n} sessions</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Session count (hidden when template is selected since it auto-sets) */}
+          {!useTemplate && (
+            <div className="space-y-1.5">
+              <Label>Number of sessions</Label>
+              <Select value={sessionCount} onValueChange={v => setSessionCount(v ?? '10')}>
+                <SelectTrigger data-testid="session-count-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SESSION_COUNTS.map(n => (
+                    <SelectItem key={n} value={String(n)}>{n} sessions</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Student (optional) */}
           {students.length > 0 && (
@@ -241,7 +330,7 @@ export default function CourseNew() {
                 doCreate()
               }}
             >
-              Generate Curriculum
+              {useTemplate && selectedTemplate ? 'Create from Template' : 'Generate Curriculum'}
             </Button>
           </div>
         </div>

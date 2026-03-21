@@ -42,5 +42,6 @@ public record GenerationContext(
     string? LessonSummary = null,
     string? Direction = null,
     string[]? MaterialFileNames = null,
-    DifficultyDto[]? StudentDifficulties = null
+    DifficultyDto[]? StudentDifficulties = null,
+    IReadOnlyList<string>? GrammarConstraints = null
 );
