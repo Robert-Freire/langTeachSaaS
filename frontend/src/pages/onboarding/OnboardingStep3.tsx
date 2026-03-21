@@ -106,7 +106,7 @@ export default function OnboardingStep3({ student, onBack }: OnboardingStep3Prop
       {error && <p className="text-sm text-red-600" data-testid="step3-error">{error}</p>}
 
       <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={onBack} data-testid="onboarding-back">
+        <Button type="button" variant="outline" onClick={onBack} disabled={isPending} data-testid="onboarding-back">
           Back
         </Button>
         <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700" data-testid="onboarding-next">
