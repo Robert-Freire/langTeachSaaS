@@ -28,11 +28,13 @@ vi.mock('@auth0/auth0-react', () => ({
   }),
 }))
 
+const mockGetStudents = vi.fn()
 vi.mock('../api/students', async () => {
   const actual = await vi.importActual('../api/students')
   return {
     ...actual,
     createStudent: vi.fn(),
+    getStudents: (...args: unknown[]) => mockGetStudents(...args),
   }
 })
 
@@ -96,6 +98,7 @@ describe('Onboarding', () => {
   beforeEach(() => {
     mockUpdateMutate.mockClear()
     mockCompleteMutateAsync.mockClear()
+    mockGetStudents.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 1 })
   })
 
   it('shows loading state while profile loads', () => {
@@ -149,7 +152,23 @@ describe('Onboarding', () => {
     expect(screen.getByText('Add your first student')).toBeInTheDocument()
   })
 
-  it('resumes at step 3 if student exists but no lessons', () => {
+  it('resumes at step 3 if student exists but no lessons', async () => {
+    const mockStudent = {
+      id: 'stu-1',
+      name: 'Test Student',
+      learningLanguage: 'English',
+      cefrLevel: 'B1',
+      interests: [],
+      notes: null,
+      nativeLanguage: null,
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+    }
+    mockGetStudents.mockResolvedValue({ items: [mockStudent], totalCount: 1, page: 1, pageSize: 1 })
+
     vi.mocked(useProfile).mockReturnValue({
       data: profileWithStudents,
       isLoading: false,
@@ -158,10 +177,16 @@ describe('Onboarding', () => {
     } as unknown as ReturnType<typeof useProfile>)
 
     renderOnboarding()
-    // Step 3 needs a createdStudent prop, so it won't render the form directly.
-    // The step indicator should show step 3 as active.
+
+    // Step indicator shows step 3 as active
     const step3 = screen.getByTestId('step-3')
     expect(step3).toHaveClass('bg-indigo-600')
+
+    // Step 3 form loads after student is fetched
+    await waitFor(() => {
+      expect(screen.getByTestId('onboarding-step-3')).toBeInTheDocument()
+    })
+    expect(screen.getByText('Create your first lesson')).toBeInTheDocument()
   })
 
   it('advances from step 1 to step 2 on profile save', async () => {

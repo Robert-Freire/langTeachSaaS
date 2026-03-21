@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useProfile } from '../hooks/useProfile'
-import { type Student } from '../api/students'
+import { getStudents, type Student } from '../api/students'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import OnboardingStep1 from './onboarding/OnboardingStep1'
@@ -60,12 +61,28 @@ export default function Onboarding() {
   const [createdStudent, setCreatedStudent] = useState<Student | null>(null)
   const [initialized, setInitialized] = useState(false)
 
+  const initialStep = !isLoading && profile ? deriveInitialStep(profile) : 1
+
+  // Fetch existing students when resuming at step 3 (user completed step 2 in a previous session)
+  const { data: studentsData } = useQuery({
+    queryKey: ['students', { pageSize: 1 }],
+    queryFn: () => getStudents({ pageSize: 1 }),
+    enabled: initialStep === 3 && !createdStudent,
+  })
+
   useEffect(() => {
     if (!isLoading && profile && !initialized) {
-      setStep(deriveInitialStep(profile))
+      setStep(initialStep)
       setInitialized(true)
     }
-  }, [isLoading, profile, initialized])
+  }, [isLoading, profile, initialized, initialStep])
+
+  // When resuming at step 3, use the fetched student
+  useEffect(() => {
+    if (step === 3 && !createdStudent && studentsData?.items?.length) {
+      setCreatedStudent(studentsData.items[0])
+    }
+  }, [step, createdStudent, studentsData])
 
   if (isLoading) {
     return (
@@ -114,6 +131,13 @@ export default function Onboarding() {
               student={createdStudent}
               onBack={() => setStep(2)}
             />
+          )}
+          {step === 3 && !createdStudent && (
+            <div className="space-y-4" data-testid="step3-loading">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-64" />
+              <Skeleton className="h-10 w-full" />
+            </div>
           )}
         </CardContent>
       </Card>

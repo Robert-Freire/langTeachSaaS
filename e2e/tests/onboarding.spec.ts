@@ -1,8 +1,11 @@
 import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
-import { resetE2ETestTeacher } from '../helpers/db-helper'
+import { resetE2ETestTeacher, approveE2ETestTeacherWithoutOnboarding } from '../helpers/db-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 import { UI_TIMEOUT, NAV_TIMEOUT } from '../helpers/timeouts'
+
+const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
+const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 
 // This test needs a fresh teacher (no onboarding completed).
 // Reset the teacher before running, then re-create via /api/auth/me
@@ -24,29 +27,15 @@ test.describe.serial('Onboarding wizard', () => {
   test('new user completes onboarding wizard', async ({ browser }) => {
     const context = await createMockAuthContext(browser)
     const page = await context.newPage()
-    const apiBase = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 
     // Register the teacher via API (creates teacher with HasCompletedOnboarding=false)
-    const meResponse = await page.request.get(`${apiBase}/api/auth/me`, {
-      headers: { Authorization: 'Bearer test-token' },
+    const meResponse = await page.request.get(`${API_BASE}/api/auth/me`, {
+      headers: AUTH_HEADER,
     })
     expect(meResponse.ok()).toBeTruthy()
 
-    // Approve the teacher (but NOT complete onboarding)
-    const pool = (await import('mssql')).default
-    const config = {
-      server: process.env.DB_SERVER ?? '127.0.0.1',
-      port: parseInt(process.env.DB_PORT ?? '1434'),
-      database: process.env.DB_NAME ?? 'LangTeach',
-      user: process.env.DB_USER ?? 'sa',
-      password: process.env.DB_PASSWORD ?? 'LangTeach_Dev1!',
-      options: { trustServerCertificate: true },
-    }
-    const conn = await new pool.ConnectionPool(config).connect()
-    await conn.request().query(
-      "UPDATE Teachers SET IsApproved = 1 WHERE Email = 'e2e-test@langteach.io'"
-    )
-    await conn.close()
+    // Approve the teacher but leave HasCompletedOnboarding=false
+    await approveE2ETestTeacherWithoutOnboarding()
 
     // Navigate to the app, should redirect to /onboarding
     await page.goto('/')
