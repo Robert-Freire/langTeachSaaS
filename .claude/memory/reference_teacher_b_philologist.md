@@ -6,10 +6,13 @@ type: reference
 
 ## Identity
 
-- **Name:** Unknown (anonymous — contact only via Jordi, do not request direct contact per Robert's instruction)
+- **Name:** "Pedro Sanchez" (pseudonym chosen by Jordi to protect privacy, 2026-03-21)
 - **Who:** Jordi's colleague from his first summer at the academy (not the most recent one)
 - **Profile:** Language teacher, likely philologist/linguistics background, technically engaged with the topic
-- **Demo window:** Was planning to visit Barcelona 2026-03-31 to 2026-04-05 (Jordi suggested showing him a demo then)
+- **Language taught:** Spanish
+- **Academy:** Works at multiple academies (no single employer)
+- **Contact:** Via Jordi's email (jordim.freire@gmail.com). Jordi explicitly declined to share personal data.
+- **Demo window:** Will be in Barcelona 2026-03-31 to 2026-04-05 (Jordi suggested showing him a demo then)
 
 ## Feedback Files (chronological)
 

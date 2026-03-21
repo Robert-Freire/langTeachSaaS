@@ -22,7 +22,7 @@ Raw: `feedback/raw/2026-03-19_jordi_audio-round3_gamification.txt`
 
 ## Teacher B — Philologist (new source, 2026-03-20)
 
-- **Name:** Unknown (anonymous, Jordi explicitly relays all questions — no direct contact per Robert's instruction)
+- **Name:** "Pedro Sanchez" (pseudonym, Jordi declined to share real name, 2026-03-21)
 - **Relationship:** Jordi's colleague from first summer at the academy (not most recent summer)
 - **Role:** Language teacher, likely philologist / linguistics background
 - **Source:** WhatsApp audios + text messages forwarded by Robert (2026-03-20)

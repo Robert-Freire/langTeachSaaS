@@ -9,13 +9,13 @@ type: project
 GitHub Issues is the single source of truth for task tracking (as of 2026-03-19).
 Use `gh issue list` to see current state. Key queries:
 
-- Current sprint: `gh issue list --milestone "Demo 1 (internal)" --label "demo-sprint"`
+- Current sprint: `gh issue list --milestone "Phase 2A: Teacher Workflow"`
 - Must-haves: `gh issue list --label "P1:must"`
 - Ready to pick up: `gh issue list --label "qa:ready"`
 
 **Milestones:**
-- Demo 1 (internal): demo sprint issues + T23 demo prep
-- Phase 2A: Teacher Workflow (Course Planner, Audio Reflections, Difficulty Tracking, Group Classes, Material Upload)
+- Demo 1 (internal): CLOSED (all issues done)
+- Phase 2A: Teacher Workflow (Course Planner, Audio Reflections, Difficulty Tracking, Group Classes, Material Upload) — ACTIVE
 - Phase 2B: Production (onboarding, caching, usage limits, QA agent, CI pipeline)
 - Phase 3: Growth (student portal, evaluation, content library, payments)
 
@@ -29,10 +29,9 @@ See git history for details. Key completed milestones:
 - Phase 1: repo setup, Azure infra, Auth0, DB, CRUD APIs, lesson UI, CI/CD
 - Beta Phase 2A (AI Core): T10-T15 (Claude API, prompts, generation, streaming, typed content)
 - Beta Phase 2B (Make It Real): T16-T21 (one-click generation, PDF export, student notes, dashboard v2, brand polish, mobile responsive, regenerate with direction)
-- Demo Sprint: #74, #78, #76, #79 all fixed
+- Demo Sprint: all issues closed, milestone closed
 
-**Demo 1 sprint open issues:** #95, #116, #117, #121, #122, #123, #124, #125, #126 (UX guidelines)
-**Next sprint:** Beta 2: Teacher Workflow Foundation (scope defined in plan/beta2-teacher-workflow/sprint-scope.md)
+**Active sprint:** Phase 2A: Teacher Workflow (18 open issues)
 - #98 Course/Curriculum Planner (P0)
 - #100 Enhanced Difficulty Tracking (P1)
 - #102 Material Upload (P1)

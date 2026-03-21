@@ -16,6 +16,8 @@
 - [Jordi feedback log](project_jordi_feedback_log.md) — running log of all feedback from Jordi (brother/teacher, Head of Discovery), mapped to roadmap, with open questions
 - [Unnamed teacher feedback](project_unnamed_teacher_feedback.md) — feedback from Jordi's colleague (name pending), gamification and ludic activities
 - [Deploy freeze mechanism](project_deploy_freeze.md) — DEPLOY_FROZEN repo variable controls Azure deploys; check state before unfreeze
+- [Dev workflow overview](project_dev_workflow_doc.md) — human-readable explanation of the full dev loop; lives at plan/dev-workflow.md; keep aligned when CLAUDE.md rules change
+- [Sprint overview files](project_sprint_overviews.md) — quick-reference sprint files at plan/sprints/; update when issues are completed, split, or added to a sprint
 
 ## Feedback
 - [Task start workflow](feedback_task_branch_workflow.md) — always pull main and create the feature branch before starting any task
@@ -36,11 +38,13 @@
 - [QA agent must read SKILL.md](feedback_qa_agent_use_skill_file.md) — never duplicate QA rules inline; always instruct agent to read .claude/skills/qa/SKILL.md — check no implementation started, re-run QA agent after any body edit on a qa:ready issue
 - [Email check and reply workflow](feedback_email_workflow.md) — when asked to check email: read, analyze, incorporate feedback into memory/plans, reply directly via SMTP
 - [Always save raw feedback](feedback_save_raw_feedback.md) — on any feedback (email, audio, message), save raw text to feedback/raw/ and update person's feedback log
+- [Email processing workflow](feedback_email_processing_workflow.md) — after processing feedback email: save raw, update logs, create/update issues, reply, move to Processed folder
 - [E2E stack coordination](feedback_e2e_stack_coordination.md) — only one e2e stack at a time; check before starting, notify user if busy, never tear down another agent's stack
 - [Batch related issues](feedback_issue_batching.md) — group related small fixes into single issues; don't create one issue per finding or one mega-issue for everything
 - [Add issues to project board](feedback_add_issues_to_project.md) — always add new issues to the project board immediately after creation; has been forgotten before
 - [Verify project board after sprint prep](feedback_verify_project_board.md) — after preparing a sprint, verify the board matches expectations (columns, priorities, all items visible)
 - [Assign issue when picked](feedback_assign_issue_when_picked.md) — immediately self-assign the GitHub issue when picking a task, before any other work, so other agents don't pick it
+- [Reply with understanding before acting](feedback_reply_before_acting.md) — after receiving feedback, reply with summary + planned issues, wait 4 days for corrections before creating issues
 
 ## Reference
 - [Audio transcription method](reference_audio_transcription.md) — transcribe audio files locally using OpenAI Whisper + ffmpeg

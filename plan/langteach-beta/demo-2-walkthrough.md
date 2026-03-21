@@ -2,25 +2,111 @@
 
 **Framing to open with:** "I want to show you where the app is so your feedback is grounded in what actually exists, not what I describe."
 
-## Flow
+---
 
-1. **Dashboard** - Start here. Show the week strip, quick actions sidebar. "This is what a teacher sees when they log in."
+## Step 1: Dashboard
 
-2. **Students** - Open the list, click into a student. Show the profile: CEFR level, interests, native language, weaknesses. "This is what the AI uses to personalize."
+**What to do:** Start here. Show the week strip, quick actions sidebar.
 
-3. **Create a Lesson** - From dashboard or lessons list, pick a template (Conversation is the most visual). Assign it to a student. "Notice it picks up the student's level and language automatically."
+**Say:** "This is what a teacher sees when they log in. Upcoming lessons for the week, quick actions on the side."
 
-4. **Generate** - Hit Generate All. Let it stream in real time. Don't rush this, let him watch. "This is the part that replaces 15 minutes of prep."
+---
 
-5. **Typed Content** - Scroll through the generated sections. Point out: vocabulary is a table (not text), exercises are interactive (not a list), conversation is a dialogue card. "Same data, different rendering depending on context."
+## Step 2: Create the Student
 
-6. **Study View** - Click "Preview as Student." Same lesson, student experience: flashcards, interactive quiz, dialogue viewer. "Teacher and student see the same content, different interface."
+**What to do:** Go to Students, click "New Student." Fill in these fields exactly:
 
-7. **Regenerate** - Go back to editor. Pick one section, add a direction ("make it about food instead of travel"), regenerate just that section. "The teacher stays in control."
+| Field | Type this |
+|---|---|
+| Name | `Willem van der Berg` |
+| Learning Language | `Spanish` |
+| CEFR Level | `B1` |
+| Native Language | `Dutch` |
+| Interests | `rugby, art and painting, travel, sailing` |
+| Learning Goals | `hold conversations with colleagues in Spanish ports, talk about art and culture, describe his work and daily routines` |
+| Weaknesses | `ser vs estar, gender agreement, prepositions (por vs para)` |
+| Notes | `Ship captain, travels to Spanish-speaking ports regularly. Also speaks French and English. Highly motivated, limited study time due to work schedule. Responds well to practical, real-world scenarios connected to his profession and interests.` |
 
-8. **PDF Export** - Download the PDF. "Teacher copy has answers, student copy doesn't."
+**Say:** "This is a real profile: Dutch, ship captain, loves rugby and art, speaks French and English. Everything here feeds into the AI. Watch how it uses this."
 
-9. **Hand him the keyboard.** "Click around. What would you try to do? Where do you get stuck?"
+**Why this student:** Jordi described this exact student in his last email. He'll recognize it immediately.
+
+---
+
+## Step 3: Create a Lesson
+
+**What to do:** Go to Lessons, click "New Lesson." Fill in:
+
+| Field | Type this |
+|---|---|
+| Template | `Conversation` |
+| Language | `Spanish` |
+| CEFR Level | `B1` |
+| Student | `Willem van der Berg` (select from dropdown) |
+| Topic | `Visiting an art museum in Barcelona and discussing paintings with a local guide` |
+
+**Say:** "I set the language and level, link the student, pick a topic. The AI will pull Willem's full profile (interests, weaknesses, native language) into the generation."
+
+---
+
+## Step 4: Generate
+
+**What to do:** Hit "Generate All." Let it stream. Do NOT click anything else. Let Jordi watch the content appear section by section.
+
+**Say:** "This is the part that replaces 15 minutes of prep. Watch."
+
+**After it finishes:** "Every section was generated knowing Willem is Dutch, B1, interested in art. Look at the vocabulary: it's not generic B1 words, it's museum and art vocabulary tailored to his level."
+
+---
+
+## Step 5: Typed Content
+
+**What to do:** Scroll through the generated sections slowly. Point at each one.
+
+**Say for each:**
+- **Vocabulary:** "This is a structured table, not a text dump. Each word has a definition, example sentence, and translation."
+- **Exercises:** "These are interactive: multiple choice, fill-in-the-blank. Not a PDF list."
+- **Conversation:** "This is a dialogue card with roles. Not raw text."
+
+**Key line:** "Same data, different rendering depending on whether you're the teacher editing or the student practicing."
+
+---
+
+## Step 6: Study View
+
+**What to do:** Click "Preview as Student" (or the study view button).
+
+**Say:** "Same lesson, student experience. Flashcards for vocabulary, interactive quiz for exercises, dialogue viewer for conversation. Teacher and student see the same content, different interface."
+
+---
+
+## Step 7: Regenerate with Direction
+
+**What to do:** Go back to editor. Click Regenerate on the Practice section. In the direction field, type exactly:
+
+> `Change the scenario to arriving at a Spanish port and coordinating with harbor staff`
+
+**Say:** "Watch this. I'm changing one section, keeping everything else. And I'm connecting it to his job as a ship captain."
+
+**After it regenerates:** "The AI knows Willem is a captain. The new content references ports, crew, harbor vocabulary. The teacher stays in control of what to regenerate and what direction to take."
+
+---
+
+## Step 8: PDF Export
+
+**What to do:** Click Export/Download PDF.
+
+**Say:** "Two versions: teacher copy has answers marked, student copy doesn't. Ready to print or send via WhatsApp."
+
+---
+
+## Step 9: Hand Over
+
+**What to do:** Give Jordi the keyboard (or share screen control on Meet).
+
+**Say:** "Click around. What would you try to do? Where do you get stuck? What's missing?"
+
+---
 
 ## What NOT to show (unless he asks)
 - Profile/settings (boring)
@@ -29,43 +115,21 @@
 
 ## What to listen for
 - What does he try to click that doesn't exist yet?
-- Does he ask about courses/curriculum? (validates Phase 2 priority)
+- Does he ask about courses/curriculum? (validates Phase 2 priority, already built!)
 - Does he mention specific content types he'd want? (feeds typed content roadmap)
-- Does he try to do something the app doesn't support? (that's the most valuable signal)
+- Does he try to do something the app doesn't support? (most valuable signal)
+- Does he mention the Dutch student example? (confirms he recognizes his own use case)
+
+## If he asks about courses
+
+The Course Planner is already built (#98, shipped). If he asks "can I plan a full course for this student?", show it. This is a bonus moment, not part of the main flow.
 
 ---
 
-## Demo Seed Data: Spanish Class Example
+## Pre-demo checklist
 
-Use this data when creating the demo student and lesson live during the walkthrough.
-
-### Student
-
-| Field | Value |
-|---|---|
-| Name | Carlos Mendez |
-| Learning Language | Spanish |
-| CEFR Level | B1 |
-| Native Language | English |
-| Interests | travel, cooking, football |
-| Learning Goals | hold conversations with native speakers, order food and ask for directions, talk about past experiences |
-| Weaknesses | ser vs estar, subjunctive mood, rolling the R |
-| Notes | Works in logistics, travels to Spain twice a year. Motivated but inconsistent with homework. Responds well to real-life scenarios. |
-
-### Lesson
-
-| Field | Value |
-|---|---|
-| Template | Conversation |
-| Topic (notes field) | Ordering food and asking for recommendations at a restaurant in Madrid |
-| Student | Carlos Mendez (auto-filled from above) |
-| Level | B1 (auto-filled) |
-| Language | Spanish (auto-filled) |
-
-### Regenerate section demo
-
-When demoing the regenerate step (step 7), use this direction on the Practice section:
-
-> "Make it about asking for directions to a football stadium instead of ordering food"
-
-This keeps it realistic and shows the AI picks up the student's interest in football.
+- [ ] App running and accessible via the URL you'll share on Meet
+- [ ] Logged in, dashboard visible
+- [ ] No existing "Willem" student (create it live during the demo)
+- [ ] Audio recording running (phone voice recorder or Audacity)
+- [ ] This script open on a second screen or printed
