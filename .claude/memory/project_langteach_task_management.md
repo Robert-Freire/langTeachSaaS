@@ -26,13 +26,20 @@ When creating a new issue via `gh issue create`, always complete these steps:
    ```
    gh project item-edit --project-id PVT_kwHOAF1Pks4BSLsS --id "$item_id" --field-id PVTSSF_lAHOAF1Pks4BSLsSzg_ysiA --single-select-option-id <status_id>
    ```
-   Status option IDs: Backlog=7cba4571, Ready=eec9fa45, In Progress=47fc9ee4, In Review=530fcec2, Done=61f69a4c
+   Status option IDs: Backlog=7cba4571, Ready=eec9fa45, In Progress=47fc9ee4, Ready to Test=530fcec2, Done=61f69a4c
 4. **Set the T-shirt size** on the project item (required — no size = not qa:ready):
    ```
    gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: { projectId: "PVT_kwHOAF1Pks4BSLsS" itemId: "<item_id>" fieldId: "PVTSSF_lAHOAF1Pks4BSLsSzg_7HpU" value: { singleSelectOptionId: "<size_id>" } }) { projectV2Item { id } } }'
    ```
    Size field ID: `PVTSSF_lAHOAF1Pks4BSLsSzg_7HpU`
    Size option IDs: XS=e261fbf6, S=6736aa38, M=5cfbe0a8, L=e072ac0f, XL=2115c351
+
+### Project Board — Always Use `--limit 100`
+
+`gh project item-list` defaults to 30 items. The board has 40+ items, so issues are silently omitted without `--limit 100`. Always use:
+```
+gh project item-list 2 --owner Robert-Freire --format json --limit 100
+```
 
 ### Agent Workflow
 1. Check GitHub Issues for highest-priority unassigned issue in current milestone

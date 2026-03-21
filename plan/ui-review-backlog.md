@@ -19,6 +19,17 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Minor | Generate and Preview buttons in header have inconsistent border-radius (rounded-md vs rounded-full) |
 | Minor | Dashboard mobile week strip doesn't auto-scroll to current day |
 
+### PR #144 (2026-03-21) — Exercise explanation (#127)
+
+| Severity | Finding |
+|----------|---------|
+| Important | FIB explanation text (gray, no container) is easy to miss below the inline result; consider a subtle left-border accent or bg-blue-50 note container to distinguish from exercise content |
+| Minor | Explanation column header uses text-zinc-400 (one step lighter than text-zinc-500); consider text-zinc-500 to avoid appearing ghosted while keeping read-only feel |
+| Minor | FIB correct-answer uses plain ✓ glyph; MC uses green "✓ Correct" label — inconsistent visual vocabulary for same concept; unify to green "✓ Correct" for FIB |
+| Minor | Study view lesson title has no truncation/max-w on mobile; long titles wrap and push PREVIEW badge to second line |
+| Minor | Dashboard lesson title list items lack truncate; long test/real titles will word-wrap |
+| Minor | Matching right-column chip order is spatially misaligned from left-column labels after shuffling (pre-existing, not introduced by this PR) |
+
 ### PR #TBD (2026-03-20) — Student 404 not-found (#123)
 
 | Severity | Finding |
