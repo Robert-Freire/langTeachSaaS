@@ -181,3 +181,87 @@ test('full student CRUD flow', async ({ browser }) => {
 
   await context.close()
 })
+
+test('custom free-text learning goal persists after save', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Custom Goals ${Date.now()}`
+
+  // Create a student with a custom learning goal
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: 10000 })
+
+  await page.getByTestId('student-name').fill(studentName)
+
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+
+  // Select a predefined goal
+  await page.getByTestId('learning-goals-trigger').click()
+  await page.getByRole('option', { name: 'Travel' }).click()
+  await page.keyboard.press('Escape')
+
+  // Helper to add a custom entry: fills the command input then selects "Add"
+  async function addCustomEntry(triggerTestId: string, text: string) {
+    await page.getByTestId(triggerTestId).click()
+    // Radix keeps both popover inputs visible in DOM; .last() targets the
+    // most recently opened popover (`:visible` resolves to 2 elements)
+    const cmdInput = page.locator('input[cmdk-input]').last()
+    await cmdInput.fill(text)
+    // Wait for React to render the "Add" option
+    const addBtn = page.getByTestId('add-custom-entry')
+    await expect(addBtn).toBeVisible({ timeout: 5000 })
+    await addBtn.click()
+    await page.keyboard.press('Escape')
+  }
+
+  // Add a custom learning goal
+  await addCustomEntry('learning-goals-trigger', 'pass DELE B2 in June')
+
+  // Verify both chips are visible before saving
+  await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'Travel' })).toBeVisible()
+  await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'pass DELE B2 in June' })).toBeVisible()
+
+  // Add a custom weakness
+  await addCustomEntry('weaknesses-trigger', 'irregular verb conjugation')
+
+  await expect(page.getByTestId('weakness-chip').filter({ hasText: 'irregular verb conjugation' })).toBeVisible()
+
+  // Save
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL('/students', { timeout: 10000 })
+
+  // Navigate to edit and verify persistence
+  const studentCard = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await expect(studentCard).toBeVisible({ timeout: 10000 })
+  await studentCard.getByTestId('edit-student').click()
+  await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: 10000 })
+
+  // Verify predefined and custom goals persisted
+  await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'Travel' })).toBeVisible()
+  await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'pass DELE B2 in June' })).toBeVisible()
+  await expect(page.getByTestId('weakness-chip').filter({ hasText: 'irregular verb conjugation' })).toBeVisible()
+
+  // Clean up: go back and delete the student
+  await page.getByRole('button', { name: 'Cancel' }).click()
+  await expect(page).toHaveURL('/students', { timeout: 10000 })
+  const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await deleteCard.getByTestId('delete-student').click()
+  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
+  await page.getByTestId('confirm-delete').click()
+  await expect(
+    page.locator('[data-testid^="student-row-"]').filter({
+      has: page.getByTestId('student-name').filter({ hasText: studentName }),
+    }),
+  ).not.toBeVisible({ timeout: 10000 })
+
+  await context.close()
+})

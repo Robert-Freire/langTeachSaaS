@@ -199,6 +199,101 @@ describe('StudentForm', () => {
     expect(items[1]).toHaveValue('rolled r')
   })
 
+  it('shows "Add custom" option when typing non-matching text in learning goals', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderNew()
+
+    // Open the learning goals popover
+    await user.click(screen.getByTestId('learning-goals-trigger'))
+
+    // Type a custom value that doesn't match predefined options
+    const input = screen.getByPlaceholderText('Search or type custom...')
+    await user.type(input, 'pass DELE B2')
+
+    // Should show the "Add custom" option
+    const addOption = screen.getByTestId('add-custom-entry')
+    expect(addOption).toBeInTheDocument()
+    expect(addOption).toHaveTextContent('pass DELE B2')
+  })
+
+  it('adds custom entry as chip when clicking "Add" option', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderNew()
+
+    // Open learning goals and type custom
+    await user.click(screen.getByTestId('learning-goals-trigger'))
+    const input = screen.getByPlaceholderText('Search or type custom...')
+    await user.type(input, 'pass DELE B2')
+
+    // Click the add custom option
+    await user.click(screen.getByTestId('add-custom-entry'))
+
+    // Chip should appear
+    const chips = screen.getAllByTestId('learning-goal-chip')
+    expect(chips.some((c) => c.textContent?.includes('pass DELE B2'))).toBe(true)
+  })
+
+  it('can remove a custom entry chip', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderNew()
+
+    // Add custom entry
+    await user.click(screen.getByTestId('learning-goals-trigger'))
+    const input = screen.getByPlaceholderText('Search or type custom...')
+    await user.type(input, 'custom goal')
+    await user.click(screen.getByTestId('add-custom-entry'))
+
+    // Verify chip exists
+    const chip = screen.getByTestId('learning-goal-chip')
+    expect(chip).toHaveTextContent('custom goal')
+
+    // Remove it
+    await user.click(screen.getByLabelText('Remove custom goal'))
+    expect(screen.queryByTestId('learning-goal-chip')).not.toBeInTheDocument()
+  })
+
+  it('does not show "Add custom" when input matches a predefined label', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderNew()
+
+    await user.click(screen.getByTestId('learning-goals-trigger'))
+    const input = screen.getByPlaceholderText('Search or type custom...')
+    await user.type(input, 'Travel')
+
+    // Should NOT show the add custom option (matches predefined label)
+    expect(screen.queryByTestId('add-custom-entry')).not.toBeInTheDocument()
+  })
+
+  it('displays custom entries in edit mode when loaded from server', async () => {
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1',
+      name: 'Ana',
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      nativeLanguage: null,
+      learningGoals: ['travel', 'pass DELE B2 exam'],
+      weaknesses: ['grammar', 'irregular verb conjugation'],
+      difficulties: [],
+      notes: '',
+    })
+
+    renderEdit()
+
+    // Predefined goals show their label
+    await expect(screen.findByText('Travel')).resolves.toBeInTheDocument()
+    // Custom goals show their raw value
+    expect(screen.getByText('pass DELE B2 exam')).toBeInTheDocument()
+
+    // Same for weaknesses
+    expect(screen.getByText('Grammar')).toBeInTheDocument()
+    expect(screen.getByText('irregular verb conjugation')).toBeInTheDocument()
+  })
+
   it('includes difficulties in form submission', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
     const user = userEvent.setup()
