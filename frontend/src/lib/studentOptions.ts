@@ -44,7 +44,7 @@ const WEAKNESSES_BY_LANGUAGE: Record<string, Option[]> = {
     { value: 'subjunctive', label: 'Subjunctive' },
     { value: 'partitive articles', label: 'Partitive Articles' },
     { value: 'pronoun placement', label: 'Pronoun Placement' },
-    { value: 'passe compose vs imparfait', label: 'Passe Compose vs Imparfait' },
+    { value: 'passe compose vs imparfait', label: 'Pass\u00e9 Compos\u00e9 vs Imparfait' },
     { value: 'gender agreement', label: 'Gender Agreement' },
   ],
   German: [
