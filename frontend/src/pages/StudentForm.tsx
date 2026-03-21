@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, ChevronsUpDown, Check, Plus, Trash2 } from 'lucide-react'
 import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty } from '../api/students'
-import { LEARNING_GOALS, WEAKNESSES, DIFFICULTY_CATEGORIES, SEVERITY_LEVELS, TREND_OPTIONS } from '../lib/studentOptions'
+import { LEARNING_GOALS, getWeaknessesForLanguage, DIFFICULTY_CATEGORIES, SEVERITY_LEVELS, TREND_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -494,7 +494,7 @@ export default function StudentForm() {
             <div className="space-y-1.5">
               <Label>Areas to Improve</Label>
               <MultiSelect
-                options={WEAKNESSES}
+                options={getWeaknessesForLanguage(language)}
                 selected={weaknesses}
                 onChange={setWeaknesses}
                 placeholder="Select or type areas..."

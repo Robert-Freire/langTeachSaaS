@@ -22,7 +22,12 @@ vi.mock('../lib/logger', () => ({
 
 vi.mock('../lib/studentOptions', () => ({
   LEARNING_GOALS: [{ value: 'travel', label: 'Travel' }],
-  WEAKNESSES: [{ value: 'grammar', label: 'Grammar' }],
+  getWeaknessesForLanguage: (lang: string) => {
+    const common = [{ value: 'past tenses', label: 'Past Tenses' }]
+    if (lang === 'English') return [...common, { value: 'phrasal verbs', label: 'Phrasal Verbs' }]
+    if (lang === 'Spanish') return [...common, { value: 'ser/estar', label: 'Ser/Estar' }]
+    return common
+  },
   DIFFICULTY_CATEGORIES: [
     { value: 'grammar', label: 'Grammar' },
     { value: 'pronunciation', label: 'Pronunciation' },
@@ -277,7 +282,7 @@ describe('StudentForm', () => {
       interests: [],
       nativeLanguage: null,
       learningGoals: ['travel', 'pass DELE B2 exam'],
-      weaknesses: ['grammar', 'irregular verb conjugation'],
+      weaknesses: ['ser/estar', 'irregular verb conjugation'],
       difficulties: [],
       notes: '',
     })
@@ -289,8 +294,8 @@ describe('StudentForm', () => {
     // Custom goals show their raw value
     expect(screen.getByText('pass DELE B2 exam')).toBeInTheDocument()
 
-    // Same for weaknesses
-    expect(screen.getByText('Grammar')).toBeInTheDocument()
+    // Predefined weaknesses show their label, custom ones show raw value
+    expect(screen.getByText('Ser/Estar')).toBeInTheDocument()
     expect(screen.getByText('irregular verb conjugation')).toBeInTheDocument()
   })
 
@@ -322,5 +327,102 @@ describe('StudentForm', () => {
         difficulties: [],
       }),
     )
+  })
+
+  it('shows English-specific weaknesses when English is selected', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderNew()
+
+    // Select English
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(screen.getByRole('option', { name: 'English' }))
+
+    // Open weaknesses dropdown
+    await user.click(screen.getByTestId('weaknesses-trigger'))
+
+    // Should show English-specific option
+    expect(screen.getByRole('option', { name: 'Phrasal Verbs' })).toBeInTheDocument()
+    // Should show common option
+    expect(screen.getByRole('option', { name: 'Past Tenses' })).toBeInTheDocument()
+  })
+
+  it('shows Spanish-specific weaknesses when Spanish is selected', async () => {
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1',
+      name: 'Ana',
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      nativeLanguage: null,
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+      notes: '',
+    })
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderEdit()
+
+    // Wait for form to load
+    await screen.findByRole('heading', { name: 'Edit Student' })
+
+    // Open weaknesses dropdown
+    await user.click(screen.getByTestId('weaknesses-trigger'))
+
+    // Should show Spanish-specific option
+    expect(screen.getByRole('option', { name: 'Ser/Estar' })).toBeInTheDocument()
+    // Phrasal Verbs should not appear for Spanish
+    expect(screen.queryByRole('option', { name: 'Phrasal Verbs' })).not.toBeInTheDocument()
+  })
+
+  it('preserves existing weaknesses when loaded from server', async () => {
+    // Simulate a student who has a weakness that might not be in their language's list
+    // (e.g., "phrasal verbs" saved before language filtering was added)
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1',
+      name: 'Ana',
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      nativeLanguage: null,
+      learningGoals: [],
+      weaknesses: ['phrasal verbs'],
+      difficulties: [],
+      notes: '',
+    })
+
+    renderEdit()
+
+    // The weakness chip should display even though "phrasal verbs" is not in Spanish's list
+    // MultiSelect falls back to showing the raw value for items not in options
+    const chip = await screen.findByTestId('weakness-chip')
+    expect(chip).toHaveTextContent('phrasal verbs')
+  })
+
+  it('allows adding a custom free-text weakness', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderNew()
+
+    // Select a language first
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(screen.getByRole('option', { name: 'English' }))
+
+    // Open weaknesses dropdown and type a custom value
+    await user.click(screen.getByTestId('weaknesses-trigger'))
+    const searchInput = screen.getByPlaceholderText('Search or type custom...')
+    await user.type(searchInput, 'irregular plurals')
+
+    // Should show the "Add" option for custom entry
+    const addOption = screen.getByTestId('add-custom-entry')
+    expect(addOption).toBeInTheDocument()
+
+    // Click to add the custom weakness
+    await user.click(addOption)
+
+    // Should show the custom value as a chip
+    const chip = screen.getByTestId('weakness-chip')
+    expect(chip).toHaveTextContent('irregular plurals')
   })
 })
