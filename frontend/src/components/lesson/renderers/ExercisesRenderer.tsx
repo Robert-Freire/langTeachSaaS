@@ -133,7 +133,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Sentence (use ___ for blank)</th>
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600 text-green-700">Answer</th>
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Hint</th>
-              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Explanation</th>
+              <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Explanation</th>
               <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -149,7 +149,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
                 <td className="border border-zinc-200 p-1">
                   <input value={item.hint ?? ''} onChange={(e) => updateFib(i, 'hint', e.target.value)} className={inputClass} />
                 </td>
-                <td className="border border-zinc-200 p-1">
+                <td className="hidden sm:table-cell border border-zinc-200 p-1">
                   <span className="px-2 py-1 text-xs text-zinc-400 italic">{item.explanation ?? '—'}</span>
                 </td>
                 <td className="border border-zinc-200 p-1 text-center">
@@ -199,7 +199,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
               <button type="button" onClick={() => addMcOption(qi)} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-1">+ Add option</button>
             </div>
             {q.explanation && (
-              <p className="text-xs text-zinc-400 italic mt-1 pl-1">{q.explanation}</p>
+              <p className="text-xs text-zinc-400 italic mt-2 pl-1 border-t border-zinc-100 pt-2">{q.explanation}</p>
             )}
           </div>
         ))}
@@ -214,7 +214,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
             <tr className="bg-zinc-50">
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Left</th>
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Right</th>
-              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Explanation</th>
+              <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Explanation</th>
               <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -227,7 +227,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
                 <td className="border border-zinc-200 p-1">
                   <input value={pair.right} onChange={(e) => updateMatch(i, 'right', e.target.value)} className={inputClass} />
                 </td>
-                <td className="border border-zinc-200 p-1">
+                <td className="hidden sm:table-cell border border-zinc-200 p-1">
                   <span className="px-2 py-1 text-xs text-zinc-400 italic">{pair.explanation ?? '—'}</span>
                 </td>
                 <td className="border border-zinc-200 p-1 text-center">
