@@ -1,0 +1,108 @@
+{
+  "level": "A2.1",
+  "cefr_level": "A2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 1,
+      "title": "El español y tú",
+      "textbook_ref": "AULA 2 U.1",
+      "overall_goal": "Hacer recomendaciones a nuestros compañeros de clase para aprender mejor el español.",
+      "communicative_functions": [
+        "Hablar de hábitos y de dificultades",
+        "Hablar de la duración",
+        "Hacer recomendaciones",
+        "Describir sentimientos"
+      ],
+      "grammar": [
+        "Los presentes regulares e irregulares",
+        "Verbos reflexivos",
+        "Los verbos costar y sentirse",
+        "Para/porque",
+        "Desde/desde hace/hace…que"
+      ],
+      "vocabulary_themes": [
+        "Sentirse ridículo/-a, seguro/-a, inseguro/-a, frustrado/-a, bien, mal…",
+        "Dar vergüenza/miedo",
+        "Actividades para aprender idiomas"
+      ],
+      "learning_strategies": [
+        "Reflexión sobre nuestros modos de aprendizaje",
+        "Aplicación de diversas estrategias para aprender español de manera eficaz",
+        "Selección de estrategias que facilitan el propio aprendizaje"
+      ],
+      "cultural_content": [
+        "Algunas diferencias culturales entre Venezuela y España",
+        "Búsqueda de diferencias culturales",
+        "Lenguas que habla la gente en España",
+        "La vida de los extranjeros viviendo en España"
+      ]
+    },
+    {
+      "unit_number": 2,
+      "title": "Una vida de película",
+      "textbook_ref": "AULA 2 U.2",
+      "overall_goal": "Escribir una biografía.",
+      "communicative_functions": [
+        "Relatar y relacionar acontecimientos pasados",
+        "Hablar del inicio y de la duración de una acción"
+      ],
+      "grammar": [
+        "Formas y usos del pretérito indefinido",
+        "Marcadores temporales para el pasado",
+        "Las preposiciones desde, durante y hasta",
+        "Empezar a + infinitivo",
+        "Ir/irse"
+      ],
+      "vocabulary_themes": [
+        "Cine",
+        "Biografías",
+        "Logros"
+      ],
+      "learning_strategies": [
+        "Deducción del uso y forma de un tiempo verbal a partir de un contexto"
+      ],
+      "cultural_content": [
+        "Mitos de la historia: Frida Kahlo, Che Guevara, Dalí",
+        "Personajes hispanohablantes del mundo de la cultura y el cine",
+        "Isabel Coixet",
+        "Nahui Olin"
+      ]
+    },
+    {
+      "unit_number": 3,
+      "title": "Yo soy así",
+      "textbook_ref": "AULA 2 U.3",
+      "overall_goal": "Describir el perfil de la persona ideal para alguien que busca pareja.",
+      "communicative_functions": [
+        "Identificar y describir físicamente a las personas",
+        "Hablar de las relaciones y de los parecidos entre las personas"
+      ],
+      "grammar": [
+        "Presentes irregulares: c>zc",
+        "Este/-a/-os/-as, ese/-a/-os/-as, aquel/aquella/aquellos/aquellas",
+        "El/la/los/las + de + sustantivo",
+        "El/la/los/las + que + verbo"
+      ],
+      "vocabulary_themes": [
+        "Adjetivos de descripción física",
+        "Relaciones de pareja",
+        "Los verbos ser, tener, llevar",
+        "El verbo parecerse",
+        "El verbo llevarse",
+        "Caer bien/mal"
+      ],
+      "learning_strategies": [
+        "Elección del vocabulario de la unidad que el estudiante crea que es más útil para su propio aprendizaje"
+      ],
+      "cultural_content": [
+        "Familias de famosos españoles",
+        "Páginas/aplicaciones de contactos para encontrar pareja",
+        "¿Cómo viste la gente en España?",
+        "Serie 'La casa de papel'"
+      ]
+    }
+  ]
+}

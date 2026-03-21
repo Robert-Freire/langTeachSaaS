@@ -1,0 +1,106 @@
+{
+  "level": "A2.4",
+  "cefr_level": "A2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 9,
+      "title": "Antes y ahora",
+      "textbook_ref": "AULA 3 U.1",
+      "overall_goal": "Decidir cuál ha sido el descubrimiento que ha cambiado más la vida de la gente.",
+      "communicative_functions": [
+        "Hablar de hábitos, costumbres y circunstancias en el pasado",
+        "Situar acciones en el pasado y en el presente",
+        "Argumentar y debatir"
+      ],
+      "grammar": [
+        "El pretérito imperfecto",
+        "Ya no / todavía",
+        "Marcadores temporales para el pasado",
+        "Marcadores temporales para el presente"
+      ],
+      "vocabulary_themes": [
+        "Periodos históricos",
+        "Historia y sociedad",
+        "Etapas de la vida"
+      ],
+      "learning_strategies": [
+        "Deducción del uso de un tiempo verbal por las actividades de lengua realizadas",
+        "Deducción del significado de palabras y expresiones al asociarlas a un contexto"
+      ],
+      "cultural_content": [
+        "Momentos de la historia de España",
+        "España en la época de Franco",
+        "Cambios significativos de las ciudades con el paso del tiempo: Ibiza",
+        "Pintores famosos: Picasso, Botero, Miró, Dalí",
+        "Grandes inventos de la humanidad",
+        "Los incas"
+      ]
+    },
+    {
+      "unit_number": 10,
+      "title": "Prohibido prohibir",
+      "textbook_ref": "AULA 3 U.2",
+      "overall_goal": "Escribir una guía sobre costumbres y códigos sociales de España.",
+      "communicative_functions": [
+        "Expresar prohibición",
+        "Expresar obligatoriedad",
+        "Expresar impersonalidad",
+        "Hablar de hábitos",
+        "Opinar y aconsejar"
+      ],
+      "grammar": [
+        "Lo normal/lo habitual/lo raro es + infinitivo",
+        "Soler + infinitivo",
+        "Cuantificadores: todo el mundo/la mayoría (de…)/muchos/algunos…",
+        "Es obligatorio/está prohibido/está permitido + infinitivo",
+        "Se prohíbe/n, se permite/n + sustantivo",
+        "El verbo dejar",
+        "Expresiones con ser y estar para hablar de normas y hábitos"
+      ],
+      "vocabulary_themes": [
+        "Costumbres sociales",
+        "Léxico del ámbito laboral"
+      ],
+      "learning_strategies": [
+        "Estrategias para la deducción del léxico a través de imágenes",
+        "Estrategias para escribir un texto: planificación y uso de fuentes de información"
+      ],
+      "cultural_content": [
+        "Costumbres sociales chocantes",
+        "Algunas características culturales de Colombia",
+        "Fiestas populares: San Fermines, las Fallas, la Feria de Abril"
+      ]
+    },
+    {
+      "unit_number": 11,
+      "title": "Volver a empezar",
+      "textbook_ref": "AULA 3 U.3",
+      "overall_goal": "Escribir una carta de presentación del candidato ideal para un puesto de trabajo.",
+      "communicative_functions": [
+        "Hablar de hábitos en el presente",
+        "Relatar experiencias pasadas",
+        "Hablar del inicio y de la duración de una acción",
+        "Localizar una acción en el tiempo"
+      ],
+      "grammar": [
+        "Perífrasis: empezar/acabar de/terminar de/volver a/dejar de + infinitivo; llevar/seguir + gerundio",
+        "Desde/desde que/desde hace"
+      ],
+      "vocabulary_themes": [
+        "Trabajo",
+        "Hechos de la vida de una persona"
+      ],
+      "learning_strategies": [
+        "Estrategias para escribir una carta de presentación",
+        "Técnicas para elaborar un currículum",
+        "Reflexión sobre el carácter formal o informal de ciertas palabras y expresiones"
+      ],
+      "cultural_content": [
+        "Personas minimalistas"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,177 @@
+{
+  "institution": "Kingsbrook Idiomas",
+  "source_file": "Contenidos gramaticales por nivel.pdf",
+  "document_title": "Programa Contenidos y Objetivos ELE 2021/2022",
+  "note": "This document maps grammar and vocabulary at the broad CEFR level (not sub-level). Levels A1-C2 covered.",
+  "levels": [
+    {
+      "cefr_level": "A1",
+      "cefr_descriptor": "Puede comprender y utilizar expresiones cotidianas familiares y frases muy sencillas encaminadas a satisfacer las primeras necesidades. Puede presentarse y presentar a terceras personas y puede formular y responder preguntas sobre detalles personales (dónde vive, gente que conoce y qué tiene).",
+      "grammar_resources": [
+        "Presente de Indicativo",
+        "Pretérito perfecto de Indicativo",
+        "Verbo Gustar",
+        "Poder/Saber + infinitivo",
+        "Artículo determinado e indeterminado",
+        "El género de sustantivos y adjetivos",
+        "Cuantificadores",
+        "Interrogativos",
+        "Pronombres objeto directo",
+        "Localizadores y adverbios de lugar"
+      ],
+      "vocabulary_themes": [
+        "Números",
+        "Nacionalidades",
+        "Actividades cotidianas y de ocio",
+        "El tiempo meteorológico",
+        "Las horas",
+        "La ropa",
+        "La familia",
+        "Alimentos",
+        "Días de la semana y meses del año",
+        "Las estaciones",
+        "La ciudad",
+        "Adjetivos de carácter"
+      ]
+    },
+    {
+      "cefr_level": "A2",
+      "cefr_descriptor": "Puede comprender frases y expresiones utilizadas habitualmente y relacionadas con temas de importancia inmediata (por ej. informaciones personales básicas, informaciones familiares, compras, geografía local, ocupación). Puede escribir, de manera sencilla, aspectos de su experiencia o bagaje personal, aspectos de su entorno inmediato y asuntos relacionados con sus necesidades inmediatas.",
+      "grammar_resources": [
+        "Ir a + infinitivo",
+        "Estar + gerundio",
+        "Pretérito perfecto de Indicativo",
+        "Pretérito Indefinido de Indicativo",
+        "Contraste de estos dos tiempos del pasado",
+        "Imperativo afirmativo",
+        "Contraste ser/estar",
+        "Verbo doler",
+        "Se impersonal",
+        "Preposiciones para localizar",
+        "Marcadores temporales",
+        "Parecer/parecerse",
+        "Verbos con pronombres: cambio significado"
+      ],
+      "vocabulary_themes": [
+        "Viajes",
+        "Recetas de cocina",
+        "Cine",
+        "Tipos de vivienda",
+        "Pesos y medidas",
+        "Oferta cultural",
+        "Partes del cuerpo",
+        "Enfermedades y síntomas",
+        "Estados de ánimo"
+      ]
+    },
+    {
+      "cefr_level": "B1",
+      "cefr_descriptor": "Puede comprender las ideas principales de una información clara sobre temas relativos al trabajo, a la escuela, el ocio, etc. Puede hacer frente a la mayor parte de situaciones lingüísticas que pueden aparecer cuando se viaja a una zona donde se habla la lengua objeto de aprendizaje. Puede describir hechos y experiencias, sueños, esperanzas y ambiciones, y dar razones y explicaciones de las opiniones y proyectos de manera breve.",
+      "grammar_resources": [
+        "Perífrasis verbales",
+        "Pretérito Imperfecto de Indicativo",
+        "Pretérito Pluscuamperfecto de Indicativo",
+        "Futuro simple de Indicativo",
+        "Presente de Subjuntivo",
+        "Condicional Simple",
+        "Imperativo afirmativo y negativo",
+        "Verbos de cambio",
+        "Estilo directo e Indirecto (tiempos de Indicativo)",
+        "Pronombres (reflexivo, de objeto directo e indirecto)",
+        "Contraste de los tiempos del pasado",
+        "Conectores"
+      ],
+      "vocabulary_themes": [
+        "Trabajo",
+        "Hechos y etapas de la vida de una persona",
+        "Periodos históricos",
+        "Costumbres sociales",
+        "La escuela",
+        "La publicidad",
+        "Tareas del hogar",
+        "Emociones",
+        "Tipos de mensaje (carta, mensajes, correo electrónico)",
+        "Problemas del mundo",
+        "Géneros (cine, televisión, literatura…)",
+        "Cine y televisión",
+        "Expresiones para expresar vergüenza, miedo…",
+        "Política y sociedad",
+        "La educación",
+        "Tipos de turismo",
+        "Verbos para expresar intereses o sentimientos",
+        "Recursos para mostrar desacuerdo",
+        "Vocabulario para describir objetos y valorar",
+        "El medioambiente",
+        "Solidaridad",
+        "Misterios y fenómenos paranormales",
+        "Ciencia y psicología"
+      ]
+    },
+    {
+      "cefr_level": "B2",
+      "cefr_descriptor": "Puede comprender las ideas principales de textos complejos sobre temas tanto concretos como abstractos, incluyendo discusiones técnicas en el campo de la especialización profesional. Puede expresarse con fluidez y espontaneidad. Puede producir textos claros y detallados en una amplia gama de temas y expresar un punto de vista sobre una cuestión, exponiendo las ventajas y los inconvenientes.",
+      "grammar_resources": [
+        "Pretérito Perfecto de Subjuntivo",
+        "Pretérito Imperfecto de Subjuntivo",
+        "Pretérito Pluscuamperfecto de Subjuntivo",
+        "Condicional Compuesto",
+        "Estilo Indirecto (Mandato)",
+        "Voz pasiva",
+        "Por y para",
+        "Oraciones de relativo",
+        "Usos de infinitivo compuesto",
+        "Se impersonal",
+        "Verbos de percepción y opinión",
+        "Marcadores y construcciones temporales",
+        "Partículas temporales",
+        "Recursos para cohesionar",
+        "Conectores de causa y consecuencia",
+        "Oraciones subordinadas",
+        "Combinación pronombres se lo"
+      ],
+      "vocabulary_themes": [
+        "Verbos de transmisión de la información",
+        "Medios de comunicación",
+        "Política e historia",
+        "Deportes",
+        "Tradiciones",
+        "Dar miedo/asco/pereza/vergüenza",
+        "Relaciones personales y afectivas",
+        "Tribus urbanas",
+        "Describir ciudades",
+        "Vocabulario del ámbito del teatro, el deporte, el baile",
+        "Usos verbos poner y quedar",
+        "Adjetivos con prefijos",
+        "Vocabulario relacionado con el ámbito de las TIC",
+        "Medios de comunicación",
+        "Medioambiente"
+      ]
+    },
+    {
+      "cefr_level": "C1",
+      "cefr_descriptor": "Puede comprender una amplia gama de textos largos y complejos, y reconoce el sentido implícito. Puede expresarse con fluidez y espontaneidad sin tener que buscar de manera muy evidente palabras o expresiones. Puede producir textos claros, bien estructurados y detallados sobre temas complejos y demuestra un uso controlado de estructuras organizativas, conectores y mecanismos de cohesión.",
+      "grammar_resources": [
+        "Elementos compositivos que se asocian con sustantivos: prefijos y sufijos de uso frecuente. Adjetivos con ambos géneros",
+        "Marcadores temporales. Organizadores del relato",
+        "Usos del indicativo y del subjuntivo en oraciones finales, modales, temporales",
+        "Pronombres y adverbios relativos. Morfología y usos frecuentes. Construcciones oracionales con pronombres y adverbios relativos con preposición",
+        "Construcciones pasivas"
+      ],
+      "vocabulary_themes": [],
+      "note": "Source document notes: 'El léxico de los niveles C1 y C2 viene determinado por el manual que se use o las necesidades o características específicas del grupo o según criterio del enseñante.'"
+    },
+    {
+      "cefr_level": "C2",
+      "cefr_descriptor": "Puede comprender sin esfuerzo prácticamente todo lo que lee o escucha. Puede resumir información procedente de diferentes fuentes orales o escritas, reconstruir hechos y argumentos, y presentarlos de una manera coherente. Puede expresarse espontáneamente, con fluidez y precisión distinguiendo matices de significado hasta en las situaciones más complejas.",
+      "grammar_resources": [
+        "Correlación de tiempos en el estilo indirecto referido al presente, al pasado o al futuro",
+        "Transformaciones de los tiempos verbales de acuerdo con el cambio en la situación de comunicación",
+        "Adverbiales con gerundio",
+        "Sustantivas con verbos en indicativo, subjuntivo o futuro",
+        "Oraciones subordinadas. Causales y consecutivas con verbo en indicativo o en subjuntivo, introducidas por conjunciones y locuciones conjuntivas de uso frecuente"
+      ],
+      "vocabulary_themes": [],
+      "note": "Source document notes: 'El léxico de los niveles C1 y C2 viene determinado por el manual que se use o las necesidades o características específicas del grupo o según criterio del enseñante.' Also notes: 'En todos los niveles se incluye aspectos gramaticales como: preposiciones, pronombres, conectores, comparativos… adaptados a la dificultad del nivel propiamente dicho, así como audiciones, lecturas y expresión escrita.'"
+    }
+  ]
+}

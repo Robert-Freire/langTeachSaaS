@@ -1,0 +1,95 @@
+{
+  "level": "C2.3",
+  "cefr_level": "C2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "notes": "At C2 the source document relabels columns: 'Contenidos lingüísticos' replaces 'Contenidos gramaticales'. Content is mapped to grammar field. 'Tipos de texto y léxico' is mapped to vocabulary_themes.",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 5,
+      "title": "¡No te lo vas a creer!",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Expresar acuerdo y desacuerdo rotundo",
+        "Expresar escepticismo",
+        "Expresar certeza, o falta de certeza, posibilidad o desconocimiento",
+        "Comprender y comentar estadísticas",
+        "Apoyar la argumentación en datos estadísticos",
+        "Rebatir empleando datos estadísticos"
+      ],
+      "grammar": [
+        "Elementos lingüísticos que expresan certeza",
+        "Contraste indicativo/subjuntivo en la expresión de certeza o falta de certeza",
+        "Las oraciones interrogativas retóricas",
+        "Concordancia en construcciones partitivas",
+        "Concordancia ad sensum en las construcciones pseudopartitivas"
+      ],
+      "vocabulary_themes": [
+        "Artículos de revista",
+        "Cuentos y leyendas",
+        "El ensayo",
+        "Texto expositivo: estructura y características (oral y escrito)",
+        "Léxico relacionado con los dilemas morales",
+        "Fraseología relacionada con la suerte",
+        "Estadísticas",
+        "Derivación",
+        "Nociones cuantitativas (cantidad relativa, aumento, disminución)",
+        "Léxico relacionado con aspectos culturales: valores y creencias"
+      ],
+      "learning_strategies": [
+        "Adelantar el contenido de un texto por el género textual y el título",
+        "Uso del diccionario combinatorio",
+        "Movilizar el vocabulario y contrastar hipótesis sobre la derivación de palabras",
+        "Reflexión sobre el tratamiento de los elementos socioculturales en el aula"
+      ],
+      "cultural_content": [
+        "Creencias religiosas",
+        "El ensayista español José Ortega y Gasset",
+        "Valores y creencias en el mundo hispano",
+        "Elementos socioculturales en la clase de español para extranjeros"
+      ]
+    },
+    {
+      "unit_number": 6,
+      "title": "Ni contigo… ni sin ti…",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Argumentar sobre modos y estilos de vida",
+        "Describir detalladamente rasgos físicos y de carácter",
+        "Dar consejos en cuestiones sentimentales",
+        "Definir a las personas que gustan a primera vista",
+        "Hablar de manera coloquial"
+      ],
+      "grammar": [
+        "Los sufijos peyorativos",
+        "Estructuras propias de la conversación coloquial",
+        "Comparativas con subjuntivo",
+        "Presencia y ausencia del pronombre sujeto",
+        "División de palabras a final de renglón",
+        "Construcciones eco"
+      ],
+      "vocabulary_themes": [
+        "La encuesta: opiniones sobre las cuestiones sentimentales",
+        "La conversación coloquial: expresiones propias",
+        "Expresiones sobre las relaciones personales",
+        "Léxico sobre el lenguaje corporal",
+        "Adjetivos aplicados a la conversación"
+      ],
+      "learning_strategies": [
+        "Deducir una información implícita en un mensaje",
+        "Importancia del lenguaje no verbal en la interacción",
+        "Reconocimiento de estrategias conversacionales"
+      ],
+      "cultural_content": [
+        "Realidad española sobre relaciones sentimentales y personajes",
+        "Lenguaje gestual",
+        "Hábitos conversacionales propios del mundo hispano",
+        "La comunicación no verbal",
+        "Dos mujeres de Praga de Juan José Millás"
+      ]
+    }
+  ]
+}

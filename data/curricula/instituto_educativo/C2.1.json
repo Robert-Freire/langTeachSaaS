@@ -1,0 +1,90 @@
+{
+  "level": "C2.1",
+  "cefr_level": "C2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "notes": "At C2 the source document relabels columns: 'Contenidos lingüísticos' replaces 'Contenidos gramaticales'. Content is mapped to grammar field. 'Tipos de texto y léxico' is mapped to vocabulary_themes.",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 1,
+      "title": "Enseñarte",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Redactar un folleto turístico",
+        "Elaborar y grabar una audioguía",
+        "Reaccionar ante una obra de arte y ensalzar a un artista",
+        "Expresar gustos y valoraciones",
+        "Redactar las bases de un certamen artístico"
+      ],
+      "grammar": [
+        "Valores del pronombre se",
+        "Valores del pronombre lo",
+        "El valor del futuro en los textos normativos"
+      ],
+      "vocabulary_themes": [
+        "Bases de certámenes y concursos",
+        "Folletos turísticos: recursos lingüísticos",
+        "Análisis de una obra pictórica",
+        "Elaboración de una audioguía",
+        "Léxico relacionado con la arquitectura: movimientos arquitectónicos, características, materiales, elementos y partes de edificios",
+        "Léxico relacionado con certámenes y concursos",
+        "Léxico relacionado con el patrimonio cultural",
+        "Léxico relacionado con la pintura: estilo, técnicas, utensilios, etc.",
+        "Léxico relacionado con las características estéticas"
+      ],
+      "learning_strategies": [
+        "Buscar modelos textuales para completarlos y extraer sus principales rasgos",
+        "Autoevaluación de textos escritos",
+        "Localizar y utilizar selectivamente recursos: libros, enciclopedias, internet"
+      ],
+      "cultural_content": [
+        "Movimientos artísticos y arquitectónicos de España",
+        "Patrimonio cultural y artístico de España: el románico palentino, Córdoba y la arquitectura de Bilbao",
+        "Diferentes estilos y formatos pictóricos",
+        "Algunos certámenes culturales importantes en España"
+      ]
+    },
+    {
+      "unit_number": 2,
+      "title": "Se siente",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Recomendar y desaconsejar enfáticamente",
+        "Matizar una opinión",
+        "Contar una anécdota",
+        "Precisar detalles",
+        "Narrar, describir y valorar"
+      ],
+      "grammar": [
+        "Posición del adjetivo (calificativo y epíteto)",
+        "Concordancia en lexías complejas",
+        "Marcadores discursivos para intensificar y atenuar",
+        "Unidades fraseológicas (verbo + sustantivo, sustantivo + adjetivo) y expresiones idiomáticas"
+      ],
+      "vocabulary_themes": [
+        "Texto argumentativo: la columna periodística",
+        "Poesía",
+        "Entrevista radiofónica: neurociencia",
+        "Texto digital: blog de viajes",
+        "Léxico relacionado con los sentidos"
+      ],
+      "learning_strategies": [
+        "Predecir el contenido de un texto auditivo: formato y contenido",
+        "Recursos para comprender el sentido de textos orales extensos",
+        "Inferencia de las actitudes del hablante",
+        "Captar y resumir las ideas generales de un texto crítico"
+      ],
+      "cultural_content": [
+        "Turismo gastronómico",
+        "Programas y revistas de divulgación científica en español",
+        "Concepto de buen/mal gusto",
+        "Juan Ramón Jiménez",
+        "Antonio Gala",
+        "Eduard Punset"
+      ]
+    }
+  ]
+}

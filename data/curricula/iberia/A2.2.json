@@ -1,0 +1,29 @@
+{
+  "level": "A2.2",
+  "cefr_level": "A2",
+  "institution": "Iberia Language Academy",
+  "source_file": "PROGRAMA A2.2_Alumnos (1).pdf",
+  "hours": 40,
+  "textbook": {
+    "name": "Aula Plus 2",
+    "units_covered": [5, 6, 7, 8]
+  },
+  "communicative_objectives": [
+    "Simular situaciones de contacto social utilizando diferentes niveles de formalidad",
+    "Desenvolverse en saludos, presentaciones, pedir y conceder permiso",
+    "Pedir cosas, acciones y favores",
+    "Dar excusas y justificar",
+    "Escribir un artículo de las cosas más interesantes del lugar en el que estamos",
+    "Hablar de experiencias pasadas y valorarlas",
+    "Hablar de intenciones y expresar el deseo de hacer algo",
+    "Preparar una cena para una fiesta con toda la clase",
+    "Hablar de gustos y hábitos alimentarios",
+    "Explicar cómo se prepara un plato",
+    "Hacer una presentación sobre un mal del siglo XXI",
+    "Describir dolores, molestias y síntomas",
+    "Hablar de estados de ánimo",
+    "Dar consejos"
+  ],
+  "units": [],
+  "exam_prep": null
+}

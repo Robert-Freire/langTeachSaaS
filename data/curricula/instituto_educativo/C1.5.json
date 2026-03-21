@@ -1,0 +1,84 @@
+{
+  "level": "C1.5",
+  "cefr_level": "C1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "notes": "From C1 onward the source document labels the third column 'Tipos de texto y léxico' instead of 'Contenidos léxicos'. Both text types and lexical content are merged into vocabulary_themes.",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 9,
+      "title": "De ensueño",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Expresar lo que se considera posible o probable",
+        "Expresar lo que se considera posible pero lejano",
+        "Evocar situaciones ficticias",
+        "Expresar deseos irreales y sensaciones",
+        "Expresar deseos imposibles o de difícil cumplimiento"
+      ],
+      "grammar": [
+        "Futuro imperfecto como indicador de probabilidad en el presente",
+        "Futuro perfecto como indicador de probabilidad en el pasado relacionado con el presente",
+        "Condicional simple/pretérito imperfecto de indicativo para expresar deseos utópicos, con valor de presente o futuro",
+        "Condicional simple como indicador de probabilidad en el pasado",
+        "Expresiones para formular hipótesis y deseos"
+      ],
+      "vocabulary_themes": [
+        "Texto conversacional: test, entrevista, radio",
+        "Texto digital: foro sobre el insomnio",
+        "Campo léxico relacionado con el mundo onírico",
+        "Acepciones de la palabra sueño y su campo léxico"
+      ],
+      "learning_strategies": [
+        "Pautas para escribir una biografía",
+        "Reflexión sobre el aprendizaje de la gramática inductiva/deductiva"
+      ],
+      "cultural_content": [
+        "El surrealismo",
+        "Salvador Dalí",
+        "Freud"
+      ]
+    },
+    {
+      "unit_number": 10,
+      "title": "Ética y dinero",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Expresión general de la condición",
+        "Condición con valor de advertencia o consejo y amenaza",
+        "Condición mínima imprescindible para que se produzca algo",
+        "Condición suficiente con la que basta para que se produzca algo",
+        "Condición que se presenta como impedimento único de que algo se produzca",
+        "Condición que implica una previsión de lo que puede ocurrir",
+        "Condición que expresa un intercambio de acciones"
+      ],
+      "grammar": [
+        "Oraciones condicionales con si, de + infinitivo, gerundio",
+        "Conectores condicionales complejos: siempre que, siempre y cuando, solo si..."
+      ],
+      "vocabulary_themes": [
+        "Géneros periodísticos: la columna de opinión",
+        "Conclusiones de una encuesta",
+        "Entrevista",
+        "La oferta de trabajo",
+        "La carta de presentación y el currículum vitae",
+        "La entrevista de trabajo",
+        "Léxico del dinero y la economía",
+        "Léxico del mundo de la solidaridad",
+        "Léxico relacionado con las capacitaciones académicas y profesionales"
+      ],
+      "learning_strategies": [
+        "Comprensión lectora: las técnicas de skimming y scanning"
+      ],
+      "cultural_content": [
+        "La banca ética: Triodos Bank",
+        "Muhammad Yunus y los microcréditos",
+        "La Agencia Española de Cooperación Internacional para el Desarrollo (AECID)",
+        "ONG y voluntariado"
+      ]
+    }
+  ]
+}

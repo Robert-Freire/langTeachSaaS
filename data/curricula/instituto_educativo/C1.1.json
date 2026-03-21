@@ -1,0 +1,88 @@
+{
+  "level": "C1.1",
+  "cefr_level": "C1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "notes": "From C1 onward the source document labels the third column 'Tipos de texto y léxico' instead of 'Contenidos léxicos'. Both text types and lexical content are merged into vocabulary_themes.",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 1,
+      "title": "¿Qué tal?",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Valorar y enfatizar la actitud o el comportamiento de alguien",
+        "Contar una anécdota",
+        "Caricaturizar",
+        "Describir de forma detallada: el retrato",
+        "Describir por medio de comparaciones",
+        "Referirse a una acción como proceso o como resultado"
+      ],
+      "grammar": [
+        "Contraste ser/estar",
+        "Expresiones con ser y estar + preposición",
+        "Expresiones idiomáticas con ser y estar",
+        "Estructuras enfáticas con ser",
+        "La oración pasiva"
+      ],
+      "vocabulary_themes": [
+        "Texto humorístico: chiste, caricatura, tira cómica y monólogo",
+        "La instancia",
+        "Léxico relacionado con el humor",
+        "Abreviaturas del diccionario",
+        "Las palabras homófonas"
+      ],
+      "learning_strategies": [
+        "Uso del diccionario",
+        "Recursos para comprender el sentido de textos orales extensos",
+        "Pautas para la comprensión de textos humorísticos"
+      ],
+      "cultural_content": [
+        "El humor en el mundo hispano: el chiste, el tebeo, el cómic, la caricatura",
+        "Maitena",
+        "El club de la comedia",
+        "Dalí",
+        "'Eugenio' Salvador Dalí del grupo musical Mecano"
+      ]
+    },
+    {
+      "unit_number": 2,
+      "title": "Estudiante de profesión",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Evocar un recuerdo: fórmulas introductorias",
+        "Narrar y describir en el pasado",
+        "Rememorar a un personaje fallecido",
+        "Argumentar a favor o en contra con ejemplos específicos",
+        "Participar en un debate",
+        "Recursos para mantener la comunicación oral"
+      ],
+      "grammar": [
+        "El presente histórico",
+        "Uso y relación entre los diferentes tiempos del pasado en indicativo: pretérito indefinido, pretérito perfecto, pretérito imperfecto, pretérito pluscuamperfecto, futuro perfecto",
+        "El condicional simple con valor de pasado"
+      ],
+      "vocabulary_themes": [
+        "Texto divulgativo",
+        "Entrevista radiofónica",
+        "Panegírico",
+        "Crítica de teatro",
+        "Texto digital: el blog de un actor",
+        "Texto argumentativo: las subvenciones teatrales",
+        "Carteles de teatro",
+        "Léxico y expresiones idiomáticas relacionados con el mundo del espectáculo"
+      ],
+      "learning_strategies": [
+        "Estrategias para adquirir competencia auditiva: tono de la conversación, relación entre los interlocutores, pedir la cooperación del interlocutor, confirmar la comprensión de lo que se ha dicho, pedir la clarificación del discurso, ayudas y repeticiones, autorregularse verbalmente y reformular para hacerse entender mejor, usar pausas, muletillas o fórmulas hechas para ganar tiempo o enlazar el discurso"
+      ],
+      "cultural_content": [
+        "Festivales de teatro",
+        "El corral de comedias de Almagro y el Anfiteatro romano de Mérida",
+        "Actores españoles: José Sacristán, Fernando Fernán Gómez, Rafael Álvarez 'El Brujo'",
+        "Sinopsis de algunas obras teatrales: La katarsis del tomatazo, Garrick..."
+      ]
+    }
+  ]
+}

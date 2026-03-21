@@ -1,0 +1,75 @@
+{
+  "level": "B2.2",
+  "cefr_level": "B2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 3,
+      "title": "Yo nunca lo haría",
+      "textbook_ref": "AULA 5 U.3",
+      "overall_goal": "Hacer una exposición de tradiciones culturales y comentarlas.",
+      "communicative_functions": [
+        "Dar consejos",
+        "Evocar situaciones imaginarias",
+        "Opinar sobre acciones y conductas",
+        "Expresar deseos",
+        "Expresar desconocimiento"
+      ],
+      "grammar": [
+        "Algunos usos del condicional",
+        "Te recomiendo/aconsejo/sugiero que + presente de subjuntivo",
+        "El pretérito imperfecto del subjuntivo",
+        "No sabía que…",
+        "Negar categóricamente de forma coloquial"
+      ],
+      "vocabulary_themes": [
+        "Deportes",
+        "Tradiciones",
+        "Dar miedo/asco/pánico/pereza/vergüenza…",
+        "Miedos y fobias"
+      ],
+      "learning_strategies": [
+        "Desarrollo del trabajo colaborativo como método de aprendizaje",
+        "Uso de la gramática en contextos significativos y reales para los estudiantes que les permitan fijar mejor los conceptos"
+      ],
+      "cultural_content": [
+        "Tradiciones singulares: espectáculo de clavados, castells, encierros, los voladores de Papantla, pelea de tigres de Guerrero, …",
+        "'Relato de un náufrago' de Gabriel García Márquez",
+        "Lugares para practicar deportes de riesgo en España"
+      ]
+    },
+    {
+      "unit_number": 4,
+      "title": "Maneras de vivir",
+      "textbook_ref": "AULA 5 U.4",
+      "overall_goal": "Diseñar un paraíso donde vivir.",
+      "communicative_functions": [
+        "Expresar causa y finalidad",
+        "Hablar de sentimientos, del carácter y de la personalidad",
+        "Hablar de cualidades de personas y objetos"
+      ],
+      "grammar": [
+        "Algunos usos de por y para",
+        "La correlación de tiempos verbales en las frases de relativo",
+        "Conectores para añadir, matizar, contraponer y desmentir una información",
+        "Algunos verbos con preposición"
+      ],
+      "vocabulary_themes": [
+        "Vocabulario para hablar de las relaciones personales y afectivas",
+        "Tribus urbanas"
+      ],
+      "learning_strategies": [
+        "Anticiparse al contenido de un texto mediante el desarrollo del campo léxico",
+        "Uso de internet para comprobar el buen uso de las preposiciones",
+        "Uso de la mnemotecnia y otras estrategias de asociación de ideas, para recordar el uso de las preposiciones"
+      ],
+      "cultural_content": [
+        "Tribus urbanas",
+        "Película: 'Nosotros los nobles'",
+        "Aplicaciones para conocer a gente más usadas en España"
+      ]
+    }
+  ]
+}

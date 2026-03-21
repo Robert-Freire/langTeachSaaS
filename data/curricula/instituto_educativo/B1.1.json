@@ -1,0 +1,97 @@
+{
+  "level": "B1.1",
+  "cefr_level": "B1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 1,
+      "title": "Momentos especiales",
+      "textbook_ref": "AULA 3 U.4",
+      "overall_goal": "Contar anécdotas personales.",
+      "communicative_functions": [
+        "Relatar en pasado",
+        "Secuenciar acciones",
+        "Expresar emociones"
+      ],
+      "grammar": [
+        "Formas irregulares del pretérito indefinido",
+        "El contraste entre el pretérito indefinido y el imperfecto",
+        "Las formas del pasado de estar + gerundio",
+        "Marcadores temporales para relatar"
+      ],
+      "vocabulary_themes": [
+        "Acontecimientos históricos",
+        "Recuerdos",
+        "Emociones"
+      ],
+      "learning_strategies": [
+        "Uso de conectores como estrategia para la creación de textos cohesionados y ordenados",
+        "Utilización del dibujo para comprender el uso de algunos tiempos verbales del pasado",
+        "Utilización de colores para ayudar en la reflexión del uso de los tiempos verbales"
+      ],
+      "cultural_content": [
+        "Reinaldo Arenas",
+        "Leyendas urbanas",
+        "Hitos históricos de Cuba",
+        "Acontecimientos históricos de España"
+      ]
+    },
+    {
+      "unit_number": 2,
+      "title": "Busque y compare",
+      "textbook_ref": "AULA 3 U.5",
+      "overall_goal": "Diseñar y presentar una campaña publicitaria.",
+      "communicative_functions": [
+        "Recomendar y aconsejar",
+        "Dar instrucciones",
+        "Describir un anuncio"
+      ],
+      "grammar": [
+        "La forma y algunos usos del imperativo afirmativo y negativo",
+        "La colocación de los pronombres reflexivos y de OD/OI"
+      ],
+      "vocabulary_themes": [
+        "Publicidad: valores, soportes, elementos de un anuncio",
+        "Recursos para describir un anuncio"
+      ],
+      "learning_strategies": [
+        "Asociar palabras en esquemas léxicos",
+        "Estrategias para escribir un texto: la colaboración",
+        "Reconocimiento de palabras clave para la comprensión de un texto"
+      ],
+      "cultural_content": [
+        "La publicidad y anuncios con eslóganes famosos",
+        "Anuncios que rodean al alumno en el lugar que se encuentra",
+        "Influencers"
+      ]
+    },
+    {
+      "unit_number": 3,
+      "title": "Mensajes",
+      "textbook_ref": "AULA 3 U.6",
+      "overall_goal": "Crear y transmitir mensajes y desarrollar estrategias de comunicación.",
+      "communicative_functions": [
+        "Desenvolverse por teléfono y en videollamadas",
+        "Tomar y dejar recados por teléfono",
+        "Transmitir mensajes"
+      ],
+      "grammar": [
+        "Estilo indirecto: me ha dicho que…/me ha preguntado si…/me ha preguntado cuándo/dónde/por qué…"
+      ],
+      "vocabulary_themes": [
+        "Verbos que resumen la intención de un mensaje (protestar, felicitar, etc.)",
+        "Tipos de mensaje: carta, mensaje de móvil, correo electrónico, etc.",
+        "Los verbos pedir y preguntar"
+      ],
+      "learning_strategies": [
+        "Reflexión sobre las estructuras y formato de los textos escritos según el canal y el destinatario",
+        "Estrategias de comunicación cuando no entendemos algo, cuando no sabemos cómo decir algo, cuando no sabemos si nos han entendido"
+      ],
+      "cultural_content": [
+        "Diferentes medios de comunicación"
+      ]
+    }
+  ]
+}

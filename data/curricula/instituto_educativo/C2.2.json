@@ -1,0 +1,101 @@
+{
+  "level": "C2.2",
+  "cefr_level": "C2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "notes": "At C2 the source document relabels columns: 'Contenidos lingüísticos' replaces 'Contenidos gramaticales'. Content is mapped to grammar field. 'Tipos de texto y léxico' is mapped to vocabulary_themes.",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 3,
+      "title": "Todo un éxito",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Narrar anécdotas propias y de otros",
+        "Describir una situación social",
+        "Expresar el modo de realizar una acción",
+        "Exponer las causas de un fenómeno social",
+        "Argumentar la propia opinión",
+        "Expresar habilidades"
+      ],
+      "grammar": [
+        "Los adverbios cortos",
+        "Los conectores modales",
+        "Conectores y marcadores argumentativos",
+        "Preposiciones regidas por verbos, adjetivos y sustantivos",
+        "Combinaciones de verbos + adverbio corto"
+      ],
+      "vocabulary_themes": [
+        "Monólogos radiofónicos",
+        "Titulares de un periódico",
+        "La ponencia",
+        "El resumen",
+        "Artículos de revista",
+        "Cuestionario profesional y personal",
+        "Adjetivos: cualidades relacionadas con el éxito",
+        "Unidades fraseológicas con el éxito",
+        "Verbos relacionados con el éxito y el fracaso",
+        "Léxico relacionado con el mundo laboral y las habilidades personales"
+      ],
+      "learning_strategies": [
+        "Predecir el contenido de textos orales y escritos",
+        "Reflexionar sobre las distintas acepciones de una palabra",
+        "Implicar a los alumnos en la elaboración de los materiales"
+      ],
+      "cultural_content": [
+        "La definición social del éxito",
+        "Rasgos que definen a las personas de éxito",
+        "Presidentes y gobiernos de la democracia en España",
+        "Percepción de los rasgos que definen a un líder",
+        "El cielo de Madrid, por Julio Llamazares",
+        "Valores sociales asociados al éxito",
+        "Personajes hispanos de éxito"
+      ]
+    },
+    {
+      "unit_number": 4,
+      "title": "Palabras en el tiempo",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Evocar recuerdos sobre experiencias literarias",
+        "Expresar sorpresa, extrañeza y deseos",
+        "Expresar cortesía",
+        "Narrar episodios ficticios",
+        "Confirmar una información",
+        "Analizar y comentar un texto narrativo",
+        "Comparar lenguaje literal y figurado"
+      ],
+      "grammar": [
+        "Usos de diferentes tiempos del pasado en indicativo",
+        "Relación entre la semántica del verbo y los tiempos del pasado: evento/pasado",
+        "El imperfecto narrativo",
+        "Algunos casos de cambio de significado del verbo según el tiempo verbal",
+        "Valores modales del imperfecto (cortesía, sorpresa, ficción, etc…)",
+        "Lenguaje figurado y recursos retóricos: la metáfora",
+        "Colocaciones con adverbios en -mente"
+      ],
+      "vocabulary_themes": [
+        "El blog: experiencias como lectores",
+        "La revista literaria: concursos y colaboraciones",
+        "Poesía",
+        "El cuento literario",
+        "Léxico: géneros literarios",
+        "Términos y expresiones para comentar un texto narrativo",
+        "Conversaciones literarias",
+        "Efectos estilísticos del lenguaje periodístico"
+      ],
+      "learning_strategies": [
+        "Obras de la literatura en español",
+        "El cuento literario en la lengua española: autores y títulos"
+      ],
+      "cultural_content": [
+        "Mario Benedetti",
+        "Revistas y otras fuentes de información literaria",
+        "Antonio Machado",
+        "Autores hispanos de cuentos: Juan Rulfo, Julio Cortázar, Mario Benedetti, entre otros"
+      ]
+    }
+  ]
+}

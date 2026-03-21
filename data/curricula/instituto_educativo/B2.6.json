@@ -1,0 +1,72 @@
+{
+  "level": "B2.6",
+  "cefr_level": "B2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 11,
+      "title": "Vivir para trabajar",
+      "textbook_ref": "AULA 6 U.5",
+      "overall_goal": "Escribir una página de presentación para la web de una empresa.",
+      "communicative_functions": [
+        "Hablar de un trabajo: cualidades, funciones, problemas",
+        "Describir una empresa",
+        "Algunas características de los textos escritos y formales"
+      ],
+      "grammar": [
+        "Las subordinadas concesivas: aunque, a pesar de, por mucho que…",
+        "Reformular: es decir, esto es, o sea",
+        "Ejemplificar: un ejemplo, por ejemplo, a modo de ejemplo"
+      ],
+      "vocabulary_themes": [
+        "Vocabulario del ámbito del trabajo",
+        "Características de jefes/as y empleados/as",
+        "Significado de la palabra experiencia"
+      ],
+      "learning_strategies": [
+        "Anticipación del contenido de un texto antes de su lectura como estrategia para la comprensión de textos",
+        "Detección de errores y su corrección como método de aprendizaje",
+        "Estrategias para reconocer el lugar que ocupaban frases extraídas de un texto"
+      ],
+      "cultural_content": [
+        "Crowdfunding",
+        "En qué emplean su tiempo de ocio las personas en España",
+        "Relación entre empleados y jefes en España",
+        "Emigración: Icíar Bollaín, documental 'En tierra extraña'"
+      ]
+    },
+    {
+      "unit_number": 12,
+      "title": "Como no lo sabía…",
+      "textbook_ref": "AULA 6 U.6",
+      "overall_goal": "Presentar un evento histórico hipotético y sus consecuencias en la historia.",
+      "communicative_functions": [
+        "Valorar hechos pasados",
+        "Hablar de hechos hipotéticos y de sus consecuencias",
+        "Hacer reproches"
+      ],
+      "grammar": [
+        "Combinaciones de pronombres",
+        "El pretérito pluscuamperfecto de subjuntivo",
+        "El condicional compuesto",
+        "Algunos conectores de causa y consecuencia"
+      ],
+      "vocabulary_themes": [
+        "Vocabulario del ámbito de la educación",
+        "Los verbos arrepentirse, lamentarse, dejar y pasar",
+        "Vocabulario de biografías y recorridos vitales"
+      ],
+      "learning_strategies": [
+        "La importancia de la motivación para el aprendizaje",
+        "Estrategias para la comprensión lectora"
+      ],
+      "cultural_content": [
+        "Tipos de escuela alternativas",
+        "La ONCE",
+        "Experiencias educativas: 'Vivir para contarla' de Gabriel García Márquez y 'La lengua de las mariposas', Manuel Rivas"
+      ]
+    }
+  ]
+}

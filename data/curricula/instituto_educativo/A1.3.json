@@ -1,0 +1,104 @@
+{
+  "level": "A1.3",
+  "cefr_level": "A1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 7,
+      "title": "¡A comer!",
+      "textbook_ref": "AULA 1 U.7",
+      "overall_goal": "Crear un menú del día y elegir los platos que nos gustan.",
+      "communicative_functions": [
+        "Desenvolverse en bares y restaurantes",
+        "Pedir y dar información sobre comida",
+        "Hablar de hábitos gastronómicos"
+      ],
+      "grammar": [
+        "Los verbos poner y traer",
+        "Los pronombres de OD (lo, la, los, las)",
+        "Algunos usos de de y con"
+      ],
+      "vocabulary_themes": [
+        "Alimentos",
+        "Maneras de cocinar",
+        "Platos habituales en España y platos típicos del mundo hispano"
+      ],
+      "learning_strategies": [
+        "Relacionar imágenes con vocabulario",
+        "Organizar el vocabulario en grupos de orden mayor para ayudar en su memorización",
+        "Reconocimiento de fórmulas de cortesía que se repiten en situaciones similares"
+      ],
+      "cultural_content": [
+        "Comida callejera de Hispanoamérica",
+        "Comparación de alimentos y precios entre los lugares de procedencia de los alumnos y los del lugar de estudio",
+        "Mapa gastronómico de España",
+        "Comida típica de Madrid",
+        "Sándwiches, bocadillos y montaditos",
+        "Formas de tomar el café"
+      ]
+    },
+    {
+      "unit_number": 8,
+      "title": "El barrio ideal",
+      "textbook_ref": "AULA 1 U.8",
+      "overall_goal": "Imaginar y describir un barrio ideal.",
+      "communicative_functions": [
+        "Describir pueblos, barrios y ciudades",
+        "Hablar de lo que más nos gusta de un lugar",
+        "Pedir y dar información para llegar a un sitio",
+        "Expresar gustos y resaltar un aspecto"
+      ],
+      "grammar": [
+        "Cuantificadores (algún, ningún, mucho)",
+        "Preposiciones y adverbios de lugar (a, en, al lado de, lejos, cerca,…)"
+      ],
+      "vocabulary_themes": [
+        "Servicios y lugares de las ciudades",
+        "Adjetivos para describir un barrio"
+      ],
+      "learning_strategies": [
+        "Asociar conceptos con imágenes",
+        "Reconocer los puntos relevantes de un texto",
+        "Usar modelos de lengua como ejemplo para la creación de un texto"
+      ],
+      "cultural_content": [
+        "Barrio de Cimavilla en Gijón",
+        "Barrios de Madrid: Lavapiés, Chamberí, Vallecas",
+        "Barrio de Buenos Aires: San Telmo",
+        "Buscar datos sobre ciudades españolas del interés del alumno"
+      ]
+    },
+    {
+      "unit_number": 9,
+      "title": "¿Sabes conducir?",
+      "textbook_ref": "AULA 1 U.9",
+      "overall_goal": "Elegir al candidato ideal para realizar un trabajo.",
+      "communicative_functions": [
+        "Hablar de experiencias pasadas",
+        "Hablar de habilidades y aptitudes",
+        "Hablar de cualidades y defectos de las personas"
+      ],
+      "grammar": [
+        "El pretérito perfecto",
+        "Saber + infinitivo",
+        "Poder + infinitivo",
+        "Expresiones de frecuencia"
+      ],
+      "vocabulary_themes": [
+        "Adjetivos de carácter",
+        "Profesiones",
+        "Habilidades y capacidades"
+      ],
+      "learning_strategies": [
+        "Clasificación de adjetivos dicotómicamente, para ayudar a su memorización",
+        "Elaboración de esquemas o guiones para la realización de una presentación oral",
+        "Reutilización del léxico y la gramática trabajados en contextos significativos que representen una realidad para el estudiante"
+      ],
+      "cultural_content": [
+        "La España rural: pueblos abandonados y repoblación de estos"
+      ]
+    }
+  ]
+}

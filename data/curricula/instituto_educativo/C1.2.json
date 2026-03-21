@@ -1,0 +1,91 @@
+{
+  "level": "C1.2",
+  "cefr_level": "C1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "notes": "From C1 onward the source document labels the third column 'Tipos de texto y léxico' instead of 'Contenidos léxicos'. Both text types and lexical content are merged into vocabulary_themes.",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 3,
+      "title": "La felicidad",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Expresar deseos y maldiciones",
+        "Expresar sentimientos",
+        "Reaccionar ante algo",
+        "Expresar voluntad, deseo, prohibición, mandato o ruego con la intención de influir sobre los demás",
+        "Expresar el punto de vista sobre algo"
+      ],
+      "grammar": [
+        "Oraciones subordinadas sustantivas",
+        "Verbos y expresiones que transmiten reacción, voluntad, sentimiento, deseo, prohibición, mandato, consejo o ruego, actividad mental, comunicación, percepción y certeza",
+        "Ser + adjetivo (de falsedad o virtualidad) + que",
+        "Ojalá, así + subjuntivo",
+        "Verbos con doble significado según se construyan con indicativo o subjuntivo"
+      ],
+      "vocabulary_themes": [
+        "Encuesta",
+        "Test de personalidad",
+        "Texto digital: foro sobre el amor",
+        "Texto testimonial",
+        "Fragmento de tesis",
+        "Palabras derivadas del griego y del latín",
+        "Prefijos y sufijos",
+        "Léxico relacionado con la felicidad y las compras"
+      ],
+      "learning_strategies": [
+        "Adquisición de léxico por derivación",
+        "Comprensión general de un texto escrito: estrategias de compensación, la importancia del contexto, la relevancia de las palabras clave",
+        "Interacción comunicativa intercultural: los modelos de comunicación y el valor del silencio"
+      ],
+      "cultural_content": [
+        "Citas célebres",
+        "El modelo comunicativo español",
+        "El dinero y la felicidad"
+      ]
+    },
+    {
+      "unit_number": 4,
+      "title": "Bueno, bonito y barato",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Influir sobre los demás",
+        "Dar órdenes de forma directa y de forma atenuada",
+        "Conceder permiso",
+        "Repetir una orden",
+        "Dar consejos e instrucciones"
+      ],
+      "grammar": [
+        "El imperativo",
+        "Pronombres de objeto directo e indirecto",
+        "La reduplicación de los pronombres objeto",
+        "Estructuras para dar órdenes e instrucciones: presente de indicativo",
+        "A + infinitivo/sustantivo, (Se ruega) + infinitivo/(Se ruega que) + subjuntivo, Que + subjuntivo (he dicho/te digo)"
+      ],
+      "vocabulary_themes": [
+        "Anuncio publicitario comercial y anuncio publicitario con implicaciones socioculturales",
+        "Informe especializado",
+        "Entrevista radiofónica",
+        "Texto digital: foro de lectura",
+        "Texto literario: fragmento de novela",
+        "Léxico relacionado con la publicidad",
+        "El lenguaje publicitario"
+      ],
+      "learning_strategies": [
+        "Comprensión lectora de un texto largo",
+        "Expresión escrita: elaborar un resumen",
+        "Pautas para redactar un artículo con el fin de influir sobre los demás"
+      ],
+      "cultural_content": [
+        "La ONG Publicitarios Implicados",
+        "13'99 de Frederic Beigbeder",
+        "La mercadotecnia",
+        "La publicidad: ventajas e inconvenientes",
+        "La publicidad institucional"
+      ]
+    }
+  ]
+}

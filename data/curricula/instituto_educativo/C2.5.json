@@ -1,0 +1,90 @@
+{
+  "level": "C2.5",
+  "cefr_level": "C2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "notes": "At C2 the source document relabels columns: 'Contenidos lingüísticos' replaces 'Contenidos gramaticales'. Content is mapped to grammar field. 'Tipos de texto y léxico' is mapped to vocabulary_themes.",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 9,
+      "title": "Darle a la lengua",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Expresar el origen de las palabras",
+        "Formular hipótesis sobre las palabras",
+        "Enfatizar y resaltar una información",
+        "Dar una conferencia"
+      ],
+      "grammar": [
+        "Gramática de la cortesía: la atenuación",
+        "Niveles de lengua y registros del habla",
+        "Estructuras para expresar énfasis"
+      ],
+      "vocabulary_themes": [
+        "Léxico relacionado con los estilos comunicativos",
+        "Diccionarios etimológicos",
+        "Programas de radio",
+        "Cartas al director",
+        "Vídeos didácticos",
+        "Palíndromos, vocablos panvocálicos, palabras curiosas",
+        "La ponencia: estructuras y características",
+        "Blogs y foros de Internet",
+        "Expresiones idiomáticas",
+        "Etimología de algunas palabras"
+      ],
+      "learning_strategies": [
+        "Comunicación intercultural",
+        "Uso de diccionarios etimológicos",
+        "Movilización de conocimientos previos de otras lenguas",
+        "Implicación de los alumnos en la elaboración de material didáctico",
+        "Borrador para participar en una situación de comunicación oral"
+      ],
+      "cultural_content": [
+        "Estilos comunicativos",
+        "El interés por las cuestiones lingüísticas en los medios",
+        "Cruce de culturas"
+      ]
+    },
+    {
+      "unit_number": 10,
+      "title": "Principios",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Pedir un favor",
+        "Responder afirmativamente a una petición",
+        "Negarse al cumplimiento de un favor o una petición",
+        "Valorar razonadamente de un tema de actualidad",
+        "Debatir y presentar argumentos",
+        "Relatar narraciones fantásticas"
+      ],
+      "grammar": [
+        "El masculino genérico: usos sexistas y no sexistas",
+        "Alternativas al masculino sexista: barras, guiones, desdoblamientos, etc…",
+        "El pretérito anterior: formas y usos",
+        "La negación tajante: frases hechas con el adverbio ni y otras estructuras"
+      ],
+      "vocabulary_themes": [
+        "Blogs y Facebook",
+        "Textos informativos",
+        "Frases hechas provenientes de la literatura y el cine",
+        "Textos periodísticos",
+        "Cuentos tradicionales y leyendas",
+        "Eslóganes"
+      ],
+      "learning_strategies": [
+        "Adecuación al registro lingüístico al contexto y tipo de texto",
+        "Selección de las ideas principales de un texto"
+      ],
+      "cultural_content": [
+        "La comunicación no sexista",
+        "Las ONG",
+        "Valores y antivalores en los cuentos tradicionales e hispanos",
+        "Reflexión intercultural sobre el folclore",
+        "Famosos que se involucran en las campañas de solidaridad"
+      ]
+    }
+  ]
+}
