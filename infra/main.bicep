@@ -76,6 +76,7 @@ module kv 'modules/keyvault.bicep' = {
     location: location
     sqlConnectionString: 'Server=tcp:${sqlServerName}${environment().suffixes.sqlServerHostname},1433;Initial Catalog=${sqlDbName};User ID=${sqlAdminUser};Password=${sqlAdminPassword};Encrypt=True;Connection Timeout=30;'
     appPrincipalId: containerApp.outputs.principalId
+    storageConnectionString: storage.outputs.connectionString
   }
 }
 
@@ -94,6 +95,7 @@ module storage 'modules/storage.bicep' = {
   params: {
     accountName: storageName
     location: location
+    appPrincipalId: containerApp.outputs.principalId
   }
 }
 

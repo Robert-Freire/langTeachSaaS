@@ -11,6 +11,8 @@ import {
   getContentBlocks,
   type ContentBlockDto,
 } from '../api/generate'
+import { MaterialUpload } from '@/components/lesson/MaterialUpload'
+import { MaterialPreview } from '@/components/lesson/MaterialPreview'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -730,7 +732,15 @@ export default function LessonEditor() {
                   data-testid={`section-${type.toLowerCase()}`}
                 />
 
-                {!sectionNotes[type] && blocks.length === 0 && (
+                {/* Materials */}
+                <div className="space-y-2" data-testid={`materials-area-${type.toLowerCase()}`}>
+                  {(section.materials ?? []).map(mat => (
+                    <MaterialPreview key={mat.id} material={mat} lessonId={id!} sectionId={sectionId} />
+                  ))}
+                  <MaterialUpload lessonId={id!} sectionId={sectionId} />
+                </div>
+
+                {!sectionNotes[type] && blocks.length === 0 && (section.materials ?? []).length === 0 && (
                   <p className="text-xs text-zinc-400 italic">Use Generate to create content, or type your notes above.</p>
                 )}
 

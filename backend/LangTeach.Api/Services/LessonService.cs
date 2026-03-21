@@ -9,11 +9,13 @@ namespace LangTeach.Api.Services;
 public class LessonService : ILessonService
 {
     private readonly AppDbContext _db;
+    private readonly IMaterialService _materialService;
     private readonly ILogger<LessonService> _logger;
 
-    public LessonService(AppDbContext db, ILogger<LessonService> logger)
+    public LessonService(AppDbContext db, IMaterialService materialService, ILogger<LessonService> logger)
     {
         _db = db;
+        _materialService = materialService;
         _logger = logger;
     }
 
@@ -71,6 +73,7 @@ public class LessonService : ILessonService
     {
         var lesson = await _db.Lessons
             .Include(l => l.Sections)
+                .ThenInclude(s => s.Materials)
             .Include(l => l.Student)
             .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
@@ -151,7 +154,7 @@ public class LessonService : ILessonService
     public async Task<LessonUpdateResult> UpdateAsync(Guid teacherId, Guid lessonId, UpdateLessonRequest request, CancellationToken cancellationToken = default)
     {
         var lesson = await _db.Lessons
-            .Include(l => l.Sections)
+            .Include(l => l.Sections).ThenInclude(s => s.Materials)
             .Include(l => l.Student)
             .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
@@ -192,7 +195,7 @@ public class LessonService : ILessonService
     public async Task<LessonDto?> UpdateSectionsAsync(Guid teacherId, Guid lessonId, UpdateLessonSectionsRequest request, CancellationToken cancellationToken = default)
     {
         var lesson = await _db.Lessons
-            .Include(l => l.Sections)
+            .Include(l => l.Sections).ThenInclude(s => s.Materials)
             .Include(l => l.Student)
             .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
@@ -209,13 +212,15 @@ public class LessonService : ILessonService
         var now = DateTime.UtcNow;
         var existingByType = lesson.Sections.ToDictionary(s => s.SectionType);
 
-        // Remove sections no longer present (and their content blocks, since FK is NoAction)
+        // Remove sections no longer present (and their content blocks + material blobs)
         var removedSections = lesson.Sections.Where(s => !incomingTypes.Contains(s.SectionType)).ToList();
+        var removedSectionIds = new HashSet<Guid>();
         if (removedSections.Count > 0)
         {
-            var removedIds = removedSections.Select(s => s.Id).ToHashSet();
+            removedSectionIds = removedSections.Select(s => s.Id).ToHashSet();
+
             var orphanedBlocks = await _db.LessonContentBlocks
-                .Where(b => b.LessonSectionId.HasValue && removedIds.Contains(b.LessonSectionId.Value))
+                .Where(b => b.LessonSectionId.HasValue && removedSectionIds.Contains(b.LessonSectionId.Value))
                 .ToListAsync(cancellationToken);
             if (orphanedBlocks.Count > 0)
                 _db.LessonContentBlocks.RemoveRange(orphanedBlocks);
@@ -252,6 +257,11 @@ public class LessonService : ILessonService
 
         lesson.UpdatedAt = now;
         await _db.SaveChangesAsync(cancellationToken);
+
+        // Clean up material blobs after DB commit (DB-first pattern)
+        if (removedSectionIds.Count > 0)
+            await _materialService.DeleteBlobsForSectionsAsync(removedSectionIds, cancellationToken);
+
         _logger.LogInformation("Lesson sections updated. TeacherId={TeacherId} LessonId={LessonId} SectionCount={Count}",
             teacherId, lessonId, resultSections.Count);
 
@@ -345,7 +355,8 @@ public class LessonService : ILessonService
         s.Id,
         s.SectionType,
         s.OrderIndex,
-        s.Notes
+        s.Notes,
+        s.Materials?.Select(m => new MaterialDto(m.Id, m.FileName, m.ContentType, m.SizeBytes, m.BlobPath, null, m.CreatedAt)).ToList() ?? new()
     );
 
     private record TemplateSectionEntry(string SectionType, int OrderIndex, string NotesPlaceholder);

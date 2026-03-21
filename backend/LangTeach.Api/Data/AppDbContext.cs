@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<LessonNote> LessonNotes => Set<LessonNote>();
     public DbSet<Course> Courses => Set<Course>();
     public DbSet<CurriculumEntry> CurriculumEntries => Set<CurriculumEntry>();
+    public DbSet<Material> Materials => Set<Material>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -146,6 +147,17 @@ public class AppDbContext : DbContext
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
             e.Property(ce => ce.Status).HasDefaultValue("planned");
+        });
+
+        // Material — cascade delete from LessonSection
+        modelBuilder.Entity<Material>(e =>
+        {
+            e.HasKey(m => m.Id);
+            e.HasIndex(m => m.LessonSectionId);
+            e.HasOne(m => m.LessonSection)
+             .WithMany(s => s.Materials)
+             .HasForeignKey(m => m.LessonSectionId)
+             .OnDelete(DeleteBehavior.Cascade);
         });
 
         // LessonContentBlock — cascade delete from Lesson, no-action from LessonSection (nullable)
