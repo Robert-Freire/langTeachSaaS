@@ -349,16 +349,18 @@ Cleanup helpers (afterEach/afterAll) that delete test records do not assert that
 
 ## What the current review agent does NOT explicitly check
 
-The current review skill (`review-plan/SKILL.md`) is a **plan reviewer**, not a code reviewer. It checks:
-- Referenced files exist
-- Method signatures are correct in the plan
-- Tests are listed in the plan
+The code review agent (`.claude/agents/review.md`) already checks for:
+- Bugs: logic errors, off-by-one, null derefs, race conditions, unhandled error paths
+- Security: injection, leaked secrets, missing auth checks, OWASP top 10
+- Data loss: missing migrations, destructive operations, cascade behavior
+- Missing validation, missing tests, error handling, API contract consistency
+- SQL Server dialect portability
 
-There is **no code review agent yet** (no `review/SKILL.md` found). The CodeRabbit patterns above represent what a code review agent should check.
+However, these checks are **generic instructions** rather than specific, learnable patterns. The agent says "check for null derefs" but doesn't specify the JWT claim null-forgiving pattern, the Array.fill() bug, or the PII-in-logs pattern. Adding the CodeRabbit-derived patterns below as explicit checklist items would make the agent significantly more effective.
 
 ---
 
-## Recommendations for the new review agent
+## Recommendations for improving the review agent
 
 ### High ROI -- add these checks (catches most REAL BUGs)
 
