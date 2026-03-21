@@ -133,7 +133,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Sentence (use ___ for blank)</th>
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600 text-green-700">Answer</th>
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Hint</th>
-              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600 text-zinc-400">Explanation</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Explanation</th>
               <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -214,7 +214,7 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
             <tr className="bg-zinc-50">
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Left</th>
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Right</th>
-              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600 text-zinc-400">Explanation</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Explanation</th>
               <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -468,9 +468,9 @@ function Student({ parsedContent, rawContent }: StudentProps) {
                     </span>
                   )}
                   {checked && !fibCorrect[i] && item.explanation && (
-                    <span className="w-full text-xs text-zinc-500 mt-1 block" data-testid={`fib-explanation-${i}`}>
+                    <p className="w-full text-xs text-zinc-500 mt-1" data-testid={`fib-explanation-${i}`}>
                       {item.explanation}
-                    </span>
+                    </p>
                   )}
                 </li>
               )

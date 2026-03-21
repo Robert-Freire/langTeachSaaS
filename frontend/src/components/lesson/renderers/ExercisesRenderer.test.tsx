@@ -199,6 +199,23 @@ describe('ExercisesRenderer.Student', () => {
     expect(screen.queryByTestId('fib-explanation-0')).not.toBeInTheDocument()
   })
 
+  it('shows explanation for wrong matching answer', async () => {
+    const content = makeContent({
+      matching: [
+        { left: 'hello', right: 'hola', explanation: '"Hola" is the Spanish greeting for "hello".' },
+        { left: 'goodbye', right: 'adios' },
+      ],
+    })
+    render(<ExercisesRenderer.Student rawContent={raw(content)} parsedContent={content} />)
+
+    // Pair "hello" with "adios" (wrong) and leave "goodbye" unpaired
+    await userEvent.click(screen.getByTestId('match-left-0'))
+    await userEvent.click(screen.getByText('adios'))
+    await userEvent.click(screen.getByTestId('check-answers-btn'))
+
+    expect(screen.getByTestId('match-explanation-0')).toHaveTextContent('"Hola" is the Spanish greeting')
+  })
+
   it('gracefully shows only correct answer when explanation is absent', async () => {
     const content = makeContent() // no explanation fields
     render(<ExercisesRenderer.Student rawContent={raw(content)} parsedContent={content} />)

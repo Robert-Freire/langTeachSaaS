@@ -203,7 +203,7 @@ public class PromptServiceTests
     {
         var req = _sut.BuildExercisesPrompt(BaseCtx());
 
-        req.UserPrompt.Should().Contain("\"explanation\"");
+        req.UserPrompt.Should().Contain("\"explanation\":\"\"");
     }
 
     // --- JSON schema injected ---
