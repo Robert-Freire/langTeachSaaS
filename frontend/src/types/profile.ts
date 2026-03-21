@@ -4,6 +4,10 @@ export interface ProfileDto {
   teachingLanguages: string[]
   cefrLevels: string[]
   preferredStyle: string
+  hasCompletedOnboarding: boolean
+  hasSettings: boolean
+  hasStudents: boolean
+  hasLessons: boolean
 }
 
 export interface UpdateProfileRequest {

@@ -6,3 +6,6 @@ export const getProfile = (): Promise<ProfileDto> =>
 
 export const updateProfile = (req: UpdateProfileRequest): Promise<ProfileDto> =>
   apiClient.put('/api/profile', req).then(r => r.data)
+
+export const completeOnboarding = (): Promise<void> =>
+  apiClient.post('/api/profile/complete-onboarding').then(() => undefined)

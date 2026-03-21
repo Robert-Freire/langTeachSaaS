@@ -28,7 +28,10 @@ public class ProfileService : IProfileService
         if (teacher is null)
             return null;
 
-        return MapToDto(teacher);
+        var hasStudents = await _db.Students.AnyAsync(s => s.TeacherId == teacher.Id && !s.IsDeleted);
+        var hasLessons = await _db.Lessons.AnyAsync(l => l.TeacherId == teacher.Id && !l.IsDeleted);
+
+        return MapToDto(teacher, hasStudents, hasLessons);
     }
 
     public async Task<ProfileDto> UpdateProfileAsync(string auth0UserId, UpdateProfileRequest request)
@@ -65,7 +68,25 @@ public class ProfileService : IProfileService
         }
 
         await _db.SaveChangesAsync();
-        return MapToDto(teacher);
+
+        var hasStudents = await _db.Students.AnyAsync(s => s.TeacherId == teacher.Id && !s.IsDeleted);
+        var hasLessons = await _db.Lessons.AnyAsync(l => l.TeacherId == teacher.Id && !l.IsDeleted);
+
+        return MapToDto(teacher, hasStudents, hasLessons);
+    }
+
+    public async Task CompleteOnboardingAsync(string auth0UserId)
+    {
+        var teacher = await _db.Teachers
+            .FirstOrDefaultAsync(t => t.Auth0UserId == auth0UserId)
+            ?? throw new InvalidOperationException($"Teacher not found for Auth0UserId={auth0UserId}");
+
+        if (!teacher.HasCompletedOnboarding)
+        {
+            teacher.HasCompletedOnboarding = true;
+            teacher.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
     }
 
     public async Task<Guid> UpsertTeacherAsync(string auth0UserId, string email, string name = "")
@@ -203,12 +224,16 @@ public class ProfileService : IProfileService
         return email ?? "";
     }
 
-    private static ProfileDto MapToDto(Teacher teacher) => new(
+    private static ProfileDto MapToDto(Teacher teacher, bool hasStudents, bool hasLessons) => new(
         teacher.Id,
         teacher.DisplayName,
         Deserialize(teacher.Settings?.TeachingLanguages ?? "[]"),
         Deserialize(teacher.Settings?.CefrLevels ?? "[]"),
-        teacher.Settings?.PreferredStyle ?? "Conversational"
+        teacher.Settings?.PreferredStyle ?? "Conversational",
+        teacher.HasCompletedOnboarding,
+        teacher.Settings is not null,
+        hasStudents,
+        hasLessons
     );
 
     private static List<string> Deserialize(string json) =>
