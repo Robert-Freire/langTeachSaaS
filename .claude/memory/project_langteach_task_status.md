@@ -18,6 +18,7 @@ Use `gh issue list` to see current state. Key queries:
 - Phase 2A: Teacher Workflow: CLOSED (reorganized 2026-03-21)
 - Curriculum & Personalization: ACTIVE (target Easter April 5, Jordi testing)
 - Solo Whiteboard: NEXT SPRINT (5 sub-issues from #174)
+- Adaptive Replanning: AFTER WHITEBOARD (audio input, post-class reflections, auto-difficulty updates, course replanning, progress dashboard)
 - Group Classes: FUTURE (#146, #147)
 - Phase 2B: Production (caching, usage limits, CI pipeline)
 - Phase 3: Growth (student portal, evaluation, content library, payments)
@@ -36,6 +37,7 @@ See git history for details. Key completed milestones:
 - Demo Sprint: all issues closed, milestone closed
 
 **Active sprint: Curriculum & Personalization** (target Easter April 5)
+- #184 Fix phantom materials in AI generation (P1, done, PR #193 merged)
 - #157 AI-Powered Difficulty Targeting (P1, in progress)
 - #163 Extract curricula JSON (P1, in progress, Ready to Test)
 - #164 Integrate curriculum data as templates (P2, in progress, depends on #163)

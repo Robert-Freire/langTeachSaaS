@@ -55,6 +55,7 @@ These patterns were derived from analyzing 210 CodeRabbit findings across 42 mer
 | Important | CancellationToken not propagated | Controller action has `CancellationToken` parameter not passed to service method calls or DB queries. |
 | Important | Cancelled token used in catch block | After catching `OperationCanceledException`, using the same `cancellationToken` for error writes (it's already cancelled). |
 | Important | Unhandled exception in singleton constructor | `JsonSerializer.Deserialize`, file I/O, or network calls in a singleton/DI constructor without try/catch. An exception kills app startup entirely. Log and skip/degrade gracefully. |
+| Important | Asymmetric key normalization | Dictionary/map lookups where the key is normalized differently at storage time vs lookup time. If the write path trims, lowercases, or extracts a prefix before storing, the read/lookup path must apply the same transformation to its input. |
 
 ### Frontend (.tsx/.ts) files
 

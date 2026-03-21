@@ -19,3 +19,17 @@ When the user says "check email" or similar:
 9. Keep the PM tone: direct, professional, grounded in the vision doc and current roadmap
 
 Do NOT just read and summarize to the user. Take action: update memory, reply to sender.
+
+## Before Sending Any Email
+
+**Always check the inbox first** before composing any outgoing email. The recipient may have already replied to a previous message, and sending without checking leads to crossed wires or redundant messages.
+
+## Thread Discipline
+
+**Keep conversations in existing threads.** Do not create a new email thread for every topic if it's a continuation of an existing conversation. Use `In-Reply-To` and `References` headers to maintain the thread, or at minimum reuse the same `Subject` line with `Re:` prefix.
+
+Only start a new thread when:
+- The topic is genuinely unrelated to any recent conversation
+- Mixing it into an existing thread would confuse the recipient
+
+When replying to an email Jordi sent, reply in that same thread. When following up on a topic you already emailed about, continue that thread.

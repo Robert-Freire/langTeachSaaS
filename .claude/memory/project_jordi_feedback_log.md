@@ -124,6 +124,8 @@ Jordi sent 19 PDFs, all saved to `feedback/raw/2026-03-21-jordi-programs/`:
 - **Systematization examples (2):** "Sistematizacion la casa.pdf", "4.Gustar.pdf" (end-of-class student summary format)
 - **Grammar content maps (2):** "Contenidos gramaticales por nivel.pdf", "Contenidos gramaticales por nivel y subnivel.pdf"
 
+**Attribution correction (2026-03-21):** Jordi clarified these are NOT from Instituto Cervantes. They are from his academy and an internet source, but he considers them the best model for what we need. Do not reference "Instituto Cervantes" when describing this data.
+
 These are key inputs for Course Planner (issue 98): standardized curricula with communicative + grammatical content per level.
 
 **Reply sent (2026-03-21):** Emailed Jordi explaining our 3-phase plan for the data (extract into structured JSON, integrate as Course Planner templates, use for grammar-constrained generation). No demo date promised. Issues created: 163 (extraction, P1), 164 (integration, P2), 165 (labels + guardrails, P3).
