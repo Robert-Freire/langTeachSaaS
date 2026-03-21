@@ -40,7 +40,7 @@ See git history for details. Key completed milestones:
 - #184 Fix phantom materials in AI generation (P1, done, PR #193 merged)
 - #157 AI-Powered Difficulty Targeting (P1, in progress)
 - #163 Extract curricula JSON (P1, in progress, Ready to Test)
-- #164 Integrate curriculum data as templates (P2, in progress, depends on #163)
+- #164 Integrate curriculum data as templates (P2, done, PR #173 merged, Ready to Test)
 - #150 Filter difficulties by target language (P1, ready)
 - #161 Custom free-text entries for learning goals (P1, done, PR #172 merged)
 - #154 Auto-fill lesson language/level from student (P2, ready)
