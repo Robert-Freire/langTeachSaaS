@@ -36,8 +36,12 @@ export async function streamText(
     let message = 'Monthly generation limit reached.'
     try {
       const errorBody = await response.json()
-      resetsAt = errorBody.resetsAt ?? ''
-      message = errorBody.message ?? message
+      if (typeof errorBody?.resetsAt === 'string') {
+        resetsAt = errorBody.resetsAt
+      }
+      if (typeof errorBody?.message === 'string' && errorBody.message.trim()) {
+        message = errorBody.message
+      }
     } catch {
       // ignore parse failure
     }

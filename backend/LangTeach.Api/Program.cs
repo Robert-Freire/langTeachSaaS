@@ -108,8 +108,10 @@ builder.Services.AddHttpClient("Claude", (sp, client) =>
 builder.Services.AddScoped<IClaudeClient, ClaudeApiClient>();
 builder.Services.AddScoped<IPromptService, PromptService>();
 
-builder.Services.Configure<GenerationLimitsOptions>(
-    builder.Configuration.GetSection(GenerationLimitsOptions.SectionName));
+builder.Services.AddOptions<GenerationLimitsOptions>()
+    .Bind(builder.Configuration.GetSection(GenerationLimitsOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddScoped<IUsageLimitService, UsageLimitService>();
 
 builder.Services.AddScoped<IProfileService, ProfileService>();
