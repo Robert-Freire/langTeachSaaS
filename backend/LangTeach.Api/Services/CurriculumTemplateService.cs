@@ -141,8 +141,16 @@ public class CurriculumTemplateService : ICurriculumTemplateService
     public CurriculumTemplateData? GetByLevel(string level) =>
         _byLevel.TryGetValue(level, out var data) ? data : null;
 
-    public IReadOnlyList<string> GetGrammarForCefrPrefix(string cefrPrefix) =>
-        _grammarByPrefix.TryGetValue(cefrPrefix, out var list) ? list : [];
+    public IReadOnlyList<string> GetGrammarForCefrPrefix(string cefrPrefix)
+    {
+        if (string.IsNullOrWhiteSpace(cefrPrefix))
+            return [];
+
+        var normalized = cefrPrefix.Trim();
+        normalized = normalized.Length >= 2 ? normalized[..2] : normalized;
+
+        return _grammarByPrefix.TryGetValue(normalized, out var list) ? list : [];
+    }
 
     // Internal deserialization models (snake_case JSON)
     private sealed class RawTemplate
