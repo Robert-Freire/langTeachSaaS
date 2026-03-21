@@ -89,3 +89,12 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 - **Important** - Difficulty badge text could clip at narrow content widths; consider adding `title` attribute for hover tooltip
 - **Minor** - No hover state on difficulty badges; could add subtle hover effect or tooltip
 - **Minor** - `[category]` bracket formatting is functional but slightly technical; could use uppercase label or dot prefix
+
+## PR #TBD (task-t150-difficulty-areas-filter) - 2026-03-21
+
+- **Important** | Student Form: weaknesses dropdown overlaps Interests card above (z-index layering)
+- **Important** | Student Form: selected chips not visible without scrolling when multiple weaknesses chosen
+- **Important** | Student Form: language-specific weaknesses persist silently when language is switched (user may not notice stale selections)
+- **Minor** | Student Form: no hint text in dropdown when no language selected ("Select a language to see more options")
+- **Minor** | Student Form: Save button hover state is very subtle (indigo-600 to indigo-700)
+- **Minor** | Student Form: Native Language shows "none" instead of "Not specified" in trigger
