@@ -228,7 +228,7 @@ export default function CourseDetail() {
                     data-testid={`move-up-${idx}`}
                     onClick={() => moveEntry(entry, 'up')}
                     disabled={idx === 0}
-                    className="p-0.5 rounded text-zinc-400 hover:text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="p-2 rounded text-zinc-400 hover:text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed"
                     aria-label="Move up"
                   >
                     <ChevronUp className="h-4 w-4" />
@@ -239,7 +239,7 @@ export default function CourseDetail() {
                     data-testid={`move-down-${idx}`}
                     onClick={() => moveEntry(entry, 'down')}
                     disabled={idx === entries.length - 1}
-                    className="p-0.5 rounded text-zinc-400 hover:text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="p-2 rounded text-zinc-400 hover:text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed"
                     aria-label="Move down"
                   >
                     <ChevronDown className="h-4 w-4" />
@@ -310,8 +310,10 @@ export default function CourseDetail() {
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <>
-                        <BookOpen className="h-3.5 w-3.5 mr-1" />
-                        {entry.status === 'planned' ? 'Generate Lesson' : entry.status === 'created' ? 'Created' : 'Taught'}
+                        <BookOpen className="h-3.5 w-3.5 sm:mr-1" />
+                        <span className="hidden sm:inline">
+                          {entry.status === 'planned' ? 'Generate Lesson' : entry.status === 'created' ? 'Created' : 'Taught'}
+                        </span>
                       </>
                     )}
                   </Button>

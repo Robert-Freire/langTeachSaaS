@@ -225,7 +225,7 @@ export default function CourseNew() {
             </Card>
           )}
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-2">
             <Button
               variant="outline"
               onClick={() => navigate('/courses')}

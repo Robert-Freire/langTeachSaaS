@@ -91,7 +91,7 @@ export default function Courses() {
             <div
               key={course.id}
               data-testid={`course-card-${course.id}`}
-              className="flex items-center gap-4 rounded-lg border border-zinc-200 bg-white p-4 hover:border-zinc-300 transition-colors"
+              className="group flex items-center gap-4 rounded-lg border border-zinc-200 bg-white p-4 hover:border-zinc-300 hover:bg-zinc-50 transition-colors cursor-pointer"
             >
               <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/courses/${course.id}`)}>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -124,7 +124,7 @@ export default function Courses() {
                 type="button"
                 data-testid={`delete-course-${course.id}`}
                 onClick={() => setDeleteId(course.id)}
-                className="p-1.5 rounded text-zinc-300 hover:text-red-500 transition-colors"
+                className="p-1.5 rounded text-zinc-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                 aria-label="Delete course"
               >
                 <Trash2 className="h-4 w-4" />
