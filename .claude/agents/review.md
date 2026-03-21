@@ -64,7 +64,7 @@ These patterns were derived from analyzing 210 CodeRabbit findings across 42 mer
 | Important | Missing error state in UI | `useQuery`/`useMutation` hooks where `isError` state is not handled in JSX, or `onError` only calls `console.error` with no user-visible feedback (toast, error message). |
 | Important | Unguarded array index access | `someArray[0].property` without prior `someArray?.length > 0` or null-coalescing check. Crashes on empty arrays. |
 | Important | `useEffect` timer not cleaned up | `setInterval`/`setTimeout` in `useEffect` without a return cleanup function. Memory leak on unmount. |
-| Important | Unsanitized AI prompt inputs | User-supplied fields interpolated directly into prompt template strings without sanitization. |
+| Critical | Unsanitized AI prompt inputs | User-supplied fields interpolated directly into prompt template strings without sanitization. Prompt injection is a real attack vector in an AI-first product. |
 
 ### Test (.spec.ts) files
 
@@ -73,6 +73,12 @@ These patterns were derived from analyzing 210 CodeRabbit findings across 42 mer
 | Important | `beforeAll` with DB mutations | `beforeAll` calling helpers that INSERT/DELETE/reset data in e2e specs. Use `beforeEach` for test independence. |
 | Important | Cleanup without assertion | afterAll/afterEach delete calls without asserting the deletion succeeded (row count check). |
 | Minor | Weak assertions | Assertions on shape only (e.g., checking array length > 0 instead of specific content), or tests that never exercise the branch they claim to test. |
+
+### Infrastructure (.bicep) files
+
+| Severity | Pattern | What to look for |
+|----------|---------|-----------------|
+| Important | Missing `@secure()` on secrets | Parameters containing secrets, connection strings, or keys without the `@secure()` decorator. Values will appear in deployment logs. |
 
 ### CI/Infra (.yml) files
 
