@@ -33,17 +33,20 @@ export interface ExercisesFillInBlank {
   sentence: string
   answer: string
   hint?: string
+  explanation?: string
 }
 
 export interface ExercisesMultipleChoice {
   question: string
   options: string[]
   answer: string
+  explanation?: string
 }
 
 export interface ExercisesMatching {
   left: string
   right: string
+  explanation?: string
 }
 
 export interface ExercisesContent {

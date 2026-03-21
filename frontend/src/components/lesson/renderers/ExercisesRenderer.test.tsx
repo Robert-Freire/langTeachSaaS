@@ -159,4 +159,54 @@ describe('ExercisesRenderer.Student', () => {
     render(<ExercisesRenderer.Student rawContent="not valid" parsedContent={42} />)
     expect(screen.getByText(/could not be loaded/)).toBeInTheDocument()
   })
+
+  it('shows explanation below wrong fill-in-blank answer', async () => {
+    const content = makeContent({
+      fillInBlank: [{ sentence: 'She ___ to the store.', answer: 'went', hint: "past of 'go'", explanation: 'Use past simple "went" here.' }],
+    })
+    render(<ExercisesRenderer.Student rawContent={raw(content)} parsedContent={content} />)
+
+    await userEvent.type(screen.getByTestId('fib-input-0'), 'go')
+    await userEvent.click(screen.getByTestId('check-answers-btn'))
+
+    expect(screen.getByTestId('fib-result-0')).toHaveTextContent('✗')
+    expect(screen.getByTestId('fib-explanation-0')).toHaveTextContent('Use past simple "went" here.')
+  })
+
+  it('shows explanation below wrong multiple choice answer', async () => {
+    const content = makeContent({
+      multipleChoice: [{ question: 'Which word means happy?', options: ['sad', 'glad', 'angry'], answer: 'glad', explanation: '"Glad" is a synonym for happy.' }],
+    })
+    render(<ExercisesRenderer.Student rawContent={raw(content)} parsedContent={content} />)
+
+    await userEvent.click(screen.getByTestId('mc-option-0-0')) // 'sad' — wrong
+    await userEvent.click(screen.getByTestId('check-answers-btn'))
+
+    expect(screen.getByTestId('mc-result-0')).toHaveTextContent('✗')
+    expect(screen.getByTestId('mc-explanation-0')).toHaveTextContent('"Glad" is a synonym for happy.')
+  })
+
+  it('does not show explanation when answer is correct', async () => {
+    const content = makeContent({
+      fillInBlank: [{ sentence: 'She ___ to the store.', answer: 'went', explanation: 'Use past simple.' }],
+    })
+    render(<ExercisesRenderer.Student rawContent={raw(content)} parsedContent={content} />)
+
+    await userEvent.type(screen.getByTestId('fib-input-0'), 'went')
+    await userEvent.click(screen.getByTestId('check-answers-btn'))
+
+    expect(screen.getByTestId('fib-result-0')).toHaveTextContent('✓')
+    expect(screen.queryByTestId('fib-explanation-0')).not.toBeInTheDocument()
+  })
+
+  it('gracefully shows only correct answer when explanation is absent', async () => {
+    const content = makeContent() // no explanation fields
+    render(<ExercisesRenderer.Student rawContent={raw(content)} parsedContent={content} />)
+
+    await userEvent.type(screen.getByTestId('fib-input-0'), 'wrong')
+    await userEvent.click(screen.getByTestId('check-answers-btn'))
+
+    expect(screen.getByTestId('fib-result-0')).toHaveTextContent('✗ went')
+    expect(screen.queryByTestId('fib-explanation-0')).not.toBeInTheDocument()
+  })
 })

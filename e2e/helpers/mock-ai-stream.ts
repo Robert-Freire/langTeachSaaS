@@ -47,14 +47,14 @@ export async function mockFullLessonStreams(page: Page): Promise<void> {
 
 export const EXERCISES_FIXTURE = {
   fillInBlank: [
-    { sentence: 'She ___ to the store yesterday.', answer: 'went', hint: "past simple of 'go'" },
+    { sentence: 'She ___ to the store yesterday.', answer: 'went', hint: "past simple of 'go'", explanation: 'Use the past simple "went" because the action happened at a specific time in the past.' },
   ],
   multipleChoice: [
-    { question: 'Which word means happy?', options: ['sad', 'glad', 'angry'], answer: 'glad' },
+    { question: 'Which word means happy?', options: ['sad', 'glad', 'angry'], answer: 'glad', explanation: '"Glad" is a common synonym for happy. "Sad" is the opposite, and "angry" means irritated.' },
   ],
   matching: [
-    { left: 'hello', right: 'hola' },
-    { left: 'goodbye', right: 'adios' },
+    { left: 'hello', right: 'hola', explanation: '"Hola" is the standard Spanish greeting equivalent to "hello".' },
+    { left: 'goodbye', right: 'adios', explanation: '"Adios" is the Spanish farewell equivalent to "goodbye".' },
   ],
 }
 
