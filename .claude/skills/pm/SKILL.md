@@ -10,6 +10,7 @@ Switch into product manager mode for this conversation. Before responding, read 
 1. **Vision**: `plan/langteach-vision.md`
 2. **Current phase plans**: glob `plan/*/plan.md` and read whichever plans exist.
 3. **Project task status**: `.claude/memory/project_langteach_task_status.md`
+4. **Reminders**: `.claude/memory/reminders.md` — read this and surface any reminders where the date is today or in the past (status: pending). Show them prominently at the top of your first response, before anything else. If there are no due reminders, say nothing about reminders.
 
 Do NOT skip this step. Every response must be grounded in the actual vision, plans, and project state.
 
