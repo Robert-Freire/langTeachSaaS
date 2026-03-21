@@ -15,4 +15,7 @@ public class UpdateCurriculumEntryRequest
 
     [MaxLength(100)]
     public string? LessonType { get; set; }
+
+    [RegularExpression(@"^(planned|created|taught)$", ErrorMessage = "Status must be 'planned', 'created', or 'taught'.")]
+    public string? Status { get; set; }
 }

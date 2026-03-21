@@ -212,6 +212,7 @@ public class CoursesController : ControllerBase
         entry.GrammarFocus = request.GrammarFocus;
         entry.Competencies = request.Competencies ?? string.Empty;
         entry.LessonType = request.LessonType;
+        if (request.Status is not null) entry.Status = request.Status;
         course.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
@@ -294,7 +295,7 @@ public class CoursesController : ControllerBase
             c.Id, c.Name, c.Description, c.Language, c.Mode,
             c.TargetCefrLevel, c.TargetExam, c.ExamDate,
             c.SessionCount, c.StudentId, c.Student?.Name,
-            LessonsCreated: c.Entries.Count(e => e.Status != "planned"),
+            LessonsCreated: c.Entries.Count(e => e.Status == "created" || e.Status == "taught"),
             c.CreatedAt, c.UpdatedAt,
             c.Entries.OrderBy(e => e.OrderIndex).Select(MapEntryToDto).ToList()
         );
@@ -304,7 +305,7 @@ public class CoursesController : ControllerBase
             c.Id, c.Name, c.Description, c.Language, c.Mode,
             c.TargetCefrLevel, c.TargetExam,
             c.SessionCount, c.StudentId, c.Student?.Name,
-            LessonsCreated: c.Entries.Count(e => e.Status != "planned"),
+            LessonsCreated: c.Entries.Count(e => e.Status == "created" || e.Status == "taught"),
             c.CreatedAt
         );
 }

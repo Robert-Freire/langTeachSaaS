@@ -102,6 +102,17 @@ export async function updateCurriculumEntry(
   return res.data
 }
 
+export async function markEntryAsTaught(courseId: string, entryId: string, entry: CurriculumEntry): Promise<CurriculumEntry> {
+  const res = await apiClient.put<CurriculumEntry>(`/api/courses/${courseId}/curriculum/${entryId}`, {
+    topic: entry.topic,
+    grammarFocus: entry.grammarFocus ?? undefined,
+    competencies: entry.competencies,
+    lessonType: entry.lessonType ?? undefined,
+    status: 'taught',
+  })
+  return res.data
+}
+
 export async function generateLessonFromEntry(courseId: string, entryId: string): Promise<{ lessonId: string }> {
   const res = await apiClient.post<{ lessonId: string }>(`/api/courses/${courseId}/curriculum/${entryId}/lesson`, {})
   return res.data

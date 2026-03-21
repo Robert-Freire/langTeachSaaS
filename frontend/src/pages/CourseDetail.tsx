@@ -6,6 +6,7 @@ import {
   getCourse,
   reorderCurriculum,
   updateCurriculumEntry,
+  markEntryAsTaught,
   generateLessonFromEntry,
   type CurriculumEntry,
 } from '../api/courses'
@@ -74,6 +75,11 @@ export default function CourseDetail() {
       queryClient.invalidateQueries({ queryKey: ['course', id] })
       setEditingId(null)
     },
+  })
+
+  const { mutate: doMarkTaught } = useMutation({
+    mutationFn: (entry: CurriculumEntry) => markEntryAsTaught(id!, entry.id, entry),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course', id] }),
   })
 
   const { mutate: doGenerateLesson } = useMutation({
@@ -277,11 +283,23 @@ export default function CourseDetail() {
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
+                  {entry.status === 'created' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      data-testid={`mark-taught-${idx}`}
+                      onClick={() => doMarkTaught(entry)}
+                      className="text-xs h-7 text-green-700 border-green-200 hover:bg-green-50"
+                    >
+                      <Check className="h-3.5 w-3.5 mr-1" />
+                      Mark as taught
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="outline"
                     data-testid={`generate-lesson-${idx}`}
-                    disabled={generatingId === entry.id || entry.status === 'created'}
+                    disabled={generatingId === entry.id || entry.status !== 'planned'}
                     onClick={() => {
                       setGeneratingId(entry.id)
                       doGenerateLesson(entry.id)
@@ -293,7 +311,7 @@ export default function CourseDetail() {
                     ) : (
                       <>
                         <BookOpen className="h-3.5 w-3.5 mr-1" />
-                        {entry.status === 'created' ? 'Created' : 'Generate Lesson'}
+                        {entry.status === 'planned' ? 'Generate Lesson' : entry.status === 'created' ? 'Created' : 'Taught'}
                       </>
                     )}
                   </Button>
