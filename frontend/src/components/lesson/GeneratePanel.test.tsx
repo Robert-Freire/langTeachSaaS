@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GeneratePanel } from './GeneratePanel'
 import type { ContentBlockDto } from '../../api/generate'
 import * as generateApi from '../../api/generate'
@@ -16,6 +17,12 @@ vi.mock('@auth0/auth0-react', () => ({
 const mockUseGenerate = vi.fn()
 vi.mock('../../hooks/useGenerate', () => ({
   useGenerate: () => mockUseGenerate(),
+}))
+
+// Mock useProfile for quota data
+const mockUseProfile = vi.fn()
+vi.mock('../../hooks/useProfile', () => ({
+  useProfile: () => mockUseProfile(),
 }))
 
 vi.mock('../../api/generate', async (importOriginal) => {
@@ -56,8 +63,23 @@ const defaultProps = {
   onClose: vi.fn(),
 }
 
+const defaultProfile = {
+  data: {
+    id: '1', displayName: 'Test', teachingLanguages: [], cefrLevels: [],
+    preferredStyle: '', hasCompletedOnboarding: true, hasSettings: true,
+    hasStudents: false, hasLessons: false,
+    generationsUsedThisMonth: 5, generationsMonthlyLimit: 50, subscriptionTier: 'Free',
+  },
+}
+
+function renderWithQuery(ui: React.ReactElement) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
+  mockUseProfile.mockReturnValue(defaultProfile)
 })
 
 describe('GeneratePanel - streaming states', () => {
@@ -66,11 +88,12 @@ describe('GeneratePanel - streaming states', () => {
       status: 'streaming',
       output: '',
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
-    render(<GeneratePanel {...defaultProps} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
 
     const output = screen.getByTestId('generate-output')
     expect(output).toBeTruthy()
@@ -87,11 +110,12 @@ describe('GeneratePanel - streaming states', () => {
       status: 'streaming',
       output: vocabOutput,
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
-    render(<GeneratePanel {...defaultProps} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
 
     const output = screen.getByTestId('generate-output')
     expect(output.getAttribute('role')).toBeNull()
@@ -107,11 +131,12 @@ describe('GeneratePanel - streaming states', () => {
       status: 'done',
       output: vocabOutput,
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
-    render(<GeneratePanel {...defaultProps} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
 
     expect(screen.getByText('Generated preview')).toBeTruthy()
   })
@@ -123,11 +148,12 @@ describe('GeneratePanel - replace indicator', () => {
       status: 'idle',
       output: null,
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
-    render(<GeneratePanel {...defaultProps} existingBlocks={[]} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} existingBlocks={[]} />)
 
     expect(screen.queryByTestId('replace-indicator')).toBeNull()
   })
@@ -137,12 +163,13 @@ describe('GeneratePanel - replace indicator', () => {
       status: 'idle',
       output: null,
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
     const blocks = [makeBlock(), makeBlock({ id: 'block-2' })]
-    render(<GeneratePanel {...defaultProps} existingBlocks={blocks} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} existingBlocks={blocks} />)
 
     const indicator = screen.getByTestId('replace-indicator')
     expect(indicator).toBeInTheDocument()
@@ -154,11 +181,12 @@ describe('GeneratePanel - replace indicator', () => {
       status: 'idle',
       output: null,
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
-    render(<GeneratePanel {...defaultProps} existingBlocks={[makeBlock()]} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} existingBlocks={[makeBlock()]} />)
 
     const indicator = screen.getByTestId('replace-indicator')
     expect(indicator.textContent).toContain('1 existing block')
@@ -172,11 +200,12 @@ describe('GeneratePanel - direction textarea and chips', () => {
       status: 'idle',
       output: null,
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
-    render(<GeneratePanel {...defaultProps} existingBlocks={[makeBlock()]} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} existingBlocks={[makeBlock()]} />)
 
     expect(screen.getByTestId('direction-textarea')).toBeInTheDocument()
     expect(screen.getByTestId('direction-chips')).toBeInTheDocument()
@@ -187,11 +216,12 @@ describe('GeneratePanel - direction textarea and chips', () => {
       status: 'idle',
       output: null,
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
-    render(<GeneratePanel {...defaultProps} existingBlocks={[]} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} existingBlocks={[]} />)
 
     expect(screen.queryByTestId('direction-textarea')).toBeNull()
   })
@@ -201,11 +231,12 @@ describe('GeneratePanel - direction textarea and chips', () => {
       status: 'idle',
       output: null,
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
-    render(<GeneratePanel {...defaultProps} existingBlocks={[makeBlock()]} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} existingBlocks={[makeBlock()]} />)
 
     const user = userEvent.setup()
     await user.click(screen.getByTestId('direction-chip-make-it-easier'))
@@ -221,11 +252,12 @@ describe('GeneratePanel - replace on insert', () => {
       status: 'done',
       output: '{"items":[]}',
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
-    render(<GeneratePanel {...defaultProps} existingBlocks={[makeBlock()]} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} existingBlocks={[makeBlock()]} />)
 
     expect(screen.getByTestId('insert-btn')).toHaveTextContent('Replace & insert')
   })
@@ -235,11 +267,12 @@ describe('GeneratePanel - replace on insert', () => {
       status: 'done',
       output: '{"items":[]}',
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
-    render(<GeneratePanel {...defaultProps} existingBlocks={[]} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} existingBlocks={[]} />)
 
     expect(screen.getByTestId('insert-btn')).toHaveTextContent('Insert into section')
   })
@@ -254,12 +287,13 @@ describe('GeneratePanel - replace on insert', () => {
       status: 'done',
       output: '{"items":[]}',
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
     const onReplace = vi.fn()
-    render(<GeneratePanel {...defaultProps} existingBlocks={[existingBlock]} onReplace={onReplace} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} existingBlocks={[existingBlock]} onReplace={onReplace} />)
 
     const user = userEvent.setup()
     await user.click(screen.getByTestId('insert-btn'))
@@ -281,12 +315,13 @@ describe('GeneratePanel - replace on insert', () => {
       status: 'done',
       output: '{"items":[]}',
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
     const onReplace = vi.fn()
-    render(<GeneratePanel {...defaultProps} existingBlocks={[existingBlock]} onReplace={onReplace} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} existingBlocks={[existingBlock]} onReplace={onReplace} />)
 
     const user = userEvent.setup()
     await user.click(screen.getByTestId('insert-btn'))
@@ -306,11 +341,12 @@ describe('GeneratePanel - replace on insert', () => {
       status: 'done',
       output: '{"items":[]}',
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
-    render(<GeneratePanel {...defaultProps} existingBlocks={[existingBlock]} onClose={onClose} />)
+    renderWithQuery(<GeneratePanel {...defaultProps} existingBlocks={[existingBlock]} onClose={onClose} />)
 
     const user = userEvent.setup()
     // Click the Discard link (not the Replace & insert button)
@@ -334,12 +370,13 @@ describe('GeneratePanel - difficulty targeting', () => {
       status: 'done',
       output: '{"items":[]}',
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
     const onReplace = vi.fn()
-    render(
+    renderWithQuery(
       <GeneratePanel
         {...defaultProps}
         lessonContext={{ ...defaultProps.lessonContext, studentDifficulties: difficulties }}
@@ -367,11 +404,12 @@ describe('GeneratePanel - difficulty targeting', () => {
       status: 'done',
       output: '{"items":[]}',
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
-    render(
+    renderWithQuery(
       <GeneratePanel
         {...defaultProps}
         lessonContext={{ ...defaultProps.lessonContext, studentDifficulties: difficulties }}
@@ -383,17 +421,62 @@ describe('GeneratePanel - difficulty targeting', () => {
   })
 })
 
+describe('GeneratePanel - quota exhausted', () => {
+  it('disables generate button when quota is exhausted', () => {
+    mockUseProfile.mockReturnValue({
+      data: {
+        ...defaultProfile.data,
+        generationsUsedThisMonth: 50,
+        generationsMonthlyLimit: 50,
+      },
+    })
+
+    mockUseGenerate.mockReturnValue({
+      status: 'idle',
+      output: null,
+      error: null,
+      quotaExceeded: false,
+      generate: vi.fn(),
+      abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    const btn = screen.getByTestId('generate-btn')
+    expect(btn).toBeDisabled()
+    expect(screen.getByTestId('quota-exhausted-msg')).toBeInTheDocument()
+  })
+
+  it('shows quota message when 429 was returned', () => {
+    mockUseGenerate.mockReturnValue({
+      status: 'error',
+      output: '',
+      error: 'Monthly generation limit reached. Resets on 5/1/2026.',
+      quotaExceeded: true,
+      generate: vi.fn(),
+      abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    expect(screen.getByTestId('quota-exhausted-msg')).toBeInTheDocument()
+    const btn = screen.getByTestId('generate-btn')
+    expect(btn).toBeDisabled()
+  })
+})
+
 describe('GeneratePanel - task type dropdown casing', () => {
   it('displays task type in Title Case in the trigger', () => {
     mockUseGenerate.mockReturnValue({
       status: 'idle',
       output: null,
       error: null,
+      quotaExceeded: false,
       generate: vi.fn(),
       abort: vi.fn(),
     })
 
-    render(<GeneratePanel {...defaultProps} sectionType="Presentation" />)
+    renderWithQuery(<GeneratePanel {...defaultProps} sectionType="Presentation" />)
 
     // Default task type for Presentation is "vocabulary", should display as "Vocabulary"
     const label = screen.getByText('Task type')

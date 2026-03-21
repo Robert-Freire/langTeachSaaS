@@ -8,6 +8,8 @@ import {
   type GenerateRequest,
 } from '../../api/generate'
 import { useGenerate } from '../../hooks/useGenerate'
+import { useProfile } from '../../hooks/useProfile'
+import { useQueryClient } from '@tanstack/react-query'
 import { getRenderer } from './contentRegistry'
 import { ContentErrorBoundary } from './ContentErrorBoundary'
 import type { ContentBlockType } from '../../types/contentTypes'
@@ -102,7 +104,13 @@ export function GeneratePanel({
   const [inserting, setInserting] = useState(false)
   const [insertError, setInsertError] = useState<string | null>(null)
 
-  const { status, output, error, generate, abort } = useGenerate()
+  const { data: profile } = useProfile()
+  const queryClient = useQueryClient()
+  const { status, output, error, quotaExceeded, generate, abort } = useGenerate()
+
+  const quotaLimit = profile?.generationsMonthlyLimit ?? -1
+  const quotaUsed = profile?.generationsUsedThisMonth ?? 0
+  const isQuotaExhausted = quotaLimit >= 0 && quotaUsed >= quotaLimit
 
   const request: GenerateRequest = useMemo(() => ({
     lessonId,
@@ -147,6 +155,7 @@ export function GeneratePanel({
         })
       }
       onReplace(block, removedIds)
+      queryClient.invalidateQueries({ queryKey: ['profile'] })
       onClose()
     } catch {
       setInsertError('Failed to save. Please try again.')
@@ -314,8 +323,14 @@ export function GeneratePanel({
         />
       )}
 
-      {isError && (
-        <p className="text-xs text-red-600">{error ?? 'Generation failed.'}</p>
+      {isError && !quotaExceeded && (
+        <p className="text-xs text-red-600" data-testid="generate-error">{error ?? 'Generation failed.'}</p>
+      )}
+
+      {(isQuotaExhausted || quotaExceeded) && (
+        <p className="text-xs text-red-600" data-testid="quota-exhausted-msg">
+          {error ?? 'Monthly generation limit reached. Upgrade for more generations.'}
+        </p>
       )}
 
       <div className="flex items-center gap-2">
@@ -323,10 +338,11 @@ export function GeneratePanel({
           <Button
             size="sm"
             onClick={handleGenerate}
+            disabled={isQuotaExhausted || quotaExceeded}
             className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
             data-testid="generate-btn"
           >
-            {isError ? 'Retry' : 'Generate'}
+            {isError && !quotaExceeded ? 'Retry' : 'Generate'}
           </Button>
         )}
 

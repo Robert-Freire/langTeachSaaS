@@ -8,6 +8,7 @@ public class Teacher
     public string DisplayName { get; set; } = string.Empty;
     public bool IsApproved { get; set; } = false;
     public bool HasCompletedOnboarding { get; set; } = false;
+    public SubscriptionTier SubscriptionTier { get; set; } = SubscriptionTier.Free;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

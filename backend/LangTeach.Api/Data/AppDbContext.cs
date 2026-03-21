@@ -18,6 +18,7 @@ public class AppDbContext : DbContext
     public DbSet<Course> Courses => Set<Course>();
     public DbSet<CurriculumEntry> CurriculumEntries => Set<CurriculumEntry>();
     public DbSet<Material> Materials => Set<Material>();
+    public DbSet<GenerationUsage> GenerationUsages => Set<GenerationUsage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -158,6 +159,22 @@ public class AppDbContext : DbContext
              .WithMany(s => s.Materials)
              .HasForeignKey(m => m.LessonSectionId)
              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // GenerationUsage — cascade delete from Teacher, index on (TeacherId, CreatedAt)
+        modelBuilder.Entity<GenerationUsage>(e =>
+        {
+            e.HasKey(g => g.Id);
+            e.HasIndex(g => new { g.TeacherId, g.CreatedAt });
+            e.HasOne(g => g.Teacher)
+             .WithMany()
+             .HasForeignKey(g => g.TeacherId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.Property(g => g.BlockType)
+             .HasMaxLength(50)
+             .HasConversion(
+                 v => v.ToKebabCase(),
+                 v => ContentBlockTypeExtensions.FromKebabCase(v));
         });
 
         // LessonContentBlock — cascade delete from Lesson, no-action from LessonSection (nullable)

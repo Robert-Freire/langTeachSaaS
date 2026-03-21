@@ -135,6 +135,30 @@ describe('useGenerate', () => {
     await waitFor(() => expect(result.current.status).toBe('idle'))
   })
 
+  it('sets quotaExceeded when server returns 429', async () => {
+    server.use(
+      http.post(SSE_URL, () => {
+        return HttpResponse.json(
+          { message: 'Monthly generation limit reached.', resetsAt: '2026-05-01T00:00:00Z' },
+          { status: 429 },
+        )
+      }),
+    )
+
+    const { result } = renderHook(() => useGenerate())
+
+    act(() => {
+      result.current.generate('vocabulary', validRequest)
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('error'), {
+      timeout: 3000,
+    })
+
+    expect(result.current.quotaExceeded).toBe(true)
+    expect(result.current.error).toContain('Monthly generation limit reached.')
+  })
+
   it('aborts the in-flight request when the hook unmounts during streaming', async () => {
     let requestAborted = false
 

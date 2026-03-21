@@ -8,6 +8,9 @@ export interface ProfileDto {
   hasSettings: boolean
   hasStudents: boolean
   hasLessons: boolean
+  generationsUsedThisMonth: number
+  generationsMonthlyLimit: number
+  subscriptionTier: string
 }
 
 export interface UpdateProfileRequest {

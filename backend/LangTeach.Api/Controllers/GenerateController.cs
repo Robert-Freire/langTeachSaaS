@@ -20,6 +20,7 @@ public class GenerateController : ControllerBase
     private readonly IPromptService _promptService;
     private readonly IClaudeClient _claudeClient;
     private readonly IMaterialService _materialService;
+    private readonly IUsageLimitService _usageLimitService;
     private readonly ICurriculumTemplateService _templateService;
     private readonly AppDbContext _db;
     private readonly ILogger<GenerateController> _logger;
@@ -30,6 +31,7 @@ public class GenerateController : ControllerBase
         IPromptService promptService,
         IClaudeClient claudeClient,
         IMaterialService materialService,
+        IUsageLimitService usageLimitService,
         ICurriculumTemplateService templateService,
         AppDbContext db,
         ILogger<GenerateController> logger)
@@ -39,6 +41,7 @@ public class GenerateController : ControllerBase
         _promptService = promptService;
         _claudeClient = claudeClient;
         _materialService = materialService;
+        _usageLimitService = usageLimitService;
         _templateService = templateService;
         _db = db;
         _logger = logger;
@@ -87,6 +90,18 @@ public class GenerateController : ControllerBase
         {
             _logger.LogWarning("Stream/{TaskType} rejected: teacher not approved. TeacherId={TeacherId}", taskType, teacherId);
             Response.StatusCode = 403;
+            return;
+        }
+
+        if (!await _usageLimitService.CanGenerateAsync(teacherId, ct))
+        {
+            var usageStatus = await _usageLimitService.GetUsageStatusAsync(teacherId, ct);
+            Response.StatusCode = 429;
+            Response.ContentType = "application/json";
+            Response.Headers["Retry-After"] = Math.Max(0, (int)(usageStatus.ResetsAt - DateTime.UtcNow).TotalSeconds).ToString();
+            await Response.WriteAsync(
+                JsonSerializer.Serialize(new { message = "Monthly generation limit reached.", resetsAt = usageStatus.ResetsAt }),
+                ct);
             return;
         }
 
@@ -159,6 +174,7 @@ public class GenerateController : ControllerBase
             }
             await Response.WriteAsync("data: [DONE]\n\n", ct);
             await Response.Body.FlushAsync(ct);
+            await _usageLimitService.RecordGenerationAsync(teacherId, blockTypeEnum, CancellationToken.None);
             _logger.LogInformation("Stream/{TaskType} succeeded. LessonId={LessonId}", taskType, lesson.Id);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -223,6 +239,13 @@ public class GenerateController : ControllerBase
         {
             _logger.LogWarning("Generate/{BlockType} rejected: teacher not approved. TeacherId={TeacherId}", blockType, teacherId);
             return Forbid();
+        }
+
+        if (!await _usageLimitService.CanGenerateAsync(teacherId, ct))
+        {
+            var usageStatus = await _usageLimitService.GetUsageStatusAsync(teacherId, ct);
+            Response.Headers["Retry-After"] = Math.Max(0, (int)(usageStatus.ResetsAt - DateTime.UtcNow).TotalSeconds).ToString();
+            return StatusCode(429, new { message = "Monthly generation limit reached.", resetsAt = usageStatus.ResetsAt });
         }
 
         var lesson = await _db.Lessons.FindAsync(new object[] { request.LessonId }, ct);
@@ -315,6 +338,7 @@ public class GenerateController : ControllerBase
         };
         _db.LessonContentBlocks.Add(block);
         await _db.SaveChangesAsync(ct);
+        await _usageLimitService.RecordGenerationAsync(teacherId, blockType, ct);
 
         _logger.LogInformation(
             "Generate/{BlockType} succeeded. LessonId={LessonId} BlockId={BlockId} InputTokens={InputTokens} OutputTokens={OutputTokens}",

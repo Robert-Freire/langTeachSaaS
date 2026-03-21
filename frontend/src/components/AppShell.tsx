@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import LangTeachLogo from '@/components/LangTeachLogo'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
+import { UsageIndicator } from '@/components/UsageIndicator'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -52,8 +53,9 @@ function SidebarContent({ user, initials, logout, location }: {
         })}
       </nav>
 
-      {/* User + Logout */}
+      {/* Usage + User + Logout */}
       <div className="border-t border-border px-3 py-4 mt-2 space-y-0.5">
+        <UsageIndicator />
         <div className="flex items-center gap-3 px-3 py-2">
           <Avatar className="h-7 w-7">
             <AvatarImage src={user?.picture} alt={user?.name} />

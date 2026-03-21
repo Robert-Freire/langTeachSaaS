@@ -9,5 +9,8 @@ public record ProfileDto(
     bool HasCompletedOnboarding,
     bool HasSettings,
     bool HasStudents,
-    bool HasLessons
+    bool HasLessons,
+    int GenerationsUsedThisMonth,
+    int GenerationsMonthlyLimit,
+    string SubscriptionTier
 );

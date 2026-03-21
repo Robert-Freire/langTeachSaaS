@@ -1,8 +1,19 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
 
+export class QuotaExceededError extends Error {
+  public readonly resetsAt: string
+
+  constructor(message: string, resetsAt: string) {
+    super(message)
+    this.name = 'QuotaExceededError'
+    this.resetsAt = resetsAt
+  }
+}
+
 /**
  * Streams an SSE generation endpoint and returns the full accumulated text.
  * Throws on non-2xx responses or stream errors.
+ * Throws QuotaExceededError on 429 (quota exhausted).
  */
 export async function streamText(
   taskType: string,
@@ -19,6 +30,23 @@ export async function streamText(
     body: JSON.stringify(body),
     signal,
   })
+
+  if (response.status === 429) {
+    let resetsAt = ''
+    let message = 'Monthly generation limit reached.'
+    try {
+      const errorBody = await response.json()
+      if (typeof errorBody?.resetsAt === 'string') {
+        resetsAt = errorBody.resetsAt
+      }
+      if (typeof errorBody?.message === 'string' && errorBody.message.trim()) {
+        message = errorBody.message
+      }
+    } catch {
+      // ignore parse failure
+    }
+    throw new QuotaExceededError(message, resetsAt)
+  }
 
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`)

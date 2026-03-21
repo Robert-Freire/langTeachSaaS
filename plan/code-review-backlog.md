@@ -39,3 +39,19 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 - **Minor** - `TargetedDifficulties.tsx:20`: Silent `catch {}` on JSON parse. Could add `console.warn` for debuggability.
 - **Minor** - `frontend/src/api/generate.ts`: `TargetedDifficulty` is intentionally a subset of backend `DifficultyDto` (omits `id`, `trend`). Not a bug but undocumented.
 - **Important** - `GenerateController.cs:300-312`: Manual field listing in `GenerationParams` serialization (non-streaming path). New request fields must be added here manually.
+
+### PR (2026-03-21) — Usage Limits (#105)
+
+| Severity | Finding |
+|----------|---------|
+| Important | `UsageLimitService.cs`: `GetUsageStatusAsync` and `CanGenerateAsync` both query Teacher + count GenerationUsages independently. When called together (as in GenerateController), this duplicates DB round-trips. Consider a combined method or caching within the request scope. |
+| Important | `GenerateController.cs`: TOCTOU race between `CanGenerateAsync` check and `RecordGenerationAsync`. Two concurrent requests could both pass the check and exceed the limit by 1. Acceptable for current scale but would need atomic decrement for strict enforcement. |
+
+### PR (2026-03-21) — Usage Limits (#105) — UI Review
+
+| Severity | Finding |
+|----------|---------|
+| Minor | `UsageIndicator.tsx`: progress bar at 0% is invisible (width: 0%). Consider a minimum visible width (e.g., 2%) for better affordance. |
+| Minor | `UsageIndicator.tsx`: progress bar track height `h-1.5` (6px) is very thin on high-DPI displays. Consider `h-2` (8px). |
+| Minor | `AppShell.tsx`: no visual separator between UsageIndicator and user avatar section in sidebar. A subtle border or extra padding would improve grouping. |
+| Minor | Lesson editor mobile header: action buttons crowd at 375px width. Could benefit from responsive collapse / "more" menu (pre-existing, not introduced by this PR). |
