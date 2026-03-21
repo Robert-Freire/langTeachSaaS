@@ -5,5 +5,9 @@ public record ProfileDto(
     string DisplayName,
     List<string> TeachingLanguages,
     List<string> CefrLevels,
-    string PreferredStyle
+    string PreferredStyle,
+    bool HasCompletedOnboarding,
+    bool HasSettings,
+    bool HasStudents,
+    bool HasLessons
 );

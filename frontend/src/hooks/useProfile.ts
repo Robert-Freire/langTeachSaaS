@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { getProfile, updateProfile } from '../api/profileApi'
+import { getProfile, updateProfile, completeOnboarding } from '../api/profileApi'
 import type { ProfileDto } from '../types/profile'
 
 export function useProfile() {
-  return useQuery({ queryKey: ['profile'], queryFn: getProfile })
+  return useQuery({ queryKey: ['profile'], queryFn: getProfile, refetchOnWindowFocus: false })
 }
 
 export function useUpdateProfile() {
@@ -12,6 +12,16 @@ export function useUpdateProfile() {
     mutationFn: updateProfile,
     onSuccess: (data: ProfileDto) => {
       queryClient.setQueryData(['profile'], data)
+    },
+  })
+}
+
+export function useCompleteOnboarding() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: completeOnboarding,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] })
     },
   })
 }

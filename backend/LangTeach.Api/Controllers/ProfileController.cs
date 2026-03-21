@@ -64,4 +64,12 @@ public class ProfileController : ControllerBase
             updated.Id, updated.DisplayName);
         return Ok(updated);
     }
+
+    [HttpPost("complete-onboarding")]
+    public async Task<IActionResult> CompleteOnboarding()
+    {
+        await _profileService.CompleteOnboardingAsync(Auth0Id);
+        _logger.LogInformation("POST /api/profile/complete-onboarding. Auth0Id={Auth0Id}", Auth0Id);
+        return NoContent();
+    }
 }
