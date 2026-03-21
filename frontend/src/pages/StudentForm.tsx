@@ -82,11 +82,15 @@ function MultiSelect({
   }
 
   const trimmedInput = inputValue.trim()
+  const customValue = maxLength ? trimmedInput.slice(0, maxLength) : trimmedInput
   const matchesPredefined = trimmedInput.length > 0 && options.some(
     (o) => o.label.toLowerCase() === trimmedInput.toLowerCase()
   )
-  const alreadySelected = selected.includes(trimmedInput)
+  const alreadySelected = selected.includes(customValue)
   const showAddCustom = trimmedInput.length > 0 && !matchesPredefined && !alreadySelected
+  const filteredOptions = options.filter((o) =>
+    !trimmedInput || o.label.toLowerCase().includes(trimmedInput.toLowerCase())
+  )
 
   return (
     <div className="space-y-2">
@@ -107,17 +111,11 @@ function MultiSelect({
               onValueChange={setInputValue}
             />
             <CommandList>
-              {!showAddCustom && options.filter((o) =>
-                !inputValue.trim() || o.label.toLowerCase().includes(inputValue.trim().toLowerCase())
-              ).length === 0 && (
+              {!showAddCustom && filteredOptions.length === 0 && (
                 <CommandEmpty>No options found.</CommandEmpty>
               )}
               <CommandGroup>
-                {options
-                  .filter((o) =>
-                    !inputValue.trim() || o.label.toLowerCase().includes(inputValue.trim().toLowerCase())
-                  )
-                  .map((opt) => (
+                {filteredOptions.map((opt) => (
                     <CommandItem
                       key={opt.value}
                       value={opt.value}
