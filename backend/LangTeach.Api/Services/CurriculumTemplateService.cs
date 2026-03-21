@@ -89,9 +89,17 @@ public class CurriculumTemplateService : ICurriculumTemplateService
                 CommunicativeFunctions: u.CommunicativeFunctions ?? []
             )).ToList();
 
+            // Normalize CefrLevel to the 2-char CEFR prefix ("B1", not "B1.2")
+            // so GetGrammarForCefrPrefix lookups always work regardless of what
+            // individual JSON files store in the cefr_level field.
+            var rawCefr = raw.CefrLevel?.Trim();
+            var normalizedCefr = !string.IsNullOrEmpty(rawCefr)
+                ? (rawCefr.Length >= 2 ? rawCefr[..2] : rawCefr)
+                : (level.Length >= 2 ? level[..2] : level);
+
             var data = new CurriculumTemplateData(
                 Level: level,
-                CefrLevel: raw.CefrLevel ?? (level.Length >= 2 ? level[..2] : level),
+                CefrLevel: normalizedCefr,
                 Units: units
             );
 
@@ -110,7 +118,7 @@ public class CurriculumTemplateService : ICurriculumTemplateService
             ));
 
             // Accumulate grammar by CEFR prefix (e.g., "B1" from "B1.2")
-            var cefrPrefix = data.CefrLevel;
+            var cefrPrefix = data.CefrLevel.Length >= 2 ? data.CefrLevel[..2] : data.CefrLevel;
             if (!grammarAccumulator.TryGetValue(cefrPrefix, out var set))
             {
                 set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
