@@ -13,4 +13,5 @@ public class Teacher
     public TeacherSettings? Settings { get; set; }
     public ICollection<Student> Students { get; set; } = [];
     public ICollection<Lesson> Lessons { get; set; } = [];
+    public ICollection<Course> Courses { get; set; } = [];
 }

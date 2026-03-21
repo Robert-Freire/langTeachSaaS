@@ -25,6 +25,9 @@ public class PromptService : IPromptService
     public ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx) =>
         new(BuildSystemPrompt(ctx), HomeworkUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 1024);
 
+    public ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx) =>
+        new(CurriculumSystemPrompt(ctx), CurriculumUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 8192);
+
     private static string Sanitize(string? value) =>
         value is null ? string.Empty : string.Concat(value.Where(c => c >= ' ' || c == '\t')).Trim();
 
@@ -179,5 +182,59 @@ public class PromptService : IPromptService
         var topic = Sanitize(ctx.Topic);
         const string schema = """{"title":"","objectives":[""],"sections":{"warmUp":"","presentation":"","practice":"","production":"","wrapUp":""}}""";
         return $"Generate a complete lesson plan for the lesson on \"{topic}\". Return JSON:\n{schema}\nEach section should be detailed enough for the teacher to follow without additional preparation. Focus on activities suitable for one-on-one online tutoring. Do not reference physical classroom resources like whiteboards, projectors, or video players.";
+    }
+
+    private static string CurriculumSystemPrompt(CurriculumContext ctx)
+    {
+        var language = Sanitize(ctx.Language);
+        var sb = new StringBuilder();
+        sb.AppendLine($"You are an expert {language} language teacher and curriculum designer.");
+        sb.AppendLine("You output ONLY valid JSON arrays with no markdown, no prose, no code fences.");
+
+        if (ctx.StudentName is not null)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"Student: {Sanitize(ctx.StudentName)}");
+            if (ctx.StudentNativeLanguage is not null)
+                sb.AppendLine($"Native language: {Sanitize(ctx.StudentNativeLanguage)}");
+            if (ctx.StudentInterests?.Length > 0)
+                sb.AppendLine($"Interests: {string.Join(", ", ctx.StudentInterests.Select(Sanitize).Where(s => s.Length > 0))}");
+            if (ctx.StudentGoals?.Length > 0)
+                sb.AppendLine($"Goals: {string.Join(", ", ctx.StudentGoals.Select(Sanitize).Where(s => s.Length > 0))}");
+        }
+
+        return sb.ToString();
+    }
+
+    private static string CurriculumUserPrompt(CurriculumContext ctx)
+    {
+        var language = Sanitize(ctx.Language);
+        var sb = new StringBuilder();
+
+        if (ctx.Mode == "exam-prep")
+        {
+            var exam = Sanitize(ctx.TargetExam);
+            var dateStr = ctx.ExamDate.HasValue ? ctx.ExamDate.Value.ToString("yyyy-MM-dd") : "unspecified";
+            sb.AppendLine($"Design a {ctx.SessionCount}-session {language} exam preparation course for {exam} (exam date: {dateStr}).");
+            sb.AppendLine("Each session should target specific exam sections and skill areas.");
+        }
+        else
+        {
+            var level = Sanitize(ctx.TargetCefrLevel ?? "B1");
+            sb.AppendLine($"Design a {ctx.SessionCount}-session {language} course for a {level} learner.");
+            sb.AppendLine("Distribute reading, writing, listening, and speaking across sessions with a logical grammar progression.");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("Return a JSON array with exactly one object per session. Each object must have these fields:");
+        sb.AppendLine("- orderIndex (integer, 1-based)");
+        sb.AppendLine("- topic (string, concise session topic)");
+        sb.AppendLine("- grammarFocus (string or null, main grammar point)");
+        sb.AppendLine("- competencies (array of strings, subset of: reading, writing, listening, speaking)");
+        sb.AppendLine("- lessonType (string, e.g. Communicative, Grammar-focused, Exam Practice, Mixed)");
+        sb.AppendLine();
+        sb.AppendLine("Output ONLY the JSON array. No markdown, no explanation.");
+
+        return sb.ToString();
     }
 }

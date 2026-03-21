@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
-import { LayoutDashboard, UserCircle, Users, BookOpen, LogOut, Menu } from 'lucide-react'
+import { LayoutDashboard, UserCircle, Users, BookOpen, GraduationCap, LogOut, Menu } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import LangTeachLogo from '@/components/LangTeachLogo'
@@ -13,6 +13,7 @@ const navItems = [
   { to: '/settings', label: 'My Profile', icon: UserCircle },
   { to: '/students', label: 'Students', icon: Users },
   { to: '/lessons', label: 'Lessons', icon: BookOpen },
+  { to: '/courses', label: 'Courses', icon: GraduationCap },
 ]
 
 function SidebarContent({ user, initials, logout, location }: {

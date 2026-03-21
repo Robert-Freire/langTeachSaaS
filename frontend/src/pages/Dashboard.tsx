@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getLessons } from '../api/lessons'
 import { getStudents } from '../api/students'
+import { getCourses } from '../api/courses'
 import { getWeekBounds, toISODateString } from '../lib/weekUtils'
 import { WeekStrip } from '@/components/dashboard/WeekStrip'
 import { NeedsPreparation } from '@/components/dashboard/NeedsPreparation'
 import { QuickActions } from '@/components/dashboard/QuickActions'
 import { UnscheduledDrafts } from '@/components/dashboard/UnscheduledDrafts'
+import { CoursesOverview } from '@/components/dashboard/CoursesOverview'
 
 export default function Dashboard() {
   const [weekOffset, setWeekOffset] = useState(0)
@@ -43,6 +45,12 @@ export default function Dashboard() {
     queryFn: () => getLessons({ pageSize: 1 }),
   })
 
+  const { data: coursesData } = useQuery({
+    queryKey: ['courses'],
+    queryFn: getCourses,
+  })
+
+  const courses = coursesData ?? []
   const studentCount = studentsData?.totalCount ?? 0
   const students = studentsData?.items ?? []
   const weekLessons = weekLessonsData?.items ?? []
@@ -84,6 +92,8 @@ export default function Dashboard() {
       </div>
 
       <UnscheduledDrafts lessons={allUnscheduled} />
+
+      {courses.length > 0 && <CoursesOverview courses={courses} />}
     </div>
   )
 }

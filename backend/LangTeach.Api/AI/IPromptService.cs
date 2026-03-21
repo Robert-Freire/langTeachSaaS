@@ -9,7 +9,21 @@ public interface IPromptService
     ClaudeRequest BuildConversationPrompt(GenerationContext ctx);
     ClaudeRequest BuildReadingPrompt(GenerationContext ctx);
     ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx);
+    ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx);
 }
+
+public record CurriculumContext(
+    string Language,
+    string Mode,
+    int SessionCount,
+    string? TargetCefrLevel,
+    string? TargetExam,
+    DateOnly? ExamDate,
+    string? StudentName,
+    string? StudentNativeLanguage,
+    string[]? StudentInterests,
+    string[]? StudentGoals
+);
 
 public record GenerationContext(
     string Language,
