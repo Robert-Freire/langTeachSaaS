@@ -78,6 +78,7 @@ describe('Dashboard', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
@@ -239,7 +240,6 @@ describe('Dashboard', () => {
       renderDashboard()
       act(() => { vi.advanceTimersByTime(4999) })
       expect(screen.queryByTestId('slow-connection-message')).not.toBeInTheDocument()
-      vi.useRealTimers()
     })
 
     it('shows slow-connection message after 5 seconds of loading', () => {
@@ -252,7 +252,6 @@ describe('Dashboard', () => {
       act(() => { vi.advanceTimersByTime(5000) })
       expect(screen.getByTestId('slow-connection-message')).toBeInTheDocument()
       expect(screen.getByText(/Still connecting/)).toBeInTheDocument()
-      vi.useRealTimers()
     })
   })
 })
