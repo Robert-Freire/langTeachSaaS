@@ -57,3 +57,9 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Minor | CourseDetail — tight spacing between progress bar and metadata subtitle |
 | Minor | Courses list — mode badge casing inconsistent ("General" vs "exam") — fix label mapping |
 | Minor | CourseNew — required fields not marked with asterisk |
+
+### PR (2026-03-21) — Structured Difficulty Management (#156)
+
+| Severity | Finding |
+|----------|---------|
+| Minor | Difficulty section "Specific Difficulties" label uses `<Label>` element (renders as `<label>`) but is not associated with any input; semantically should be a heading or `<span>` for accessibility |
