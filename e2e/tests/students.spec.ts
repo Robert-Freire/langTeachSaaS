@@ -208,7 +208,8 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
   // Helper to add a custom entry: fills the command input then selects "Add"
   async function addCustomEntry(triggerTestId: string, text: string) {
     await page.getByTestId(triggerTestId).click()
-    // Target the cmdk input inside the open popover (last one in DOM)
+    // Radix keeps both popover inputs visible in DOM; .last() targets the
+    // most recently opened popover (`:visible` resolves to 2 elements)
     const cmdInput = page.locator('input[cmdk-input]').last()
     await cmdInput.fill(text)
     // Wait for React to render the "Add" option
@@ -256,6 +257,11 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
   await deleteCard.getByTestId('delete-student').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
   await page.getByTestId('confirm-delete').click()
+  await expect(
+    page.locator('[data-testid^="student-row-"]').filter({
+      has: page.getByTestId('student-name').filter({ hasText: studentName }),
+    }),
+  ).not.toBeVisible({ timeout: 10000 })
 
   await context.close()
 })
