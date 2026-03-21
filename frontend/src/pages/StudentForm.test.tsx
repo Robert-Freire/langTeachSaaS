@@ -282,7 +282,7 @@ describe('StudentForm', () => {
       interests: [],
       nativeLanguage: null,
       learningGoals: ['travel', 'pass DELE B2 exam'],
-      weaknesses: ['grammar', 'irregular verb conjugation'],
+      weaknesses: ['ser/estar', 'irregular verb conjugation'],
       difficulties: [],
       notes: '',
     })
@@ -294,8 +294,8 @@ describe('StudentForm', () => {
     // Custom goals show their raw value
     expect(screen.getByText('pass DELE B2 exam')).toBeInTheDocument()
 
-    // Same for weaknesses
-    expect(screen.getByText('Grammar')).toBeInTheDocument()
+    // Predefined weaknesses show their label, custom ones show raw value
+    expect(screen.getByText('Ser/Estar')).toBeInTheDocument()
     expect(screen.getByText('irregular verb conjugation')).toBeInTheDocument()
   })
 
@@ -411,11 +411,11 @@ describe('StudentForm', () => {
 
     // Open weaknesses dropdown and type a custom value
     await user.click(screen.getByTestId('weaknesses-trigger'))
-    const searchInput = screen.getByPlaceholderText('Search...')
+    const searchInput = screen.getByPlaceholderText('Search or type custom...')
     await user.type(searchInput, 'irregular plurals')
 
     // Should show the "Add" option for custom entry
-    const addOption = screen.getByTestId('add-custom-option')
+    const addOption = screen.getByTestId('add-custom-entry')
     expect(addOption).toBeInTheDocument()
 
     // Click to add the custom weakness
