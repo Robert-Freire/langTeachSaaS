@@ -1,15 +1,11 @@
 // Option values are the canonical strings stored in the DB and injected into AI prompts.
 // Labels are the display strings shown in the UI.
 //
-// NOTE: The WEAKNESSES list uses European-language grammar terminology.
-// For students learning Japanese, Arabic, or other non-European languages, different
-// categories apply (e.g. pitch accent, particles, script systems). Extend this list
-// or migrate to a DB-backed approach if non-European language support is added.
-//
 // To add options: append to the relevant array here. No other file needs to change.
-// To migrate to combobox/custom entries: swap the component in StudentForm.tsx.
 
-export const LEARNING_GOALS: { value: string; label: string }[] = [
+type Option = { value: string; label: string }
+
+export const LEARNING_GOALS: Option[] = [
   { value: 'conversation', label: 'Conversation' },
   { value: 'business', label: 'Business' },
   { value: 'travel', label: 'Travel' },
@@ -19,20 +15,58 @@ export const LEARNING_GOALS: { value: string; label: string }[] = [
   { value: 'reading', label: 'Reading' },
 ]
 
-export const WEAKNESSES: { value: string; label: string }[] = [
+// Common weaknesses applicable to all languages
+const COMMON_WEAKNESSES: Option[] = [
   { value: 'past tenses', label: 'Past Tenses' },
-  { value: 'articles', label: 'Articles' },
-  { value: 'subjunctive', label: 'Subjunctive' },
-  { value: 'conditionals', label: 'Conditionals' },
-  { value: 'phrasal verbs', label: 'Phrasal Verbs' },
   { value: 'pronunciation', label: 'Pronunciation' },
-  { value: 'word order', label: 'Word Order' },
-  { value: 'gender agreement', label: 'Gender Agreement' },
-  { value: 'reported speech', label: 'Reported Speech' },
   { value: 'vocabulary range', label: 'Vocabulary Range' },
+  { value: 'listening comprehension', label: 'Listening Comprehension' },
+  { value: 'reading comprehension', label: 'Reading Comprehension' },
 ]
 
-export const DIFFICULTY_CATEGORIES: { value: string; label: string }[] = [
+// Language-specific weaknesses, merged with common when displayed
+const WEAKNESSES_BY_LANGUAGE: Record<string, Option[]> = {
+  English: [
+    { value: 'articles', label: 'Articles' },
+    { value: 'phrasal verbs', label: 'Phrasal Verbs' },
+    { value: 'conditionals', label: 'Conditionals' },
+    { value: 'reported speech', label: 'Reported Speech' },
+    { value: 'prepositions', label: 'Prepositions' },
+  ],
+  Spanish: [
+    { value: 'ser/estar', label: 'Ser/Estar' },
+    { value: 'subjunctive', label: 'Subjunctive' },
+    { value: 'por/para', label: 'Por/Para' },
+    { value: 'preterite vs imperfect', label: 'Preterite vs Imperfect' },
+    { value: 'gender agreement', label: 'Gender Agreement' },
+  ],
+  French: [
+    { value: 'subjunctive', label: 'Subjunctive' },
+    { value: 'partitive articles', label: 'Partitive Articles' },
+    { value: 'pronoun placement', label: 'Pronoun Placement' },
+    { value: 'passe compose vs imparfait', label: 'Passe Compose vs Imparfait' },
+    { value: 'gender agreement', label: 'Gender Agreement' },
+  ],
+  German: [
+    { value: 'cases', label: 'Cases (Akkusativ/Dativ)' },
+    { value: 'word order', label: 'Word Order' },
+    { value: 'separable verbs', label: 'Separable Verbs' },
+    { value: 'gendered articles', label: 'Gendered Articles' },
+    { value: 'adjective declension', label: 'Adjective Declension' },
+  ],
+}
+
+/**
+ * Returns weakness options for a given target language.
+ * Merges common weaknesses with language-specific ones.
+ * Returns common-only for unknown languages or empty string.
+ */
+export function getWeaknessesForLanguage(language: string): Option[] {
+  const specific = WEAKNESSES_BY_LANGUAGE[language] ?? []
+  return [...COMMON_WEAKNESSES, ...specific]
+}
+
+export const DIFFICULTY_CATEGORIES: Option[] = [
   { value: 'grammar', label: 'Grammar' },
   { value: 'vocabulary', label: 'Vocabulary' },
   { value: 'pronunciation', label: 'Pronunciation' },
@@ -40,13 +74,13 @@ export const DIFFICULTY_CATEGORIES: { value: string; label: string }[] = [
   { value: 'comprehension', label: 'Comprehension' },
 ]
 
-export const SEVERITY_LEVELS: { value: string; label: string }[] = [
+export const SEVERITY_LEVELS: Option[] = [
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
   { value: 'high', label: 'High' },
 ]
 
-export const TREND_OPTIONS: { value: string; label: string }[] = [
+export const TREND_OPTIONS: Option[] = [
   { value: 'improving', label: 'Improving' },
   { value: 'stable', label: 'Stable' },
   { value: 'declining', label: 'Declining' },

@@ -24,6 +24,39 @@ test('shows not-found message for invalid student edit URL', async ({ browser })
   await context.close()
 })
 
+test('weakness options are filtered by target language', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: 10000 })
+
+  // Select English as learning language
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'English' }).click()
+
+  // Open weaknesses dropdown and verify English-specific options appear
+  await page.getByTestId('weaknesses-trigger').click()
+  await expect(page.getByRole('option', { name: 'Phrasal Verbs' })).toBeVisible({ timeout: 5000 })
+  await expect(page.getByRole('option', { name: 'Past Tenses' })).toBeVisible()
+  // Spanish-specific option should not appear
+  await expect(page.getByRole('option', { name: 'Ser/Estar' })).not.toBeVisible()
+  await page.keyboard.press('Escape')
+
+  // Switch to Spanish
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+
+  // Open weaknesses dropdown and verify Spanish-specific options appear
+  await page.getByTestId('weaknesses-trigger').click()
+  await expect(page.getByRole('option', { name: 'Ser/Estar' })).toBeVisible({ timeout: 5000 })
+  await expect(page.getByRole('option', { name: 'Past Tenses' })).toBeVisible()
+  // English-specific option should not appear
+  await expect(page.getByRole('option', { name: 'Phrasal Verbs' })).not.toBeVisible()
+
+  await context.close()
+})
+
 test('full student CRUD flow', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
@@ -66,9 +99,9 @@ test('full student CRUD flow', async ({ browser }) => {
   await page.getByRole('option', { name: 'Travel' }).click()
   await page.keyboard.press('Escape')
 
-  // Select a weakness
+  // Select a weakness (Ser/Estar is Spanish-specific, verifying language filtering)
   await page.getByTestId('weaknesses-trigger').click()
-  await page.getByRole('option', { name: 'Past Tenses' }).click()
+  await page.getByRole('option', { name: 'Ser/Estar' }).click()
   await page.keyboard.press('Escape')
 
   // Add a structured difficulty
@@ -115,7 +148,7 @@ test('full student CRUD flow', async ({ browser }) => {
 
   // Confirm enrichment fields round-trip correctly
   await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'Travel' })).toBeVisible()
-  await expect(page.getByTestId('weakness-chip').filter({ hasText: 'Past Tenses' })).toBeVisible()
+  await expect(page.getByTestId('weakness-chip').filter({ hasText: 'Ser/Estar' })).toBeVisible()
 
   // Verify difficulty persisted
   const editDiffRow = page.getByTestId('difficulty-row')
