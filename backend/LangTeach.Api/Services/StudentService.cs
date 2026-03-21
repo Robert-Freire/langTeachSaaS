@@ -179,13 +179,15 @@ public class StudentService : IStudentService
     {
         foreach (var d in difficulties)
         {
+            if (string.IsNullOrWhiteSpace(d.Id) || d.Id.Length > 100)
+                throw new ValidationException("Each difficulty must have an id (max 100 characters).");
             if (string.IsNullOrWhiteSpace(d.Item) || d.Item.Length > 200)
                 throw new ValidationException("Each difficulty item must be between 1 and 200 characters.");
-            if (!AllowedDifficultyCategories.Contains(d.Category))
+            if (string.IsNullOrWhiteSpace(d.Category) || !AllowedDifficultyCategories.Contains(d.Category))
                 throw new ValidationException($"Difficulty category '{d.Category}' is not valid. Allowed: {string.Join(", ", AllowedDifficultyCategories)}.");
-            if (!AllowedSeverityLevels.Contains(d.Severity))
+            if (string.IsNullOrWhiteSpace(d.Severity) || !AllowedSeverityLevels.Contains(d.Severity))
                 throw new ValidationException($"Difficulty severity '{d.Severity}' is not valid. Allowed: {string.Join(", ", AllowedSeverityLevels)}.");
-            if (!AllowedTrends.Contains(d.Trend))
+            if (string.IsNullOrWhiteSpace(d.Trend) || !AllowedTrends.Contains(d.Trend))
                 throw new ValidationException($"Difficulty trend '{d.Trend}' is not valid. Allowed: {string.Join(", ", AllowedTrends)}.");
         }
     }
