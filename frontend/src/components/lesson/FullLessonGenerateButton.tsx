@@ -12,8 +12,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { streamText } from '../../lib/streamText'
+import { streamText, QuotaExceededError } from '../../lib/streamText'
 import { saveContentBlock, type ContentBlockDto } from '../../api/generate'
+import { useProfile } from '../../hooks/useProfile'
+import { useQueryClient } from '@tanstack/react-query'
 import type { LessonSection } from '../../api/lessons'
 import type { ContentBlockType } from '../../types/contentTypes'
 
@@ -56,6 +58,8 @@ export function FullLessonGenerateButton({
   onBlockSaved,
 }: FullLessonGenerateButtonProps) {
   const { getAccessTokenSilently } = useAuth0()
+  const { data: profile } = useProfile()
+  const queryClient = useQueryClient()
   const [phase, setPhase] = useState<Phase>('idle')
   const [sectionStatus, setSectionStatus] = useState<Record<string, 'pending' | 'active' | 'done' | 'error'>>({})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -66,7 +70,10 @@ export function FullLessonGenerateButton({
     if (doneTimerRef.current) clearTimeout(doneTimerRef.current)
   }, [])
 
-  const disabled = !lessonContext.topic.trim() || !lessonContext.language.trim()
+  const quotaLimit = profile?.generationsMonthlyLimit ?? -1
+  const quotaUsed = profile?.generationsUsedThisMonth ?? 0
+  const isQuotaExhausted = quotaLimit >= 0 && quotaUsed >= quotaLimit
+  const disabled = !lessonContext.topic.trim() || !lessonContext.language.trim() || isQuotaExhausted
   const activeSections = SECTION_ORDER.filter(t => sections.some(s => s.sectionType === t))
 
   const handleConfirm = async () => {
@@ -127,6 +134,13 @@ export function FullLessonGenerateButton({
         setSectionStatus(prev => ({ ...prev, [sectionType]: 'done' }))
       } catch (err) {
         if (controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return
+        if (err instanceof QuotaExceededError) {
+          controller.abort()
+          setErrorMessage(err.message)
+          setPhase('error')
+          queryClient.invalidateQueries({ queryKey: ['profile'] })
+          return
+        }
         setSectionStatus(prev => ({ ...prev, [sectionType]: 'error' }))
         const msg = err instanceof Error ? err.message : 'Generation failed.'
         errors.push(`${SECTION_LABELS[sectionType]}: ${msg}`)
@@ -134,6 +148,8 @@ export function FullLessonGenerateButton({
     }))
 
     if (controller.signal.aborted) return
+
+    queryClient.invalidateQueries({ queryKey: ['profile'] })
 
     if (errors.length > 0) {
       setErrorMessage(errors.join('; '))

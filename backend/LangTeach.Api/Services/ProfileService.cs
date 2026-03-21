@@ -10,12 +10,14 @@ public class ProfileService : IProfileService
 {
     private readonly AppDbContext _db;
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
+    private readonly IUsageLimitService _usageLimitService;
     private readonly ILogger<ProfileService> _logger;
 
-    public ProfileService(AppDbContext db, IDbContextFactory<AppDbContext> dbFactory, ILogger<ProfileService> logger)
+    public ProfileService(AppDbContext db, IDbContextFactory<AppDbContext> dbFactory, IUsageLimitService usageLimitService, ILogger<ProfileService> logger)
     {
         _db = db;
         _dbFactory = dbFactory;
+        _usageLimitService = usageLimitService;
         _logger = logger;
     }
 
@@ -30,8 +32,9 @@ public class ProfileService : IProfileService
 
         var hasStudents = await _db.Students.AnyAsync(s => s.TeacherId == teacher.Id && !s.IsDeleted);
         var hasLessons = await _db.Lessons.AnyAsync(l => l.TeacherId == teacher.Id && !l.IsDeleted);
+        var usageStatus = await _usageLimitService.GetUsageStatusAsync(teacher.Id);
 
-        return MapToDto(teacher, hasStudents, hasLessons);
+        return MapToDto(teacher, hasStudents, hasLessons, usageStatus);
     }
 
     public async Task<ProfileDto> UpdateProfileAsync(string auth0UserId, UpdateProfileRequest request)
@@ -71,8 +74,9 @@ public class ProfileService : IProfileService
 
         var hasStudents = await _db.Students.AnyAsync(s => s.TeacherId == teacher.Id && !s.IsDeleted);
         var hasLessons = await _db.Lessons.AnyAsync(l => l.TeacherId == teacher.Id && !l.IsDeleted);
+        var usageStatus = await _usageLimitService.GetUsageStatusAsync(teacher.Id);
 
-        return MapToDto(teacher, hasStudents, hasLessons);
+        return MapToDto(teacher, hasStudents, hasLessons, usageStatus);
     }
 
     public async Task CompleteOnboardingAsync(string auth0UserId)
@@ -224,7 +228,7 @@ public class ProfileService : IProfileService
         return email ?? "";
     }
 
-    private static ProfileDto MapToDto(Teacher teacher, bool hasStudents, bool hasLessons) => new(
+    private static ProfileDto MapToDto(Teacher teacher, bool hasStudents, bool hasLessons, DTOs.UsageStatusDto usageStatus) => new(
         teacher.Id,
         teacher.DisplayName,
         Deserialize(teacher.Settings?.TeachingLanguages ?? "[]"),
@@ -233,7 +237,10 @@ public class ProfileService : IProfileService
         teacher.HasCompletedOnboarding,
         teacher.Settings is not null,
         hasStudents,
-        hasLessons
+        hasLessons,
+        usageStatus.UsedThisMonth,
+        usageStatus.MonthlyLimit,
+        usageStatus.Tier
     );
 
     private static List<string> Deserialize(string json) =>

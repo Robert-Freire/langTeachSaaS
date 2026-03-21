@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { FullLessonGenerateButton } from './FullLessonGenerateButton'
 import type { LessonSection } from '../../api/lessons'
 import type { ContentBlockDto } from '../../api/generate'
@@ -13,6 +14,26 @@ vi.mock('@auth0/auth0-react', () => ({
 // Mock streamText
 vi.mock('../../lib/streamText', () => ({
   streamText: vi.fn(),
+  QuotaExceededError: class QuotaExceededError extends Error {
+    resetsAt: string
+    constructor(message: string, resetsAt: string) {
+      super(message)
+      this.name = 'QuotaExceededError'
+      this.resetsAt = resetsAt
+    }
+  },
+}))
+
+// Mock useProfile
+vi.mock('../../hooks/useProfile', () => ({
+  useProfile: () => ({
+    data: {
+      id: '1', displayName: 'Test', teachingLanguages: [], cefrLevels: [],
+      preferredStyle: '', hasCompletedOnboarding: true, hasSettings: true,
+      hasStudents: false, hasLessons: false,
+      generationsUsedThisMonth: 5, generationsMonthlyLimit: 50, subscriptionTier: 'Free',
+    },
+  }),
 }))
 
 // Mock saveContentBlock
@@ -53,8 +74,13 @@ function makeBlock(sectionId: string, blockType: string): ContentBlockDto {
   }
 }
 
+function renderWithQuery(ui: React.ReactElement) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
+}
+
 function renderButton(onBlockSaved = vi.fn()) {
-  return render(
+  return renderWithQuery(
     <FullLessonGenerateButton
       lessonId="lesson-1"
       sections={SECTIONS}
@@ -70,7 +96,7 @@ beforeEach(() => {
 
 describe('FullLessonGenerateButton', () => {
   it('renders button disabled when topic is empty', () => {
-    render(
+    renderWithQuery(
       <FullLessonGenerateButton
         lessonId="lesson-1"
         sections={SECTIONS}
@@ -82,7 +108,7 @@ describe('FullLessonGenerateButton', () => {
   })
 
   it('renders button disabled when language is empty', () => {
-    render(
+    renderWithQuery(
       <FullLessonGenerateButton
         lessonId="lesson-1"
         sections={SECTIONS}
@@ -111,7 +137,7 @@ describe('FullLessonGenerateButton', () => {
     const THREE_SECTIONS: LessonSection[] = SECTIONS.filter(
       s => ['WarmUp', 'Practice', 'WrapUp'].includes(s.sectionType)
     )
-    render(
+    renderWithQuery(
       <FullLessonGenerateButton
         lessonId="lesson-1"
         sections={THREE_SECTIONS}
@@ -126,7 +152,7 @@ describe('FullLessonGenerateButton', () => {
   it('canceling dialog does not call onBlockSaved', async () => {
     const user = userEvent.setup()
     const onBlockSaved = vi.fn()
-    render(
+    renderWithQuery(
       <FullLessonGenerateButton
         lessonId="lesson-1"
         sections={SECTIONS}
@@ -150,7 +176,7 @@ describe('FullLessonGenerateButton', () => {
       Promise.resolve(makeBlock(req.lessonSectionId!, req.blockType as string))
     )
 
-    render(
+    renderWithQuery(
       <FullLessonGenerateButton
         lessonId="lesson-1"
         sections={SECTIONS}
@@ -234,7 +260,7 @@ describe('FullLessonGenerateButton', () => {
 
     const FOUR_SECTIONS: LessonSection[] = SECTIONS.filter(s => s.sectionType !== 'Production')
 
-    render(
+    renderWithQuery(
       <FullLessonGenerateButton
         lessonId="lesson-1"
         sections={FOUR_SECTIONS}
@@ -266,7 +292,7 @@ describe('FullLessonGenerateButton', () => {
 
     const FOUR_SECTIONS: LessonSection[] = SECTIONS.filter(s => s.sectionType !== 'Production')
 
-    render(
+    renderWithQuery(
       <FullLessonGenerateButton
         lessonId="lesson-1"
         sections={FOUR_SECTIONS}
@@ -302,7 +328,7 @@ describe('FullLessonGenerateButton', () => {
     )
 
     const onBlockSaved = vi.fn()
-    render(
+    renderWithQuery(
       <FullLessonGenerateButton
         lessonId="lesson-1"
         sections={SECTIONS}

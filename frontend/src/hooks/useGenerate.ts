@@ -9,6 +9,7 @@ export function useGenerate() {
   const [status, setStatus] = useState<GenerateStatus>('idle')
   const [output, setOutput] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [quotaExceeded, setQuotaExceeded] = useState(false)
   const controllerRef = useRef<AbortController | null>(null)
 
   const abort = useCallback(() => {
@@ -31,6 +32,7 @@ export function useGenerate() {
       setStatus('streaming')
       setOutput('')
       setError(null)
+      setQuotaExceeded(false)
 
       try {
         const token = await getAccessTokenSilently()
@@ -46,6 +48,25 @@ export function useGenerate() {
             signal: controller.signal,
           },
         )
+
+        if (response.status === 429) {
+          let message = 'Monthly generation limit reached.'
+          try {
+            const errorBody = await response.json()
+            const resetsAt = errorBody.resetsAt
+              ? new Date(errorBody.resetsAt).toLocaleDateString()
+              : ''
+            message = resetsAt
+              ? `${errorBody.message ?? message} Resets on ${resetsAt}.`
+              : (errorBody.message ?? message)
+          } catch {
+            // ignore parse failure
+          }
+          setError(message)
+          setQuotaExceeded(true)
+          setStatus('error')
+          return
+        }
 
         if (!response.ok) {
           setError(`Request failed: ${response.status}`)
@@ -107,5 +128,5 @@ export function useGenerate() {
     [getAccessTokenSilently],
   )
 
-  return { status, output, error, generate, abort }
+  return { status, output, error, quotaExceeded, generate, abort }
 }
