@@ -6,11 +6,14 @@ public interface IClaudeClient
     IAsyncEnumerable<string> StreamAsync(ClaudeRequest request, CancellationToken ct = default);
 }
 
+public record ContentAttachment(string MediaType, byte[] Data, string FileName);
+
 public record ClaudeRequest(
     string SystemPrompt,
     string UserPrompt,
     ClaudeModel Model,
-    int MaxTokens = 2048
+    int MaxTokens = 2048,
+    IReadOnlyList<ContentAttachment>? Attachments = null
 );
 
 public record ClaudeResponse(

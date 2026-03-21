@@ -117,7 +117,43 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
     }
 
     private static object BuildRequestBody(ClaudeRequest request, string modelId, bool stream)
-        => new
+    {
+        if (request.Attachments is { Count: > 0 })
+        {
+            var contentParts = new List<object>();
+            foreach (var att in request.Attachments)
+            {
+                var base64 = Convert.ToBase64String(att.Data);
+                if (att.MediaType == "application/pdf")
+                {
+                    contentParts.Add(new
+                    {
+                        type = "document",
+                        source = new { type = "base64", media_type = att.MediaType, data = base64 }
+                    });
+                }
+                else
+                {
+                    contentParts.Add(new
+                    {
+                        type = "image",
+                        source = new { type = "base64", media_type = att.MediaType, data = base64 }
+                    });
+                }
+            }
+            contentParts.Add(new { type = "text", text = request.UserPrompt });
+
+            return new
+            {
+                model      = modelId,
+                max_tokens = request.MaxTokens,
+                system     = request.SystemPrompt,
+                stream,
+                messages   = new[] { new { role = "user", content = (object)contentParts } },
+            };
+        }
+
+        return new
         {
             model      = modelId,
             max_tokens = request.MaxTokens,
@@ -125,6 +161,7 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
             stream,
             messages   = new[] { new { role = "user", content = request.UserPrompt } },
         };
+    }
 
     private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken ct)
     {

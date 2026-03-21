@@ -30,6 +30,12 @@ public class BlobStorageService : IBlobStorageService
         return blob.Uri;
     }
 
+    public async Task<Stream> DownloadAsync(string blobPath, CancellationToken cancellationToken = default)
+    {
+        var blob = _container.GetBlobClient(blobPath);
+        return await blob.OpenReadAsync(cancellationToken: cancellationToken);
+    }
+
     public async Task DeleteAsync(string blobPath, CancellationToken cancellationToken = default)
     {
         var blob = _container.GetBlobClient(blobPath);
