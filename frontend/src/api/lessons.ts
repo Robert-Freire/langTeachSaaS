@@ -1,5 +1,6 @@
 import { apiClient } from '../lib/apiClient'
 import type { ContentBlockType } from '../types/contentTypes'
+import type { Material } from './materials'
 
 export type LessonStatus = 'Draft' | 'Published'
 export type SectionType = 'WarmUp' | 'Presentation' | 'Practice' | 'Production' | 'WrapUp'
@@ -9,6 +10,7 @@ export interface LessonSection {
   sectionType: SectionType
   orderIndex: number
   notes: string | null
+  materials: Material[]
 }
 
 export interface Lesson {

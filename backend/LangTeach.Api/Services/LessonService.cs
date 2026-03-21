@@ -9,11 +9,13 @@ namespace LangTeach.Api.Services;
 public class LessonService : ILessonService
 {
     private readonly AppDbContext _db;
+    private readonly IMaterialService _materialService;
     private readonly ILogger<LessonService> _logger;
 
-    public LessonService(AppDbContext db, ILogger<LessonService> logger)
+    public LessonService(AppDbContext db, IMaterialService materialService, ILogger<LessonService> logger)
     {
         _db = db;
+        _materialService = materialService;
         _logger = logger;
     }
 
@@ -71,6 +73,7 @@ public class LessonService : ILessonService
     {
         var lesson = await _db.Lessons
             .Include(l => l.Sections)
+                .ThenInclude(s => s.Materials)
             .Include(l => l.Student)
             .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
@@ -209,11 +212,15 @@ public class LessonService : ILessonService
         var now = DateTime.UtcNow;
         var existingByType = lesson.Sections.ToDictionary(s => s.SectionType);
 
-        // Remove sections no longer present (and their content blocks, since FK is NoAction)
+        // Remove sections no longer present (and their content blocks + material blobs)
         var removedSections = lesson.Sections.Where(s => !incomingTypes.Contains(s.SectionType)).ToList();
         if (removedSections.Count > 0)
         {
             var removedIds = removedSections.Select(s => s.Id).ToHashSet();
+
+            // Clean up material blobs before removing sections
+            await _materialService.DeleteBlobsForSectionsAsync(removedIds, cancellationToken);
+
             var orphanedBlocks = await _db.LessonContentBlocks
                 .Where(b => b.LessonSectionId.HasValue && removedIds.Contains(b.LessonSectionId.Value))
                 .ToListAsync(cancellationToken);
@@ -345,7 +352,8 @@ public class LessonService : ILessonService
         s.Id,
         s.SectionType,
         s.OrderIndex,
-        s.Notes
+        s.Notes,
+        s.Materials?.Select(m => new MaterialDto(m.Id, m.FileName, m.ContentType, m.SizeBytes, m.BlobPath, null, m.CreatedAt)).ToList() ?? new()
     );
 
     private record TemplateSectionEntry(string SectionType, int OrderIndex, string NotesPlaceholder);

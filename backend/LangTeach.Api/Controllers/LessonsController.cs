@@ -18,6 +18,7 @@ public class LessonsController : ControllerBase
 {
     private readonly ILessonService _lessonService;
     private readonly IProfileService _profileService;
+    private readonly IMaterialService _materialService;
     private readonly AppDbContext _db;
     private readonly IPdfExportService _pdfExportService;
     private readonly ILogger<LessonsController> _logger;
@@ -25,12 +26,14 @@ public class LessonsController : ControllerBase
     public LessonsController(
         ILessonService lessonService,
         IProfileService profileService,
+        IMaterialService materialService,
         AppDbContext db,
         IPdfExportService pdfExportService,
         ILogger<LessonsController> logger)
     {
         _lessonService = lessonService;
         _profileService = profileService;
+        _materialService = materialService;
         _db = db;
         _pdfExportService = pdfExportService;
         _logger = logger;
@@ -88,6 +91,7 @@ public class LessonsController : ControllerBase
             return NotFound();
         }
 
+        await _materialService.EnrichWithPreviewUrls(lesson.Sections);
         return Ok(lesson);
     }
 

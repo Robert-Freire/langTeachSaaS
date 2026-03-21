@@ -25,11 +25,11 @@ import { streamText } from '../../lib/streamText'
 import * as generateApi from '../../api/generate'
 
 const SECTIONS: LessonSection[] = [
-  { id: 's1', sectionType: 'WarmUp', orderIndex: 0, notes: null },
-  { id: 's2', sectionType: 'Presentation', orderIndex: 1, notes: null },
-  { id: 's3', sectionType: 'Practice', orderIndex: 2, notes: null },
-  { id: 's4', sectionType: 'Production', orderIndex: 3, notes: null },
-  { id: 's5', sectionType: 'WrapUp', orderIndex: 4, notes: null },
+  { id: 's1', sectionType: 'WarmUp', orderIndex: 0, notes: null, materials: [] },
+  { id: 's2', sectionType: 'Presentation', orderIndex: 1, notes: null, materials: [] },
+  { id: 's3', sectionType: 'Practice', orderIndex: 2, notes: null, materials: [] },
+  { id: 's4', sectionType: 'Production', orderIndex: 3, notes: null, materials: [] },
+  { id: 's5', sectionType: 'WrapUp', orderIndex: 4, notes: null, materials: [] },
 ]
 
 const LESSON_CONTEXT = {
