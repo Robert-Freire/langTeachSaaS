@@ -105,7 +105,7 @@ export default function CourseNew() {
               <button
                 type="button"
                 data-testid="mode-general"
-                onClick={() => setMode('general')}
+                onClick={() => { setMode('general') }}
                 className={cn(
                   'flex flex-col items-start gap-1.5 rounded-lg border p-4 text-left transition-colors',
                   mode === 'general'
@@ -120,7 +120,7 @@ export default function CourseNew() {
               <button
                 type="button"
                 data-testid="mode-exam-prep"
-                onClick={() => setMode('exam-prep')}
+                onClick={() => { setMode('exam-prep'); setUseTemplate(false); setSelectedTemplate('') }}
                 className={cn(
                   'flex flex-col items-start gap-1.5 rounded-lg border p-4 text-left transition-colors',
                   mode === 'exam-prep'

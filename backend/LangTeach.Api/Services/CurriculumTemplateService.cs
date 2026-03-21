@@ -47,7 +47,12 @@ public class CurriculumTemplateService : ICurriculumTemplateService
             var withoutPrefix = name[prefix.Length..];
             var level = withoutPrefix[..^".json".Length];
 
-            using var stream = assembly.GetManifestResourceStream(name)!;
+            using var stream = assembly.GetManifestResourceStream(name);
+            if (stream is null)
+            {
+                _log.LogWarning("CurriculumTemplateService: could not open embedded resource stream '{Name}'; skipping", name);
+                continue;
+            }
             var raw = JsonSerializer.Deserialize<RawTemplate>(stream, options);
             if (raw is null)
             {
@@ -75,7 +80,7 @@ public class CurriculumTemplateService : ICurriculumTemplateService
 
             var data = new CurriculumTemplateData(
                 Level: level,
-                CefrLevel: raw.CefrLevel ?? level[..2],
+                CefrLevel: raw.CefrLevel ?? (level.Length >= 2 ? level[..2] : level),
                 Units: units
             );
 

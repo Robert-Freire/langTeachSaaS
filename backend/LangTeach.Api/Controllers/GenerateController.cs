@@ -125,12 +125,6 @@ public class GenerateController : ControllerBase
             ? materials.Select(m => m.FileName).ToArray()
             : null;
 
-        // Grammar constraints come from the Instituto Cervantes Spanish curriculum (Spanish-specific).
-        // Only inject for Spanish lessons to avoid polluting prompts for other languages.
-        var grammarConstraints = string.Equals(language, "Spanish", StringComparison.OrdinalIgnoreCase)
-            ? _templateService.GetGrammarForCefrPrefix(cefrLevel)
-            : [];
-
         var ctx = new GenerationContext(
             Language: language,
             CefrLevel: cefrLevel,
@@ -146,7 +140,7 @@ public class GenerateController : ControllerBase
             Direction: request.Direction,
             MaterialFileNames: materialFileNames,
             StudentDifficulties: TopDifficulties(student),
-            GrammarConstraints: grammarConstraints.Count > 0 ? grammarConstraints : null
+            GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel)
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -261,12 +255,6 @@ public class GenerateController : ControllerBase
             ? materials.Select(m => m.FileName).ToArray()
             : null;
 
-        // Grammar constraints come from the Instituto Cervantes Spanish curriculum (Spanish-specific).
-        // Only inject for Spanish lessons to avoid polluting prompts for other languages.
-        var grammarConstraints = string.Equals(language, "Spanish", StringComparison.OrdinalIgnoreCase)
-            ? _templateService.GetGrammarForCefrPrefix(cefrLevel)
-            : [];
-
         var ctx = new GenerationContext(
             Language: language,
             CefrLevel: cefrLevel,
@@ -282,7 +270,7 @@ public class GenerateController : ControllerBase
             Direction: request.Direction,
             MaterialFileNames: materialFileNames,
             StudentDifficulties: TopDifficulties(student),
-            GrammarConstraints: grammarConstraints.Count > 0 ? grammarConstraints : null
+            GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel)
         );
 
         var claudeRequest = buildPrompt(ctx);
@@ -333,6 +321,14 @@ public class GenerateController : ControllerBase
             blockType, lesson.Id, block.Id, response.InputTokens, response.OutputTokens);
 
         return Ok(new GenerationResultDto(block.Id, block.BlockType, block.GeneratedContent));
+    }
+
+    private IReadOnlyList<string>? SpanishGrammarConstraints(string language, string cefrLevel)
+    {
+        if (!string.Equals(language, "Spanish", StringComparison.OrdinalIgnoreCase))
+            return null;
+        var list = _templateService.GetGrammarForCefrPrefix(cefrLevel);
+        return list.Count > 0 ? list : null;
     }
 
     private static DifficultyDto[]? TopDifficulties(StudentDto? student) =>
