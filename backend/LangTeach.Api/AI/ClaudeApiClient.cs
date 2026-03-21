@@ -123,7 +123,8 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
             var contentParts = new List<object>();
             foreach (var att in request.Attachments)
             {
-                var blockType = att.MediaType == "application/pdf" ? "document" : "image";
+                var isPdf = string.Equals(att.MediaType, "application/pdf", StringComparison.OrdinalIgnoreCase);
+                var blockType = isPdf ? "document" : "image";
                 contentParts.Add(new
                 {
                     type = blockType,

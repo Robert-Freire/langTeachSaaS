@@ -319,7 +319,7 @@ public class GenerateController : ControllerBase
 
         // Haiku does not support PDF document blocks; upgrade to Sonnet when PDFs are present
         if (claudeRequest.Model == ClaudeModel.Haiku &&
-            materials.Any(m => m.ContentType == "application/pdf"))
+            materials.Any(m => string.Equals(m.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase)))
         {
             claudeRequest = claudeRequest with { Model = ClaudeModel.Sonnet };
         }
