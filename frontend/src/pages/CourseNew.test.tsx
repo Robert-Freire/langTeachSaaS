@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -70,16 +71,29 @@ describe('CourseNew wizard', () => {
     expect(screen.queryByTestId('use-template-checkbox')).not.toBeInTheDocument()
   })
 
-  it('submit without template does not include templateLevel', async () => {
+  it('submitting without template omits templateLevel', async () => {
+    const user = userEvent.setup()
     const mockCreate = vi.fn().mockResolvedValue({ id: 'course-1' })
     vi.mocked(coursesApi.createCourse).mockImplementation(mockCreate)
     wrapper(<CourseNew />)
 
     fireEvent.change(screen.getByTestId('course-name'), { target: { value: 'My Course' } })
-    expect(screen.queryByTestId('use-template-checkbox')).not.toBeInTheDocument()
 
-    // Without CEFR level set, no templateLevel in any submission
-    expect(mockCreate).not.toHaveBeenCalled()
+    // Open language select and pick Spanish
+    await user.click(screen.getByTestId('language-select'))
+    await user.click(screen.getByRole('option', { name: 'Spanish' }))
+
+    // Open CEFR select and pick B1
+    await user.click(screen.getByTestId('cefr-select'))
+    await user.click(screen.getByRole('option', { name: 'B1' }))
+
+    // Do NOT check the template checkbox - submit without a template
+    await user.click(screen.getByTestId('generate-curriculum-btn'))
+
+    expect(mockCreate).toHaveBeenCalledOnce()
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.not.objectContaining({ templateLevel: expect.anything() })
+    )
   })
 
   it('shows loading state when generating', async () => {

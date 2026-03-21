@@ -37,8 +37,9 @@ public class CurriculumTemplateServiceTests
     [Fact]
     public void GetByLevel_CaseInsensitive_ReturnsTemplate()
     {
-        var upper = _sut.GetByLevel("B1.1");
-        upper.Should().NotBeNull();
+        var lower = _sut.GetByLevel("b1.1");
+        lower.Should().NotBeNull();
+        lower!.Level.Should().Be("B1.1");
     }
 
     [Fact]

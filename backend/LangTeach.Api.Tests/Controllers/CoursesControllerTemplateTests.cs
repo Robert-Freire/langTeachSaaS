@@ -136,7 +136,7 @@ public class CoursesControllerTemplateTests
             Mode = "general",
             TargetCefrLevel = "B1",
             SessionCount = 10,
-            TemplateLevel = "B9.9",
+            TemplateLevel = "B1.999", // valid format, non-existent template
         };
 
         var response = await client.PostAsJsonAsync("/api/courses", request);

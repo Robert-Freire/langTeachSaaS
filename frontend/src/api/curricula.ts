@@ -28,6 +28,6 @@ export async function getCurriculumTemplates(): Promise<CurriculumTemplateSummar
 }
 
 export async function getCurriculumTemplate(level: string): Promise<CurriculumTemplateData> {
-  const { data } = await apiClient.get<CurriculumTemplateData>(`/api/curriculum-templates/${level}`)
+  const { data } = await apiClient.get<CurriculumTemplateData>(`/api/curriculum-templates/${encodeURIComponent(level)}`)
   return data
 }

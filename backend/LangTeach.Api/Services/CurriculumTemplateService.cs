@@ -53,10 +53,21 @@ public class CurriculumTemplateService : ICurriculumTemplateService
                 _log.LogWarning("CurriculumTemplateService: could not open embedded resource stream '{Name}'; skipping", name);
                 continue;
             }
-            var raw = JsonSerializer.Deserialize<RawTemplate>(stream, options);
+
+            RawTemplate? raw;
+            try
+            {
+                raw = JsonSerializer.Deserialize<RawTemplate>(stream, options);
+            }
+            catch (Exception ex) when (ex is JsonException or NotSupportedException)
+            {
+                _log.LogWarning(ex, "CurriculumTemplateService: failed to deserialize embedded resource '{Name}'; skipping", name);
+                continue;
+            }
+
             if (raw is null)
             {
-                _log.LogWarning("CurriculumTemplateService: failed to deserialize embedded resource '{Name}'; skipping", name);
+                _log.LogWarning("CurriculumTemplateService: deserialized null from embedded resource '{Name}'; skipping", name);
                 continue;
             }
 
