@@ -56,15 +56,13 @@ export default function Dashboard() {
 
   const isLoading = studentsLoading || weekLoading || draftsLoading || publishedLoading || totalLoading || coursesLoading
 
-  const [showSlowMessage, setShowSlowMessage] = useState(false)
+  const [slowTimerFired, setSlowTimerFired] = useState(false)
   useEffect(() => {
-    if (!isLoading) {
-      setShowSlowMessage(false)
-      return
-    }
-    const timer = setTimeout(() => setShowSlowMessage(true), SLOW_THRESHOLD_MS)
+    if (!isLoading) return
+    const timer = setTimeout(() => setSlowTimerFired(true), SLOW_THRESHOLD_MS)
     return () => clearTimeout(timer)
   }, [isLoading])
+  const showSlowMessage = isLoading && slowTimerFired
 
   if (isLoading) {
     return (
