@@ -37,6 +37,7 @@ Apply the quality rubric to each issue.
 | Area label | Has at least one of: `area:frontend`, `area:backend`, `area:e2e`, `area:infra`, `area:design`, `area:ai` |
 | Milestone | Has a milestone assigned |
 | Focused scope | Issue addresses a single concern. Multiple unrelated changes in one issue is a finding. |
+| T-shirt size | The issue's project item must have a Size set (XS/S/M/L/XL). Check via: `gh api graphql -f query='{ user(login: "Robert-Freire") { projectV2(number: 2) { items(first: 50) { nodes { id fieldValueByName(name: "Size") { ... on ProjectV2ItemFieldSingleSelectValue { name } } content { ... on Issue { number } } } } } } }'` and verify the issue number has a non-null Size value. If missing, set it using the project API before approving (field ID: `PVTSSF_lAHOAF1Pks4BSLsSzg_7HpU`, option IDs: XS=e261fbf6, S=6736aa38, M=5cfbe0a8, L=e072ac0f, XL=2115c351). Use your judgement on the right size if not already set, confirm with PM agent if unsure. |
 
 **Recommended criteria (non-blocking):**
 
@@ -101,6 +102,7 @@ Post this comment on every reviewed issue:
 - [x] Area label(s)
 - [x] Milestone
 - [x] Scope
+- [x] T-shirt size (or [!] T-shirt size: not set on project item)
 
 ### PM Coordination
 (Only include this section if PM was consulted)
