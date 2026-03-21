@@ -131,7 +131,7 @@ export default function CourseNew() {
           {/* Language */}
           <div className="space-y-1.5">
             <Label>Language</Label>
-            <Select value={language} onValueChange={setLanguage}>
+            <Select value={language} onValueChange={v => setLanguage(v ?? '')}>
               <SelectTrigger data-testid="language-select">
                 <SelectValue placeholder="Select language" />
               </SelectTrigger>
@@ -147,7 +147,7 @@ export default function CourseNew() {
           {mode === 'general' ? (
             <div className="space-y-1.5">
               <Label>Target CEFR level</Label>
-              <Select value={targetCefrLevel} onValueChange={setTargetCefrLevel}>
+              <Select value={targetCefrLevel} onValueChange={v => setTargetCefrLevel(v ?? '')}>
                 <SelectTrigger data-testid="cefr-select">
                   <SelectValue placeholder="Select level" />
                 </SelectTrigger>
@@ -162,7 +162,7 @@ export default function CourseNew() {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label>Target exam</Label>
-                <Select value={targetExam} onValueChange={setTargetExam}>
+                <Select value={targetExam} onValueChange={v => setTargetExam(v ?? '')}>
                   <SelectTrigger data-testid="exam-select">
                     <SelectValue placeholder="Select exam" />
                   </SelectTrigger>
@@ -189,7 +189,7 @@ export default function CourseNew() {
           {/* Session count */}
           <div className="space-y-1.5">
             <Label>Number of sessions</Label>
-            <Select value={sessionCount} onValueChange={setSessionCount}>
+            <Select value={sessionCount} onValueChange={v => setSessionCount(v ?? '')}>
               <SelectTrigger data-testid="session-count-select">
                 <SelectValue />
               </SelectTrigger>
@@ -205,7 +205,7 @@ export default function CourseNew() {
           {students.length > 0 && (
             <div className="space-y-1.5">
               <Label>Student (optional)</Label>
-              <Select value={studentId ?? 'none'} onValueChange={v => setStudentId(v === 'none' ? undefined : v)}>
+              <Select value={studentId ?? 'none'} onValueChange={v => setStudentId(v == null || v === 'none' ? undefined : v)}>
                 <SelectTrigger data-testid="student-select">
                   <SelectValue placeholder="No specific student" />
                 </SelectTrigger>
