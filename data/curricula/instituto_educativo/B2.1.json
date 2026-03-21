@@ -1,0 +1,77 @@
+{
+  "level": "B2.1",
+  "cefr_level": "B2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 1,
+      "title": "Buenas noticias",
+      "textbook_ref": "AULA 5 U.1",
+      "overall_goal": "Convertirnos en la redacción de un medio de comunicación.",
+      "communicative_functions": [
+        "Referirnos a una noticia y comentarla",
+        "Redactar una noticia"
+      ],
+      "grammar": [
+        "Tiempos del pasado",
+        "Usos de la voz pasiva",
+        "Construcciones impersonales: se + verbo en 3ª persona / uso de la 3ª persona del plural"
+      ],
+      "vocabulary_themes": [
+        "Verbos de la transmisión de la información: manifestar, declarar, etc.",
+        "Medios de comunicación",
+        "Acontecimientos notables"
+      ],
+      "learning_strategies": [
+        "La autoevaluación como estrategia de aprendizaje para la realización de un texto periodístico, oral o escrito",
+        "Reformulación de frases usando diferentes estructuras sin modificar el significado original de la primera frase"
+      ],
+      "cultural_content": [
+        "Redes sociales",
+        "Los diarios argentinos y españoles más leídos",
+        "Periódicos y su línea editorial, perfil del lector: eldiario.es, elmundo.es",
+        "'El Mundo Today', página de humor",
+        "Fakenews"
+      ]
+    },
+    {
+      "unit_number": 2,
+      "title": "¿Y tú qué opinas?",
+      "textbook_ref": "AULA 5 U.2",
+      "overall_goal": "Celebrar una asamblea popular.",
+      "communicative_functions": [
+        "Dar nuestra opinión",
+        "Valorar diversas opiniones",
+        "Proponer condiciones",
+        "Argumentar opiniones",
+        "Hacer, respaldar o rechazar una propuesta",
+        "Aludir a temas o intervenciones de otros"
+      ],
+      "grammar": [
+        "Creo que + indicativo, no creo que + subjuntivo",
+        "Es una tontería/impensable + infinitivo/que + subjuntivo",
+        "Solo si/siempre que…",
+        "Eso de/de que…",
+        "Además/y encima…"
+      ],
+      "vocabulary_themes": [
+        "El turismo",
+        "Algunos verbos con preposición",
+        "Leyes, burocracia y gestión"
+      ],
+      "learning_strategies": [
+        "La autoevaluación como estrategia de aprendizaje para el desarrollo de la expresión oral dentro de un contexto de debate",
+        "Uso de los conectores como organizadores del discurso",
+        "Estrategias para la adquisición léxica: campo semántico (nombres, adjetivos y verbos)",
+        "Uso de la lingüística comparada"
+      ],
+      "cultural_content": [
+        "Ciudades cittaslow: Mungia",
+        "Turismo de masas vs turismo responsable: ejemplos del turismo de masas en España",
+        "Punta del Este: un icono turístico del Cono Sur"
+      ]
+    }
+  ]
+}

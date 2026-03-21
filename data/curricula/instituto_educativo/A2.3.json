@@ -1,0 +1,78 @@
+{
+  "level": "A2.3",
+  "cefr_level": "A2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 7,
+      "title": "¿No comes de todo?",
+      "textbook_ref": "AULA 2 U.7",
+      "overall_goal": "Preparar una cena para una fiesta con toda la clase.",
+      "communicative_functions": [
+        "Hablar de gustos y hábitos alimentarios",
+        "Explicar cómo se prepara un plato"
+      ],
+      "grammar": [
+        "Los pronombres personales de O.D.",
+        "Las formas con se",
+        "Algunos usos de ser y estar",
+        "Y, pero, además",
+        "Soler + infinitivo"
+      ],
+      "vocabulary_themes": [
+        "Alimentos",
+        "Recetas",
+        "Pesos y medidas"
+      ],
+      "learning_strategies": [
+        "Deducción de vocabulario a través de su descripción",
+        "Utilización del vocabulario de la unidad en contextos significativos para el estudiante",
+        "Clasificación del vocabulario en función de la utilidad para el estudiante"
+      ],
+      "cultural_content": [
+        "Productos de denominación de origen de España",
+        "Recetas de platos fáciles del mundo hispanohablante",
+        "Dieta saludable",
+        "La dieta Mediterránea",
+        "Diferencias de productos en un supermercado argentino y mexicano",
+        "Platos típicos españoles",
+        "Comidas familiares"
+      ]
+    },
+    {
+      "unit_number": 8,
+      "title": "Estamos muy bien",
+      "textbook_ref": "AULA 2 U.8",
+      "overall_goal": "Hacer una presentación sobre un mal del siglo XXI.",
+      "communicative_functions": [
+        "Dar consejos",
+        "Hablar de estados de ánimo",
+        "Describir dolores, molestias y síntomas"
+      ],
+      "grammar": [
+        "Usos de los verbos ser y estar",
+        "Verbo doler",
+        "Forma y algunos usos del imperativo afirmativo"
+      ],
+      "vocabulary_themes": [
+        "Partes del cuerpo",
+        "Estados de ánimo",
+        "Enfermedades, molestias y síntomas",
+        "Léxico de la salud y el deporte"
+      ],
+      "learning_strategies": [
+        "Localizar en un texto vocabulario relacionado con un campo semántico",
+        "Crear ejemplos significativos con el vocabulario trabajado que sirvan de modelo de uso y como referencia",
+        "Deducir el infinitivo de algunos verbos a partir de los verbos conjugados por similitud en su raíz"
+      ],
+      "cultural_content": [
+        "Gestos, el lenguaje no verbal",
+        "Hábitos deportivos en España",
+        "Centros de salud y su funcionamiento del lugar en el que estamos",
+        "Gente y deporte en España"
+      ]
+    }
+  ]
+}

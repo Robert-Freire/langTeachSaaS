@@ -1,0 +1,30 @@
+{
+  "level": "B1.1",
+  "cefr_level": "B1",
+  "institution": "Iberia Language Academy",
+  "source_file": "PROGRAMA B1.1_Alumnos.pdf",
+  "hours": 40,
+  "textbook": {
+    "name": "Aula Plus 3",
+    "units_covered": [1, 2, 3, 7]
+  },
+  "communicative_objectives": [
+    "Decidir cuál ha sido el descubrimiento que ha cambiado más la vida de la gente",
+    "Hablar de hábitos, costumbres y circunstancias en el pasado",
+    "Situar acciones en el pasado y en el presente",
+    "Argumentar y debatir",
+    "Escribir una guía sobre costumbres y códigos sociales en España",
+    "Expresar prohibición, obligatoriedad e impersonalidad",
+    "Hablar de hábitos, opinar y aconsejar",
+    "Escribir una carta de presentación para un trabajo",
+    "Hablar de hábitos en el presente y relatar experiencias pasadas",
+    "Hablar del inicio y duración de una acción",
+    "Localizar una acción en el tiempo",
+    "Hacer un cartel con las advertencias que hace la ciencia ficción sobre el futuro",
+    "Hablar de acciones y situaciones futuras",
+    "Expresar condiciones",
+    "Formular hipótesis sobre el futuro"
+  ],
+  "units": [],
+  "exam_prep": null
+}

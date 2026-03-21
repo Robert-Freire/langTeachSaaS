@@ -1,0 +1,109 @@
+{
+  "level": "A2.2",
+  "cefr_level": "A2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 4,
+      "title": "Hogar, dulce hogar",
+      "textbook_ref": "AULA 2 U.4",
+      "overall_goal": "Amueblar una casa y diseñar una vivienda.",
+      "communicative_functions": [
+        "Expresar gustos y preferencias",
+        "Describir una casa",
+        "Comparar",
+        "Expresar coincidencia",
+        "Ubicar objetos en el espacio",
+        "Describir objetos"
+      ],
+      "grammar": [
+        "Comparativos",
+        "Preposiciones: sin, con, debajo, encima, detrás, delante, etc.",
+        "Pronombres posesivos: el mío/la mía, el tuyo/la tuya, el suyo/la suya",
+        "Usos de ser y estar",
+        "Verbos gustar, encantar y preferir"
+      ],
+      "vocabulary_themes": [
+        "Tipos de vivienda",
+        "Partes de una vivienda",
+        "Adjetivos para describir una vivienda",
+        "Formas, estilos y materiales"
+      ],
+      "learning_strategies": [
+        "Deducción del vocabulario a través de imágenes",
+        "Realización de actividades con el vocabulario específico de la realidad de cada uno de los alumnos",
+        "Asociar palabras en esquemas léxicos"
+      ],
+      "cultural_content": [
+        "Buscar vivienda en España, ciudades más caras",
+        "Casas museos de personajes importantes de la cultura hispanohablante: Pablo Neruda, Frida Kahlo, Manuel de Falla"
+      ]
+    },
+    {
+      "unit_number": 5,
+      "title": "¿Cómo va todo?",
+      "textbook_ref": "AULA 2 U.5",
+      "overall_goal": "Simular situaciones de contacto social utilizando diferentes niveles de formalidad.",
+      "communicative_functions": [
+        "Desenvolvernos en situaciones muy codificadas: invitaciones, presentaciones, saludos, despedidas",
+        "Pedir cosas, acciones, favores",
+        "Pedir y conceder permiso",
+        "Dar excusas y justificar"
+      ],
+      "grammar": [
+        "El gerundio (formas regulares e irregulares)",
+        "Estar + gerundio",
+        "Condicional de poder e importar"
+      ],
+      "vocabulary_themes": [
+        "Saludos y despedidas",
+        "Verbos de cortesía: poder, importar, ayudar, poner",
+        "Dar, dejar y prestar"
+      ],
+      "learning_strategies": [
+        "Identificar expresiones de comunicación en un diálogo y aplicarlas a una tarea",
+        "Reflexionar sobre los usos de tiempos verbales a través del análisis de modelos de lengua"
+      ],
+      "cultural_content": [
+        "Plazas de ciudades españolas: Valladolid, Madrid, Barcelona",
+        "La cortesía",
+        "Cortometraje 'Flechazos' de Roberto Pérez Toledo",
+        "Saludos y despedidas"
+      ]
+    },
+    {
+      "unit_number": 6,
+      "title": "Guía del ocio",
+      "textbook_ref": "AULA 2 U.6",
+      "overall_goal": "Escribir un artículo de las cosas más interesantes del lugar en el que estamos.",
+      "communicative_functions": [
+        "Hablar de experiencias pasadas y valorarlas",
+        "Hablar de intenciones y expresar el deseo de hacer algo"
+      ],
+      "grammar": [
+        "El pretérito perfecto",
+        "Usos del p. perfecto y del p. indefinido",
+        "Ya/todavía no",
+        "Ir a + infinitivo",
+        "Querer/pensar + infinitivo",
+        "Frases exclamativas",
+        "Verbo parecer"
+      ],
+      "vocabulary_themes": [
+        "Actividades y lugares de ocio",
+        "Lugares de interés y ofertas culturales"
+      ],
+      "learning_strategies": [
+        "Deducción de una regla gramatical a través de un modelo de lengua",
+        "Realización de asociogramas para aprender y memorizar vocabulario"
+      ],
+      "cultural_content": [
+        "Actividades y lugares de interés en Madrid",
+        "Parques naturales de España: Picos de Europa, Garajonay, Cabo de Gata-Níjar",
+        "Lima"
+      ]
+    }
+  ]
+}

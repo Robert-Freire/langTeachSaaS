@@ -1,0 +1,117 @@
+{
+  "level": "A1.2",
+  "cefr_level": "A1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 4,
+      "title": "¿Cuál prefieres?",
+      "textbook_ref": "AULA 1 U.4",
+      "overall_goal": "Simular compras en un mercadillo.",
+      "communicative_functions": [
+        "Identificar objetos",
+        "Expresar necesidad",
+        "Comprar en tiendas: preguntar por productos, pedir precios, etc.",
+        "Hablar de preferencias"
+      ],
+      "grammar": [
+        "Los demostrativos: este/esta/estos/estas, esto",
+        "El/la/los/las + adjetivo",
+        "Qué + sustantivo, cuál/cuáles",
+        "Tener que + infinitivo",
+        "El verbo ir",
+        "El verbo preferir",
+        "Los números a partir de 100"
+      ],
+      "vocabulary_themes": [
+        "Los colores",
+        "Prendas de vestir",
+        "Objetos de uso cotidiano",
+        "Usos del verbo llevar",
+        "Combinaciones con ir"
+      ],
+      "learning_strategies": [
+        "Simulación de un mercadillo para poner en práctica todos los recursos aprendidos",
+        "Informarse sobre un tema para poder escribir o hablar sobre él",
+        "Analizar ejemplos de lengua con el fin de detectar normas de uso de los demostrativos",
+        "Crear situaciones de uso real del vocabulario para memorizarlo"
+      ],
+      "cultural_content": [
+        "Los gigantes de la moda española: Inditex y sus diferentes tiendas, Mango, Cortefiel y sus diferentes tiendas",
+        "Destino de escapada de fin de semana de los españoles del entorno del estudiante",
+        "Tú o usted"
+      ]
+    },
+    {
+      "unit_number": 5,
+      "title": "Tus amigos son mis amigos",
+      "textbook_ref": "AULA 1 U.5",
+      "overall_goal": "Presentar y describir a una persona.",
+      "communicative_functions": [
+        "Hablar del aspecto y del carácter",
+        "Expresar y contrastar gustos e intereses",
+        "Preguntar sobre gustos",
+        "Hablar de relaciones personales"
+      ],
+      "grammar": [
+        "El verbo gustar",
+        "Los cuantificadores (muy, bastante, un poco)",
+        "Los posesivos",
+        "También/tampoco",
+        "Acento diacrítico"
+      ],
+      "vocabulary_themes": [
+        "La familia",
+        "Adjetivos de carácter",
+        "Música"
+      ],
+      "learning_strategies": [
+        "Asociación de imágenes y conceptos con el léxico",
+        "Estrategias para la comprensión auditiva: contextualización del tema antes de leerlo, reconocer el todo, encontrar información determinada",
+        "Deducción de conceptos gramaticales a partir de modelos de lengua",
+        "Hablar sobre lo que me interesa aplicando los recursos trabajados"
+      ],
+      "cultural_content": [
+        "Festivales de música en España: Festival de jazz en San Sebastián, Bienal de Flamenco, FIB",
+        "Definir a personas por el tipo de música que escuchan",
+        "Jorge Drexler",
+        "Serie 'La casa de papel'",
+        "Música española (grupos del interés del alumno)"
+      ]
+    },
+    {
+      "unit_number": 6,
+      "title": "Día a día",
+      "textbook_ref": "AULA 1 U.6",
+      "overall_goal": "Conocer los hábitos de nuestros compañeros y dar premios.",
+      "communicative_functions": [
+        "Hablar de hábitos",
+        "Expresar frecuencia",
+        "Preguntar y decir la hora"
+      ],
+      "grammar": [
+        "El presente de indicativo de algunos verbos irregulares",
+        "Los verbos reflexivos",
+        "Yo también / Yo tampoco / Yo sí / Yo no",
+        "Primero / Después / Luego"
+      ],
+      "vocabulary_themes": [
+        "Los días de la semana",
+        "Las partes del día",
+        "Actividades diarias"
+      ],
+      "learning_strategies": [
+        "Recordar las irregularidades del presente a través de la asociación y la memoria visual"
+      ],
+      "cultural_content": [
+        "Mafalda",
+        "El día de Reyes",
+        "Nochevieja",
+        "Fiestas típicas de una ciudad, región o país de habla hispana",
+        "Horarios de actividades culturales de Madrid (la ciudad donde reside el estudiante)"
+      ]
+    }
+  ]
+}

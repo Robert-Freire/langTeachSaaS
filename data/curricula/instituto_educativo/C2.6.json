@@ -1,0 +1,81 @@
+{
+  "level": "C2.6",
+  "cefr_level": "C2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "notes": "At C2 the source document relabels columns: 'Contenidos lingüísticos' replaces 'Contenidos gramaticales'. Content is mapped to grammar field. 'Tipos de texto y léxico' is mapped to vocabulary_themes.",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 11,
+      "title": "Cambios",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Describir y comparar acciones y situaciones de un proceso",
+        "Narrar un proceso de cambio",
+        "Expresar arrepentimiento, lamento, reproche, etc. sobre una acción pasada",
+        "Expresar causa y consecuencia",
+        "Expresar alternativa de hechos pasados"
+      ],
+      "grammar": [
+        "Verbos y perífrasis que expresan cambio",
+        "Perífrasis verbales con infinitivo compuesto",
+        "El imperativo retrospectivo",
+        "Oraciones causales y consecutivas: conectores, alternancia indicativo/subjuntivo",
+        "Colocaciones"
+      ],
+      "vocabulary_themes": [
+        "Léxico sobre el matrimonio y las parejas de hecho",
+        "Léxico relacionado con la Historia"
+      ],
+      "learning_strategies": [
+        "Uso de corpora y de diccionario de colocaciones",
+        "Autonomía en el aprendizaje: autocorrección",
+        "Valorar las diferencias de registro"
+      ],
+      "cultural_content": [
+        "Cambios en las costumbres y tradiciones sobre el noviazgo y el matrimonio",
+        "La llegada de Colón a América",
+        "El jinete polaco de Antonio Muñoz Molina"
+      ]
+    },
+    {
+      "unit_number": 12,
+      "title": "La noche y el día",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Establecer relaciones de anterioridad, simultaneidad y posterioridad",
+        "Expresar puntualidad y anticipación",
+        "Hablar sobre el inicio y fin de acciones o sucesos",
+        "Expresar continuación, repetición, duración y frecuencia",
+        "Narrar un sueño"
+      ],
+      "grammar": [
+        "Marcadores de evidencialidad",
+        "Marcadores temporales: acciones en desarrollo",
+        "El uso del imperfecto en los relatos"
+      ],
+      "vocabulary_themes": [
+        "El texto argumentativo: su estructura",
+        "Textos científicos divulgativos",
+        "Textos periodísticos y blogs",
+        "Léxico relacionado con las partes del día y los problemas del sueño",
+        "Léxico relacionado con la estética",
+        "Canciones",
+        "Caligramas"
+      ],
+      "learning_strategies": [
+        "Deducción de palabras a partir de la estructura silábica y de la rima"
+      ],
+      "cultural_content": [
+        "Personajes famosos del mundo hispano",
+        "La cirugía estética como fenómeno social",
+        "Música española: Rosana y Mecano",
+        "Simbología de la luna en diferentes culturas",
+        "Tipos de sueños"
+      ]
+    }
+  ]
+}

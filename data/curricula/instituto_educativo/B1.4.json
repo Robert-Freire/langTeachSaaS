@@ -1,0 +1,98 @@
+{
+  "level": "B1.4",
+  "cefr_level": "B1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 9,
+      "title": "Tenemos que hablar",
+      "textbook_ref": "AULA 4 U.4",
+      "overall_goal": "Representar una discusión.",
+      "communicative_functions": [
+        "Expresar intereses y sentimientos",
+        "Hablar de las relaciones entre personas",
+        "Mostrar desacuerdo en diversos registros",
+        "Suavizar una expresión de desacuerdo",
+        "Contraargumentar"
+      ],
+      "grammar": [
+        "Me fascina/me encanta/odio/no aguanto… que + subjuntivo",
+        "Me fascina/me encanta/odio/no aguanto… + sustantivo/infinitivo"
+      ],
+      "vocabulary_themes": [
+        "Verbos para expresar intereses, sentimientos y sensaciones",
+        "Manías",
+        "Recursos para mostrar desacuerdo"
+      ],
+      "learning_strategies": [
+        "Utilización del vocabulario en contextos significativos y reales permitiendo comprender y adquirirlo de manera más eficaz",
+        "Comprensión y memorización de adjetivos del carácter por asociación a conductas reales del alumno y de sus compañeros"
+      ],
+      "cultural_content": [
+        "Tipos de manías",
+        "Comparativa de las diferencias o similitudes en la expresión de emociones entre España y la cultura del estudiante",
+        "Cosas que no soporta el alumno de España"
+      ]
+    },
+    {
+      "unit_number": 10,
+      "title": "De diseño",
+      "textbook_ref": "AULA 4 U.5",
+      "overall_goal": "Hacer un póster con los objetos que necesitamos.",
+      "communicative_functions": [
+        "Describir las características y el funcionamiento de algo",
+        "Opinar sobre objetos"
+      ],
+      "grammar": [
+        "Los superlativos en ísimo/-a/-os/-as",
+        "Las frases exclamativas: ¡qué…!, ¡qué… tan/más…!",
+        "Las frases relativas con preposición",
+        "Uso del indicativo y del subjuntivo en frases relativas"
+      ],
+      "vocabulary_themes": [
+        "Vocabulario para describir objetos (formas, materiales,…)",
+        "Vocabulario para valorar el diseño de objetos",
+        "Superlativo y otros gradativos"
+      ],
+      "learning_strategies": [
+        "Estrategias para definir el léxico desconocido"
+      ],
+      "cultural_content": [
+        "Inventos latinos",
+        "Diseños de Marín Azúa"
+      ]
+    },
+    {
+      "unit_number": 11,
+      "title": "Un mundo mejor",
+      "textbook_ref": "AULA 4 U.6",
+      "overall_goal": "Presentar algunos problemas y proponer soluciones.",
+      "communicative_functions": [
+        "Valorar situaciones y hechos",
+        "Opinar sobre acciones y conductas"
+      ],
+      "grammar": [
+        "Me parece bien/mal/injusto/ilógico… que + presente de subjuntivo",
+        "Está bien/mal que… + presente de subjuntivo",
+        "Es injusto/ilógico/fantástico… que + presente de subjuntivo",
+        "El condicional",
+        "Lo de + infinitivo/sustantivo, lo que + verbo"
+      ],
+      "vocabulary_themes": [
+        "Acciones para un mundo mejor",
+        "Características y materiales de los objetos"
+      ],
+      "learning_strategies": [
+        "Anticipar el contenido de un audio a través de lo que nos sugieren las imágenes que lo ilustran",
+        "Asociación frecuente de palabras"
+      ],
+      "cultural_content": [
+        "Vitoria, capital verde",
+        "Slow food y KM 0",
+        "Tu espacio verde favorito en Madrid (ciudad donde reside el alumno)"
+      ]
+    }
+  ]
+}

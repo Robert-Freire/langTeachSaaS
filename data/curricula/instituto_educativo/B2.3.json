@@ -1,0 +1,73 @@
+{
+  "level": "B2.3",
+  "cefr_level": "B2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 5,
+      "title": "Lugares con encanto",
+      "textbook_ref": "AULA 5 U.5",
+      "overall_goal": "Escribir un texto sobre un lugar de nuestra ciudad que nos gusta.",
+      "communicative_functions": [
+        "Hablar de ciudades: describirlas y comentar cualidades",
+        "Hablar de creencias previas sobre algo",
+        "Expresar sentimientos"
+      ],
+      "grammar": [
+        "Las oraciones de relativo: el uso de que, quien/es, cuyo/-a/-os/-as",
+        "El participio en las oraciones de relativo: la voz pasiva",
+        "Verbos de percepción y de opinión + indicativo/subjuntivo"
+      ],
+      "vocabulary_themes": [
+        "Vocabulario para describir ciudades y del ámbito de los viajes",
+        "Vocabulario para hablar de sentimientos"
+      ],
+      "learning_strategies": [
+        "Reformulación de frases sin cambiar su significado original con el fin de reflexionar sobre el uso de la lengua en un registro culto o coloquial",
+        "Deducción de estructuras gramaticales extraídas de un texto",
+        "La autoevaluación como estrategia de aprendizaje para la realización de un texto escrito de presentación de un lugar",
+        "Estrategias para redactar un diario de viaje",
+        "Deducción del significado del léxico relacionándolo a un contexto"
+      ],
+      "cultural_content": [
+        "Dos ciudades con mil caras: La Habana y Cádiz",
+        "Ciudad colonial: Antigua",
+        "Poesía sobre ciudades: 'Pausa de agosto' de Mario Benedetti, poema sobre Madrid en agosto, 'Oda a Valparaíso' de Pablo Neruda",
+        "Barrio de Ruzafa, Valencia"
+      ]
+    },
+    {
+      "unit_number": 6,
+      "title": "Se valorará la experiencia",
+      "textbook_ref": "AULA 5 U.6",
+      "overall_goal": "Establecer las condiciones para participar en un concurso y elegir la obra ganadora.",
+      "communicative_functions": [
+        "Expresar condiciones",
+        "Establecer condiciones y requisitos"
+      ],
+      "grammar": [
+        "Usos de las oraciones pasivas",
+        "Usos del infinitivo compuesto",
+        "El pretérito perfecto de subjuntivo",
+        "Construcciones relativas: quienes, aquellos que, todo aquel que, el/la/los/las que",
+        "Únicamente, exclusivamente, necesariamente"
+      ],
+      "vocabulary_themes": [
+        "Vocabulario del ámbito de las convocatorias",
+        "Vocabulario del ámbito de la educación",
+        "El verbo presentarse"
+      ],
+      "learning_strategies": [
+        "Reformulación de frases sin cambiar su significado original con el fin de reflexionar sobre el uso de la lengua en un registro formal escrito u oral coloquial",
+        "Comparación de expresiones en la lengua madre y meta",
+        "Estrategias para la adquisición léxica: campo semántico (nombres, adjetivos y verbos)"
+      ],
+      "cultural_content": [
+        "Concurso World Press Photo: Ganador de 2018, Ronaldo Schemidt",
+        "El arte contemporáneo"
+      ]
+    }
+  ]
+}

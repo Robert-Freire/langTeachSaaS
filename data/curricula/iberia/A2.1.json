@@ -1,0 +1,30 @@
+{
+  "level": "A2.1",
+  "cefr_level": "A2",
+  "institution": "Iberia Language Academy",
+  "source_file": "PROGRAMA A2.1_Alumnos (1).pdf",
+  "hours": 40,
+  "textbook": {
+    "name": "Aula Plus 2",
+    "units_covered": [1, 2, 3, 4]
+  },
+  "communicative_objectives": [
+    "Dar consejos para aprender un idioma",
+    "Hablar de hábitos y duración",
+    "Hablar de dificultades y hacer recomendaciones",
+    "Describir sentimientos",
+    "Escribir una biografía",
+    "Relatar y relacionar acontecimientos pasados",
+    "Hablar del inicio y la duración de una acción",
+    "Describir el perfil de una persona ideal para alguien que busca pareja",
+    "Identificar y describir físicamente a las personas",
+    "Hablar de las relaciones y de los parecidos entre las personas",
+    "Diseñar y amueblar una vivienda",
+    "Expresar gustos y preferencias",
+    "Describir una casa y ubicar objetos en el espacio",
+    "Comparar y expresar coincidencias",
+    "Describir objetos"
+  ],
+  "units": [],
+  "exam_prep": null
+}

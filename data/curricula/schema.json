@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://langteach.internal/curricula/level-schema",
+  "title": "LangTeach Curriculum Level",
+  "description": "Schema for a single course-level curriculum entry. Supports both flat-objectives (Iberia) and per-unit (Instituto Educativo) structures.",
+  "type": "object",
+  "required": ["level", "cefr_level", "institution", "source_file"],
+  "properties": {
+    "level": {
+      "type": "string",
+      "description": "Sub-level identifier as used in the source document (e.g. 'A1.1', 'B1.2+', 'C2.6')"
+    },
+    "cefr_level": {
+      "type": "string",
+      "enum": ["A1", "A2", "B1", "B2", "C1", "C2"],
+      "description": "Broad CEFR level this course belongs to"
+    },
+    "institution": {
+      "type": "string",
+      "description": "Name of the institution that produced this curriculum document"
+    },
+    "source_file": {
+      "type": "string",
+      "description": "Filename of the source PDF this data was extracted from"
+    },
+    "hours": {
+      "type": "integer",
+      "description": "Course duration in contact hours"
+    },
+    "textbook": {
+      "type": ["object", "null"],
+      "description": "Textbook used in this course. null when no textbook is used.",
+      "properties": {
+        "name": { "type": "string" },
+        "units_covered": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Textbook unit numbers covered in this course"
+        }
+      }
+    },
+    "communicative_objectives": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Flat list of course-level communicative objectives (present in Iberia PROGRAMA files)"
+    },
+    "units": {
+      "type": "array",
+      "description": "Per-unit content breakdown (present in Instituto Educativo files)",
+      "items": {
+        "type": "object",
+        "required": ["unit_number"],
+        "properties": {
+          "unit_number": {
+            "type": ["integer", "string"],
+            "description": "Unit number within the course (may be 0 for introductory units)"
+          },
+          "title": { "type": "string" },
+          "textbook_ref": {
+            "type": ["string", "null"],
+            "description": "Textbook unit reference (e.g. 'AULA 1 U.0'). null when source document has no textbook column."
+          },
+          "overall_goal": {
+            "type": ["string", "null"],
+            "description": "Main communicative task or project for this unit. null when source document has no overall goal column."
+          },
+          "communicative_functions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Contenidos funcionales: what the student can do communicatively"
+          },
+          "grammar": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Contenidos gramaticales: grammar structures introduced"
+          },
+          "vocabulary_themes": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Contenidos léxicos (A1-B2) or Tipos de texto y léxico (C1-C2)"
+          },
+          "learning_strategies": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "El componente estratégico: learning and metacognitive strategies"
+          },
+          "cultural_content": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Contenidos culturales: cultural references and content"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Free-text notes about the source document or extraction decisions for this level (e.g. column naming differences in C1-C2 Instituto Educativo files)"
+    },
+    "exam_prep": {
+      "type": ["object", "null"],
+      "description": "Reserved for exam preparation curricula (DELE, DALF, etc.). null for general-learning courses.",
+      "properties": {
+        "exam_type": {
+          "type": "string",
+          "description": "Exam name, e.g. 'DELE', 'DALF'"
+        },
+        "exam_level": {
+          "type": "string",
+          "description": "Exam level designation, e.g. 'B2', 'DALF C1'"
+        },
+        "exam_components": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Exam skill components covered (e.g. 'comprensión lectora', 'expresión escrita')"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "grammar_map_entry": {
+      "title": "Grammar Map Entry",
+      "description": "Schema for a grammar map entry (broad CEFR level, one institution)",
+      "type": "object",
+      "required": ["cefr_level", "institution", "source_file"],
+      "properties": {
+        "cefr_level": { "type": "string", "enum": ["A1", "A2", "B1", "B2", "C1", "C2"] },
+        "institution": { "type": "string" },
+        "source_file": { "type": "string" },
+        "cefr_descriptor": {
+          "type": "string",
+          "description": "Official CEFR can-do descriptor for this level"
+        },
+        "grammar_resources": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Grammar structures introduced at this level"
+        },
+        "vocabulary_themes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Lexical themes covered at this level"
+        }
+      }
+    }
+  }
+}

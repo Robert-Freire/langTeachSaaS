@@ -1,0 +1,83 @@
+{
+  "level": "C1.4",
+  "cefr_level": "C1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "notes": "From C1 onward the source document labels the third column 'Tipos de texto y léxico' instead of 'Contenidos léxicos'. Both text types and lexical content are merged into vocabulary_themes.",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 7,
+      "title": "Reducir, reutilizar y reciclar",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Caracterizar e identificar personas, lugares y cosas",
+        "Preguntar y responder por la existencia o no de algo o de alguien"
+      ],
+      "grammar": [
+        "Oraciones de relativo especificativas/explicativas",
+        "Oraciones de relativo con indicativo/subjuntivo",
+        "Pronombres y adverbios relativos"
+      ],
+      "vocabulary_themes": [
+        "Texto divulgativo",
+        "Noticia periodística",
+        "Fábula",
+        "Canción",
+        "Artículo periodístico especializado",
+        "Expresiones idiomáticas con animales",
+        "Léxico relacionado con el medioambiente"
+      ],
+      "learning_strategies": [
+        "Adquisición de léxico",
+        "El uso del diccionario: la búsqueda de expresiones fijas",
+        "La coherencia y cohesión textual"
+      ],
+      "cultural_content": [
+        "Miguel Delibes",
+        "Los parques naturales: el Parque Natural de Doñana",
+        "Famosos por el medioambiente",
+        "¿Dónde jugarán los niños? de Maná"
+      ]
+    },
+    {
+      "unit_number": 8,
+      "title": "¿Quién dijo qué?",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Transmitir lo que ha dicho otra persona",
+        "Interpretar y reproducir palabras ajenas",
+        "Transmitir informaciones teniendo en cuenta diferentes elementos pragmáticos",
+        "Justificar y apoyar una opinión con argumentos de peso o de autoridad: citar"
+      ],
+      "grammar": [
+        "El discurso referido: estilo indirecto",
+        "Transformaciones gramaticales: pronombres, determinantes, marcadores temporales, modos y tiempos verbales"
+      ],
+      "vocabulary_themes": [
+        "Texto conversacional: la entrevista, la cita",
+        "Texto argumentativo: el artículo periodístico",
+        "Texto divulgativo: el concepto del donjuanismo",
+        "Acepciones del verbo conquistar",
+        "Verbos aglutinadores de significado en el discurso referido"
+      ],
+      "learning_strategies": [
+        "Elementos introductorios del acto de habla que desaparecen en el discurso referido",
+        "Elementos expresivos del acto de habla que deben interpretarse en el discurso referido",
+        "El diccionario de uso: manejo y símbolos",
+        "Mejora y ampliación del léxico",
+        "Recursos para elaborar una…"
+      ],
+      "cultural_content": [
+        "Citas de personajes célebres",
+        "El donjuanismo",
+        "Hernán Cortés y la conquista de México",
+        "Carlos Fuentes",
+        "Octavio Paz",
+        "Vista de Tenochtitlán, mural de Diego Rivera"
+      ]
+    }
+  ]
+}

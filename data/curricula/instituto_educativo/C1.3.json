@@ -1,0 +1,95 @@
+{
+  "level": "C1.3",
+  "cefr_level": "C1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "notes": "From C1 onward the source document labels the third column 'Tipos de texto y léxico' instead of 'Contenidos léxicos'. Both text types and lexical content are merged into vocabulary_themes.",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 5,
+      "title": "Imaginario",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Expresar relaciones de contemporaneidad y secuencialidad entre las acciones",
+        "Establecer relaciones de anterioridad y posterioridad entre las acciones",
+        "Expresar el modo y la actitud",
+        "Hacer comparaciones irreales",
+        "Opinar y hacer una crítica de una película en una conversación y por escrito",
+        "Describir las características de algunos seres fantásticos",
+        "Intervenir en un debate"
+      ],
+      "grammar": [
+        "Nexos y conectores temporales",
+        "Nexos y conectores modales",
+        "Locuciones adverbiales de tiempo y modo",
+        "Estructuras comparativas irreales",
+        "Elementos lingüísticos del registro formal/informal"
+      ],
+      "vocabulary_themes": [
+        "Texto instructivo: la leyenda; ficha técnica de la película Ágora",
+        "Texto digital: blog de supersticiones",
+        "Texto argumentativo: crítica y testimonio; discurso",
+        "Léxico relacionado con la magia, la fantasía, las supersticiones",
+        "Léxico relacionado con el cine y la crítica de cine"
+      ],
+      "learning_strategies": [
+        "Análisis del lenguaje informal/formal, oral/escrito",
+        "Deducción de léxico a través de la contextualización",
+        "Pautas para participar en un debate"
+      ],
+      "cultural_content": [
+        "Leyenda azteca sobre el origen del chocolate",
+        "Toca madera, de Joan Manuel Serrat",
+        "Ana María Matute y su discurso de ingreso en la Real Academia de la Lengua",
+        "Ficha técnica de la película Ágora",
+        "Supersticiones en el mundo hispano",
+        "Malentendidos culturales",
+        "La figura del rey Felipe II"
+      ]
+    },
+    {
+      "unit_number": 6,
+      "title": "¿Qué memoria?",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Hacer referencia a algo",
+        "Manifestar que uno está parcialmente de acuerdo",
+        "Intentar convencer a alguien: argumentar y contraargumentar",
+        "Expresar insistencia e intensidad sin obtener los resultados deseados",
+        "Expresar la mínima intensidad que facilita los resultados deseados",
+        "Expresar un reproche",
+        "Expresar lo inevitable del cumplimiento de una acción y/o el convencimiento que tenemos sobre algo",
+        "Presentar o tener en cuenta un hecho que no impide otro hecho, o tener en cuenta una idea pero no dejarse influir por ella"
+      ],
+      "grammar": [
+        "Conectores concesivos: Por mucho,-a,-os,-as (+nombre) +que +indicativo/subjuntivo; Por más +(sustantivo) +que +indicativo/subjuntivo; Por +adjetivo +que +subjuntivo; Por muy +adjetivo/adverbio +que +subjuntivo; Y eso que/Y mira que +indicativo; Por poco,-a,-os,-as (+nombre) +que +subjuntivo; Aunque/A pesar de que +indicativo/subjuntivo; Aun +gerundio; Digan lo que digan, Hagan lo que hagan, Pese a quien pese..."
+      ],
+      "vocabulary_themes": [
+        "Texto argumentativo",
+        "El género periodístico: el artículo",
+        "Texto conversacional: diálogo, entrevista para obtener datos para una encuesta",
+        "Informe de una encuesta",
+        "Texto descriptivo",
+        "Mitin político",
+        "Campo léxico relacionado con la memoria",
+        "Expresiones fijas",
+        "Trabajo de léxico del español de América"
+      ],
+      "learning_strategies": [
+        "Estrategias para desarrollar la comprensión auditiva: analizar la intención del hablante",
+        "Captar el tono del discurso",
+        "Discriminar las informaciones irrelevantes",
+        "Buscar lo que no se dice explícitamente",
+        "Claves para escribir una descripción"
+      ],
+      "cultural_content": [
+        "El silencio y el caos, artículo de Rosa Montero",
+        "Algunos políticos hispanoamericanos",
+        "La figura de Eva Perón. No llores por mí, Argentina del musical Evita"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "level": "B2.4",
+  "cefr_level": "B2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 7,
+      "title": "El cuerpo en movimiento",
+      "textbook_ref": "AULA 6 U.1",
+      "overall_goal": "Hacer una exposición de fotos imitando cuadros famosos.",
+      "communicative_functions": [
+        "Describir actividades y los movimientos",
+        "Dar instrucciones",
+        "Hablar de la postura corporal",
+        "Expresar sentimientos y estados de ánimo"
+      ],
+      "grammar": [
+        "Describir acciones con adjetivos, gerundios y adverbios",
+        "Verbos pronominales",
+        "Sentirse y sentir",
+        "Ponerse y poner",
+        "Quedar y quedarse"
+      ],
+      "vocabulary_themes": [
+        "Las partes del cuerpo",
+        "La postura corporal",
+        "Léxico para hablar de movimientos que hacemos con el cuerpo y la cara",
+        "Sentimientos, actitudes y estados de ánimo"
+      ],
+      "learning_strategies": [
+        "Asociar imágenes a su descripción",
+        "Reconocer vocabulario por su definición"
+      ],
+      "cultural_content": [
+        "Retratos de pintores reconocidos españoles",
+        "El flamenco en la sociedad nipona"
+      ]
+    },
+    {
+      "unit_number": 8,
+      "title": "Dijo que lo haría",
+      "textbook_ref": "AULA 6 U.2",
+      "overall_goal": "Presentar casos de mediación y pensar en soluciones para cada caso.",
+      "communicative_functions": [
+        "Expresar finalidad",
+        "Expresar intencionalidad",
+        "Aludir a promesas en estilo indirecto",
+        "Reclamar el cumplimiento de un compromiso"
+      ],
+      "grammar": [
+        "Para + infinitivo/pretérito imperfecto de subjuntivo",
+        "Usos de se para expresar involuntariedad",
+        "Estilo indirecto",
+        "Es que…, no es que…, lo que pasa es que…",
+        "Adjetivos con prefijos",
+        "Hacer a propósito/sin querer/adrede…",
+        "Artículo indeterminado delante de adjetivos"
+      ],
+      "vocabulary_themes": [
+        "Hablar de conflictos"
+      ],
+      "learning_strategies": [
+        "Deducción de las reglas gramaticales a través de la observación de modelos de lengua",
+        "Preparación de argumentos en contra y a favor en un conflicto antes de exponerlos oralmente",
+        "Reflexión sobre cómo pueden afectar las lenguas a nuestra forma de entender el mundo"
+      ],
+      "cultural_content": [
+        "Seguridad de los diferentes portales en internet para encontrar piso o planear vacaciones de España",
+        "Los pütchipü'üs o los palabreros del pueblo wayu",
+        "'El Lazarillo de Tormes'"
+      ]
+    }
+  ]
+}

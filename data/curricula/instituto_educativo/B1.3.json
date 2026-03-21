@@ -1,0 +1,108 @@
+{
+  "level": "B1.3",
+  "cefr_level": "B1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 6,
+      "title": "¿Se te dan bien las lenguas?",
+      "textbook_ref": "AULA 4 U.1",
+      "overall_goal": "Hacer una infografía sobre las habilidades blandas.",
+      "communicative_functions": [
+        "Hablar de habilidades",
+        "Hablar de emociones",
+        "Conectar frases"
+      ],
+      "grammar": [
+        "Verbos que llevan pronombre (hacerse, ponerse, quedarse, sentirse…)",
+        "Aunque, y eso que",
+        "Dársele bien/mal algo a alguien",
+        "Dar vergüenza/miedo",
+        "Ponerse nervioso/-a, triste…",
+        "Adjetivos buen y gran",
+        "Ser bueno/malo + gerundio"
+      ],
+      "vocabulary_themes": [
+        "Dársele bien/mal algo a alguien",
+        "Dar vergüenza/miedo",
+        "Ponerse nervioso/-a, triste…",
+        "Adjetivos buen y gran",
+        "Ser bueno/malo + gerundio"
+      ],
+      "learning_strategies": [
+        "Observación de los diferentes modos de aprendizaje extrayendo qué prácticas son más adecuadas para cada uno",
+        "Reflexión sobre las emociones que nos suscita el aprendizaje de español para saber cómo afrontar aquellas negativas"
+      ],
+      "cultural_content": [
+        "Inteligencias múltiples",
+        "Teresa Perales, ejemplo de superación",
+        "Habilidades blandas"
+      ]
+    },
+    {
+      "unit_number": 7,
+      "title": "¡Basta ya!",
+      "textbook_ref": "AULA 4 U.2",
+      "overall_goal": "Escribir una carta abierta para exponer un problema.",
+      "communicative_functions": [
+        "Expresar deseos, reclamaciones y necesidad",
+        "Proponer soluciones",
+        "Escribir una carta abierta denunciando un problema"
+      ],
+      "grammar": [
+        "El presente de subjuntivo",
+        "Querer/pedir/exigir/necesitar + infinitivo",
+        "Querer/pedir/exigir/necesitar que + subjuntivo",
+        "Debemos/tenemos que/se debe/deberían/se debería/habría que",
+        "Cuando + subjuntivo"
+      ],
+      "vocabulary_themes": [
+        "Aspectos de la vida social y administrativa",
+        "Activismo social"
+      ],
+      "learning_strategies": [
+        "Deducción del uso y forma de un tiempo verbal a través de la observación y reflexión de modelos de lengua",
+        "Reflexión sobre los matices de significado de sinónimos",
+        "Uso del diccionario para encontrar palabras más precisas en la elaboración de textos escritos de carácter formal",
+        "Utilización de modelos de cartas formales para la redacción de dichas cartas"
+      ],
+      "cultural_content": [
+        "Poesía para cambiar el mundo: Gabriel Celaya, Ernesto Cardenal",
+        "Pueblos indígenas de Perú",
+        "Noticias españolas de tema social"
+      ]
+    },
+    {
+      "unit_number": 8,
+      "title": "El turista accidental",
+      "textbook_ref": "AULA 4 U.3",
+      "overall_goal": "Contar anécdotas reales o inventadas.",
+      "communicative_functions": [
+        "Recursos para contar anécdotas",
+        "Recursos para mostrar interés al escuchar un relato",
+        "Hablar de causas y consecuencias"
+      ],
+      "grammar": [
+        "Algunos conectores para hablar de causas y consecuencias: como, porque, así que, o sea que, etc.",
+        "El pretérito pluscuamperfecto de indicativo",
+        "Combinar los tiempos del pasado en un relato (pretérito perfecto, pretérito indefinido, pretérito imperfecto, pretérito pluscuamperfecto)"
+      ],
+      "vocabulary_themes": [
+        "Viajes y turismo",
+        "Anécdotas"
+      ],
+      "learning_strategies": [
+        "Comprensión y memorización de adjetivos del carácter por asociación a conductas reales del alumno y de sus compañeros",
+        "Uso del teatro: creación de diálogos que ejemplifiquen los recursos para contar anécdotas y mostrar interés"
+      ],
+      "cultural_content": [
+        "Lugares turísticos de Colombia, Menorca y Costa Rica",
+        "La vida de Vicente Ferrer",
+        "Augusto Monterroso",
+        "Tipos de viajeros"
+      ]
+    }
+  ]
+}

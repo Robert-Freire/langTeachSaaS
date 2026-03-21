@@ -1,0 +1,99 @@
+{
+  "level": "C1.6",
+  "cefr_level": "C1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "notes": "From C1 onward the source document labels the third column 'Tipos de texto y léxico' instead of 'Contenidos léxicos'. Both text types and lexical content are merged into vocabulary_themes.",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 11,
+      "title": "La cosmogonía",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Expresar la causa como una justificación y con un matiz enfático",
+        "Expresar la causa de manera formal e informal",
+        "Expresar la causa con connotaciones positivas y negativas",
+        "Expresar finalidad de manera formal e informal",
+        "Expresar la finalidad de un movimiento",
+        "Preguntar por la finalidad con matices negativos o expresando reproche",
+        "Evitar un suceso posible que se entiende como amenaza",
+        "Comparar cualidades, acontecimientos o acciones realizadas, cantidad de objetos diferentes"
+      ],
+      "grammar": [
+        "Las oraciones causales",
+        "Las oraciones finales",
+        "Contraste causa/finalidad",
+        "Usos de por y para"
+      ],
+      "vocabulary_themes": [
+        "Texto divulgativo",
+        "Leyendas sobre el origen del mundo",
+        "Texto narrativo",
+        "Lenguaje científico",
+        "Lenguaje literario",
+        "Léxico relacionado con mitos y leyendas",
+        "Expresiones idiomáticas con por y para"
+      ],
+      "learning_strategies": [
+        "Leer con un propósito concreto",
+        "Técnica de skimming",
+        "Estrategias de compensación léxica",
+        "Evaluar y evaluarse en la expresión oral",
+        "Pautas para hablar en público",
+        "Deducir expresiones idiomáticas por el contexto y el aprendizaje contrastivo con L1"
+      ],
+      "cultural_content": [
+        "Leyendas de España e Hispanoamérica",
+        "Culturas precolombinas",
+        "El Machu Picchu",
+        "La Biblia. El Génesis",
+        "La Teoría del Big Bang",
+        "Patrimonio Inmaterial de la Humanidad: el flamenco"
+      ]
+    },
+    {
+      "unit_number": 12,
+      "title": "Etapas de la vida",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Expresar cuando empezó a desarrollarse una acción",
+        "Expresar que alguien ha empezado a hacer algo para lo que no está preparado",
+        "Expresar el inicio repentino de una acción subrayando si el inicio es brusco",
+        "Expresar una acción acabada",
+        "Expresar el final de un suceso reciente",
+        "Expresar la duración de una acción señalando si esa duración es un proceso lento, continuado o que se interrumpe",
+        "Expresar el resultado de una acción indicando la cantidad que se ha realizado"
+      ],
+      "grammar": [
+        "Perífrasis de infinitivo: ponerse a/comenzar a/venir a/echar(se) a/romper a/dejar de/acabar de/por/llegar a/meterse a",
+        "Perífrasis de gerundio: estar/ir/venir/llevar/acabar",
+        "Perífrasis de participio: dar por/llevar/tener"
+      ],
+      "vocabulary_themes": [
+        "Texto instructivo: objetivos de la OMS; la Declaración de los Derechos del Niño",
+        "Texto informativo: terapias alternativas; el estrés",
+        "Texto periodístico: carta al director",
+        "Entrevista",
+        "Léxico relacionado con la salud (partes del cuerpo y enfermedades, instituciones, etapas de la vida...)",
+        "Expresiones idiomáticas relacionadas con las partes del cuerpo",
+        "Léxico del español de América: Argentina"
+      ],
+      "learning_strategies": [
+        "Trabajo cooperativo para realizar una tarea",
+        "Estrategias para la deducción de las expresiones fijas",
+        "Recomendaciones y estrategias para escribir una carta al director de un periódico"
+      ],
+      "cultural_content": [
+        "Medicina convencional y medicina alternativa",
+        "Enfermedades del siglo XXI",
+        "La Declaración de los Derechos del Niño",
+        "La ONG Aldeas Infantiles SOS España",
+        "El cine hispano",
+        "El cine argentino: El hijo de la novia de Juan José Campanella"
+      ]
+    }
+  ]
+}

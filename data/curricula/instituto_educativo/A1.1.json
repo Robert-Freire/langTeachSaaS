@@ -1,0 +1,141 @@
+{
+  "level": "A1.1",
+  "cefr_level": "A1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 0,
+      "title": "En el aula",
+      "textbook_ref": "AULA 1 U.0",
+      "overall_goal": "Aprender a presentarnos, a preguntar cosas en clase, a saludar y despedirnos.",
+      "communicative_functions": [
+        "Presentarse",
+        "Saludar y despedirse"
+      ],
+      "grammar": [
+        "Verbo llamarse: ¿Cómo te llamas? / Me llamo…"
+      ],
+      "vocabulary_themes": [
+        "Saludos y despedidas",
+        "Números del 1 al 10",
+        "Significado de Vale"
+      ],
+      "learning_strategies": [
+        "Reconocer la sonoridad del español en comparación con otras lenguas",
+        "Preguntas de la clase de español: ¿Qué significa? ¿Cómo se escribe? ¿Puedes hablar más despacio? ¿Cómo se dice?"
+      ],
+      "cultural_content": []
+    },
+    {
+      "unit_number": 1,
+      "title": "Nosotros",
+      "textbook_ref": "AULA 1 U.1",
+      "overall_goal": "Conocer a los compañeros de clase.",
+      "communicative_functions": [
+        "Dar y pedir los datos personales",
+        "Saludar y despedirse",
+        "Recursos para preguntar sobre las palabras"
+      ],
+      "grammar": [
+        "El género",
+        "Las tres conjugaciones: -ar, -er, -ir",
+        "Los verbos ser, llamarse, y tener",
+        "Los números",
+        "Nacionalidades",
+        "Profesiones",
+        "El abecedario"
+      ],
+      "vocabulary_themes": [
+        "Los números",
+        "Nacionalidades",
+        "Profesiones",
+        "El abecedario"
+      ],
+      "learning_strategies": [
+        "Relacionar información a través de imágenes",
+        "Deducción de conceptos gramaticales simples por la observación directa de estos en textos en español"
+      ],
+      "cultural_content": [
+        "Tratamientos en español",
+        "Nombres y apellidos en español",
+        "Cosas típicas de España y personajes relevantes de la actualidad española",
+        "Palabras en la calle"
+      ]
+    },
+    {
+      "unit_number": 2,
+      "title": "Quiero aprender español",
+      "textbook_ref": "AULA 1 U.2",
+      "overall_goal": "Hablar sobre nuestra relación con el español y con la cultura hispana.",
+      "communicative_functions": [
+        "Expresar intenciones",
+        "Explicar los motivos de lo que hacemos",
+        "Hablar de lo que sabemos hacer en distintos idiomas"
+      ],
+      "grammar": [
+        "El presente de indicativo",
+        "Algunos usos de por, para y porque",
+        "El artículo determinado (el, la, los, las) e indeterminado",
+        "Los pronombres personales de sujeto",
+        "El género"
+      ],
+      "vocabulary_themes": [
+        "Idiomas",
+        "Actividades de la clase de lengua",
+        "Actividades de ocio"
+      ],
+      "learning_strategies": [
+        "Estrategias para comparar formas verbales con el fin de facilitar su memorización",
+        "Encontrar los puntos de interés que queremos aprender en el curso y por tanto nos motivan a aprender",
+        "Deducción de reglas gramaticales sencillas"
+      ],
+      "cultural_content": [
+        "Palabras españolas usadas en otras lenguas",
+        "El plurilingüismo",
+        "Lenguas oficiales de España",
+        "Lugares donde se habla español",
+        "Agenda cultural de Madrid (ciudad donde reside el alumno)"
+      ]
+    },
+    {
+      "unit_number": 3,
+      "title": "¿Dónde está Santiago?",
+      "textbook_ref": "AULA 1 U.3",
+      "overall_goal": "Hacer un concurso de conocimientos del mundo hispano.",
+      "communicative_functions": [
+        "Describir lugares",
+        "Expresar existencia y ubicación",
+        "Hablar del clima"
+      ],
+      "grammar": [
+        "Algunos usos de hay",
+        "El verbo estar",
+        "El superlativo",
+        "Un/una/unos/unas",
+        "Cuantificadores: muy, mucho/mucha/muchos/muchas",
+        "Qué, cuál/cuáles, cuántos/cuántas, dónde, cómo"
+      ],
+      "vocabulary_themes": [
+        "El tiempo y el clima",
+        "Geografía",
+        "Datos sobre países",
+        "Los puntos cardinales",
+        "Las estaciones del año"
+      ],
+      "learning_strategies": [
+        "Tomar como ejemplo textos sobre descripción de ciudades para escribir uno propio",
+        "Informarse para la creación de un cuestionario",
+        "Deducción de reglas gramaticales a través del análisis de frases extraídas de un texto",
+        "Asociación de imágenes con vocabulario"
+      ],
+      "cultural_content": [
+        "Ciudades que se llaman Santiago",
+        "Datos curiosos sobre México, Guatemala, Argentina y otros países de Hispanoamérica",
+        "Comunidades autónomas",
+        "El tiempo en Madrid (ciudad donde reside el estudiante)"
+      ]
+    }
+  ]
+}

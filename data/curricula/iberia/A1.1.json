@@ -1,0 +1,27 @@
+{
+  "level": "A1.1",
+  "cefr_level": "A1",
+  "institution": "Iberia Language Academy",
+  "source_file": "PROGRAMA A1.1_Alumnos.pdf",
+  "hours": 40,
+  "textbook": {
+    "name": "Aula Plus 1",
+    "units_covered": [1, 2, 3, 4]
+  },
+  "communicative_objectives": [
+    "Dar y pedir datos personales",
+    "Saludar y despedirse",
+    "Expresar intenciones",
+    "Explicar los motivos de lo que hacemos",
+    "Hablar de lo que sabemos hacer en distintos idiomas",
+    "Describir lugares",
+    "Expresar existencia y ubicación",
+    "Hablar del clima y del tiempo",
+    "Identificar objetos",
+    "Expresar necesidad",
+    "Comprar en tiendas: preguntar por productos, pedir precios, etc.",
+    "Hablar de preferencias"
+  ],
+  "units": [],
+  "exam_prep": null
+}

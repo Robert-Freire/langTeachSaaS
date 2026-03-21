@@ -1,0 +1,31 @@
+{
+  "level": "B1.1+",
+  "cefr_level": "B1",
+  "institution": "Iberia Language Academy",
+  "source_file": "PROGRAMA B1.1+_Alumnos.pdf",
+  "hours": 40,
+  "textbook": {
+    "name": "Aula Plus 3",
+    "units_covered": [4, 5, 6, 8]
+  },
+  "communicative_objectives": [
+    "Contar anécdotas personales",
+    "Relatar en pasado y secuenciar acciones",
+    "Expresar emociones",
+    "Diseñar y presentar una campaña publicitaria",
+    "Recomendar y aconsejar",
+    "Dar instrucciones",
+    "Describir un anuncio",
+    "Crear y transmitir mensajes",
+    "Desarrollar estrategias de comunicación",
+    "Desenvolverse por teléfono y en videollamadas",
+    "Tomar y dejar recados por teléfono",
+    "Transmitir mensajes",
+    "Escribir la sinopsis de una película",
+    "Relatar en presente",
+    "Resumir el argumento de un libro o una película",
+    "Entender chistes"
+  ],
+  "units": [],
+  "exam_prep": null
+}

@@ -1,0 +1,74 @@
+{
+  "level": "B2.5",
+  "cefr_level": "B2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 9,
+      "title": "Así pasó",
+      "textbook_ref": "AULA 6 U.3",
+      "overall_goal": "Hacer un programa de televisión con historias sobre una ciudad o un barrio.",
+      "communicative_functions": [
+        "Combinar tiempos del pasado",
+        "Referir eventos pasados",
+        "Transmitir peticiones y advertencias",
+        "Contar relatos (cuentos/leyendas,…)"
+      ],
+      "grammar": [
+        "Marcadores y construcciones temporales: justo en ese momento, estar a punto de, entonces",
+        "Usos del pretérito perfecto de indicativo y de subjuntivo",
+        "Usos del gerundio",
+        "La colocación del adjetivo"
+      ],
+      "vocabulary_themes": [
+        "Catástrofes y fenómenos naturales",
+        "Léxico relacionado con la historia de las ciudades",
+        "Léxico del ámbito del deporte",
+        "Recursos para hablar de personajes y acontecimientos históricos"
+      ],
+      "learning_strategies": [
+        "Localizar en un texto sobre un tema dado léxico en torno a un campo léxico",
+        "Conocer el contexto para afrontar la comprensión de un texto",
+        "Estrategias para resumir un texto",
+        "La autoevaluación como estrategia de autoaprendizaje"
+      ],
+      "cultural_content": [
+        "La leyenda de Manco Cápac y Mama Ocllo",
+        "Leyenda del origen de la Ciudad de México",
+        "Relación entre el Teatro de Victoria Eugenia, el Hotel María Cristina y el Festival Internacional de Cine de San Sebastián"
+      ]
+    },
+    {
+      "unit_number": 10,
+      "title": "Antes de que sea tarde",
+      "textbook_ref": "AULA 6 U.4",
+      "overall_goal": "Crear una campaña de concienciación social sobre algún problema medioambiental.",
+      "communicative_functions": [
+        "Hacer predicciones sobre el futuro",
+        "Analizar y exponer problemas relacionados con el medioambiente (sus causas y sus consecuencias)",
+        "Cohesionar textos"
+      ],
+      "grammar": [
+        "Construcciones temporales con: mientras, hasta (que), en cuanto, antes de (que), después de (que)",
+        "Recursos para cohesionar textos: dicho/-a/-os/-as, el citado/-a/-os/-as, tal",
+        "Nominalización"
+      ],
+      "vocabulary_themes": [
+        "Vocabulario del ámbito del medioambiente",
+        "Recursos para cohesionar textos: uso de sinónimos, hiperónimos, hipónimos, pronombres…"
+      ],
+      "learning_strategies": [
+        "Realización de mapas conceptuales para la adquisición de vocabulario",
+        "Mapeado de un texto para extraer vocabulario relacionado con un tema",
+        "Reformulación de frases sin cambiar el significado de estas pero sí el registro"
+      ],
+      "cultural_content": [
+        "Comer carne como peligro medioambiental",
+        "Antonio Machado, poema 'A un olmo seco'",
+        "Iniciativas en ciudades españolas para hacerlas más sostenibles"
+      ]
+    }
+  ]
+}

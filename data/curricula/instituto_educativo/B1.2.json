@@ -1,0 +1,70 @@
+{
+  "level": "B1.2",
+  "cefr_level": "B1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 4,
+      "title": "Mañana",
+      "textbook_ref": "AULA 3 U.7",
+      "overall_goal": "Hacer un cartel con las advertencias que hace la ciencia ficción sobre el futuro.",
+      "communicative_functions": [
+        "Hablar de acciones y situaciones futuras",
+        "Expresar condiciones",
+        "Formular hipótesis sobre el futuro"
+      ],
+      "grammar": [
+        "Si + presente de indicativo, futuro",
+        "Seguramente/seguro que/supongo que + futuro",
+        "Marcadores temporales para hablar del futuro",
+        "Cada vez más/menos"
+      ],
+      "vocabulary_themes": [
+        "Retos del futuro",
+        "Tecnología y ciencia"
+      ],
+      "learning_strategies": [
+        "Estrategias para la adquisición léxica: campo semántico (nombres, adjetivos y verbos)",
+        "Inferir el significado de las palabras a partir de un contexto",
+        "Reconocer las formas irregulares por comparación con las regulares"
+      ],
+      "cultural_content": [
+        "Advertencias de la ciencia ficción y de las distopías literarias o cinematográficas"
+      ]
+    },
+    {
+      "unit_number": 5,
+      "title": "Va y le dice…",
+      "textbook_ref": "AULA 3 U.8",
+      "overall_goal": "Escribir la sinopsis de una película.",
+      "communicative_functions": [
+        "Relatar en presente",
+        "Resumir el argumento de un libro o una película",
+        "Entender chistes"
+      ],
+      "grammar": [
+        "Algunos conectores para relatar: (y) entonces, en aquel momento, al final, de repente, de pronto, etc.",
+        "Porque, como, aunque, sin embargo",
+        "La forma y los usos de los pronombres de O.D. y O.I."
+      ],
+      "vocabulary_themes": [
+        "Géneros narrativos (cine, televisión, novelas, …)",
+        "Léxico del cine, la literatura y el entretenimiento",
+        "Verbos relacionados con el acto de hablar"
+      ],
+      "learning_strategies": [
+        "Deducción del significado de algunos conectores a través de la reflexión de su función dentro de un contexto",
+        "Estrategias para el desarrollo de la comprensión auditiva detectando las palabras clave"
+      ],
+      "cultural_content": [
+        "Humor y estereotipos",
+        "Chistes: Jaimito, de estereotipos por regiones",
+        "Las películas más divertidas del cine español",
+        "Series y películas míticas",
+        "Novela 'Distancia de rescate' de Samanta Schweblin"
+      ]
+    }
+  ]
+}

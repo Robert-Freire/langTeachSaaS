@@ -1,0 +1,28 @@
+{
+  "level": "B1.2",
+  "cefr_level": "B1",
+  "institution": "Iberia Language Academy",
+  "source_file": "PROGRAMA B1.2_Alumnos.pdf",
+  "hours": 40,
+  "textbook": {
+    "name": "Aula Plus 4",
+    "units_covered": [1, 2, 4, 6]
+  },
+  "communicative_objectives": [
+    "Hablar de habilidades",
+    "Hablar de emociones",
+    "Conectar frases",
+    "Expresar deseos, reclamaciones y necesidad",
+    "Proponer soluciones",
+    "Escribir una carta abierta denunciando un problema",
+    "Expresar intereses y sentimientos",
+    "Hablar de relaciones",
+    "Mostrar desacuerdo en diversos registros",
+    "Suavizar una expresión de desacuerdo",
+    "Contraargumentar",
+    "Valorar situaciones y hechos",
+    "Opinar sobre acciones y conductas"
+  ],
+  "units": [],
+  "exam_prep": null
+}

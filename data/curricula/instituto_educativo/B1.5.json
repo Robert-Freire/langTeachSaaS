@@ -1,0 +1,72 @@
+{
+  "level": "B1.5",
+  "cefr_level": "B1",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 12,
+      "title": "Misterios y enigmas",
+      "textbook_ref": "AULA 4 U.7",
+      "overall_goal": "Escribir un blog sobre misterios de la ciencia.",
+      "communicative_functions": [
+        "Hacer hipótesis y conjeturas",
+        "Relatar sucesos misteriosos",
+        "Expresar grados de seguridad"
+      ],
+      "grammar": [
+        "Algunos usos del futuro simple y del futuro compuesto",
+        "Construcciones en indicativo y en subjuntivo para formular hipótesis",
+        "Creer algo/creerse algo/creer en algo",
+        "Los verbos pensar y recordar"
+      ],
+      "vocabulary_themes": [
+        "Sucesos misteriosos y fenómenos paranormales",
+        "Psicología",
+        "Ciencia"
+      ],
+      "learning_strategies": [
+        "Reflexionar sobre la diferencia de significado entre expresiones parecidas a través de la observación de estas en contextos significativos",
+        "Reflexión sobre el diferente uso de una misma forma",
+        "Deducción de reglas a través de ejemplos de modelo de lengua"
+      ],
+      "cultural_content": [
+        "Las líneas de Nazca",
+        "El surrealismo de Salvador Dalí y Frida Kahlo",
+        "Leyendas de Madrid",
+        "Serie 'El Ministerio del Tiempo'"
+      ]
+    },
+    {
+      "unit_number": 13,
+      "title": "¿Y qué te dijo?",
+      "textbook_ref": "AULA 4 U.8",
+      "overall_goal": "Tomar partido en un conflicto entre dos personas.",
+      "communicative_functions": [
+        "Transmitir órdenes, peticiones y consejos",
+        "Referir lo que han dicho otros en el pasado"
+      ],
+      "grammar": [
+        "Estilo directo e indirecto",
+        "Ir y venir",
+        "Llevar y traer"
+      ],
+      "vocabulary_themes": [
+        "El trabajo",
+        "Estafas, conflictos y reclamaciones",
+        "Discriminación en el mundo laboral"
+      ],
+      "learning_strategies": [
+        "Deducción de la equivalencia de tiempos verbales a través de la observación de un modelo de lengua",
+        "Resumir el contenido de un texto y exponerlo a otra persona",
+        "Reformular frases con estructuras equivalentes"
+      ],
+      "cultural_content": [
+        "Estafas",
+        "Discriminación laboral",
+        "El teletrabajo"
+      ]
+    }
+  ]
+}

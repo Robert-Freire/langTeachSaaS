@@ -1,0 +1,95 @@
+{
+  "level": "C2.4",
+  "cefr_level": "C2",
+  "institution": "Instituto Educativo Español",
+  "source_file": "Contenidos gramaticales por nivel y subnivel.pdf",
+  "notes": "At C2 the source document relabels columns: 'Contenidos lingüísticos' replaces 'Contenidos gramaticales'. Content is mapped to grammar field. 'Tipos de texto y léxico' is mapped to vocabulary_themes.",
+  "exam_prep": null,
+  "units": [
+    {
+      "unit_number": 7,
+      "title": "Locos por la ciencia",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Aclarar y precisar términos científicos y técnicos",
+        "Describir y valorar innovaciones y descubrimientos científicos y técnicos",
+        "Comunicarse a través del chat, SMS, …"
+      ],
+      "grammar": [
+        "Prefijación",
+        "Marcadores del discurso: reformuladores explícitos",
+        "Características de la conversación tecnológica en la Red",
+        "Oraciones consecutivas con subjuntivo"
+      ],
+      "vocabulary_themes": [
+        "Reportajes sobre temas científicos",
+        "Textos científicos",
+        "Terminología científica",
+        "La conversación tecnológica: el chat",
+        "Mensajes cortos en Internet: el twitter",
+        "Léxico relacionado con la tecnología y la televisión",
+        "Términos relacionados con las redes sociales",
+        "Manual de estilo para la escritura en la Red: textos digitales"
+      ],
+      "learning_strategies": [
+        "Usos de ejemplos para usar palabras",
+        "Selección de palabras clave en un texto",
+        "Utilidad de manuales de estilo",
+        "Reescribir textos reutilizando frases con los términos que presentan dificultad"
+      ],
+      "cultural_content": [
+        "Avances en medicina y en genética",
+        "El papel de las redes sociales",
+        "Historia de la televisión en España",
+        "El papel socializador de la televisión: programas generacionales",
+        "Fundéu (Fundación del Español Urgente)"
+      ]
+    },
+    {
+      "unit_number": 8,
+      "title": "Ley y orden",
+      "textbook_ref": null,
+      "overall_goal": null,
+      "communicative_functions": [
+        "Narrar hechos históricos de manera coloquial",
+        "Responder a consultas formales",
+        "Contraargumentar",
+        "Expresar compromiso"
+      ],
+      "grammar": [
+        "Usos del gerundio",
+        "Características del lenguaje jurídico y administrativo",
+        "Unidades fraseológicas"
+      ],
+      "vocabulary_themes": [
+        "Textos de divulgación histórica",
+        "Enciclopedias electrónicas",
+        "Diccionarios especializados",
+        "Consultas legales (vídeo y web)",
+        "La sentencia judicial",
+        "Léxico relacionado con las formas de gobierno, instituciones, …",
+        "Léxico jurídico y administrativo",
+        "Metonimias de uso común",
+        "Acepciones particulares de términos del lenguaje común en textos de Historia"
+      ],
+      "learning_strategies": [
+        "Relación entre los dos términos de una metonimia",
+        "Búsqueda de ejemplos de uso en la Red",
+        "Uso de diccionarios especializados (monolingües y bilingües)",
+        "Planificación y revisión del proceso de escritura",
+        "Localizar palabras y expresiones sinónimas entre el lenguaje común y el especializado"
+      ],
+      "cultural_content": [
+        "Personajes y momentos importantes en la Historia de España",
+        "Frases célebres del pasado reciente español",
+        "Ramas del Derecho",
+        "Normas de extranjería en España",
+        "La generación NI-NI",
+        "Programas televisivos",
+        "El concurso Tengo una pregunta para usted",
+        "Estudio del CIS: principales problemas de los españoles"
+      ]
+    }
+  ]
+}
