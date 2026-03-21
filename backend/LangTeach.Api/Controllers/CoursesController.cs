@@ -188,6 +188,7 @@ public class CoursesController : ControllerBase
 
         var entryMap = course.Entries.ToDictionary(e => e.Id);
         if (request.OrderedEntryIds.Count != entryMap.Count ||
+            request.OrderedEntryIds.Distinct().Count() != entryMap.Count ||
             request.OrderedEntryIds.Any(eid => !entryMap.ContainsKey(eid)))
             return BadRequest("OrderedEntryIds must contain all entry IDs for this course exactly once.");
 
@@ -287,10 +288,10 @@ public class CoursesController : ControllerBase
             StudentName: student?.Name,
             StudentNativeLanguage: student?.NativeLanguage,
             StudentInterests: student is not null
-                ? JsonSerializer.Deserialize<string[]>(student.Interests) ?? []
+                ? TryDeserializeStringArray(student.Interests)
                 : null,
             StudentGoals: student is not null
-                ? JsonSerializer.Deserialize<string[]>(student.LearningGoals) ?? []
+                ? TryDeserializeStringArray(student.LearningGoals)
                 : null
         );
 
@@ -306,6 +307,12 @@ public class CoursesController : ControllerBase
             c.CreatedAt, c.UpdatedAt,
             c.Entries.OrderBy(e => e.OrderIndex).Select(MapEntryToDto).ToList()
         );
+
+    private static string[] TryDeserializeStringArray(string json)
+    {
+        try { return JsonSerializer.Deserialize<string[]>(json) ?? []; }
+        catch (JsonException) { return []; }
+    }
 
     private static CourseSummaryDto MapToSummary(Course c) =>
         new(

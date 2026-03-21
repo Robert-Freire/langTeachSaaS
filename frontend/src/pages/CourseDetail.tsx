@@ -82,7 +82,7 @@ export default function CourseDetail() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course', id] }),
   })
 
-  const { mutate: doGenerateLesson } = useMutation({
+  const { mutate: doGenerateLesson, isPending: generatingLesson } = useMutation({
     mutationFn: (entryId: string) => generateLessonFromEntry(id!, entryId),
     onSuccess: ({ lessonId }) => {
       queryClient.invalidateQueries({ queryKey: ['course', id] })
@@ -299,7 +299,7 @@ export default function CourseDetail() {
                     size="sm"
                     variant="outline"
                     data-testid={`generate-lesson-${idx}`}
-                    disabled={generatingId === entry.id || entry.status !== 'planned'}
+                    disabled={generatingLesson || entry.status !== 'planned'}
                     onClick={() => {
                       setGeneratingId(entry.id)
                       doGenerateLesson(entry.id)

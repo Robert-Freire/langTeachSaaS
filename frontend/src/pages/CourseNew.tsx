@@ -189,7 +189,7 @@ export default function CourseNew() {
           {/* Session count */}
           <div className="space-y-1.5">
             <Label>Number of sessions</Label>
-            <Select value={sessionCount} onValueChange={v => setSessionCount(v ?? '')}>
+            <Select value={sessionCount} onValueChange={v => setSessionCount(v ?? '10')}>
               <SelectTrigger data-testid="session-count-select">
                 <SelectValue />
               </SelectTrigger>

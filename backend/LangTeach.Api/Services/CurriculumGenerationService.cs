@@ -34,7 +34,9 @@ public class CurriculumGenerationService : ICurriculumGenerationService
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Failed to parse curriculum JSON from AI. Content={Content}", response.Content);
+            var excerpt = response.Content.Length > 200 ? response.Content[..200] + "..." : response.Content;
+            _logger.LogError(ex, "Failed to parse curriculum JSON from AI. ContentLength={Length} Excerpt={Excerpt}",
+                response.Content.Length, excerpt);
             throw new CurriculumGenerationException("AI returned invalid JSON for the curriculum.", ex);
         }
 
@@ -44,7 +46,7 @@ public class CurriculumGenerationService : ICurriculumGenerationService
         return aiEntries.Select((e, i) => new CurriculumEntry
         {
             Id = Guid.NewGuid(),
-            OrderIndex = e.OrderIndex > 0 ? e.OrderIndex : i + 1,
+            OrderIndex = i + 1,
             Topic = e.Topic ?? $"Session {i + 1}",
             GrammarFocus = e.GrammarFocus,
             Competencies = e.Competencies is { Count: > 0 }
