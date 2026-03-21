@@ -1,6 +1,6 @@
 import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import Dashboard from './Dashboard'
@@ -8,6 +8,7 @@ import type { Lesson, LessonListResponse } from '../api/lessons'
 
 const mockGetLessons = vi.fn()
 const mockGetStudents = vi.fn()
+const mockGetCourses = vi.fn()
 
 vi.mock('../api/lessons', () => ({
   getLessons: (...args: unknown[]) => mockGetLessons(...args),
@@ -15,6 +16,10 @@ vi.mock('../api/lessons', () => ({
 
 vi.mock('../api/students', () => ({
   getStudents: (...args: unknown[]) => mockGetStudents(...args),
+}))
+
+vi.mock('../api/courses', () => ({
+  getCourses: (...args: unknown[]) => mockGetCourses(...args),
 }))
 
 const mockNavigate = vi.fn()
@@ -69,6 +74,11 @@ describe('Dashboard', () => {
       totalCount: 1,
     })
     mockGetLessons.mockResolvedValue(makeLessonResponse([]))
+    mockGetCourses.mockResolvedValue([])
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('renders week strip with 7 day columns', async () => {
@@ -190,5 +200,59 @@ describe('Dashboard', () => {
     await userEvent.click(nextBtn)
     // The getLessons should have been called again with new date range
     expect(mockGetLessons).toHaveBeenCalled()
+  })
+
+  describe('loading states', () => {
+    it('shows skeleton while API requests are in-flight', () => {
+      mockGetStudents.mockReturnValue(new Promise(() => {}))
+      mockGetLessons.mockReturnValue(new Promise(() => {}))
+      mockGetCourses.mockReturnValue(new Promise(() => {}))
+
+      renderDashboard()
+      expect(screen.getByTestId('dashboard-skeleton')).toBeInTheDocument()
+      expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
+    })
+
+    it('shows actual content after API responds (not skeleton)', async () => {
+      renderDashboard()
+      await screen.findByText('Dashboard')
+      expect(screen.queryByTestId('dashboard-skeleton')).not.toBeInTheDocument()
+    })
+
+    it('shows empty state (not skeleton) when API returns zero results', async () => {
+      mockGetStudents.mockResolvedValue({ items: [], totalCount: 0 })
+      mockGetLessons.mockResolvedValue(makeLessonResponse([]))
+      mockGetCourses.mockResolvedValue([])
+
+      renderDashboard()
+      await screen.findByText('Dashboard')
+      expect(screen.queryByTestId('dashboard-skeleton')).not.toBeInTheDocument()
+      expect(screen.getByText('Your teaching command center.')).toBeInTheDocument()
+    })
+
+    it('does not show slow-connection message before 5 seconds', () => {
+      vi.useFakeTimers()
+      mockGetStudents.mockReturnValue(new Promise(() => {}))
+      mockGetLessons.mockReturnValue(new Promise(() => {}))
+      mockGetCourses.mockReturnValue(new Promise(() => {}))
+
+      renderDashboard()
+      act(() => { vi.advanceTimersByTime(4999) })
+      expect(screen.queryByTestId('slow-connection-message')).not.toBeInTheDocument()
+      vi.useRealTimers()
+    })
+
+    it('shows slow-connection message after 5 seconds of loading', () => {
+      vi.useFakeTimers()
+      mockGetStudents.mockReturnValue(new Promise(() => {}))
+      mockGetLessons.mockReturnValue(new Promise(() => {}))
+      mockGetCourses.mockReturnValue(new Promise(() => {}))
+
+      renderDashboard()
+      act(() => { vi.advanceTimersByTime(5000) })
+      expect(screen.getByTestId('slow-connection-message')).toBeInTheDocument()
+      expect(screen.getByText(/Still connecting/)).toBeInTheDocument()
+      vi.useRealTimers()
+    })
   })
 })
