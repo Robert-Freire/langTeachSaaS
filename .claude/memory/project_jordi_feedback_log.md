@@ -128,6 +128,23 @@ These are key inputs for Course Planner (issue 98): standardized curricula with 
 
 **Reply sent (2026-03-21):** Emailed Jordi explaining our 3-phase plan for the data (extract into structured JSON, integrate as Course Planner templates, use for grammar-constrained generation). No demo date promised. Issues created: 163 (extraction, P1), 164 (integration, P2), 165 (labels + guardrails, P3).
 
+## Feedback Round 6 (2026-03-21, email reply to whiteboard questions)
+
+Source: Email reply to PM's whiteboard clarification questions. Answered every question inline.
+
+| # | Feedback | Roadmap fit | Status |
+|---|----------|-------------|--------|
+| 31 | **Confirmed digital whiteboard** (not Canva). Likes Preply's because he can upload documents and write on them. Miro doesn't work for him (can't upload materials). | Solo Whiteboard (#174) | **Confirmed** |
+| 32 | **Primary use: during live class.** Uploads materials before class starts (theory, videos, exercises), shares with student, works on it together. | Solo Whiteboard (#174) | **Key workflow detail** |
+| 33 | **Upload + annotate is core**: uploads fill-in-the-blank PDFs, student fills them in on the whiteboard. Also wants video/audio upload and Word-like text writing (not freehand drawing). | Solo Whiteboard (#174) | **Key requirement** |
+| 34 | **Interactive for both**: student also writes/interacts on the whiteboard. | Collaborative Whiteboard (#175, Phase 3) | **Confirms collab is needed eventually** |
+| 35 | **Session persistence is key**: whiteboards from previous days are kept, so teacher can review what was covered in past classes. | Solo Whiteboard (#174) | **Must-have** |
+| 36 | **Preply pain points**: (1) Can't see where student is scrolling. (2) Write mode resets every time, has to re-select from toolbar. | UX improvements over Preply | **Design requirements** |
+
+Raw: `feedback/raw/2026-03-21-jordi-email-round6-whiteboard.txt`
+
+**Course programs confirmation (same date):** Jordi replied "Me parece perfecto!" to our plan for extracting and structuring the curriculum data. No action needed.
+
 ## Open questions for Jordi
 
 - ~~Awaiting: course programs for all levels~~ RECEIVED

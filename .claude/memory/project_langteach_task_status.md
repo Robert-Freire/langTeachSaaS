@@ -9,15 +9,19 @@ type: project
 GitHub Issues is the single source of truth for task tracking (as of 2026-03-19).
 Use `gh issue list` to see current state. Key queries:
 
-- Current sprint: `gh issue list --milestone "Phase 2A: Teacher Workflow"`
+- Current sprint: `gh issue list --milestone "Curriculum & Personalization"`
 - Must-haves: `gh issue list --label "P1:must"`
 - Ready to pick up: `gh issue list --label "qa:ready"`
 
 **Milestones:**
-- Demo 1 (internal): CLOSED (all issues done)
-- Phase 2A: Teacher Workflow (Course Planner, Audio Reflections, Difficulty Tracking, Group Classes, Material Upload) — ACTIVE
-- Phase 2B: Production (onboarding, caching, usage limits, QA agent, CI pipeline)
+- Demo 1 (internal): CLOSED
+- Phase 2A: Teacher Workflow: CLOSED (reorganized 2026-03-21)
+- Curriculum & Personalization: ACTIVE (target Easter April 5, Jordi testing)
+- Solo Whiteboard: NEXT SPRINT (5 sub-issues from #174)
+- Group Classes: FUTURE (#146, #147)
+- Phase 2B: Production (caching, usage limits, CI pipeline)
 - Phase 3: Growth (student portal, evaluation, content library, payments)
+- Backlog (no milestone): polish, tech debt, grammar constraints, guardrails
 
 ## Task Numbering Convention
 Tasks are numbered sequentially within a phase. Branch naming: `task/t<N>-<short-description>`.
@@ -31,12 +35,14 @@ See git history for details. Key completed milestones:
 - Beta Phase 2B (Make It Real): T16-T21 (one-click generation, PDF export, student notes, dashboard v2, brand polish, mobile responsive, regenerate with direction)
 - Demo Sprint: all issues closed, milestone closed
 
-**Active sprint:** Phase 2A: Teacher Workflow (18 open issues)
-- #98 Course/Curriculum Planner (P0)
-- #100 Enhanced Difficulty Tracking (P1)
-- #102 Material Upload (P1)
-- #127 Exercise Correction with Explanation (P1)
-- Audio Reflections (#99) deferred per Jordi's skepticism
+**Active sprint: Curriculum & Personalization** (target Easter April 5)
+- #157 AI-Powered Difficulty Targeting (P1, in progress)
+- #163 Extract curricula JSON (P1, in progress, Ready to Test)
+- #164 Integrate curriculum data as templates (P2, in progress, depends on #163)
+- #150 Filter difficulties by target language (P1, ready)
+- #161 Custom free-text entries for learning goals (P1, done, PR #172 merged)
+- #154 Auto-fill lesson language/level from student (P2, ready)
+- #151 CEFR level mismatch warning (P2, ready)
 
 ## Key Architectural Notes
 - Azure Container Apps (not App Service), North Europe region, SWA in West Europe

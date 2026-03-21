@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuth0 } from '@auth0/auth0-react'
 import { setupAuthInterceptor } from './lib/apiClient'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { OnboardingGuard } from './components/OnboardingGuard'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import AppShell from './components/AppShell'
 import Dashboard from './pages/Dashboard'
@@ -17,6 +18,7 @@ import StudyView from './pages/StudyView'
 import Courses from './pages/Courses'
 import CourseNew from './pages/CourseNew'
 import CourseDetail from './pages/CourseDetail'
+import Onboarding from './pages/Onboarding'
 
 const queryClient = new QueryClient()
 
@@ -40,20 +42,23 @@ export default function App() {
         <BrowserRouter>
           <AuthSetup>
             <Routes>
-              <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/students" element={<Students />} />
-                <Route path="/students/new" element={<StudentForm />} />
-                <Route path="/students/:id/edit" element={<StudentForm />} />
-                <Route path="/students/:id" element={<Navigate to="/students" replace />} />
-                <Route path="/lessons" element={<Lessons />} />
-                <Route path="/lessons/new" element={<LessonNew />} />
-                <Route path="/lessons/:id" element={<LessonEditor />} />
-                <Route path="/lessons/:id/study" element={<StudyView />} />
-                <Route path="/courses" element={<Courses />} />
-                <Route path="/courses/new" element={<CourseNew />} />
-                <Route path="/courses/:id" element={<CourseDetail />} />
+              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+              <Route element={<ProtectedRoute><OnboardingGuard /></ProtectedRoute>}>
+                <Route element={<AppShell />}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/students" element={<Students />} />
+                  <Route path="/students/new" element={<StudentForm />} />
+                  <Route path="/students/:id/edit" element={<StudentForm />} />
+                  <Route path="/students/:id" element={<Navigate to="/students" replace />} />
+                  <Route path="/lessons" element={<Lessons />} />
+                  <Route path="/lessons/new" element={<LessonNew />} />
+                  <Route path="/lessons/:id" element={<LessonEditor />} />
+                  <Route path="/lessons/:id/study" element={<StudyView />} />
+                  <Route path="/courses" element={<Courses />} />
+                  <Route path="/courses/new" element={<CourseNew />} />
+                  <Route path="/courses/:id" element={<CourseDetail />} />
+                </Route>
               </Route>
             </Routes>
           </AuthSetup>

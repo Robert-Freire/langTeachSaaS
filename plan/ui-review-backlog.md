@@ -73,9 +73,28 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 |----------|---------|
 | Minor | Difficulty section "Specific Difficulties" label uses `<Label>` element (renders as `<label>`) but is not associated with any input; semantically should be a heading or `<span>` for accessibility |
 
+### PR #TBD (2026-03-21) — Custom free-text entries (#161)
+
+| Severity | Finding |
+|----------|---------|
+| Important | Edit form skeleton only covers 2 cards (Basic Info + Interests), does not match the full 4-card layout (missing AI Personalization, Notes); causes layout shift on load (pre-existing) |
+| Minor | MultiSelect trigger is a custom-styled button, not shadcn SelectTrigger; slight hover behavior difference (hover:bg-zinc-50 vs ring-based focus) |
+| Minor | Placeholder text inconsistency between combo box ("Search or type custom...") and trigger ("Select or type goals...") and Interests ("Type and press Enter") |
+| Minor | Chip remove X button (h-3 w-3 / 12x12px) is below 44x44px touch target guideline on mobile |
+| Minor | "Add" option uses typographic curly quotes while the rest of the app may use straight quotes |
+
 ## PR #157 - 2026-03-21
 
 - **Important** - Lesson editor mobile: header action buttons may overflow at 375px width (pre-existing, not introduced by this PR)
 - **Important** - Difficulty badge text could clip at narrow content widths; consider adding `title` attribute for hover tooltip
 - **Minor** - No hover state on difficulty badges; could add subtle hover effect or tooltip
 - **Minor** - `[category]` bracket formatting is functional but slightly technical; could use uppercase label or dot prefix
+
+## PR #TBD (task-t150-difficulty-areas-filter) - 2026-03-21
+
+- **Important** | Student Form: weaknesses dropdown overlaps Interests card above (z-index layering)
+- **Important** | Student Form: selected chips not visible without scrolling when multiple weaknesses chosen
+- **Important** | Student Form: language-specific weaknesses persist silently when language is switched (user may not notice stale selections)
+- **Minor** | Student Form: no hint text in dropdown when no language selected ("Select a language to see more options")
+- **Minor** | Student Form: Save button hover state is very subtle (indigo-600 to indigo-700)
+- **Minor** | Student Form: Native Language shows "none" instead of "Not specified" in trigger

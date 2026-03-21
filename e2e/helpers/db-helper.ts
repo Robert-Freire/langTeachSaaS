@@ -78,9 +78,24 @@ export async function approveE2ETestTeacher(): Promise<void> {
     const result = await pool
       .request()
       .input('email', sql.NVarChar, E2E_TEST_EMAIL)
-      .query('UPDATE Teachers SET IsApproved = 1 WHERE Email = @email')
+      .query('UPDATE Teachers SET IsApproved = 1, HasCompletedOnboarding = 1 WHERE Email = @email')
     if (result.rowsAffected[0] === 0) {
       throw new Error(`approveE2ETestTeacher: no teacher found with Email "${E2E_TEST_EMAIL}"`)
+    }
+  } finally {
+    await pool.close()
+  }
+}
+
+export async function approveE2ETestTeacherWithoutOnboarding(): Promise<void> {
+  const pool = await new sql.ConnectionPool(config).connect()
+  try {
+    const result = await pool
+      .request()
+      .input('email', sql.NVarChar, E2E_TEST_EMAIL)
+      .query('UPDATE Teachers SET IsApproved = 1 WHERE Email = @email')
+    if (result.rowsAffected[0] === 0) {
+      throw new Error(`approveE2ETestTeacherWithoutOnboarding: no teacher found with Email "${E2E_TEST_EMAIL}"`)
     }
   } finally {
     await pool.close()
@@ -94,7 +109,7 @@ export async function approveTeacherByAuth0Id(auth0UserId: string): Promise<void
     const result = await pool
       .request()
       .input('auth0UserId', sql.NVarChar, auth0UserId)
-      .query('UPDATE Teachers SET IsApproved = 1 WHERE Auth0UserId = @auth0UserId')
+      .query('UPDATE Teachers SET IsApproved = 1, HasCompletedOnboarding = 1 WHERE Auth0UserId = @auth0UserId')
     if (result.rowsAffected[0] === 0) {
       throw new Error(`approveTeacherByAuth0Id: no teacher found with Auth0UserId "${auth0UserId}"`)
     }

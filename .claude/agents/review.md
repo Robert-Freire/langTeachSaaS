@@ -13,7 +13,8 @@ You are a code reviewer. Your job is to review all changes on the current branch
 1. Run `git diff main...HEAD --stat` to get the list of changed files.
 2. Run `git diff main...HEAD` to get the full diff.
 3. For each changed file, read enough surrounding context to understand the change (use Read with offset/limit, not the entire file unless it's small).
-4. Produce a report using the format below.
+4. Apply the file-type-specific checklists below to each changed file.
+5. Produce a report using the format below.
 
 ## What to check
 
@@ -35,11 +36,66 @@ You are a code reviewer. Your job is to review all changes on the current branch
 - **Naming**: inconsistent with existing codebase conventions
 - **Duplication**: copy-pasted logic that should be extracted (only if 3+ occurrences)
 
-### Out of scope (do NOT flag)
+## File-type-specific checklists
+
+These patterns were derived from analyzing 210 CodeRabbit findings across 42 merged PRs. Apply them to changed files of the matching type.
+
+### Backend (.cs) files
+
+| Severity | Pattern | What to look for |
+|----------|---------|-----------------|
+| Critical | Null-forgiving on JWT claims | `FindFirstValue(...)!` or `.Value!` on claim extraction in controllers. `[Authorize]` validates token presence, not specific claims. |
+| Critical | Delete-before-commit ordering | Storage/blob delete calls that precede `SaveChangesAsync()` in the same method. If the DB commit fails, deleted blobs are unrecoverable. |
+| Critical | Race-prone idempotency guard | `if (!await _db.X.AnyAsync(...)) { _db.X.Add(...) }` without a unique constraint or transaction. Check-then-act is not atomic. |
+| Important | PII in log statements | `_logger.Log*()` calls containing `.Email`, `.Auth0Id`, `.auth0Id`, or full AI response body strings. PII leaks into log aggregators. |
+| Important | Missing `[MaxLength]` on DTO strings | String properties in request DTOs (Create/Update) without `[MaxLength(...)]`. Allows unbounded input that can overflow DB columns. |
+| Important | Missing enum validation | String properties named Level, Type, Direction, Status in request DTOs without `[EnumDataType]` or custom validation. |
+| Important | Missing `[Range]` on pagination | `PageSize` properties in query DTOs without `[Range(1, MAX)]`. Clients can request extreme page sizes. |
+| Important | `JsonDocument` not disposed | `JsonDocument.Parse`/`ParseAsync` without `using` statement or `.Dispose()`. Memory leak. |
+| Important | CancellationToken not propagated | Controller action has `CancellationToken` parameter not passed to service method calls or DB queries. |
+| Important | Cancelled token used in catch block | After catching `OperationCanceledException`, using the same `cancellationToken` for error writes (it's already cancelled). |
+| Important | Unhandled exception in singleton constructor | `JsonSerializer.Deserialize`, file I/O, or network calls in a singleton/DI constructor without try/catch. An exception kills app startup entirely. Log and skip/degrade gracefully. |
+
+### Frontend (.tsx/.ts) files
+
+| Severity | Pattern | What to look for |
+|----------|---------|-----------------|
+| Critical | Double-submit / no loading guard | Mutation trigger buttons (save, generate, delete, export) not disabled by `isPending` or `isLoading` during the mutation. |
+| Critical | `Array.fill()` with object | `Array(n).fill({...})` or `Array(n).fill([...])`. All elements share the same reference; mutating one mutates all. |
+| Important | Missing error state in UI | `useQuery`/`useMutation` hooks where `isError` state is not handled in JSX, or `onError` only calls `console.error` with no user-visible feedback (toast, error message). |
+| Important | Unguarded array index access | `someArray[0].property` without prior `someArray?.length > 0` or null-coalescing check. Crashes on empty arrays. |
+| Important | `useEffect` timer not cleaned up | `setInterval`/`setTimeout` in `useEffect` without a return cleanup function. Memory leak on unmount. |
+| Critical | Unsanitized AI prompt inputs | User-supplied fields interpolated directly into prompt template strings without sanitization. Prompt injection is a real attack vector in an AI-first product. |
+
+### Test (.spec.ts, .test.tsx, .test.ts, Tests.cs) files
+
+| Severity | Pattern | What to look for |
+|----------|---------|-----------------|
+| Important | `beforeAll` with DB mutations | `beforeAll` calling helpers that INSERT/DELETE/reset data that individual tests also mutate. Shared read-only seed data in `beforeAll` is fine; flag shared mutable state. |
+| Important | Cleanup without assertion | afterAll/afterEach delete calls without asserting the deletion succeeded (row count check). |
+| Important | Test name doesn't match behavior | The test name claims to test X but the code tests Y. Common cases: (1) test says "case insensitive" but input uses canonical casing, (2) test says "unknown X" but input fails format validation before reaching the "unknown" logic, (3) test says "submit without X" but never triggers a form submission. The test must exercise the exact condition its name describes. |
+| Minor | Weak assertions | Assertions on shape only (e.g., checking array length > 0 instead of specific content), or tests that never exercise the branch they claim to test. |
+
+### Infrastructure (.bicep) files
+
+| Severity | Pattern | What to look for |
+|----------|---------|-----------------|
+| Important | Missing `@secure()` on secrets | Parameters containing secrets, connection strings, or keys without the `@secure()` decorator. Values will appear in deployment logs. |
+
+### CI/Infra (.yml) files
+
+| Severity | Pattern | What to look for |
+|----------|---------|-----------------|
+| Important | Over-scoped token permissions | `permissions: id-token: write` at workflow-level instead of limited to the specific job that needs it. |
+| Minor | Overly broad build context | Docker build using repo root as context when a subfolder would suffice. |
+
+## Out of scope (do NOT flag)
 - Style preferences (bracket placement, trailing commas)
 - Missing docstrings or comments on self-explanatory code
 - Suggestions to add features or refactor code beyond what changed
 - Performance micro-optimizations without evidence of a problem
+- Plan files (`plan/` directory) or data files (`data/` directory) content quality
+- Markdown formatting issues
 
 ## Report format
 
