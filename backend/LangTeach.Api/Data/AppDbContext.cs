@@ -15,6 +15,8 @@ public class AppDbContext : DbContext
     public DbSet<LessonSection> LessonSections => Set<LessonSection>();
     public DbSet<LessonContentBlock> LessonContentBlocks => Set<LessonContentBlock>();
     public DbSet<LessonNote> LessonNotes => Set<LessonNote>();
+    public DbSet<Course> Courses => Set<Course>();
+    public DbSet<CurriculumEntry> CurriculumEntries => Set<CurriculumEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -109,6 +111,41 @@ public class AppDbContext : DbContext
              .WithMany()
              .HasForeignKey(n => n.TeacherId)
              .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        // Course — cascade delete from Teacher, set null from Student
+        modelBuilder.Entity<Course>(e =>
+        {
+            e.HasKey(c => c.Id);
+            e.HasIndex(c => new { c.TeacherId, c.IsDeleted });
+            e.HasOne(c => c.Teacher)
+             .WithMany(t => t.Courses)
+             .HasForeignKey(c => c.TeacherId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(c => c.Student)
+             .WithMany(s => s.Courses)
+             .HasForeignKey(c => c.StudentId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.Property(c => c.IsDeleted).HasDefaultValue(false);
+            e.Property(c => c.Mode).HasDefaultValue("general");
+        });
+
+        // CurriculumEntry — cascade delete from Course, no-action from Lesson (nullable)
+        modelBuilder.Entity<CurriculumEntry>(e =>
+        {
+            e.HasKey(ce => ce.Id);
+            e.HasIndex(ce => ce.CourseId);
+            e.HasOne(ce => ce.Course)
+             .WithMany(c => c.Entries)
+             .HasForeignKey(ce => ce.CourseId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(ce => ce.Lesson)
+             .WithMany()
+             .HasForeignKey(ce => ce.LessonId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.Property(ce => ce.Status).HasDefaultValue("planned");
         });
 
         // LessonContentBlock — cascade delete from Lesson, no-action from LessonSection (nullable)

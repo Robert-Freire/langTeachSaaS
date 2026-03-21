@@ -7,9 +7,10 @@
 Before starting any task:
 1. `git fetch origin && git checkout main && git pull origin main`
 2. `EnterWorktree` with `name: "task-t<N>-<short-description>"` (e.g. `task-t21-export-pdf`)
-3. Write the task plan, run `/review-plan`, iterate until READY
-4. Implement, test, commit, push, open PR (all from inside the worktree)
-5. After the PR is merged, exit and remove the worktree with `ExitWorktree(action: "remove")`
+3. Write the task plan **inside the worktree** at `plan/langteach-beta/task<N>-<short-description>.md` — never write plan files to the main repo directory
+4. Run `/review-plan`, iterate until READY
+5. Implement, test, commit, push, open PR (all from inside the worktree)
+6. After the PR is merged, exit and remove the worktree with `ExitWorktree(action: "remove")`
 
 Never work directly in the main repo directory for task work (including planning).
 
@@ -42,6 +43,8 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 - Work from GitHub Issues, highest priority (`P0` > `P1` > `P2`) in the current milestone
 - An issue must have the `qa:ready` label before implementation starts
 - Use `gh issue list --milestone "<milestone>" --label "qa:ready"` to find ready work
+- **Skip already-assigned issues** — only pick issues with no assignee. Check the `assignees` field in the list output, or filter with `gh issue list ... --assignee ""` (no assignee)
+- **Immediately self-assign the issue when you pick it** (before worktree, before plan): `gh issue edit <number> --add-assignee "@me"` — this signals to other agents that the issue is taken
 
 **Closing issues via PR:**
 - PR body must include `Closes #N` to auto-close the issue on merge
