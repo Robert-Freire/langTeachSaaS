@@ -166,15 +166,21 @@ test('wrong exercise answer shows correct answer and AI explanation', async ({ b
     // Answer fill-in-blank incorrectly
     await student.getByTestId('fib-input-0').fill('go')
 
+    // Answer multiple choice incorrectly (select 'sad' which is wrong, 'glad' is correct)
+    await student.getByTestId('mc-option-0-0').check()
+
     // Check answers
     await student.getByTestId('check-answers-btn').click()
 
-    // Correct answer is shown
+    // FIB: correct answer and explanation shown
     await expect(student.getByTestId('fib-result-0')).toHaveText('✗ went', { timeout: UI_TIMEOUT })
-
-    // AI explanation is shown
     await expect(student.getByTestId('fib-explanation-0')).toBeVisible({ timeout: UI_TIMEOUT })
     await expect(student.getByTestId('fib-explanation-0')).toContainText('past simple', { timeout: UI_TIMEOUT })
+
+    // MC: correct answer and explanation shown
+    await expect(student.getByTestId('mc-result-0')).toContainText('✗ Answer: glad', { timeout: UI_TIMEOUT })
+    await expect(student.getByTestId('mc-explanation-0')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(student.getByTestId('mc-explanation-0')).toContainText('Glad', { timeout: UI_TIMEOUT })
   } finally {
     await context.close()
   }
