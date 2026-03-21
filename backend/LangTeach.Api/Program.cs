@@ -125,6 +125,7 @@ builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<ILessonNoteService, LessonNoteService>();
 builder.Services.AddScoped<ICurriculumGenerationService, CurriculumGenerationService>();
+builder.Services.AddSingleton<ICurriculumTemplateService, CurriculumTemplateService>();
 
 QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddScoped<IPdfExportService, PdfExportService>();

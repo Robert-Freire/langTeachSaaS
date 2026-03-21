@@ -8,9 +8,9 @@ Before starting any task:
 1. `git fetch origin && git checkout main && git pull origin main`
 2. `EnterWorktree` with `name: "task-t<N>-<short-description>"` (e.g. `task-t21-export-pdf`)
 3. Write the task plan **inside the worktree** at `plan/langteach-beta/task<N>-<short-description>.md` — never write plan files to the main repo directory
-4. Run `/review-plan`. If the reviewer says NEEDS REVISION:
+4. Run the `review-plan` agent (use the Agent tool with `subagent_type: "review-plan"`, NOT the `/review-plan` skill). Always use agents for all review steps to keep context clean. If the reviewer says NEEDS REVISION:
    - Critically evaluate each finding: is it valid given the codebase and project context, or is the reviewer being overly cautious / missing context?
-   - Fix findings you agree with, update the plan, and re-run `/review-plan`
+   - Fix findings you agree with, update the plan, and re-run the `review-plan` agent
    - For findings you disagree with, note your reasoning in the plan and proceed
    - Only stop and escalate to the user if the reviewer and you fundamentally disagree on approach (e.g., architectural direction, scope interpretation) after 2 review rounds
 5. Implement, test, commit, push, open PR (all from inside the worktree)
@@ -47,6 +47,8 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 - Work from GitHub Issues, highest priority (`P0` > `P1` > `P2`) in the current milestone
 - An issue must have the `qa:ready` label before implementation starts
 - **Never hardcode or guess milestone names.** Always query first: `gh milestone list --state open --json title` and use the exact title from the output. Milestone names change between sprints.
+- **Check the active sprint in `.claude/memory/project_langteach_task_status.md`** to know which milestone is current. Only pick issues from the active sprint milestone.
+- **If the issue's milestone does not match the active sprint: STOP and ask the user for confirmation before proceeding.** Do not silently pick work from other milestones. Explain which milestone the issue belongs to and why you're considering it (e.g., "no unassigned issues left in the active sprint").
 - Use `gh issue list --milestone "<milestone>" --label "qa:ready"` to find ready work
 - **Skip already-assigned issues** — only pick issues with no assignee. Check the `assignees` field in the list output, or filter with `gh issue list ... --assignee ""` (no assignee)
 - **Immediately self-assign the issue when you pick it** (before worktree, before plan): `gh issue edit <number> --add-assignee "@me"` — this signals to other agents that the issue is taken
@@ -66,6 +68,10 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 - Area: `area:frontend`, `area:backend`, `area:e2e`, `area:infra`, `area:design`, `area:ai` (stackable)
 - Type: `type:polish`, `type:tech-debt`
 - Workflow: `qa:ready`, `demo-sprint`
+
+## Review Tools: Always Use Agents
+
+All review steps (`review-plan`, `qa-verify`, `review`, `review-ui`) must be invoked as **agents** (via the Agent tool with the appropriate `subagent_type`), never as skills or slash commands. This keeps the main context window clean and prevents review output from consuming token budget. The `/qa` skill is the only exception (it's for interactive issue review with the user, not part of the task completion pipeline).
 
 ## Task Completion Protocol
 

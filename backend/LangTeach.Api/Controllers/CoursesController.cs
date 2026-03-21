@@ -18,17 +18,20 @@ public class CoursesController : ControllerBase
 {
     private readonly IProfileService _profileService;
     private readonly ICurriculumGenerationService _curriculumService;
+    private readonly ICurriculumTemplateService _templateService;
     private readonly AppDbContext _db;
     private readonly ILogger<CoursesController> _logger;
 
     public CoursesController(
         IProfileService profileService,
         ICurriculumGenerationService curriculumService,
+        ICurriculumTemplateService templateService,
         AppDbContext db,
         ILogger<CoursesController> logger)
     {
         _profileService = profileService;
         _curriculumService = curriculumService;
+        _templateService = templateService;
         _db = db;
         _logger = logger;
     }
@@ -75,17 +78,49 @@ public class CoursesController : ControllerBase
                 return BadRequest("Invalid StudentId: student not found or does not belong to you.");
         }
 
-        var ctx = BuildCurriculumContext(request, student);
-
         List<CurriculumEntry> entries;
-        try
+        int resolvedSessionCount;
+
+        if (!string.IsNullOrEmpty(request.TemplateLevel))
         {
-            entries = await _curriculumService.GenerateAsync(ctx, ct);
+            if (request.Mode != "general")
+                return BadRequest("TemplateLevel can only be used with mode 'general'.");
+
+            var template = _templateService.GetByLevel(request.TemplateLevel);
+            if (template is null)
+                return BadRequest($"Template '{request.TemplateLevel}' not found.");
+
+            entries = template.Units.Select((u, i) => new CurriculumEntry
+            {
+                Id = Guid.NewGuid(),
+                OrderIndex = i + 1,
+                // Include communicative functions in topic so they surface in the planner view.
+                // Vocabulary themes are shown in the template preview card only (no model field).
+                Topic = u.CommunicativeFunctions.Count > 0
+                    ? $"{u.Title}: {string.Join(", ", u.CommunicativeFunctions.Take(2))}"
+                    : u.Title,
+                GrammarFocus = u.Grammar.Count > 0 ? string.Join(", ", u.Grammar) : null,
+                Competencies = "reading,writing,listening,speaking",
+                LessonType = "Communicative",
+                Status = "planned"
+            }).ToList();
+
+            resolvedSessionCount = entries.Count;
         }
-        catch (CurriculumGenerationException ex)
+        else
         {
-            _logger.LogError(ex, "Curriculum generation failed for TeacherId={TeacherId}", teacherId);
-            return StatusCode(502, new { error = "Curriculum generation failed. Please try again." });
+            // AI generation path; student lookup above is still needed for course.StudentId
+            var ctx = BuildCurriculumContext(request, student);
+            try
+            {
+                entries = await _curriculumService.GenerateAsync(ctx, ct);
+            }
+            catch (CurriculumGenerationException ex)
+            {
+                _logger.LogError(ex, "Curriculum generation failed for TeacherId={TeacherId}", teacherId);
+                return StatusCode(502, new { error = "Curriculum generation failed. Please try again." });
+            }
+            resolvedSessionCount = request.SessionCount;
         }
 
         var now = DateTime.UtcNow;
@@ -101,7 +136,7 @@ public class CoursesController : ControllerBase
             TargetCefrLevel = request.TargetCefrLevel,
             TargetExam = request.TargetExam,
             ExamDate = request.ExamDate,
-            SessionCount = request.SessionCount,
+            SessionCount = resolvedSessionCount,
             CreatedAt = now,
             UpdatedAt = now,
         };

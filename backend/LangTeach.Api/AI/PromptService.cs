@@ -49,6 +49,14 @@ public class PromptService : IPromptService
         sb.AppendLine();
         sb.AppendLine($"Write all examples, sentences, and instructions using vocabulary and grammar appropriate for {cefrLevel}. Do not use structures above this level in examples. Definitions and explanations aimed at the teacher may use higher-level language.");
 
+        if (ctx.GrammarConstraints is { Count: > 0 })
+        {
+            sb.AppendLine();
+            sb.AppendLine($"Target grammar structures for {cefrLevel} (from the course curriculum syllabus). Use only these and lower-level structures in examples:");
+            foreach (var g in ctx.GrammarConstraints)
+                sb.AppendLine($"- {Sanitize(g)}");
+        }
+
         if (ctx.StudentName is not null)
         {
             var interests  = ctx.StudentInterests?.Select(Sanitize).Where(s => s.Length > 0).ToArray() ?? [];
@@ -115,6 +123,11 @@ public class PromptService : IPromptService
             foreach (var name in ctx.MaterialFileNames)
                 sb.AppendLine($"- {Sanitize(name)}");
             sb.AppendLine("Use these materials as source/inspiration for the generated content. Adapt, reference, or build upon them as appropriate for the student's level.");
+        }
+        else
+        {
+            sb.AppendLine();
+            sb.AppendLine("IMPORTANT: All content must be self-contained and work with text alone. Do not reference images, audio clips, videos, physical objects, or any external materials. Every exercise, example, and activity must be completable using only the text provided.");
         }
 
         sb.AppendLine();

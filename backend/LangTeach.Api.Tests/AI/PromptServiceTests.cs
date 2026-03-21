@@ -358,4 +358,70 @@ public class PromptServiceTests
 
         req.SystemPrompt.Should().NotContain("reference materials");
     }
+
+    // --- Grammar constraints ---
+
+    [Fact]
+    public void SystemPrompt_IncludesGrammarConstraints_WhenProvided()
+    {
+        var constraints = new List<string> { "Present simple", "Modal verbs: can/could" };
+        var ctx = BaseCtx() with { GrammarConstraints = constraints };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Target grammar structures");
+        req.SystemPrompt.Should().Contain("Present simple");
+        req.SystemPrompt.Should().Contain("Modal verbs: can/could");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsGrammarConstraints_WhenNotProvided()
+    {
+        var ctx = BaseCtx();
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Target grammar structures");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsGrammarConstraints_WhenListIsEmpty()
+    {
+        var ctx = BaseCtx() with { GrammarConstraints = new List<string>() };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Target grammar structures");
+    }
+
+    // --- No phantom materials constraint ---
+
+    [Fact]
+    public void SystemPrompt_IncludesSelfContainedConstraint_WhenNoMaterials()
+    {
+        var req = _sut.BuildExercisesPrompt(BaseCtx());
+
+        req.SystemPrompt.Should().Contain("self-contained and work with text alone");
+        req.SystemPrompt.Should().Contain("Do not reference images, audio clips, videos, physical objects");
+    }
+
+    [Fact]
+    public void SystemPrompt_IncludesSelfContainedConstraint_WhenMaterialsEmpty()
+    {
+        var ctx = BaseCtx() with { MaterialFileNames = [] };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("self-contained and work with text alone");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsSelfContainedConstraint_WhenMaterialsProvided()
+    {
+        var ctx = BaseCtx() with { MaterialFileNames = ["worksheet.pdf"] };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("self-contained and work with text alone");
+    }
 }
