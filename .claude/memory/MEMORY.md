@@ -1,5 +1,8 @@
 # Memory Index
 
+## Reminders
+- [Pending reminders](..\..\..\..\..\ws\PersonalOS\03_Workspace\langTeachSaaS\.claude\memory\reminders.md) — check this file at the start of /pm sessions and when asked; surface anything due
+
 ## Project
 - [LangTeach SaaS overview](project_langteach_overview.md) — stack, phases, monetization, key files
 - [Task status and next steps](project_langteach_task_status.md) — GitHub Issues is live tracker; historical task tables for reference
@@ -29,7 +32,8 @@
 - [Docker Vite restart after new files](feedback_docker_vite_restart.md) — after adding new frontend files via git (cherry-pick/merge), restart `docker compose restart frontend` before running e2e tests or Vite won't discover the new modules
 - [Frontend unit test requirement](feedback_frontend_unit_tests.md) — any modified frontend component or hook must have a unit test added/updated; Vitest + RTL + msw, tests live next to source files
 - [Critically evaluate PR comments](feedback_critically_evaluate_pr_comments.md) — never blindly fix review comments; assess validity against project context before fixing or declining
-- [Re-run QA after editing a qa:ready issue](feedback_reqa_after_issue_edit.md) — check no implementation started, re-run QA agent after any body edit on a qa:ready issue
+- [Re-run QA after editing a qa:ready issue](feedback_reqa_after_issue_edit.md)
+- [QA agent must read SKILL.md](feedback_qa_agent_use_skill_file.md) — never duplicate QA rules inline; always instruct agent to read .claude/skills/qa/SKILL.md — check no implementation started, re-run QA agent after any body edit on a qa:ready issue
 - [Email check and reply workflow](feedback_email_workflow.md) — when asked to check email: read, analyze, incorporate feedback into memory/plans, reply directly via SMTP
 - [Always save raw feedback](feedback_save_raw_feedback.md) — on any feedback (email, audio, message), save raw text to feedback/raw/ and update person's feedback log
 - [E2E stack coordination](feedback_e2e_stack_coordination.md) — only one e2e stack at a time; check before starting, notify user if busy, never tear down another agent's stack
