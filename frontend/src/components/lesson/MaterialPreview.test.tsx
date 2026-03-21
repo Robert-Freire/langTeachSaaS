@@ -52,9 +52,8 @@ describe('MaterialPreview', () => {
     expect(screen.getByText('5.0 MB')).toBeInTheDocument()
   })
 
-  it('delete button calls delete API after confirmation', async () => {
+  it('delete button shows confirmation dialog and calls API on confirm', async () => {
     mockDeleteMaterial.mockResolvedValue(undefined)
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     renderWithProviders(<MaterialPreview material={imageMaterial} lessonId="l1" sectionId="s1" />)
 
     const deleteBtn = screen.getByTestId('material-delete-btn')
@@ -62,12 +61,19 @@ describe('MaterialPreview', () => {
       await userEvent.click(deleteBtn)
     })
 
-    expect(window.confirm).toHaveBeenCalled()
+    // Confirmation dialog should appear
+    expect(screen.getByText('Delete "photo.jpg"?')).toBeInTheDocument()
+
+    // Click Delete to confirm
+    const confirmBtn = screen.getByTestId('confirm-delete-material')
+    await act(async () => {
+      await userEvent.click(confirmBtn)
+    })
+
     expect(mockDeleteMaterial).toHaveBeenCalledWith('l1', 's1', 'mat-1')
   })
 
-  it('delete button does not call API when confirmation is cancelled', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('delete confirmation dialog Cancel does not call API', async () => {
     renderWithProviders(<MaterialPreview material={imageMaterial} lessonId="l1" sectionId="s1" />)
 
     const deleteBtn = screen.getByTestId('material-delete-btn')
@@ -75,7 +81,12 @@ describe('MaterialPreview', () => {
       await userEvent.click(deleteBtn)
     })
 
-    expect(window.confirm).toHaveBeenCalled()
+    // Click Cancel
+    const cancelBtn = screen.getByRole('button', { name: /cancel/i })
+    await act(async () => {
+      await userEvent.click(cancelBtn)
+    })
+
     expect(mockDeleteMaterial).not.toHaveBeenCalled()
   })
 
@@ -83,5 +94,18 @@ describe('MaterialPreview', () => {
     renderWithProviders(<MaterialPreview material={imageMaterial} lessonId="l1" sectionId="s1" />)
     const downloadBtn = screen.getByTestId('material-download-btn')
     expect(downloadBtn).toHaveAttribute('href', imageMaterial.previewUrl)
+  })
+
+  it('falls back to file icon when image fails to load', () => {
+    renderWithProviders(<MaterialPreview material={imageMaterial} lessonId="l1" sectionId="s1" />)
+    const img = screen.getByTestId('material-thumbnail')
+
+    // Simulate image load error
+    act(() => {
+      img.dispatchEvent(new Event('error'))
+    })
+
+    // Thumbnail should be gone, replaced by file icon
+    expect(screen.queryByTestId('material-thumbnail')).not.toBeInTheDocument()
   })
 })

@@ -55,10 +55,12 @@ test('upload a material, see preview, then delete it', async ({ browser }) => {
   const filename = page.getByTestId('material-filename').first()
   await expect(filename).toHaveText('test-image.png')
 
-  // Delete the material (accept confirmation dialog)
-  page.on('dialog', dialog => dialog.accept())
+  // Delete the material via AlertDialog confirmation
   const deleteBtn = page.getByTestId('material-delete-btn').first()
   await deleteBtn.click()
+  const confirmDeleteBtn = page.getByTestId('confirm-delete-material')
+  await expect(confirmDeleteBtn).toBeVisible({ timeout: 5000 })
+  await confirmDeleteBtn.click()
 
   // Material should disappear
   await expect(thumbnail).not.toBeVisible({ timeout: 10000 })
