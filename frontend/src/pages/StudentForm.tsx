@@ -45,6 +45,7 @@ function MultiSelect({
   placeholder,
   triggerId,
   chipTestId,
+  maxLength,
 }: {
   options: { value: string; label: string }[]
   selected: string[]
@@ -52,8 +53,10 @@ function MultiSelect({
   placeholder: string
   triggerId: string
   chipTestId: string
+  maxLength?: number
 }) {
   const [open, setOpen] = useState(false)
+  const [inputValue, setInputValue] = useState('')
 
   function toggle(value: string) {
     onChange(
@@ -68,6 +71,23 @@ function MultiSelect({
     onChange(selected.filter((v) => v !== value))
   }
 
+  function addCustom() {
+    const trimmed = inputValue.trim()
+    if (!trimmed) return
+    const limited = maxLength ? trimmed.slice(0, maxLength) : trimmed
+    if (!selected.includes(limited)) {
+      onChange([...selected, limited])
+    }
+    setInputValue('')
+  }
+
+  const trimmedInput = inputValue.trim()
+  const matchesPredefined = trimmedInput.length > 0 && options.some(
+    (o) => o.label.toLowerCase() === trimmedInput.toLowerCase()
+  )
+  const alreadySelected = selected.includes(trimmedInput)
+  const showAddCustom = trimmedInput.length > 0 && !matchesPredefined && !alreadySelected
+
   return (
     <div className="space-y-2">
       <Popover open={open} onOpenChange={setOpen}>
@@ -80,27 +100,51 @@ function MultiSelect({
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </PopoverTrigger>
         <PopoverContent className="w-64 p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Search..." />
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder="Search or type custom..."
+              value={inputValue}
+              onValueChange={setInputValue}
+            />
             <CommandList>
-              <CommandEmpty>No options found.</CommandEmpty>
+              {!showAddCustom && options.filter((o) =>
+                !inputValue.trim() || o.label.toLowerCase().includes(inputValue.trim().toLowerCase())
+              ).length === 0 && (
+                <CommandEmpty>No options found.</CommandEmpty>
+              )}
               <CommandGroup>
-                {options.map((opt) => (
-                  <CommandItem
-                    key={opt.value}
-                    value={opt.value}
-                    onSelect={() => toggle(opt.value)}
-                  >
-                    <Check
-                      className={cn(
-                        'mr-2 h-4 w-4',
-                        selected.includes(opt.value) ? 'opacity-100' : 'opacity-0'
-                      )}
-                    />
-                    {opt.label}
-                  </CommandItem>
-                ))}
+                {options
+                  .filter((o) =>
+                    !inputValue.trim() || o.label.toLowerCase().includes(inputValue.trim().toLowerCase())
+                  )
+                  .map((opt) => (
+                    <CommandItem
+                      key={opt.value}
+                      value={opt.value}
+                      onSelect={() => toggle(opt.value)}
+                    >
+                      <Check
+                        className={cn(
+                          'mr-2 h-4 w-4',
+                          selected.includes(opt.value) ? 'opacity-100' : 'opacity-0'
+                        )}
+                      />
+                      {opt.label}
+                    </CommandItem>
+                  ))}
               </CommandGroup>
+              {showAddCustom && (
+                <CommandGroup>
+                  <CommandItem
+                    value={`custom:${trimmedInput}`}
+                    onSelect={addCustom}
+                    data-testid="add-custom-entry"
+                  >
+                    <Plus className="mr-2 h-4 w-4 text-indigo-500" />
+                    Add &ldquo;{trimmedInput}&rdquo;
+                  </CommandItem>
+                </CommandGroup>
+              )}
             </CommandList>
           </Command>
         </PopoverContent>
@@ -441,9 +485,10 @@ export default function StudentForm() {
                 options={LEARNING_GOALS}
                 selected={learningGoals}
                 onChange={setLearningGoals}
-                placeholder="Select goals..."
+                placeholder="Select or type goals..."
                 triggerId="learning-goals-trigger"
                 chipTestId="learning-goal-chip"
+                maxLength={100}
               />
             </div>
 
@@ -454,9 +499,10 @@ export default function StudentForm() {
                 options={WEAKNESSES}
                 selected={weaknesses}
                 onChange={setWeaknesses}
-                placeholder="Select areas..."
+                placeholder="Select or type areas..."
                 triggerId="weaknesses-trigger"
                 chipTestId="weakness-chip"
+                maxLength={200}
               />
             </div>
 
