@@ -116,6 +116,11 @@ public class PromptService : IPromptService
                 sb.AppendLine($"- {Sanitize(name)}");
             sb.AppendLine("Use these materials as source/inspiration for the generated content. Adapt, reference, or build upon them as appropriate for the student's level.");
         }
+        else
+        {
+            sb.AppendLine();
+            sb.AppendLine("IMPORTANT: All content must be self-contained and work with text alone. Do not reference images, audio clips, videos, physical objects, or any external materials. Every exercise, example, and activity must be completable using only the text provided.");
+        }
 
         sb.AppendLine();
         sb.AppendLine("Respond ONLY with valid JSON matching the schema below. No markdown, no prose, no code fences. Start your response with { and end with }.");
