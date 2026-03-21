@@ -27,6 +27,12 @@ When creating a new issue via `gh issue create`, always complete these steps:
    gh project item-edit --project-id PVT_kwHOAF1Pks4BSLsS --id "$item_id" --field-id PVTSSF_lAHOAF1Pks4BSLsSzg_ysiA --single-select-option-id <status_id>
    ```
    Status option IDs: Backlog=7cba4571, Ready=eec9fa45, In Progress=47fc9ee4, In Review=530fcec2, Done=61f69a4c
+4. **Set the T-shirt size** on the project item (required — no size = not qa:ready):
+   ```
+   gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: { projectId: "PVT_kwHOAF1Pks4BSLsS" itemId: "<item_id>" fieldId: "PVTSSF_lAHOAF1Pks4BSLsSzg_7HpU" value: { singleSelectOptionId: "<size_id>" } }) { projectV2Item { id } } }'
+   ```
+   Size field ID: `PVTSSF_lAHOAF1Pks4BSLsSzg_7HpU`
+   Size option IDs: XS=e261fbf6, S=6736aa38, M=5cfbe0a8, L=e072ac0f, XL=2115c351
 
 ### Agent Workflow
 1. Check GitHub Issues for highest-priority unassigned issue in current milestone
@@ -43,6 +49,7 @@ When creating a new issue via `gh issue create`, always complete these steps:
 - Every acceptance criterion must be verifiable
 - Edge cases covered (empty states, errors, mobile)
 - E2e test scenario obvious from criteria
+- **T-shirt size must be set on the project item** (XS/S/M/L/XL) — check via GraphQL or project board. No size = automatic FAIL, do not apply qa:ready.
 - Agent approves or sends back for revision
 
 **Checkpoint 2 — Pre-PR Verification (before pushing):**
