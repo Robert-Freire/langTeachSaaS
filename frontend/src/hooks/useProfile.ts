@@ -3,7 +3,7 @@ import { getProfile, updateProfile, completeOnboarding } from '../api/profileApi
 import type { ProfileDto } from '../types/profile'
 
 export function useProfile() {
-  return useQuery({ queryKey: ['profile'], queryFn: getProfile })
+  return useQuery({ queryKey: ['profile'], queryFn: getProfile, refetchOnWindowFocus: false })
 }
 
 export function useUpdateProfile() {
