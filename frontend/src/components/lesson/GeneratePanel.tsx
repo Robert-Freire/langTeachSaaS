@@ -323,7 +323,7 @@ export function GeneratePanel({
         />
       )}
 
-      {isError && (
+      {isError && !quotaExceeded && (
         <p className="text-xs text-red-600" data-testid="generate-error">{error ?? 'Generation failed.'}</p>
       )}
 
