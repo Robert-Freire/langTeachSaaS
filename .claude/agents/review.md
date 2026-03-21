@@ -46,7 +46,7 @@ These patterns were derived from analyzing 210 CodeRabbit findings across 42 mer
 |----------|---------|-----------------|
 | Critical | Null-forgiving on JWT claims | `FindFirstValue(...)!` or `.Value!` on claim extraction in controllers. `[Authorize]` validates token presence, not specific claims. |
 | Critical | Delete-before-commit ordering | Storage/blob delete calls that precede `SaveChangesAsync()` in the same method. If the DB commit fails, deleted blobs are unrecoverable. |
-| Critical | Race-prone idempotency guard | `if (!await _db.X.AnyAsync(...)) { _db.X.Add(...) }` without a unique constraint or transaction. Check-then-act is not atomic. |
+| Critical | Race-prone idempotency guard | `if (!await _db.X.AnyAsync(...)) { _db.X.Add(...) }` without a unique constraint or transaction. Check-then-act is not atomic. Before flagging, check entity configuration or migrations for a unique index (which makes EF throw `DbUpdateException` on conflict, the idiomatic fix). |
 | Important | PII in log statements | `_logger.Log*()` calls containing `.Email`, `.Auth0Id`, `.auth0Id`, or full AI response body strings. PII leaks into log aggregators. |
 | Important | Missing `[MaxLength]` on DTO strings | String properties in request DTOs (Create/Update) without `[MaxLength(...)]`. Allows unbounded input that can overflow DB columns. |
 | Important | Missing enum validation | String properties named Level, Type, Direction, Status in request DTOs without `[EnumDataType]` or custom validation. |
@@ -64,7 +64,7 @@ These patterns were derived from analyzing 210 CodeRabbit findings across 42 mer
 | Important | Missing error state in UI | `useQuery`/`useMutation` hooks where `isError` state is not handled in JSX, or `onError` only calls `console.error` with no user-visible feedback (toast, error message). |
 | Important | Unguarded array index access | `someArray[0].property` without prior `someArray?.length > 0` or null-coalescing check. Crashes on empty arrays. |
 | Important | `useEffect` timer not cleaned up | `setInterval`/`setTimeout` in `useEffect` without a return cleanup function. Memory leak on unmount. |
-| Critical | Unsanitized AI prompt inputs | User-supplied fields interpolated directly into prompt template strings without sanitization. Prompt injection is a real attack vector in an AI-first product. |
+| Critical | Unsanitized AI prompt inputs | User-supplied fields interpolated into prompt template strings without length limits or escaping. Look for: no `MaxLength` on the input, no stripping of instruction-like markers (e.g., "ignore previous instructions"), or raw multi-line user text injected mid-prompt. Not every interpolation is a bug; flag cases where unbounded user text could hijack prompt structure. |
 
 ### Test (.spec.ts) files
 
@@ -92,7 +92,7 @@ These patterns were derived from analyzing 210 CodeRabbit findings across 42 mer
 - Missing docstrings or comments on self-explanatory code
 - Suggestions to add features or refactor code beyond what changed
 - Performance micro-optimizations without evidence of a problem
-- Plan files (`plan/` directory) or data files (`data/` directory) content quality
+- Prose content quality in plan files (`plan/`) or data files (`data/`). Still review any executable content (SQL, scripts, config) in these directories.
 - Markdown formatting issues
 
 ## Report format
