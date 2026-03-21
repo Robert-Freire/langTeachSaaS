@@ -98,3 +98,12 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 - **Minor** | Student Form: no hint text in dropdown when no language selected ("Select a language to see more options")
 - **Minor** | Student Form: Save button hover state is very subtle (indigo-600 to indigo-700)
 - **Minor** | Student Form: Native Language shows "none" instead of "Not specified" in trigger
+
+### PR #TBD (2026-03-21) — Usage Limits (#105)
+
+| Severity | Finding |
+|----------|---------|
+| Minor | UsageIndicator progress bar at 0% is invisible (width: 0%); consider minimum 2% fill for affordance |
+| Minor | UsageIndicator progress bar track `h-1.5` (6px) is very thin on high-DPI; consider `h-2` (8px) |
+| Minor | No visual separator between UsageIndicator and user avatar section in sidebar footer |
+| Minor | Lesson editor mobile header action buttons crowd at 375px (pre-existing, not introduced by this PR) |
