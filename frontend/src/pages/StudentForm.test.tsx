@@ -399,4 +399,30 @@ describe('StudentForm', () => {
     const chip = await screen.findByTestId('weakness-chip')
     expect(chip).toHaveTextContent('phrasal verbs')
   })
+
+  it('allows adding a custom free-text weakness', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderNew()
+
+    // Select a language first
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(screen.getByRole('option', { name: 'English' }))
+
+    // Open weaknesses dropdown and type a custom value
+    await user.click(screen.getByTestId('weaknesses-trigger'))
+    const searchInput = screen.getByPlaceholderText('Search...')
+    await user.type(searchInput, 'irregular plurals')
+
+    // Should show the "Add" option for custom entry
+    const addOption = screen.getByTestId('add-custom-option')
+    expect(addOption).toBeInTheDocument()
+
+    // Click to add the custom weakness
+    await user.click(addOption)
+
+    // Should show the custom value as a chip
+    const chip = screen.getByTestId('weakness-chip')
+    expect(chip).toHaveTextContent('irregular plurals')
+  })
 })
