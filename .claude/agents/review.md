@@ -70,7 +70,7 @@ These patterns were derived from analyzing 210 CodeRabbit findings across 42 mer
 
 | Severity | Pattern | What to look for |
 |----------|---------|-----------------|
-| Important | `beforeAll` with DB mutations | `beforeAll` calling helpers that INSERT/DELETE/reset data in e2e specs. Use `beforeEach` for test independence. |
+| Important | `beforeAll` with DB mutations | `beforeAll` calling helpers that INSERT/DELETE/reset data that individual tests also mutate. Shared read-only seed data in `beforeAll` is fine; flag shared mutable state. |
 | Important | Cleanup without assertion | afterAll/afterEach delete calls without asserting the deletion succeeded (row count check). |
 | Minor | Weak assertions | Assertions on shape only (e.g., checking array length > 0 instead of specific content), or tests that never exercise the branch they claim to test. |
 
