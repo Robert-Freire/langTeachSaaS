@@ -72,3 +72,10 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Severity | Finding |
 |----------|---------|
 | Minor | Difficulty section "Specific Difficulties" label uses `<Label>` element (renders as `<label>`) but is not associated with any input; semantically should be a heading or `<span>` for accessibility |
+
+## PR #157 - 2026-03-21
+
+- **Important** - Lesson editor mobile: header action buttons may overflow at 375px width (pre-existing, not introduced by this PR)
+- **Important** - Difficulty badge text could clip at narrow content widths; consider adding `title` attribute for hover tooltip
+- **Minor** - No hover state on difficulty badges; could add subtle hover effect or tooltip
+- **Minor** - `[category]` bracket formatting is functional but slightly technical; could use uppercase label or dot prefix
