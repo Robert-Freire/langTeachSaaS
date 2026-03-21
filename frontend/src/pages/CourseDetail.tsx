@@ -71,9 +71,9 @@ export default function CourseDetail() {
   const { mutate: doUpdateEntry, isPending: updatingEntry } = useMutation({
     mutationFn: ({ entryId, req }: { entryId: string; req: { topic: string; grammarFocus?: string; competencies?: string; lessonType?: string } }) =>
       updateCurriculumEntry(id!, entryId, req),
-    onSuccess: () => {
+    onSuccess: (_data, { entryId }) => {
       queryClient.invalidateQueries({ queryKey: ['course', id] })
-      setEditingId(null)
+      setEditingId(current => (current === entryId ? null : current))
     },
   })
 
