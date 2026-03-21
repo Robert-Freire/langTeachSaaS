@@ -199,15 +199,23 @@ public class MaterialService : IMaterialService
                 _logger.LogWarning(
                     "Skipping material {MaterialId} ({FileName}, {SizeBytes} bytes): total size cap of {MaxBytes} bytes would be exceeded.",
                     m.Id, m.FileName, m.SizeBytes, MaxTotalMaterialBytes);
-                continue;
+                break;
             }
 
-            await using var stream = await _blobStorage.DownloadAsync(m.BlobPath, cancellationToken);
-            using var ms = new MemoryStream();
-            await stream.CopyToAsync(ms, cancellationToken);
+            try
+            {
+                await using var stream = await _blobStorage.DownloadAsync(m.BlobPath, cancellationToken);
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms, cancellationToken);
 
-            result.Add(new MaterialContent(m.FileName, m.ContentType, ms.ToArray()));
-            totalSize += m.SizeBytes;
+                result.Add(new MaterialContent(m.FileName, m.ContentType, ms.ToArray()));
+                totalSize += m.SizeBytes;
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to download blob {BlobPath} for material {MaterialId}. Skipping.", m.BlobPath, m.Id);
+            }
         }
 
         return result;

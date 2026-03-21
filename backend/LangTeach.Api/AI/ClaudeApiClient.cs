@@ -123,23 +123,12 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
             var contentParts = new List<object>();
             foreach (var att in request.Attachments)
             {
-                var base64 = Convert.ToBase64String(att.Data);
-                if (att.MediaType == "application/pdf")
+                var blockType = att.MediaType == "application/pdf" ? "document" : "image";
+                contentParts.Add(new
                 {
-                    contentParts.Add(new
-                    {
-                        type = "document",
-                        source = new { type = "base64", media_type = att.MediaType, data = base64 }
-                    });
-                }
-                else
-                {
-                    contentParts.Add(new
-                    {
-                        type = "image",
-                        source = new { type = "base64", media_type = att.MediaType, data = base64 }
-                    });
-                }
+                    type = blockType,
+                    source = new { type = "base64", media_type = att.MediaType, data = Convert.ToBase64String(att.Data) }
+                });
             }
             contentParts.Add(new { type = "text", text = request.UserPrompt });
 
