@@ -167,6 +167,37 @@ public class PromptServiceTests
         req.SystemPrompt.Should().NotContain("IMPORTANT DIRECTION");
     }
 
+    // --- Vocabulary CEFR level and L1 definitions ---
+
+    [Fact]
+    public void VocabularyPrompt_RequiresCefrLevelOnItems()
+    {
+        var req = _sut.BuildVocabularyPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("B1 level");
+        req.UserPrompt.Should().Contain("do not include words above this CEFR level");
+    }
+
+    [Fact]
+    public void VocabularyPrompt_RequiresL1Definitions_WhenNativeLanguageKnown()
+    {
+        var ctx = BaseCtx("Ana") with { StudentNativeLanguage = "English" };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("translation or gloss in English");
+        req.UserPrompt.Should().Contain("student's native language");
+    }
+
+    [Fact]
+    public void VocabularyPrompt_NoL1Instruction_WhenNativeLanguageNull()
+    {
+        var req = _sut.BuildVocabularyPrompt(BaseCtx());
+
+        req.UserPrompt.Should().NotContain("student's native language");
+        req.UserPrompt.Should().NotContain("translation or gloss in");
+    }
+
     // --- MaxTokens ---
 
     [Fact]

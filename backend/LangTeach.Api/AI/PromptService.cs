@@ -138,13 +138,20 @@ public class PromptService : IPromptService
 
     private static string VocabularyUserPrompt(GenerationContext ctx)
     {
-        var topic = Sanitize(ctx.Topic);
-        var level = Sanitize(ctx.CefrLevel);
-        var seed = Guid.NewGuid().ToString("N")[..8];
+        var topic      = Sanitize(ctx.Topic);
+        var level      = Sanitize(ctx.CefrLevel);
+        var nativeLang = Sanitize(ctx.StudentNativeLanguage);
+        var seed       = Guid.NewGuid().ToString("N")[..8];
+
+        var definitionInstruction = ctx.StudentNativeLanguage is not null
+            ? $"The 'definition' field must be a concise translation or gloss in {nativeLang} (the student's native language), not a definition in the target language."
+            : "The 'definition' field should be a short definition or translation.";
+
         return $$"""
         Generate a vocabulary list for the lesson on "{{topic}}". Return JSON:
         {"items":[{"word":"","definition":"","exampleSentence":""}]}
-        Limit to 10-15 items appropriate for {{level}}.
+        Limit to 10-15 items. All vocabulary items must be at {{level}} level — do not include words above this CEFR level.
+        {{definitionInstruction}}
         Choose a varied and unexpected selection — avoid the most obvious or common words for this topic (seed: {{seed}}).
         """;
     }

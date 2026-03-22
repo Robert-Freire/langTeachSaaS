@@ -4,6 +4,15 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 ---
 
+### PR #238 (2026-03-22) — Fix vocabulary generation (#229)
+
+| Severity | Finding |
+|----------|---------|
+| minor | `VocabularyPrompt_RequiresCefrLevelOnItems` test name overstates — only verifies "B1" literal, not arbitrary levels. Functionally correct, naming only. |
+| minor | Column-alignment whitespace in `VocabularyUserPrompt` (`var topic      =`) — cosmetic. |
+
+---
+
 ### PR (2026-03-21) — Dashboard loading skeletons (#111)
 
 | Severity | Finding |
