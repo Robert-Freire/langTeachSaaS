@@ -233,9 +233,15 @@ Tear down the e2e stack:
 docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
 ```
 
-## Report format
+## Report output
 
-```
+The review produces two outputs: a **full report file** (for humans and backlog) and a **compact summary** (returned to the calling agent). This keeps the caller's context small.
+
+### Step 1: Write the full report to a file
+
+Write the complete report to `e2e/screenshots/review-ui/REPORT.md`:
+
+```markdown
 ## UI Design Review
 
 ### Environment
@@ -247,7 +253,6 @@ docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
 | Page | Desktop | Tablet | Mobile | Key Observations |
 |------|---------|--------|--------|-----------------|
 | Dashboard | screenshot | screenshot | screenshot | <1-line summary> |
-| ... | ... | ... | ... | ... |
 
 ### Critical (design is broken or unusable)
 - [ ] **<page> (<viewport>)** — <what's wrong and why it matters>
@@ -281,16 +286,34 @@ docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
 | Form patterns | Pass/Fail | <observations> |
 
 ### Cross-Page Visual Consistency
-<observations about visual consistency across pages, positive and negative>
+<observations>
 
 ### Strongest Pages
-<which pages look the best and why, so the user knows what "good" looks like in their own app>
+<observations>
 
 ### Verdict
-POLISHED — consistent design, intuitive interactions, ready for users
-GOOD — solid foundation, some visual or UX areas need attention
-NEEDS WORK — significant design inconsistencies or UX friction
+POLISHED / GOOD / NEEDS WORK
 ```
+
+### Step 2: Return a compact summary to the caller
+
+Your **final response** (what the calling agent sees) must be under 1500 characters. Use this format:
+
+```
+VERDICT: POLISHED | GOOD | NEEDS WORK
+FULL REPORT: e2e/screenshots/review-ui/REPORT.md
+
+CRITICAL (<count>):
+- <one-line per finding>
+
+IMPORTANT (<count>):
+- <one-line per finding>
+
+MINOR: <count> findings (see full report)
+UX GUIDELINES: <count> failures (see full report)
+```
+
+If verdict is POLISHED or GOOD with zero critical/important findings, the summary is just 3 lines. The caller reads the full report file only if it needs to populate the backlog.
 
 ## Windows / Git Bash: path mangling
 
