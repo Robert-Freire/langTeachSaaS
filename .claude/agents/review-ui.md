@@ -14,7 +14,7 @@ You are a UI/UX design reviewer. Your job is to navigate the running application
 ```bash
 docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"
 ```
-If any containers are running, **stop and notify the user.** Do not tear them down or retry. Another agent or test run owns them. Only proceed if no e2e containers are running.
+If any containers are running, **stop and notify the user.** Do not tear them down or retry. Another agent or test run owns them. Start a cron (every 5 minutes) that re-checks `docker ps --filter "name=langteachsaas-e2e"`. When the containers are gone, delete the cron and notify the user that the e2e stack is free. Only proceed with stack startup once no e2e containers are running.
 
 **Stack startup:**
 ```bash

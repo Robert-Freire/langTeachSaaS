@@ -35,7 +35,11 @@ The e2e stack (`docker-compose.e2e.yml`) uses mock auth and fixed ports. It can 
 ```bash
 docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"
 ```
-- If containers are running: **stop and notify the user.** Do not tear them down, do not retry. Another agent or test run owns them.
+- If containers are running: **stop and notify the user.** Do not tear them down, do not retry. Another agent or test run owns them. Then start a cron that checks every 5 minutes whether the e2e stack has been freed:
+  ```bash
+  docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"
+  ```
+  When the containers are gone, the cron deletes itself and notifies the user that the e2e stack is now available so the agent can proceed with UI review or e2e tests.
 - If no containers are running: proceed.
 
 **Starting the stack:**
