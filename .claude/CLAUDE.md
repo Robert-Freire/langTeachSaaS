@@ -113,6 +113,11 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 - **Skip already-assigned issues** — only pick issues with no assignee. Check the `assignees` field in the list output, or filter with `gh issue list ... --assignee ""` (no assignee)
 - **Immediately self-assign the issue when you pick it** (before worktree, before plan): `gh issue edit <number> --add-assignee "@me"` — this signals to other agents that the issue is taken
 
+**Adding issues to the project board:**
+- Every new issue must be added to the board with a status. **Never use `gh project item-add` directly** (it leaves items in "No Status").
+- Use the helper script: `./scripts/add-to-board.sh <issue-url> [status]`
+- Status values: `backlog` (default), `ready`, `in-progress`, `ready-to-test`, `done`
+
 **Closing issues via PR:**
 - PR body must include `Closes #N` to auto-close the issue on merge
 - Apply appropriate area/type labels when creating issues
