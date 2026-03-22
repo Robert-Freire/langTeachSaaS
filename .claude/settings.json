@@ -1,23 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Read(path:C:/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
-      "Read(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
-      "Read(path:C:/ws/PersonalOS/03_Workspace/langTeachSaaS)",
-      "Read(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS)",
-      "Grep(path:C:/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
-      "Grep(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
-      "Grep(path:C:/ws/PersonalOS/03_Workspace/langTeachSaaS)",
-      "Grep(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS)",
-      "Glob(path:C:/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
-      "Glob(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
-      "Glob(path:C:/ws/PersonalOS/03_Workspace/langTeachSaaS)",
-      "Glob(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS)",
+      "Read(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Bash(*)",
+      "WebSearch(*)",
+      "WebFetch(*)",
+      "NotebookEdit(*)",
       "Write(path:C:/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
       "Write(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
       "Edit(path:C:/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
-      "Edit(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
-      "Bash(*)"
+      "Edit(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)"
     ],
     "deny": [
       "Bash(git push *main*)",
