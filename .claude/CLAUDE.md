@@ -131,7 +131,7 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 
 ## Review Tools: Always Use Agents
 
-All review steps (`review-plan`, `qa-verify`, `review`, `review-ui`) must be invoked as **agents** (via the Agent tool with the appropriate `subagent_type`), never as skills or slash commands. This keeps the main context window clean and prevents review output from consuming token budget. The `/qa` skill is the only exception (it's for interactive issue review with the user, not part of the task completion pipeline).
+All review steps (`review-plan`, `qa-verify`, `review`, `architecture-reviewer`, `review-ui`) must be invoked as **agents** (via the Agent tool with the appropriate `subagent_type`), never as skills or slash commands. This keeps the main context window clean and prevents review output from consuming token budget. The `/qa` skill is the only exception (it's for interactive issue review with the user, not part of the task completion pipeline).
 
 ## Task Completion Protocol
 
@@ -142,10 +142,12 @@ When a task is marked complete:
    - If verdict is **FAIL**: address unmet criteria or missing tests, re-commit, re-run checks and QA.
    - If verdict is **PASS WITH GAPS**: add missing test coverage, re-commit, re-run checks and QA.
    - If verdict is **PASS**: proceed to code review.
-4. Run the `review` agent to perform a code review of all changes vs the sprint branch.
-   - If verdict is **FAIL**: fix all critical issues, re-commit, re-run checks and review.
-   - If verdict is **PASS WITH NOTES**: address important items where reasonable, then proceed. Append any unfixed notes to `plan/code-review-backlog.md` with PR number, date, severity, and description.
-   - If verdict is **PASS**: proceed to UI review (or push if not applicable).
+4. Run the `review` agent and the `architecture-reviewer` agent **in parallel** (send both Agent tool calls in the same message). They have different lenses and do not depend on each other.
+   - `review` verdict **FAIL**: fix all critical issues, re-commit, re-run checks and review.
+   - `review` verdict **PASS WITH NOTES**: address important items where reasonable, then proceed. Append any unfixed notes to `plan/code-review-backlog.md` with PR number, date, severity, and description.
+   - `architecture-reviewer` verdict **NEEDS REVISION**: fix pattern violations and convention breaks, re-commit, re-run checks, and re-run the architecture reviewer.
+   - `architecture-reviewer` verdict **PASS WITH NOTES**: address items where reasonable, then proceed. Minor notes not worth fixing go to `plan/code-review-backlog.md`.
+   - Both at **PASS** or **PASS WITH NOTES** (after addressing or logging notes): proceed to UI review (or push if not applicable).
 5. **UI Review (review-ui agent):** Skip this step ONLY if the issue has NONE of these labels: `area:frontend`, `area:design`. If the issue has `area:frontend` OR `area:design` (either one is sufficient), you MUST run `review-ui`. **`area:frontend` alone triggers UI review. You do NOT need `area:design`.** Never ask the user whether to skip UI review; if the label is present, run it.
    - The review-ui agent manages its own e2e stack (`docker-compose.e2e.yml`). Do NOT start the dev stack for UI review. The agent handles stack startup and teardown automatically.
    - In the agent prompt, list the specific routes and screens the feature modified so the agent runs in **focused review mode** (screenshots of changed screens + regression check on dashboard/lesson editor). Example prompt: *"Review UI for lesson editor header redesign. Changed screens: /lessons/:id (editor view), /lessons/:id/study (study view). The header layout and metadata section were restructured."*
