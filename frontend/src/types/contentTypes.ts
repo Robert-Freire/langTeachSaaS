@@ -202,7 +202,14 @@ export function coerceGrammarContent(v: unknown): GrammarContent | null {
   const unwrapped = unwrapWrapper(obj, isGrammarContent)
   if (unwrapped) return unwrapped
 
-  // Rename near-match fields
+  // Only attempt field remapping if at least one recognized key is present
+  const hasRecognizedField =
+    obj.title != null || obj.heading != null || obj.name != null ||
+    obj.explanation != null || obj.description != null || obj.summary != null ||
+    Array.isArray(obj.examples) || Array.isArray(obj.commonMistakes) ||
+    Array.isArray(obj.mistakes) || Array.isArray(obj.errors)
+  if (!hasRecognizedField) return null
+
   const candidate: Record<string, unknown> = {
     title: obj.title ?? obj.heading ?? obj.name ?? '',
     explanation: obj.explanation ?? obj.description ?? obj.summary ?? '',
@@ -225,7 +232,13 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
   const unwrapped = unwrapWrapper(obj, isExercisesContent)
   if (unwrapped) return unwrapped
 
-  // Fill missing arrays with []
+  // Only attempt to fill missing arrays if at least one recognized key is present
+  const hasRecognizedField =
+    Array.isArray(obj.fillInBlank) || Array.isArray(obj.fill_in_blank) ||
+    Array.isArray(obj.multipleChoice) || Array.isArray(obj.multiple_choice) ||
+    Array.isArray(obj.matching)
+  if (!hasRecognizedField) return null
+
   const candidate = {
     fillInBlank: Array.isArray(obj.fillInBlank) ? obj.fillInBlank
       : Array.isArray(obj.fill_in_blank) ? obj.fill_in_blank
