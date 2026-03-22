@@ -109,7 +109,7 @@ export function ContentBlock({
   }
 
   const renderer = getRenderer(block.blockType)
-  const parsedContent = useMemo(() => {
+  const { parsedContent, isIncomplete } = useMemo(() => {
     const trimmed = value.trim()
     const candidates: string[] = [trimmed]
     for (const m of trimmed.matchAll(/```json\s*\n?([\s\S]*?)\n?```/gi)) {
@@ -121,10 +121,17 @@ export function ContentBlock({
     const openMatch = trimmed.match(/```(?:json)?\s*\n([\s\S]+)$/i)
     if (openMatch) candidates.push(openMatch[1].trim())
     for (const candidate of candidates) {
-      try { return JSON.parse(candidate) } catch { /* try next */ }
+      try {
+        const parsed = JSON.parse(candidate)
+        const coerced = renderer.coerce ? renderer.coerce(parsed) : parsed
+        return { parsedContent: coerced ?? parsed, isIncomplete: false }
+      } catch { /* try next */ }
     }
-    return null
-  }, [value])
+    // Detect truncated JSON: starts like JSON but never closed
+    const looksLikeJson = /^\s*[{[]/.test(trimmed)
+    const isTruncated = looksLikeJson && !trimmed.match(/[}\]]\s*$/)
+    return { parsedContent: null, isIncomplete: isTruncated }
+  }, [value, renderer])
 
   return (
     <div
@@ -176,6 +183,8 @@ export function ContentBlock({
               setValue(newRaw)
               if (actionError) setActionError(null)
             }}
+            onRegenerate={handleRegenerate}
+            isIncomplete={isIncomplete}
           />
         )}
         {mode === 'preview' && (

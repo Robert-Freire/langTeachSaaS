@@ -11,6 +11,8 @@ export interface EditorProps {
   rawContent: string
   parsedContent: unknown
   onChange: (newRaw: string) => void
+  onRegenerate?: () => void
+  isIncomplete?: boolean
 }
 
 export interface PreviewProps {
@@ -27,6 +29,7 @@ export interface ContentRenderer {
   Editor: React.ComponentType<EditorProps>
   Preview: React.ComponentType<PreviewProps>
   Student: React.ComponentType<StudentProps>
+  coerce?: (v: unknown) => unknown
 }
 
 const registry: Partial<Record<ContentBlockType, ContentRenderer>> = {

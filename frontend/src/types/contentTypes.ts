@@ -141,3 +141,175 @@ export function isHomeworkContent(v: unknown): v is HomeworkContent {
 export function isLessonPlanContent(v: unknown): v is LessonPlanContent {
   return typeof v === 'object' && v !== null && 'sections' in v && 'objectives' in v
 }
+
+// ─── Coerce functions ─────────────────────────────────────────────────────────
+// Each coerce function attempts to normalise common AI schema mismatches into the
+// expected shape. Returns the coerced value if it passes the type guard, or null.
+
+/** Unwrap the first nested object value that matches the type guard. */
+function unwrapWrapper<T>(obj: Record<string, unknown>, guard: (v: unknown) => v is T): T | null {
+  for (const key of Object.keys(obj)) {
+    const child = obj[key]
+    if (typeof child === 'object' && child !== null && guard(child)) return child as T
+  }
+  return null
+}
+
+function normalizeVocabularyItems(arr: unknown[]): VocabularyContent | null {
+  const items = arr
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .map((item) => ({
+      word: String(item.word ?? item.term ?? item.target ?? ''),
+      definition: String(item.definition ?? item.meaning ?? item.translation ?? ''),
+      exampleSentence: item.exampleSentence != null ? String(item.exampleSentence)
+        : item.example != null ? String(item.example)
+        : item.sentence != null ? String(item.sentence)
+        : undefined,
+    }))
+  const candidate = { items }
+  return isVocabularyContent(candidate) ? candidate : null
+}
+
+export function coerceVocabularyContent(v: unknown): VocabularyContent | null {
+  if (typeof v !== 'object' || v === null) {
+    if (Array.isArray(v)) return normalizeVocabularyItems(v)
+    return null
+  }
+  const obj = v as Record<string, unknown>
+
+  // Unwrap extra wrapper key: { vocabulary: { items: [...] } }
+  if (!Array.isArray(v)) {
+    for (const key of Object.keys(obj)) {
+      const child = obj[key]
+      if (typeof child === 'object' && child !== null && !Array.isArray(child)) {
+        const result = coerceVocabularyContent(child)
+        if (result) return result
+      }
+    }
+  }
+
+  // Array directly -> normalize
+  if (Array.isArray(v)) return normalizeVocabularyItems(v)
+
+  // Object with items array -> normalize items (handles field renames + valid schemas)
+  if (Array.isArray(obj.items)) return normalizeVocabularyItems(obj.items)
+
+  return null
+}
+
+export function coerceGrammarContent(v: unknown): GrammarContent | null {
+  if (isGrammarContent(v)) return v
+  if (typeof v !== 'object' || v === null) return null
+  const obj = v as Record<string, unknown>
+
+  // Unwrap extra wrapper key
+  const unwrapped = unwrapWrapper(obj, isGrammarContent)
+  if (unwrapped) return unwrapped
+
+  // Rename near-match fields
+  const candidate: Record<string, unknown> = {
+    title: obj.title ?? obj.heading ?? obj.name ?? '',
+    explanation: obj.explanation ?? obj.description ?? obj.summary ?? '',
+    examples: Array.isArray(obj.examples) ? obj.examples : [],
+    commonMistakes: Array.isArray(obj.commonMistakes) ? obj.commonMistakes
+      : Array.isArray(obj.mistakes) ? obj.mistakes
+      : Array.isArray(obj.errors) ? obj.errors
+      : [],
+  }
+  if (isGrammarContent(candidate)) return candidate as GrammarContent
+  return null
+}
+
+export function coerceExercisesContent(v: unknown): ExercisesContent | null {
+  if (isExercisesContent(v)) return v
+  if (typeof v !== 'object' || v === null) return null
+  const obj = v as Record<string, unknown>
+
+  // Unwrap extra wrapper key
+  const unwrapped = unwrapWrapper(obj, isExercisesContent)
+  if (unwrapped) return unwrapped
+
+  // Fill missing arrays with []
+  const candidate = {
+    fillInBlank: Array.isArray(obj.fillInBlank) ? obj.fillInBlank
+      : Array.isArray(obj.fill_in_blank) ? obj.fill_in_blank
+      : [],
+    multipleChoice: Array.isArray(obj.multipleChoice) ? obj.multipleChoice
+      : Array.isArray(obj.multiple_choice) ? obj.multiple_choice
+      : [],
+    matching: Array.isArray(obj.matching) ? obj.matching : [],
+  }
+  if (isExercisesContent(candidate)) return candidate
+  return null
+}
+
+export function coerceConversationContent(v: unknown): ConversationContent | null {
+  if (isConversationContent(v)) return v
+  if (typeof v !== 'object' || v === null) return null
+  const obj = v as Record<string, unknown>
+
+  // Unwrap extra wrapper key
+  const unwrapped = unwrapWrapper(obj, isConversationContent)
+  if (unwrapped) return unwrapped
+
+  // Array directly -> wrap as scenarios
+  if (Array.isArray(v)) {
+    const candidate = { scenarios: v }
+    if (isConversationContent(candidate)) return candidate
+  }
+
+  // Single scenario object -> wrap in array
+  if ('setup' in obj || 'roleA' in obj) {
+    const candidate = { scenarios: [obj] }
+    if (isConversationContent(candidate)) return candidate
+  }
+
+  return null
+}
+
+export function coerceReadingContent(v: unknown): ReadingContent | null {
+  if (typeof v !== 'object' || v === null) return null
+  const obj = v as Record<string, unknown>
+
+  if (isReadingContent(v)) {
+    // Fill missing arrays
+    return {
+      passage: String(obj.passage ?? ''),
+      comprehensionQuestions: Array.isArray(obj.comprehensionQuestions) ? obj.comprehensionQuestions as ReadingQuestion[] : [],
+      vocabularyHighlights: Array.isArray(obj.vocabularyHighlights) ? obj.vocabularyHighlights as ReadingVocabHighlight[] : [],
+    }
+  }
+
+  // Unwrap extra wrapper key
+  const unwrapped = unwrapWrapper(obj, isReadingContent)
+  if (unwrapped) return coerceReadingContent(unwrapped)
+
+  // Has passage field
+  if (typeof obj.passage === 'string') {
+    return {
+      passage: obj.passage,
+      comprehensionQuestions: Array.isArray(obj.comprehensionQuestions) ? obj.comprehensionQuestions as ReadingQuestion[] : [],
+      vocabularyHighlights: Array.isArray(obj.vocabularyHighlights) ? obj.vocabularyHighlights as ReadingVocabHighlight[] : [],
+    }
+  }
+
+  return null
+}
+
+export function coerceHomeworkContent(v: unknown): HomeworkContent | null {
+  if (isHomeworkContent(v)) return v
+  if (typeof v !== 'object' || v === null) return null
+  const obj = v as Record<string, unknown>
+
+  // Unwrap extra wrapper key
+  const unwrapped = unwrapWrapper(obj, isHomeworkContent)
+  if (unwrapped) return unwrapped
+
+  // Array directly -> wrap as tasks
+  if (Array.isArray(v)) {
+    const candidate = { tasks: v }
+    if (isHomeworkContent(candidate)) return candidate
+  }
+
+  return null
+}
