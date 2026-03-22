@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { BookOpen, MessageSquare, FileText, PenLine, GraduationCap, Plus, ArrowLeft } from 'lucide-react'
@@ -43,6 +43,13 @@ export default function LessonNew() {
   const [studentId, setStudentId] = useState<string | undefined>(searchParams.get('studentId') ?? undefined)
   const [scheduledAt, setScheduledAt] = useState(searchParams.get('scheduledAt') ?? '')
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [autoFilled, setAutoFilled] = useState<'language' | 'level' | 'both' | null>(null)
+
+  useEffect(() => {
+    if (!autoFilled) return
+    const t = setTimeout(() => setAutoFilled(null), 2000)
+    return () => clearTimeout(t)
+  }, [autoFilled])
 
   const { data: templates, isLoading: templatesLoading, isError: templatesError, refetch: refetchTemplates } = useQuery({
     queryKey: ['lesson-templates'],
@@ -77,6 +84,27 @@ export default function LessonNew() {
   })
 
   const students = studentsData?.items ?? []
+
+  function handleStudentChange(value: string | null) {
+    const id = !value || value === 'none' ? undefined : value
+    setStudentId(id)
+
+    if (!id) return
+
+    // students list is from query cache; find returns undefined if query hasn't resolved yet — auto-fill silently skips in that case
+    const student = students.find(s => s.id === id)
+    if (!student) return
+
+    const willFillLanguage = !!student.learningLanguage
+    const willFillLevel = !!student.cefrLevel
+
+    if (willFillLanguage) setLanguage(student.learningLanguage)
+    if (willFillLevel) setCefrLevel(student.cefrLevel)
+
+    if (willFillLanguage && willFillLevel) setAutoFilled('both')
+    else if (willFillLanguage) setAutoFilled('language')
+    else if (willFillLevel) setAutoFilled('level')
+  }
 
   const isFormValid = title.trim() && language && cefrLevel && topic.trim()
 
@@ -178,11 +206,34 @@ export default function LessonNew() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {(students.length > 0 || !!studentId) && (
+            <div className="space-y-2">
+              <Label htmlFor="student">Link Student (optional)</Label>
+              <Select value={studentId ?? 'none'} onValueChange={handleStudentChange}>
+                <SelectTrigger id="student" data-testid="select-student">
+                  {studentId
+                    ? <span>{students.find(s => s.id === studentId)?.name}</span>
+                    : <span className="text-muted-foreground">No student linked</span>}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No student</SelectItem>
+                  {students.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="language">Language <span className="text-red-500">*</span></Label>
               <Select value={language} onValueChange={(v) => setLanguage(v ?? '')}>
-                <SelectTrigger id="language" data-testid="select-language">
+                <SelectTrigger
+                  id="language"
+                  data-testid="select-language"
+                  className={cn((autoFilled === 'language' || autoFilled === 'both') && 'ring-2 ring-indigo-400 transition-all')}
+                >
                   <SelectValue placeholder="Select language" />
                 </SelectTrigger>
                 <SelectContent>
@@ -194,7 +245,11 @@ export default function LessonNew() {
             <div className="space-y-2">
               <Label htmlFor="cefr">CEFR Level <span className="text-red-500">*</span></Label>
               <Select value={cefrLevel} onValueChange={(v) => setCefrLevel(v ?? '')}>
-                <SelectTrigger id="cefr" data-testid="select-level">
+                <SelectTrigger
+                  id="cefr"
+                  data-testid="select-level"
+                  className={cn((autoFilled === 'level' || autoFilled === 'both') && 'ring-2 ring-indigo-400 transition-all')}
+                >
                   <SelectValue placeholder="Select level" />
                 </SelectTrigger>
                 <SelectContent>
@@ -247,25 +302,6 @@ export default function LessonNew() {
               data-testid="input-objectives"
             />
           </div>
-
-          {students.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="student">Link Student (optional)</Label>
-              <Select value={studentId ?? 'none'} onValueChange={(v) => setStudentId(!v || v === 'none' ? undefined : v)}>
-                <SelectTrigger id="student" data-testid="select-student">
-                  {studentId
-                    ? <span>{students.find(s => s.id === studentId)?.name}</span>
-                    : <SelectValue placeholder="No student linked" />}
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No student</SelectItem>
-                  {students.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           {submitError && (
             <p className="text-sm text-red-600" data-testid="submit-error">{submitError}</p>

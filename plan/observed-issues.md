@@ -5,3 +5,5 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | Source issue | Date | Severity | Observation |
 |-------------|------|----------|-------------|
 | #198 | 2026-03-22 | Minor | `StudentForm.test.tsx` "shows English-specific weaknesses when English is selected" is flaky on the sprint branch (fails on `getByRole('option', { name: 'English' })`) despite PR #209 fixing a different test in the same file; may need `findByRole` fix for this test case too |
+| #154 | 2026-03-22 | Minor | NativeLanguage selector in StudentForm shows "none" instead of "Not specified" in the closed trigger (same root cause as the "No student" fix in this PR) |
+| #154 | 2026-03-22 | Minor | LessonNew step 2 uses a custom header layout (ArrowLeft icon + h1) instead of the PageHeader component used by every other sub-page, creating visual inconsistency between step 1 and step 2 |

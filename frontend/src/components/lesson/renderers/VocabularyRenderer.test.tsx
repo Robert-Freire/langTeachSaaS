@@ -75,9 +75,57 @@ describe('VocabularyRenderer.Editor', () => {
     expect(last.items[0].word).toBe('arrival')
   })
 
-  it('falls back to raw textarea when parsedContent does not match schema', () => {
+  it('shows friendly error instead of raw textarea when parsedContent does not match schema', () => {
     render(<VocabularyRenderer.Editor rawContent="not valid" parsedContent="a string" onChange={vi.fn()} />)
-    expect(screen.getByRole('textbox')).toHaveValue('not valid')
+    expect(screen.getByText(/unexpected format/i)).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
+
+  it('calls onRegenerate from friendly error when Regenerate is clicked', async () => {
+    const onRegenerate = vi.fn()
+    render(<VocabularyRenderer.Editor rawContent="bad" parsedContent={null} onChange={vi.fn()} onRegenerate={onRegenerate} />)
+    await userEvent.click(screen.getByTestId('parse-error-regenerate-btn'))
+    expect(onRegenerate).toHaveBeenCalledOnce()
+  })
+})
+
+describe('VocabularyRenderer.Preview (coerce regression)', () => {
+  it('still shows ContentParseError when coerce returns null', () => {
+    render(<VocabularyRenderer.Preview rawContent="{}" parsedContent={null} />)
+    expect(screen.getByText(/could not be parsed/)).toBeInTheDocument()
+  })
+})
+
+describe('VocabularyRenderer.Student (coerce regression)', () => {
+  it('still shows student ContentParseError when coerce returns null', () => {
+    render(<VocabularyRenderer.Student rawContent="{}" parsedContent={null} />)
+    expect(screen.getByText(/could not be loaded/)).toBeInTheDocument()
+  })
+})
+
+describe('VocabularyRenderer coerce', () => {
+  it('coerces wrapped schema { vocabulary: { items } }', () => {
+    const wrapped = { vocabulary: { items: [{ word: 'museo', definition: 'museum' }] } }
+    const result = VocabularyRenderer.coerce(wrapped)
+    expect(result).toEqual({ items: [{ word: 'museo', definition: 'museum', exampleSentence: undefined }] })
+  })
+
+  it('coerces array input to { items }', () => {
+    const arr = [{ word: 'casa', definition: 'house' }]
+    const result = VocabularyRenderer.coerce(arr)
+    expect((result as { items: unknown[] }).items).toHaveLength(1)
+  })
+
+  it('coerces near-match field names (term -> word, example -> exampleSentence)', () => {
+    const mismatched = { items: [{ term: 'gato', definition: 'cat', example: 'El gato duerme.' }] }
+    const result = VocabularyRenderer.coerce(mismatched) as { items: { word: string; exampleSentence: string }[] }
+    expect(result.items[0].word).toBe('gato')
+    expect(result.items[0].exampleSentence).toBe('El gato duerme.')
+  })
+
+  it('returns null for completely unrecognised input', () => {
+    expect(VocabularyRenderer.coerce(42)).toBeNull()
+    expect(VocabularyRenderer.coerce(null)).toBeNull()
   })
 })
 
