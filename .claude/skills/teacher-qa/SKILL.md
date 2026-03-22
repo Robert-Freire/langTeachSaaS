@@ -1,6 +1,6 @@
 ---
 name: teacher-qa
-description: "Run the Teacher QA agent against the sprint branch. Evaluates AI-generated lesson content for pedagogical quality using real Auth0 and real Claude API. Args: full | ana-a1 | marco-b1 | sprint"
+description: "Run the Teacher QA agent against the sprint branch. Evaluates AI-generated lesson content for pedagogical quality using real Auth0 and real Claude API. Args: full | ana-a1 | marco-b1 | carmen | ana-exam | sprint"
 model: claude-opus-4-6
 ---
 
@@ -24,16 +24,41 @@ Before the first run, Robert must create the dedicated QA user in Auth0:
    ```
 6. Also in Auth0: verify "Allow Skipping User Consent" is enabled on the LangTeach API to avoid the consent screen on first login
 
-The QA user is a real teacher account. Their students (Emma, Luca) and lessons persist across runs — they are NOT cleaned up by e2e test teardown.
+The QA user is a real teacher account. Their students and lessons persist across runs — they are NOT cleaned up by e2e test teardown.
+
+---
+
+## One-Time QA User Onboarding
+
+**This setup must be completed before any teacher-qa test run.** The QA user hits the OnboardingGuard on first login and is redirected to `/onboarding`. The auth helper will throw a clear error if onboarding has not been completed.
+
+Steps:
+1. Ensure `.env.qa` is set up and the QA stack is running:
+   ```bash
+   docker compose -f docker-compose.qa.yml --env-file .env.qa up -d --build
+   ```
+2. Open a browser and navigate to `http://localhost:5175`
+3. Log in with the `TEACHER_QA_EMAIL` and `TEACHER_QA_PASSWORD` from `.env.qa`
+4. Complete the 3-step onboarding wizard:
+   - **Step 1 (Profile):** Display name "QA Teacher", teaching language Spanish, any style preference
+   - **Step 2 (Student):** Create any student (e.g., "QA First Student")
+   - **Step 3 (Lesson):** Create any lesson (e.g., "QA First Lesson")
+5. After completing onboarding, the QA user's profile is saved in the database and subsequent runs will skip onboarding automatically.
+
+**Note:** Onboarding data persists in the database volume. It survives stack restarts (`docker compose down` without `-v`). Only `docker compose down -v` destroys the volume and would require re-onboarding.
+
+**If the auth helper throws "QA user has not been onboarded":** complete the above steps before retrying.
 
 ---
 
 ## Argument Parsing
 
-- **No args / `full`**: run all implemented personas (currently: Ana A1.1, Marco B1.1)
-- **`ana-a1`**: run only the Ana persona (A1.1, Conversation, English L1)
+- **No args / `full`**: run all 5 personas (Ana A1.1, Marco B1.1, Carmen B2.1, Ana Exam Prep, Sprint Reviewer)
+- **`ana-a1`**: run only the Ana A1.1 persona (Conversation, English L1)
 - **`marco-b1`**: run only the Marco persona (B1.1, Grammar, Italian L1)
-- **`sprint`**: run the Sprint Reviewer persona (Persona 5 — implemented in issue #201)
+- **`carmen`**: run only the Carmen persona (B2.1, Reading, English L1)
+- **`ana-exam`**: run only the Ana Exam Prep persona (B2.1, Exam Prep, English L1, DELE focus)
+- **`sprint`**: run the Sprint Reviewer persona only (dynamic scenario from sprint issues)
 
 ---
 
@@ -88,9 +113,42 @@ cd .claude/skills/teacher-qa/playwright && QA_BRANCH=$(git rev-parse --abbrev-re
 cd .claude/skills/teacher-qa/playwright && QA_BRANCH=$(git rev-parse --abbrev-ref HEAD) npx playwright test tests/marco-b1.spec.ts --config playwright.config.ts
 ```
 
+**Carmen B2.1:**
+```bash
+cd .claude/skills/teacher-qa/playwright && QA_BRANCH=$(git rev-parse --abbrev-ref HEAD) npx playwright test tests/carmen-b2.spec.ts --config playwright.config.ts
+```
+
+**Ana Exam Prep (B2.1, DELE):**
+```bash
+cd .claude/skills/teacher-qa/playwright && QA_BRANCH=$(git rev-parse --abbrev-ref HEAD) npx playwright test tests/ana-exam-b2.spec.ts --config playwright.config.ts
+```
+
+**Sprint Reviewer (run this before other specs when arg is `sprint` or `full`):**
+
+First, fetch the sprint issues. Never hardcode the milestone name — query first:
+```bash
+MILESTONE=$(gh milestone list --state open --json title --jq '.[0].title')
+echo "Active milestone: $MILESTONE"
+CLOSED_ISSUES=$(gh issue list --milestone "$MILESTONE" --state closed --json number,title,labels | jq -c .)
+READY_ISSUES=$(gh issue list --milestone "$MILESTONE" --label "qa:ready" --json number,title,labels | jq -c .)
+```
+
+Analyze the issues. Select 3-5 features that work together (e.g., AI difficulty targeting + curriculum templates + language/level autofill). Choose a topic and template that exercises those features in combination:
+- Pick a topic and template that triggers those features when a lesson is generated
+- Set `QA_SPRINT_TOPIC` to a short description of the combined scenario
+
+Then run:
+```bash
+cd .claude/skills/teacher-qa/playwright && \
+  QA_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
+  QA_SPRINT_TOPIC="<chosen topic>" \
+  QA_SPRINT_ISSUES_JSON="$(echo $CLOSED_ISSUES $READY_ISSUES | jq -cs 'add')" \
+  npx playwright test tests/sprint-reviewer.spec.ts --config playwright.config.ts
+```
+
 Each test saves its output to `.claude/skills/teacher-qa/output/<persona>-<timestamp>/`:
 - `lesson-content.json` — all sections and blocks as structured JSON
-- `run-metadata.json` — lesson ID, student ID, generation time, branch
+- `run-metadata.json` — lesson ID, student ID, generation time, branch, sprint issues (for sprint reviewer)
 - `lesson-editor.png` — screenshot of the lesson editor
 - `student-view.png` — screenshot of the student view (if available)
 
@@ -106,6 +164,8 @@ Read `lesson-content.json` and `run-metadata.json` from the output directory.
 Also load the relevant curriculum JSON for CEFR alignment:
 - A1.1 persona: read `data/curricula/iberia/A1.1.json`
 - B1.1 persona: read `data/curricula/iberia/B1.1.json`
+- B2.1 persona (Carmen, Ana Exam): read `data/curricula/iberia/B2.1.json`
+- Sprint Reviewer: read the curriculum for the level used (B1.1 by default)
 
 ### Step 5: Evaluate Against Rubric
 
@@ -145,6 +205,30 @@ docker compose -f docker-compose.qa.yml --env-file .env.qa down -v
 - **Lesson**: Grammar template, topic "ser vs estar in context"
 - **Curriculum scope (B1.1)**: contrasting ser/estar in present and past. Italian L1 key test: Italian "essere" covers both ser and estar, so L1 interference is strong.
 - **Expected**: exercises targeting ser/estar specifically, L1 interference notes, B1-appropriate difficulty, no C1 structures
+
+### Persona 3: Carmen (B2.1, Reading, English L1)
+
+- **Teacher**: Carmen — teaches Spanish to English speakers at advanced level
+- **Student**: [QA] James, B2.1, native English, interests: politics, literature, weakness: subjunctive mood
+- **Lesson**: Reading template, topic "The Spanish political system"
+- **Curriculum scope (B2.1)**: complex texts, subjunctive in subordinate clauses, formal register, political and cultural vocabulary. L1 English key test: false cognates in formal register (e.g., "realizar" vs "realize").
+- **Expected**: authentic-feeling text passage, B2-depth comprehension questions (inference, text structure, vocabulary in context), subjunctive in reading examples if natural, challenging but not C1
+
+### Persona 4: Ana Exam Prep (B2.1, Exam Prep, English L1, DELE focus)
+
+- **Teacher**: Ana — exam prep specialist
+- **Student**: [QA] Tom, B2.1, native English, preparing for DELE B2, weakness: formal register and timed writing
+- **Lesson**: Exam Prep template, topic "DELE B2 reading comprehension practice"
+- **Curriculum scope (B2.1)**: DELE B2 format — reading a 400-600 word text, answering multiple choice and short answer, time awareness. Note: the app uses granular B2.1, not flat "B2", so evaluate as B2.1 level.
+- **Expected**: exam-format exercises (multiple choice, true/false with justification), formal register throughout, timed practice awareness (mention of time limits), no "fun activities" — this is exam prep
+
+### Persona 5: Sprint Reviewer (dynamic)
+
+- **Teacher**: N/A — evaluates features rather than one teacher's approach
+- **Student**: [QA] Sprint Tester, B1.1, native English (stable anchor student)
+- **Lesson**: Grammar template, topic from `QA_SPRINT_TOPIC` env var (set by agent before running)
+- **Scope**: exercises the sprint's new features in combination, not just individual ones
+- **Expected output**: standard rubric evaluation PLUS Sprint Integration Assessment section (see Report Format below)
 
 ---
 
@@ -281,8 +365,18 @@ Write to `output/<persona-dir>/report.md`:
 - student-view.png: [brief description, or "not captured"]
 ```
 
----
+### Additional Section for Sprint Reviewer Only
 
-## Notes for Future Personas
+Append this section to the Sprint Reviewer report after the standard rubric evaluation:
 
-Issues #201 adds Personas 3-5 (Carmen B2.1 Reading, Ana exam prep, Sprint Reviewer). This skill file will be updated when those are implemented. The Sprint Reviewer persona (Persona 5) dynamically reads closed sprint issues to design a targeted integration test scenario — it is NOT included in this version.
+```markdown
+### Sprint Integration Assessment
+
+- **Sprint Issues Tested**: [list issue numbers and titles from run-metadata.json]
+- **Test Scenario**: [what topic and template were chosen, and why they exercise the sprint features]
+- **Feature Coherence**: [do the sprint features work well together? any conflicts or overlaps?]
+- **Workflow Impact**: [do new features improve or complicate the teacher's lesson creation workflow?]
+- **Regression**: [any features from previous sprints that appear broken in this run?]
+- **Missing Pieces**: [gaps that prevent a coherent end-to-end workflow with this sprint's features]
+- **Rating**: COHERENT | FRAGMENTED | NEEDS WORK
+```
