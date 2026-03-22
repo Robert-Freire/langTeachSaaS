@@ -91,6 +91,7 @@ export default function LessonNew() {
 
     if (!id) return
 
+    // students list is from query cache; find returns undefined if query hasn't resolved yet — auto-fill silently skips in that case
     const student = students.find(s => s.id === id)
     if (!student) return
 
@@ -205,7 +206,7 @@ export default function LessonNew() {
             />
           </div>
 
-          {students.length > 0 && (
+          {(students.length > 0 || !!studentId) && (
             <div className="space-y-2">
               <Label htmlFor="student">Link Student (optional)</Label>
               <Select value={studentId ?? 'none'} onValueChange={handleStudentChange}>
@@ -231,7 +232,7 @@ export default function LessonNew() {
                 <SelectTrigger
                   id="language"
                   data-testid="select-language"
-                  className={cn(autoFilled === 'language' || autoFilled === 'both' ? 'ring-2 ring-indigo-400 transition-all' : '')}
+                  className={cn((autoFilled === 'language' || autoFilled === 'both') && 'ring-2 ring-indigo-400 transition-all')}
                 >
                   <SelectValue placeholder="Select language" />
                 </SelectTrigger>
@@ -247,7 +248,7 @@ export default function LessonNew() {
                 <SelectTrigger
                   id="cefr"
                   data-testid="select-level"
-                  className={cn(autoFilled === 'level' || autoFilled === 'both' ? 'ring-2 ring-indigo-400 transition-all' : '')}
+                  className={cn((autoFilled === 'level' || autoFilled === 'both') && 'ring-2 ring-indigo-400 transition-all')}
                 >
                   <SelectValue placeholder="Select level" />
                 </SelectTrigger>

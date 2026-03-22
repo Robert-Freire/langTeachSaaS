@@ -115,6 +115,26 @@ describe('LessonNew', () => {
     expect(screen.getByTestId('select-level').textContent).toContain('B2')
   })
 
+  it('applies highlight ring when overwriting manually-set language and level', async () => {
+    mockGetStudents.mockResolvedValue({ items: [STUDENT_WITH_PROFILE], totalCount: 1 })
+
+    await goToStep2()
+
+    // Manually select language (different from student's profile)
+    await userEvent.click(screen.getByTestId('select-language'))
+    await userEvent.click(await screen.findByRole('option', { name: 'English' }))
+
+    // Now select student — should auto-fill and apply ring highlight
+    await userEvent.click(screen.getByTestId('select-student'))
+    await userEvent.click(await screen.findByRole('option', { name: 'Marco' }))
+
+    // Language should be overwritten with student's value
+    expect(screen.getByTestId('select-language').textContent).toContain('Spanish')
+    // Ring highlight class should be applied on the language trigger
+    const languageTrigger = screen.getByTestId('select-language')
+    expect(languageTrigger.className).toContain('ring-2')
+  })
+
   it('clearing student selection does not clear language and level', async () => {
     mockGetStudents.mockResolvedValue({ items: [STUDENT_WITH_PROFILE], totalCount: 1 })
 
