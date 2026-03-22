@@ -309,10 +309,10 @@ describe('StudentForm', () => {
     await user.type(screen.getByTestId('student-name'), 'Test Student')
     // Select language
     await user.click(screen.getByTestId('student-language'))
-    await user.click(screen.getByRole('option', { name: 'Spanish' }))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
     // Select CEFR
     await user.click(screen.getByTestId('student-cefr'))
-    await user.click(screen.getByRole('option', { name: 'B1' }))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
 
     // Add a difficulty and fill the item text
     await user.click(screen.getByTestId('add-difficulty'))
@@ -336,13 +336,13 @@ describe('StudentForm', () => {
 
     // Select English
     await user.click(screen.getByTestId('student-language'))
-    await user.click(screen.getByRole('option', { name: 'English' }))
+    await user.click(await screen.findByRole('option', { name: 'English' }))
 
     // Open weaknesses dropdown
     await user.click(screen.getByTestId('weaknesses-trigger'))
 
     // Should show English-specific option
-    expect(screen.getByRole('option', { name: 'Phrasal Verbs' })).toBeInTheDocument()
+    expect(await screen.findByRole('option', { name: 'Phrasal Verbs' })).toBeInTheDocument()
     // Should show common option
     expect(screen.getByRole('option', { name: 'Past Tenses' })).toBeInTheDocument()
   })
@@ -371,7 +371,7 @@ describe('StudentForm', () => {
     await user.click(screen.getByTestId('weaknesses-trigger'))
 
     // Should show Spanish-specific option
-    expect(screen.getByRole('option', { name: 'Ser/Estar' })).toBeInTheDocument()
+    expect(await screen.findByRole('option', { name: 'Ser/Estar' })).toBeInTheDocument()
     // Phrasal Verbs should not appear for Spanish
     expect(screen.queryByRole('option', { name: 'Phrasal Verbs' })).not.toBeInTheDocument()
   })
@@ -407,7 +407,7 @@ describe('StudentForm', () => {
 
     // Select a language first
     await user.click(screen.getByTestId('student-language'))
-    await user.click(screen.getByRole('option', { name: 'English' }))
+    await user.click(await screen.findByRole('option', { name: 'English' }))
 
     // Open weaknesses dropdown and type a custom value
     await user.click(screen.getByTestId('weaknesses-trigger'))
