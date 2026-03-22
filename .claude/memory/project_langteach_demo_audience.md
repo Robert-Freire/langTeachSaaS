@@ -1,10 +1,10 @@
 ---
 name: LangTeach demo strategy and audience
-description: Demos are periodic internal quality checkpoints; brother is potential PM but not blocking; continuous development, no waiting for feedback
+description: Demos are periodic internal quality checkpoints; Jordi is first customer (not PM); we show working software, he reacts
 type: project
 ---
 
-## Demo Strategy (updated 2026-03-19)
+## Demo Strategy (updated 2026-03-22)
 
 **Demos are periodic internal quality checkpoints**, not one-off events. Robert stops, walks through the app as a teacher would, finds what's broken, files issues. This is his QA process given the fast pace of development.
 
@@ -12,14 +12,22 @@ type: project
 - **Demo 2+:** Future checkpoints, roughly after major feature milestones (e.g., after Course Planner ships).
 - Milestones in GitHub map to demo checkpoints.
 
-## Brother as PM
+## Jordi as First Customer
 
-Robert's brother Jordi (jordim.freire@gmail.com, language teacher) is the target PM. He has been providing ongoing feedback since 2026-03-18 (voice notes, email). See `project_jordi_feedback_log.md` for the full log.
+Robert's brother Jordi (jordim.freire@gmail.com, language teacher) is the **first customer and pilot user**, not a PM or co-builder. The relationship is: we are a consultancy building a tailored solution for him. He uses the product, tells us what works and what doesn't. We interpret, prioritize, and build.
 
-- Do NOT block development waiting for his feedback.
-- When he eventually sees a live demo (maybe Demo 2 or 3), the app will be stronger.
-- His feedback validated the core product direction and reshaped Phase 2 priorities.
+**What this means in practice:**
+- Never block development waiting for his input. Build from what we already know, show the result.
+- Never send him structured summaries asking for validation. He already told us what he thinks; trust it.
+- When he shares ideas or asks what we think, respond with "here's what we're building based on your input." Show working software, not issue lists.
+- The burden of preparation is always on us, never on him. He's a busy teacher, not a project manager.
+- His feedback is a gift, not a deliverable with a due date.
 - PM bot can email him directly; he knows to reply to robert.freire.bot@gmail.com.
+
+**What we preserve:**
+- Direct access. Having a real teacher to show things to and watch react is gold.
+- The feedback loop. When he shares ideas, we acknowledge and show what we built from them.
+- His materials (course programs, systematization examples) are valuable inputs we use internally.
 
 ## What demos prove
 

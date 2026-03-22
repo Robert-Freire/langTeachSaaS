@@ -8,7 +8,7 @@ type: project
 
 - **Name:** Jordi Freire
 - **Email:** jordim.freire@gmail.com
-- **Role:** Language teacher, Head of Discovery for LangTeach (market research, teacher interviews, feedback gathering)
+- **Role:** Language teacher, first customer and pilot user for LangTeach. NOT a PM or co-builder. We treat him as a client: show working software, collect reactions, build from his input without making him manage our backlog.
 - **Language:** Communicates in Spanish
 
 ## Feedback Round 1 (2026-03-18, voice notes + summary)
@@ -147,10 +147,23 @@ Raw: `feedback/raw/2026-03-21-jordi-email-round6-whiteboard.txt`
 
 **Course programs confirmation (same date):** Jordi replied "Me parece perfecto!" to our plan for extracting and structuring the curriculum data. No action needed.
 
-## Open questions for Jordi
+## Feedback Round 7 (2026-03-22, email reply)
+
+Source: Email reply to "problema detectado en la demo" thread. Attached example PDF.
+
+| # | Feedback | Roadmap fit | Status |
+|---|----------|-------------|--------|
+| 37 | **Content variety over grammar drills**: Exercises shouldn't be grammar-only. Wants to upload photos, artwork, varied materials. Main teaching tool is presentations. "This matters more than grammar exercises that ChatGPT can easily generate." | Phase 2A: Material Upload + Content types expansion | **Strategic signal** |
+| 38 | **Example PDF attached** (`Las_partes_del_dia_y_las_horas_v2.pdf`): AI-generated "parts of the day and hours" document. Visual, presentational style. Has errors but shows the direction he cares about. Needs analysis to understand what "good output" looks like to him. | Content type design input | **Needs analysis** |
+| 39 | **Whiteboard not urgent**: Will keep using Preply's, wants to explore Miro to give better feedback later. | Solo Whiteboard (#174) | **Confirms deprioritization** |
+
+Raw: `feedback/raw/2026-03-22-jordi-email-materials-variety.txt`
+PDF: `feedback/raw/2026-03-22-jordi-pdf-partes-del-dia.pdf`
+
+## Open items (internal, do not chase Jordi)
 
 - ~~Awaiting: course programs for all levels~~ RECEIVED
 - ~~Awaiting: "systematization" PDF example~~ RECEIVED
-- Awaiting: book index photos (mentioned in call, may be covered by grammar content maps)
-- Why did the Gemini infographic have errors? (Could be a concrete use case for our generation quality)
-- What types of games/activities does he use most? (Kahoot-style quiz, word match, fill-in-the-blank race?)
+- Book index photos (mentioned in call, may be covered by grammar content maps). If they arrive, great. If not, we have enough.
+- Gemini infographic errors: potential use case for our generation quality. Observe if he mentions it again.
+- Activity types he uses most: observe from future interactions, don't ask directly.
