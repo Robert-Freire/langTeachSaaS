@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createLesson } from '../../api/lessons'
-import { useCompleteOnboarding } from '../../hooks/useProfile'
 import { type Student } from '../../api/students'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,12 +11,12 @@ import { Badge } from '@/components/ui/badge'
 interface OnboardingStep3Props {
   student: Student
   onBack: () => void
+  onSkip?: () => void
 }
 
-export default function OnboardingStep3({ student, onBack }: OnboardingStep3Props) {
+export default function OnboardingStep3({ student, onBack, onSkip }: OnboardingStep3Props) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { mutateAsync: completeOnboarding } = useCompleteOnboarding()
 
   const [title, setTitle] = useState('')
   const [topic, setTopic] = useState('')
@@ -25,15 +24,9 @@ export default function OnboardingStep3({ student, onBack }: OnboardingStep3Prop
 
   const { mutate, isPending } = useMutation({
     mutationFn: createLesson,
-    onSuccess: async (lesson) => {
+    onSuccess: (lesson) => {
       queryClient.invalidateQueries({ queryKey: ['lessons'] })
       queryClient.invalidateQueries({ queryKey: ['profile'] })
-      try {
-        await completeOnboarding()
-      } catch {
-        // Lesson was created successfully; onboarding flag will be retried on next visit.
-        // Don't block navigation for a non-critical side effect.
-      }
       navigate(`/lessons/${lesson.id}`)
     },
     onError: () => setError('Failed to create lesson. Please try again.'),
@@ -109,9 +102,22 @@ export default function OnboardingStep3({ student, onBack }: OnboardingStep3Prop
         <Button type="button" variant="outline" onClick={onBack} disabled={isPending} data-testid="onboarding-back">
           Back
         </Button>
-        <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700" data-testid="onboarding-next">
-          {isPending ? 'Creating...' : 'Finish & Open Lesson'}
-        </Button>
+        <div className="flex items-center gap-4">
+          {onSkip && (
+            <button
+              type="button"
+              onClick={onSkip}
+              disabled={isPending}
+              className="text-sm text-zinc-600 hover:text-zinc-800 underline underline-offset-2"
+              data-testid="onboarding-skip"
+            >
+              Skip, I'll do this later
+            </button>
+          )}
+          <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700" data-testid="onboarding-next">
+            {isPending ? 'Creating...' : 'Finish & Open Lesson'}
+          </Button>
+        </div>
       </div>
     </form>
   )

@@ -56,6 +56,8 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | Minor | `AppShell.tsx`: no visual separator between UsageIndicator and user avatar section in sidebar. A subtle border or extra padding would improve grouping. |
 | Minor | Lesson editor mobile header: action buttons crowd at 375px width. Could benefit from responsive collapse / "more" menu (pre-existing, not introduced by this PR). |
 
+| #213 | 2026-03-22 | Minor | Duplicated skip button footer JSX in OnboardingStep2.tsx and OnboardingStep3.tsx — consider a shared SkipLink or OnboardingStepFooter component if more steps are added |
+
 ### PR (2026-03-22) — Fix Reading & Comprehension template (#227)
 
 | Severity | Finding |
