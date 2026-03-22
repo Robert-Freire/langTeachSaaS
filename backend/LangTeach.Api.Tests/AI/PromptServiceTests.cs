@@ -404,10 +404,16 @@ public class PromptServiceTests
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
         req.UserPrompt.Should().Contain("Generate a complete lesson plan");
+        req.UserPrompt.Should().Contain("READING & COMPREHENSION TEMPLATE REQUIREMENTS");
         req.UserPrompt.Should().Contain("reading passage");
         req.UserPrompt.Should().Contain("comprehension questions");
         req.UserPrompt.Should().Contain("inferential");
+        req.UserPrompt.Should().Contain("warmUp");
+        req.UserPrompt.Should().Contain("presentation");
+        req.UserPrompt.Should().Contain("practice");
         req.UserPrompt.Should().Contain("production");
+        req.UserPrompt.Should().Contain("wrapUp");
+        req.UserPrompt.Should().Contain("All five sections");
     }
 
     [Fact]
