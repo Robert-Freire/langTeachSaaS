@@ -35,6 +35,28 @@ function renderWithProviders(initialEntries?: string[]) {
   )
 }
 
+const STUDENT_WITH_PROFILE = {
+  id: 'stu-1',
+  name: 'Marco',
+  learningLanguage: 'Spanish',
+  cefrLevel: 'B2',
+  interests: [],
+  notes: null,
+  nativeLanguage: null,
+  learningGoals: [],
+  weaknesses: [],
+  difficulties: [],
+  createdAt: '',
+  updatedAt: '',
+}
+
+async function goToStep2(initialEntries?: string[]) {
+  renderWithProviders(initialEntries)
+  const blankBtn = await screen.findByTestId('template-blank')
+  await userEvent.click(blankBtn)
+  await screen.findByText('Lesson Details')
+}
+
 describe('LessonNew', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -44,44 +66,94 @@ describe('LessonNew', () => {
   })
 
   it('renders the scheduled date picker on step 2', async () => {
-    renderWithProviders()
-
-    // Move to step 2 by clicking blank template
-    const blankBtn = await screen.findByTestId('template-blank')
-    await userEvent.click(blankBtn)
+    await goToStep2()
 
     const datePicker = screen.getByTestId('input-scheduled-at')
     expect(datePicker).toBeInTheDocument()
-    // DateTimePicker renders a popover trigger with placeholder text
     expect(datePicker.textContent).toContain('Pick a date')
   })
 
   it('pre-fills studentId and scheduledAt from URL query params', async () => {
-    mockGetStudents.mockResolvedValue({
-      items: [{ id: 'stu-1', name: 'Marco', learningLanguage: 'English', cefrLevel: 'B1', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], createdAt: '', updatedAt: '' }],
-      totalCount: 1,
-    })
+    mockGetStudents.mockResolvedValue({ items: [STUDENT_WITH_PROFILE], totalCount: 1 })
 
-    renderWithProviders(['/lessons/new?studentId=stu-1&scheduledAt=2026-03-20T10:00'])
+    await goToStep2(['/lessons/new?studentId=stu-1&scheduledAt=2026-03-20T10:00'])
 
-    const blankBtn = await screen.findByTestId('template-blank')
-    await userEvent.click(blankBtn)
-
-    // DateTimePicker should display the formatted date
     const datePicker = screen.getByTestId('input-scheduled-at')
     expect(datePicker.textContent).toContain('2026')
-
-    // Student should be pre-selected (shown in the trigger)
     expect(screen.getByText('Marco')).toBeInTheDocument()
   })
 
   it('renders date picker with placeholder when no date is set', async () => {
-    renderWithProviders()
-
-    const blankBtn = await screen.findByTestId('template-blank')
-    await userEvent.click(blankBtn)
+    await goToStep2()
 
     const datePicker = screen.getByTestId('input-scheduled-at')
     expect(datePicker.textContent).toContain('Pick a date')
+  })
+
+  it('student selector appears before language and level in the DOM', async () => {
+    mockGetStudents.mockResolvedValue({ items: [STUDENT_WITH_PROFILE], totalCount: 1 })
+
+    await goToStep2()
+
+    const studentTrigger = screen.getByTestId('select-student')
+    const languageTrigger = screen.getByTestId('select-language')
+
+    const position = studentTrigger.compareDocumentPosition(languageTrigger)
+    // DOCUMENT_POSITION_FOLLOWING means languageTrigger comes after studentTrigger
+    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('auto-fills language and CEFR level when a student is selected', async () => {
+    mockGetStudents.mockResolvedValue({ items: [STUDENT_WITH_PROFILE], totalCount: 1 })
+
+    await goToStep2()
+
+    await userEvent.click(screen.getByTestId('select-student'))
+    await userEvent.click(await screen.findByRole('option', { name: 'Marco' }))
+
+    expect(screen.getByTestId('select-language').textContent).toContain('Spanish')
+    expect(screen.getByTestId('select-level').textContent).toContain('B2')
+  })
+
+  it('applies highlight ring when overwriting manually-set language and level', async () => {
+    mockGetStudents.mockResolvedValue({ items: [STUDENT_WITH_PROFILE], totalCount: 1 })
+
+    await goToStep2()
+
+    // Manually select language (different from student's profile)
+    await userEvent.click(screen.getByTestId('select-language'))
+    await userEvent.click(await screen.findByRole('option', { name: 'English' }))
+
+    // Now select student — should auto-fill and apply ring highlight
+    await userEvent.click(screen.getByTestId('select-student'))
+    await userEvent.click(await screen.findByRole('option', { name: 'Marco' }))
+
+    // Language should be overwritten with student's value
+    expect(screen.getByTestId('select-language').textContent).toContain('Spanish')
+    // Ring highlight class should be applied on the language trigger
+    const languageTrigger = screen.getByTestId('select-language')
+    expect(languageTrigger.className).toContain('ring-2')
+  })
+
+  it('clearing student selection does not clear language and level', async () => {
+    mockGetStudents.mockResolvedValue({ items: [STUDENT_WITH_PROFILE], totalCount: 1 })
+
+    await goToStep2()
+
+    // Select student to auto-fill
+    await userEvent.click(screen.getByTestId('select-student'))
+    await userEvent.click(await screen.findByRole('option', { name: 'Marco' }))
+
+    // Language and level should be auto-filled
+    expect(screen.getByTestId('select-language').textContent).toContain('Spanish')
+    expect(screen.getByTestId('select-level').textContent).toContain('B2')
+
+    // Clear the student
+    await userEvent.click(screen.getByTestId('select-student'))
+    await userEvent.click(await screen.findByRole('option', { name: 'No student' }))
+
+    // Language and level should still show the auto-filled values
+    expect(screen.getByTestId('select-language').textContent).toContain('Spanish')
+    expect(screen.getByTestId('select-level').textContent).toContain('B2')
   })
 })
