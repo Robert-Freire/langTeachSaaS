@@ -106,6 +106,20 @@ describe('ContentBlock - parsedContent derivation', () => {
 describe('ContentBlock - regenerate', () => {
   beforeEach(() => vi.clearAllMocks())
 
+  it('hides block-level Regenerate button when parsedContent is null (error state)', () => {
+    const block = makeBlock({ generatedContent: 'not json at all', parsedContent: null })
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+      />
+    )
+    expect(screen.queryByTestId('regenerate-btn')).not.toBeInTheDocument()
+  })
+
   it('calls onRegenerate when clicking Regenerate button', async () => {
     const block = makeBlock()
     const onRegenerate = vi.fn()

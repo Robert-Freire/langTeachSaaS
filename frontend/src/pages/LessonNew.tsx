@@ -222,6 +222,9 @@ export default function LessonNew() {
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-zinc-500" data-testid="student-autofill-hint">
+                Selecting a student auto-fills language and level.
+              </p>
             </div>
           )}
 
