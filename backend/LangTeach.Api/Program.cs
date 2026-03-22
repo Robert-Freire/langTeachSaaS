@@ -5,6 +5,7 @@ using LangTeach.Api.Auth;
 using LangTeach.Api.Data;
 using Microsoft.AspNetCore.Authentication;
 using LangTeach.Api.Data.Models;
+using LangTeach.Api.Infrastructure;
 using LangTeach.Api.Services;
 using LangTeach.Api.Services.PdfExport;
 using Microsoft.Extensions.Options;
@@ -42,6 +43,18 @@ if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("
     var kvUri = builder.Configuration["KeyVault:Uri"]
                 ?? throw new InvalidOperationException("KeyVault:Uri is not configured.");
     builder.Configuration.AddAzureKeyVault(new Uri(kvUri), new DefaultAzureCredential());
+
+    // Validate all required config keys after Key Vault is loaded, before any service registration.
+    // This ensures the app fails fast with a clear message instead of crashing mid-startup.
+    StartupConfigValidator.ValidateRequiredConfig(
+        builder.Configuration,
+        [
+            "ConnectionStrings:Default",
+            "Auth0:Domain",
+            "Auth0:Audience",
+            "Claude:ApiKey",
+            "AzureBlobStorage:ConnectionString",
+        ]);
 }
 
 // CORS
@@ -118,7 +131,12 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddSingleton(_ =>
-    new BlobServiceClient(builder.Configuration["AzureBlobStorage:ConnectionString"]));
+{
+    var connStr = builder.Configuration["AzureBlobStorage:ConnectionString"];
+    if (string.IsNullOrWhiteSpace(connStr))
+        throw new InvalidOperationException("AzureBlobStorage:ConnectionString is not configured.");
+    return new BlobServiceClient(connStr);
+});
 builder.Services.AddSingleton<BlobStorageService>();
 builder.Services.AddSingleton<IBlobStorageService>(sp => sp.GetRequiredService<BlobStorageService>());
 builder.Services.AddScoped<IMaterialService, MaterialService>();
