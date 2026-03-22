@@ -139,4 +139,50 @@ test.describe.serial('Onboarding wizard', () => {
     await page.close()
     await context.close()
   })
+
+  test('new user completes step 2 then skips step 3 and lands on dashboard', async ({ browser }) => {
+    await resetE2ETestTeacher()
+
+    const context = await createMockAuthContext(browser)
+    const page = await context.newPage()
+
+    const meResponse = await page.request.get(`${API_BASE}/api/auth/me`, {
+      headers: AUTH_HEADER,
+    })
+    expect(meResponse.ok()).toBeTruthy()
+
+    await approveE2ETestTeacherWithoutOnboarding()
+
+    await page.goto('/')
+    await page.waitForURL('**/onboarding', { timeout: NAV_TIMEOUT })
+
+    // Step 1: complete profile
+    await expect(page.getByTestId('onboarding-step-1')).toBeVisible({ timeout: UI_TIMEOUT })
+    const nameInput = page.getByTestId('onboarding-display-name')
+    await nameInput.clear()
+    await nameInput.fill('Skip Step3 Teacher')
+    await page.locator('button:has-text("English")').first().click()
+    await page.locator('button:has-text("B1")').first().click()
+    await page.getByTestId('onboarding-next').click()
+
+    // Step 2: create student
+    await expect(page.getByTestId('onboarding-step-2')).toBeVisible({ timeout: UI_TIMEOUT })
+    await page.getByTestId('onboarding-student-name').fill('Test Student')
+    await page.getByTestId('onboarding-learning-language').click()
+    await page.getByRole('option', { name: 'English' }).click()
+    await page.getByTestId('onboarding-cefr-level').click()
+    await page.getByRole('option', { name: 'B1' }).click()
+    await page.getByTestId('onboarding-next').click()
+
+    // Step 3: skip lesson creation
+    await expect(page.getByTestId('onboarding-step-3')).toBeVisible({ timeout: UI_TIMEOUT })
+    await page.getByTestId('onboarding-skip').click()
+
+    // Should land on dashboard
+    await page.waitForURL('**/', { timeout: NAV_TIMEOUT })
+    await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: UI_TIMEOUT })
+
+    await page.close()
+    await context.close()
+  })
 })

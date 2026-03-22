@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Onboarding from './Onboarding'
 
 const mockUpdateMutate = vi.fn()
-const mockCompleteMutateAsync = vi.fn()
+const mockCompleteMutateAsync = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('../hooks/useProfile', () => ({
   useProfile: vi.fn(),
@@ -91,7 +91,7 @@ const profileWithStudents = {
 describe('Onboarding', () => {
   beforeEach(() => {
     mockUpdateMutate.mockClear()
-    mockCompleteMutateAsync.mockClear()
+    mockCompleteMutateAsync.mockClear().mockResolvedValue(undefined)
     mockGetStudents.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 1 })
   })
 
@@ -229,8 +229,6 @@ describe('Onboarding', () => {
   })
 
   it('calls completeOnboarding after step 1 profile save', async () => {
-    mockCompleteMutateAsync.mockResolvedValue(undefined)
-
     vi.mocked(useProfile).mockReturnValue({
       data: newUserProfile,
       isLoading: false,
