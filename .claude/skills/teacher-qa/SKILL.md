@@ -133,7 +133,7 @@ docker compose -f docker-compose.qa.yml --env-file .env.qa down -v
 ### Persona 1: Ana (A1.1, Conversation, English L1)
 
 - **Teacher**: Ana — teaches Spanish to English speakers
-- **Student**: Emma, A1.1, native English, interests: travel, food
+- **Student**: [QA] Emma, A1.1, native English, interests: travel, food
 - **Lesson**: Conversation template, topic "ordering at a restaurant"
 - **Curriculum scope (A1.1)**: present tense regular verbs, basic vocabulary (food, numbers, greetings). NO subjunctive, NO complex grammar, NO past tense.
 - **Expected**: vocabulary under 15 items, short dialogues (3-4 exchanges), warm-up is an icebreaker not a drill
@@ -141,7 +141,7 @@ docker compose -f docker-compose.qa.yml --env-file .env.qa down -v
 ### Persona 2: Marco (B1.1, Grammar, Italian L1)
 
 - **Teacher**: Marco — teaches Spanish to Italian speakers
-- **Student**: Luca, B1.1, native Italian, interests: football/movies, weakness: ser/estar confusion
+- **Student**: [QA] Luca, B1.1, native Italian, interests: football/movies, weakness: ser/estar confusion
 - **Lesson**: Grammar template, topic "ser vs estar in context"
 - **Curriculum scope (B1.1)**: contrasting ser/estar in present and past. Italian L1 key test: Italian "essere" covers both ser and estar, so L1 interference is strong.
 - **Expected**: exercises targeting ser/estar specifically, L1 interference notes, B1-appropriate difficulty, no C1 structures

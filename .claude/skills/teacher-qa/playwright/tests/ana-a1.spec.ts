@@ -1,8 +1,11 @@
 /**
  * Ana Persona — A1.1 Spanish teacher, English L1 student
  *
- * Teacher: Ana. Student: Emma. Level: A1.1. L1: English.
+ * Teacher: Ana. Student: [QA] Emma. Level: A1.1. L1: English.
  * Template: Conversation. Topic: "ordering at a restaurant"
+ *
+ * Student names use [QA] prefix to prevent collisions with manually created
+ * students in the persistent QA database.
  *
  * Run via SKILL.md agent or directly:
  *   npx playwright test tests/ana-a1.spec.ts --config playwright.config.ts
@@ -17,13 +20,14 @@ import {
   extractLessonContent,
   screenshotTeacherView,
   screenshotStudentView,
+  screenshotPdfExport,
   saveRunOutput,
 } from '../helpers/navigation'
 
 const PERSONA = {
   name: 'Ana',
   student: {
-    name: 'Emma',
+    name: '[QA] Emma',
     language: 'Spanish',
     cefrLevel: 'A1.1',
     nativeLanguage: 'English',
@@ -48,7 +52,7 @@ test('Ana A1.1 — create student, generate lesson, capture output', async ({ br
   const context = await createQAAuthContext(browser)
   const page = await context.newPage()
 
-  // 1. Ensure student Emma exists (create if first run, reuse on subsequent runs)
+  // 1. Ensure student [QA] Emma exists (create if first run, reuse on subsequent runs)
   const studentId = await upsertStudent(page, PERSONA.student)
 
   // 2. Create lesson
@@ -66,10 +70,13 @@ test('Ana A1.1 — create student, generate lesson, capture output', async ({ br
   // 5. Screenshot teacher view
   await screenshotTeacherView(page, outputDir, 'lesson-editor.png')
 
-  // 6. Screenshot student view
-  await screenshotStudentView(page, lessonId, outputDir)
+  // 6. Screenshot student view (non-fatal — study view may not be available)
+  const studentViewCaptured = await screenshotStudentView(page, lessonId, outputDir)
 
-  // 7. Extract lesson content from API
+  // 7. PDF export — trigger download and screenshot the export menu
+  const pdfExportSucceeded = await screenshotPdfExport(page, lessonId, outputDir)
+
+  // 8. Extract lesson content from API
   const content = await extractLessonContent(page, lessonId, {
     studentName: PERSONA.student.name,
     template: PERSONA.lesson.templateName,
@@ -78,25 +85,28 @@ test('Ana A1.1 — create student, generate lesson, capture output', async ({ br
     topic: PERSONA.lesson.topic,
   })
 
-  // 8. Verify we have content to evaluate (sanity check only — pedagogical
+  // 9. Verify we have content to evaluate (sanity check only — pedagogical
   //    evaluation happens in SKILL.md by Claude, not in this Playwright spec)
   expect(content.sections.length).toBeGreaterThan(0)
   const totalBlocks = content.sections.reduce((sum, s) => sum + s.blocks.length, 0)
   expect(totalBlocks).toBeGreaterThan(0)
 
-  // 9. Save output for SKILL.md agent to evaluate
+  // 10. Save output for SKILL.md agent to evaluate
   saveRunOutput(outputDir, content, {
     persona: PERSONA.name,
     lessonId,
     studentId,
     branch: process.env.QA_BRANCH ?? 'unknown',
     generationDurationMs: durationMs,
+    studentViewCaptured,
+    pdfExportSucceeded,
     timestamp: new Date().toISOString(),
     outputDir,
   })
 
   console.log(`Ana A1.1 run complete. Output: ${outputDir}`)
   console.log(`Generation took ${Math.round(durationMs / 1000)}s. ${totalBlocks} blocks across ${content.sections.length} sections.`)
+  console.log(`Artifacts: student-view=${studentViewCaptured}, pdf=${pdfExportSucceeded}`)
 
   await context.close()
 })

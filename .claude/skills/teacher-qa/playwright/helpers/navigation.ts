@@ -151,8 +151,11 @@ export async function createLesson(page: Page, data: LessonData): Promise<string
   if (data.templateName) {
     const templateTestId = `template-${data.templateName.replace(/\s+/g, '-').toLowerCase()}`
     const templateCard = page.locator(`[data-testid="${templateTestId}"]`)
-    if (await templateCard.isVisible({ timeout: 5000 })) {
+    try {
+      await templateCard.waitFor({ state: 'visible', timeout: 5000 })
       await templateCard.click()
+    } catch {
+      // Template card not found — proceed without selecting a template
     }
   }
 
@@ -294,16 +297,64 @@ export async function screenshotTeacherView(page: Page, outputDir: string, filen
 
 /**
  * Navigates to the student study view and takes a screenshot.
+ * Returns true if successful, false if the view is unavailable (non-fatal).
  */
-export async function screenshotStudentView(page: Page, lessonId: string, outputDir: string): Promise<void> {
+export async function screenshotStudentView(page: Page, lessonId: string, outputDir: string): Promise<boolean> {
   const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5175'
   try {
     await page.goto(`${baseURL}/lessons/${lessonId}/study`)
     await page.waitForLoadState('networkidle', { timeout: 15000 })
     fs.mkdirSync(outputDir, { recursive: true })
     await page.screenshot({ path: path.join(outputDir, 'student-view.png'), fullPage: true })
-  } catch {
-    // Study view may not be available; non-fatal
+    return true
+  } catch (err) {
+    console.warn(`[teacher-qa] Student view unavailable for lesson ${lessonId}: ${err}`)
+    return false
+  }
+}
+
+/**
+ * Triggers the PDF export (teacher copy), waits for the download to start,
+ * and takes a screenshot of the export menu.
+ * Returns true if the download started successfully, false on failure (non-fatal —
+ * the lesson content evaluation can still proceed without the PDF).
+ */
+export async function screenshotPdfExport(page: Page, lessonId: string, outputDir: string): Promise<boolean> {
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5175'
+  try {
+    // Navigate to the lesson editor (may already be there, but navigate to ensure clean state)
+    await page.goto(`${baseURL}/lessons/${lessonId}`)
+    await page.waitForLoadState('networkidle', { timeout: 15000 })
+
+    // Open the export dropdown
+    const exportBtn = page.locator('[data-testid="export-pdf-btn"]')
+    await exportBtn.waitFor({ state: 'visible', timeout: 10000 })
+    await exportBtn.click()
+
+    // Screenshot the open export menu
+    fs.mkdirSync(outputDir, { recursive: true })
+    await page.screenshot({ path: path.join(outputDir, 'pdf-export-menu.png') })
+
+    // Wait for the teacher copy download
+    const teacherOption = page.locator('[data-testid="export-teacher"]')
+    await teacherOption.waitFor({ state: 'visible', timeout: 5000 })
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 30000 }),
+      teacherOption.click(),
+    ])
+
+    // Verify the download completed (suggestedFilename should end in .pdf)
+    const filename = download.suggestedFilename()
+    if (!filename.endsWith('.pdf')) {
+      throw new Error(`Unexpected PDF filename: ${filename}`)
+    }
+
+    console.log(`[teacher-qa] PDF export succeeded: ${filename}`)
+    return true
+  } catch (err) {
+    console.warn(`[teacher-qa] PDF export failed for lesson ${lessonId}: ${err}`)
+    return false
   }
 }
 

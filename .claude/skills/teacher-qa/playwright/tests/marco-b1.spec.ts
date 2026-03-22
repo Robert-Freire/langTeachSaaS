@@ -1,8 +1,11 @@
 /**
  * Marco Persona — B1.1 Spanish teacher, Italian L1 student
  *
- * Teacher: Marco. Student: Luca. Level: B1.1. L1: Italian.
+ * Teacher: Marco. Student: [QA] Luca. Level: B1.1. L1: Italian.
  * Template: Grammar. Topic: "ser vs estar in context"
+ *
+ * Student names use [QA] prefix to prevent collisions with manually created
+ * students in the persistent QA database.
  *
  * Run via SKILL.md agent or directly:
  *   npx playwright test tests/marco-b1.spec.ts --config playwright.config.ts
@@ -17,13 +20,14 @@ import {
   extractLessonContent,
   screenshotTeacherView,
   screenshotStudentView,
+  screenshotPdfExport,
   saveRunOutput,
 } from '../helpers/navigation'
 
 const PERSONA = {
   name: 'Marco',
   student: {
-    name: 'Luca',
+    name: '[QA] Luca',
     language: 'Spanish',
     cefrLevel: 'B1.1',
     nativeLanguage: 'Italian',
@@ -51,7 +55,7 @@ test('Marco B1.1 — create student, generate lesson, capture output', async ({ 
   const context = await createQAAuthContext(browser)
   const page = await context.newPage()
 
-  // 1. Ensure student Luca exists (create if first run, reuse on subsequent runs)
+  // 1. Ensure student [QA] Luca exists (create if first run, reuse on subsequent runs)
   const studentId = await upsertStudent(page, PERSONA.student)
 
   // 2. Create lesson
@@ -69,10 +73,13 @@ test('Marco B1.1 — create student, generate lesson, capture output', async ({ 
   // 5. Screenshot teacher view
   await screenshotTeacherView(page, outputDir, 'lesson-editor.png')
 
-  // 6. Screenshot student view
-  await screenshotStudentView(page, lessonId, outputDir)
+  // 6. Screenshot student view (non-fatal — study view may not be available)
+  const studentViewCaptured = await screenshotStudentView(page, lessonId, outputDir)
 
-  // 7. Extract lesson content from API
+  // 7. PDF export — trigger download and screenshot the export menu
+  const pdfExportSucceeded = await screenshotPdfExport(page, lessonId, outputDir)
+
+  // 8. Extract lesson content from API
   const content = await extractLessonContent(page, lessonId, {
     studentName: PERSONA.student.name,
     template: PERSONA.lesson.templateName,
@@ -81,24 +88,27 @@ test('Marco B1.1 — create student, generate lesson, capture output', async ({ 
     topic: PERSONA.lesson.topic,
   })
 
-  // 8. Sanity check — pedagogical evaluation happens in SKILL.md by Claude
+  // 9. Sanity check — pedagogical evaluation happens in SKILL.md by Claude
   expect(content.sections.length).toBeGreaterThan(0)
   const totalBlocks = content.sections.reduce((sum, s) => sum + s.blocks.length, 0)
   expect(totalBlocks).toBeGreaterThan(0)
 
-  // 9. Save output for SKILL.md agent to evaluate
+  // 10. Save output for SKILL.md agent to evaluate
   saveRunOutput(outputDir, content, {
     persona: PERSONA.name,
     lessonId,
     studentId,
     branch: process.env.QA_BRANCH ?? 'unknown',
     generationDurationMs: durationMs,
+    studentViewCaptured,
+    pdfExportSucceeded,
     timestamp: new Date().toISOString(),
     outputDir,
   })
 
   console.log(`Marco B1.1 run complete. Output: ${outputDir}`)
   console.log(`Generation took ${Math.round(durationMs / 1000)}s. ${totalBlocks} blocks across ${content.sections.length} sections.`)
+  console.log(`Artifacts: student-view=${studentViewCaptured}, pdf=${pdfExportSucceeded}`)
 
   await context.close()
 })
