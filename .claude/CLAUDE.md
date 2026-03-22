@@ -77,8 +77,14 @@ Freeze = Robert does not trigger the merge action. The sprint branch keeps recei
 ### Exceptions (can target main directly)
 
 - **Non-code files**: `.claude/memory/`, `.claude/skills/`, `plan/` files can be committed and pushed directly to `main`. These are documentation/configuration, not application code, and don't need the sprint branch quality gate.
-- **Hotfixes** to production: branch from `main`, PR to `main`, then merge `main` into the sprint branch to keep them in sync.
+- **Hotfixes** to production: branch from `main`, PR to `main`.
 - **Infrastructure/workflow changes** that affect how agents work may target `main` directly if the user approves.
+
+**After any direct push to main**, merge main into the active sprint branch so agents see the changes immediately:
+```bash
+git checkout sprint/<slug> && git merge main && git push origin sprint/<slug>
+```
+This keeps the sprint branch in sync with any memory, skill, or rule updates.
 
 ## Task Source: GitHub Issues
 
