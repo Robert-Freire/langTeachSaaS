@@ -171,28 +171,24 @@ function normalizeVocabularyItems(arr: unknown[]): VocabularyContent | null {
 }
 
 export function coerceVocabularyContent(v: unknown): VocabularyContent | null {
-  if (typeof v !== 'object' || v === null) {
-    if (Array.isArray(v)) return normalizeVocabularyItems(v)
-    return null
-  }
-  const obj = v as Record<string, unknown>
-
-  // Unwrap extra wrapper key: { vocabulary: { items: [...] } }
-  if (!Array.isArray(v)) {
-    for (const key of Object.keys(obj)) {
-      const child = obj[key]
-      if (typeof child === 'object' && child !== null && !Array.isArray(child)) {
-        const result = coerceVocabularyContent(child)
-        if (result) return result
-      }
-    }
-  }
-
-  // Array directly -> normalize
+  // Array directly -> normalize items
   if (Array.isArray(v)) return normalizeVocabularyItems(v)
+
+  if (typeof v !== 'object' || v === null) return null
+
+  const obj = v as Record<string, unknown>
 
   // Object with items array -> normalize items (handles field renames + valid schemas)
   if (Array.isArray(obj.items)) return normalizeVocabularyItems(obj.items)
+
+  // Unwrap extra wrapper key: { vocabulary: { items: [...] } }
+  for (const key of Object.keys(obj)) {
+    const child = obj[key]
+    if (typeof child === 'object' && child !== null && !Array.isArray(child)) {
+      const result = coerceVocabularyContent(child)
+      if (result) return result
+    }
+  }
 
   return null
 }
