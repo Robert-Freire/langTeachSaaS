@@ -4,6 +4,7 @@ import { getLessons } from '../api/lessons'
 import { getStudents } from '../api/students'
 import { getCourses } from '../api/courses'
 import { getWeekBounds, toISODateString } from '../lib/weekUtils'
+import { Link } from 'react-router-dom'
 import { WeekStrip } from '@/components/dashboard/WeekStrip'
 import { NeedsPreparation } from '@/components/dashboard/NeedsPreparation'
 import { QuickActions } from '@/components/dashboard/QuickActions'
@@ -11,6 +12,7 @@ import { UnscheduledDrafts } from '@/components/dashboard/UnscheduledDrafts'
 import { CoursesOverview } from '@/components/dashboard/CoursesOverview'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 const SLOW_THRESHOLD_MS = 5000
 
@@ -171,6 +173,19 @@ export default function Dashboard() {
             students={students}
             unscheduledDrafts={allUnscheduled}
           />
+
+          {totalLessonCount === 0 && !weekLoading && (
+            <Card className="border-dashed border-zinc-200 bg-zinc-50" data-testid="dashboard-empty-state">
+              <CardContent className="py-10 flex flex-col items-center gap-3 text-center">
+                <p className="text-sm text-zinc-500">No lessons yet. Create your first lesson to get started.</p>
+                <Link to="/lessons/new">
+                  <Button className="bg-indigo-600 hover:bg-indigo-700" data-testid="dashboard-empty-new-lesson">
+                    Create a lesson
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
 
           <NeedsPreparation lessons={allDrafts} />
         </div>
