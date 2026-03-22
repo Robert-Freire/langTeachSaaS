@@ -9,6 +9,7 @@ Before starting any task:
    - **If the sprint branch does not exist yet**: STOP and ask the user. Do not create it yourself. Ask: should it be created from `main` or from the previous sprint branch? The answer depends on whether there's unmerged work in the previous sprint.
 2. `EnterWorktree` with `name: "task-t<N>-<short-description>"` (e.g. `task-t21-export-pdf`)
    - A post-creation hook automatically copies env files from the main repo and runs `npm ci` + `dotnet restore`. If builds still fail, verify dependencies are installed manually: `cd frontend && npm ci` and `cd backend && dotnet restore`.
+   - **Immediately after the worktree is created**, run `git merge origin/sprint/<slug> --no-edit` from inside the worktree to ensure it is fully up to date. Do this before writing the plan or reading any source files.
 3. Write the task plan **inside the worktree** at `plan/langteach-beta/task<N>-<short-description>.md` — never write plan files to the main repo directory
 4. Run the `review-plan` agent (use the Agent tool with `subagent_type: "review-plan"`, NOT the `/review-plan` skill). Always use agents for all review steps to keep context clean. If the reviewer says NEEDS REVISION:
    - Critically evaluate each finding: is it valid given the codebase and project context, or is the reviewer being overly cautious / missing context?
