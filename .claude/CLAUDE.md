@@ -20,6 +20,13 @@ Before starting any task:
 
 Never work directly in the main repo directory for task work (including planning).
 
+## Git Bash Path Mangling (Windows)
+
+Git Bash automatically translates Unix absolute paths to Windows paths (e.g., `/opt/bin/tool` becomes `C:/Program Files/Git/opt/bin/tool`). This breaks `docker exec` commands that pass paths meant for inside a container. **Always prefix `docker exec` commands containing Linux paths with `MSYS_NO_PATHCONV=1`:**
+```bash
+MSYS_NO_PATHCONV=1 docker exec container-name /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "pass" -Q "SELECT 1"
+```
+
 ## E2E Stack Coordination
 
 The e2e stack (`docker-compose.e2e.yml`) uses mock auth and fixed ports. It can run alongside the dev stack (different compose file, different ports, different auth), but **only one e2e stack instance can run at a time.**

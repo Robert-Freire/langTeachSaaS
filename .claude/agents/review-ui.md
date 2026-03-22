@@ -292,6 +292,21 @@ GOOD — solid foundation, some visual or UX areas need attention
 NEEDS WORK — significant design inconsistencies or UX friction
 ```
 
+## Windows / Git Bash: path mangling
+
+The Bash tool runs in Git Bash on Windows. Git Bash automatically translates Unix-style absolute paths to Windows paths (e.g., `/opt/mssql-tools18/bin/sqlcmd` becomes `C:/Program Files/Git/opt/mssql-tools18/bin/sqlcmd`). This breaks any `docker exec` command that passes paths meant for inside the container.
+
+**Fix:** Prefix any `docker exec` command that contains Linux paths with `MSYS_NO_PATHCONV=1`:
+```bash
+# WRONG: Git Bash will mangle /opt/mssql-tools18/bin/sqlcmd
+docker exec langteachsaas-e2e-sqlserver-1 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "pass" -Q "SELECT 1"
+
+# CORRECT: MSYS_NO_PATHCONV disables path translation for this command
+MSYS_NO_PATHCONV=1 docker exec langteachsaas-e2e-sqlserver-1 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "pass" -Q "SELECT 1"
+```
+
+This applies to any command where you pass a path that should be interpreted inside a Docker container, not on the host.
+
 ## Important notes
 
 - You are reviewing a REAL running app, not mockups. The e2e stack is started and stopped by this agent.
