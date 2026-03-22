@@ -1,0 +1,17 @@
+{
+  "name": "teacher-qa-playwright",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:ana": "playwright test tests/ana-a1.spec.ts",
+    "test:marco": "playwright test tests/marco-b1.spec.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@types/node": "^20.0.0",
+    "dotenv": "^16.0.0",
+    "typescript": "^5.4.0"
+  }
+}
