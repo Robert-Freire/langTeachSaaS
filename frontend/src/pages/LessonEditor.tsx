@@ -36,7 +36,8 @@ import { GeneratePanel } from '@/components/lesson/GeneratePanel'
 import { ContentBlock } from '@/components/lesson/ContentBlock'
 import { ExportButton } from '@/components/lesson/ExportButton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { getCefrBadgeClasses } from '@/lib/cefr-colors'
+import { getCefrBadgeClasses, CEFR_LEVELS } from '@/lib/cefr-colors'
+import { CefrMismatchWarning } from '@/components/CefrMismatchWarning'
 import { FullLessonGenerateButton } from '@/components/lesson/FullLessonGenerateButton'
 import { LessonNotesCard } from '@/components/lesson/LessonNotesCard'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -50,7 +51,7 @@ const SECTION_LABELS: Record<SectionType, string> = {
   WrapUp: 'Wrap Up',
 }
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
-const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+// CEFR_LEVELS imported from cefr-colors
 const DURATIONS = [30, 45, 60, 90]
 
 function initSectionNotes(lesson: Lesson): Partial<Record<SectionType, string>> {
@@ -614,6 +615,18 @@ export default function LessonEditor() {
         </div>
       </div>
 
+      {/* CEFR mismatch warning (view mode) */}
+      {lesson.studentId && lesson.studentName && (() => {
+        const linkedStudent = students.find(s => s.id === lesson.studentId)
+        return linkedStudent ? (
+          <CefrMismatchWarning
+            studentName={lesson.studentName}
+            studentLevel={linkedStudent.cefrLevel}
+            lessonLevel={lesson.cefrLevel}
+          />
+        ) : null
+      })()}
+
       {/* Edit details form */}
       {editingMeta && (
         <Card className="bg-white border border-zinc-200">
@@ -635,6 +648,16 @@ export default function LessonEditor() {
                   </Select>
                 </div>
               </div>
+              {lesson.studentId && lesson.studentName && (() => {
+                const linkedStudent = students.find(s => s.id === lesson.studentId)
+                return linkedStudent ? (
+                  <CefrMismatchWarning
+                    studentName={lesson.studentName}
+                    studentLevel={linkedStudent.cefrLevel}
+                    lessonLevel={metaDraft.cefrLevel}
+                  />
+                ) : null
+              })()}
               <div className="space-y-2">
                 <Label>Topic</Label>
                 <Input value={metaDraft.topic} onChange={(e) => setMetaDraft(d => ({ ...d, topic: e.target.value }))} />

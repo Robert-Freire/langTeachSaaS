@@ -395,4 +395,54 @@ describe('LessonEditor', () => {
       expect(await screen.findByText('All changes saved')).toBeInTheDocument()
     })
   })
+
+  describe('CEFR mismatch warning', () => {
+    it('shows warning when lesson and student CEFR levels diverge by 2+', async () => {
+      mockGetLesson.mockResolvedValue({
+        ...mockLessonFull,
+        cefrLevel: 'C1',
+        studentId: 'student-1',
+        studentName: 'Ana',
+      })
+      mockGetStudents.mockResolvedValue({
+        items: [{ id: 'student-1', name: 'Ana', cefrLevel: 'A1' }],
+        totalCount: 1,
+      })
+      renderWithProviders()
+
+      await screen.findByTestId('lesson-title')
+      // The dismiss button only exists when the warning banner is shown
+      expect(await screen.findByRole('button', { name: /dismiss/i })).toBeInTheDocument()
+      // Warning text should mention both levels
+      const warning = screen.getByRole('button', { name: /dismiss/i }).closest('div')!
+      expect(warning.textContent).toMatch(/A1/)
+      expect(warning.textContent).toMatch(/C1/)
+    })
+
+    it('does not show warning for adjacent CEFR levels', async () => {
+      mockGetLesson.mockResolvedValue({
+        ...mockLessonFull,
+        cefrLevel: 'B2',
+        studentId: 'student-1',
+        studentName: 'Ana',
+      })
+      mockGetStudents.mockResolvedValue({
+        items: [{ id: 'student-1', name: 'Ana', cefrLevel: 'B1' }],
+        totalCount: 1,
+      })
+      renderWithProviders()
+
+      await screen.findByTestId('lesson-title')
+      // Warning banner should not appear — gap is only 1
+      expect(screen.queryByRole('button', { name: /dismiss/i })).not.toBeInTheDocument()
+    })
+
+    it('does not show warning when lesson has no student', async () => {
+      mockGetLesson.mockResolvedValue({ ...mockLessonFull, cefrLevel: 'C2', studentId: null, studentName: null })
+      renderWithProviders()
+
+      await screen.findByTestId('lesson-title')
+      expect(screen.queryByRole('button', { name: /dismiss/i })).not.toBeInTheDocument()
+    })
+  })
 })

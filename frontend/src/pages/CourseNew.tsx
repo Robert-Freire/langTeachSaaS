@@ -12,9 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/utils'
+import { CEFR_LEVELS } from '@/lib/cefr-colors'
+import { CefrMismatchWarning } from '@/components/CefrMismatchWarning'
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
-const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 const EXAMS = ['DELE', 'DALF', 'Cambridge B2 First', 'Cambridge C1 Advanced', 'TOEFL', 'IELTS']
 const SESSION_COUNTS = [5, 8, 10, 12, 15, 20]
 
@@ -307,6 +308,18 @@ export default function CourseNew() {
               </Select>
             </div>
           )}
+
+          {/* CEFR mismatch warning (general mode only) */}
+          {mode === 'general' && studentId && targetCefrLevel && (() => {
+            const selectedStudent = students.find(s => s.id === studentId)
+            return selectedStudent ? (
+              <CefrMismatchWarning
+                studentName={selectedStudent.name}
+                studentLevel={selectedStudent.cefrLevel}
+                lessonLevel={targetCefrLevel}
+              />
+            ) : null
+          })()}
 
           {submitError && (
             <Card className="border-red-200 bg-red-50">
