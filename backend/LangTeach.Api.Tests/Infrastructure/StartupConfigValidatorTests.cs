@@ -62,4 +62,18 @@ public class StartupConfigValidatorTests
         act.Should().Throw<InvalidOperationException>()
             .WithMessage("*MyKey*");
     }
+
+    [Fact]
+    public void ValidateRequiredConfig_NullValue_TreatedAsMissing()
+    {
+        var config = BuildConfig(new Dictionary<string, string?>
+        {
+            ["MyKey"] = null,
+        });
+
+        var act = () => StartupConfigValidator.ValidateRequiredConfig(config, ["MyKey"]);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*MyKey*");
+    }
 }

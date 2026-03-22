@@ -46,6 +46,7 @@ if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("
 
     // Validate all required config keys after Key Vault is loaded, before any service registration.
     // This ensures the app fails fast with a clear message instead of crashing mid-startup.
+    // When adding a new Key Vault secret, add its key here so missing config is caught at startup.
     StartupConfigValidator.ValidateRequiredConfig(
         builder.Configuration,
         [
@@ -132,6 +133,9 @@ builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddSingleton(_ =>
 {
+    // Belt-and-suspenders guard: the startup validator covers this in production,
+    // but dev/e2e environments skip the validator and still require blob storage
+    // (BlobStorageService.InitializeAsync runs unconditionally at startup).
     var connStr = builder.Configuration["AzureBlobStorage:ConnectionString"];
     if (string.IsNullOrWhiteSpace(connStr))
         throw new InvalidOperationException("AzureBlobStorage:ConnectionString is not configured.");
