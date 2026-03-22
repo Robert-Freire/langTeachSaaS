@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-22
 **Incident:** `AzureBlobStorage--ConnectionString` absent from Key Vault caused API `ActivationFailed` on every new revision. Resolved manually by provisioning the secret.
-**Related issues:** #217 (incident), #219 (this investigation), #220 (startup validation), #221 (PR template), #223 (CI secret validation), #224 (auto-rollback + alerting)
+**Related issues:** #217 (incident), #219 (this investigation), #220 (startup validation), #221 (PR template), #222 (original combined follow-up, now closed and split), #223 (CI secret validation), #224 (auto-rollback + alerting)
 
 ---
 
