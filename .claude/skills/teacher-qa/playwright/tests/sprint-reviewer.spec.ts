@@ -37,6 +37,7 @@ let sprintIssues: unknown[]
 try {
   sprintIssues = JSON.parse(sprintIssuesRaw)
 } catch {
+  console.warn(`[sprint-reviewer] QA_SPRINT_ISSUES_JSON could not be parsed — sprint context will be empty. Value: ${sprintIssuesRaw.slice(0, 100)}`)
   sprintIssues = []
 }
 
