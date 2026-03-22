@@ -1,10 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" fill="none">
-  <defs>
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;display=swap');
-    </style>
-  </defs>
-
   <!-- Back bubble (student) -->
   <rect x="14" y="4" width="30" height="22" rx="6" fill="#a5b4fc"/>
 
@@ -23,7 +17,7 @@
     font-family="'Outfit', 'DM Sans', 'Nunito', ui-rounded, ui-sans-serif, system-ui, sans-serif"
     font-size="24"
     font-weight="600"
-    letter-spacing="-0.4"
+    letter-spacing="-0.4px"
   >
     <tspan fill="#4338ca">Lang</tspan><tspan fill="#6366f1">Teach</tspan>
   </text>

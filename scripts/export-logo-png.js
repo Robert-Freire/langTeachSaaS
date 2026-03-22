@@ -1,6 +1,10 @@
 /**
  * Exports logo-icon.svg to a 150x150 PNG for Auth0 upload.
  * Run from the project root: node scripts/export-logo-png.js
+ *
+ * Prerequisite: e2e dependencies must be installed (cd e2e && npm ci).
+ * The PNG is committed to the repo so this script only needs re-running
+ * if logo-icon.svg is updated.
  */
 const { chromium } = require('../e2e/node_modules/playwright');
 const path = require('path');
