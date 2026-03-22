@@ -116,9 +116,10 @@ export default function Onboarding() {
         <CardContent className="py-8 px-6">
           {step === 1 && (
             <OnboardingStep1 onNext={() => {
-              completeOnboarding().catch(() => {
+              completeOnboarding().catch((err) => {
                 // Profile setup succeeded; onboarding flag will be retried on next visit.
                 // Don't block step 2 for a non-critical side effect.
+                console.warn('completeOnboarding failed:', err)
               })
               setStep(2)
             }} />
