@@ -6,8 +6,8 @@
  * "Ready to Test" issues). The SKILL.md agent reads the sprint issues, selects a
  * topic that exercises those features together, and passes it via QA_SPRINT_TOPIC.
  *
- * Student: [QA] Sprint Tester. Level: B1.1. L1: English.
- * Template: Grammar (default — covers broad feature surface).
+ * Student: [QA] Sprint Tester. Level: B1. L1: English.
+ * Template: Grammar Focus (default — covers broad feature surface).
  * Topic: from QA_SPRINT_TOPIC env var (default: "everyday situations in Spanish")
  *
  * Sprint issues context is passed via QA_SPRINT_ISSUES_JSON env var and saved

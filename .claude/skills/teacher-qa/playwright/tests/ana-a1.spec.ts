@@ -1,7 +1,7 @@
 /**
- * Ana Persona — A1.1 Spanish teacher, English L1 student
+ * Ana Persona — A1 Spanish teacher, English L1 student
  *
- * Teacher: Ana. Student: [QA] Emma. Level: A1.1. L1: English.
+ * Teacher: Ana. Student: [QA] Emma. Level: A1. L1: English.
  * Template: Conversation. Topic: "ordering at a restaurant"
  *
  * Student names use [QA] prefix to prevent collisions with manually created

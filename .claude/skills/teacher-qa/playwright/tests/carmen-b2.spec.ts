@@ -1,8 +1,8 @@
 /**
- * Carmen Persona — B2.1 Spanish teacher, English L1 student
+ * Carmen Persona — B2 Spanish teacher, English L1 student
  *
- * Teacher: Carmen. Student: [QA] James. Level: B2.1. L1: English.
- * Template: Reading. Topic: "The Spanish political system"
+ * Teacher: Carmen. Student: [QA] James. Level: B2. L1: English.
+ * Template: Reading & Comprehension. Topic: "The Spanish political system"
  * Weakness: subjunctive mood
  *
  * Student names use [QA] prefix to prevent collisions with manually created
