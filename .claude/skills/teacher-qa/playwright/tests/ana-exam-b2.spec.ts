@@ -1,12 +1,12 @@
 /**
  * Ana Exam Prep Persona — B2 Spanish teacher, English L1 student (DELE prep)
  *
- * Teacher: Ana. Student: [QA] Tom. Level: B2.1. L1: English.
+ * Teacher: Ana. Student: [QA] Tom. Level: B2. L1: English.
  * Template: Exam Prep. Topic: "DELE B2 reading comprehension practice"
  *
- * Note: The app uses granular CEFR sublevels (B2.1, B2.2). "B2" as a flat
- * level is not a valid option. We use B2.1 as the closest match for a student
- * preparing for DELE B2. The topic and student goal specify DELE B2 exam prep.
+ * Note: The app uses broad CEFR levels (A1, A2, B1, B2, C1, C2). We use B2
+ * to represent a student preparing for DELE B2. The topic and student goal
+ * specify DELE B2 exam prep.
  *
  * Student names use [QA] prefix to prevent collisions with manually created
  * students in the persistent QA database.
@@ -33,7 +33,7 @@ const PERSONA = {
   student: {
     name: '[QA] Tom',
     language: 'Spanish',
-    cefrLevel: 'B2.1',
+    cefrLevel: 'B2',
     nativeLanguage: 'English',
     interests: ['travel', 'current affairs'],
     difficulties: [
@@ -44,7 +44,7 @@ const PERSONA = {
     templateName: 'Exam Prep',
     title: '[QA] DELE B2 Reading Comprehension Practice',
     language: 'Spanish',
-    cefrLevel: 'B2.1',
+    cefrLevel: 'B2',
     topic: 'DELE B2 reading comprehension practice',
   },
 }
@@ -60,10 +60,10 @@ test('Ana Exam Prep B2 — create student, generate lesson, capture output', asy
   const page = await context.newPage()
 
   // 1. Ensure student [QA] Tom exists (create if first run, reuse on subsequent runs)
-  const studentId = await upsertStudent(page, PERSONA.student)
+  await upsertStudent(page, PERSONA.student)
 
   // 2. Create lesson
-  const lessonData = { ...PERSONA.lesson, studentId }
+  const lessonData = { ...PERSONA.lesson, studentName: PERSONA.student.name }
   const lessonId = await createLesson(page, lessonData)
 
   // 3. Navigate to lesson editor
@@ -101,7 +101,7 @@ test('Ana Exam Prep B2 — create student, generate lesson, capture output', asy
   saveRunOutput(outputDir, content, {
     persona: PERSONA.name,
     lessonId,
-    studentId,
+    studentId: undefined,
     branch: process.env.QA_BRANCH ?? 'unknown',
     generationDurationMs: durationMs,
     studentViewCaptured,

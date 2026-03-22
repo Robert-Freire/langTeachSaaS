@@ -21,7 +21,7 @@ export interface LessonData {
   language: string
   cefrLevel: string
   topic: string
-  studentId?: string
+  studentName?: string  // Display name as shown in the dropdown option
 }
 
 export interface LessonContent {
@@ -54,8 +54,11 @@ export async function findStudentByName(page: Page, name: string): Promise<strin
   const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5175'
 
   // Navigate to students list which triggers GET /api/students
+  // resourceType check excludes Vite-served JS files whose URL also contains '/api/students'
   const [studentsResponse] = await Promise.all([
-    page.waitForResponse(resp => resp.url().includes('/api/students') && resp.status() === 200),
+    page.waitForResponse(
+      resp => resp.url().includes('/api/students') && resp.status() === 200 && resp.request().resourceType() === 'xhr'
+    ),
     page.goto(`${baseURL}/students`),
   ])
 
@@ -175,16 +178,9 @@ export async function createLesson(page: Page, data: LessonData): Promise<string
   await page.fill('[data-testid="input-topic"]', data.topic)
 
   // Link student
-  if (data.studentId) {
+  if (data.studentName) {
     await page.locator('[data-testid="select-student"]').click()
-    // Wait for the options list to be populated (student data loads async)
-    await page.waitForSelector(`[role="option"]`, { timeout: 10000 })
-    // Select the option with the matching data-value attribute
-    const option = page.locator(`[role="option"][data-value="${data.studentId}"]`)
-    if (!(await option.isVisible({ timeout: 5000 }))) {
-      throw new Error(`Student option with id "${data.studentId}" not found in dropdown — cannot link lesson to wrong student`)
-    }
-    await option.click()
+    await page.getByRole('option', { name: data.studentName }).click()
   }
 
   // Submit
@@ -220,15 +216,20 @@ export async function triggerFullGeneration(page: Page): Promise<number> {
   // Wait for the progress indicator to appear
   await page.waitForSelector('[data-testid="generation-progress"]', { timeout: 30000 })
 
-  // Wait until generation is done: all section status items show "done" state.
-  // The button shows "Lesson generated!" text when phase === 'done'.
-  // Allow up to 3 minutes for real Claude API calls.
+  // Wait until generation is done.
+  // "Lesson generated!" appears in the AlertDialogTitle (not on the button).
+  // After 2 seconds, the dialog auto-closes and returns to idle.
+  // Allow up to 8 minutes for real Claude API calls (multiple sections, streamed sequentially).
   await page.waitForFunction(
-    () => {
-      const btn = document.querySelector('[data-testid="generate-full-lesson-btn"]')
-      return btn?.textContent?.includes('Lesson generated!')
-    },
-    { timeout: 180_000 }
+    () => document.body.textContent?.includes('Lesson generated!') ||
+          document.body.textContent?.includes('All sections complete'),
+    { timeout: 480_000 }
+  )
+
+  // Wait for the dialog to auto-close (2-second timer after done)
+  await page.waitForFunction(
+    () => !document.querySelector('[data-testid="generation-progress"]'),
+    { timeout: 10_000 }
   )
 
   return Date.now() - start
@@ -239,8 +240,9 @@ export async function triggerFullGeneration(page: Page): Promise<number> {
 // ---------------------------------------------------------------------------
 
 /**
- * Extracts lesson content from the API response by navigating to the lesson
- * editor and intercepting the GET /api/lessons/{id} response.
+ * Extracts lesson content by fetching lesson metadata (sections) and content blocks separately.
+ * GET /api/lessons/{id} returns sections (no blocks).
+ * GET /api/lessons/{id}/content-blocks returns the generated blocks, keyed by sectionId.
  */
 export async function extractLessonContent(
   page: Page,
@@ -252,7 +254,7 @@ export async function extractLessonContent(
   // Navigate to lesson editor and intercept the lesson data response
   const [lessonResponse] = await Promise.all([
     page.waitForResponse(
-      resp => resp.url().includes(`/api/lessons/${lessonId}`) && resp.status() === 200,
+      resp => resp.url().includes(`/api/lessons/${lessonId}`) && !resp.url().includes('/content-blocks') && resp.status() === 200 && resp.request().resourceType() === 'xhr',
       { timeout: 30000 }
     ),
     page.goto(`${baseURL}/lessons/${lessonId}`),
@@ -260,17 +262,34 @@ export async function extractLessonContent(
 
   const lessonData = await lessonResponse.json()
 
-  // Build content structure from API response
-  const sections = (lessonData.sections ?? []).map((section: {
-    sectionType: string;
-    contentBlocks?: Array<{ blockType: string; rawContent: string }>
-  }) => ({
-    sectionType: section.sectionType,
-    blocks: (section.contentBlocks ?? []).map((block: { blockType: string; rawContent: string }) => ({
-      blockType: block.blockType,
-      rawContent: block.rawContent ?? '',
-    })),
-  }))
+  // Fetch content blocks separately (not included in the lesson GET response)
+  const blocksResponse = await page.waitForResponse(
+    resp => resp.url().includes(`/api/lessons/${lessonId}/content-blocks`) && resp.status() === 200 && resp.request().resourceType() === 'xhr',
+    { timeout: 30000 }
+  )
+  const blocksData: Array<{ lessonSectionId: string | null; blockType: string; generatedContent: string; editedContent: string | null }> = await blocksResponse.json()
+
+  // Group blocks by section ID
+  const blocksBySectionId = new Map<string, typeof blocksData>()
+  for (const block of blocksData) {
+    if (block.lessonSectionId) {
+      const existing = blocksBySectionId.get(block.lessonSectionId) ?? []
+      existing.push(block)
+      blocksBySectionId.set(block.lessonSectionId, existing)
+    }
+  }
+
+  // Build content structure combining sections + blocks
+  const sections = (lessonData.sections ?? []).map((section: { id: string; sectionType: string }) => {
+    const sectionBlocks = blocksBySectionId.get(section.id) ?? []
+    return {
+      sectionType: section.sectionType,
+      blocks: sectionBlocks.map(block => ({
+        blockType: block.blockType,
+        rawContent: block.editedContent ?? block.generatedContent ?? '',
+      })),
+    }
+  })
 
   return {
     lessonId,
