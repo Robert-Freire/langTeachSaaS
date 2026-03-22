@@ -1,9 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useState, useCallback, useRef, useMemo } from 'react'
-import { isVocabularyContent } from '../../../types/contentTypes'
+import { isVocabularyContent, coerceVocabularyContent } from '../../../types/contentTypes'
 import type { VocabularyItem } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
 import { ContentParseError } from '../ContentParseError'
+import { ContentEditorParseError } from '../ContentEditorParseError'
 
 const TABLE_HEADERS = ['Word', 'Definition', 'Example']
 
@@ -34,7 +35,7 @@ function syncRowIds(ids: number[], targetLength: number) {
   return ids
 }
 
-function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
+function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplete }: EditorProps) {
   const rowIdsRef = useRef<number[]>([])
 
   const vocabContent = isVocabularyContent(parsedContent) ? parsedContent : null
@@ -43,11 +44,11 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
 
   if (!vocabContent) {
     return (
-      <textarea
-        value={rawContent}
-        onChange={(e) => onChange(e.target.value)}
-        rows={6}
-        className="w-full resize-none text-sm border rounded p-2"
+      <ContentEditorParseError
+        rawContent={rawContent}
+        onChange={onChange}
+        onRegenerate={onRegenerate}
+        isIncomplete={isIncomplete}
       />
     )
   }
@@ -247,4 +248,4 @@ function Student({ parsedContent }: StudentProps) {
   )
 }
 
-export const VocabularyRenderer = { Editor, Preview, Student }
+export const VocabularyRenderer = { Editor, Preview, Student, coerce: coerceVocabularyContent }

@@ -100,9 +100,10 @@ describe('ReadingRenderer.Editor', () => {
     expect(last.vocabularyHighlights).toHaveLength(0)
   })
 
-  it('falls back to raw textarea when isReadingContent returns false', () => {
+  it('shows friendly error instead of raw textarea when isReadingContent returns false', () => {
     render(<ReadingRenderer.Editor rawContent="not json" parsedContent={null} onChange={vi.fn()} />)
-    expect(screen.getByRole('textbox')).toHaveValue('not json')
+    expect(screen.getByText(/unexpected format/i)).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
   })
 })
 
