@@ -63,7 +63,7 @@ jobs:
           SUBSCRIPTION_ID=$(az account show --query id -o tsv)
           KV_NAME=$(az keyvault list \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --query "[0].name" -o tsv)
+            --query "[?starts_with(name, 'kv-lt-')].name | [0]" -o tsv)
 
           if [ -z "$KV_NAME" ]; then
             echo "ERROR: No Key Vault found in resource group ${{ env.RESOURCE_GROUP }}"
