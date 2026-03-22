@@ -400,6 +400,31 @@ describe('StudentForm', () => {
     expect(chip).toHaveTextContent('phrasal verbs')
   })
 
+  it('clears language-specific weaknesses when target language changes', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderNew()
+
+    // Select English and add an English-specific weakness (phrasal verbs) plus a custom one
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(await screen.findByRole('option', { name: 'English' }))
+
+    await user.click(screen.getByTestId('weaknesses-trigger'))
+    await user.click(await screen.findByRole('option', { name: 'Phrasal Verbs' }))
+    // Close popover by clicking elsewhere
+    await user.keyboard('{Escape}')
+
+    // Phrasal Verbs chip should be visible
+    expect(screen.getByTestId('weakness-chip')).toHaveTextContent('Phrasal Verbs')
+
+    // Now change language to Spanish
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+
+    // Phrasal Verbs is English-specific — it should be cleared
+    expect(screen.queryByTestId('weakness-chip')).not.toBeInTheDocument()
+  })
+
   it('allows adding a custom free-text weakness', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
     const user = userEvent.setup()
