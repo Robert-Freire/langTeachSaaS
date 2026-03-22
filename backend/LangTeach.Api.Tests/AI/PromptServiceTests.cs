@@ -481,6 +481,50 @@ public class PromptServiceTests
         req.UserPrompt.Should().NotContain("READING & COMPREHENSION TEMPLATE REQUIREMENTS");
     }
 
+    // --- Exam Prep template ---
+
+    [Fact]
+    public void LessonPlanPrompt_IncludesWrittenProductionRequirement_WhenExamPrepTemplate()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Exam Prep" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("EXAM PREP TEMPLATE REQUIREMENTS");
+        req.UserPrompt.Should().Contain("written exam task");
+        req.UserPrompt.Should().Contain("Do NOT use oral role-play");
+        req.UserPrompt.Should().Contain("opinion essay, formal letter, short report");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_IncludesTimeLimitGuidance_WhenExamPrepTemplate()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Exam Prep" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("time limit");
+        req.UserPrompt.Should().Contain("target word count");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_DoesNotIncludeExamPrepRequirements_WhenNoTemplate()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx() with { TemplateName = null });
+
+        req.UserPrompt.Should().NotContain("EXAM PREP TEMPLATE REQUIREMENTS");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_DoesNotIncludeExamPrepRequirements_WhenDifferentTemplate()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Reading & Comprehension" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("EXAM PREP TEMPLATE REQUIREMENTS");
+    }
+
     // --- No phantom materials constraint ---
 
     [Fact]
