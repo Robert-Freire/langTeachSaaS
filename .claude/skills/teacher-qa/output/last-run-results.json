@@ -1,0 +1,141 @@
+{
+  "config": {
+    "configFile": "C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\playwright\\playwright.config.ts",
+    "rootDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/playwright/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/output/test-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/playwright/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 600000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "../output/last-run-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.2",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "ana-a1.spec.ts",
+      "file": "ana-a1.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Ana A1.1 — create student, generate lesson, capture output",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 600000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "timedOut",
+                  "duration": 600064,
+                  "error": {
+                    "message": "\u001b[31mTest timeout of 600000ms exceeded.\u001b[39m",
+                    "stack": "\u001b[31mTest timeout of 600000ms exceeded.\u001b[39m"
+                  },
+                  "errors": [
+                    {
+                      "message": "\u001b[31mTest timeout of 600000ms exceeded.\u001b[39m"
+                    },
+                    {
+                      "location": {
+                        "file": "C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\playwright\\helpers\\navigation.ts",
+                        "column": 14,
+                        "line": 222
+                      },
+                      "message": "Error: page.waitForFunction: Test ended.\n\n   at ..\\helpers\\navigation.ts:222\n\n  220 |   // The button shows \"Lesson generated!\" text when phase === 'done'.\n  221 |   // Allow up to 8 minutes for real Claude API calls (multiple sections, each streamed sequentially).\n> 222 |   await page.waitForFunction(\n      |              ^\n  223 |     () => {\n  224 |       const btn = document.querySelector('[data-testid=\"generate-full-lesson-btn\"]')\n  225 |       return btn?.textContent?.includes('Lesson generated!')\n    at triggerFullGeneration (C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\playwright\\helpers\\navigation.ts:222:14)\n    at C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\playwright\\tests\\ana-a1.spec.ts:68:22"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-22T18:18:44.726Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\output\\test-artifacts\\ana-a1-Ana-A1-1-—-create-s-6846b-erate-lesson-capture-output\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\output\\test-artifacts\\ana-a1-Ana-A1-1-—-create-s-6846b-erate-lesson-capture-output\\error-context.md"
+                    }
+                  ]
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "9b859ec63182a638ec5f-4c410cadb63d352d36ef",
+          "file": "ana-a1.spec.ts",
+          "line": 45,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-03-22T18:18:43.915Z",
+    "duration": 601039.698,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}
