@@ -314,6 +314,7 @@ export default function CourseNew() {
             const selectedStudent = students.find(s => s.id === studentId)
             return selectedStudent ? (
               <CefrMismatchWarning
+                key={studentId}
                 studentName={selectedStudent.name}
                 studentLevel={selectedStudent.cefrLevel}
                 lessonLevel={targetCefrLevel}

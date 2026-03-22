@@ -620,6 +620,7 @@ export default function LessonEditor() {
         const linkedStudent = students.find(s => s.id === lesson.studentId)
         return linkedStudent ? (
           <CefrMismatchWarning
+            key={`view:${lesson.studentId}`}
             studentName={lesson.studentName}
             studentLevel={linkedStudent.cefrLevel}
             lessonLevel={lesson.cefrLevel}
@@ -652,6 +653,7 @@ export default function LessonEditor() {
                 const linkedStudent = students.find(s => s.id === lesson.studentId)
                 return linkedStudent ? (
                   <CefrMismatchWarning
+                    key={`edit:${lesson.studentId}`}
                     studentName={lesson.studentName}
                     studentLevel={linkedStudent.cefrLevel}
                     lessonLevel={metaDraft.cefrLevel}
