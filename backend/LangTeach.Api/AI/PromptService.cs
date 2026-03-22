@@ -238,7 +238,7 @@ public class PromptService : IPromptService
                 "All five sections (warmUp, presentation, practice, production, wrapUp) are required. Do not collapse or omit any of them.";
         }
 
-        if (string.Equals(ctx.TemplateName, "Exam Prep", StringComparison.OrdinalIgnoreCase))
+        else if (string.Equals(ctx.TemplateName, "Exam Prep", StringComparison.OrdinalIgnoreCase))
         {
             baseInstruction +=
                 "\n\nEXAM PREP TEMPLATE REQUIREMENTS (mandatory):\n" +
