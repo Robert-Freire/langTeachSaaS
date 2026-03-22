@@ -11,9 +11,11 @@ interface CefrMismatchWarningProps {
 export function CefrMismatchWarning({ studentName, studentLevel, lessonLevel }: CefrMismatchWarningProps) {
   const [dismissed, setDismissed] = useState(false)
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setDismissed(false)
   }, [studentLevel, lessonLevel])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const gap = getCefrGap(studentLevel, lessonLevel)
   if (gap < 2 || dismissed) return null
