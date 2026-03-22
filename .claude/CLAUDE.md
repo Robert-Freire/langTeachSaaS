@@ -15,6 +15,7 @@ Before starting any task:
    - Fix findings you agree with, update the plan, and re-run the `review-plan` agent
    - For findings you disagree with, note your reasoning in the plan and proceed
    - Only stop and escalate to the user if the reviewer and you fundamentally disagree on approach (e.g., architectural direction, scope interpretation) after 2 review rounds
+   - **Once the review-plan agent approves (or you resolve all findings), proceed immediately to implementation. Do NOT stop to ask the user for plan approval. The review-plan agent's approval IS the plan approval.** This overrides the global "wait for approval" rule in the PersonalOS CLAUDE.md.
 5. Implement, test, commit, push, open PR **targeting the sprint branch** (all from inside the worktree)
 6. After the PR is merged, exit and remove the worktree with `ExitWorktree(action: "remove")`
 
