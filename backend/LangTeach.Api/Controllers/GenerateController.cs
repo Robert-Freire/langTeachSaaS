@@ -140,6 +140,13 @@ public class GenerateController : ControllerBase
             ? materials.Select(m => m.FileName).ToArray()
             : null;
 
+        string? templateName = null;
+        if (blockTypeEnum == ContentBlockType.LessonPlan && lesson.TemplateId.HasValue)
+        {
+            var template = await _db.LessonTemplates.FindAsync(new object[] { lesson.TemplateId.Value }, ct);
+            templateName = template?.Name;
+        }
+
         var ctx = new GenerationContext(
             Language: language,
             CefrLevel: cefrLevel,
@@ -155,7 +162,8 @@ public class GenerateController : ControllerBase
             Direction: request.Direction,
             MaterialFileNames: materialFileNames,
             StudentDifficulties: TopDifficulties(student),
-            GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel)
+            GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
+            TemplateName: templateName
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -278,6 +286,13 @@ public class GenerateController : ControllerBase
             ? materials.Select(m => m.FileName).ToArray()
             : null;
 
+        string? templateName = null;
+        if (blockType == ContentBlockType.LessonPlan && lesson.TemplateId.HasValue)
+        {
+            var template = await _db.LessonTemplates.FindAsync(new object[] { lesson.TemplateId.Value }, ct);
+            templateName = template?.Name;
+        }
+
         var ctx = new GenerationContext(
             Language: language,
             CefrLevel: cefrLevel,
@@ -293,7 +308,8 @@ public class GenerateController : ControllerBase
             Direction: request.Direction,
             MaterialFileNames: materialFileNames,
             StudentDifficulties: TopDifficulties(student),
-            GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel)
+            GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
+            TemplateName: templateName
         );
 
         var claudeRequest = buildPrompt(ctx);
