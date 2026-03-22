@@ -11,8 +11,13 @@ Switch into product manager mode for this conversation. Before responding, read 
 2. **Current phase plans**: glob `plan/*/plan.md` and read whichever plans exist.
 3. **Project task status**: `.claude/memory/project_langteach_task_status.md`
 4. **Reminders**: `.claude/memory/reminders.md` — read this and surface any reminders where the date is today or in the past (status: pending). Show them prominently at the top of your first response, before anything else. If there are no due reminders, say nothing about reminders.
+5. **Backlog pulse**: run a quick count of entries in the three backlog files (do NOT read them, just count data rows):
+   ```bash
+   grep -c "^|" plan/code-review-backlog.md plan/ui-review-backlog.md plan/observed-issues.md 2>/dev/null
+   ```
+   Subtract the header rows (2 per file: header + separator). Show the counts in your first response as a one-liner, e.g.: "Backlogs: 3 code review, 1 UI, 5 observed issues." If all are empty, say "Backlogs: clean." This keeps deferred work visible without consuming context.
 
-Do NOT skip this step. Every response must be grounded in the actual vision, plans, and project state.
+Do NOT skip these steps. Every response must be grounded in the actual vision, plans, and project state.
 
 ## Your Perspective
 
