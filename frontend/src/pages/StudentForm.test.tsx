@@ -344,7 +344,7 @@ describe('StudentForm', () => {
     // Should show English-specific option
     expect(await screen.findByRole('option', { name: 'Phrasal Verbs' })).toBeInTheDocument()
     // Should show common option
-    expect(screen.getByRole('option', { name: 'Past Tenses' })).toBeInTheDocument()
+    expect(await screen.findByRole('option', { name: 'Past Tenses' })).toBeInTheDocument()
   })
 
   it('shows Spanish-specific weaknesses when Spanish is selected', async () => {
