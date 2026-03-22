@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Navigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { useProfile } from '../hooks/useProfile'
+import { useProfile, useCompleteOnboarding } from '../hooks/useProfile'
 import { getStudents, type Student } from '../api/students'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -57,6 +57,8 @@ function deriveInitialStep(profile: { hasSettings: boolean; hasStudents: boolean
 
 export default function Onboarding() {
   const { data: profile, isLoading } = useProfile()
+  const navigate = useNavigate()
+  const { mutateAsync: completeOnboarding } = useCompleteOnboarding()
   const [step, setStep] = useState(1)
   const [createdStudent, setCreatedStudent] = useState<Student | null>(null)
   const [initialized, setInitialized] = useState(false)
@@ -101,10 +103,6 @@ export default function Onboarding() {
     )
   }
 
-  if (profile?.hasCompletedOnboarding) {
-    return <Navigate to="/" replace />
-  }
-
   return (
     <div className="flex min-h-screen flex-col items-center bg-zinc-50 px-4 py-12" data-testid="onboarding-wizard">
       <div className="mb-6 text-center">
@@ -117,7 +115,10 @@ export default function Onboarding() {
       <Card className="mt-6 w-full max-w-lg">
         <CardContent className="py-8 px-6">
           {step === 1 && (
-            <OnboardingStep1 onNext={() => setStep(2)} />
+            <OnboardingStep1 onNext={() => {
+              void completeOnboarding()
+              setStep(2)
+            }} />
           )}
           {step === 2 && (
             <OnboardingStep2
@@ -126,12 +127,14 @@ export default function Onboarding() {
                 setStep(3)
               }}
               onBack={() => setStep(1)}
+              onSkip={() => navigate('/')}
             />
           )}
           {step === 3 && createdStudent && (
             <OnboardingStep3
               student={createdStudent}
               onBack={() => setStep(2)}
+              onSkip={() => navigate('/')}
             />
           )}
           {step === 3 && !createdStudent && (
