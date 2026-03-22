@@ -8,16 +8,25 @@ Before starting any task:
 1. `git fetch origin` and check out the **active sprint branch** (see Sprint Branch Workflow below): `git checkout sprint/<slug> && git pull origin sprint/<slug>`
    - **If the sprint branch does not exist yet**: STOP and ask the user. Do not create it yourself. Ask: should it be created from `main` or from the previous sprint branch? The answer depends on whether there's unmerged work in the previous sprint.
 2. `EnterWorktree` with `name: "task-t<N>-<short-description>"` (e.g. `task-t21-export-pdf`)
+   - A post-creation hook automatically copies env files from the main repo and runs `npm ci` + `dotnet restore`. If builds still fail, verify dependencies are installed manually: `cd frontend && npm ci` and `cd backend && dotnet restore`.
 3. Write the task plan **inside the worktree** at `plan/langteach-beta/task<N>-<short-description>.md` — never write plan files to the main repo directory
 4. Run the `review-plan` agent (use the Agent tool with `subagent_type: "review-plan"`, NOT the `/review-plan` skill). Always use agents for all review steps to keep context clean. If the reviewer says NEEDS REVISION:
    - Critically evaluate each finding: is it valid given the codebase and project context, or is the reviewer being overly cautious / missing context?
    - Fix findings you agree with, update the plan, and re-run the `review-plan` agent
    - For findings you disagree with, note your reasoning in the plan and proceed
    - Only stop and escalate to the user if the reviewer and you fundamentally disagree on approach (e.g., architectural direction, scope interpretation) after 2 review rounds
+   - **Once the review-plan agent approves (or you resolve all findings), proceed immediately to implementation. Do NOT stop to ask the user for plan approval. The review-plan agent's approval IS the plan approval.** This overrides the global "wait for approval" rule in the PersonalOS CLAUDE.md.
 5. Implement, test, commit, push, open PR **targeting the sprint branch** (all from inside the worktree)
 6. After the PR is merged, exit and remove the worktree with `ExitWorktree(action: "remove")`
 
 Never work directly in the main repo directory for task work (including planning).
+
+## Git Bash Path Mangling (Windows)
+
+Git Bash automatically translates Unix absolute paths to Windows paths (e.g., `/opt/bin/tool` becomes `C:/Program Files/Git/opt/bin/tool`). This breaks `docker exec` commands that pass paths meant for inside a container. **Always prefix `docker exec` commands containing Linux paths with `MSYS_NO_PATHCONV=1`:**
+```bash
+MSYS_NO_PATHCONV=1 docker exec container-name /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "pass" -Q "SELECT 1"
+```
 
 ## E2E Stack Coordination
 
@@ -27,7 +36,11 @@ The e2e stack (`docker-compose.e2e.yml`) uses mock auth and fixed ports. It can 
 ```bash
 docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"
 ```
-- If containers are running: **stop and notify the user.** Do not tear them down, do not retry. Another agent or test run owns them.
+- If containers are running: **stop and notify the user.** Do not tear them down, do not retry. Another agent or test run owns them. Then start a cron that checks every 5 minutes whether the e2e stack has been freed:
+  ```bash
+  docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"
+  ```
+  When the containers are gone, the cron deletes itself and notifies the user that the e2e stack is now available so the agent can proceed with UI review or e2e tests.
 - If no containers are running: proceed.
 
 **Starting the stack:**
@@ -139,14 +152,18 @@ When a task is marked complete:
    - If verdict is **NEEDS WORK**: fix critical and important visual/UX issues, re-commit, re-run pre-push checks, and re-run UI review.
    - If verdict is **GOOD** or **POLISHED**: proceed to push.
    - **After the final verdict**, append any findings you did NOT fix (items you chose to skip or that were too minor to address) to `plan/ui-review-backlog.md` with PR number, date, severity, and a one-line description. Do not log findings you already fixed. Do not create GitHub issues for these individually; they get batched into polish tasks later.
-6. Push the branch and open a PR against the **active sprint branch** with a summary of what was done and why
-7. Start a CodeRabbit monitoring cron (every 5 minutes) that:
+6. **Log out-of-scope observations.** During implementation, you may notice issues unrelated to the current task (e.g., similar bugs in other components, naming inconsistencies, missing error handling elsewhere, UX rough edges on other screens). Do NOT fix them (that's scope creep) and do NOT silently ignore them. Append each observation to `plan/observed-issues.md` with the issue number you were working on, date, and a one-line description. These get batched into future issues by the PM. Format:
+   ```
+   | #<issue> | <date> | <severity> | <one-line observation> |
+   ```
+7. Push the branch and open a PR against the **active sprint branch** with a summary of what was done and why. Immediately after creating the PR, post a comment with `@coderabbitai review` to trigger CodeRabbit (it only auto-reviews PRs targeting main, so sprint branch PRs need a manual trigger).
+8. Start a CodeRabbit monitoring cron (every 5 minutes) that:
    - Checks CI build status (`gh pr checks`) and fetches all PR comments from CodeRabbit
    - If CI passes AND no unresolved comments: deletes the cron and notifies the user the PR is ready for their review
    - If CI fails: investigate the failure, fix locally, run pre-push checks, commit, and push
    - If unresolved comments exist: **critically evaluates** each one (is it valid? does it contradict project conventions? does it over-engineer?), fixes only what genuinely improves the code, replies explaining reasoning for declined suggestions, runs pre-push checks, commits, and pushes
    - Safety limits: max 3 fix-and-push rounds, stops on test failures or ambiguous/architectural comments, always notifies the user when stopping
-8. Stop -- do NOT merge. The user reviews the PR and merges manually.
+9. Stop -- do NOT merge. The user reviews the PR and merges manually.
 
 **Pre-push checks (must all pass before pushing):**
 - `az bicep build --file infra/main.bicep` -- zero warnings, zero errors

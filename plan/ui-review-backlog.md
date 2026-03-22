@@ -108,6 +108,12 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Minor | Step 2 header uses hand-rolled flex layout instead of shared PageHeader component (pre-existing) |
 | Minor | Dashboard mobile — "Needs Preparation" heading renders in orange-red on mobile (pre-existing, not introduced by this PR) |
 
+### PR #TBD (2026-03-22) — Fix raw JSON in editor (#192)
+
+| Severity | Finding |
+|----------|---------|
+| Important | Duplicate "Regenerate" labels: the amber error box shows a primary Regenerate button and the block action row below shows a second ghost Regenerate button. A teacher sees two identical labels. Fix: hide the block-level Regenerate when parsedContent is null, or relabel the error box button (e.g. "Fix with AI") |
+
 ### PR #TBD (2026-03-21) — Usage Limits (#105)
 
 | Severity | Finding |

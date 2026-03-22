@@ -15,8 +15,8 @@
 - [Flaky e2e test analysis](project_flaky_tests_analysis.md) — registration and typed-content-view tests fail on fresh DB (Auth0 unreachable from Docker, AI response format)
 - [Jordi feedback log](project_jordi_feedback_log.md) — running log of all feedback from Jordi (brother/teacher, Head of Discovery), mapped to roadmap, with open questions
 - [Unnamed teacher feedback](project_unnamed_teacher_feedback.md) — feedback from Jordi's colleague (name pending), gamification and ludic activities
-- [Deploy freeze mechanism](project_deploy_freeze.md) — DEPLOY_FROZEN repo variable controls Azure deploys; check state before unfreeze
-- [Dev workflow overview](project_dev_workflow_doc.md) — human-readable explanation of the full dev loop; lives at plan/dev-workflow.md; keep aligned when CLAUDE.md rules change
+- [Deploy freeze mechanism](project_deploy_freeze.md) — freeze = don't trigger merge-sprint-to-main action; no variables needed
+- [Dev workflow overview](project_dev_workflow_doc.md) — human-readable explanation of the full dev loop; lives at docs/dev-workflow.md; keep aligned when CLAUDE.md rules change
 - [Sprint overview files](project_sprint_overviews.md) — quick-reference sprint files at plan/sprints/; update when issues are completed, split, or added to a sprint
 
 ## Feedback
@@ -25,7 +25,7 @@
 - [Project memory discipline](feedback_project_memory_discipline.md) — after every completed task, update task status memory so next session starts with full context; no re-reading requirements/plans from scratch
 - [Trust memory selectively](feedback_no_redundant_file_reads.md) — trust memory for stable facts (architecture, completed work); always verify volatile state (next task, new sub-tasks) against source files
 - [Playwright must be run, not just written](feedback_playwright_must_run.md) — execute the e2e test against the running stack before pushing; writing the file is not sufficient
-- [PR base branch always main](feedback_pr_base_branch.md) — always target main, even when task depends on another task branch; note the dependency in the PR body instead
+- [PR base branch always sprint](feedback_pr_base_branch.md) — always target the active sprint branch, not main; note dependencies in PR body
 - [Reply to PR comments when fixing them](feedback_reply_to_pr_comments.md) — whenever fixing a code issue raised in a review comment, immediately post a reply to that comment with the commit SHA and a brief explanation
 - [No PR without verified changes](feedback_no_pr_without_verified_changes.md) — always write tests covering the changed behavior and confirm they pass before opening a PR; a passing build is not sufficient
 - [Always verify no open PR comments before declaring done](feedback_pr_comments_final_check.md) — fetch the full comment list after every push before saying all comments are resolved; CodeRabbit posts new comments after each push
@@ -45,9 +45,13 @@
 - [Verify project board after sprint prep](feedback_verify_project_board.md) — after preparing a sprint, verify the board matches expectations (columns, priorities, all items visible)
 - [Assign issue when picked](feedback_assign_issue_when_picked.md) — immediately self-assign the GitHub issue when picking a task, before any other work, so other agents don't pick it
 - [Reply with understanding before acting](feedback_reply_before_acting.md) — after receiving feedback, reply with summary + planned issues, wait 4 days for corrections before creating issues
+- [Report observations not acted upon](feedback_report_noted_not_acted.md) — at the end of every summary, list things noticed but deferred so nothing silently drops
+- [Update dev-workflow.md on workflow changes](feedback_update_dev_workflow_doc.md) — any change to CLAUDE.md, agents, or skills must also update docs/dev-workflow.md
+- [CodeRabbit needs manual trigger on sprint PRs](feedback_coderabbit_sprint_branch.md) — post @coderabbitai review comment after opening PRs against the sprint branch
 
 ## Reference
 - [Audio transcription method](reference_audio_transcription.md) — transcribe audio files locally using OpenAI Whisper + ffmpeg
 - [Gmail bot account access](reference_gmail_bot_access.md) — IMAP/SMTP credentials for robert.freire.bot@gmail.com; read and send emails via curl
 - [Agent transcript location](reference_agent_transcripts.md) — where to find subagent reasoning logs (JSONL files) to check agent status/progress
 - [Teacher B — Anonymous Philologist](reference_teacher_b_philologist.md) — Jordi's colleague, feedback file locations, naming convention for future audio batches
+- [Backlog files](reference_backlog_files.md) — three backlog files (code-review, ui-review, observed-issues) to check when user says "check backlogs"

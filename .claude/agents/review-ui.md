@@ -14,7 +14,7 @@ You are a UI/UX design reviewer. Your job is to navigate the running application
 ```bash
 docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"
 ```
-If any containers are running, **stop and notify the user.** Do not tear them down or retry. Another agent or test run owns them. Only proceed if no e2e containers are running.
+If any containers are running, **stop and notify the user.** Do not tear them down or retry. Another agent or test run owns them. Start a cron (every 5 minutes) that re-checks `docker ps --filter "name=langteachsaas-e2e"`. When the containers are gone, delete the cron and notify the user that the e2e stack is free. Only proceed with stack startup once no e2e containers are running.
 
 **Stack startup:**
 ```bash
@@ -233,9 +233,15 @@ Tear down the e2e stack:
 docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
 ```
 
-## Report format
+## Report output
 
-```
+The review produces two outputs: a **full report file** (for humans and backlog) and a **compact summary** (returned to the calling agent). This keeps the caller's context small.
+
+### Step 1: Write the full report to a file
+
+Write the complete report to `e2e/screenshots/review-ui/REPORT.md`:
+
+```markdown
 ## UI Design Review
 
 ### Environment
@@ -247,7 +253,6 @@ docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
 | Page | Desktop | Tablet | Mobile | Key Observations |
 |------|---------|--------|--------|-----------------|
 | Dashboard | screenshot | screenshot | screenshot | <1-line summary> |
-| ... | ... | ... | ... | ... |
 
 ### Critical (design is broken or unusable)
 - [ ] **<page> (<viewport>)** — <what's wrong and why it matters>
@@ -281,16 +286,52 @@ docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
 | Form patterns | Pass/Fail | <observations> |
 
 ### Cross-Page Visual Consistency
-<observations about visual consistency across pages, positive and negative>
+<observations>
 
 ### Strongest Pages
-<which pages look the best and why, so the user knows what "good" looks like in their own app>
+<observations>
 
 ### Verdict
-POLISHED — consistent design, intuitive interactions, ready for users
-GOOD — solid foundation, some visual or UX areas need attention
-NEEDS WORK — significant design inconsistencies or UX friction
+POLISHED / GOOD / NEEDS WORK
 ```
+
+### Step 2: Return a compact summary to the caller
+
+Your **final response** (what the calling agent sees) must be concise. Include one-liners for ALL findings (the caller needs them to populate `plan/ui-review-backlog.md` without reading the full report). Skip the detailed analysis, screenshot refs, tables, and suggested fixes (those stay in the full report).
+
+```
+VERDICT: POLISHED | GOOD | NEEDS WORK
+FULL REPORT: e2e/screenshots/review-ui/REPORT.md
+
+CRITICAL:
+- [C1] <page> (<viewport>): <one-line description>
+
+IMPORTANT:
+- [I1] <page> (<viewport>): <one-line description>
+
+MINOR:
+- [M1] <page> (<viewport>): <one-line description>
+
+UX GUIDELINE FAILURES:
+- [U1] <rule name>: <one-line description>
+```
+
+Omit any section that has zero findings. If verdict is POLISHED with no findings, the summary is just 2 lines.
+
+## Windows / Git Bash: path mangling
+
+The Bash tool runs in Git Bash on Windows. Git Bash automatically translates Unix-style absolute paths to Windows paths (e.g., `/opt/mssql-tools18/bin/sqlcmd` becomes `C:/Program Files/Git/opt/mssql-tools18/bin/sqlcmd`). This breaks any `docker exec` command that passes paths meant for inside the container.
+
+**Fix:** Prefix any `docker exec` command that contains Linux paths with `MSYS_NO_PATHCONV=1`:
+```bash
+# WRONG: Git Bash will mangle /opt/mssql-tools18/bin/sqlcmd
+docker exec langteachsaas-e2e-sqlserver-1 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "pass" -Q "SELECT 1"
+
+# CORRECT: MSYS_NO_PATHCONV disables path translation for this command
+MSYS_NO_PATHCONV=1 docker exec langteachsaas-e2e-sqlserver-1 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "pass" -Q "SELECT 1"
+```
+
+This applies to any command where you pass a path that should be interpreted inside a Docker container, not on the host.
 
 ## Important notes
 

@@ -110,9 +110,10 @@ describe('HomeworkRenderer.Editor', () => {
     expect(last.tasks[0].examples).toHaveLength(1)
   })
 
-  it('falls back to raw textarea when parsedContent does not match schema', () => {
+  it('shows friendly error instead of raw textarea when parsedContent does not match schema', () => {
     render(<HomeworkRenderer.Editor rawContent="not valid" parsedContent="a string" onChange={vi.fn()} />)
-    expect(screen.getByRole('textbox')).toHaveValue('not valid')
+    expect(screen.getByText(/unexpected format/i)).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
   })
 })
 

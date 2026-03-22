@@ -28,10 +28,19 @@ Thumbs.db
 .env.local
 .env.*.local
 .env.e2e
+.env.qa
 
 # Claude Code local session cache
 .claude/settings.local.json
 .claude/worktrees/
+
+# Teacher QA agent outputs (generated reports and screenshots)
+.claude/skills/teacher-qa/output/*/
+!.claude/skills/teacher-qa/output/.gitkeep
+.claude/skills/teacher-qa/playwright/node_modules/
+.claude/skills/teacher-qa/playwright/dist/
+.claude/skills/teacher-qa/playwright/test-results/
+.claude/skills/teacher-qa/playwright/playwright-report/
 
 # Docker
 docker-compose.override.yml

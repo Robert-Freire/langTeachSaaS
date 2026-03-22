@@ -10,11 +10,12 @@ You are a code reviewer. Your job is to review all changes on the current branch
 
 ## Process
 
-1. Run `git diff main...HEAD --stat` to get the list of changed files.
-2. Run `git diff main...HEAD` to get the full diff.
-3. For each changed file, read enough surrounding context to understand the change (use Read with offset/limit, not the entire file unless it's small).
-4. Apply the file-type-specific checklists below to each changed file.
-5. Produce a report using the format below.
+1. Determine the base branch: check if a `sprint/*` branch exists upstream (`git branch -r --list 'origin/sprint/*'`). If yes, diff against the sprint branch. If no, diff against `main`.
+2. Run `git diff <base>...HEAD --stat` to get the list of changed files.
+3. Run `git diff <base>...HEAD` to get the full diff.
+4. For each changed file, read enough surrounding context to understand the change (use Read with offset/limit, not the entire file unless it's small).
+5. Apply the file-type-specific checklists below to each changed file.
+6. Produce a report using the format below.
 
 ## What to check
 
@@ -67,6 +68,7 @@ These patterns were derived from analyzing 210 CodeRabbit findings across 42 mer
 | Important | Unguarded array index access | `someArray[0].property` without prior `someArray?.length > 0` or null-coalescing check. Crashes on empty arrays. |
 | Important | `useEffect` timer not cleaned up | `setInterval`/`setTimeout` in `useEffect` without a return cleanup function. Memory leak on unmount. |
 | Critical | Unsanitized AI prompt inputs | User-supplied fields interpolated directly into prompt template strings without sanitization. Prompt injection is a real attack vector in an AI-first product. |
+| Important | Silent coercion to empty content | Coercion/normalization functions that accept arbitrary or empty input and return structurally valid objects with all fields defaulted to `''`, `[]`, or `0`. The result passes type checks but contains no meaningful data, bypassing error/retry UI. Coercion should return `null` (triggering error flow) when no recognized source fields are present in the input. Also flag guard-before-coerce ordering: if a type guard is applied before coercion in a pipeline (e.g. `unwrapWrapper` checking the guard before the coerce function runs), recoverable payloads will be rejected instead of fixed. |
 
 ### Test (.spec.ts, .test.tsx, .test.ts, Tests.cs) files
 
@@ -75,6 +77,9 @@ These patterns were derived from analyzing 210 CodeRabbit findings across 42 mer
 | Important | `beforeAll` with DB mutations | `beforeAll` calling helpers that INSERT/DELETE/reset data that individual tests also mutate. Shared read-only seed data in `beforeAll` is fine; flag shared mutable state. |
 | Important | Cleanup without assertion | afterAll/afterEach delete calls without asserting the deletion succeeded (row count check). |
 | Important | Test name doesn't match behavior | The test name claims to test X but the code tests Y. Common cases: (1) test says "case insensitive" but input uses canonical casing, (2) test says "unknown X" but input fails format validation before reaching the "unknown" logic, (3) test says "submit without X" but never triggers a form submission. The test must exercise the exact condition its name describes. |
+| Important | Playwright immediate-return API misuse | `isVisible()`, `isEnabled()`, `isChecked()` used to gate navigation or interaction timing. These return the current state immediately and do not wait. Flag when the intent is clearly to wait for a state change; the correct replacement is `waitFor({ state: 'visible' })` or `expect(locator).toBeVisible()`. |
+| Important | Test data collision in persistent stores | Test data using generic names (e.g. "Luca", "Emma") without a namespace prefix (`[QA]`, `[Test]`) in environments with persistent volumes or shared databases. Look for upsert/findByName patterns where a manually created record with the same name would silently satisfy the lookup and bypass intended test setup. |
+| Important | Spec skips declared feature paths | A spec file or test block claims to cover a feature (via its name, the issue it references, or the skill description) but only exercises a subset of the interaction paths. Look for entire flows mentioned in the feature scope (e.g. PDF export, delete confirmation) that have no corresponding test steps, or flows guarded by try/catch that swallow failures silently. |
 | Minor | Weak assertions | Assertions on shape only (e.g., checking array length > 0 instead of specific content), or tests that never exercise the branch they claim to test. |
 
 ### Infrastructure (.bicep) files

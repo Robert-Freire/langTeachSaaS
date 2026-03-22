@@ -1,0 +1,93 @@
+# QA stack for Teacher QA agent runs.
+# Uses real Auth0 (NOT mock) so the dedicated QA user can log in with a real JWT.
+# Data persists across runs via named volumes — do NOT use 'down -v' unless resetting.
+# Playwright runs from the HOST against http://localhost:5175.
+#
+# Prerequisites:
+#   cp .env.qa.example .env.qa  # fill in secrets once
+#   # Create the Auth0 QA user first (see .claude/skills/teacher-qa/SKILL.md)
+#
+# Start:
+#   docker compose -f docker-compose.qa.yml --env-file .env.qa up -d --build
+#
+# Stop (keep data):
+#   docker compose -f docker-compose.qa.yml --env-file .env.qa down
+#
+# Reset (wipe all QA data and start fresh):
+#   docker compose -f docker-compose.qa.yml --env-file .env.qa down -v
+
+name: langteachsaas-qa
+
+services:
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: "azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck"
+    volumes:
+      - qa-azurite-data:/data
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD}"
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${SA_PASSWORD}" -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - qa-sqlserver-data:/var/opt/mssql
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: LangTeach.Api/Dockerfile
+    environment:
+      # Development environment uses real Auth0 JWT validation (not E2ETesting bypass)
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: "Server=sqlserver,1433;Database=LangTeachQA;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=true"
+      Auth0__Domain: "${AUTH0_DOMAIN}"
+      Auth0__Audience: "${AUTH0_AUDIENCE}"
+      Claude__ApiKey: "${CLAUDE_API_KEY}"
+      # Host-side Playwright connects through localhost:5175
+      AllowedOrigins__E2e: "http://localhost:5175"
+      AzureBlobStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+    healthcheck:
+      test: curl -sf http://localhost:5000/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: e2e
+    environment:
+      # Real Auth0 mode — frontend uses Auth0Provider, not MockAuth0Provider
+      VITE_E2E_TEST_MODE: "false"
+      VITE_API_URL: "http://api:5000"
+      VITE_API_PROXY_TARGET: "http://api:5000"
+      VITE_AUTH0_DOMAIN: "${AUTH0_DOMAIN}"
+      VITE_AUTH0_CLIENT_ID: "${VITE_AUTH0_CLIENT_ID}"
+      VITE_AUTH0_AUDIENCE: "${AUTH0_AUDIENCE}"
+    ports:
+      - "5175:5174"
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:5174"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  qa-sqlserver-data:
+  qa-azurite-data:
