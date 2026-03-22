@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getCefrGap } from '../lib/cefr-colors'
+import { getCefrGap, CEFR_LEVELS } from '../lib/cefr-colors'
 
 interface CefrMismatchWarningProps {
   studentName: string
@@ -17,12 +17,12 @@ export function CefrMismatchWarning({ studentName, studentLevel, lessonLevel }: 
   const gap = getCefrGap(studentLevel, lessonLevel)
   if (gap < 2 || dismissed) return null
 
-  const direction = (studentLevel && lessonLevel)
-    ? (['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].indexOf(lessonLevel) > ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].indexOf(studentLevel) ? 'above' : 'below')
-    : 'away from'
+  const direction = CEFR_LEVELS.indexOf(lessonLevel as (typeof CEFR_LEVELS)[number]) > CEFR_LEVELS.indexOf(studentLevel as (typeof CEFR_LEVELS)[number])
+    ? 'above'
+    : 'below'
 
   return (
-    <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+    <div data-testid="cefr-mismatch-warning" className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
       <span className="mt-0.5 shrink-0">⚠️</span>
       <span className="flex-1">
         <strong>{studentName}</strong> is currently {studentLevel}. This lesson is set to{' '}

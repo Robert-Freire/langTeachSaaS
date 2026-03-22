@@ -133,11 +133,10 @@ describe('CourseNew wizard', () => {
       await user.click(screen.getByTestId('cefr-select'))
       await user.click(await screen.findByRole('option', { name: 'C1' }))
 
-      // The dismiss button only exists when the warning banner is shown
-      expect(await screen.findByRole('button', { name: /dismiss/i })).toBeInTheDocument()
-      const warning = screen.getByRole('button', { name: /dismiss/i }).closest('div')!
-      expect(warning.textContent).toMatch(/A1/)
-      expect(warning.textContent).toMatch(/C1/)
+      const banner = await screen.findByTestId('cefr-mismatch-warning')
+      expect(banner).toBeInTheDocument()
+      expect(banner.textContent).toMatch(/A1/)
+      expect(banner.textContent).toMatch(/C1/)
     })
 
     it('does not show warning for adjacent levels', async () => {

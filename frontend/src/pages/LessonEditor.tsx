@@ -51,7 +51,7 @@ const SECTION_LABELS: Record<SectionType, string> = {
   WrapUp: 'Wrap Up',
 }
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
-// CEFR_LEVELS imported from cefr-colors
+
 const DURATIONS = [30, 45, 60, 90]
 
 function initSectionNotes(lesson: Lesson): Partial<Record<SectionType, string>> {
@@ -615,8 +615,8 @@ export default function LessonEditor() {
         </div>
       </div>
 
-      {/* CEFR mismatch warning (view mode) */}
-      {lesson.studentId && lesson.studentName && (() => {
+      {/* CEFR mismatch warning (view mode — hidden when edit form is open, which has its own warning) */}
+      {!editingMeta && lesson.studentId && lesson.studentName && (() => {
         const linkedStudent = students.find(s => s.id === lesson.studentId)
         return linkedStudent ? (
           <CefrMismatchWarning

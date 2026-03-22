@@ -1,4 +1,4 @@
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, act, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -411,12 +411,11 @@ describe('LessonEditor', () => {
       renderWithProviders()
 
       await screen.findByTestId('lesson-title')
-      // The dismiss button only exists when the warning banner is shown
-      expect(await screen.findByRole('button', { name: /dismiss/i })).toBeInTheDocument()
-      // Warning text should mention both levels
-      const warning = screen.getByRole('button', { name: /dismiss/i }).closest('div')!
-      expect(warning.textContent).toMatch(/A1/)
-      expect(warning.textContent).toMatch(/C1/)
+      // The warning banner appears when gap >= 2
+      const banner = await screen.findByTestId('cefr-mismatch-warning')
+      expect(banner).toBeInTheDocument()
+      expect(banner.textContent).toMatch(/A1/)
+      expect(banner.textContent).toMatch(/C1/)
     })
 
     it('does not show warning for adjacent CEFR levels', async () => {
@@ -434,7 +433,10 @@ describe('LessonEditor', () => {
 
       await screen.findByTestId('lesson-title')
       // Warning banner should not appear — gap is only 1
-      expect(screen.queryByRole('button', { name: /dismiss/i })).not.toBeInTheDocument()
+      // Use waitFor to guard against async race where students query resolves after lesson
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: /dismiss/i })).not.toBeInTheDocument()
+      })
     })
 
     it('does not show warning when lesson has no student', async () => {

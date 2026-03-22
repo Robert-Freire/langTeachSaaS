@@ -76,17 +76,16 @@ test('CEFR mismatch warning appears and can be dismissed in CourseNew', async ({
   await page.getByRole('option', { name: studentName }).click()
 
   // Warning banner should appear
-  const dismissBtn = page.getByRole('button', { name: /dismiss/i })
-  await expect(dismissBtn).toBeVisible({ timeout: UI_TIMEOUT })
+  const warningBanner = page.getByTestId('cefr-mismatch-warning')
+  await expect(warningBanner).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Warning should mention both levels
-  const warningText = await dismissBtn.locator('..').textContent()
-  expect(warningText).toMatch(/A1/)
-  expect(warningText).toMatch(/C1/)
+  await expect(warningBanner).toContainText('A1')
+  await expect(warningBanner).toContainText('C1')
 
   // Dismiss the warning
-  await dismissBtn.click()
-  await expect(dismissBtn).not.toBeVisible({ timeout: UI_TIMEOUT })
+  await page.getByRole('button', { name: /dismiss/i }).click()
+  await expect(warningBanner).not.toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()
 })
