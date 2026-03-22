@@ -5,7 +5,8 @@
 **All task work MUST happen inside a git worktree.** This includes planning, plan review, implementation, testing, and PR creation. The worktree keeps the main working directory clean and prevents conflicts when multiple agents work in parallel.
 
 Before starting any task:
-1. `git fetch origin && git checkout main && git pull origin main`
+1. `git fetch origin` and check out the **active sprint branch** (see Sprint Branch Workflow below): `git checkout sprint/<slug> && git pull origin sprint/<slug>`
+   - **If the sprint branch does not exist yet**: STOP and ask the user. Do not create it yourself. Ask: should it be created from `main` or from the previous sprint branch? The answer depends on whether there's unmerged work in the previous sprint.
 2. `EnterWorktree` with `name: "task-t<N>-<short-description>"` (e.g. `task-t21-export-pdf`)
 3. Write the task plan **inside the worktree** at `plan/langteach-beta/task<N>-<short-description>.md` — never write plan files to the main repo directory
 4. Run the `review-plan` agent (use the Agent tool with `subagent_type: "review-plan"`, NOT the `/review-plan` skill). Always use agents for all review steps to keep context clean. If the reviewer says NEEDS REVISION:
@@ -13,7 +14,7 @@ Before starting any task:
    - Fix findings you agree with, update the plan, and re-run the `review-plan` agent
    - For findings you disagree with, note your reasoning in the plan and proceed
    - Only stop and escalate to the user if the reviewer and you fundamentally disagree on approach (e.g., architectural direction, scope interpretation) after 2 review rounds
-5. Implement, test, commit, push, open PR (all from inside the worktree)
+5. Implement, test, commit, push, open PR **targeting the sprint branch** (all from inside the worktree)
 6. After the PR is merged, exit and remove the worktree with `ExitWorktree(action: "remove")`
 
 Never work directly in the main repo directory for task work (including planning).
@@ -38,6 +39,46 @@ docker compose -f docker-compose.e2e.yml --env-file .env.e2e --profile test up -
 ```bash
 docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
 ```
+
+## Sprint Branch Workflow
+
+**All feature work targets the active sprint branch, never main directly.**
+
+```
+main (deploys to Azure, advances only via merge action)
+  └── sprint/<milestone-slug> (integration branch, agents PR here)
+        └── task/t<N>-<description> (feature branches from worktrees)
+```
+
+### How it works
+
+- Each active milestone has one sprint branch (e.g., `sprint/curriculum-personalization`)
+- Agents create PRs targeting the sprint branch instead of `main`
+- The sprint branch is where integration testing and Teacher QA runs happen
+- **Main only advances when Robert triggers the `merge-sprint-to-main` GitHub Action** (manual workflow_dispatch)
+- The existing CD pipeline (main -> Azure) deploys automatically after merge
+
+### Active sprint branch
+
+Check `.claude/memory/project_langteach_task_status.md` for the current sprint branch name. Always use the branch name from memory, never guess.
+
+### Deploy freeze
+
+Freeze = Robert does not trigger the merge action. The sprint branch keeps receiving work, main stays stable, Azure stays on the last good state. No config variables or special flags needed.
+
+### Branch lifecycle
+
+1. Sprint start: create `sprint/<slug>` from `main`
+2. During sprint: agents open PRs against the sprint branch
+3. Robert periodically triggers merge action to sync sprint -> main (unless frozen)
+4. Sprint end: final merge to main, delete the sprint branch
+5. Next sprint: new `sprint/<slug>` from `main`
+
+### Exceptions (can target main directly)
+
+- **Non-code files**: `.claude/memory/`, `.claude/skills/`, `plan/` files can be committed and pushed directly to `main`. These are documentation/configuration, not application code, and don't need the sprint branch quality gate.
+- **Hotfixes** to production: branch from `main`, PR to `main`, then merge `main` into the sprint branch to keep them in sync.
+- **Infrastructure/workflow changes** that affect how agents work may target `main` directly if the user approves.
 
 ## Task Source: GitHub Issues
 
@@ -82,7 +123,7 @@ When a task is marked complete:
    - If verdict is **FAIL**: address unmet criteria or missing tests, re-commit, re-run checks and QA.
    - If verdict is **PASS WITH GAPS**: add missing test coverage, re-commit, re-run checks and QA.
    - If verdict is **PASS**: proceed to code review.
-4. Run the `review` agent to perform a code review of all changes vs `main`.
+4. Run the `review` agent to perform a code review of all changes vs the sprint branch.
    - If verdict is **FAIL**: fix all critical issues, re-commit, re-run checks and review.
    - If verdict is **PASS WITH NOTES**: address important items where reasonable, then proceed. Append any unfixed notes to `plan/code-review-backlog.md` with PR number, date, severity, and description.
    - If verdict is **PASS**: proceed to UI review (or push if not applicable).
@@ -92,7 +133,7 @@ When a task is marked complete:
    - If verdict is **NEEDS WORK**: fix critical and important visual/UX issues, re-commit, re-run pre-push checks, and re-run UI review.
    - If verdict is **GOOD** or **POLISHED**: proceed to push.
    - **After the final verdict**, append any findings you did NOT fix (items you chose to skip or that were too minor to address) to `plan/ui-review-backlog.md` with PR number, date, severity, and a one-line description. Do not log findings you already fixed. Do not create GitHub issues for these individually; they get batched into polish tasks later.
-6. Push the branch and open a PR against `main` with a summary of what was done and why
+6. Push the branch and open a PR against the **active sprint branch** with a summary of what was done and why
 7. Start a CodeRabbit monitoring cron (every 5 minutes) that:
    - Checks CI build status (`gh pr checks`) and fetches all PR comments from CodeRabbit
    - If CI passes AND no unresolved comments: deletes the cron and notifies the user the PR is ready for their review
@@ -111,7 +152,8 @@ When a task is marked complete:
 
 **Branch protection rules:**
 - Feature branches (`task/*`): commit and push freely
-- `main`: never commit or push directly unless the user explicitly asks in that message
+- Sprint branches (`sprint/*`): merge via PR only, never commit directly
+- `main`: never commit or push directly. Main advances only via the `merge-sprint-to-main` GitHub Action or user-approved hotfixes
 
 
 ## Memory
