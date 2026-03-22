@@ -99,6 +99,15 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 - **Minor** | Student Form: Save button hover state is very subtle (indigo-600 to indigo-700)
 - **Minor** | Student Form: Native Language shows "none" instead of "Not specified" in trigger
 
+### PR #TBD (2026-03-22) — Auto-fill lesson language/level (#154)
+
+| Severity | Finding |
+|----------|---------|
+| Important | Student selector has no hint that selecting a student auto-fills Language/CEFR; add hint text below the field to make the feature discoverable |
+| Minor | Auto-fill ring (ring-2 ring-indigo-400) uses same style as focus ring; may cause brief ambiguity — consider ring-indigo-300 or animation to differentiate |
+| Minor | Step 2 header uses hand-rolled flex layout instead of shared PageHeader component (pre-existing) |
+| Minor | Dashboard mobile — "Needs Preparation" heading renders in orange-red on mobile (pre-existing, not introduced by this PR) |
+
 ### PR #TBD (2026-03-21) — Usage Limits (#105)
 
 | Severity | Finding |

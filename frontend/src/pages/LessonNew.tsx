@@ -213,7 +213,7 @@ export default function LessonNew() {
                 <SelectTrigger id="student" data-testid="select-student">
                   {studentId
                     ? <span>{students.find(s => s.id === studentId)?.name}</span>
-                    : <SelectValue placeholder="No student linked" />}
+                    : <span className="text-muted-foreground">No student linked</span>}
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No student</SelectItem>
@@ -225,7 +225,7 @@ export default function LessonNew() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="language">Language <span className="text-red-500">*</span></Label>
               <Select value={language} onValueChange={(v) => setLanguage(v ?? '')}>
