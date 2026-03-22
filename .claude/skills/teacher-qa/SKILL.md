@@ -48,7 +48,7 @@ test -f .env.qa && echo "exists" || echo "MISSING — copy .env.qa.example and f
 
 Verify the Playwright dependencies are installed:
 ```bash
-cd .claude/skills/teacher-qa/playwright && test -d node_modules && echo "ok" || echo "run: npm ci && npx playwright install chromium"
+cd .claude/skills/teacher-qa/playwright && test -d node_modules && echo "ok" || echo "run: npm install && npx playwright install chromium"
 ```
 
 If either is missing, stop and tell the user what to set up.
