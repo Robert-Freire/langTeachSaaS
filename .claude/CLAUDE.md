@@ -147,14 +147,18 @@ When a task is marked complete:
    - If verdict is **NEEDS WORK**: fix critical and important visual/UX issues, re-commit, re-run pre-push checks, and re-run UI review.
    - If verdict is **GOOD** or **POLISHED**: proceed to push.
    - **After the final verdict**, append any findings you did NOT fix (items you chose to skip or that were too minor to address) to `plan/ui-review-backlog.md` with PR number, date, severity, and a one-line description. Do not log findings you already fixed. Do not create GitHub issues for these individually; they get batched into polish tasks later.
-6. Push the branch and open a PR against the **active sprint branch** with a summary of what was done and why
-7. Start a CodeRabbit monitoring cron (every 5 minutes) that:
+6. **Log out-of-scope observations.** During implementation, you may notice issues unrelated to the current task (e.g., similar bugs in other components, naming inconsistencies, missing error handling elsewhere, UX rough edges on other screens). Do NOT fix them (that's scope creep) and do NOT silently ignore them. Append each observation to `plan/observed-issues.md` with the issue number you were working on, date, and a one-line description. These get batched into future issues by the PM. Format:
+   ```
+   | #<issue> | <date> | <severity> | <one-line observation> |
+   ```
+7. Push the branch and open a PR against the **active sprint branch** with a summary of what was done and why
+8. Start a CodeRabbit monitoring cron (every 5 minutes) that:
    - Checks CI build status (`gh pr checks`) and fetches all PR comments from CodeRabbit
    - If CI passes AND no unresolved comments: deletes the cron and notifies the user the PR is ready for their review
    - If CI fails: investigate the failure, fix locally, run pre-push checks, commit, and push
    - If unresolved comments exist: **critically evaluates** each one (is it valid? does it contradict project conventions? does it over-engineer?), fixes only what genuinely improves the code, replies explaining reasoning for declined suggestions, runs pre-push checks, commits, and pushes
    - Safety limits: max 3 fix-and-push rounds, stops on test failures or ambiguous/architectural comments, always notifies the user when stopping
-8. Stop -- do NOT merge. The user reviews the PR and merges manually.
+9. Stop -- do NOT merge. The user reviews the PR and merges manually.
 
 **Pre-push checks (must all pass before pushing):**
 - `az bicep build --file infra/main.bicep` -- zero warnings, zero errors
