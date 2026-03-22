@@ -107,3 +107,6 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Minor | UsageIndicator progress bar track `h-1.5` (6px) is very thin on high-DPI; consider `h-2` (8px) |
 | Minor | No visual separator between UsageIndicator and user avatar section in sidebar footer |
 | Minor | Lesson editor mobile header action buttons crowd at 375px (pre-existing, not introduced by this PR) |
+
+| #215 (PR TBD) | 2026-03-22 | Minor | logo-icon.svg back bubble overlap (x=14-44) may be hard to read at 16px favicon size |
+| #215 (PR TBD) | 2026-03-22 | Minor | logo.svg wordmark falls back to system-ui in static contexts (emails, OG images) — no external font loaded |
