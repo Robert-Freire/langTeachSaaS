@@ -4,3 +4,4 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 | Source issue | Date | Severity | Observation |
 |-------------|------|----------|-------------|
+| #198 | 2026-03-22 | Minor | `StudentForm.test.tsx` "shows English-specific weaknesses when English is selected" is flaky on the sprint branch (fails on `getByRole('option', { name: 'English' })`) despite PR #209 fixing a different test in the same file; may need `findByRole` fix for this test case too |
