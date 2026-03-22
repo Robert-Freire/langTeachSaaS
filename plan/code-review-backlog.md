@@ -57,3 +57,10 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | Minor | Lesson editor mobile header: action buttons crowd at 375px width. Could benefit from responsive collapse / "more" menu (pre-existing, not introduced by this PR). |
 
 | #213 | 2026-03-22 | Minor | Duplicated skip button footer JSX in OnboardingStep2.tsx and OnboardingStep3.tsx — consider a shared SkipLink or OnboardingStepFooter component if more steps are added |
+
+### PR (2026-03-22) — Fix Reading & Comprehension template (#227)
+
+| Severity | Finding |
+|----------|---------|
+| Minor | `GenerateController.cs`: template-lookup logic (4-line block) is duplicated in both `Stream` and `Generate` methods. Pre-existing duplication in the controller, slightly extended by this PR. Extract shared validation+context-build into a private helper when refactoring. |
+| Minor | `PromptService.cs`: template name matched by hardcoded string "Reading & Comprehension". If templates are renamed or new templates need custom prompt handling, consider a template slug or enum to avoid fragile string comparisons. |

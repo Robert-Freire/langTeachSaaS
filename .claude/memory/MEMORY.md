@@ -48,6 +48,7 @@
 - [Report observations not acted upon](feedback_report_noted_not_acted.md) — at the end of every summary, list things noticed but deferred so nothing silently drops
 - [Update dev-workflow.md on workflow changes](feedback_update_dev_workflow_doc.md) — any change to CLAUDE.md, agents, or skills must also update docs/dev-workflow.md
 - [CodeRabbit needs manual trigger on sprint PRs](feedback_coderabbit_sprint_branch.md) — post @coderabbitai review comment after opening PRs against the sprint branch
+- [Worktree CWD discipline](feedback_worktree_cwd_discipline.md) — all edits/commands must use worktree paths, never main repo absolute path; agents default to memorized project root
 
 ## Reference
 - [Audio transcription method](reference_audio_transcription.md) — transcribe audio files locally using OpenAI Whisper + ffmpeg
