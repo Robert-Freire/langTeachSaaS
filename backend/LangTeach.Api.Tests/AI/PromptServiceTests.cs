@@ -479,7 +479,17 @@ public class PromptServiceTests
     [Fact]
     public void LessonPlanPrompt_DoesNotIncludeExamPrepRequirements_WhenNoTemplate()
     {
-        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx() with { TemplateName = null });
+
+        req.UserPrompt.Should().NotContain("EXAM PREP TEMPLATE REQUIREMENTS");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_DoesNotIncludeExamPrepRequirements_WhenDifferentTemplate()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Reading & Comprehension" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
 
         req.UserPrompt.Should().NotContain("EXAM PREP TEMPLATE REQUIREMENTS");
     }
