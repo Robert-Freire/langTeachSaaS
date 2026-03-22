@@ -43,6 +43,16 @@ export async function createQAAuthContext(browser: Browser): Promise<BrowserCont
 
   // Wait until redirected back to the app
   await page.waitForURL(`${baseURL}/**`, { timeout: 30000 })
+
+  // Fail fast if the QA user has not been onboarded yet
+  if (page.url().includes('/onboarding')) {
+    throw new Error(
+      'QA user has not been onboarded. The QA user must complete the 3-step onboarding wizard ' +
+      'before running teacher-qa tests. See .claude/skills/teacher-qa/SKILL.md ' +
+      '"One-Time QA User Onboarding" section for instructions.'
+    )
+  }
+
   await page.close()
 
   return context

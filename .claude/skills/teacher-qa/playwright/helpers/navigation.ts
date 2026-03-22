@@ -59,7 +59,8 @@ export async function findStudentByName(page: Page, name: string): Promise<strin
     page.goto(`${baseURL}/students`),
   ])
 
-  const students: Array<{ id: string; name: string }> = await studentsResponse.json()
+  const body: { items: Array<{ id: string; name: string }> } = await studentsResponse.json()
+  const students = body.items
   const match = students.find(s => s.name.toLowerCase() === name.toLowerCase())
   return match?.id ?? null
 }
