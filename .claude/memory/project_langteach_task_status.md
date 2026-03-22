@@ -47,11 +47,18 @@ See git history for details. Key completed milestones:
 - #164 Integrate curriculum data as templates (P2, done, PR #173 merged, Ready to Test)
 - #150 Filter difficulties by target language (P1, ready)
 - #161 Custom free-text entries for learning goals (P1, done, PR #172 merged)
-- #154 Auto-fill lesson language/level from student (P2, ready)
+- #154 Auto-fill lesson language/level from student (P2, done, PR #205 merged, Ready to Test)
 - #151 CEFR level mismatch warning (P2, ready)
-- #192 Fix raw JSON visible in editor (P1, ready)
-- #195 Sprint branch workflow (P1, in progress)
-- #196 Teacher QA agent (P1, to be planned)
+- #192 Fix raw JSON visible in editor (P1, done, PR #204 merged, Ready to Test)
+- #195 Sprint branch workflow (P1, done)
+- #200 Teacher QA agent core — 2 personas + rubric + QA stack (P1, Ready to Test, PR #203 merged)
+  - Auth0 QA user still needs manual creation (one-time setup, see SKILL.md)
+- #201 Teacher QA remaining personas + Sprint Reviewer (P1, done, PR #211 merged, Ready to Test)
+  - Fixes: paginated student list parsing, onboarding guard in auth helper
+  - Adds: Carmen B2.1, Ana Exam Prep B2.1, Sprint Reviewer personas
+  - Auth0 QA user + onboarding still needs one-time manual setup (see SKILL.md)
+- #199 Fix flaky StudentForm test (P1, done, PR #209 merged, Ready to Test)
+- #202 Teacher QA first run + triage (P1, blocked until Auth0 QA user onboarded)
 
 ## Key Architectural Notes
 - Azure Container Apps (not App Service), North Europe region, SWA in West Europe

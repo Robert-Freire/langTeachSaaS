@@ -42,7 +42,7 @@ Future                 Marketplace, mobile, analytics, integrations
 
 **Goal**: A demo compelling enough that a language teacher watches it and says "I want to use this Monday."
 
-**Audience**: Robert's brother (language teacher, potential PM).
+**Audience**: Robert's brother Jordi (language teacher, first customer and pilot user).
 
 ### What Beta Delivers
 
@@ -89,9 +89,9 @@ Future                 Marketplace, mobile, analytics, integrations
 
 ---
 
-## First PM Feedback (2026-03-18)
+## First Customer Feedback (2026-03-18)
 
-Before seeing the app, Robert's brother (language teacher, potential PM) provided detailed feedback via voice notes. This feedback validates the product direction and reveals the next layer of teacher needs. Full transcriptions and analysis in `plan/langteach-beta/demo feedback 1/`.
+Before seeing the app, Jordi (language teacher, first customer) provided detailed feedback via voice notes. This feedback validates the product direction and reveals the next layer of teacher needs. Full transcriptions and analysis in `plan/langteach-beta/demo feedback 1/`.
 
 ### Key Themes
 

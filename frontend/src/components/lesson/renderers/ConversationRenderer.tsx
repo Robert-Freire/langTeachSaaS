@@ -1,9 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useRef, useMemo, useState } from 'react'
-import { isConversationContent } from '../../../types/contentTypes'
+import { isConversationContent, coerceConversationContent } from '../../../types/contentTypes'
 import type { ConversationContent, ConversationScenario } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
 import { ContentParseError } from '../ContentParseError'
+import { ContentEditorParseError } from '../ContentEditorParseError'
 
 const sectionHeadingClass = 'text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-2 mt-4 first:mt-0'
 const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200'
@@ -83,7 +84,7 @@ function syncIds(ids: number[], targetLength: number) {
   return ids
 }
 
-function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
+function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplete }: EditorProps) {
   const scenarioIdsRef = useRef<number[]>([])
   // Two phrase inputs per scenario: [roleA, roleB]
   const [phraseInputs, setPhraseInputs] = useState<[string, string][]>([])
@@ -94,11 +95,11 @@ function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
 
   if (!content) {
     return (
-      <textarea
-        value={rawContent}
-        onChange={(e) => onChange(e.target.value)}
-        rows={6}
-        className="w-full resize-none text-sm border rounded p-2"
+      <ContentEditorParseError
+        rawContent={rawContent}
+        onChange={onChange}
+        onRegenerate={onRegenerate}
+        isIncomplete={isIncomplete}
       />
     )
   }
@@ -458,4 +459,4 @@ function Student({ parsedContent }: StudentProps) {
 
 // ─── Export ──────────────────────────────────────────────────────────────────
 
-export const ConversationRenderer = { Editor, Preview, Student }
+export const ConversationRenderer = { Editor, Preview, Student, coerce: coerceConversationContent }

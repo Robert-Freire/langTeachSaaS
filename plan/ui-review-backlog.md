@@ -99,6 +99,21 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 - **Minor** | Student Form: Save button hover state is very subtle (indigo-600 to indigo-700)
 - **Minor** | Student Form: Native Language shows "none" instead of "Not specified" in trigger
 
+### PR #TBD (2026-03-22) — Auto-fill lesson language/level (#154)
+
+| Severity | Finding |
+|----------|---------|
+| Important | Student selector has no hint that selecting a student auto-fills Language/CEFR; add hint text below the field to make the feature discoverable |
+| Minor | Auto-fill ring (ring-2 ring-indigo-400) uses same style as focus ring; may cause brief ambiguity — consider ring-indigo-300 or animation to differentiate |
+| Minor | Step 2 header uses hand-rolled flex layout instead of shared PageHeader component (pre-existing) |
+| Minor | Dashboard mobile — "Needs Preparation" heading renders in orange-red on mobile (pre-existing, not introduced by this PR) |
+
+### PR #TBD (2026-03-22) — Fix raw JSON in editor (#192)
+
+| Severity | Finding |
+|----------|---------|
+| Important | Duplicate "Regenerate" labels: the amber error box shows a primary Regenerate button and the block action row below shows a second ghost Regenerate button. A teacher sees two identical labels. Fix: hide the block-level Regenerate when parsedContent is null, or relabel the error box button (e.g. "Fix with AI") |
+
 ### PR #TBD (2026-03-21) — Usage Limits (#105)
 
 | Severity | Finding |
@@ -107,3 +122,6 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Minor | UsageIndicator progress bar track `h-1.5` (6px) is very thin on high-DPI; consider `h-2` (8px) |
 | Minor | No visual separator between UsageIndicator and user avatar section in sidebar footer |
 | Minor | Lesson editor mobile header action buttons crowd at 375px (pre-existing, not introduced by this PR) |
+
+| #215 (PR TBD) | 2026-03-22 | Minor | logo-icon.svg back bubble overlap (x=14-44) may be hard to read at 16px favicon size |
+| #215 (PR TBD) | 2026-03-22 | Minor | logo.svg wordmark falls back to system-ui in static contexts (emails, OG images) — no external font loaded |

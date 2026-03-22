@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 48" fill="none">
+  <!-- Back bubble (student) -->
+  <rect x="14" y="4" width="30" height="22" rx="6" fill="#a5b4fc"/>
+
+  <!-- Front bubble (teacher) -->
+  <path d="M4 14C4 10.686 6.686 8 10 8H30C33.314 8 36 10.686 36 14V28C36 31.314 33.314 34 30 34H18L10 42V34H10C6.686 34 4 31.314 4 28V14Z" fill="#6366f1"/>
+
+  <!-- Text lines inside front bubble -->
+  <rect x="10" y="16" width="16" height="2.5" rx="1.25" fill="white"/>
+  <rect x="10" y="22" width="12" height="2.5" rx="1.25" fill="white" opacity="0.7"/>
+  <rect x="10" y="28" width="8" height="2.5" rx="1.25" fill="white" opacity="0.4"/>
+
+  <!-- Wordmark: "Lang" + "Teach" -->
+  <text
+    x="58"
+    y="32"
+    font-family="'Outfit', 'DM Sans', 'Nunito', ui-rounded, ui-sans-serif, system-ui, sans-serif"
+    font-size="24"
+    font-weight="600"
+    letter-spacing="-0.4px"
+  >
+    <tspan fill="#4338ca">Lang</tspan><tspan fill="#6366f1">Teach</tspan>
+  </text>
+</svg>

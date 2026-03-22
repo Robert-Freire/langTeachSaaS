@@ -10,7 +10,7 @@
 - [Plan file locations](project_langteach_plans.md) — where to find each plan document
 - [Dev workflow conventions](project_langteach_dev_conventions.md) — local dev setup, ports, Auth0 tenant, Playwright, logs
 - [Design system decisions](project_langteach_design_system.md) — component library, colors, layout rationale, infrastructure notes
-- [Demo strategy and audience](project_langteach_demo_audience.md) — periodic internal demos as QA checkpoints; brother is potential PM but not blocking
+- [Demo strategy and audience](project_langteach_demo_audience.md) — periodic internal demos as QA checkpoints; Jordi is first customer (not PM), we show working software and collect reactions
 - [Task management](project_langteach_task_management.md) — GitHub Issues as single source of truth; QA reviewer agent; agent workflow
 - [Flaky e2e test analysis](project_flaky_tests_analysis.md) — registration and typed-content-view tests fail on fresh DB (Auth0 unreachable from Docker, AI response format)
 - [Jordi feedback log](project_jordi_feedback_log.md) — running log of all feedback from Jordi (brother/teacher, Head of Discovery), mapped to roadmap, with open questions

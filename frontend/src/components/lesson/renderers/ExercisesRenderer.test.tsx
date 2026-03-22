@@ -98,9 +98,24 @@ describe('ExercisesRenderer.Editor', () => {
     expect(last.matching).toHaveLength(3)
   })
 
-  it('falls back to raw textarea when parsedContent does not match schema', () => {
+  it('shows friendly error instead of raw textarea when parsedContent does not match schema', () => {
     render(<ExercisesRenderer.Editor rawContent="not valid" parsedContent="a string" onChange={vi.fn()} />)
-    expect(screen.getByRole('textbox')).toHaveValue('not valid')
+    expect(screen.getByText(/unexpected format/i)).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
+})
+
+describe('ExercisesRenderer coerce', () => {
+  it('coerces missing arrays to empty arrays', () => {
+    const partial = { fillInBlank: [{ sentence: 'S', answer: 'A' }] }
+    const result = ExercisesRenderer.coerce(partial) as { fillInBlank: unknown[]; multipleChoice: unknown[]; matching: unknown[] }
+    expect(result.fillInBlank).toHaveLength(1)
+    expect(result.multipleChoice).toEqual([])
+    expect(result.matching).toEqual([])
+  })
+
+  it('returns null for completely unrecognised input', () => {
+    expect(ExercisesRenderer.coerce('bad')).toBeNull()
   })
 })
 

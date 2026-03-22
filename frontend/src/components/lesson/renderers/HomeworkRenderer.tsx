@@ -1,8 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
-import { isHomeworkContent } from '../../../types/contentTypes'
+import { isHomeworkContent, coerceHomeworkContent } from '../../../types/contentTypes'
 import type { HomeworkTask } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
 import { ContentParseError } from '../ContentParseError'
+import { ContentEditorParseError } from '../ContentEditorParseError'
 
 const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200'
 const textareaClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200 resize-none'
@@ -18,14 +19,14 @@ function normalizeTask(task: unknown): HomeworkTask {
   }
 }
 
-function Editor({ parsedContent, rawContent, onChange }: EditorProps) {
+function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplete }: EditorProps) {
   if (!isHomeworkContent(parsedContent)) {
     return (
-      <textarea
-        value={rawContent}
-        onChange={(e) => onChange(e.target.value)}
-        rows={6}
-        className="w-full resize-none text-sm border rounded p-2"
+      <ContentEditorParseError
+        rawContent={rawContent}
+        onChange={onChange}
+        onRegenerate={onRegenerate}
+        isIncomplete={isIncomplete}
       />
     )
   }
@@ -198,4 +199,4 @@ function Student({ parsedContent }: StudentProps) {
   )
 }
 
-export const HomeworkRenderer = { Editor, Preview, Student }
+export const HomeworkRenderer = { Editor, Preview, Student, coerce: coerceHomeworkContent }

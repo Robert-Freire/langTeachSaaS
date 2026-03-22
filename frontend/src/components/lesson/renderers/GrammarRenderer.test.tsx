@@ -88,9 +88,33 @@ describe('GrammarRenderer.Editor', () => {
     expect(last.commonMistakes).toHaveLength(2)
   })
 
-  it('falls back to raw textarea when isGrammarContent returns false', () => {
+  it('shows friendly error instead of raw textarea when isGrammarContent returns false', () => {
     render(<GrammarRenderer.Editor rawContent="not json" parsedContent={null} onChange={vi.fn()} />)
-    expect(screen.getByRole('textbox')).toHaveValue('not json')
+    expect(screen.getByText(/unexpected format/i)).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
+})
+
+describe('GrammarRenderer coerce', () => {
+  it('coerces wrapped schema { grammar: { title, ... } }', () => {
+    const wrapped = { grammar: makeContent() }
+    const result = GrammarRenderer.coerce(wrapped) as GrammarContent
+    expect(result.title).toBe('Past Perfect Tense')
+  })
+
+  it('coerces near-match field names (mistakes -> commonMistakes)', () => {
+    const mismatched = {
+      title: 'T',
+      explanation: 'E',
+      examples: [],
+      mistakes: ['oops'],
+    }
+    const result = GrammarRenderer.coerce(mismatched) as GrammarContent
+    expect(result.commonMistakes).toEqual(['oops'])
+  })
+
+  it('returns null for completely unrecognised input', () => {
+    expect(GrammarRenderer.coerce(42)).toBeNull()
   })
 })
 
