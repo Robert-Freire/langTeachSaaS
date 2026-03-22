@@ -1,0 +1,113 @@
+name: Merge Sprint to Main
+
+on:
+  workflow_dispatch:
+    inputs:
+      sprint_branch:
+        description: 'Sprint branch to merge (e.g., sprint/curriculum-personalization)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run (validate only, do not merge)'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: merge-sprint-to-main
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Validate sprint branch
+    runs-on: ubuntu-latest
+    env:
+      SPRINT_BRANCH: ${{ inputs.sprint_branch }}
+    steps:
+      - name: Validate branch name
+        run: |
+          if [[ ! "$SPRINT_BRANCH" =~ ^sprint/[a-zA-Z0-9._-]+$ ]]; then
+            echo "::error::Invalid branch name '$SPRINT_BRANCH'. Must match sprint/<name> pattern."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sprint_branch }}
+          fetch-depth: 0
+
+      - name: Check sprint branch is up-to-date with main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor origin/main HEAD; then
+            echo "::error::Sprint branch is not up-to-date with main. Merge main into the sprint branch first."
+            exit 1
+          fi
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.x'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Bicep build
+        run: az bicep build --file infra/main.bicep
+
+      - name: Backend build
+        run: dotnet build --warnaserror
+        working-directory: backend
+
+      - name: Backend tests
+        run: dotnet test
+        working-directory: backend
+
+      - name: Frontend install
+        run: npm ci
+        working-directory: frontend
+
+      - name: Frontend build
+        run: npm run build
+        working-directory: frontend
+        env:
+          VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
+          VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
+          VITE_AUTH0_AUDIENCE: ${{ secrets.VITE_AUTH0_AUDIENCE }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Frontend tests
+        run: npm test
+        working-directory: frontend
+
+  merge:
+    name: Merge to main
+    needs: validate
+    if: ${{ inputs.dry_run == false }}
+    runs-on: ubuntu-latest
+    env:
+      SPRINT_BRANCH: ${{ inputs.sprint_branch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge sprint branch into main
+        run: |
+          git fetch origin "$SPRINT_BRANCH"
+          git merge "origin/$SPRINT_BRANCH" --no-ff -m "chore: merge $SPRINT_BRANCH into main"
+
+      - name: Push main
+        run: git push origin main

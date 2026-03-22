@@ -13,11 +13,15 @@ Use `gh issue list` to see current state. Key queries:
 - Must-haves: `gh issue list --label "P1:must"`
 - Ready to pick up: `gh issue list --label "qa:ready"`
 
+**Active sprint branch:** `sprint/curriculum-personalization`
+Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Workflow" section.
+
 **Milestones:**
 - Demo 1 (internal): CLOSED
 - Phase 2A: Teacher Workflow: CLOSED (reorganized 2026-03-21)
-- Curriculum & Personalization: ACTIVE (target Easter April 5, Jordi testing)
-- Solo Whiteboard: NEXT SPRINT (5 sub-issues from #174)
+- Curriculum & Personalization: ACTIVE (target Easter April 5)
+- Pedagogical Credibility: NEW (milestone #9, #166, #167, #194)
+- Solo Whiteboard: NEXT (5 sub-issues from #174)
 - Adaptive Replanning: AFTER WHITEBOARD (audio input, post-class reflections, auto-difficulty updates, course replanning, progress dashboard)
 - Group Classes: FUTURE (#146, #147)
 - Phase 2B: Production (caching, usage limits, CI pipeline)
@@ -38,13 +42,16 @@ See git history for details. Key completed milestones:
 
 **Active sprint: Curriculum & Personalization** (target Easter April 5)
 - #184 Fix phantom materials in AI generation (P1, done, PR #193 merged)
-- #157 AI-Powered Difficulty Targeting (P1, in progress)
-- #163 Extract curricula JSON (P1, in progress, Ready to Test)
+- #157 AI-Powered Difficulty Targeting (P1, Ready to Test)
+- #163 Extract curricula JSON (P1, Ready to Test)
 - #164 Integrate curriculum data as templates (P2, done, PR #173 merged, Ready to Test)
 - #150 Filter difficulties by target language (P1, ready)
 - #161 Custom free-text entries for learning goals (P1, done, PR #172 merged)
 - #154 Auto-fill lesson language/level from student (P2, ready)
 - #151 CEFR level mismatch warning (P2, ready)
+- #192 Fix raw JSON visible in editor (P1, ready)
+- #195 Sprint branch workflow (P1, in progress)
+- #196 Teacher QA agent (P1, to be planned)
 
 ## Key Architectural Notes
 - Azure Container Apps (not App Service), North Europe region, SWA in West Europe
@@ -52,3 +59,4 @@ See git history for details. Key completed milestones:
 - Content blocks are typed (vocabulary, exercises, conversation, reading, grammar, homework, freeText) with per-type renderers
 - Mock-auth e2e: ASPNETCORE_ENVIRONMENT=E2ETesting, VITE_E2E_TEST_MODE=true
 - Student->Lesson FK is NoAction (SQL Server cascade constraint)
+- Deploy freeze: primary mechanism is sprint branch workflow (don't trigger merge action); secondary is DEPLOY_FROZEN repo variable
