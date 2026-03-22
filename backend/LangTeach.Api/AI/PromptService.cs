@@ -238,6 +238,18 @@ public class PromptService : IPromptService
                 "All five sections (warmUp, presentation, practice, production, wrapUp) are required. Do not collapse or omit any of them.";
         }
 
+        if (string.Equals(ctx.TemplateName, "Exam Prep", StringComparison.OrdinalIgnoreCase))
+        {
+            baseInstruction +=
+                "\n\nEXAM PREP TEMPLATE REQUIREMENTS (mandatory):\n" +
+                "- warmUp: review the exam format, the target task type, and the scoring criteria. Briefly discuss what the examiner is looking for. No casual icebreakers or conversation warm-ups.\n" +
+                "- presentation: teach the strategy for the target exam task (e.g. essay structure, formal letter conventions, skimming for gist). Use authentic exam-task examples. Formal register throughout.\n" +
+                "- practice: timed written practice under exam conditions. Specify an explicit time limit in the section notes (e.g. '15 minutes'). Use written task types only (opinion paragraph, gap-fill, reading comprehension questions). Do NOT use oral role-play or conversation activities here.\n" +
+                "- production: a full written exam task the student attempts independently. Specify a time limit (in minutes) and a target word count. Task type must match the target exam format: opinion essay, formal letter, short report, or similar written genre. Do NOT use oral role-play or conversation activities.\n" +
+                "- wrapUp: student self-assesses against the mark scheme criteria; teacher identifies one strength and one area to improve before the next session.\n" +
+                "All five sections (warmUp, presentation, practice, production, wrapUp) are required. Do not collapse or omit any of them.";
+        }
+
         return baseInstruction;
     }
 
