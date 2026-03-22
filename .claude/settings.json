@@ -21,5 +21,19 @@
   },
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "EnterWorktree",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/worktree-setup.sh",
+            "timeout": 120000
+          }
+        ]
+      }
+    ]
   }
 }
