@@ -76,11 +76,23 @@ jobs:
           MISSING=()
 
           for SECRET in $SECRETS; do
-            az rest \
+            if ERROR_OUTPUT=$(az rest \
               --method GET \
               --url "https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${{ env.RESOURCE_GROUP }}/providers/Microsoft.KeyVault/vaults/${KV_NAME}/secrets/${SECRET}?api-version=2023-07-01" \
-              --output none 2>/dev/null \
-            || MISSING+=("$SECRET")
+              --output none 2>&1); then
+              : # secret exists
+            else
+              ERROR_CODE=$(echo "$ERROR_OUTPUT" | grep -o '"code":"[^"]*"' | head -1 | sed 's/"code":"//;s/"//')
+              if [ "$ERROR_CODE" = "ResourceNotFound" ]; then
+                MISSING+=("$SECRET")
+              else
+                echo "ERROR: Unexpected failure checking secret '${SECRET}':"
+                echo "  ${ERROR_OUTPUT}"
+                echo "  This may indicate a permissions issue or transient Azure error (code: ${ERROR_CODE:-unknown})."
+                echo "  Verify the CI service principal has Contributor role on resource group ${{ env.RESOURCE_GROUP }}."
+                exit 1
+              fi
+            fi
           done
 
           if [ ${#MISSING[@]} -gt 0 ]; then
