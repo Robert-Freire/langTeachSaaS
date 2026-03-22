@@ -174,7 +174,7 @@ export default function Dashboard() {
             unscheduledDrafts={allUnscheduled}
           />
 
-          {totalLessonCount === 0 && !weekLoading && (
+          {totalData?.totalCount === 0 && !weekLoading && (
             <Card className="border-dashed border-zinc-300 bg-zinc-50" data-testid="dashboard-empty-state">
               <CardContent className="py-10 flex flex-col items-center gap-3 text-center">
                 <p className="text-sm text-zinc-500">No lessons yet. Create your first lesson to get started.</p>
