@@ -81,11 +81,11 @@ describe('CourseNew wizard', () => {
 
     // Open language select and pick Spanish
     await user.click(screen.getByTestId('language-select'))
-    await user.click(screen.getByRole('option', { name: 'Spanish' }))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
 
     // Open CEFR select and pick B1
     await user.click(screen.getByTestId('cefr-select'))
-    await user.click(screen.getByRole('option', { name: 'B1' }))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
 
     // Do NOT check the template checkbox - submit without a template
     await user.click(screen.getByTestId('generate-curriculum-btn'))
