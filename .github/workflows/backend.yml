@@ -40,9 +40,77 @@ jobs:
         run: dotnet test --no-build -c Release
         working-directory: backend
 
+  validate-secrets:
+    name: Validate Key Vault secrets
+    needs: ci
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.DEPLOY_FROZEN != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate required Key Vault secrets
+        run: |
+          SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+          KV_NAME=$(az keyvault list \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query "[?starts_with(name, 'kv-lt-')].name | [0]" -o tsv)
+
+          if [ -z "$KV_NAME" ]; then
+            echo "ERROR: No Key Vault found in resource group ${{ env.RESOURCE_GROUP }}"
+            exit 1
+          fi
+
+          echo "Checking secrets in Key Vault: ${KV_NAME}"
+
+          SECRETS=$(jq -r '.requiredSecrets[]' infra/required-secrets.json)
+          MISSING=()
+
+          for SECRET in $SECRETS; do
+            if ERROR_OUTPUT=$(az rest \
+              --method GET \
+              --url "https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${{ env.RESOURCE_GROUP }}/providers/Microsoft.KeyVault/vaults/${KV_NAME}/secrets/${SECRET}?api-version=2023-07-01" \
+              --output none 2>&1); then
+              : # secret exists
+            else
+              ERROR_CODE=$(echo "$ERROR_OUTPUT" | grep -o '"code":"[^"]*"' | head -1 | sed 's/"code":"//;s/"//')
+              if [ "$ERROR_CODE" = "ResourceNotFound" ]; then
+                MISSING+=("$SECRET")
+              else
+                echo "ERROR: Unexpected failure checking secret '${SECRET}':"
+                echo "  ${ERROR_OUTPUT}"
+                echo "  This may indicate a permissions issue or transient Azure error (code: ${ERROR_CODE:-unknown})."
+                echo "  Verify the CI service principal has Contributor role on resource group ${{ env.RESOURCE_GROUP }}."
+                exit 1
+              fi
+            fi
+          done
+
+          if [ ${#MISSING[@]} -gt 0 ]; then
+            echo "ERROR: The following required secrets are missing from Key Vault '${KV_NAME}':"
+            for S in "${MISSING[@]}"; do
+              echo "  - ${S}"
+            done
+            echo ""
+            echo "Provision each missing secret before deploying:"
+            echo "  az keyvault secret set --vault-name ${KV_NAME} --name <secret-name> --value <value>"
+            exit 1
+          fi
+
+          echo "All required secrets are present in Key Vault '${KV_NAME}'."
+
   deploy:
     name: Build image and deploy
-    needs: ci
+    needs: [ci, validate-secrets]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.DEPLOY_FROZEN != 'true'
     runs-on: ubuntu-latest
     permissions:
