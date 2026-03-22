@@ -41,6 +41,12 @@ if [ -f "$WORKTREE_DIR/frontend/package.json" ]; then
   (cd "$WORKTREE_DIR/frontend" && npm ci --silent 2>&1) || echo "  WARNING: npm ci failed"
 fi
 
+# --- Install e2e dependencies (Playwright) ---
+if [ -f "$WORKTREE_DIR/e2e/package.json" ]; then
+  echo "worktree-setup: installing e2e dependencies..."
+  (cd "$WORKTREE_DIR/e2e" && npm ci --silent 2>&1) || echo "  WARNING: e2e npm ci failed"
+fi
+
 # --- Restore backend dependencies ---
 if [ -f "$WORKTREE_DIR/backend/LangTeach.sln" ]; then
   echo "worktree-setup: restoring backend dependencies..."
