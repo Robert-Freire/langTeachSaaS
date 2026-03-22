@@ -143,7 +143,7 @@ export default function OnboardingStep2({ onNext, onBack, onSkip }: OnboardingSt
               type="button"
               onClick={onSkip}
               disabled={isPending}
-              className="text-sm text-zinc-500 hover:text-zinc-700 underline underline-offset-2"
+              className="text-sm text-zinc-600 hover:text-zinc-800 underline underline-offset-2"
               data-testid="onboarding-skip"
             >
               Skip, I'll do this later
