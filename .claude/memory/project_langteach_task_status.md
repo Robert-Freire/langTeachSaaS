@@ -56,9 +56,16 @@ See git history for details. Key completed milestones:
 - #201 Teacher QA remaining personas + Sprint Reviewer (P1, done, PR #211 merged, Ready to Test)
   - Fixes: paginated student list parsing, onboarding guard in auth helper
   - Adds: Carmen B2.1, Ana Exam Prep B2.1, Sprint Reviewer personas
-  - Auth0 QA user + onboarding still needs one-time manual setup (see SKILL.md)
+  - Auth0 QA user: CREATED (done for #200/#201)
+  - Onboarding wizard: still needs one-time manual completion (start QA stack, log in, complete 3-step wizard)
 - #199 Fix flaky StudentForm test (P1, done, PR #209 merged, Ready to Test)
-- #202 Teacher QA first run + triage (P1, blocked until Auth0 QA user onboarded)
+- #202 Teacher QA first run + triage (P1, DONE — PR #218 open, CodeRabbit monitoring active)
+  - All 5 personas ran successfully against sprint/curriculum-personalization
+  - Key finding: WarmUp always generates vocabulary drill (should be icebreaker) — system-wide, 5/5 personas
+  - Key finding: Carmen Reading & Comprehension has no reading passage — structural template gap
+  - Confirmed working: #184 phantom media fix, #192 raw JSON fix
+  - Triage report: .claude/skills/teacher-qa/output/triage-2026-03-22.md
+  - Proposed follow-up: 2 P1 issues + 2 P2 issues (see triage report)
 
 ## Key Architectural Notes
 - Azure Container Apps (not App Service), North Europe region, SWA in West Europe

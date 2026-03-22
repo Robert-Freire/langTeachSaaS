@@ -17,7 +17,7 @@ export default defineConfig({
   },
   // Teacher QA runs are sequential (create data, then evaluate) and slow (real Claude API)
   workers: 1,
-  timeout: 300_000, // 5 minutes per test — real Claude generation can take 60-90s
+  timeout: 600_000, // 10 minutes per test — real Claude generation can take 60-90s + setup overhead
   reporter: [['list'], ['json', { outputFile: '../output/last-run-results.json' }]],
   outputDir: '../output/test-artifacts',
 })

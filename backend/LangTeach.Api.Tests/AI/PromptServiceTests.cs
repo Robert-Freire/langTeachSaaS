@@ -425,6 +425,62 @@ public class PromptServiceTests
         req.SystemPrompt.Should().NotContain("Target grammar structures");
     }
 
+    // --- WarmUp icebreaker constraint ---
+
+    [Fact]
+    public void LessonPlanPrompt_UserPrompt_ContainsWarmUpIcebreakerGuidance()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("conversational icebreaker");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_UserPrompt_ProhibitsVocabularyListInWarmUp()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("NEVER generate a vocabulary list");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_UserPrompt_ProhibitsGrammarDrillInWarmUp()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("grammar drill");
+    }
+
+    // --- Reading & Comprehension template ---
+
+    [Fact]
+    public void LessonPlanPrompt_IncludesReadingPassageRequirements_WhenReadingComprehensionTemplate()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Reading & Comprehension" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Generate a complete lesson plan");
+        req.UserPrompt.Should().Contain("READING & COMPREHENSION TEMPLATE REQUIREMENTS");
+        req.UserPrompt.Should().Contain("reading passage");
+        req.UserPrompt.Should().Contain("comprehension questions");
+        req.UserPrompt.Should().Contain("inferential");
+        req.UserPrompt.Should().Contain("warmUp");
+        req.UserPrompt.Should().Contain("presentation");
+        req.UserPrompt.Should().Contain("practice");
+        req.UserPrompt.Should().Contain("production");
+        req.UserPrompt.Should().Contain("wrapUp");
+        req.UserPrompt.Should().Contain("All five sections");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_DoesNotIncludeReadingPassageRequirements_WhenNoTemplate()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().NotContain("READING & COMPREHENSION TEMPLATE REQUIREMENTS");
+    }
+
     // --- No phantom materials constraint ---
 
     [Fact]

@@ -254,4 +254,20 @@ describe('Dashboard', () => {
       expect(screen.getByText(/Still connecting/)).toBeInTheDocument()
     })
   })
+
+  it('shows empty state with create lesson CTA when teacher has no lessons', async () => {
+    mockGetLessons.mockResolvedValue(makeLessonResponse([]))
+    renderDashboard()
+    expect(await screen.findByTestId('dashboard-empty-state')).toBeInTheDocument()
+    expect(screen.getByText(/No lessons yet/)).toBeInTheDocument()
+    expect(screen.getByTestId('dashboard-empty-new-lesson')).toBeInTheDocument()
+  })
+
+  it('does not show empty state when teacher has lessons', async () => {
+    mockGetLessons.mockResolvedValue(makeLessonResponse([{ id: 'l1', title: 'Lesson 1' }]))
+    renderDashboard()
+    // Wait for data to load
+    await screen.findByTestId('quick-actions')
+    expect(screen.queryByTestId('dashboard-empty-state')).not.toBeInTheDocument()
+  })
 })

@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Onboarding from './Onboarding'
 
 const mockUpdateMutate = vi.fn()
-const mockCompleteMutateAsync = vi.fn()
+const mockCompleteMutateAsync = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('../hooks/useProfile', () => ({
   useProfile: vi.fn(),
@@ -88,16 +88,10 @@ const profileWithStudents = {
   hasStudents: true,
 }
 
-const completedProfile = {
-  ...profileWithStudents,
-  hasCompletedOnboarding: true,
-  hasLessons: true,
-}
-
 describe('Onboarding', () => {
   beforeEach(() => {
     mockUpdateMutate.mockClear()
-    mockCompleteMutateAsync.mockClear()
+    mockCompleteMutateAsync.mockClear().mockResolvedValue(undefined)
     mockGetStudents.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 1 })
   })
 
@@ -114,16 +108,16 @@ describe('Onboarding', () => {
     expect(skeletons.length).toBeGreaterThan(0)
   })
 
-  it('redirects to dashboard if onboarding already completed', () => {
+  it('shows step 2 when profile has settings but no students, even if onboarding already marked complete', () => {
     vi.mocked(useProfile).mockReturnValue({
-      data: completedProfile,
+      data: { ...profileWithSettings, hasCompletedOnboarding: true },
       isLoading: false,
       isError: false,
       error: null,
     } as unknown as ReturnType<typeof useProfile>)
 
     renderOnboarding()
-    expect(screen.getByTestId('dashboard')).toBeInTheDocument()
+    expect(screen.getByTestId('onboarding-step-2')).toBeInTheDocument()
   })
 
   it('renders step 1 by default for new user', () => {
@@ -232,6 +226,86 @@ describe('Onboarding', () => {
     expect(step1).toHaveClass('bg-indigo-600')
     expect(step2).toHaveClass('bg-zinc-100')
     expect(step3).toHaveClass('bg-zinc-100')
+  })
+
+  it('calls completeOnboarding after step 1 profile save', async () => {
+    vi.mocked(useProfile).mockReturnValue({
+      data: newUserProfile,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useProfile>)
+
+    mockUpdateMutate.mockImplementation((_data: unknown, opts: { onSuccess?: () => void }) => {
+      opts.onSuccess?.()
+    })
+
+    renderOnboarding()
+    const user = userEvent.setup()
+
+    const nameInput = screen.getByTestId('onboarding-display-name')
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Test Teacher')
+    await user.click(screen.getByTestId('onboarding-next'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('onboarding-step-2')).toBeInTheDocument()
+    })
+    expect(mockCompleteMutateAsync).toHaveBeenCalledOnce()
+  })
+
+  it('navigates to dashboard when step 2 skip is clicked', async () => {
+    vi.mocked(useProfile).mockReturnValue({
+      data: profileWithSettings,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useProfile>)
+
+    renderOnboarding()
+    const user = userEvent.setup()
+
+    await waitFor(() => expect(screen.getByTestId('onboarding-step-2')).toBeInTheDocument())
+    await user.click(screen.getByTestId('onboarding-skip'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard')).toBeInTheDocument()
+    })
+  })
+
+  it('navigates to dashboard when step 3 skip is clicked', async () => {
+    const mockStudent = {
+      id: 'stu-1',
+      name: 'Test Student',
+      learningLanguage: 'English',
+      cefrLevel: 'B1',
+      interests: [],
+      notes: null,
+      nativeLanguage: null,
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+    }
+    mockGetStudents.mockResolvedValue({ items: [mockStudent], totalCount: 1, page: 1, pageSize: 1 })
+
+    vi.mocked(useProfile).mockReturnValue({
+      data: profileWithStudents,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useProfile>)
+
+    renderOnboarding()
+
+    await waitFor(() => expect(screen.getByTestId('onboarding-step-3')).toBeInTheDocument())
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('onboarding-skip'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard')).toBeInTheDocument()
+    })
   })
 
   it('shows validation error when name is empty on step 1', async () => {
