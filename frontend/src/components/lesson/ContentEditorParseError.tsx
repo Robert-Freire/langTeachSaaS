@@ -53,7 +53,7 @@ export function ContentEditorParseError({
           value={rawContent}
           onChange={(e) => onChange(e.target.value)}
           rows={6}
-          className="w-full resize-none text-sm border rounded p-2 font-mono"
+          className="w-full resize-none text-sm border border-amber-200 rounded p-2 font-mono"
           data-testid="parse-error-raw-textarea"
         />
       )}
