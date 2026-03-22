@@ -30,7 +30,7 @@ const PERSONA = {
   student: {
     name: '[QA] James',
     language: 'Spanish',
-    cefrLevel: 'B2.1',
+    cefrLevel: 'B2',
     nativeLanguage: 'English',
     interests: ['politics', 'literature'],
     difficulties: [
@@ -38,10 +38,10 @@ const PERSONA = {
     ],
   },
   lesson: {
-    templateName: 'Reading',
+    templateName: 'Reading & Comprehension',
     title: '[QA] The Spanish Political System — B2.1',
     language: 'Spanish',
-    cefrLevel: 'B2.1',
+    cefrLevel: 'B2',
     topic: 'The Spanish political system',
   },
 }
@@ -57,10 +57,10 @@ test('Carmen B2.1 — create student, generate lesson, capture output', async ({
   const page = await context.newPage()
 
   // 1. Ensure student [QA] James exists (create if first run, reuse on subsequent runs)
-  const studentId = await upsertStudent(page, PERSONA.student)
+  await upsertStudent(page, PERSONA.student)
 
   // 2. Create lesson
-  const lessonData = { ...PERSONA.lesson, studentId }
+  const lessonData = { ...PERSONA.lesson, studentName: PERSONA.student.name }
   const lessonId = await createLesson(page, lessonData)
 
   // 3. Navigate to lesson editor
@@ -98,7 +98,7 @@ test('Carmen B2.1 — create student, generate lesson, capture output', async ({
   saveRunOutput(outputDir, content, {
     persona: PERSONA.name,
     lessonId,
-    studentId,
+    studentId: undefined,
     branch: process.env.QA_BRANCH ?? 'unknown',
     generationDurationMs: durationMs,
     studentViewCaptured,

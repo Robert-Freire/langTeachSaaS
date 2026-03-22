@@ -29,7 +29,7 @@ const PERSONA = {
   student: {
     name: '[QA] Emma',
     language: 'Spanish',
-    cefrLevel: 'A1.1',
+    cefrLevel: 'A1',
     nativeLanguage: 'English',
     interests: ['travel', 'food'],
   },
@@ -37,7 +37,7 @@ const PERSONA = {
     templateName: 'Conversation',
     title: '[QA] Ordering at a Restaurant — A1.1',
     language: 'Spanish',
-    cefrLevel: 'A1.1',
+    cefrLevel: 'A1',
     topic: 'ordering at a restaurant',
   },
 }
@@ -53,10 +53,10 @@ test('Ana A1.1 — create student, generate lesson, capture output', async ({ br
   const page = await context.newPage()
 
   // 1. Ensure student [QA] Emma exists (create if first run, reuse on subsequent runs)
-  const studentId = await upsertStudent(page, PERSONA.student)
+  await upsertStudent(page, PERSONA.student)
 
   // 2. Create lesson
-  const lessonData = { ...PERSONA.lesson, studentId }
+  const lessonData = { ...PERSONA.lesson, studentName: PERSONA.student.name }
   const lessonId = await createLesson(page, lessonData)
 
   // 3. Navigate to lesson editor
@@ -95,7 +95,7 @@ test('Ana A1.1 — create student, generate lesson, capture output', async ({ br
   saveRunOutput(outputDir, content, {
     persona: PERSONA.name,
     lessonId,
-    studentId,
+    studentId: undefined,
     branch: process.env.QA_BRANCH ?? 'unknown',
     generationDurationMs: durationMs,
     studentViewCaptured,
