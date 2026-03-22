@@ -6,8 +6,8 @@
  * "Ready to Test" issues). The SKILL.md agent reads the sprint issues, selects a
  * topic that exercises those features together, and passes it via QA_SPRINT_TOPIC.
  *
- * Student: [QA] Sprint Tester. Level: B1.1. L1: English.
- * Template: Grammar (default — covers broad feature surface).
+ * Student: [QA] Sprint Tester. Level: B1. L1: English.
+ * Template: Grammar Focus (default — covers broad feature surface).
  * Topic: from QA_SPRINT_TOPIC env var (default: "everyday situations in Spanish")
  *
  * Sprint issues context is passed via QA_SPRINT_ISSUES_JSON env var and saved
@@ -46,15 +46,15 @@ const PERSONA = {
   student: {
     name: '[QA] Sprint Tester',
     language: 'Spanish',
-    cefrLevel: 'B1.1',
+    cefrLevel: 'B1',
     nativeLanguage: 'English',
     interests: ['daily life', 'work situations'],
   },
   lesson: {
-    templateName: 'Grammar',
+    templateName: 'Grammar Focus',
     title: `[QA] Sprint Review — ${sprintTopic.slice(0, 40)}`,
     language: 'Spanish',
-    cefrLevel: 'B1.1',
+    cefrLevel: 'B1',
     topic: sprintTopic,
   },
 }
@@ -70,10 +70,10 @@ test('Sprint Reviewer — integration test for current sprint features', async (
   const page = await context.newPage()
 
   // 1. Ensure student [QA] Sprint Tester exists (create if first run, reuse on subsequent runs)
-  const studentId = await upsertStudent(page, PERSONA.student)
+  await upsertStudent(page, PERSONA.student)
 
   // 2. Create lesson with the sprint-specific topic
-  const lessonData = { ...PERSONA.lesson, studentId }
+  const lessonData = { ...PERSONA.lesson, studentName: PERSONA.student.name }
   const lessonId = await createLesson(page, lessonData)
 
   // 3. Navigate to lesson editor
@@ -111,7 +111,7 @@ test('Sprint Reviewer — integration test for current sprint features', async (
   saveRunOutput(outputDir, content, {
     persona: PERSONA.name,
     lessonId,
-    studentId,
+    studentId: undefined,
     branch: process.env.QA_BRANCH ?? 'unknown',
     generationDurationMs: durationMs,
     studentViewCaptured,

@@ -213,7 +213,18 @@ public class PromptService : IPromptService
     {
         var topic = Sanitize(ctx.Topic);
         const string schema = """{"title":"","objectives":[""],"sections":{"warmUp":"","presentation":"","practice":"","production":"","wrapUp":""}}""";
-        var baseInstruction = $"Generate a complete lesson plan for the lesson on \"{topic}\". Return JSON:\n{schema}\nEach section should be detailed enough for the teacher to follow without additional preparation. Focus on activities suitable for one-on-one online tutoring. Do not reference physical classroom resources like whiteboards, projectors, or video players.";
+        var baseInstruction = $"""
+        Generate a complete lesson plan for the lesson on "{topic}". Return JSON:
+        {schema}
+        Each section should be detailed enough for the teacher to follow without additional preparation. Focus on activities suitable for one-on-one online tutoring. Do not reference physical classroom resources like whiteboards, projectors, or video players.
+
+        Section guidelines:
+        - warmUp (2-5 min): A conversational icebreaker. Use a discussion question, opinion prompt, or anecdote starter that the student can answer freely. There is no right or wrong answer. NEVER generate a vocabulary list, grammar drill, translation exercise, or fill-in-blank activity for warmUp. The sole purpose is to get the student talking and relaxed before the lesson begins.
+        - presentation: Introduce the new language (vocabulary, grammar, or structure) with examples in context. Explain meanings and usage.
+        - practice: Controlled activities where the student practises the new language (fill-in-blank, matching, short answers). Correction is expected.
+        - production: A free or communicative activity where the student uses the new language independently with minimal guidance.
+        - wrapUp (2-3 min): Brief review of what was covered and preview of homework or next session.
+        """;
 
         if (string.Equals(ctx.TemplateName, "Reading & Comprehension", StringComparison.OrdinalIgnoreCase))
         {

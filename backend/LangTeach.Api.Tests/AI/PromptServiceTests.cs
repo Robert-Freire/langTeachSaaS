@@ -394,6 +394,32 @@ public class PromptServiceTests
         req.SystemPrompt.Should().NotContain("Target grammar structures");
     }
 
+    // --- WarmUp icebreaker constraint ---
+
+    [Fact]
+    public void LessonPlanPrompt_UserPrompt_ContainsWarmUpIcebreakerGuidance()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("conversational icebreaker");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_UserPrompt_ProhibitsVocabularyListInWarmUp()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("NEVER generate a vocabulary list");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_UserPrompt_ProhibitsGrammarDrillInWarmUp()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("grammar drill");
+    }
+
     // --- Reading & Comprehension template ---
 
     [Fact]
