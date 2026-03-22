@@ -297,23 +297,26 @@ POLISHED / GOOD / NEEDS WORK
 
 ### Step 2: Return a compact summary to the caller
 
-Your **final response** (what the calling agent sees) must be under 1500 characters. Use this format:
+Your **final response** (what the calling agent sees) must be concise. Include one-liners for ALL findings (the caller needs them to populate `plan/ui-review-backlog.md` without reading the full report). Skip the detailed analysis, screenshot refs, tables, and suggested fixes (those stay in the full report).
 
 ```
 VERDICT: POLISHED | GOOD | NEEDS WORK
 FULL REPORT: e2e/screenshots/review-ui/REPORT.md
 
-CRITICAL (<count>):
-- <one-line per finding>
+CRITICAL:
+- [C1] <page> (<viewport>): <one-line description>
 
-IMPORTANT (<count>):
-- <one-line per finding>
+IMPORTANT:
+- [I1] <page> (<viewport>): <one-line description>
 
-MINOR: <count> findings (see full report)
-UX GUIDELINES: <count> failures (see full report)
+MINOR:
+- [M1] <page> (<viewport>): <one-line description>
+
+UX GUIDELINE FAILURES:
+- [U1] <rule name>: <one-line description>
 ```
 
-If verdict is POLISHED or GOOD with zero critical/important findings, the summary is just 3 lines. The caller reads the full report file only if it needs to populate the backlog.
+Omit any section that has zero findings. If verdict is POLISHED with no findings, the summary is just 2 lines.
 
 ## Windows / Git Bash: path mangling
 

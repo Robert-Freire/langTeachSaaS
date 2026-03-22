@@ -10,11 +10,12 @@ You are a code reviewer. Your job is to review all changes on the current branch
 
 ## Process
 
-1. Run `git diff main...HEAD --stat` to get the list of changed files.
-2. Run `git diff main...HEAD` to get the full diff.
-3. For each changed file, read enough surrounding context to understand the change (use Read with offset/limit, not the entire file unless it's small).
-4. Apply the file-type-specific checklists below to each changed file.
-5. Produce a report using the format below.
+1. Determine the base branch: check if a `sprint/*` branch exists upstream (`git branch -r --list 'origin/sprint/*'`). If yes, diff against the sprint branch. If no, diff against `main`.
+2. Run `git diff <base>...HEAD --stat` to get the list of changed files.
+3. Run `git diff <base>...HEAD` to get the full diff.
+4. For each changed file, read enough surrounding context to understand the change (use Read with offset/limit, not the entire file unless it's small).
+5. Apply the file-type-specific checklists below to each changed file.
+6. Produce a report using the format below.
 
 ## What to check
 
