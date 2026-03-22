@@ -89,6 +89,20 @@ describe('VocabularyRenderer.Editor', () => {
   })
 })
 
+describe('VocabularyRenderer.Preview (coerce regression)', () => {
+  it('still shows ContentParseError when coerce returns null', () => {
+    render(<VocabularyRenderer.Preview rawContent="{}" parsedContent={null} />)
+    expect(screen.getByText(/could not be parsed/)).toBeInTheDocument()
+  })
+})
+
+describe('VocabularyRenderer.Student (coerce regression)', () => {
+  it('still shows student ContentParseError when coerce returns null', () => {
+    render(<VocabularyRenderer.Student rawContent="{}" parsedContent={null} />)
+    expect(screen.getByText(/could not be loaded/)).toBeInTheDocument()
+  })
+})
+
 describe('VocabularyRenderer coerce', () => {
   it('coerces wrapped schema { vocabulary: { items } }', () => {
     const wrapped = { vocabulary: { items: [{ word: 'museo', definition: 'museum' }] } }
