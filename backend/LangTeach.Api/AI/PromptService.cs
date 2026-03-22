@@ -213,7 +213,21 @@ public class PromptService : IPromptService
     {
         var topic = Sanitize(ctx.Topic);
         const string schema = """{"title":"","objectives":[""],"sections":{"warmUp":"","presentation":"","practice":"","production":"","wrapUp":""}}""";
-        return $"Generate a complete lesson plan for the lesson on \"{topic}\". Return JSON:\n{schema}\nEach section should be detailed enough for the teacher to follow without additional preparation. Focus on activities suitable for one-on-one online tutoring. Do not reference physical classroom resources like whiteboards, projectors, or video players.";
+        var baseInstruction = $"Generate a complete lesson plan for the lesson on \"{topic}\". Return JSON:\n{schema}\nEach section should be detailed enough for the teacher to follow without additional preparation. Focus on activities suitable for one-on-one online tutoring. Do not reference physical classroom resources like whiteboards, projectors, or video players.";
+
+        if (string.Equals(ctx.TemplateName, "Reading & Comprehension", StringComparison.OrdinalIgnoreCase))
+        {
+            baseInstruction +=
+                "\n\nREADING & COMPREHENSION TEMPLATE REQUIREMENTS (mandatory):\n" +
+                "- warmUp: a pre-reading activation task only. Activate schema, predict content from the title, or discuss the topic. Do NOT use grammar drills, vocabulary lists, or fill-in-blank exercises here.\n" +
+                "- presentation: embed a complete reading passage (300-500 words, using vocabulary and grammar appropriate for the stated CEFR level) inside this section's notes. The teacher reads it with the student: first read for gist, second read for detail. Pre-teach any blocking vocabulary before reading.\n" +
+                "- practice: comprehension questions covering three types: (1) factual - explicitly stated in the text, (2) inferential - requiring the student to read between the lines, (3) vocabulary in context - explain the meaning of a word or phrase as used in the passage. Include at least 2 questions of each type.\n" +
+                "- production: a free-production task connected to the passage topic (e.g. short written response, opinion discussion, or a creative extension). The student works independently.\n" +
+                "- wrapUp: student summarises the passage in 1-2 sentences; brief discussion of the author's purpose or the student's reaction.\n" +
+                "All five sections (warmUp, presentation, practice, production, wrapUp) are required. Do not collapse or omit any of them.";
+        }
+
+        return baseInstruction;
     }
 
     private static string CurriculumSystemPrompt(CurriculumContext ctx)

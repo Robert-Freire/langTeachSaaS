@@ -394,6 +394,30 @@ public class PromptServiceTests
         req.SystemPrompt.Should().NotContain("Target grammar structures");
     }
 
+    // --- Reading & Comprehension template ---
+
+    [Fact]
+    public void LessonPlanPrompt_IncludesReadingPassageRequirements_WhenReadingComprehensionTemplate()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Reading & Comprehension" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Generate a complete lesson plan");
+        req.UserPrompt.Should().Contain("reading passage");
+        req.UserPrompt.Should().Contain("comprehension questions");
+        req.UserPrompt.Should().Contain("inferential");
+        req.UserPrompt.Should().Contain("production");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_DoesNotIncludeReadingPassageRequirements_WhenNoTemplate()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().NotContain("READING & COMPREHENSION TEMPLATE REQUIREMENTS");
+    }
+
     // --- No phantom materials constraint ---
 
     [Fact]
