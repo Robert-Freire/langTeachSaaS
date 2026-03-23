@@ -103,7 +103,7 @@ function MultiSelect({
           {selected.length === 0 ? placeholder : `${selected.length} selected`}
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </PopoverTrigger>
-        <PopoverContent className="w-64 max-w-[calc(100vw-2rem)] p-0 z-[60]" align="start" side="bottom" avoidCollisions={true}>
+        <PopoverContent className="w-64 max-w-[calc(100vw-2rem)] p-0 z-[60]" align="start" side="bottom">
           <Command shouldFilter={false}>
             <CommandInput
               placeholder="Search or type custom..."
