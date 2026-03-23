@@ -23,6 +23,9 @@ param swaLocation string = 'westeurope'
 @description('Frontend SWA origin URL for CORS (e.g. https://xxx.azurestaticapps.net)')
 param allowedOriginSwa string
 
+@description('Email address for ActivationFailed and infrastructure alerts')
+param alertEmail string
+
 // ── Derived names ─────────────────────────────────────────────────────────────
 
 var sqlServerName = 'langteach-sql-${env}'
@@ -55,6 +58,7 @@ module containerApp 'modules/containerapp.bicep' = {
     location: location
     keyVaultName: keyVaultName
     allowedOriginSwa: allowedOriginSwa
+    alertEmail: alertEmail
   }
 }
 
