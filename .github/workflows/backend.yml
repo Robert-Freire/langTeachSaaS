@@ -178,16 +178,19 @@ jobs:
           OLD_REVISION="${{ steps.deploy.outputs.old_revision }}"
           echo "Polling revision '${NEW_REVISION}' for up to 2 minutes..."
 
+          # Poll runningState (not provisioningState): ARM provisioning completes
+          # almost immediately, but ActivationFailed is a runningState value.
+          # runningState values: Activating -> Running (healthy) or ActivationFailed/Failed (broken)
           for i in $(seq 1 24); do
             STATE=$(az containerapp revision show \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.RESOURCE_GROUP }} \
               --revision "${NEW_REVISION}" \
-              --query "properties.provisioningState" -o tsv)
+              --query "properties.runningState" -o tsv)
 
-            echo "  Attempt ${i}/24: provisioningState=${STATE}"
+            echo "  Attempt ${i}/24: runningState=${STATE}"
 
-            if [ "${STATE}" = "Provisioned" ]; then
+            if [ "${STATE}" = "Running" ]; then
               echo "Revision is healthy. Shifting 100% traffic to ${NEW_REVISION}."
               az containerapp ingress traffic set \
                 --name ${{ env.CONTAINER_APP_NAME }} \
@@ -195,8 +198,8 @@ jobs:
                 --revision-weight "${NEW_REVISION}=100"
               echo "Traffic shift complete."
               exit 0
-            elif [ "${STATE}" = "Failed" ] || [ "${STATE}" = "ActivationFailed" ]; then
-              echo "ERROR: Revision ${NEW_REVISION} entered Failed/ActivationFailed state."
+            elif [ "${STATE}" = "ActivationFailed" ] || [ "${STATE}" = "Failed" ]; then
+              echo "ERROR: Revision ${NEW_REVISION} entered ${STATE} state."
               if [ -n "${OLD_REVISION}" ]; then
                 echo "Old revision ${OLD_REVISION} continues serving 100% of traffic."
                 echo "Deactivating failed revision to prevent orphan accumulation..."
@@ -214,7 +217,7 @@ jobs:
             sleep 5
           done
 
-          echo "ERROR: Revision ${NEW_REVISION} did not reach Provisioned state within 2 minutes."
+          echo "ERROR: Revision ${NEW_REVISION} did not reach Running state within 2 minutes."
           if [ -n "${OLD_REVISION}" ]; then
             echo "Old revision ${OLD_REVISION} continues serving 100% of traffic."
             echo "Deactivating timed-out revision to prevent orphan accumulation..."
