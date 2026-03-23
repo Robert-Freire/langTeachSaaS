@@ -24,11 +24,12 @@ export function WeekStrip({ weekOffset, onPrev, onNext, lessons, students, unsch
   const dayRefs = useRef<(HTMLDivElement | null)[]>([])
 
   useEffect(() => {
-    const todayIdx = days.findIndex(d => isToday(d))
+    const weekDays = getWeekDays(weekOffset)
+    const todayIdx = weekDays.findIndex(d => isToday(d))
     if (todayIdx >= 0) {
       dayRefs.current[todayIdx]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
     }
-  }, [weekOffset]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [weekOffset])
 
   const lessonsByDay: Record<number, Lesson[]> = {}
   for (const lesson of lessons) {
