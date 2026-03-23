@@ -156,4 +156,14 @@ describe('LessonNew', () => {
     expect(screen.getByTestId('select-language').textContent).toContain('Spanish')
     expect(screen.getByTestId('select-level').textContent).toContain('B2')
   })
+
+  it('shows auto-fill hint text below the student selector', async () => {
+    mockGetStudents.mockResolvedValue({ items: [STUDENT_WITH_PROFILE], totalCount: 1 })
+
+    await goToStep2()
+
+    const hint = await screen.findByTestId('student-autofill-hint')
+    expect(hint).toBeInTheDocument()
+    expect(hint.textContent).toContain('auto-fills language and level')
+  })
 })

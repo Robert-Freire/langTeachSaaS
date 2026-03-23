@@ -130,3 +130,12 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | #213 | 2026-03-22 | Minor | [M2] Step 2 validation error shows below all fields rather than adjacent to the student name field — pre-existing |
 | #213 | 2026-03-22 | Minor | [U1] Required fields not marked with asterisks in onboarding forms — pre-existing pattern |
 | #151 | 2026-03-22 | Important | [I2] CourseNew mobile (375px): CEFR mismatch warning appears below fold after student selection; no auto-scroll — user must scroll to see it |
+
+### PR #247 (2026-03-23) — Fix duplicate Regenerate + auto-fill hint (#242)
+
+| Severity | Finding |
+|----------|---------|
+| Important | Lesson editor mobile (375px): "Preview as Student" button clips off screen due to action toolbar overflow — pre-existing, not introduced by #242 |
+| Minor | LessonNew student hint text uses text-zinc-500 with no icon; a small info icon would make it feel more like an intentional tip |
+| Minor | LessonNew step 1: "Blank" template card uses faint dashed border vs. solid on other cards — low contrast on light background |
+| Minor | Dashboard mobile: week strip clips to 3 days with no scroll affordance visible — pre-existing |
