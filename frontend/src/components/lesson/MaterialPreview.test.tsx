@@ -108,4 +108,13 @@ describe('MaterialPreview', () => {
     // Thumbnail should be gone, replaced by file icon
     expect(screen.queryByTestId('material-thumbnail')).not.toBeInTheDocument()
   })
+
+  it('thumbnail uses responsive size classes for mobile', () => {
+    renderWithProviders(<MaterialPreview material={imageMaterial} lessonId="l1" sectionId="s1" />)
+    const img = screen.getByTestId('material-thumbnail')
+    expect(img).toHaveClass('h-8')
+    expect(img).toHaveClass('w-8')
+    expect(img).toHaveClass('sm:h-12')
+    expect(img).toHaveClass('sm:w-12')
+  })
 })

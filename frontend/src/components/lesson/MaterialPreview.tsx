@@ -53,13 +53,13 @@ export function MaterialPreview({ material, lessonId, sectionId }: MaterialPrevi
             <img
               src={previewUrl}
               alt={material.fileName}
-              className="h-12 w-12 rounded object-cover border"
+              className="h-8 w-8 sm:h-12 sm:w-12 rounded object-cover border"
               data-testid="material-thumbnail"
               onError={() => setImgError(true)}
             />
           </a>
         ) : (
-          <div className="flex h-12 w-12 items-center justify-center rounded border bg-muted shrink-0">
+          <div className="flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded border bg-muted shrink-0">
             <FileText className="h-6 w-6 text-muted-foreground" />
           </div>
         )}

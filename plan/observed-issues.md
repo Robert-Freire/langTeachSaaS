@@ -10,3 +10,4 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #224 | 2026-03-23 | Minor | With minReplicas=0, the old revision may be scaled to zero when a new deploy arrives. If the health gate fails and old revision is restored to 100% traffic, there will be a cold-start delay before it can serve requests. Potential improvement: set minReplicas=1 during deploy window, or pre-warm the old revision before shifting traffic back. |
 
 *Items #2 and #3 are covered by #243 (visual polish batch). Item #1 is a test flakiness issue; monitor and create a separate issue if it persists.*
+| #243 | 2026-03-23 | Minor | LessonEditor uses a custom header (not PageHeader), so PageHeader's new `truncate` class does not apply to the lesson title on the editor screen. Long lesson titles still wrap in LessonEditor's header row. |

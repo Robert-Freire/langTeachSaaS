@@ -77,7 +77,7 @@ export default function OnboardingStep2({ onNext, onBack, onSkip }: OnboardingSt
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="studentName">Student name</Label>
+        <Label htmlFor="studentName">Student name <span className="text-red-500">*</span></Label>
         <Input
           id="studentName"
           value={name}
@@ -90,7 +90,7 @@ export default function OnboardingStep2({ onNext, onBack, onSkip }: OnboardingSt
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="learningLanguage">Language they are learning</Label>
+        <Label htmlFor="learningLanguage">Language they are learning <span className="text-red-500">*</span></Label>
         <Select value={learningLanguage} onValueChange={(v) => setLearningLanguage(v ?? '')}>
           <SelectTrigger className="max-w-sm" id="learningLanguage" data-testid="onboarding-learning-language">
             <SelectValue placeholder="Select language" />
@@ -104,7 +104,7 @@ export default function OnboardingStep2({ onNext, onBack, onSkip }: OnboardingSt
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="cefrLevel">Current level</Label>
+        <Label htmlFor="cefrLevel">Current level <span className="text-red-500">*</span></Label>
         <Select value={cefrLevel} onValueChange={(v) => setCefrLevel(v ?? '')}>
           <SelectTrigger className="max-w-sm" id="cefrLevel" data-testid="onboarding-cefr-level">
             <SelectValue placeholder="Select level" />

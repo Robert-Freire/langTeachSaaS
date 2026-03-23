@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useRef, useEffect } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { getCefrBadgeClasses } from '@/lib/cefr-colors'
@@ -20,6 +21,15 @@ interface WeekStripProps {
 export function WeekStrip({ weekOffset, onPrev, onNext, lessons, students, unscheduledDrafts }: WeekStripProps) {
   const navigate = useNavigate()
   const days = getWeekDays(weekOffset)
+  const dayRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  useEffect(() => {
+    const weekDays = getWeekDays(weekOffset)
+    const todayIdx = weekDays.findIndex(d => isToday(d))
+    if (todayIdx >= 0) {
+      dayRefs.current[todayIdx]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    }
+  }, [weekOffset])
 
   const lessonsByDay: Record<number, Lesson[]> = {}
   for (const lesson of lessons) {
@@ -56,6 +66,7 @@ export function WeekStrip({ weekOffset, onPrev, onNext, lessons, students, unsch
           return (
             <div
               key={idx}
+              ref={(el) => { dayRefs.current[idx] = el }}
               className={`min-w-[120px] shrink-0 snap-start md:min-w-0 md:shrink min-h-[100px] rounded-lg border p-2 ${
                 today ? 'bg-indigo-50 border-indigo-200 border-t-2 border-t-indigo-500' : 'bg-white border-zinc-200'
               }`}
