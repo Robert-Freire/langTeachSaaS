@@ -90,7 +90,12 @@ See git history for details. Key completed milestones:
   - Note: Teacher QA re-run with Carmen needed to confirm fix (AC4)
 - #219 Review process gap (P1, DONE — PR #237 merged, Ready to Test)
   - Findings doc at plan/langteach-beta/219-findings.md covers all 4 postmortem angles
-  - Implemented: #220 (startup validation), #221 (PR template); Deferred: #223 (CI secret validation), #224 (auto-rollback + alerting) to Phase 2B
+  - Implemented: #220 (startup validation), #221 (PR template), #223 (CI secret validation); Deferred: #224 (auto-rollback + alerting) to Phase 2B
+- #223 CI step to validate required Key Vault secrets before deploy (P2, DONE — PR #240 merged, Ready to Test)
+  - infra/required-secrets.json manifest lists all 5 required KV secret names
+  - validate-secrets job checks each via ARM management-plane API (no new RBAC grants needed)
+  - deploy job now depends on [ci, validate-secrets]; fails with actionable error if any secret missing
+  - Error handling distinguishes ResourceNotFound from permission/transient errors
 - #221 Add PR template checklist (P1, DONE — PR #232 merged, Ready to Test)
   - Created .github/PULL_REQUEST_TEMPLATE.md with Config & Infrastructure checklist section
   - Checklist prompts authors to confirm secrets in Key Vault, env vars in Bicep, new infra templated
@@ -100,6 +105,10 @@ See git history for details. Key completed milestones:
   - No existing content type can produce this; recommends new `visualExplainer` type
   - Start with freeText prototype to validate demand before building full renderer
   - Analysis at plan/langteach-beta/jordi-pdf-analysis.md
+- #242 Fix duplicate Regenerate labels and add auto-fill hint (P2, DONE — PR #247 merged, Ready to Test)
+  - ContentBlock: block-level Regenerate hidden when parsedContent is null (error box already has one)
+  - LessonNew: hint text "Selecting a student auto-fills language and level." added below student selector
+  - 2 new unit tests; 385 frontend + 180 backend tests pass
 - #229 Fix vocabulary generation: enforce L1 translations and CEFR-appropriate level (P2, DONE — PR #238 merged, Ready to Test)
   - VocabularyUserPrompt now requires CEFR-level items and L1 translations when native language known
   - 3 unit tests; fixes Teacher QA findings CQ-2 and CQ-3

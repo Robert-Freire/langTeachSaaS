@@ -11,3 +11,5 @@ When working inside a worktree, **all file edits and bash commands must use the 
 **Root cause:** The agent "knows" the project root from initial context and defaults to it, especially when constructing `cd` commands or using tool paths.
 
 **Rule:** After entering a worktree, verify that your CWD and all absolute paths point to the worktree directory before editing files or running commands. If using absolute paths, they must start with the worktree root (e.g., `.claude/worktrees/task-xxx/`), not the main repo root.
+
+**Rebase conflict resolution rule:** When rebasing a task branch onto sprint and plan/backlog files conflict, **merge both sides** (not `--theirs`). These files are additive — both sides likely have valid entries and accepting only one side loses content. Use `--theirs` only for generated or compiled files where only one authoritative version should exist.
