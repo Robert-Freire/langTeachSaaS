@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, ChevronsUpDown, Check, Plus, Trash2 } from 'lucide-react'
 import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty } from '../api/students'
-import { LEARNING_GOALS, getWeaknessesForLanguage, DIFFICULTY_CATEGORIES, SEVERITY_LEVELS, TREND_OPTIONS } from '../lib/studentOptions'
+import { LEARNING_GOALS, getWeaknessesForLanguage, getLanguageSpecificWeaknessValues, DIFFICULTY_CATEGORIES, SEVERITY_LEVELS, TREND_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -93,7 +93,7 @@ function MultiSelect({
   )
 
   return (
-    <div className="space-y-2">
+    <div className="relative z-[1] space-y-2">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           type="button"
@@ -103,7 +103,7 @@ function MultiSelect({
           {selected.length === 0 ? placeholder : `${selected.length} selected`}
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </PopoverTrigger>
-        <PopoverContent className="w-64 max-w-[calc(100vw-2rem)] p-0" align="start">
+        <PopoverContent className="w-64 max-w-[calc(100vw-2rem)] p-0 z-[60]" align="start" side="bottom">
           <Command shouldFilter={false}>
             <CommandInput
               placeholder="Search or type custom..."
@@ -149,7 +149,7 @@ function MultiSelect({
       </Popover>
 
       {selected.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
           {selected.map((value) => {
             const label = options.find((o) => o.value === value)?.label ?? value
             return (
@@ -379,7 +379,12 @@ export default function StudentForm() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
               <div className="space-y-1.5">
                 <Label>Learning Language <span className="text-red-500">*</span></Label>
-                <Select value={language} onValueChange={(v) => v && setLanguage(v)}>
+                <Select value={language} onValueChange={(v) => {
+                  if (!v) return
+                  const stale = getLanguageSpecificWeaknessValues(language)
+                  setWeaknesses((prev) => prev.filter((w) => !stale.has(w)))
+                  setLanguage(v)
+                }}>
                   <SelectTrigger data-testid="student-language">
                     <SelectValue placeholder="Select a language" />
                   </SelectTrigger>
