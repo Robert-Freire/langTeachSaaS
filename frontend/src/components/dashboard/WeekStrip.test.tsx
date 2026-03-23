@@ -8,6 +8,7 @@ vi.mock('./SchedulePopover', () => ({
 }))
 
 const scrollIntoViewMock = vi.fn()
+const originalScrollIntoView = window.HTMLElement.prototype.scrollIntoView
 
 beforeEach(() => {
   scrollIntoViewMock.mockClear()
@@ -15,6 +16,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  window.HTMLElement.prototype.scrollIntoView = originalScrollIntoView
   vi.restoreAllMocks()
 })
 
