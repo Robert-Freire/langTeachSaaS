@@ -3,6 +3,8 @@
 # Data persists across runs via named volumes — do NOT use 'down -v' unless resetting.
 # Playwright runs from the HOST against http://localhost:5175.
 #
+# Ports (host): frontend 5175, API 5176 (independent of dev stack on 5000/5173).
+#
 # Prerequisites:
 #   cp .env.qa.example .env.qa  # fill in secrets once
 #   # Create the Auth0 QA user first (see .claude/skills/teacher-qa/SKILL.md)
@@ -52,6 +54,8 @@ services:
       # Host-side Playwright connects through localhost:5175
       AllowedOrigins__E2e: "http://localhost:5175"
       AzureBlobStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+    ports:
+      - "5176:5000"
     healthcheck:
       test: curl -sf http://localhost:5000/health || exit 1
       interval: 10s
@@ -71,7 +75,7 @@ services:
     environment:
       # Real Auth0 mode — frontend uses Auth0Provider, not MockAuth0Provider
       VITE_E2E_TEST_MODE: "false"
-      VITE_API_URL: "http://api:5000"
+      VITE_API_URL: "http://localhost:5176"
       VITE_API_PROXY_TARGET: "http://api:5000"
       VITE_AUTH0_DOMAIN: "${AUTH0_DOMAIN}"
       VITE_AUTH0_CLIENT_ID: "${VITE_AUTH0_CLIENT_ID}"
