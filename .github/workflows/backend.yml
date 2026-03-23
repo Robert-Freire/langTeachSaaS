@@ -195,7 +195,7 @@ jobs:
                 --revision-weight "${NEW_REVISION}=100"
               echo "Traffic shift complete."
               exit 0
-            elif [ "${STATE}" = "Failed" ]; then
+            elif [ "${STATE}" = "Failed" ] || [ "${STATE}" = "ActivationFailed" ]; then
               echo "ERROR: Revision ${NEW_REVISION} entered Failed/ActivationFailed state."
               if [ -n "${OLD_REVISION}" ]; then
                 echo "Old revision ${OLD_REVISION} continues serving 100% of traffic."
