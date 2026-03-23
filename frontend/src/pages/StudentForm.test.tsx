@@ -33,11 +33,6 @@ vi.mock('../lib/studentOptions', () => ({
     if (lang === 'Spanish') return new Set(['ser/estar'])
     return new Set<string>()
   },
-  getLanguageSpecificWeaknessValues: (lang: string) => {
-    if (lang === 'English') return new Set(['phrasal verbs'])
-    if (lang === 'Spanish') return new Set(['ser/estar'])
-    return new Set<string>()
-  },
   DIFFICULTY_CATEGORIES: [
     { value: 'grammar', label: 'Grammar' },
     { value: 'pronunciation', label: 'Pronunciation' },
