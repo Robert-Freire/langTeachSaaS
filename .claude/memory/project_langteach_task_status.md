@@ -48,6 +48,8 @@ See git history for details. Key completed milestones:
 - #150 Filter difficulties by target language (P1, ready)
 - #161 Custom free-text entries for learning goals (P1, done, PR #172 merged)
 - #154 Auto-fill lesson language/level from student (P2, done, PR #205 merged, Ready to Test)
+- #213 Skippable onboarding steps 2-3 (P2, done, PR #236 merged, Ready to Test)
+  - completeOnboarding moved to after step 1; steps 2/3 have skip buttons; dashboard empty state added
 - #151 CEFR level mismatch warning (P2, ready)
 - #192 Fix raw JSON visible in editor (P1, done, PR #204 merged, Ready to Test)
 - #195 Sprint branch workflow (P1, done)
@@ -56,9 +58,69 @@ See git history for details. Key completed milestones:
 - #201 Teacher QA remaining personas + Sprint Reviewer (P1, done, PR #211 merged, Ready to Test)
   - Fixes: paginated student list parsing, onboarding guard in auth helper
   - Adds: Carmen B2.1, Ana Exam Prep B2.1, Sprint Reviewer personas
-  - Auth0 QA user + onboarding still needs one-time manual setup (see SKILL.md)
+  - Auth0 QA user: CREATED (done for #200/#201)
+  - Onboarding wizard: still needs one-time manual completion (start QA stack, log in, complete 3-step wizard)
 - #199 Fix flaky StudentForm test (P1, done, PR #209 merged, Ready to Test)
-- #202 Teacher QA first run + triage (P1, blocked until Auth0 QA user onboarded)
+- #202 Teacher QA first run + triage (P1, DONE — PR #218 merged, Ready to Test)
+  - All 5 personas ran successfully against sprint/curriculum-personalization
+  - Key finding: WarmUp always generates vocabulary drill (should be icebreaker) — system-wide, 5/5 personas
+  - Key finding: Carmen Reading & Comprehension has no reading passage — structural template gap
+  - Confirmed working: #184 phantom media fix, #192 raw JSON fix
+  - Triage report: .claude/skills/teacher-qa/output/triage-2026-03-22.md
+  - Proposed follow-up: 2 P1 issues + 2 P2 issues (see triage report)
+- #220 Add startup config validation (P1, DONE — PR #230 merged, Ready to Test)
+  - StartupConfigValidator checks all 5 required keys after Key Vault loads, before service registration
+  - BlobServiceClient gets explicit null guard with descriptive error
+  - 5 unit tests in LangTeach.Api.Tests/Infrastructure/StartupConfigValidatorTests.cs
+- #226 Fix WarmUp generation: icebreaker, not vocabulary drill (P1, DONE — PR #231 merged, Ready to Test)
+  - Updated LessonPlanUserPrompt with per-section guidance; warmUp explicitly requires conversational icebreaker
+  - Vocabulary lists, grammar drills, fill-in-blank explicitly prohibited for warmUp
+  - 3 new unit tests in PromptServiceTests.cs verify constraints; 166 backend tests pass
+  - Note: Teacher QA re-run needed to confirm fix (acceptance criterion #3)
+- #228 Fix Exam Prep template: written production + timed practice (P2, DONE — PR #239 merged, Ready to Test)
+  - Injected Exam Prep-specific requirements into LessonPlanUserPrompt (else-if pattern, same as #227)
+  - Prohibits oral role-play in practice/production; requires written tasks (essay, formal letter, short report)
+  - Mandates explicit time limits and word count targets in practice/production sections
+  - 3 new unit tests in PromptServiceTests.cs; 176 backend tests pass
+  - Note: Teacher QA re-run with Ana Exam needed to confirm fix (AC3)
+- #227 Fix Reading & Comprehension template (P1, DONE — PR #235 merged, Ready to Test)
+  - Added TemplateName to GenerationContext; LessonPlanUserPrompt now appends R&C-specific requirements when template matches
+  - Requirements: 300-500 word reading passage, comprehension questions (factual/inferential/vocab-in-context), all 5 sections mandatory
+  - Controller loads template name from DB on LessonPlan requests only (gated on ContentBlockType.LessonPlan)
+  - Note: Teacher QA re-run with Carmen needed to confirm fix (AC4)
+- #219 Review process gap (P1, DONE — PR #237 merged, Ready to Test)
+  - Findings doc at plan/langteach-beta/219-findings.md covers all 4 postmortem angles
+  - Implemented: #220 (startup validation), #221 (PR template), #223 (CI secret validation); Deferred: #224 (auto-rollback + alerting) to Phase 2B
+- #223 CI step to validate required Key Vault secrets before deploy (P2, DONE — PR #240 merged, Ready to Test)
+  - infra/required-secrets.json manifest lists all 5 required KV secret names
+  - validate-secrets job checks each via ARM management-plane API (no new RBAC grants needed)
+  - deploy job now depends on [ci, validate-secrets]; fails with actionable error if any secret missing
+  - Error handling distinguishes ResourceNotFound from permission/transient errors
+- #221 Add PR template checklist (P1, DONE — PR #232 merged, Ready to Test)
+  - Created .github/PULL_REQUEST_TEMPLATE.md with Config & Infrastructure checklist section
+  - Checklist prompts authors to confirm secrets in Key Vault, env vars in Bicep, new infra templated
+  - Preserves Summary and Test Plan sections; pre-populates on all new PRs
+- #208 Analyze Jordi's example PDF (P2, DONE — PR #225 merged, Ready to Test)
+  - Visual reference card format: timeline infographic + clock row + formula callout + contrasting examples
+  - No existing content type can produce this; recommends new `visualExplainer` type
+  - Start with freeText prototype to validate demand before building full renderer
+  - Analysis at plan/langteach-beta/jordi-pdf-analysis.md
+- #242 Fix duplicate Regenerate labels and add auto-fill hint (P2, DONE — PR #247 merged, Ready to Test)
+  - ContentBlock: block-level Regenerate hidden when parsedContent is null (error box already has one)
+  - LessonNew: hint text "Selecting a student auto-fills language and level." added below student selector
+  - 2 new unit tests; 385 frontend + 180 backend tests pass
+- #229 Fix vocabulary generation: enforce L1 translations and CEFR-appropriate level (P2, DONE — PR #238 merged, Ready to Test)
+  - VocabularyUserPrompt now requires CEFR-level items and L1 translations when native language known
+  - 3 unit tests; fixes Teacher QA findings CQ-2 and CQ-3
+
+## Production Incidents
+
+### 2026-03-22: API ActivationFailed (issue #217, resolved)
+- **Root cause:** `AzureBlobStorage--ConnectionString` secret missing from Key Vault. Added in Bicep but never provisioned after PR #148 (BlobStorageService) added the dependency.
+- **Symptom:** Every new revision crashed on startup with `ArgumentNullException: connectionString`. Old revision 0000031 (built pre-PR-#148) kept running because it didn't use BlobStorageService.
+- **Fix:** Added the secret to Key Vault manually (`az keyvault secret set`). New revision 0000040 is now healthy.
+- **Follow-up:** Issue #219 — startup hardening (null guard) + review process gap (missing secret not caught in CI/review).
+- **Lesson:** When adding a new service that reads from Key Vault, ensure the secret is provisioned (Bicep update + manual apply if infra wasn't redeployed).
 
 ## Key Architectural Notes
 - Azure Container Apps (not App Service), North Europe region, SWA in West Europe
