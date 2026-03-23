@@ -45,7 +45,25 @@ All 19 sprint issues with merged PRs are **CLOSED** on GitHub. The PRs used `Clo
 - **CLAUDE.md:** Updated with sprint label workflow and two-board documentation
 - **Memory files:** Updated (task management, GitHub labels)
 
-## Open Questions for Next Session
+## RESOLVED (2026-03-23)
+
+**Root cause:** The previous session's agent had a code bug (comparing a dict to a string), making it look like the milestone view only returned 3 items. The milestone view works perfectly: 35 items, open + closed, all columns.
+
+**Decision:** Milestone view is the single sprint screen. Removed Project #3, `sprint:active` label workflow, `--sprint` flag, and "Current Sprint" view. Installed GitHub MCP server with projects toolset for reliable board operations.
+
+**Changes made:** `.mcp.json` (new), `scripts/add-to-board.sh` (simplified), `.claude/CLAUDE.md` (single-board workflow), memory files updated.
+
+**Manual steps for Robert:**
+1. Delete "Current Sprint" view on Roadmap board
+2. Archive Project #3 (Settings > Danger Zone > Close project)
+3. Update "Current milestone" view filter to `milestone:"Curriculum & Personalization"` and save
+4. Create a GitHub **Classic** Personal Access Token (Settings > Developer settings > Personal access tokens > Tokens (classic)). Fine-grained tokens do NOT support Projects for personal accounts. Scopes: `repo`, `project`, `read:org`
+5. Set `GITHUB_PERSONAL_ACCESS_TOKEN` as an environment variable in your shell profile
+6. Restart Claude Code, verify MCP with `/mcp`
+
+---
+
+## Open Questions (resolved)
 
 1. **Why does the milestone view hide closed issues?** Check the "Current milestone" view settings. Is there an `is:open` filter? Can it be changed to show all issues? If yes, milestones alone solve the problem and we don't need the label.
 

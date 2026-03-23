@@ -91,6 +91,11 @@ See git history for details. Key completed milestones:
 - #219 Review process gap (P1, DONE — PR #237 merged, Ready to Test)
   - Findings doc at plan/langteach-beta/219-findings.md covers all 4 postmortem angles
   - Implemented: #220 (startup validation), #221 (PR template), #223 (CI secret validation); Deferred: #224 (auto-rollback + alerting) to Phase 2B
+- #241 Fix student form UX bugs: z-index, chip overflow, stale weaknesses (P1, DONE — PR #248 merged)
+  - MultiSelect PopoverContent: side=bottom + z-[60] to prevent overlap behind preceding cards
+  - Chip container: max-h-24 overflow-y-auto for visibility without unbounded card growth
+  - Language switch: clears only language-specific weaknesses (new getLanguageSpecificWeaknessValues helper); common entries preserved
+  - 1 new unit test covering language-switch clearing behavior
 - #223 CI step to validate required Key Vault secrets before deploy (P2, DONE — PR #240 merged, Ready to Test)
   - infra/required-secrets.json manifest lists all 5 required KV secret names
   - validate-secrets job checks each via ARM management-plane API (no new RBAC grants needed)

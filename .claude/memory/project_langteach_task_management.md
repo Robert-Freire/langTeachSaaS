@@ -34,20 +34,13 @@ When creating a new issue via `gh issue create`, always complete these steps:
    Size field ID: `PVTSSF_lAHOAF1Pks4BSLsSzg_7HpU`
    Size option IDs: XS=e261fbf6, S=6736aa38, M=5cfbe0a8, L=e072ac0f, XL=2115c351
 
-### Two Project Boards
+### Project Board: Roadmap (#2)
 
-**Roadmap (project #2):** Full backlog across all milestones. Long-term view.
-**Current Sprint (project #3):** Only active sprint issues. At-a-glance sprint status. Repopulated each sprint.
+Single board for all issues across all milestones. The **"Current milestone"** view (filtered by the active sprint's milestone) is the primary sprint-at-a-glance screen.
 
-The **"Current Sprint" view** on the Roadmap board (filtered by `label:sprint:active`) is the primary sprint view. Project #3 is a secondary option.
-
-### Sprint Label: `sprint:active`
-
-All issues in the active sprint get the `sprint:active` label. This powers the "Current Sprint" board view on the Roadmap project (label filter is reliable, unlike milestone filter which has sync issues).
-
-- **Adding sprint issues:** Use `./scripts/add-to-board.sh <url> <status> --sprint` to add to both boards and apply the label
-- **Sprint transition:** Bulk-remove `sprint:active` from old sprint issues, bulk-add to new sprint issues
-- Only add issues that actually belong in the sprint (not deferred/backlog items)
+- **Adding issues:** Use `./scripts/add-to-board.sh <url> <status>` to add and set status
+- **Sprint view:** Robert updates the "Current milestone" view filter in the GitHub UI at sprint start
+- The milestone view shows both open and closed issues, so `Closes #N` in PRs is fine
 
 ### Project Board — Always Use `--limit 100`
 
