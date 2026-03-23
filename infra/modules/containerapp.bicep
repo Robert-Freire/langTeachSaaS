@@ -2,6 +2,7 @@ param name string
 param location string
 param keyVaultName string
 param allowedOriginSwa string
+param alertEmail string
 
 var keyVaultUri = 'https://${keyVaultName}${environment().suffixes.keyvaultDns}/'
 
@@ -39,6 +40,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
   properties: {
     managedEnvironmentId: containerEnv.id
     configuration: {
+      activeRevisionsMode: 'Multiple'
       ingress: {
         external: true
         targetPort: 5000
@@ -78,6 +80,55 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
         maxReplicas: 1
       }
     }
+  }
+}
+
+resource alertActionGroup 'microsoft.insights/actionGroups@2023-01-01' = {
+  name: 'ag-langteach-${name}'
+  location: 'global'
+  properties: {
+    groupShortName: 'lt-alert'
+    enabled: true
+    emailReceivers: [
+      {
+        name: 'Robert'
+        emailAddress: alertEmail
+        useCommonAlertSchema: true
+      }
+    ]
+  }
+}
+
+resource activationFailedAlert 'microsoft.insights/scheduledQueryRules@2022-06-15' = {
+  name: 'alert-activation-failed-${name}'
+  location: location
+  properties: {
+    displayName: 'Container App ActivationFailed - ${name}'
+    description: 'Fires when a Container App revision fails to start (ActivationFailed). The CI/CD health gate prevents traffic from shifting, but this alert ensures visibility for manual investigation.'
+    enabled: true
+    scopes: [logAnalytics.id]
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT6M'
+    criteria: {
+      allOf: [
+        {
+          // Note: ContainerAppSystemLogs uses Log_s for the free-text message field.
+          // If Azure changes this field name in a future API version, update the query here.
+          query: 'ContainerAppSystemLogs | where Log_s contains "ActivationFailed"'
+          timeAggregation: 'Count'
+          operator: 'GreaterThan'
+          threshold: 0
+          failingPeriods: {
+            numberOfEvaluationPeriods: 1
+            minFailingPeriodsToAlert: 1
+          }
+        }
+      ]
+    }
+    actions: {
+      actionGroups: [alertActionGroup.id]
+    }
+    severity: 2
   }
 }
 

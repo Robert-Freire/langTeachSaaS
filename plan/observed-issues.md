@@ -7,5 +7,6 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #198 | 2026-03-22 | Minor | `StudentForm.test.tsx` "shows English-specific weaknesses when English is selected" is flaky on the sprint branch (fails on `getByRole('option', { name: 'English' })`) despite PR #209 fixing a different test in the same file; may need `findByRole` fix for this test case too |
 | #154 | 2026-03-22 | Minor | NativeLanguage selector in StudentForm shows "none" instead of "Not specified" in the closed trigger (same root cause as the "No student" fix in this PR) |
 | #154 | 2026-03-22 | Minor | LessonNew step 2 uses a custom header layout (ArrowLeft icon + h1) instead of the PageHeader component used by every other sub-page, creating visual inconsistency between step 1 and step 2 |
+| #224 | 2026-03-23 | Minor | With minReplicas=0, the old revision may be scaled to zero when a new deploy arrives. If the health gate fails and old revision is restored to 100% traffic, there will be a cold-start delay before it can serve requests. Potential improvement: set minReplicas=1 during deploy window, or pre-warm the old revision before shifting traffic back. |
 
 *Items #2 and #3 are covered by #243 (visual polish batch). Item #1 is a test flakiness issue; monitor and create a separate issue if it persists.*
