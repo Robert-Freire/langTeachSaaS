@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, ChevronsUpDown, Check, Plus, Trash2 } from 'lucide-react'
 import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty } from '../api/students'
-import { LEARNING_GOALS, getWeaknessesForLanguage, DIFFICULTY_CATEGORIES, SEVERITY_LEVELS, TREND_OPTIONS } from '../lib/studentOptions'
+import { LEARNING_GOALS, getWeaknessesForLanguage, getLanguageSpecificWeaknessValues, DIFFICULTY_CATEGORIES, SEVERITY_LEVELS, TREND_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -381,8 +381,8 @@ export default function StudentForm() {
                 <Label>Learning Language <span className="text-red-500">*</span></Label>
                 <Select value={language} onValueChange={(v) => {
                   if (!v) return
-                  const oldPredefined = new Set(getWeaknessesForLanguage(language).map((o) => o.value))
-                  setWeaknesses((prev) => prev.filter((w) => !oldPredefined.has(w)))
+                  const stale = getLanguageSpecificWeaknessValues(language)
+                  setWeaknesses((prev) => prev.filter((w) => !stale.has(w)))
                   setLanguage(v)
                 }}>
                   <SelectTrigger data-testid="student-language">
