@@ -129,3 +129,4 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | #213 | 2026-03-22 | Important | [I2] Step 3 loading skeleton has no context label — "Preparing your student..." would reduce confusion; pre-existing but newly exposed by skip flow |
 | #213 | 2026-03-22 | Minor | [M2] Step 2 validation error shows below all fields rather than adjacent to the student name field — pre-existing |
 | #213 | 2026-03-22 | Minor | [U1] Required fields not marked with asterisks in onboarding forms — pre-existing pattern |
+| #151 | 2026-03-22 | Important | [I2] CourseNew mobile (375px): CEFR mismatch warning appears below fold after student selection; no auto-scroll — user must scroll to see it |
