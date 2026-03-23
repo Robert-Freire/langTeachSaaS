@@ -162,10 +162,10 @@ function MultiSelect({
                 <button
                   type="button"
                   onClick={(e) => remove(value, e)}
-                  className="text-indigo-400 hover:text-indigo-700"
+                  className="text-indigo-400 hover:text-indigo-700 p-0.5 -mr-0.5"
                   aria-label={`Remove ${label}`}
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-4 w-4" />
                 </button>
               </span>
             )
@@ -330,7 +330,7 @@ export default function StudentForm() {
   if (isEdit && (isError || (!isLoading && !existing))) {
     return (
       <div className="flex items-center justify-center h-64">
-        <span className="text-sm text-red-600 font-medium">Student not found. <button onClick={() => navigate('/students')} className="underline">Go back</button></span>
+        <span className="text-sm text-red-600 font-medium">Student not found. <button onClick={() => navigate('/students')} className="underline hover:text-zinc-700 transition-colors">Go back</button></span>
       </div>
     )
   }
@@ -434,10 +434,10 @@ export default function StudentForm() {
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); removeInterest(interest) }}
-                    className="text-indigo-400 hover:text-indigo-700"
+                    className="text-indigo-400 hover:text-indigo-700 p-0.5 -mr-0.5"
                     aria-label={`Remove ${interest}`}
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-4 w-4" />
                   </button>
                 </span>
               ))}

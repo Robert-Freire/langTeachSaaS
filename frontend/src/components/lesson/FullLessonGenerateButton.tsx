@@ -176,7 +176,7 @@ export function FullLessonGenerateButton({
         onClick={() => setPhase('confirming')}
         disabled={disabled}
         data-testid="generate-full-lesson-btn"
-        className="gap-1.5 text-xs"
+        className="gap-1.5 text-xs rounded-full hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-colors"
       >
         <Sparkles className="h-3.5 w-3.5" />
         Generate Full Lesson
