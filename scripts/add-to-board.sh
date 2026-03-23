@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Usage: ./scripts/add-to-board.sh <issue-url> [status]
+# Usage: ./scripts/add-to-board.sh <issue-url> [status] [--sprint]
 # Status: backlog (default), ready, in-progress, ready-to-test, done
+# --sprint: also add the sprint:active label (use for issues in the active sprint)
 #
 # Adds a GitHub issue to the LangTeach project board AND sets its status.
 # This replaces the two-step process that agents keep forgetting.
@@ -18,8 +19,9 @@ declare -A STATUS_IDS=(
   [done]="61f69a4c"
 )
 
-ISSUE_URL="${1:?Usage: add-to-board.sh <issue-url> [status]}"
+ISSUE_URL="${1:?Usage: add-to-board.sh <issue-url> [status] [--sprint]}"
 STATUS="${2:-backlog}"
+SPRINT_FLAG="${3:-}"
 
 if [[ -z "${STATUS_IDS[$STATUS]+x}" ]]; then
   echo "Unknown status: $STATUS"
@@ -31,4 +33,10 @@ ITEM_ID=$(gh project item-add 2 --owner Robert-Freire --url "$ISSUE_URL" --forma
 
 gh project item-edit --project-id "$PROJECT_ID" --id "$ITEM_ID" --field-id "$FIELD_ID" --single-select-option-id "${STATUS_IDS[$STATUS]}"
 
-echo "Added to board as: $STATUS"
+if [[ "$SPRINT_FLAG" == "--sprint" ]]; then
+  ISSUE_NUM=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
+  gh issue edit "$ISSUE_NUM" --add-label "sprint:active"
+  echo "Added to board as: $STATUS (sprint:active label added)"
+else
+  echo "Added to board as: $STATUS"
+fi

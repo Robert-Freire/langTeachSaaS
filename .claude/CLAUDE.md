@@ -84,11 +84,11 @@ Freeze = Robert does not trigger the merge action. The sprint branch keeps recei
 
 ### Branch lifecycle
 
-1. Sprint start: create `sprint/<slug>` from `main`
-2. During sprint: agents open PRs against the sprint branch
+1. Sprint start: create `sprint/<slug>` from `main`, add `sprint:active` label to all sprint issues
+2. During sprint: agents open PRs against the sprint branch. New issues added to sprint get `sprint:active` label (use `--sprint` flag in `add-to-board.sh`)
 3. Robert periodically triggers merge action to sync sprint -> main (unless frozen)
-4. Sprint end: final merge to main, delete the sprint branch
-5. Next sprint: new `sprint/<slug>` from `main`
+4. Sprint end: final merge to main, delete the sprint branch, bulk-remove `sprint:active` from all issues
+5. Next sprint: new `sprint/<slug>` from `main`, add `sprint:active` to new sprint issues
 
 ### Exceptions (can target main directly)
 
@@ -118,8 +118,9 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 
 **Adding issues to the project board:**
 - Every new issue must be added to the board with a status. **Never use `gh project item-add` directly** (it leaves items in "No Status").
-- Use the helper script: `./scripts/add-to-board.sh <issue-url> [status]`
+- Use the helper script: `./scripts/add-to-board.sh <issue-url> [status] [--sprint]`
 - Status values: `backlog` (default), `ready`, `in-progress`, `ready-to-test`, `done`
+- Add `--sprint` flag for issues in the active sprint (adds `sprint:active` label for board filtering)
 
 **Closing issues via PR:**
 - PR body must include `Closes #N` to auto-close the issue on merge
@@ -136,6 +137,7 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 - Area: `area:frontend`, `area:backend`, `area:e2e`, `area:infra`, `area:design`, `area:ai` (stackable)
 - Type: `type:polish`, `type:tech-debt`
 - Workflow: `qa:ready`, `demo-sprint`
+- Sprint: `sprint:active` (added to all issues in the current sprint; powers the "Active Sprint" board view)
 
 ## Review Tools: Always Use Agents
 
