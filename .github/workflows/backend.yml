@@ -197,12 +197,16 @@ jobs:
               exit 0
             elif [ "${STATE}" = "Failed" ]; then
               echo "ERROR: Revision ${NEW_REVISION} entered Failed/ActivationFailed state."
-              echo "Old revision ${OLD_REVISION} continues serving 100% of traffic."
-              echo "Deactivating failed revision to prevent orphan accumulation..."
-              az containerapp revision deactivate \
-                --name ${{ env.CONTAINER_APP_NAME }} \
-                --resource-group ${{ env.RESOURCE_GROUP }} \
-                --revision "${NEW_REVISION}" || true
+              if [ -n "${OLD_REVISION}" ]; then
+                echo "Old revision ${OLD_REVISION} continues serving 100% of traffic."
+                echo "Deactivating failed revision to prevent orphan accumulation..."
+                az containerapp revision deactivate \
+                  --name ${{ env.CONTAINER_APP_NAME }} \
+                  --resource-group ${{ env.RESOURCE_GROUP }} \
+                  --revision "${NEW_REVISION}" || true
+              else
+                echo "No previous active revision (first deploy). Leaving failed revision active for debugging."
+              fi
               echo "Investigate via: az containerapp revision show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --revision ${NEW_REVISION}"
               exit 1
             fi
@@ -211,10 +215,14 @@ jobs:
           done
 
           echo "ERROR: Revision ${NEW_REVISION} did not reach Provisioned state within 2 minutes."
-          echo "Old revision ${OLD_REVISION} continues serving 100% of traffic."
-          echo "Deactivating timed-out revision to prevent orphan accumulation..."
-          az containerapp revision deactivate \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --revision "${NEW_REVISION}" || true
+          if [ -n "${OLD_REVISION}" ]; then
+            echo "Old revision ${OLD_REVISION} continues serving 100% of traffic."
+            echo "Deactivating timed-out revision to prevent orphan accumulation..."
+            az containerapp revision deactivate \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --revision "${NEW_REVISION}" || true
+          else
+            echo "No previous active revision (first deploy). Leaving timed-out revision active for debugging."
+          fi
           exit 1

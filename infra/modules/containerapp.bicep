@@ -128,7 +128,7 @@ resource activationFailedAlert 'microsoft.insights/scheduledQueryRules@2022-06-1
     actions: {
       actionGroups: [alertActionGroup.id]
     }
-    severity: 0
+    severity: 2
   }
 }
 
