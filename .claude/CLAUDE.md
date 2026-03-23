@@ -33,7 +33,9 @@ MSYS_NO_PATHCONV=1 docker exec container-name /opt/mssql-tools18/bin/sqlcmd -S l
 
 The e2e stack (`docker-compose.e2e.yml`) uses mock auth and fixed ports. It can run alongside the dev stack (different compose file, different ports, different auth), but **only one e2e stack instance can run at a time.**
 
-**Before starting the e2e stack** (for e2e tests or review-ui), check if e2e containers are already running:
+**This section applies when YOU (the agent) are starting the e2e stack directly** (e.g., running e2e tests, running Playwright). It does **NOT** apply when launching the `review-ui` agent, which manages its own stack internally. See the UI Review section in the Task Completion Protocol for that case.
+
+**Before starting the e2e stack**, check if e2e containers are already running:
 ```bash
 docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"
 ```
@@ -155,7 +157,7 @@ When a task is marked complete:
    - `architecture-reviewer` verdict **PASS WITH NOTES**: address items where reasonable, then proceed. Minor notes not worth fixing go to `plan/code-review-backlog.md`.
    - Both at **PASS** or **PASS WITH NOTES** (after addressing or logging notes): proceed to UI review (or push if not applicable).
 5. **UI Review (review-ui agent):** Skip this step ONLY if the issue has NONE of these labels: `area:frontend`, `area:design`. If the issue has `area:frontend` OR `area:design` (either one is sufficient), you MUST run `review-ui`. **`area:frontend` alone triggers UI review. You do NOT need `area:design`.** Never ask the user whether to skip UI review; if the label is present, run it.
-   - The review-ui agent manages its own e2e stack (`docker-compose.e2e.yml`). Do NOT start the dev stack for UI review. The agent handles stack startup and teardown automatically.
+   - The review-ui agent manages its own e2e stack (`docker-compose.e2e.yml`). Do NOT start the dev stack for UI review. The agent handles stack startup and teardown automatically. **Do NOT check for running e2e containers before launching review-ui.** The E2E Stack Coordination section does not apply here. Just launch the agent directly.
    - In the agent prompt, list the specific routes and screens the feature modified so the agent runs in **focused review mode** (screenshots of changed screens + regression check on dashboard/lesson editor). Example prompt: *"Review UI for lesson editor header redesign. Changed screens: /lessons/:id (editor view), /lessons/:id/study (study view). The header layout and metadata section were restructured."*
    - If verdict is **NEEDS WORK**: fix critical and important visual/UX issues, re-commit, re-run pre-push checks, and re-run UI review.
    - If verdict is **GOOD** or **POLISHED**: proceed to push.
