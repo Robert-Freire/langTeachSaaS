@@ -143,9 +143,89 @@ jobs:
             --server ${{ env.ACR_LOGIN_SERVER }} \
             --identity system
 
-      - name: Update Container App
+      - name: Deploy new revision (hold traffic on old revision)
+        id: deploy
         run: |
-          az containerapp update \
+          # Capture the currently active revision before deploying so we can restore traffic if needed
+          OLD_REVISION=$(az containerapp revision list \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            --query "[?properties.active && properties.trafficWeight > \`0\`].name | [0]" -o tsv)
+          echo "old_revision=${OLD_REVISION}" >> "$GITHUB_OUTPUT"
+          echo "Current active revision: ${OLD_REVISION}"
+
+          # Deploy new revision (in Multiple mode this may shift traffic to the new revision)
+          NEW_REVISION=$(az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --query "properties.latestRevisionName" -o tsv)
+          echo "new_revision=${NEW_REVISION}" >> "$GITHUB_OUTPUT"
+          echo "Deployed revision: ${NEW_REVISION}"
+
+          # Immediately pin traffic back to the old revision during health check (0% to new)
+          if [ -n "${OLD_REVISION}" ] && [ "${OLD_REVISION}" != "${NEW_REVISION}" ]; then
+            az containerapp ingress traffic set \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --revision-weight "${OLD_REVISION}=100"
+            echo "Traffic pinned to old revision ${OLD_REVISION} during health check."
+          fi
+
+      - name: Wait for revision health and shift traffic
+        run: |
+          NEW_REVISION="${{ steps.deploy.outputs.new_revision }}"
+          OLD_REVISION="${{ steps.deploy.outputs.old_revision }}"
+          echo "Polling revision '${NEW_REVISION}' for up to 2 minutes..."
+
+          # Poll runningState (not provisioningState): ARM provisioning completes
+          # almost immediately, but ActivationFailed is a runningState value.
+          # runningState values: Activating -> Running (healthy) or ActivationFailed/Failed (broken)
+          for i in $(seq 1 24); do
+            STATE=$(az containerapp revision show \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --revision "${NEW_REVISION}" \
+              --query "properties.runningState" -o tsv)
+
+            echo "  Attempt ${i}/24: runningState=${STATE}"
+
+            if [ "${STATE}" = "Running" ]; then
+              echo "Revision is healthy. Shifting 100% traffic to ${NEW_REVISION}."
+              az containerapp ingress traffic set \
+                --name ${{ env.CONTAINER_APP_NAME }} \
+                --resource-group ${{ env.RESOURCE_GROUP }} \
+                --revision-weight "${NEW_REVISION}=100"
+              echo "Traffic shift complete."
+              exit 0
+            elif [ "${STATE}" = "ActivationFailed" ] || [ "${STATE}" = "Failed" ]; then
+              echo "ERROR: Revision ${NEW_REVISION} entered ${STATE} state."
+              if [ -n "${OLD_REVISION}" ]; then
+                echo "Old revision ${OLD_REVISION} continues serving 100% of traffic."
+                echo "Deactivating failed revision to prevent orphan accumulation..."
+                az containerapp revision deactivate \
+                  --name ${{ env.CONTAINER_APP_NAME }} \
+                  --resource-group ${{ env.RESOURCE_GROUP }} \
+                  --revision "${NEW_REVISION}" || true
+              else
+                echo "No previous active revision (first deploy). Leaving failed revision active for debugging."
+              fi
+              echo "Investigate via: az containerapp revision show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --revision ${NEW_REVISION}"
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+          echo "ERROR: Revision ${NEW_REVISION} did not reach Running state within 2 minutes."
+          if [ -n "${OLD_REVISION}" ]; then
+            echo "Old revision ${OLD_REVISION} continues serving 100% of traffic."
+            echo "Deactivating timed-out revision to prevent orphan accumulation..."
+            az containerapp revision deactivate \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --revision "${NEW_REVISION}" || true
+          else
+            echo "No previous active revision (first deploy). Leaving timed-out revision active for debugging."
+          fi
+          exit 1
