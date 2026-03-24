@@ -167,7 +167,14 @@ When a task is marked complete:
    ```
    | #<issue> | <date> | <severity> | <one-line observation> |
    ```
-7. Push the branch and open a PR against the **active sprint branch** with a summary of what was done and why. Immediately after creating the PR, post a comment with `@coderabbitai review` to trigger CodeRabbit (it only auto-reviews PRs targeting main, so sprint branch PRs need a manual trigger).
+7. **Check for conflicts** before pushing. Run:
+   ```bash
+   git fetch origin
+   git merge --no-commit --no-ff origin/sprint/<slug>
+   git merge --abort
+   ```
+   If the merge step exits non-zero (conflict), resolve all conflicts, re-run pre-push checks, and re-commit before continuing. Never open a PR with unresolved conflicts.
+8. Push the branch and open a PR against the **active sprint branch** with a summary of what was done and why. Immediately after creating the PR, post a comment with `@coderabbitai review` to trigger CodeRabbit (it only auto-reviews PRs targeting main, so sprint branch PRs need a manual trigger).
 8. Start a CodeRabbit monitoring cron (every 5 minutes) that:
    - Checks CI build status (`gh pr checks`) and fetches all PR comments from CodeRabbit
    - If CI passes AND no unresolved comments: deletes the cron and notifies the user the PR is ready for their review
