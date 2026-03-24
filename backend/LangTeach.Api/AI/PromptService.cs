@@ -171,13 +171,39 @@ public class PromptService : IPromptService
     private static string ExercisesUserPrompt(GenerationContext ctx)
     {
         var topic = Sanitize(ctx.Topic);
+        var levelGuidance = CefrExerciseGuidance(Sanitize(ctx.CefrLevel));
         return $$"""
         Generate practice exercises for the lesson on "{{topic}}". Return JSON:
         {"fillInBlank":[{"sentence":"","answer":"","hint":"","explanation":""}],"multipleChoice":[{"question":"","options":[""],"answer":"","explanation":""}],"matching":[{"left":"","right":"","explanation":""}]}
-        Include at least 3 items of each type.
-        For each exercise, include a concise explanation (2-3 sentences) of why the correct answer is correct, considering the student's level and common L1 interference patterns.
+        {{levelGuidance}}
+        Include at least 3 items for each format you use. For each exercise, include a concise explanation (2-3 sentences) of why the correct answer is correct, considering the student's level and common L1 interference patterns.
         """;
     }
+
+    private static string CefrExerciseGuidance(string cefrLevel) =>
+        cefrLevel.ToUpperInvariant() switch
+        {
+            "A1" or "A2" =>
+                "LEVEL CONSTRAINTS (A1/A2): For fill-in-blank items, always provide a word bank — list the answer options in the hint field (never leave gaps open-ended). Do not include sentence transformation or error correction tasks; these are too cognitively demanding at this level. Prefer matching and categorization items.",
+            "B1" or "B2" =>
+                "LEVEL CONSTRAINTS (B1/B2): Include at least 2 different exercise formats (e.g. fill-in-blank AND multiple-choice AND matching — do not rely on just one type). Include error correction or transformation items where the exercise formats support it. Multiple-choice alone is not sufficient.",
+            "C1" or "C2" =>
+                "LEVEL CONSTRAINTS (C1/C2): Minimize purely mechanical items (basic fill-in-blank, simple matching). Prefer exercises that require inference, nuance, register awareness, or pragmatic appropriateness. Make exercises meaningful, not rote.",
+            _ =>
+                "Use a variety of exercise formats appropriate to the stated CEFR level."
+        };
+
+    private static string CefrPracticeGuidance(string cefrLevel) =>
+        cefrLevel.ToUpperInvariant() switch
+        {
+            "A1" or "A2" =>
+                "At this level, prefer matching and categorization tasks. If fill-in-blank is used, always provide a word bank.",
+            "B1" or "B2" =>
+                "At this level, use at least 2 different activity formats. Do not rely on a single exercise type.",
+            "C1" or "C2" =>
+                "At this level, minimize mechanical drills. Favor activities requiring nuance, register awareness, or inference.",
+            _ => string.Empty
+        };
 
     private static string ConversationUserPrompt(GenerationContext ctx)
     {
@@ -221,7 +247,9 @@ public class PromptService : IPromptService
     private static string LessonPlanUserPrompt(GenerationContext ctx)
     {
         var topic = Sanitize(ctx.Topic);
+        var cefrLevel = Sanitize(ctx.CefrLevel);
         const string schema = """{"title":"","objectives":[""],"sections":{"warmUp":"","presentation":"","practice":"","production":"","wrapUp":""}}""";
+        var practiceLevelHint = CefrPracticeGuidance(cefrLevel);
         var baseInstruction = $"""
         Generate a complete lesson plan for the lesson on "{topic}". Return JSON:
         {schema}
@@ -230,7 +258,7 @@ public class PromptService : IPromptService
         Section guidelines:
         - warmUp (2-5 min): A conversational icebreaker. Use a discussion question, opinion prompt, or anecdote starter that the student can answer freely. There is no right or wrong answer. NEVER generate a vocabulary list, grammar drill, translation exercise, or fill-in-blank activity for warmUp. The sole purpose is to get the student talking and relaxed before the lesson begins.
         - presentation: Introduce the new language (vocabulary, grammar, or structure) with examples in context. Explain meanings and usage.
-        - practice: Controlled activities where the student practises the new language (fill-in-blank, matching, short answers). Correction is expected.
+        - practice: Controlled activities where the student practises the new language (fill-in-blank, matching, short answers). Correction is expected. {practiceLevelHint}
         - production: A free or communicative activity where the student uses the new language independently with minimal guidance.
         - wrapUp (2-3 min): Brief review of what was covered and preview of homework or next session.
         """;
