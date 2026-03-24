@@ -352,3 +352,42 @@ test('create course from Instituto Cervantes template', async ({ browser }) => {
 
   await context.close()
 })
+
+test('A1 templates appear in dropdown when A1 is selected', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const A1_MOCK_TEMPLATES = [
+    { level: 'A1.1', cefrLevel: 'A1', unitCount: 6, sampleGrammar: ['Verbo llamarse', 'Artículos definidos'] },
+    { level: 'A1.2', cefrLevel: 'A1', unitCount: 5, sampleGrammar: ['Presente indicativo'] },
+    { level: 'A1.3', cefrLevel: 'A1', unitCount: 4, sampleGrammar: ['Números y fechas'] },
+  ]
+
+  await page.route('**/api/curriculum-templates', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(A1_MOCK_TEMPLATES) })
+  })
+
+  await page.goto('/courses/new')
+  await expect(page.locator('h1')).toHaveText('New Course', { timeout: NAV_TIMEOUT })
+
+  await page.getByTestId('language-select').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await expect(page.getByTestId('language-select')).toContainText('Spanish', { timeout: UI_TIMEOUT })
+
+  await page.getByTestId('cefr-select').click()
+  await page.getByRole('option', { name: 'A1' }).click()
+  await expect(page.getByTestId('cefr-select')).toContainText('A1', { timeout: UI_TIMEOUT })
+
+  await expect(page.getByTestId('use-template-checkbox')).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.getByTestId('use-template-checkbox').check()
+
+  await expect(page.getByTestId('template-select')).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.getByTestId('template-select').click()
+
+  await expect(page.getByRole('option', { name: /A1\.1/ })).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByRole('option', { name: /A1\.2/ })).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByRole('option', { name: /A1\.3/ })).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByRole('option', { name: /B1/ })).not.toBeVisible()
+
+  await context.close()
+})
