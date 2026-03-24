@@ -16,6 +16,7 @@
         "Hacer recomendaciones",
         "Describir sentimientos"
       ],
+      "competency_focus": ["EO", "CO"],
       "grammar": [
         "Los presentes regulares e irregulares",
         "Verbos reflexivos",
@@ -49,6 +50,7 @@
         "Relatar y relacionar acontecimientos pasados",
         "Hablar del inicio y de la duración de una acción"
       ],
+      "competency_focus": ["EE", "CE"],
       "grammar": [
         "Formas y usos del pretérito indefinido",
         "Marcadores temporales para el pasado",
@@ -80,6 +82,7 @@
         "Identificar y describir físicamente a las personas",
         "Hablar de las relaciones y de los parecidos entre las personas"
       ],
+      "competency_focus": ["EO", "CO", "CE"],
       "grammar": [
         "Presentes irregulares: c>zc",
         "Este/-a/-os/-as, ese/-a/-os/-as, aquel/aquella/aquellos/aquellas",

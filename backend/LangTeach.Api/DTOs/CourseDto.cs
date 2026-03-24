@@ -8,7 +8,9 @@ public record CurriculumEntryDto(
     string Competencies,
     string? LessonType,
     Guid? LessonId,
-    string Status
+    string Status,
+    string? TemplateUnitRef,
+    string? CompetencyFocus
 );
 
 public record CourseDto(

@@ -86,7 +86,8 @@ public class CurriculumTemplateService : ICurriculumTemplateService
                 OverallGoal: u.OverallGoal ?? string.Empty,
                 Grammar: u.Grammar ?? [],
                 VocabularyThemes: u.VocabularyThemes ?? [],
-                CommunicativeFunctions: u.CommunicativeFunctions ?? []
+                CommunicativeFunctions: u.CommunicativeFunctions ?? [],
+                CompetencyFocus: u.CompetencyFocus ?? []
             )).ToList();
 
             // Normalize CefrLevel to the 2-char CEFR prefix ("B1", not "B1.2")
@@ -168,5 +169,6 @@ public class CurriculumTemplateService : ICurriculumTemplateService
         public List<string>? Grammar { get; set; }
         public List<string>? VocabularyThemes { get; set; }
         public List<string>? CommunicativeFunctions { get; set; }
+        public List<string>? CompetencyFocus { get; set; }
     }
 }
