@@ -323,19 +323,21 @@ export default function CourseNew() {
             return selectedStudent ? <StudentProfileSummary student={selectedStudent} /> : null
           })()}
 
-          {/* Teacher notes */}
-          <div className="space-y-1.5">
-            <Label htmlFor="teacher-notes">Teacher notes (optional)</Label>
-            <Textarea
-              id="teacher-notes"
-              data-testid="teacher-notes"
-              placeholder="e.g., Relocating to Barcelona. Hates role-play. Needs formal register."
-              value={teacherNotes}
-              onChange={e => setTeacherNotes(e.target.value)}
-              rows={3}
-            />
-            <p className="text-xs text-zinc-500">Constraints and context for AI personalization.</p>
-          </div>
+          {/* Teacher notes — only shown when a student is selected, since notes only influence AI personalization when a student profile is present */}
+          {studentId && (
+            <div className="space-y-1.5">
+              <Label htmlFor="teacher-notes">Teacher notes (optional)</Label>
+              <Textarea
+                id="teacher-notes"
+                data-testid="teacher-notes"
+                placeholder="e.g., Relocating to Barcelona. Hates role-play. Needs formal register."
+                value={teacherNotes}
+                onChange={e => setTeacherNotes(e.target.value)}
+                rows={3}
+              />
+              <p className="text-xs text-zinc-500">Extra context the AI will use to personalize sessions.</p>
+            </div>
+          )}
 
           {/* CEFR mismatch warning (general mode only) */}
           {mode === 'general' && studentId && targetCefrLevel && (() => {

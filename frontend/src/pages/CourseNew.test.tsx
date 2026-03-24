@@ -232,14 +232,28 @@ describe('CourseNew wizard', () => {
     })
   })
 
-  it('renders teacher notes textarea', () => {
+  it('renders teacher notes textarea when a student is selected', async () => {
+    const STUDENT = { items: [{ id: 's1', name: 'Marco', cefrLevel: 'A1', learningLanguage: 'Spanish', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01' }], totalCount: 1, page: 1, pageSize: 100 }
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT)
+    const user = userEvent.setup()
     wrapper(<CourseNew />)
+
+    // Teacher notes should NOT appear before a student is selected
+    expect(screen.queryByTestId('teacher-notes')).not.toBeInTheDocument()
+
+    // Select a student
+    await user.click(await screen.findByTestId('student-select'))
+    await user.click(await screen.findByRole('option', { name: 'Marco' }))
+
+    // Now teacher notes should appear
     const textarea = screen.getByTestId('teacher-notes')
     expect(textarea).toBeInTheDocument()
     expect(textarea.tagName).toBe('TEXTAREA')
   })
 
   it('includes teacher notes in the create course request', async () => {
+    const STUDENT = { items: [{ id: 's1', name: 'Marco', cefrLevel: 'A1', learningLanguage: 'Spanish', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01' }], totalCount: 1, page: 1, pageSize: 100 }
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT)
     const user = userEvent.setup()
     const mockCreate = vi.fn().mockResolvedValue({ id: 'course-1' })
     vi.mocked(coursesApi.createCourse).mockImplementation(mockCreate)
@@ -250,6 +264,10 @@ describe('CourseNew wizard', () => {
     await user.click(await screen.findByRole('option', { name: 'Spanish' }))
     await user.click(screen.getByTestId('cefr-select'))
     await user.click(await screen.findByRole('option', { name: 'B1' }))
+
+    // Select student to reveal teacher notes
+    await user.click(await screen.findByTestId('student-select'))
+    await user.click(await screen.findByRole('option', { name: 'Marco' }))
 
     await user.type(screen.getByTestId('teacher-notes'), 'No role-play. Written exercises only.')
     await user.click(screen.getByTestId('generate-curriculum-btn'))

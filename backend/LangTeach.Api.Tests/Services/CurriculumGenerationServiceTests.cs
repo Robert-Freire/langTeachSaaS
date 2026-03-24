@@ -79,6 +79,7 @@ internal sealed class SequentialClaudeClient : IClaudeClient
     public async IAsyncEnumerable<string> StreamAsync(ClaudeRequest request,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
+        CompleteCallCount++;
         await Task.Yield();
         yield return _responses.Count > 0 ? _responses.Dequeue() : "[]";
     }
