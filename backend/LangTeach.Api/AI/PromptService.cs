@@ -318,7 +318,8 @@ public class PromptService : IPromptService
 
     private static string CurriculumPersonalizationUserPrompt(CurriculumContext ctx)
     {
-        var units = ctx.TemplateUnits!;
+        var units = ctx.TemplateUnits
+            ?? throw new InvalidOperationException("CurriculumPersonalizationUserPrompt requires TemplateUnits to be set.");
         var sb = new StringBuilder();
         sb.AppendLine($"The following {units.Count} sessions are fixed by the institutional curriculum. Their grammar focus and order must NOT change.");
         sb.AppendLine("Provide a short, student-specific topic title for each session that connects the grammar to this student's world and interests.");
