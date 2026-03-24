@@ -202,7 +202,7 @@ export default function CourseNew() {
                       className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="text-sm font-normal text-zinc-700">
-                      Use Instituto Cervantes curriculum template
+                      Use structured curriculum template
                     </span>
                   </label>
 

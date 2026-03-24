@@ -154,4 +154,20 @@ describe('CourseNew wizard', () => {
       expect(screen.queryByRole('button', { name: /dismiss/i })).not.toBeInTheDocument()
     })
   })
+
+  it('template checkbox label does not reference Instituto Cervantes', async () => {
+    const user = userEvent.setup()
+    wrapper(<CourseNew />)
+
+    fireEvent.change(screen.getByTestId('course-name'), { target: { value: 'My Course' } })
+    await user.click(screen.getByTestId('language-select'))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+    await user.click(screen.getByTestId('cefr-select'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+
+    const checkbox = await screen.findByTestId('use-template-checkbox')
+    const label = checkbox.closest('label')
+    expect(label?.textContent).not.toMatch(/Instituto Cervantes/i)
+    expect(label?.textContent).toMatch(/structured curriculum template/i)
+  })
 })
