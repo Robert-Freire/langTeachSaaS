@@ -48,7 +48,7 @@
 - [Report observations not acted upon](feedback_report_noted_not_acted.md) — at the end of every summary, list things noticed but deferred so nothing silently drops
 - [Update dev-workflow.md on workflow changes](feedback_update_dev_workflow_doc.md) — any change to CLAUDE.md, agents, or skills must also update docs/dev-workflow.md
 - [CodeRabbit needs manual trigger on sprint PRs](feedback_coderabbit_sprint_branch.md) — post @coderabbitai review comment after opening PRs against the sprint branch
-- [Prefer GitHub MCP over gh CLI](feedback_prefer_github_mcp.md) — always use mcp__github__* tools for GitHub operations, not gh bash commands
+- [Prefer GitHub MCP over gh CLI](feedback_prefer_github_mcp.md) — always use mcp__github__* tools; use search_issues (not list_issues) when filtering by milestone to avoid 12k+ token over-fetches
 - [Worktree CWD discipline](feedback_worktree_cwd_discipline.md) — all edits/commands must use worktree paths, never main repo absolute path; agents default to memorized project root
 - [All code/config changes require PR review](feedback_code_changes_require_review.md) — never push code, config, or dependency changes directly to main or sprint; must go through worktree + PR + review
 - [Update sprint references on creation](feedback_sprint_creation_updates.md) — when creating/closing milestones, update sprint overviews, PM skill story pointer, and task status memory

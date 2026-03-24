@@ -180,6 +180,7 @@ When a task is marked complete:
 - `az bicep build --file infra/main.bicep` -- zero warnings, zero errors
 - `cd backend && dotnet build` -- zero warnings, zero errors
 - `cd backend && dotnet test` -- all tests pass
+- `cd frontend && npm run lint` -- zero errors
 - `cd frontend && npm run build` -- zero errors
 - `cd frontend && npm test` -- all unit tests pass
 - If any check fails, fix it before pushing. Never push with known failures or warnings.
