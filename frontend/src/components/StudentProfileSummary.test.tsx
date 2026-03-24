@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
-import { StudentProfileSummary, computeProfileCompleteness } from './StudentProfileSummary'
+import { StudentProfileSummary } from './StudentProfileSummary'
+import { computeProfileCompleteness } from './studentProfileUtils'
 import type { Student } from '../api/students'
 
 const BASE_STUDENT: Student = {
