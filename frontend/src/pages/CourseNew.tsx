@@ -39,10 +39,10 @@ export default function CourseNew() {
     queryFn: () => getStudents(),
   })
 
-  const { data: allTemplates } = useQuery({
+  const { data: allTemplates, isLoading: templatesLoading } = useQuery({
     queryKey: ['curriculum-templates'],
     queryFn: getCurriculumTemplates,
-    enabled: useTemplate && !!targetCefrLevel && mode === 'general',
+    enabled: !!targetCefrLevel && mode === 'general',
   })
 
   const templates = allTemplates?.filter(t => t.cefrLevel === targetCefrLevel) ?? []
@@ -212,9 +212,10 @@ export default function CourseNew() {
                         <Select
                           value={selectedTemplate}
                           onValueChange={v => setSelectedTemplate(v ?? '')}
+                          disabled={templatesLoading}
                         >
                           <SelectTrigger data-testid="template-select">
-                            <SelectValue placeholder="Select a template" />
+                            <SelectValue placeholder={templatesLoading ? 'Loading templates...' : 'Select a template'} />
                           </SelectTrigger>
                           <SelectContent>
                             {templates.map(t => (
