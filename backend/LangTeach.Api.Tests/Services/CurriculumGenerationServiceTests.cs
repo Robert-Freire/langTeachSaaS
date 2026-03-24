@@ -358,6 +358,35 @@ public class CurriculumGenerationServiceTests
     }
 
     [Fact]
+    public async Task TemplatePath_WithStudent_SpreadsWeaknessNotesAcrossMultipleSessions()
+    {
+        // AI response where weakness emphasis ("ser/estar") appears in BOTH session notes
+        var personalizationJson = """
+            [
+                {"orderIndex":1,"topic":"Marco greets at the office","contextDescription":"Marco introduces himself at a Barcelona office.","personalizationNotes":"ser/estar focus: Marco uses 'soy' (not 'estoy') to introduce himself."},
+                {"orderIndex":2,"topic":"Marco discusses his work","contextDescription":"Marco talks about his job and daily routines.","personalizationNotes":"ser/estar revisited: describing permanent (ser) vs. temporary (estar) states."}
+            ]
+            """;
+        var claude = new ConfigurableClaudeClient(personalizationJson);
+        var sut = BuildService(new FakeTemplateService(FakeTemplates.TwoUnitTemplate()), claude);
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 0,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: "Marco", StudentNativeLanguage: "Italian",
+            StudentInterests: null, StudentGoals: null,
+            TemplateLevel: "A1.1",
+            TemplateUnits: null,
+            StudentWeaknesses: ["ser/estar distinction"]);
+
+        var entries = await sut.GenerateAsync(ctx);
+
+        // Weakness emphasis should appear in PersonalizationNotes for BOTH entries
+        entries[0].PersonalizationNotes.Should().Contain("ser/estar");
+        entries[1].PersonalizationNotes.Should().Contain("ser/estar");
+    }
+
+    [Fact]
     public async Task FreePath_WithStudent_CallsAiTwice()
     {
         var freeGenJson = """
