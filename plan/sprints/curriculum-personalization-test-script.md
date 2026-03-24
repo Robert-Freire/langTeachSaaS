@@ -13,7 +13,7 @@
   ```
   git checkout sprint/curriculum-personalization; git pull
   ```
-- [ ] Start the dev stack (`docker compose up --build`)
+- [ ] Start the dev stack (`docker compose up --build -d`)
 - [ ] Log in with your Auth0 account
 
 ---

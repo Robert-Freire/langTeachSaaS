@@ -32,6 +32,13 @@ You are a code reviewer. Your job is to review all changes on the current branch
 - **API contract**: DTO fields not matching model, inconsistent naming between frontend/backend
 - **SQL Server dialect**: raw SQL using SQL Server-specific syntax (bracket-quoted identifiers, T-SQL functions like `GETDATE()`, `ISNULL()`, `NEWID()`, `TOP`), EF Core configurations with SQL Server-specific filter expressions, or provider-specific method calls. All database access must go through EF Core's provider-agnostic APIs to keep the project portable across database engines.
 
+### Over-engineering (should fix)
+- **Unnecessary abstraction**: helpers, utilities, or wrapper classes created for a single call site with no reuse
+- **Premature generalization**: config flags, strategy patterns, or plugin hooks added for hypothetical future requirements not in the issue scope
+- **Excess configurability**: options, parameters, or env vars introduced for behavior that could just be hardcoded at this stage
+- **Gold-plating**: fallback logic, retry mechanisms, or defensive checks for scenarios that cannot happen given current system boundaries
+- **Scope creep**: refactors, renames, or cleanups applied to code unrelated to the issue being worked
+
 ### Minor (nice to have)
 - **Dead code**: unused imports, unreachable branches, commented-out code, leftover debug logs
 - **Naming**: inconsistent with existing codebase conventions
