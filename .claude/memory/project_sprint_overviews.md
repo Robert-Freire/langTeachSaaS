@@ -14,8 +14,8 @@ Sprint story files define what we're building from the teacher's perspective. Th
 
 | Order | Milestone | Status | Story file | Issues |
 |-------|-----------|--------|------------|--------|
-| 1 | Curriculum & Personalization | Finishing (1 open, 34 closed) | `plan/sprints/curriculum-personalization-test-script.md` | #150, #151, #154, #157, #161, #163, #164, #184, #192, #195, #199, #200, #201, #202, #208, #213, #219, #220, #221, #223, #226, #227, #228, #229, #242, #243 |
-| 2 | Student-Aware Curriculum | NEXT | `plan/sprints/student-aware-curriculum.md` | #206, #194, #253, #254, #152, #151, #185, #167, #166 |
+| 1 | Curriculum & Personalization | CLOSED (2026-03-24, 35/35) | `plan/sprints/curriculum-personalization-test-script.md` | 35 issues, all closed |
+| 2 | Student-Aware Curriculum | ACTIVE | `plan/sprints/student-aware-curriculum.md` | #206, #255, #256, #257, #258, #259, #260, #261, #262, #253, #254, #152, #151, #167, #166 |
 | 3 | Solo Whiteboard | Future | none yet | 6 issues from #174 |
 | 4 | Adaptive Replanning | Future | none yet | audio input, post-class reflections, auto-difficulty, course replanning, progress dashboard |
 | 5 | Group Classes | Future | none yet | #146, #147 |

@@ -9,19 +9,19 @@ type: project
 GitHub Issues is the single source of truth for task tracking (as of 2026-03-19).
 Use `gh issue list` to see current state. Key queries:
 
-- Current sprint: `gh issue list --milestone "Curriculum & Personalization"`
+- Current sprint: `gh issue list --milestone "Student-Aware Curriculum"`
 - Must-haves: `gh issue list --label "P1:must"`
 - Ready to pick up: `gh issue list --label "qa:ready"`
 
-**Active sprint branch:** `sprint/curriculum-personalization`
+**Active sprint branch:** `sprint/student-aware-curriculum`
 Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Workflow" section.
 
 **Milestones:**
 - Demo 1 (internal): CLOSED
 - Phase 2A: Teacher Workflow: CLOSED (reorganized 2026-03-21)
-- Curriculum & Personalization: ACTIVE (target Easter April 5)
+- Curriculum & Personalization: CLOSED (2026-03-24, 35/35 done, merged to main)
 - Pedagogical Credibility: CLOSED (merged into Student-Aware Curriculum)
-- Student-Aware Curriculum: NEXT (#206, #152, #151, #185, #166, #167, #194, #253, #254)
+- Student-Aware Curriculum: ACTIVE (#206, #255, #256, #257, #258, #259, #260, #261, #262, #253, #254, #152, #151, #167, #166)
 - Solo Whiteboard: AFTER STUDENT-AWARE (5 sub-issues from #174)
 - Adaptive Replanning: AFTER WHITEBOARD (audio input, post-class reflections, auto-difficulty updates, course replanning, progress dashboard)
 - Group Classes: FUTURE (#146, #147)
@@ -41,7 +41,7 @@ See git history for details. Key completed milestones:
 - Beta Phase 2B (Make It Real): T16-T21 (one-click generation, PDF export, student notes, dashboard v2, brand polish, mobile responsive, regenerate with direction)
 - Demo Sprint: all issues closed, milestone closed
 
-**Active sprint: Curriculum & Personalization** (target Easter April 5)
+**Previous sprint: Curriculum & Personalization** (CLOSED 2026-03-24, 35/35 done)
 - #184 Fix phantom materials in AI generation (P1, done, PR #193 merged)
 - #157 AI-Powered Difficulty Targeting (P1, Ready to Test)
 - #163 Extract curricula JSON (P1, Ready to Test)
