@@ -31,6 +31,8 @@ function wrapper(ui: React.ReactElement) {
 
 describe('CourseNew wizard', () => {
   const MOCK_TEMPLATES = [
+    { level: 'A1.1', cefrLevel: 'A1', unitCount: 6, sampleGrammar: ['Verbo llamarse', 'Artículos'] },
+    { level: 'A1.2', cefrLevel: 'A1', unitCount: 5, sampleGrammar: ['Presente indicativo'] },
     { level: 'B1.1', cefrLevel: 'B1', unitCount: 7, sampleGrammar: ['Present subjunctive', 'Past tenses'] },
     { level: 'B1.2', cefrLevel: 'B1', unitCount: 5, sampleGrammar: ['Conditional sentences'] },
   ]
@@ -105,6 +107,39 @@ describe('CourseNew wizard', () => {
     // language and level selects are harder to trigger in unit tests — tested in e2e
     // just verify the button exists
     expect(screen.getByTestId('generate-curriculum-btn')).toBeInTheDocument()
+  })
+
+  describe('template filtering by CEFR level', () => {
+    it('shows only A1 templates when A1 is selected', async () => {
+      const user = userEvent.setup()
+      wrapper(<CourseNew />)
+
+      await user.click(screen.getByTestId('cefr-select'))
+      await user.click(await screen.findByRole('option', { name: 'A1' }))
+
+      await user.click(screen.getByTestId('use-template-checkbox'))
+
+      await user.click(screen.getByTestId('template-select'))
+
+      expect(await screen.findByRole('option', { name: /A1\.1/ })).toBeInTheDocument()
+      expect(await screen.findByRole('option', { name: /A1\.2/ })).toBeInTheDocument()
+      expect(screen.queryByRole('option', { name: /B1\.1/ })).not.toBeInTheDocument()
+    })
+
+    it('shows only B1 templates when B1 is selected', async () => {
+      const user = userEvent.setup()
+      wrapper(<CourseNew />)
+
+      await user.click(screen.getByTestId('cefr-select'))
+      await user.click(await screen.findByRole('option', { name: 'B1' }))
+
+      await user.click(screen.getByTestId('use-template-checkbox'))
+
+      await user.click(screen.getByTestId('template-select'))
+
+      expect(await screen.findByRole('option', { name: /B1\.1/ })).toBeInTheDocument()
+      expect(screen.queryByRole('option', { name: /A1\.1/ })).not.toBeInTheDocument()
+    })
   })
 
   describe('CEFR mismatch warning', () => {
