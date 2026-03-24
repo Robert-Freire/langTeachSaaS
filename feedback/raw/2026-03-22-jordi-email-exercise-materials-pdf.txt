@@ -1,0 +1,36 @@
+Source: Email from Jordi Freire <jordim.freire@gmail.com>
+Date: 2026-03-22 (Sun)
+Subject: Re: LangTeach: problema detectado en la demo (ejercicios sin material)
+Attachment: Las_partes_del_dia_y_las_horas_v2.pdf (saved to feedback/raw/)
+
+--- Original text (Spanish) ---
+
+Hay mucha informacion en los ultimos mails, que ya te respondere durante la semana que viene, pero un par de cosas.
+
+Sobre la pizarra, estoy de acuerdo que ahora no es prioritario, puedo utilizar la pizarra de Preply y quiero indagar como funciona la de Miro.com para indicarte mejorar o aspectos buenos en su uso.
+
+Sobre los ejercicios que comentas del error, otra opcion es indicar "aqui el profesor debe subir una foto o un cuadro, etc, y lo sube el profesor. Los ejercicios no deben ser solamente gramaticales, y el material que trabajo con el alumnado principalmente son presentaciones, por lo tanto debe ser variado (ya lo contianemos hablando con calma), que ahora no tengo tiempo y no quiero darte informacion que mal interpretes.
+
+Por otro lado, te adjunto un documento que elabore con IA, para que veas que tipo de material me gusta crear y para que veas que tambien tiene algun error y hay informacion que no queda clara, pero este es un tipo de documento que me interesa poder elaborar mucho mas que ejercicios gramaticales que Chat GTP los puede elaborar facilmente.
+
+Seguimos hablando
+
+--- Translation ---
+
+There's a lot of info in the recent emails, I'll respond during next week, but a couple of things.
+
+About the whiteboard, I agree it's not priority now. I can use Preply's whiteboard and I want to explore how Miro.com works to give you improvement ideas or good aspects of its use.
+
+About the exercises error you mentioned, another option is to indicate "here the teacher should upload a photo or a painting, etc." and the teacher uploads it. The exercises shouldn't be only grammatical, and the material I work with for students is mainly presentations, so it should be varied (we'll keep talking calmly), I don't have time now and I don't want to give you info you might misinterpret.
+
+On the other hand, I'm attaching a document I created with AI, so you can see what type of material I like to create and so you can see that it also has some errors and info that's not clear, but this is the type of document I'm interested in being able to create much more than grammatical exercises that ChatGPT can create easily.
+
+Let's keep talking
+
+--- Attachment ---
+PDF: "Las partes del dia y las horas" (Parts of the day and hours)
+Content: Visual infographic/reference card about time expressions in Spanish
+- Explains "de la manana" (specifying exact time) vs "por la manana" (general period)
+- Visual layout, not text-heavy (mostly images/graphics)
+- Same style as the PDF analyzed in issue #208 (visual explainer format)
+- Jordi notes it has errors and unclear info, but likes the FORMAT
