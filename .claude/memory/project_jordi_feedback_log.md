@@ -154,7 +154,7 @@ Source: Email reply to "problema detectado en la demo" thread. Attached example 
 | # | Feedback | Roadmap fit | Status |
 |---|----------|-------------|--------|
 | 37 | **Content variety over grammar drills**: Exercises shouldn't be grammar-only. Wants to upload photos, artwork, varied materials. Main teaching tool is presentations. "This matters more than grammar exercises that ChatGPT can easily generate." | Phase 2A: Material Upload + Content types expansion | **Strategic signal** |
-| 38 | **Example PDF attached** (`Las_partes_del_dia_y_las_horas_v2.pdf`): AI-generated "parts of the day and hours" document. Visual, presentational style. Has errors but shows the direction he cares about. Needs analysis to understand what "good output" looks like to him. | Content type design input | **Needs analysis** |
+| 38 | **Example PDF attached** (`Las_partes_del_dia_y_las_horas_v2.pdf`): AI-generated "parts of the day and hours" document. Visual, presentational style. Has errors (typo "sinco", garbled formula) but shows the direction he cares about. | Content type design input | **Analyzed** (issue #208 closed). Analysis: `plan/langteach-beta/jordi-pdf-analysis.md`. Conclusion: no existing content type can produce this; new `visualExplainer` type needed. Follow-up: #233 (prototype via freeText, P2) and #234 (full type + renderer, P3). |
 | 39 | **Whiteboard not urgent**: Will keep using Preply's, wants to explore Miro to give better feedback later. | Solo Whiteboard (#174) | **Confirms deprioritization** |
 
 Raw: `feedback/raw/2026-03-22-jordi-email-materials-variety.txt`

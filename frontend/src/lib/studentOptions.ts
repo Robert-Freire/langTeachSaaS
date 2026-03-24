@@ -66,6 +66,15 @@ export function getWeaknessesForLanguage(language: string): Option[] {
   return [...COMMON_WEAKNESSES, ...specific]
 }
 
+/**
+ * Returns only the language-specific weakness values for a given language,
+ * excluding common weaknesses shared across all languages.
+ * Used when changing language to know which selections to clear.
+ */
+export function getLanguageSpecificWeaknessValues(language: string): Set<string> {
+  return new Set((WEAKNESSES_BY_LANGUAGE[language] ?? []).map((o) => o.value))
+}
+
 export const DIFFICULTY_CATEGORIES: Option[] = [
   { value: 'grammar', label: 'Grammar' },
   { value: 'vocabulary', label: 'Vocabulary' },

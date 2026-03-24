@@ -106,4 +106,52 @@ describe('CourseNew wizard', () => {
     // just verify the button exists
     expect(screen.getByTestId('generate-curriculum-btn')).toBeInTheDocument()
   })
+
+  describe('CEFR mismatch warning', () => {
+    const STUDENTS_WITH_LEVEL = {
+      items: [{
+        id: 'student-1', name: 'Ana', cefrLevel: 'A1',
+        learningLanguage: 'English', interests: [], notes: null,
+        nativeLanguage: null, learningGoals: [], weaknesses: [],
+        difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01',
+      }],
+      totalCount: 1,
+      page: 1,
+      pageSize: 100,
+    }
+
+    it('shows warning when student and target CEFR levels diverge by 2+', async () => {
+      vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENTS_WITH_LEVEL)
+      const user = userEvent.setup()
+      wrapper(<CourseNew />)
+
+      // Select student
+      await user.click(await screen.findByTestId('student-select'))
+      await user.click(await screen.findByRole('option', { name: 'Ana' }))
+
+      // Select CEFR level — C1 (gap 4 from A1)
+      await user.click(screen.getByTestId('cefr-select'))
+      await user.click(await screen.findByRole('option', { name: 'C1' }))
+
+      const banner = await screen.findByTestId('cefr-mismatch-warning')
+      expect(banner).toBeInTheDocument()
+      expect(banner.textContent).toMatch(/A1/)
+      expect(banner.textContent).toMatch(/C1/)
+    })
+
+    it('does not show warning for adjacent levels', async () => {
+      vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENTS_WITH_LEVEL)
+      const user = userEvent.setup()
+      wrapper(<CourseNew />)
+
+      await user.click(await screen.findByTestId('student-select'))
+      await user.click(await screen.findByRole('option', { name: 'Ana' }))
+
+      // A2 is adjacent to A1 (gap 1)
+      await user.click(screen.getByTestId('cefr-select'))
+      await user.click(await screen.findByRole('option', { name: 'A2' }))
+
+      expect(screen.queryByRole('button', { name: /dismiss/i })).not.toBeInTheDocument()
+    })
+  })
 })

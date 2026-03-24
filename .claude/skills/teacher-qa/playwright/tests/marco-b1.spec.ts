@@ -29,7 +29,7 @@ const PERSONA = {
   student: {
     name: '[QA] Luca',
     language: 'Spanish',
-    cefrLevel: 'B1.1',
+    cefrLevel: 'B1',
     nativeLanguage: 'Italian',
     interests: ['football', 'movies'],
     difficulties: [
@@ -37,10 +37,10 @@ const PERSONA = {
     ],
   },
   lesson: {
-    templateName: 'Grammar',
+    templateName: 'Grammar Focus',
     title: '[QA] Ser vs Estar in Context — B1.1',
     language: 'Spanish',
-    cefrLevel: 'B1.1',
+    cefrLevel: 'B1',
     topic: 'ser vs estar in context',
   },
 }
@@ -56,10 +56,10 @@ test('Marco B1.1 — create student, generate lesson, capture output', async ({ 
   const page = await context.newPage()
 
   // 1. Ensure student [QA] Luca exists (create if first run, reuse on subsequent runs)
-  const studentId = await upsertStudent(page, PERSONA.student)
+  await upsertStudent(page, PERSONA.student)
 
   // 2. Create lesson
-  const lessonData = { ...PERSONA.lesson, studentId }
+  const lessonData = { ...PERSONA.lesson, studentName: PERSONA.student.name }
   const lessonId = await createLesson(page, lessonData)
 
   // 3. Navigate to lesson editor
@@ -97,7 +97,7 @@ test('Marco B1.1 — create student, generate lesson, capture output', async ({ 
   saveRunOutput(outputDir, content, {
     persona: PERSONA.name,
     lessonId,
-    studentId,
+    studentId: undefined,
     branch: process.env.QA_BRANCH ?? 'unknown',
     generationDurationMs: durationMs,
     studentViewCaptured,

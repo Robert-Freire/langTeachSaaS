@@ -132,6 +132,16 @@ When reviewing multiple issues, process each one independently. Output a summary
 | #101 | Group Class | NEEDS WORK | Missing AC, no area label |
 ```
 
+## Teacher QA Finding Traceability
+
+When reviewing an issue that changes AI content quality (prompt engineering, template fixes, generation behavior):
+
+1. **Issues from a Teacher QA triage** (references a triage file like `triage-2026-03-22.md`, or finding IDs like CQ-1, GAP-1): verify the acceptance criteria include an item requiring the agent to update `.claude/skills/teacher-qa/output/prior-findings.md` after merge. The file has a table with columns `| ID | Finding | Fix | Issue | Deployed? |`. The AC should specify:
+   `- [ ] After PR merge, update prior-findings.md: set the Fix column to describe what was changed, the Issue column to #<N> (PR #<M>), and Deployed? to "Yes, merged YYYY-MM-DD"`
+   If this AC is missing, flag it to the PM agent for addition before approving.
+
+2. **New AI quality changes** not originating from a triage (e.g., a new template, a prompt refactor): flag to the user: "This issue changes AI generation behavior. Should a new row be added to `prior-findings.md` so the next Teacher QA run can verify the impact?" The row format is `| ID | Finding | Fix | Issue | Deployed? |`. If yes, ensure the issue AC includes adding the row to that file.
+
 ## Important
 
 - Never add `qa:ready` to an issue with unresolved structural gaps (missing labels or milestone)

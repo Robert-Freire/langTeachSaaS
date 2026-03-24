@@ -19,9 +19,10 @@ const NATIVE_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', '
 interface OnboardingStep2Props {
   onNext: (student: Student) => void
   onBack: () => void
+  onSkip?: () => void
 }
 
-export default function OnboardingStep2({ onNext, onBack }: OnboardingStep2Props) {
+export default function OnboardingStep2({ onNext, onBack, onSkip }: OnboardingStep2Props) {
   const queryClient = useQueryClient()
   const [name, setName] = useState('')
   const [learningLanguage, setLearningLanguage] = useState('')
@@ -76,7 +77,7 @@ export default function OnboardingStep2({ onNext, onBack }: OnboardingStep2Props
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="studentName">Student name</Label>
+        <Label htmlFor="studentName">Student name <span className="text-red-500">*</span></Label>
         <Input
           id="studentName"
           value={name}
@@ -89,7 +90,7 @@ export default function OnboardingStep2({ onNext, onBack }: OnboardingStep2Props
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="learningLanguage">Language they are learning</Label>
+        <Label htmlFor="learningLanguage">Language they are learning <span className="text-red-500">*</span></Label>
         <Select value={learningLanguage} onValueChange={(v) => setLearningLanguage(v ?? '')}>
           <SelectTrigger className="max-w-sm" id="learningLanguage" data-testid="onboarding-learning-language">
             <SelectValue placeholder="Select language" />
@@ -103,7 +104,7 @@ export default function OnboardingStep2({ onNext, onBack }: OnboardingStep2Props
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="cefrLevel">Current level</Label>
+        <Label htmlFor="cefrLevel">Current level <span className="text-red-500">*</span></Label>
         <Select value={cefrLevel} onValueChange={(v) => setCefrLevel(v ?? '')}>
           <SelectTrigger className="max-w-sm" id="cefrLevel" data-testid="onboarding-cefr-level">
             <SelectValue placeholder="Select level" />
@@ -136,9 +137,22 @@ export default function OnboardingStep2({ onNext, onBack }: OnboardingStep2Props
         <Button type="button" variant="outline" onClick={onBack} disabled={isPending} data-testid="onboarding-back">
           Back
         </Button>
-        <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700" data-testid="onboarding-next">
-          {isPending ? 'Creating...' : 'Next'}
-        </Button>
+        <div className="flex items-center gap-4">
+          {onSkip && (
+            <button
+              type="button"
+              onClick={onSkip}
+              disabled={isPending}
+              className="text-sm text-zinc-600 hover:text-zinc-800 underline underline-offset-2"
+              data-testid="onboarding-skip"
+            >
+              Skip, I'll do this later
+            </button>
+          )}
+          <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700" data-testid="onboarding-next">
+            {isPending ? 'Creating...' : 'Next'}
+          </Button>
+        </div>
       </div>
     </form>
   )

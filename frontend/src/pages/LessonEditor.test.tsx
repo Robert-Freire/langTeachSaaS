@@ -1,4 +1,4 @@
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, act, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -393,6 +393,58 @@ describe('LessonEditor', () => {
       await user.tab() // triggers blur -> save
 
       expect(await screen.findByText('All changes saved')).toBeInTheDocument()
+    })
+  })
+
+  describe('CEFR mismatch warning', () => {
+    it('shows warning when lesson and student CEFR levels diverge by 2+', async () => {
+      mockGetLesson.mockResolvedValue({
+        ...mockLessonFull,
+        cefrLevel: 'C1',
+        studentId: 'student-1',
+        studentName: 'Ana',
+      })
+      mockGetStudents.mockResolvedValue({
+        items: [{ id: 'student-1', name: 'Ana', cefrLevel: 'A1' }],
+        totalCount: 1,
+      })
+      renderWithProviders()
+
+      await screen.findByTestId('lesson-title')
+      // The warning banner appears when gap >= 2
+      const banner = await screen.findByTestId('cefr-mismatch-warning')
+      expect(banner).toBeInTheDocument()
+      expect(banner.textContent).toMatch(/A1/)
+      expect(banner.textContent).toMatch(/C1/)
+    })
+
+    it('does not show warning for adjacent CEFR levels', async () => {
+      mockGetLesson.mockResolvedValue({
+        ...mockLessonFull,
+        cefrLevel: 'B2',
+        studentId: 'student-1',
+        studentName: 'Ana',
+      })
+      mockGetStudents.mockResolvedValue({
+        items: [{ id: 'student-1', name: 'Ana', cefrLevel: 'B1' }],
+        totalCount: 1,
+      })
+      renderWithProviders()
+
+      await screen.findByTestId('lesson-title')
+      // Warning banner should not appear — gap is only 1
+      // Use waitFor to guard against async race where students query resolves after lesson
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: /dismiss/i })).not.toBeInTheDocument()
+      })
+    })
+
+    it('does not show warning when lesson has no student', async () => {
+      mockGetLesson.mockResolvedValue({ ...mockLessonFull, cefrLevel: 'C2', studentId: null, studentName: null })
+      renderWithProviders()
+
+      await screen.findByTestId('lesson-title')
+      expect(screen.queryByRole('button', { name: /dismiss/i })).not.toBeInTheDocument()
     })
   })
 })

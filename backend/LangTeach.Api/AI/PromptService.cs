@@ -138,13 +138,20 @@ public class PromptService : IPromptService
 
     private static string VocabularyUserPrompt(GenerationContext ctx)
     {
-        var topic = Sanitize(ctx.Topic);
-        var level = Sanitize(ctx.CefrLevel);
-        var seed = Guid.NewGuid().ToString("N")[..8];
+        var topic      = Sanitize(ctx.Topic);
+        var level      = Sanitize(ctx.CefrLevel);
+        var nativeLang = Sanitize(ctx.StudentNativeLanguage);
+        var seed       = Guid.NewGuid().ToString("N")[..8];
+
+        var definitionInstruction = ctx.StudentNativeLanguage is not null
+            ? $"The 'definition' field must be a concise translation or gloss in {nativeLang} (the student's native language), not a definition in the target language."
+            : "The 'definition' field should be a short definition or translation.";
+
         return $$"""
         Generate a vocabulary list for the lesson on "{{topic}}". Return JSON:
         {"items":[{"word":"","definition":"","exampleSentence":""}]}
-        Limit to 10-15 items appropriate for {{level}}.
+        Limit to 10-15 items. All vocabulary items must be at {{level}} level — do not include words above this CEFR level.
+        {{definitionInstruction}}
         Choose a varied and unexpected selection — avoid the most obvious or common words for this topic (seed: {{seed}}).
         """;
     }
@@ -213,7 +220,44 @@ public class PromptService : IPromptService
     {
         var topic = Sanitize(ctx.Topic);
         const string schema = """{"title":"","objectives":[""],"sections":{"warmUp":"","presentation":"","practice":"","production":"","wrapUp":""}}""";
-        return $"Generate a complete lesson plan for the lesson on \"{topic}\". Return JSON:\n{schema}\nEach section should be detailed enough for the teacher to follow without additional preparation. Focus on activities suitable for one-on-one online tutoring. Do not reference physical classroom resources like whiteboards, projectors, or video players.";
+        var baseInstruction = $"""
+        Generate a complete lesson plan for the lesson on "{topic}". Return JSON:
+        {schema}
+        Each section should be detailed enough for the teacher to follow without additional preparation. Focus on activities suitable for one-on-one online tutoring. Do not reference physical classroom resources like whiteboards, projectors, or video players.
+
+        Section guidelines:
+        - warmUp (2-5 min): A conversational icebreaker. Use a discussion question, opinion prompt, or anecdote starter that the student can answer freely. There is no right or wrong answer. NEVER generate a vocabulary list, grammar drill, translation exercise, or fill-in-blank activity for warmUp. The sole purpose is to get the student talking and relaxed before the lesson begins.
+        - presentation: Introduce the new language (vocabulary, grammar, or structure) with examples in context. Explain meanings and usage.
+        - practice: Controlled activities where the student practises the new language (fill-in-blank, matching, short answers). Correction is expected.
+        - production: A free or communicative activity where the student uses the new language independently with minimal guidance.
+        - wrapUp (2-3 min): Brief review of what was covered and preview of homework or next session.
+        """;
+
+        if (string.Equals(ctx.TemplateName, "Reading & Comprehension", StringComparison.OrdinalIgnoreCase))
+        {
+            baseInstruction +=
+                "\n\nREADING & COMPREHENSION TEMPLATE REQUIREMENTS (mandatory):\n" +
+                "- warmUp: a pre-reading activation task only. Activate schema, predict content from the title, or discuss the topic. Do NOT use grammar drills, vocabulary lists, or fill-in-blank exercises here.\n" +
+                "- presentation: embed a complete reading passage (300-500 words, using vocabulary and grammar appropriate for the stated CEFR level) inside this section's notes. The teacher reads it with the student: first read for gist, second read for detail. Pre-teach any blocking vocabulary before reading.\n" +
+                "- practice: comprehension questions covering three types: (1) factual - explicitly stated in the text, (2) inferential - requiring the student to read between the lines, (3) vocabulary in context - explain the meaning of a word or phrase as used in the passage. Include at least 2 questions of each type.\n" +
+                "- production: a free-production task connected to the passage topic (e.g. short written response, opinion discussion, or a creative extension). The student works independently.\n" +
+                "- wrapUp: student summarises the passage in 1-2 sentences; brief discussion of the author's purpose or the student's reaction.\n" +
+                "All five sections (warmUp, presentation, practice, production, wrapUp) are required. Do not collapse or omit any of them.";
+        }
+
+        else if (string.Equals(ctx.TemplateName, "Exam Prep", StringComparison.OrdinalIgnoreCase))
+        {
+            baseInstruction +=
+                "\n\nEXAM PREP TEMPLATE REQUIREMENTS (mandatory):\n" +
+                "- warmUp: review the exam format, the target task type, and the scoring criteria. Briefly discuss what the examiner is looking for. No casual icebreakers or conversation warm-ups.\n" +
+                "- presentation: teach the strategy for the target exam task (e.g. essay structure, formal letter conventions, skimming for gist). Use authentic exam-task examples. Formal register throughout.\n" +
+                "- practice: timed written practice under exam conditions. Specify an explicit time limit in the section notes (e.g. '15 minutes'). Use written task types only (opinion paragraph, gap-fill, reading comprehension questions). Do NOT use oral role-play or conversation activities here.\n" +
+                "- production: a full written exam task the student attempts independently. Specify a time limit (in minutes) and a target word count. Task type must match the target exam format: opinion essay, formal letter, short report, or similar written genre. Do NOT use oral role-play or conversation activities.\n" +
+                "- wrapUp: student self-assesses against the mark scheme criteria; teacher identifies one strength and one area to improve before the next session.\n" +
+                "All five sections (warmUp, presentation, practice, production, wrapUp) are required. Do not collapse or omit any of them.";
+        }
+
+        return baseInstruction;
     }
 
     private static string CurriculumSystemPrompt(CurriculumContext ctx)

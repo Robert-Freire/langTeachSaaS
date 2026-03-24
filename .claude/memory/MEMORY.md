@@ -17,7 +17,7 @@
 - [Unnamed teacher feedback](project_unnamed_teacher_feedback.md) — feedback from Jordi's colleague (name pending), gamification and ludic activities
 - [Deploy freeze mechanism](project_deploy_freeze.md) — freeze = don't trigger merge-sprint-to-main action; no variables needed
 - [Dev workflow overview](project_dev_workflow_doc.md) — human-readable explanation of the full dev loop; lives at docs/dev-workflow.md; keep aligned when CLAUDE.md rules change
-- [Sprint overview files](project_sprint_overviews.md) — quick-reference sprint files at plan/sprints/; update when issues are completed, split, or added to a sprint
+- [Sprint overview files](project_sprint_overviews.md) — PM-only: sprint sequence, story files, milestone map; update when sprints are created or change status
 
 ## Feedback
 - [Task start workflow](feedback_task_branch_workflow.md) — always pull main and create the feature branch before starting any task
@@ -48,6 +48,9 @@
 - [Report observations not acted upon](feedback_report_noted_not_acted.md) — at the end of every summary, list things noticed but deferred so nothing silently drops
 - [Update dev-workflow.md on workflow changes](feedback_update_dev_workflow_doc.md) — any change to CLAUDE.md, agents, or skills must also update docs/dev-workflow.md
 - [CodeRabbit needs manual trigger on sprint PRs](feedback_coderabbit_sprint_branch.md) — post @coderabbitai review comment after opening PRs against the sprint branch
+- [Worktree CWD discipline](feedback_worktree_cwd_discipline.md) — all edits/commands must use worktree paths, never main repo absolute path; agents default to memorized project root
+- [All code/config changes require PR review](feedback_code_changes_require_review.md) — never push code, config, or dependency changes directly to main or sprint; must go through worktree + PR + review
+- [Update sprint references on creation](feedback_sprint_creation_updates.md) — when creating/closing milestones, update sprint overviews, PM skill story pointer, and task status memory
 
 ## Reference
 - [Audio transcription method](reference_audio_transcription.md) — transcribe audio files locally using OpenAI Whisper + ffmpeg

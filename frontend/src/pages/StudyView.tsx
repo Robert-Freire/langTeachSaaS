@@ -23,7 +23,7 @@ export default function StudyView() {
     return (
       <div className="flex items-center justify-center h-64">
         <span className="text-sm text-red-600">
-          Lesson not found. <Link to="/lessons" className="underline">Go back</Link>
+          Lesson not found. <Link to="/lessons" className="underline hover:text-zinc-700 transition-colors">Go back</Link>
         </span>
       </div>
     )

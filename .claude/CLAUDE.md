@@ -84,11 +84,11 @@ Freeze = Robert does not trigger the merge action. The sprint branch keeps recei
 
 ### Branch lifecycle
 
-1. Sprint start: create `sprint/<slug>` from `main`, add sprint issues to "Current Sprint" project (#3) with `--sprint` flag, add `sprint:active` label
-2. During sprint: agents open PRs against the sprint branch. New sprint issues use `add-to-board.sh <url> <status> --sprint` to add to both boards
+1. Sprint start: create `sprint/<slug>` from `main`, update "Current milestone" view filter on the Roadmap board in GitHub UI
+2. During sprint: agents open PRs against the sprint branch. New sprint issues use `add-to-board.sh <url> <status>` to add to the Roadmap board
 3. Robert periodically triggers merge action to sync sprint -> main (unless frozen)
-4. Sprint end: final merge to main, delete the sprint branch, clear all items from "Current Sprint" project, bulk-remove `sprint:active` label
-5. Next sprint: new `sprint/<slug>` from `main`, populate "Current Sprint" project with new sprint issues
+4. Sprint end: final merge to main, delete the sprint branch
+5. Next sprint: new `sprint/<slug>` from `main`, update milestone view filter
 
 ### Exceptions (can target main directly)
 
@@ -118,9 +118,8 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 
 **Adding issues to the project board:**
 - Every new issue must be added to the board with a status. **Never use `gh project item-add` directly** (it leaves items in "No Status").
-- Use the helper script: `./scripts/add-to-board.sh <issue-url> [status] [--sprint]`
+- Use the helper script: `./scripts/add-to-board.sh <issue-url> [status]`
 - Status values: `backlog` (default), `ready`, `in-progress`, `ready-to-test`, `done`
-- Add `--sprint` flag for issues in the active sprint (also adds to the "Current Sprint" project board #3)
 
 **Closing issues via PR:**
 - PR body must include `Closes #N` to auto-close the issue on merge
@@ -137,7 +136,7 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 - Area: `area:frontend`, `area:backend`, `area:e2e`, `area:infra`, `area:design`, `area:ai` (stackable)
 - Type: `type:polish`, `type:tech-debt`
 - Workflow: `qa:ready`, `demo-sprint`
-- Sprint: `sprint:active` (added to all issues in the current sprint)
+- Sprint: `sprint:active` (deprecated, no longer added to new issues)
 
 ## Review Tools: Always Use Agents
 

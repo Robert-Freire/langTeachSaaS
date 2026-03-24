@@ -209,18 +209,20 @@ export function ContentBlock({
             {saving ? 'Saving...' : 'Save'}
           </Button>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          data-content-action="true"
-          onPointerDown={() => { actionInProgress.current = true }}
-          onKeyDown={markActionIntentFromKeyboard}
-          onClick={handleRegenerate}
-          className="text-xs h-7"
-          data-testid="regenerate-btn"
-        >
-          Regenerate
-        </Button>
+        {parsedContent !== null && (
+          <Button
+            variant="ghost"
+            size="sm"
+            data-content-action="true"
+            onPointerDown={() => { actionInProgress.current = true }}
+            onKeyDown={markActionIntentFromKeyboard}
+            onClick={handleRegenerate}
+            className="text-xs h-7"
+            data-testid="regenerate-btn"
+          >
+            Regenerate
+          </Button>
+        )}
         {(block.isEdited || isDirty) && (
           <Button
             variant="outline"

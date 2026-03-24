@@ -167,6 +167,37 @@ public class PromptServiceTests
         req.SystemPrompt.Should().NotContain("IMPORTANT DIRECTION");
     }
 
+    // --- Vocabulary CEFR level and L1 definitions ---
+
+    [Fact]
+    public void VocabularyPrompt_RequiresCefrLevelOnItems()
+    {
+        var req = _sut.BuildVocabularyPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("B1 level");
+        req.UserPrompt.Should().Contain("do not include words above this CEFR level");
+    }
+
+    [Fact]
+    public void VocabularyPrompt_RequiresL1Definitions_WhenNativeLanguageKnown()
+    {
+        var ctx = BaseCtx("Ana") with { StudentNativeLanguage = "English" };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("translation or gloss in English");
+        req.UserPrompt.Should().Contain("student's native language");
+    }
+
+    [Fact]
+    public void VocabularyPrompt_NoL1Instruction_WhenNativeLanguageNull()
+    {
+        var req = _sut.BuildVocabularyPrompt(BaseCtx());
+
+        req.UserPrompt.Should().NotContain("student's native language");
+        req.UserPrompt.Should().NotContain("translation or gloss in");
+    }
+
     // --- MaxTokens ---
 
     [Fact]
@@ -392,6 +423,106 @@ public class PromptServiceTests
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
         req.SystemPrompt.Should().NotContain("Target grammar structures");
+    }
+
+    // --- WarmUp icebreaker constraint ---
+
+    [Fact]
+    public void LessonPlanPrompt_UserPrompt_ContainsWarmUpIcebreakerGuidance()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("conversational icebreaker");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_UserPrompt_ProhibitsVocabularyListInWarmUp()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("NEVER generate a vocabulary list");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_UserPrompt_ProhibitsGrammarDrillInWarmUp()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("grammar drill");
+    }
+
+    // --- Reading & Comprehension template ---
+
+    [Fact]
+    public void LessonPlanPrompt_IncludesReadingPassageRequirements_WhenReadingComprehensionTemplate()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Reading & Comprehension" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Generate a complete lesson plan");
+        req.UserPrompt.Should().Contain("READING & COMPREHENSION TEMPLATE REQUIREMENTS");
+        req.UserPrompt.Should().Contain("reading passage");
+        req.UserPrompt.Should().Contain("comprehension questions");
+        req.UserPrompt.Should().Contain("inferential");
+        req.UserPrompt.Should().Contain("warmUp");
+        req.UserPrompt.Should().Contain("presentation");
+        req.UserPrompt.Should().Contain("practice");
+        req.UserPrompt.Should().Contain("production");
+        req.UserPrompt.Should().Contain("wrapUp");
+        req.UserPrompt.Should().Contain("All five sections");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_DoesNotIncludeReadingPassageRequirements_WhenNoTemplate()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().NotContain("READING & COMPREHENSION TEMPLATE REQUIREMENTS");
+    }
+
+    // --- Exam Prep template ---
+
+    [Fact]
+    public void LessonPlanPrompt_IncludesWrittenProductionRequirement_WhenExamPrepTemplate()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Exam Prep" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("EXAM PREP TEMPLATE REQUIREMENTS");
+        req.UserPrompt.Should().Contain("written exam task");
+        req.UserPrompt.Should().Contain("Do NOT use oral role-play");
+        req.UserPrompt.Should().Contain("opinion essay, formal letter, short report");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_IncludesTimeLimitGuidance_WhenExamPrepTemplate()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Exam Prep" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("time limit");
+        req.UserPrompt.Should().Contain("target word count");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_DoesNotIncludeExamPrepRequirements_WhenNoTemplate()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx() with { TemplateName = null });
+
+        req.UserPrompt.Should().NotContain("EXAM PREP TEMPLATE REQUIREMENTS");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_DoesNotIncludeExamPrepRequirements_WhenDifferentTemplate()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Reading & Comprehension" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("EXAM PREP TEMPLATE REQUIREMENTS");
     }
 
     // --- No phantom materials constraint ---

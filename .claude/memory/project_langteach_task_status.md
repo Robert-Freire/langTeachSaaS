@@ -20,8 +20,9 @@ Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Wor
 - Demo 1 (internal): CLOSED
 - Phase 2A: Teacher Workflow: CLOSED (reorganized 2026-03-21)
 - Curriculum & Personalization: ACTIVE (target Easter April 5)
-- Pedagogical Credibility: NEW (milestone #9, #166, #167, #194)
-- Solo Whiteboard: NEXT (5 sub-issues from #174)
+- Pedagogical Credibility: CLOSED (merged into Student-Aware Curriculum)
+- Student-Aware Curriculum: NEXT (#206, #152, #151, #185, #166, #167, #194, #253, #254)
+- Solo Whiteboard: AFTER STUDENT-AWARE (5 sub-issues from #174)
 - Adaptive Replanning: AFTER WHITEBOARD (audio input, post-class reflections, auto-difficulty updates, course replanning, progress dashboard)
 - Group Classes: FUTURE (#146, #147)
 - Phase 2B: Production (caching, usage limits, CI pipeline)

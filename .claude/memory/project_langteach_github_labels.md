@@ -41,7 +41,7 @@ type: project
 |-------|-------|-----|---------|
 | `qa:ready` | Dark blue | #0052CC | Issue passed QA quality gate (Checkpoint 1): acceptance criteria are specific, testable, and complete. Agent can pick this up. |
 | `demo-sprint` | Gold | #FFCC00 | Part of the current demo sprint scope. |
-| `sprint:active` | Purple | #7057FF | Issue is in the active sprint. Powers the "Current Sprint" board view on the Roadmap project (label filter is reliable, unlike milestone filter). Added at sprint start, removed at sprint end. |
+| `sprint:active` | Purple | #7057FF | **Deprecated.** Was used for sprint board filtering, but milestones work correctly for this purpose. Still exists on old issues but no longer added to new ones. |
 
 ### Deleted Default Labels
 
