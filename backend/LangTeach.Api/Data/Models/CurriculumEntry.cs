@@ -13,6 +13,10 @@ public class CurriculumEntry
     public Guid? LessonId { get; set; }
     // "planned" | "created" | "taught"
     public string Status { get; set; } = "planned";
+    // Reference to the original template unit (null for AI-generated entries)
+    public string? TemplateUnitRef { get; set; }
+    // Comma-separated CEFR skill codes, e.g. "EO,CO" (null for AI-generated entries)
+    public string? CompetencyFocus { get; set; }
 
     public Course Course { get; set; } = null!;
     public Lesson? Lesson { get; set; }

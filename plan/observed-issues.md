@@ -11,3 +11,4 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 *Items #2 and #3 are covered by #243 (visual polish batch). Item #1 is a test flakiness issue; monitor and create a separate issue if it persists.*
 | #243 | 2026-03-23 | Minor | LessonEditor uses a custom header (not PageHeader), so PageHeader's new `truncate` class does not apply to the lesson title on the editor screen. Long lesson titles still wrap in LessonEditor's header row. |
+| #255 | 2026-03-24 | Minor | `CurriculumEntry.TemplateUnitRef` stores the human-readable unit title as the reference key. If two future template units share the same title, the reference becomes ambiguous. Consider storing `UnitNumber` as a stable identifier alongside the title. No risk with current templates (all unique titles). |

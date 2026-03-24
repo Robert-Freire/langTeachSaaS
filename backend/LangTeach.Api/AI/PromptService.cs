@@ -26,7 +26,9 @@ public class PromptService : IPromptService
         new(BuildSystemPrompt(ctx), HomeworkUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 1024);
 
     public ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx) =>
-        new(CurriculumSystemPrompt(ctx), CurriculumUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 8192);
+        ctx.TemplateUnits is { Count: > 0 }
+            ? new(CurriculumSystemPrompt(ctx), CurriculumPersonalizationUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 4096)
+            : new(CurriculumSystemPrompt(ctx), CurriculumUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 8192);
 
     private static string Sanitize(string? value) =>
         value is null ? string.Empty : string.Concat(value.Where(c => c >= ' ' || c == '\t')).Trim();
@@ -325,4 +327,33 @@ public class PromptService : IPromptService
 
         return sb.ToString();
     }
+
+    private static string CurriculumPersonalizationUserPrompt(CurriculumContext ctx)
+    {
+        var units = ctx.TemplateUnits
+            ?? throw new InvalidOperationException("CurriculumPersonalizationUserPrompt requires TemplateUnits to be set.");
+        var sb = new StringBuilder();
+        sb.AppendLine($"The following {units.Count} sessions are fixed by the institutional curriculum. Their grammar focus and order must NOT change.");
+        sb.AppendLine("Provide a short, student-specific topic title for each session that connects the grammar to this student's world and interests.");
+        sb.AppendLine();
+        sb.AppendLine("Sessions:");
+
+        foreach (var u in units)
+        {
+            var skillNames = u.CompetencyFocus.Count > 0
+                ? string.Join(", ", u.CompetencyFocus.Select(CefrCodeToSkillName))
+                : "mixed skills";
+            var grammar = string.IsNullOrEmpty(u.GrammarFocus) ? "general communication" : u.GrammarFocus;
+            sb.AppendLine($"{u.OrderIndex}. Grammar: {Sanitize(grammar)} | Skills: {skillNames} | Original: {Sanitize(u.Topic)}");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine($"Return a JSON array with exactly {units.Count} objects:");
+        sb.AppendLine("[{ \"orderIndex\": 1, \"topic\": \"...\" }, ...]");
+        sb.AppendLine("Output ONLY the JSON array. No markdown, no explanation.");
+
+        return sb.ToString();
+    }
+
+    private static string CefrCodeToSkillName(string code) => LangTeach.Api.DTOs.CefrSkillCodes.ToSkillName(code);
 }

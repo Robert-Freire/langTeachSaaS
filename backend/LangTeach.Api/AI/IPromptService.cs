@@ -26,7 +26,20 @@ public record CurriculumContext(
     string[]? StudentInterests,
     string[]? StudentGoals,
     string[]? StudentWeaknesses = null,
-    DifficultyDto[]? StudentDifficulties = null
+    DifficultyDto[]? StudentDifficulties = null,
+    string? TemplateLevel = null,
+    IReadOnlyList<TemplateUnitContext>? TemplateUnits = null
+);
+
+/// <summary>
+/// Minimal representation of a template unit passed to the prompt builder
+/// for student-specific personalization.
+/// </summary>
+public record TemplateUnitContext(
+    int OrderIndex,
+    string Topic,
+    string? GrammarFocus,
+    IReadOnlyList<string> CompetencyFocus
 );
 
 public record GenerationContext(

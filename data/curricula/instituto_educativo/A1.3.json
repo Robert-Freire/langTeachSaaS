@@ -15,6 +15,7 @@
         "Pedir y dar información sobre comida",
         "Hablar de hábitos gastronómicos"
       ],
+      "competency_focus": ["EO", "CO"],
       "grammar": [
         "Los verbos poner y traer",
         "Los pronombres de OD (lo, la, los, las)",
@@ -50,6 +51,7 @@
         "Pedir y dar información para llegar a un sitio",
         "Expresar gustos y resaltar un aspecto"
       ],
+      "competency_focus": ["CE", "EO", "CO"],
       "grammar": [
         "Cuantificadores (algún, ningún, mucho)",
         "Preposiciones y adverbios de lugar (a, en, al lado de, lejos, cerca,…)"
@@ -80,6 +82,7 @@
         "Hablar de habilidades y aptitudes",
         "Hablar de cualidades y defectos de las personas"
       ],
+      "competency_focus": ["EO", "CO", "CE"],
       "grammar": [
         "El pretérito perfecto",
         "Saber + infinitivo",

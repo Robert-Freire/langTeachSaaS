@@ -66,7 +66,9 @@ public class CoursesController : ControllerBase
         if (request.Mode == "exam-prep" && string.IsNullOrWhiteSpace(request.TargetExam))
             return BadRequest("TargetExam is required when Mode is 'exam-prep'.");
 
-        if (request.Mode == "general" && string.IsNullOrWhiteSpace(request.TargetCefrLevel))
+        // When a template is provided it supplies the CEFR level; otherwise require it explicitly.
+        if (request.Mode == "general" && string.IsNullOrWhiteSpace(request.TargetCefrLevel)
+            && string.IsNullOrEmpty(request.TemplateLevel))
             return BadRequest("TargetCefrLevel is required when Mode is 'general'.");
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
@@ -80,50 +82,48 @@ public class CoursesController : ControllerBase
                 return BadRequest("Invalid StudentId: student not found or does not belong to you.");
         }
 
+        if (!string.IsNullOrEmpty(request.TemplateLevel) && request.Mode != "general")
+            return BadRequest("TemplateLevel can only be used with mode 'general'.");
+
+        // Resolve CEFR level from template (authoritative) or from the request.
+        string? resolvedCefrLevel = request.TargetCefrLevel;
+        if (!string.IsNullOrEmpty(request.TemplateLevel))
+        {
+            var templateData = _templateService.GetByLevel(request.TemplateLevel);
+            if (templateData is null)
+                return BadRequest($"Template '{request.TemplateLevel}' not found.");
+
+            // Reject mismatches: if the caller supplied a CEFR level it must match the template's.
+            if (!string.IsNullOrEmpty(request.TargetCefrLevel) &&
+                !string.Equals(request.TargetCefrLevel, templateData.CefrLevel, StringComparison.OrdinalIgnoreCase))
+                return BadRequest(
+                    $"TargetCefrLevel '{request.TargetCefrLevel}' does not match template CEFR level '{templateData.CefrLevel}'.");
+
+            resolvedCefrLevel = templateData.CefrLevel;
+        }
+
         List<CurriculumEntry> entries;
         int resolvedSessionCount;
 
-        if (!string.IsNullOrEmpty(request.TemplateLevel))
+        var ctx = BuildCurriculumContext(request, student, resolvedCefrLevel);
+        try
         {
-            if (request.Mode != "general")
-                return BadRequest("TemplateLevel can only be used with mode 'general'.");
-
-            var template = _templateService.GetByLevel(request.TemplateLevel);
-            if (template is null)
-                return BadRequest($"Template '{request.TemplateLevel}' not found.");
-
-            entries = template.Units.Select((u, i) => new CurriculumEntry
-            {
-                Id = Guid.NewGuid(),
-                OrderIndex = i + 1,
-                // Include communicative functions in topic so they surface in the planner view.
-                // Vocabulary themes are shown in the template preview card only (no model field).
-                Topic = u.CommunicativeFunctions.Count > 0
-                    ? $"{u.Title}: {string.Join(", ", u.CommunicativeFunctions.Take(2))}"
-                    : u.Title,
-                GrammarFocus = u.Grammar.Count > 0 ? string.Join(", ", u.Grammar) : null,
-                Competencies = "reading,writing,listening,speaking",
-                LessonType = "Communicative",
-                Status = "planned"
-            }).ToList();
-
-            resolvedSessionCount = entries.Count;
+            entries = await _curriculumService.GenerateAsync(ctx, ct);
         }
-        else
+        catch (CurriculumGenerationException ex)
         {
-            // AI generation path; student lookup above is still needed for course.StudentId
-            var ctx = BuildCurriculumContext(request, student);
-            try
-            {
-                entries = await _curriculumService.GenerateAsync(ctx, ct);
-            }
-            catch (CurriculumGenerationException ex)
-            {
-                _logger.LogError(ex, "Curriculum generation failed for TeacherId={TeacherId}", teacherId);
-                return StatusCode(502, new { error = "Curriculum generation failed. Please try again." });
-            }
-            resolvedSessionCount = request.SessionCount;
+            _logger.LogError(ex, "Curriculum generation failed for TeacherId={TeacherId}", teacherId);
+            return StatusCode(502, new { error = "Curriculum generation failed. Please try again." });
         }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Curriculum generation returned invalid JSON for TeacherId={TeacherId}", teacherId);
+            return StatusCode(502, new { error = "Curriculum generation failed. Please try again." });
+        }
+
+        resolvedSessionCount = !string.IsNullOrEmpty(request.TemplateLevel)
+            ? entries.Count
+            : request.SessionCount;
 
         var now = DateTime.UtcNow;
         var course = new Course
@@ -135,7 +135,7 @@ public class CoursesController : ControllerBase
             Description = request.Description,
             Language = request.Language,
             Mode = request.Mode,
-            TargetCefrLevel = request.TargetCefrLevel,
+            TargetCefrLevel = resolvedCefrLevel,
             TargetExam = request.TargetExam,
             ExamDate = request.ExamDate,
             SessionCount = resolvedSessionCount,
@@ -282,6 +282,8 @@ public class CoursesController : ControllerBase
         var objectives = entry.GrammarFocus is not null
             ? $"Grammar: {entry.GrammarFocus}. Competencies: {entry.Competencies}."
             : $"Competencies: {entry.Competencies}.";
+        if (!string.IsNullOrEmpty(entry.CompetencyFocus))
+            objectives += $" Skill focus: {entry.CompetencyFocus}.";
 
         var lesson = new Lesson
         {
@@ -314,12 +316,12 @@ public class CoursesController : ControllerBase
         return Ok(new { lessonId = lesson.Id });
     }
 
-    private static CurriculumContext BuildCurriculumContext(CreateCourseRequest req, Student? student) =>
+    private static CurriculumContext BuildCurriculumContext(CreateCourseRequest req, Student? student, string? resolvedCefrLevel) =>
         new(
             Language: req.Language,
             Mode: req.Mode,
             SessionCount: req.SessionCount,
-            TargetCefrLevel: req.TargetCefrLevel,
+            TargetCefrLevel: resolvedCefrLevel,
             TargetExam: req.TargetExam,
             ExamDate: req.ExamDate,
             StudentName: student?.Name,
@@ -335,11 +337,12 @@ public class CoursesController : ControllerBase
                 : null,
             StudentDifficulties: student is not null
                 ? TryDeserializeDifficultyArray(student.Difficulties)
-                : null
+                : null,
+            TemplateLevel: req.TemplateLevel
         );
 
     private static CurriculumEntryDto MapEntryToDto(CurriculumEntry e) =>
-        new(e.Id, e.OrderIndex, e.Topic, e.GrammarFocus, e.Competencies, e.LessonType, e.LessonId, e.Status);
+        new(e.Id, e.OrderIndex, e.Topic, e.GrammarFocus, e.Competencies, e.LessonType, e.LessonId, e.Status, e.TemplateUnitRef, e.CompetencyFocus);
 
     private static CourseDto MapToDto(Course c) =>
         new(

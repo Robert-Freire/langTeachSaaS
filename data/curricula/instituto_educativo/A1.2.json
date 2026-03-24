@@ -16,6 +16,7 @@
         "Comprar en tiendas: preguntar por productos, pedir precios, etc.",
         "Hablar de preferencias"
       ],
+      "competency_focus": ["EO", "CO"],
       "grammar": [
         "Los demostrativos: este/esta/estos/estas, esto",
         "El/la/los/las + adjetivo",
@@ -55,6 +56,7 @@
         "Preguntar sobre gustos",
         "Hablar de relaciones personales"
       ],
+      "competency_focus": ["EO", "CO", "CE"],
       "grammar": [
         "El verbo gustar",
         "Los cuantificadores (muy, bastante, un poco)",
@@ -91,6 +93,7 @@
         "Expresar frecuencia",
         "Preguntar y decir la hora"
       ],
+      "competency_focus": ["EO", "CO"],
       "grammar": [
         "El presente de indicativo de algunos verbos irregulares",
         "Los verbos reflexivos",
