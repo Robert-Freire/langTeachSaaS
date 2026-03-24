@@ -20,8 +20,9 @@ Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Wor
 - Demo 1 (internal): CLOSED
 - Phase 2A: Teacher Workflow: CLOSED (reorganized 2026-03-21)
 - Curriculum & Personalization: ACTIVE (target Easter April 5)
-- Pedagogical Credibility: NEW (milestone #9, #166, #167, #194)
-- Solo Whiteboard: NEXT (5 sub-issues from #174)
+- Pedagogical Credibility: CLOSED (merged into Student-Aware Curriculum)
+- Student-Aware Curriculum: NEXT (#206, #152, #151, #185, #166, #167, #194, #253, #254)
+- Solo Whiteboard: AFTER STUDENT-AWARE (5 sub-issues from #174)
 - Adaptive Replanning: AFTER WHITEBOARD (audio input, post-class reflections, auto-difficulty updates, course replanning, progress dashboard)
 - Group Classes: FUTURE (#146, #147)
 - Phase 2B: Production (caching, usage limits, CI pipeline)
@@ -91,11 +92,6 @@ See git history for details. Key completed milestones:
 - #219 Review process gap (P1, DONE — PR #237 merged, Ready to Test)
   - Findings doc at plan/langteach-beta/219-findings.md covers all 4 postmortem angles
   - Implemented: #220 (startup validation), #221 (PR template), #223 (CI secret validation); Deferred: #224 (auto-rollback + alerting) to Phase 2B
-- #241 Fix student form UX bugs: z-index, chip overflow, stale weaknesses (P1, DONE — PR #248 merged)
-  - MultiSelect PopoverContent: side=bottom + z-[60] to prevent overlap behind preceding cards
-  - Chip container: max-h-24 overflow-y-auto for visibility without unbounded card growth
-  - Language switch: clears only language-specific weaknesses (new getLanguageSpecificWeaknessValues helper); common entries preserved
-  - 1 new unit test covering language-switch clearing behavior
 - #223 CI step to validate required Key Vault secrets before deploy (P2, DONE — PR #240 merged, Ready to Test)
   - infra/required-secrets.json manifest lists all 5 required KV secret names
   - validate-secrets job checks each via ARM management-plane API (no new RBAC grants needed)

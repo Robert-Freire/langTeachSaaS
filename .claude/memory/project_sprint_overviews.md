@@ -1,34 +1,23 @@
 ---
 name: Sprint overview files
-description: Quick-reference sprint files at plan/sprints/; update when issues are completed, split, or added to a sprint
+description: PM-only reference for sprint sequence, story files, and milestone map. Not for task agents.
 type: reference
 ---
 
-## Location
-
-`plan/sprints/<milestone-slug>.md`
-
 ## Purpose
 
-One file per sprint/milestone. Quick overview for Robert to see what the sprint is about and what's in it, without opening GitHub. Also useful for explaining scope to others.
+Sprint story files define what we're building from the teacher's perspective. They are loaded by the PM skill, not by task agents. Each active sprint should have a story file at `plan/sprints/<slug>.md`.
 
-## Writing style
+**When the sprint changes**, update the PM skill (`SKILL.md`) to point to the new story file.
 
-Plain, direct language. No marketing or buzzwords. Write as if explaining to yourself what each thing does and why. "Stop showing phrasal verbs for Spanish students" not "Language-aware difficulty categorization." The reader is Robert, not a stakeholder deck.
+## Sprint sequence
 
-## Contents
-
-- Sprint objective (2-3 sentences)
-- Key themes (bullet points)
-- Tables: completed, in progress, ready to pick up
-
-## Maintenance
-
-Update the sprint file whenever:
-- An issue is completed, split, or added to the milestone
-- Priority or assignment changes
-- A new sprint starts (create a new file)
-
-## Current files
-
-- `plan/sprints/phase-2a-teacher-workflow.md` — Phase 2A: Teacher Workflow Foundation
+| Order | Milestone | Status | Story file | Issues |
+|-------|-----------|--------|------------|--------|
+| 1 | Curriculum & Personalization | Finishing (1 open, 34 closed) | `plan/sprints/curriculum-personalization-test-script.md` | #150, #151, #154, #157, #161, #163, #164, #184, #192, #195, #199, #200, #201, #202, #208, #213, #219, #220, #221, #223, #226, #227, #228, #229, #242, #243 |
+| 2 | Student-Aware Curriculum | NEXT | `plan/sprints/student-aware-curriculum.md` | #206, #194, #253, #254, #152, #151, #185, #167, #166 |
+| 3 | Solo Whiteboard | Future | none yet | 6 issues from #174 |
+| 4 | Adaptive Replanning | Future | none yet | audio input, post-class reflections, auto-difficulty, course replanning, progress dashboard |
+| 5 | Group Classes | Future | none yet | #146, #147 |
+| 6 | Phase 2B: Production | Future | none yet | caching, usage limits, CI pipeline |
+| 7 | Phase 3: Growth | Future | none yet | student portal, evaluation, content library, payments |
