@@ -232,6 +232,34 @@ describe('CourseNew wizard', () => {
     })
   })
 
+  it('renders teacher notes textarea', () => {
+    wrapper(<CourseNew />)
+    const textarea = screen.getByTestId('teacher-notes')
+    expect(textarea).toBeInTheDocument()
+    expect(textarea.tagName).toBe('TEXTAREA')
+  })
+
+  it('includes teacher notes in the create course request', async () => {
+    const user = userEvent.setup()
+    const mockCreate = vi.fn().mockResolvedValue({ id: 'course-1' })
+    vi.mocked(coursesApi.createCourse).mockImplementation(mockCreate)
+    wrapper(<CourseNew />)
+
+    fireEvent.change(screen.getByTestId('course-name'), { target: { value: 'My Course' } })
+    await user.click(screen.getByTestId('language-select'))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+    await user.click(screen.getByTestId('cefr-select'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+
+    await user.type(screen.getByTestId('teacher-notes'), 'No role-play. Written exercises only.')
+    await user.click(screen.getByTestId('generate-curriculum-btn'))
+
+    expect(mockCreate).toHaveBeenCalledOnce()
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ teacherNotes: 'No role-play. Written exercises only.' })
+    )
+  })
+
   it('template checkbox label does not reference Instituto Cervantes', async () => {
     const user = userEvent.setup()
     wrapper(<CourseNew />)

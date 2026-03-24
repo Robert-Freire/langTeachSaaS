@@ -293,6 +293,12 @@ public class PromptService : IPromptService
             }
         }
 
+        if (!string.IsNullOrWhiteSpace(ctx.TeacherNotes))
+        {
+            sb.AppendLine();
+            sb.AppendLine($"Teacher notes: {Sanitize(ctx.TeacherNotes)}");
+        }
+
         return sb.ToString();
     }
 
@@ -334,8 +340,32 @@ public class PromptService : IPromptService
             ?? throw new InvalidOperationException("CurriculumPersonalizationUserPrompt requires TemplateUnits to be set.");
         var sb = new StringBuilder();
         sb.AppendLine($"The following {units.Count} sessions are fixed by the institutional curriculum. Their grammar focus and order must NOT change.");
-        sb.AppendLine("Provide a short, student-specific topic title for each session that connects the grammar to this student's world and interests.");
+        sb.AppendLine("For each session, provide:");
+        sb.AppendLine("1. A short, student-specific topic title connecting the grammar to this student's world and interests.");
+        sb.AppendLine("2. A contextDescription: a one-sentence scenario drawn from the student's life (e.g., 'Marco tells the clerk his name and phone number at a Barcelona registration office.')");
+        sb.AppendLine("3. personalizationNotes: a brief note on emphasis areas or constraint compliance for this session (e.g., 'Extra ser/estar contrast practice. Written exercises only per teacher notes.')");
         sb.AppendLine();
+
+        if (ctx.StudentNativeLanguage is not null)
+        {
+            sb.AppendLine($"L1 interference: the student's native language is {Sanitize(ctx.StudentNativeLanguage)}. Flag L1-specific challenges in personalizationNotes where relevant (false cognates, structures that differ from L1).");
+            sb.AppendLine();
+        }
+
+        if (ctx.StudentWeaknesses?.Length > 0)
+        {
+            sb.AppendLine($"Known weaknesses: {string.Join(", ", ctx.StudentWeaknesses.Select(Sanitize).Where(s => s.Length > 0))}");
+            sb.AppendLine("Spread emphasis on these weaknesses across multiple sessions in personalizationNotes, not just one.");
+            sb.AppendLine();
+        }
+
+        if (!string.IsNullOrWhiteSpace(ctx.TeacherNotes))
+        {
+            sb.AppendLine($"Teacher constraints: {Sanitize(ctx.TeacherNotes)}");
+            sb.AppendLine("Ensure personalizationNotes reflects compliance with these constraints (e.g., if 'no role-play', note 'written exercises only').");
+            sb.AppendLine();
+        }
+
         sb.AppendLine("Sessions:");
 
         foreach (var u in units)
@@ -349,7 +379,7 @@ public class PromptService : IPromptService
 
         sb.AppendLine();
         sb.AppendLine($"Return a JSON array with exactly {units.Count} objects:");
-        sb.AppendLine("[{ \"orderIndex\": 1, \"topic\": \"...\" }, ...]");
+        sb.AppendLine("[{ \"orderIndex\": 1, \"topic\": \"...\", \"contextDescription\": \"...\", \"personalizationNotes\": \"...\" }, ...]");
         sb.AppendLine("Output ONLY the JSON array. No markdown, no explanation.");
 
         return sb.ToString();

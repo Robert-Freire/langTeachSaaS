@@ -80,6 +80,9 @@ test('create course (general mode) and view curriculum', async ({ browser }) => 
   await expect(page.getByTestId('mode-general')).toBeVisible()
   await expect(page.getByTestId('mode-exam-prep')).toBeVisible()
 
+  // Teacher notes textarea must be present
+  await expect(page.getByTestId('teacher-notes')).toBeVisible()
+
   // Fill in form
   await page.getByTestId('course-name').fill('B2 English Course')
 

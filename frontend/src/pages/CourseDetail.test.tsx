@@ -42,9 +42,9 @@ const mockCourse = {
   createdAt: '2026-03-10T10:00:00Z',
   updatedAt: '2026-03-10T10:00:00Z',
   entries: [
-    { id: 'e1', orderIndex: 1, topic: 'Greetings', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned' as const },
-    { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: null, competencies: 'reading', lessonType: null, lessonId: null, status: 'planned' as const },
-    { id: 'e3', orderIndex: 3, topic: 'Hobbies', grammarFocus: 'Present continuous', competencies: 'writing', lessonType: 'Grammar-focused', lessonId: null, status: 'planned' as const },
+    { id: 'e1', orderIndex: 1, topic: 'Greetings', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null },
+    { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: null, competencies: 'reading', lessonType: null, lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null },
+    { id: 'e3', orderIndex: 3, topic: 'Hobbies', grammarFocus: 'Present continuous', competencies: 'writing', lessonType: 'Grammar-focused', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null },
   ],
 }
 

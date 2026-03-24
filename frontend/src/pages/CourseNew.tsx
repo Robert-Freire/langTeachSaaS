@@ -8,6 +8,7 @@ import { getStudents } from '../api/students'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/PageHeader'
@@ -33,6 +34,7 @@ export default function CourseNew() {
   const [studentId, setStudentId] = useState<string | undefined>()
   const [useTemplate, setUseTemplate] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
+  const [teacherNotes, setTeacherNotes] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const { data: studentsData } = useQuery({
@@ -65,6 +67,7 @@ export default function CourseNew() {
         targetExam: mode === 'exam-prep' ? targetExam || undefined : undefined,
         examDate: mode === 'exam-prep' && examDate ? examDate : undefined,
         templateLevel: useTemplate && selectedTemplate ? selectedTemplate : undefined,
+        teacherNotes: teacherNotes.trim() || undefined,
       }
       return createCourse(req)
     },
@@ -319,6 +322,20 @@ export default function CourseNew() {
             const selectedStudent = students.find(s => s.id === studentId)
             return selectedStudent ? <StudentProfileSummary student={selectedStudent} /> : null
           })()}
+
+          {/* Teacher notes */}
+          <div className="space-y-1.5">
+            <Label htmlFor="teacher-notes">Teacher notes (optional)</Label>
+            <Textarea
+              id="teacher-notes"
+              data-testid="teacher-notes"
+              placeholder="e.g., Relocating to Barcelona. Hates role-play. Needs formal register."
+              value={teacherNotes}
+              onChange={e => setTeacherNotes(e.target.value)}
+              rows={3}
+            />
+            <p className="text-xs text-zinc-500">Constraints and context for AI personalization.</p>
+          </div>
 
           {/* CEFR mismatch warning (general mode only) */}
           {mode === 'general' && studentId && targetCefrLevel && (() => {
