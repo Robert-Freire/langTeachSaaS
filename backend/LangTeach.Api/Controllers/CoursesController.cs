@@ -78,50 +78,29 @@ public class CoursesController : ControllerBase
                 return BadRequest("Invalid StudentId: student not found or does not belong to you.");
         }
 
+        if (!string.IsNullOrEmpty(request.TemplateLevel) && request.Mode != "general")
+            return BadRequest("TemplateLevel can only be used with mode 'general'.");
+
+        if (!string.IsNullOrEmpty(request.TemplateLevel) && _templateService.GetByLevel(request.TemplateLevel) is null)
+            return BadRequest($"Template '{request.TemplateLevel}' not found.");
+
         List<CurriculumEntry> entries;
         int resolvedSessionCount;
 
-        if (!string.IsNullOrEmpty(request.TemplateLevel))
+        var ctx = BuildCurriculumContext(request, student);
+        try
         {
-            if (request.Mode != "general")
-                return BadRequest("TemplateLevel can only be used with mode 'general'.");
-
-            var template = _templateService.GetByLevel(request.TemplateLevel);
-            if (template is null)
-                return BadRequest($"Template '{request.TemplateLevel}' not found.");
-
-            entries = template.Units.Select((u, i) => new CurriculumEntry
-            {
-                Id = Guid.NewGuid(),
-                OrderIndex = i + 1,
-                // Include communicative functions in topic so they surface in the planner view.
-                // Vocabulary themes are shown in the template preview card only (no model field).
-                Topic = u.CommunicativeFunctions.Count > 0
-                    ? $"{u.Title}: {string.Join(", ", u.CommunicativeFunctions.Take(2))}"
-                    : u.Title,
-                GrammarFocus = u.Grammar.Count > 0 ? string.Join(", ", u.Grammar) : null,
-                Competencies = "reading,writing,listening,speaking",
-                LessonType = "Communicative",
-                Status = "planned"
-            }).ToList();
-
-            resolvedSessionCount = entries.Count;
+            entries = await _curriculumService.GenerateAsync(ctx, ct);
         }
-        else
+        catch (CurriculumGenerationException ex)
         {
-            // AI generation path; student lookup above is still needed for course.StudentId
-            var ctx = BuildCurriculumContext(request, student);
-            try
-            {
-                entries = await _curriculumService.GenerateAsync(ctx, ct);
-            }
-            catch (CurriculumGenerationException ex)
-            {
-                _logger.LogError(ex, "Curriculum generation failed for TeacherId={TeacherId}", teacherId);
-                return StatusCode(502, new { error = "Curriculum generation failed. Please try again." });
-            }
-            resolvedSessionCount = request.SessionCount;
+            _logger.LogError(ex, "Curriculum generation failed for TeacherId={TeacherId}", teacherId);
+            return StatusCode(502, new { error = "Curriculum generation failed. Please try again." });
         }
+
+        resolvedSessionCount = !string.IsNullOrEmpty(request.TemplateLevel)
+            ? entries.Count
+            : request.SessionCount;
 
         var now = DateTime.UtcNow;
         var course = new Course
@@ -280,6 +259,8 @@ public class CoursesController : ControllerBase
         var objectives = entry.GrammarFocus is not null
             ? $"Grammar: {entry.GrammarFocus}. Competencies: {entry.Competencies}."
             : $"Competencies: {entry.Competencies}.";
+        if (!string.IsNullOrEmpty(entry.CompetencyFocus))
+            objectives += $" Skill focus: {entry.CompetencyFocus}.";
 
         var lesson = new Lesson
         {
@@ -327,11 +308,12 @@ public class CoursesController : ControllerBase
                 : null,
             StudentGoals: student is not null
                 ? TryDeserializeStringArray(student.LearningGoals)
-                : null
+                : null,
+            TemplateLevel: req.TemplateLevel
         );
 
     private static CurriculumEntryDto MapEntryToDto(CurriculumEntry e) =>
-        new(e.Id, e.OrderIndex, e.Topic, e.GrammarFocus, e.Competencies, e.LessonType, e.LessonId, e.Status);
+        new(e.Id, e.OrderIndex, e.Topic, e.GrammarFocus, e.Competencies, e.LessonType, e.LessonId, e.Status, e.TemplateUnitRef, e.CompetencyFocus);
 
     private static CourseDto MapToDto(Course c) =>
         new(

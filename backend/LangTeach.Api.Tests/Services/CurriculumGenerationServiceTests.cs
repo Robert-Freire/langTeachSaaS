@@ -1,0 +1,300 @@
+using FluentAssertions;
+using LangTeach.Api.AI;
+using LangTeach.Api.DTOs;
+using LangTeach.Api.Services;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace LangTeach.Api.Tests.Services;
+
+// ---------------------------------------------------------------------------
+// Test doubles
+// ---------------------------------------------------------------------------
+
+internal sealed class FakePromptService : IPromptService
+{
+    public ClaudeRequest BuildLessonPlanPrompt(GenerationContext ctx) => Dummy();
+    public ClaudeRequest BuildVocabularyPrompt(GenerationContext ctx) => Dummy();
+    public ClaudeRequest BuildGrammarPrompt(GenerationContext ctx) => Dummy();
+    public ClaudeRequest BuildExercisesPrompt(GenerationContext ctx) => Dummy();
+    public ClaudeRequest BuildConversationPrompt(GenerationContext ctx) => Dummy();
+    public ClaudeRequest BuildReadingPrompt(GenerationContext ctx) => Dummy();
+    public ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx) => Dummy();
+
+    public ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx)
+    {
+        LastCurriculumContext = ctx;
+        return Dummy();
+    }
+
+    public CurriculumContext? LastCurriculumContext { get; private set; }
+
+    private static ClaudeRequest Dummy() =>
+        new("system", "user", ClaudeModel.Haiku, MaxTokens: 100);
+}
+
+internal sealed class ConfigurableClaudeClient : IClaudeClient
+{
+    private readonly string _content;
+    public int CompleteCallCount { get; private set; }
+
+    public ConfigurableClaudeClient(string content)
+    {
+        _content = content;
+    }
+
+    public Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default)
+    {
+        CompleteCallCount++;
+        return Task.FromResult(new ClaudeResponse(_content, "claude-haiku", 10, 20));
+    }
+
+    public async IAsyncEnumerable<string> StreamAsync(ClaudeRequest request,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await Task.Yield();
+        yield return _content;
+    }
+}
+
+internal sealed class FakeTemplateService : ICurriculumTemplateService
+{
+    private readonly CurriculumTemplateData? _data;
+
+    public FakeTemplateService(CurriculumTemplateData? data = null)
+    {
+        _data = data;
+    }
+
+    public IReadOnlyList<CurriculumTemplateSummary> GetAll() => [];
+
+    public CurriculumTemplateData? GetByLevel(string level) => _data;
+
+    public IReadOnlyList<string> GetGrammarForCefrPrefix(string cefrPrefix) => [];
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+internal static class FakeTemplates
+{
+    public static CurriculumTemplateData TwoUnitTemplate() => new(
+        Level: "A1.1",
+        CefrLevel: "A1",
+        Units: new List<CurriculumTemplateUnit>
+        {
+            new(1, "Nosotros", "Conocer a los compañeros",
+                Grammar: ["El género", "Las conjugaciones"],
+                VocabularyThemes: ["Profesiones"],
+                CommunicativeFunctions: ["Dar datos personales", "Saludar"],
+                CompetencyFocus: ["EO", "CO", "EE"]),
+            new(2, "Quiero aprender español", "Hablar sobre el español",
+                Grammar: ["El presente de indicativo", "Por/para"],
+                VocabularyThemes: ["Idiomas"],
+                CommunicativeFunctions: ["Expresar intenciones"],
+                CompetencyFocus: ["EO", "CO"])
+        });
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+public class CurriculumGenerationServiceTests
+{
+    private static CurriculumGenerationService BuildService(
+        ICurriculumTemplateService templateService,
+        IClaudeClient? claude = null,
+        IPromptService? prompts = null) =>
+        new(
+            claude ?? new ConfigurableClaudeClient("[]"),
+            prompts ?? new FakePromptService(),
+            templateService,
+            NullLogger<CurriculumGenerationService>.Instance);
+
+    // -------------------------------------------------------------------------
+    // Template path: basic skeleton creation
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task TemplatePath_CreatesEntriesMatchingTemplateUnitCount()
+    {
+        var template = FakeTemplates.TwoUnitTemplate();
+        var sut = BuildService(new FakeTemplateService(template));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 0,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: null, StudentNativeLanguage: null,
+            StudentInterests: null, StudentGoals: null,
+            TemplateLevel: "A1.1");
+
+        var entries = await sut.GenerateAsync(ctx);
+
+        entries.Should().HaveCount(template.Units.Count);
+    }
+
+    [Fact]
+    public async Task TemplatePath_PreservesGrammarFocusAndOrder()
+    {
+        var template = FakeTemplates.TwoUnitTemplate();
+        var sut = BuildService(new FakeTemplateService(template));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 0,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: null, StudentNativeLanguage: null,
+            StudentInterests: null, StudentGoals: null,
+            TemplateLevel: "A1.1");
+
+        var entries = await sut.GenerateAsync(ctx);
+
+        entries[0].OrderIndex.Should().Be(1);
+        entries[0].GrammarFocus.Should().Contain("El género");
+
+        entries[1].OrderIndex.Should().Be(2);
+        entries[1].GrammarFocus.Should().Contain("El presente de indicativo");
+    }
+
+    [Fact]
+    public async Task TemplatePath_SetsTemplateUnitRefAndCompetencyFocus()
+    {
+        var template = FakeTemplates.TwoUnitTemplate();
+        var sut = BuildService(new FakeTemplateService(template));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 0,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: null, StudentNativeLanguage: null,
+            StudentInterests: null, StudentGoals: null,
+            TemplateLevel: "A1.1");
+
+        var entries = await sut.GenerateAsync(ctx);
+
+        entries[0].TemplateUnitRef.Should().Be("Nosotros");
+        entries[0].CompetencyFocus.Should().Be("EO,CO,EE");
+
+        entries[1].TemplateUnitRef.Should().Be("Quiero aprender español");
+        entries[1].CompetencyFocus.Should().Be("EO,CO");
+    }
+
+    [Fact]
+    public async Task TemplatePath_NoStudent_SkipsAiCall()
+    {
+        var claude = new ConfigurableClaudeClient("should-not-be-called");
+        var sut = BuildService(new FakeTemplateService(FakeTemplates.TwoUnitTemplate()), claude);
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 0,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: null, StudentNativeLanguage: null,
+            StudentInterests: null, StudentGoals: null,
+            TemplateLevel: "A1.1");
+
+        await sut.GenerateAsync(ctx);
+
+        claude.CompleteCallCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task TemplatePath_WithStudent_CallsAiForPersonalization()
+    {
+        var personalizationJson =
+            "[{\"orderIndex\":1,\"topic\":\"Marco meets his football team\"},{\"orderIndex\":2,\"topic\":\"Marco explains why he loves football\"}]";
+        var claude = new ConfigurableClaudeClient(personalizationJson);
+        var prompts = new FakePromptService();
+        var sut = BuildService(new FakeTemplateService(FakeTemplates.TwoUnitTemplate()), claude, prompts);
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 0,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: "Marco", StudentNativeLanguage: "Italian",
+            StudentInterests: ["football"], StudentGoals: null,
+            TemplateLevel: "A1.1");
+
+        var entries = await sut.GenerateAsync(ctx);
+
+        claude.CompleteCallCount.Should().Be(1);
+        entries[0].Topic.Should().Be("Marco meets his football team");
+        entries[1].Topic.Should().Be("Marco explains why he loves football");
+    }
+
+    [Fact]
+    public async Task TemplatePath_WithStudent_PreservesGrammarFocusDespitePersonalization()
+    {
+        var personalizationJson =
+            "[{\"orderIndex\":1,\"topic\":\"Marco meets his football team\"}]";
+        var sut = BuildService(
+            new FakeTemplateService(FakeTemplates.TwoUnitTemplate()),
+            new ConfigurableClaudeClient(personalizationJson));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 0,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: "Marco", StudentNativeLanguage: null,
+            StudentInterests: null, StudentGoals: null,
+            TemplateLevel: "A1.1");
+
+        var entries = await sut.GenerateAsync(ctx);
+
+        // Grammar must not be altered by personalization
+        entries[0].GrammarFocus.Should().Contain("El género");
+        entries[1].GrammarFocus.Should().Contain("El presente de indicativo");
+    }
+
+    [Fact]
+    public async Task TemplatePath_AiPartialResponse_KeepsUnmatchedOriginalTopics()
+    {
+        // AI only returns entry for orderIndex 1, not 2
+        var partialJson = "[{\"orderIndex\":1,\"topic\":\"Marco's personalized topic\"}]";
+        var sut = BuildService(
+            new FakeTemplateService(FakeTemplates.TwoUnitTemplate()),
+            new ConfigurableClaudeClient(partialJson));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 0,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: "Marco", StudentNativeLanguage: null,
+            StudentInterests: null, StudentGoals: null,
+            TemplateLevel: "A1.1");
+
+        var entries = await sut.GenerateAsync(ctx);
+
+        entries[0].Topic.Should().Be("Marco's personalized topic");
+        // Entry 2 should keep original template topic (not crash)
+        entries[1].Topic.Should().NotBeNullOrEmpty();
+        entries[1].TemplateUnitRef.Should().Be("Quiero aprender español");
+    }
+
+    // -------------------------------------------------------------------------
+    // Free AI generation path (unchanged)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task FreePath_StillProducesValidEntries()
+    {
+        var freeGenJson = """
+            [
+                {"orderIndex":1,"topic":"Greetings","grammarFocus":"ser/estar","competencies":["speaking","listening"],"lessonType":"Communicative"},
+                {"orderIndex":2,"topic":"Numbers","grammarFocus":"números","competencies":["listening","writing"],"lessonType":"Grammar-focused"}
+            ]
+            """;
+        var sut = BuildService(
+            new FakeTemplateService(),
+            new ConfigurableClaudeClient(freeGenJson));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 2,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: null, StudentNativeLanguage: null,
+            StudentInterests: null, StudentGoals: null);
+
+        var entries = await sut.GenerateAsync(ctx);
+
+        entries.Should().HaveCount(2);
+        entries[0].Topic.Should().Be("Greetings");
+        entries[0].GrammarFocus.Should().Be("ser/estar");
+        entries[0].TemplateUnitRef.Should().BeNull();
+        entries[0].CompetencyFocus.Should().BeNull();
+    }
+}

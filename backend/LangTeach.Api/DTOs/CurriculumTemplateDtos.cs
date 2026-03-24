@@ -19,5 +19,6 @@ public record CurriculumTemplateUnit(
     string OverallGoal,
     IReadOnlyList<string> Grammar,
     IReadOnlyList<string> VocabularyThemes,
-    IReadOnlyList<string> CommunicativeFunctions
+    IReadOnlyList<string> CommunicativeFunctions,
+    IReadOnlyList<string> CompetencyFocus
 );
