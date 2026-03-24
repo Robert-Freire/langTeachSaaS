@@ -31,10 +31,12 @@ const FULL_STUDENT: Student = {
 }
 
 describe('computeProfileCompleteness', () => {
-  it('returns 0% for empty profile', () => {
+  // BASE_STUDENT has cefrLevel: 'A1' (always populated) = 1/6 = 17%
+  it('returns 17% when only cefrLevel is populated (baseline)', () => {
     const { score, missingFields } = computeProfileCompleteness(BASE_STUDENT)
-    expect(score).toBe(0)
+    expect(score).toBe(17)
     expect(missingFields).toHaveLength(5)
+    expect(missingFields).not.toContain('CEFR level')
   })
 
   it('returns 100% for full profile', () => {
@@ -43,12 +45,12 @@ describe('computeProfileCompleteness', () => {
     expect(missingFields).toHaveLength(0)
   })
 
-  it('returns 20% when exactly one field is populated', () => {
+  it('returns 33% when cefrLevel + one additional field are populated', () => {
     const { score, missingFields } = computeProfileCompleteness({
       ...BASE_STUDENT,
       nativeLanguage: 'Italian',
     })
-    expect(score).toBe(20)
+    expect(score).toBe(33) // 2/6 rounded
     expect(missingFields).toHaveLength(4)
   })
 
@@ -58,7 +60,7 @@ describe('computeProfileCompleteness', () => {
       interests: [],
       learningGoals: [],
     })
-    expect(score).toBe(0)
+    expect(score).toBe(17) // only cefrLevel contributes
   })
 
   it('lists missing field names', () => {
@@ -71,6 +73,7 @@ describe('computeProfileCompleteness', () => {
     expect(missingFields).toContain('known weaknesses')
     expect(missingFields).toContain('documented difficulties')
     expect(missingFields).not.toContain('native language')
+    expect(missingFields).not.toContain('CEFR level')
   })
 })
 
@@ -87,9 +90,9 @@ describe('StudentProfileSummary', () => {
     expect(screen.queryByTestId('missing-fields-hint')).not.toBeInTheDocument()
   })
 
-  it('shows 0% completeness and hint for empty profile', () => {
+  it('shows 17% completeness (cefrLevel only) and hint for minimal profile', () => {
     render(<StudentProfileSummary student={BASE_STUDENT} />)
-    expect(screen.getByTestId('completeness-score')).toHaveTextContent('0%')
+    expect(screen.getByTestId('completeness-score')).toHaveTextContent('17%')
     expect(screen.getByTestId('missing-fields-hint')).toBeInTheDocument()
   })
 
