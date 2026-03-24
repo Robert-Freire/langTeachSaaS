@@ -16,6 +16,8 @@ namespace LangTeach.Api.Controllers;
 [Authorize]
 public class CoursesController : ControllerBase
 {
+    private static readonly JsonSerializerOptions CaseInsensitiveOptions = new() { PropertyNameCaseInsensitive = true };
+
     private readonly IProfileService _profileService;
     private readonly ICurriculumGenerationService _curriculumService;
     private readonly ICurriculumTemplateService _templateService;
@@ -357,7 +359,7 @@ public class CoursesController : ControllerBase
 
     private static DifficultyDto[] TryDeserializeDifficultyArray(string json)
     {
-        try { return JsonSerializer.Deserialize<DifficultyDto[]>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? []; }
+        try { return JsonSerializer.Deserialize<DifficultyDto[]>(json, CaseInsensitiveOptions) ?? []; }
         catch (JsonException) { return []; }
     }
 

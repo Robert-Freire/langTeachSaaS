@@ -284,8 +284,9 @@ public class PromptService : IPromptService
                 var topDifficulties = ctx.StudentDifficulties
                     .OrderByDescending(d => d.Severity switch { "high" => 3, "medium" => 2, _ => 1 })
                     .Take(5)
-                    .Select(d => $"{Sanitize(d.Category)}: {Sanitize(d.Item)}")
-                    .Where(s => s.Length > 0);
+                    .Select(d => (Category: Sanitize(d.Category), Item: Sanitize(d.Item)))
+                    .Where(d => d.Category.Length > 0 && d.Item.Length > 0)
+                    .Select(d => $"{d.Category}: {d.Item}");
                 sb.AppendLine($"Documented difficulties: {string.Join("; ", topDifficulties)}");
             }
         }
