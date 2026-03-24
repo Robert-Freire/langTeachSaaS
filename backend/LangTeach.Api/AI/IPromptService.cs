@@ -25,6 +25,8 @@ public record CurriculumContext(
     string? StudentNativeLanguage,
     string[]? StudentInterests,
     string[]? StudentGoals,
+    string[]? StudentWeaknesses = null,
+    DifficultyDto[]? StudentDifficulties = null,
     string? TemplateLevel = null,
     IReadOnlyList<TemplateUnitContext>? TemplateUnits = null
 );

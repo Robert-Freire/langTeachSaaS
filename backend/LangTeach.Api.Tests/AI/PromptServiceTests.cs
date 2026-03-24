@@ -555,4 +555,70 @@ public class PromptServiceTests
 
         req.SystemPrompt.Should().NotContain("self-contained and work with text alone");
     }
+
+    // --- CurriculumContext: weaknesses and difficulties ---
+
+    private static CurriculumContext BaseCurriculumCtx() => new(
+        Language: "Spanish",
+        Mode: "general",
+        SessionCount: 10,
+        TargetCefrLevel: "A1",
+        TargetExam: null,
+        ExamDate: null,
+        StudentName: "Marco",
+        StudentNativeLanguage: "Italian",
+        StudentInterests: null,
+        StudentGoals: null
+    );
+
+    [Fact]
+    public void CurriculumSystemPrompt_IncludesWeaknesses_WhenStudentWeaknessesProvided()
+    {
+        var ctx = BaseCurriculumCtx() with { StudentWeaknesses = ["ser vs estar", "subjunctive mood"] };
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Known weaknesses");
+        req.SystemPrompt.Should().Contain("ser vs estar");
+        req.SystemPrompt.Should().Contain("subjunctive mood");
+    }
+
+    [Fact]
+    public void CurriculumSystemPrompt_IncludesDifficulties_WhenStudentDifficultiesProvided()
+    {
+        var ctx = BaseCurriculumCtx() with
+        {
+            StudentDifficulties =
+            [
+                new DifficultyDto("1", "grammar", "past tense", "high", "stable"),
+                new DifficultyDto("2", "vocabulary", "false cognates", "medium", "improving"),
+            ]
+        };
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Documented difficulties");
+        req.SystemPrompt.Should().Contain("grammar: past tense");
+        req.SystemPrompt.Should().Contain("vocabulary: false cognates");
+    }
+
+    [Fact]
+    public void CurriculumSystemPrompt_OmitsWeaknessesSection_WhenNullOrEmpty()
+    {
+        var ctxNull = BaseCurriculumCtx() with { StudentWeaknesses = null };
+        var ctxEmpty = BaseCurriculumCtx() with { StudentWeaknesses = [] };
+
+        _sut.BuildCurriculumPrompt(ctxNull).SystemPrompt.Should().NotContain("Known weaknesses");
+        _sut.BuildCurriculumPrompt(ctxEmpty).SystemPrompt.Should().NotContain("Known weaknesses");
+    }
+
+    [Fact]
+    public void CurriculumSystemPrompt_OmitsDifficultiesSection_WhenNullOrEmpty()
+    {
+        var ctxNull = BaseCurriculumCtx() with { StudentDifficulties = null };
+        var ctxEmpty = BaseCurriculumCtx() with { StudentDifficulties = [] };
+
+        _sut.BuildCurriculumPrompt(ctxNull).SystemPrompt.Should().NotContain("Documented difficulties");
+        _sut.BuildCurriculumPrompt(ctxEmpty).SystemPrompt.Should().NotContain("Documented difficulties");
+    }
 }

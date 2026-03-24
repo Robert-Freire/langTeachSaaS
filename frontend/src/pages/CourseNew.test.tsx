@@ -190,6 +190,48 @@ describe('CourseNew wizard', () => {
     })
   })
 
+  describe('student profile summary', () => {
+    const STUDENT_WITH_PROFILE = {
+      items: [{
+        id: 'student-1', name: 'Marco', cefrLevel: 'A1',
+        learningLanguage: 'Spanish', interests: ['football'],
+        notes: null, nativeLanguage: 'Italian',
+        learningGoals: ['get a job in Barcelona'],
+        weaknesses: ['ser vs estar'],
+        difficulties: [{ id: 'x', category: 'grammar', item: 'subjunctive', severity: 'high', trend: 'stable' }],
+        createdAt: '2026-01-01', updatedAt: '2026-01-01',
+      }],
+      totalCount: 1, page: 1, pageSize: 100,
+    }
+
+    it('shows profile summary card when a student is selected', async () => {
+      vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT_WITH_PROFILE)
+      const user = userEvent.setup()
+      wrapper(<CourseNew />)
+
+      expect(screen.queryByTestId('student-profile-summary')).not.toBeInTheDocument()
+
+      await user.click(await screen.findByTestId('student-select'))
+      await user.click(await screen.findByRole('option', { name: 'Marco' }))
+
+      expect(await screen.findByTestId('student-profile-summary')).toBeInTheDocument()
+    })
+
+    it('hides profile summary card when no student is selected', async () => {
+      vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT_WITH_PROFILE)
+      const user = userEvent.setup()
+      wrapper(<CourseNew />)
+
+      await user.click(await screen.findByTestId('student-select'))
+      await user.click(await screen.findByRole('option', { name: 'Marco' }))
+      expect(await screen.findByTestId('student-profile-summary')).toBeInTheDocument()
+
+      await user.click(screen.getByTestId('student-select'))
+      await user.click(await screen.findByRole('option', { name: 'No specific student' }))
+      expect(screen.queryByTestId('student-profile-summary')).not.toBeInTheDocument()
+    })
+  })
+
   it('template checkbox label does not reference Instituto Cervantes', async () => {
     const user = userEvent.setup()
     wrapper(<CourseNew />)
