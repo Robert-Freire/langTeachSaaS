@@ -271,7 +271,7 @@ test('generate lesson from curriculum entry', async ({ browser }) => {
   await context.close()
 })
 
-test('create course from Instituto Cervantes template', async ({ browser }) => {
+test('create course from structured curriculum template', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
