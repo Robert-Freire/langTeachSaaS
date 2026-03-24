@@ -525,6 +525,71 @@ public class PromptServiceTests
         req.UserPrompt.Should().NotContain("EXAM PREP TEMPLATE REQUIREMENTS");
     }
 
+    // --- CEFR-level exercise guidance ---
+
+    [Fact]
+    public void ExercisesPrompt_A1_RequiresWordBankForFillInBlank()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("word bank");
+        req.UserPrompt.Should().Contain("A1/A2");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_B1_RequiresAtLeastTwoFormats()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("at least 2 different exercise formats");
+        req.UserPrompt.Should().Contain("B1/B2");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_C1_MinimizesMechanicalDrills()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "C1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Minimize purely mechanical items");
+        req.UserPrompt.Should().Contain("C1/C2");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_A1_MentionsWordBankInPractice()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("word bank");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_B1_RequiresVarietyInPractice()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("at least 2 different activity formats");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_C1_MinimisesMechanicalDrillsInPractice()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "C1" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("minimise mechanical drills");
+    }
+
     // --- No phantom materials constraint ---
 
     [Fact]
