@@ -342,12 +342,5 @@ public class PromptService : IPromptService
         return sb.ToString();
     }
 
-    private static string CefrCodeToSkillName(string code) => code.ToUpperInvariant() switch
-    {
-        "EO" => "speaking",
-        "CO" => "listening",
-        "CE" => "reading",
-        "EE" => "writing",
-        _ => code
-    };
+    private static string CefrCodeToSkillName(string code) => LangTeach.Api.DTOs.CefrSkillCodes.ToSkillName(code);
 }

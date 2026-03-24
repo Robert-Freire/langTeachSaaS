@@ -138,14 +138,7 @@ public class CurriculumGenerationService : ICurriculumGenerationService
         }
     }
 
-    private static string CefrCodeToSkill(string code) => code.ToUpperInvariant() switch
-    {
-        "EO" => "speaking",
-        "CO" => "listening",
-        "CE" => "reading",
-        "EE" => "writing",
-        _ => "speaking"
-    };
+    private static string CefrCodeToSkill(string code) => CefrSkillCodes.ToSkillName(code);
 
     private record AiEntryDto(
         int OrderIndex,
