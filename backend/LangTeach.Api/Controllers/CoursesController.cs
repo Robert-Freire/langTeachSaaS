@@ -64,7 +64,9 @@ public class CoursesController : ControllerBase
         if (request.Mode == "exam-prep" && string.IsNullOrWhiteSpace(request.TargetExam))
             return BadRequest("TargetExam is required when Mode is 'exam-prep'.");
 
-        if (request.Mode == "general" && string.IsNullOrWhiteSpace(request.TargetCefrLevel))
+        // When a template is provided it supplies the CEFR level; otherwise require it explicitly.
+        if (request.Mode == "general" && string.IsNullOrWhiteSpace(request.TargetCefrLevel)
+            && string.IsNullOrEmpty(request.TemplateLevel))
             return BadRequest("TargetCefrLevel is required when Mode is 'general'.");
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
@@ -81,13 +83,27 @@ public class CoursesController : ControllerBase
         if (!string.IsNullOrEmpty(request.TemplateLevel) && request.Mode != "general")
             return BadRequest("TemplateLevel can only be used with mode 'general'.");
 
-        if (!string.IsNullOrEmpty(request.TemplateLevel) && _templateService.GetByLevel(request.TemplateLevel) is null)
-            return BadRequest($"Template '{request.TemplateLevel}' not found.");
+        // Resolve CEFR level from template (authoritative) or from the request.
+        string? resolvedCefrLevel = request.TargetCefrLevel;
+        if (!string.IsNullOrEmpty(request.TemplateLevel))
+        {
+            var templateData = _templateService.GetByLevel(request.TemplateLevel);
+            if (templateData is null)
+                return BadRequest($"Template '{request.TemplateLevel}' not found.");
+
+            // Reject mismatches: if the caller supplied a CEFR level it must match the template's.
+            if (!string.IsNullOrEmpty(request.TargetCefrLevel) &&
+                !string.Equals(request.TargetCefrLevel, templateData.CefrLevel, StringComparison.OrdinalIgnoreCase))
+                return BadRequest(
+                    $"TargetCefrLevel '{request.TargetCefrLevel}' does not match template CEFR level '{templateData.CefrLevel}'.");
+
+            resolvedCefrLevel = templateData.CefrLevel;
+        }
 
         List<CurriculumEntry> entries;
         int resolvedSessionCount;
 
-        var ctx = BuildCurriculumContext(request, student);
+        var ctx = BuildCurriculumContext(request, student, resolvedCefrLevel);
         try
         {
             entries = await _curriculumService.GenerateAsync(ctx, ct);
@@ -95,6 +111,11 @@ public class CoursesController : ControllerBase
         catch (CurriculumGenerationException ex)
         {
             _logger.LogError(ex, "Curriculum generation failed for TeacherId={TeacherId}", teacherId);
+            return StatusCode(502, new { error = "Curriculum generation failed. Please try again." });
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Curriculum generation returned invalid JSON for TeacherId={TeacherId}", teacherId);
             return StatusCode(502, new { error = "Curriculum generation failed. Please try again." });
         }
 
@@ -112,7 +133,7 @@ public class CoursesController : ControllerBase
             Description = request.Description,
             Language = request.Language,
             Mode = request.Mode,
-            TargetCefrLevel = request.TargetCefrLevel,
+            TargetCefrLevel = resolvedCefrLevel,
             TargetExam = request.TargetExam,
             ExamDate = request.ExamDate,
             SessionCount = resolvedSessionCount,
@@ -293,12 +314,12 @@ public class CoursesController : ControllerBase
         return Ok(new { lessonId = lesson.Id });
     }
 
-    private static CurriculumContext BuildCurriculumContext(CreateCourseRequest req, Student? student) =>
+    private static CurriculumContext BuildCurriculumContext(CreateCourseRequest req, Student? student, string? resolvedCefrLevel) =>
         new(
             Language: req.Language,
             Mode: req.Mode,
             SessionCount: req.SessionCount,
-            TargetCefrLevel: req.TargetCefrLevel,
+            TargetCefrLevel: resolvedCefrLevel,
             TargetExam: req.TargetExam,
             ExamDate: req.ExamDate,
             StudentName: student?.Name,
