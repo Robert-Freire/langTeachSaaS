@@ -20,3 +20,9 @@ All items from the previous backlog have been triaged. The backlog is now clean.
 ---
 
 *New findings from future UI reviews go below this line.*
+
+### PR #243 (2026-03-23)
+
+- **[Minor]** CourseNew (/courses/new): Name, Language, Target CEFR Level fields have no required asterisks. StudentForm and OnboardingStep2 got asterisks in this batch but CourseNew was deferred (out of scope).
+- **[Minor]** Study View back link: Default state uses `text-muted-foreground` (borderline contrast at small sizes). Hover color added but resting state is still low contrast.
+- **[Minor]** Student Form mobile (375px): Page h1 truncates to "Add Stud..." when Save/Cancel buttons are in the same row -- could be addressed with a smaller font or a stacked header layout on mobile.

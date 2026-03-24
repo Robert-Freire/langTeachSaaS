@@ -47,4 +47,10 @@ describe('PageHeader', () => {
     })
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
   })
+
+  it('title has truncate class to prevent layout shift in compact headers', () => {
+    renderHeader({ title: 'A very long lesson title that might overflow on mobile viewports' })
+    const heading = screen.getByRole('heading')
+    expect(heading).toHaveClass('truncate')
+  })
 })

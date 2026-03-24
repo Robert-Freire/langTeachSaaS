@@ -404,7 +404,7 @@ export default function LessonEditor() {
   if (isError || !lesson) {
     return (
       <div className="flex items-center justify-center h-64">
-        <span className="text-sm text-red-600 font-medium">Lesson not found. <button onClick={() => navigate('/lessons')} className="underline">Go back</button></span>
+        <span className="text-sm text-red-600 font-medium">Lesson not found. <button onClick={() => navigate('/lessons')} className="underline hover:text-zinc-700 transition-colors">Go back</button></span>
       </div>
     )
   }
