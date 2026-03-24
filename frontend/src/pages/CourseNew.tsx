@@ -67,7 +67,7 @@ export default function CourseNew() {
         targetExam: mode === 'exam-prep' ? targetExam || undefined : undefined,
         examDate: mode === 'exam-prep' && examDate ? examDate : undefined,
         templateLevel: useTemplate && selectedTemplate ? selectedTemplate : undefined,
-        teacherNotes: teacherNotes.trim() || undefined,
+        teacherNotes: studentId ? (teacherNotes.trim() || undefined) : undefined,
       }
       return createCourse(req)
     },
@@ -300,7 +300,11 @@ export default function CourseNew() {
           {students.length > 0 && (
             <div className="space-y-1.5">
               <Label>Student (optional)</Label>
-              <Select value={studentId ?? 'none'} onValueChange={v => setStudentId(v == null || v === 'none' ? undefined : v)}>
+              <Select value={studentId ?? 'none'} onValueChange={v => {
+              const next = v == null || v === 'none' ? undefined : v
+              setStudentId(next)
+              if (!next) setTeacherNotes('')
+            }}>
                 <SelectTrigger data-testid="student-select">
                   {studentId
                     ? <span>{students.find(s => s.id === studentId)?.name ?? 'No specific student'}</span>

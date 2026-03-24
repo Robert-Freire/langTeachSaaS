@@ -111,13 +111,26 @@ public class CurriculumGenerationService : ICurriculumGenerationService
                     e.OrderIndex,
                     e.Topic,
                     e.GrammarFocus,
-                    []))
+                    string.IsNullOrEmpty(e.CompetencyFocus)
+                        ? []
+                        : e.CompetencyFocus.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()))
                 .ToList();
 
             var personalizationCtx = ctx with { TemplateUnits = templateUnits };
-            var personalizationRequest = _prompts.BuildCurriculumPrompt(personalizationCtx);
-            var personalizationResponse = await _claude.CompleteAsync(personalizationRequest, ct);
-            ApplyPersonalization(freeEntries, personalizationResponse.Content);
+            try
+            {
+                var personalizationRequest = _prompts.BuildCurriculumPrompt(personalizationCtx);
+                var personalizationResponse = await _claude.CompleteAsync(personalizationRequest, ct);
+                ApplyPersonalization(freeEntries, personalizationResponse.Content);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Curriculum personalization failed for free-generated curriculum; returning base curriculum.");
+            }
         }
 
         return freeEntries;
@@ -144,7 +157,16 @@ public class CurriculumGenerationService : ICurriculumGenerationService
             return;
         }
 
-        var byOrder = personalization.ToDictionary(p => p.OrderIndex);
+        var byOrder = new Dictionary<int, PersonalizationDto>();
+        foreach (var p in personalization)
+        {
+            if (p.OrderIndex <= 0 || !byOrder.TryAdd(p.OrderIndex, p))
+            {
+                _logger.LogWarning(
+                    "Ignoring personalization item with invalid or duplicate OrderIndex={OrderIndex}.",
+                    p.OrderIndex);
+            }
+        }
 
         foreach (var skeleton in skeletons)
         {

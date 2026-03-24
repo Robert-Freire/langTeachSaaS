@@ -51,6 +51,7 @@ internal sealed class ConfigurableClaudeClient : IClaudeClient
     public async IAsyncEnumerable<string> StreamAsync(ClaudeRequest request,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
+        CompleteCallCount++;
         await Task.Yield();
         yield return _content;
     }
