@@ -581,13 +581,23 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public void LessonPlanPrompt_C1_MinimisesMechanicalDrillsInPractice()
+    public void LessonPlanPrompt_C1_MinimizesMechanicalDrillsInPractice()
     {
         var ctx = BaseCtx() with { CefrLevel = "C1" };
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("minimise mechanical drills");
+        req.UserPrompt.Should().Contain("minimize mechanical drills");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_UnknownLevel_FallsBackToGenericVarietyGuidance()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "X9" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("variety of exercise formats");
     }
 
     // --- No phantom materials constraint ---

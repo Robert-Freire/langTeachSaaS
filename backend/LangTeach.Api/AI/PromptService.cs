@@ -201,7 +201,7 @@ public class PromptService : IPromptService
             "B1" or "B2" =>
                 "At this level, use at least 2 different activity formats. Do not rely on a single exercise type.",
             "C1" or "C2" =>
-                "At this level, minimise mechanical drills. Favour activities requiring nuance, register awareness, or inference.",
+                "At this level, minimize mechanical drills. Favor activities requiring nuance, register awareness, or inference.",
             _ => string.Empty
         };
 
