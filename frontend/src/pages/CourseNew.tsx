@@ -299,7 +299,10 @@ export default function CourseNew() {
               <Label>Student (optional)</Label>
               <Select value={studentId ?? 'none'} onValueChange={v => setStudentId(v == null || v === 'none' ? undefined : v)}>
                 <SelectTrigger data-testid="student-select">
-                  <SelectValue placeholder="No specific student" />
+                  {studentId
+                    ? <span>{students.find(s => s.id === studentId)?.name ?? 'No specific student'}</span>
+                    : <span className="text-muted-foreground">No specific student</span>
+                  }
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No specific student</SelectItem>
