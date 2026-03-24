@@ -14,6 +14,7 @@ import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/utils'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { CefrMismatchWarning } from '@/components/CefrMismatchWarning'
+import { StudentProfileSummary } from '@/components/StudentProfileSummary'
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
 const EXAMS = ['DELE', 'DALF', 'Cambridge B2 First', 'Cambridge C1 Advanced', 'TOEFL', 'IELTS']
@@ -309,6 +310,12 @@ export default function CourseNew() {
               </Select>
             </div>
           )}
+
+          {/* Student profile summary */}
+          {studentId && (() => {
+            const selectedStudent = students.find(s => s.id === studentId)
+            return selectedStudent ? <StudentProfileSummary student={selectedStudent} /> : null
+          })()}
 
           {/* CEFR mismatch warning (general mode only) */}
           {mode === 'general' && studentId && targetCefrLevel && (() => {

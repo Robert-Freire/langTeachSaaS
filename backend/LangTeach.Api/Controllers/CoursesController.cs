@@ -327,6 +327,12 @@ public class CoursesController : ControllerBase
                 : null,
             StudentGoals: student is not null
                 ? TryDeserializeStringArray(student.LearningGoals)
+                : null,
+            StudentWeaknesses: student is not null
+                ? TryDeserializeStringArray(student.Weaknesses)
+                : null,
+            StudentDifficulties: student is not null
+                ? TryDeserializeDifficultyArray(student.Difficulties)
                 : null
         );
 
@@ -346,6 +352,12 @@ public class CoursesController : ControllerBase
     private static string[] TryDeserializeStringArray(string json)
     {
         try { return JsonSerializer.Deserialize<string[]>(json) ?? []; }
+        catch (JsonException) { return []; }
+    }
+
+    private static DifficultyDto[] TryDeserializeDifficultyArray(string json)
+    {
+        try { return JsonSerializer.Deserialize<DifficultyDto[]>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? []; }
         catch (JsonException) { return []; }
     }
 

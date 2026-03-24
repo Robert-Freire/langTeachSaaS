@@ -277,6 +277,17 @@ public class PromptService : IPromptService
                 sb.AppendLine($"Interests: {string.Join(", ", ctx.StudentInterests.Select(Sanitize).Where(s => s.Length > 0))}");
             if (ctx.StudentGoals?.Length > 0)
                 sb.AppendLine($"Goals: {string.Join(", ", ctx.StudentGoals.Select(Sanitize).Where(s => s.Length > 0))}");
+            if (ctx.StudentWeaknesses?.Length > 0)
+                sb.AppendLine($"Known weaknesses: {string.Join(", ", ctx.StudentWeaknesses.Select(Sanitize).Where(s => s.Length > 0))}");
+            if (ctx.StudentDifficulties?.Length > 0)
+            {
+                var topDifficulties = ctx.StudentDifficulties
+                    .OrderByDescending(d => d.Severity switch { "high" => 3, "medium" => 2, _ => 1 })
+                    .Take(5)
+                    .Select(d => $"{Sanitize(d.Category)}: {Sanitize(d.Item)}")
+                    .Where(s => s.Length > 0);
+                sb.AppendLine($"Documented difficulties: {string.Join("; ", topDifficulties)}");
+            }
         }
 
         return sb.ToString();

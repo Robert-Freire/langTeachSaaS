@@ -24,7 +24,9 @@ public record CurriculumContext(
     string? StudentName,
     string? StudentNativeLanguage,
     string[]? StudentInterests,
-    string[]? StudentGoals
+    string[]? StudentGoals,
+    string[]? StudentWeaknesses = null,
+    DifficultyDto[]? StudentDifficulties = null
 );
 
 public record GenerationContext(
