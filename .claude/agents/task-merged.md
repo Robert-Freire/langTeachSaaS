@@ -1,6 +1,6 @@
 ---
 name: task-merged
-description: Post-merge cleanup for a completed task. Moves the issue to "Ready to Test" on the project board. Run this agent when the user says "merged" after a PR is merged. The caller must provide the issue number. After the agent returns, the main agent must call ExitWorktree(action: "remove").
+description: Post-merge cleanup after a PR is merged. Moves the issue to Ready-to-Test on the project board. After this agent returns, the main agent must call ExitWorktree to remove the worktree.
 model: claude-sonnet-4-6
 ---
 
