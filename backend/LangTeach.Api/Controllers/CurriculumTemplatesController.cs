@@ -39,6 +39,9 @@ public class CurriculumTemplatesController : ControllerBase
         var template = _templates.GetByLevel(level);
         if (template is null) return NotFound();
 
+        if (template.Units.Count == 0)
+            return BadRequest("Template has no units.");
+
         var result = _sessionMapping.Compute(template.Units, sessionCount);
         return Ok(result);
     }

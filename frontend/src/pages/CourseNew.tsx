@@ -51,9 +51,9 @@ export default function CourseNew() {
 
   const templates = allTemplates?.filter(t => t.cefrLevel === targetCefrLevel) ?? []
 
-  const { data: mappingPreview } = useQuery({
+  const { data: mappingPreview, isError: mappingError } = useQuery({
     queryKey: ['mapping-preview', selectedTemplate, sessionCount],
-    queryFn: () => getMappingPreview(selectedTemplate, parseInt(sessionCount)),
+    queryFn: () => getMappingPreview(selectedTemplate, parseInt(sessionCount, 10)),
     enabled: useTemplate && !!selectedTemplate && !!sessionCount,
   })
 
@@ -237,6 +237,11 @@ export default function CourseNew() {
 
                       {mappingPreview && (
                         <SessionMappingPreview mapping={mappingPreview} />
+                      )}
+                      {mappingError && (
+                        <p className="text-xs text-red-600" data-testid="mapping-preview-error">
+                          Could not load session mapping preview.
+                        </p>
                       )}
                     </div>
                   )}
