@@ -425,6 +425,39 @@ public class PromptServiceTests
         req.SystemPrompt.Should().NotContain("Target grammar structures");
     }
 
+    // --- Teacher grammar instructions ---
+
+    [Fact]
+    public void SystemPrompt_IncludesTeacherGrammarConstraints_WhenProvided()
+    {
+        var ctx = BaseCtx() with { TeacherGrammarConstraints = "include subjunctive, only regular verbs" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Additional grammar instructions from the teacher:");
+        req.SystemPrompt.Should().Contain("include subjunctive, only regular verbs");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsTeacherGrammarConstraints_WhenNull()
+    {
+        var ctx = BaseCtx();
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Additional grammar instructions from the teacher:");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsTeacherGrammarConstraints_WhenWhitespace()
+    {
+        var ctx = BaseCtx() with { TeacherGrammarConstraints = "   " };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Additional grammar instructions from the teacher:");
+    }
+
     // --- WarmUp icebreaker constraint ---
 
     [Fact]

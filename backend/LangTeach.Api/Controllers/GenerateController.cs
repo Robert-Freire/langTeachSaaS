@@ -164,7 +164,8 @@ public class GenerateController : ControllerBase
             StudentDifficulties: TopDifficulties(student),
             GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
             TemplateName: templateName,
-            CurriculumObjectives: lesson.Objectives
+            CurriculumObjectives: lesson.Objectives,
+            TeacherGrammarConstraints: request.GrammarConstraints
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -311,7 +312,8 @@ public class GenerateController : ControllerBase
             StudentDifficulties: TopDifficulties(student),
             GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
             TemplateName: templateName,
-            CurriculumObjectives: lesson.Objectives
+            CurriculumObjectives: lesson.Objectives,
+            TeacherGrammarConstraints: request.GrammarConstraints
         );
 
         var claudeRequest = buildPrompt(ctx);
@@ -377,6 +379,7 @@ public class GenerateController : ControllerBase
                 request.StudentId,
                 request.ExistingNotes,
                 request.Direction,
+                request.GrammarConstraints,
                 targetedDifficulties = ctx.StudentDifficulties
             }),
             CreatedAt = DateTime.UtcNow,
