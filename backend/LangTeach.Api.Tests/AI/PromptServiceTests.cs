@@ -631,19 +631,25 @@ public class PromptServiceTests
         req.SystemPrompt.Should().NotContain("self-contained and work with text alone");
     }
 
-    // --- CurriculumContext: weaknesses and difficulties ---
+    // --- CurriculumContext: weaknesses, difficulties, and personalization ---
 
-    private static CurriculumContext BaseCurriculumCtx() => new(
+    private static CurriculumContext BaseCurriculumCtx(string? studentName = "Marco") => new(
         Language: "Spanish",
         Mode: "general",
         SessionCount: 10,
         TargetCefrLevel: "A1",
         TargetExam: null,
         ExamDate: null,
-        StudentName: "Marco",
+        StudentName: studentName,
         StudentNativeLanguage: "Italian",
         StudentInterests: null,
-        StudentGoals: null
+        StudentGoals: null,
+        TemplateLevel: null,
+        TemplateUnits:
+        [
+            new TemplateUnitContext(1, "Greetings", "present tense ser/estar", []),
+            new TemplateUnitContext(2, "Numbers", "cardinal numbers", []),
+        ]
     );
 
     [Fact]
@@ -695,5 +701,70 @@ public class PromptServiceTests
 
         _sut.BuildCurriculumPrompt(ctxNull).SystemPrompt.Should().NotContain("Documented difficulties");
         _sut.BuildCurriculumPrompt(ctxEmpty).SystemPrompt.Should().NotContain("Documented difficulties");
+    }
+
+    [Fact]
+    public void CurriculumPersonalizationPrompt_IncludesStudentProfileFields()
+    {
+        var ctx = BaseCurriculumCtx("Marco") with
+        {
+            StudentNativeLanguage = "Italian",
+            StudentInterests = ["football", "cooking"],
+            StudentGoals = ["work in Barcelona"],
+        };
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Marco");
+        req.SystemPrompt.Should().Contain("Italian");
+        req.SystemPrompt.Should().Contain("football");
+        req.SystemPrompt.Should().Contain("work in Barcelona");
+        req.UserPrompt.Should().Contain("contextDescription");
+        req.UserPrompt.Should().Contain("personalizationNotes");
+    }
+
+    [Fact]
+    public void CurriculumPersonalizationPrompt_IncludesTeacherNotes()
+    {
+        var ctx = BaseCurriculumCtx("Marco") with
+        {
+            TeacherNotes = "No role-play. Written exercises only.",
+        };
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("No role-play");
+        req.UserPrompt.Should().Contain("Teacher constraints:");
+        req.UserPrompt.Should().Contain("No role-play. Written exercises only.");
+    }
+
+    [Fact]
+    public void CurriculumPersonalizationPrompt_IncludesWeaknessesAndSpreadsEmphasis()
+    {
+        var ctx = BaseCurriculumCtx("Marco") with
+        {
+            StudentWeaknesses = ["ser/estar distinction", "false cognates"],
+        };
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("ser/estar distinction");
+        req.UserPrompt.Should().Contain("ser/estar distinction");
+        req.UserPrompt.Should().Contain("Spread emphasis");
+    }
+
+    [Fact]
+    public void CurriculumPersonalizationPrompt_IncludesL1InterferenceInstruction_WhenNativeLanguageSet()
+    {
+        var ctx = BaseCurriculumCtx("Marco") with
+        {
+            StudentNativeLanguage = "Italian",
+        };
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("L1 interference");
+        req.UserPrompt.Should().Contain("Italian");
+        req.UserPrompt.Should().Contain("false cognates");
     }
 }
