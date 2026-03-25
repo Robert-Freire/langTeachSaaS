@@ -699,6 +699,16 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("MC with close distractors");
     }
 
+    [Fact]
+    public void LessonPlanPrompt_UnknownLevel_ProductionGuidance_FallsBackToGenericGuidance()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "X9" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("communicative production task");
+    }
+
     // --- CurriculumContext: weaknesses and difficulties ---
 
     private static CurriculumContext BaseCurriculumCtx() => new(

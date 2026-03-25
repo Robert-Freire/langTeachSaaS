@@ -352,7 +352,7 @@ public class GenerateController : ControllerBase
             }
             catch (JsonException)
             {
-                // Content is not valid JSON — already captured in the block for error display
+                _logger.LogDebug("LessonPlan response is not valid JSON — cannot validate section count. LessonId={LessonId}", lesson.Id);
             }
         }
 

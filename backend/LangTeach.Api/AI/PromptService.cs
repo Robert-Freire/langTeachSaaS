@@ -214,7 +214,8 @@ public class PromptService : IPromptService
                 "At B1/B2, Production must be a communicative task: an opinion paragraph, a short role-play scenario description, or a problem-solving task where the student uses new language in a meaningful context.",
             "C1" or "C2" =>
                 "At C1/C2, Production must be an open-ended task requiring autonomous extended language use: a structured argument, a creative writing piece, or a task requiring register and pragmatic awareness.",
-            _ => string.Empty
+            _ =>
+                "Choose a communicative production task appropriate for the stated CEFR level."
         };
 
     private static string ConversationUserPrompt(GenerationContext ctx)
