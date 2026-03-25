@@ -315,7 +315,7 @@ public class CoursesController : ControllerBase
         if (course is null) return NotFound();
 
         var entry = await _db.CurriculumEntries
-            .FirstOrDefaultAsync(e => e.Id == entryId && e.CourseId == id, ct);
+            .FirstOrDefaultAsync(e => e.Id == entryId && e.CourseId == id && !e.IsDeleted, ct);
         if (entry is null) return NotFound();
 
         entry.Topic = request.Topic;
@@ -340,7 +340,7 @@ public class CoursesController : ControllerBase
         if (course is null) return NotFound();
 
         var entry = await _db.CurriculumEntries
-            .FirstOrDefaultAsync(e => e.Id == entryId && e.CourseId == id, ct);
+            .FirstOrDefaultAsync(e => e.Id == entryId && e.CourseId == id && !e.IsDeleted, ct);
         if (entry is null) return NotFound();
 
         var now = DateTime.UtcNow;
