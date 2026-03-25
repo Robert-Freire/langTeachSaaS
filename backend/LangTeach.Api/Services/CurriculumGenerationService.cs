@@ -61,9 +61,20 @@ public class CurriculumGenerationService : ICurriculumGenerationService
                     .ToList();
 
                 var personalizationCtx = ctx with { TemplateUnits = templateUnits };
-                var request = _prompts.BuildCurriculumPrompt(personalizationCtx);
-                var response = await _claude.CompleteAsync(request, ct);
-                ApplyPersonalization(skeletons, response.Content);
+                try
+                {
+                    var request = _prompts.BuildCurriculumPrompt(personalizationCtx);
+                    var response = await _claude.CompleteAsync(request, ct);
+                    ApplyPersonalization(skeletons, response.Content);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Curriculum personalization failed for template-based curriculum; returning base template.");
+                }
             }
 
             return skeletons;
