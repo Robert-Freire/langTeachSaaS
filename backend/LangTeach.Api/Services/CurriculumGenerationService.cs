@@ -111,9 +111,9 @@ public class CurriculumGenerationService : ICurriculumGenerationService
                     e.OrderIndex,
                     e.Topic,
                     e.GrammarFocus,
-                    string.IsNullOrEmpty(e.CompetencyFocus)
+                    string.IsNullOrEmpty(e.Competencies)
                         ? []
-                        : e.CompetencyFocus.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()))
+                        : e.Competencies.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()))
                 .ToList();
 
             var personalizationCtx = ctx with { TemplateUnits = templateUnits };
