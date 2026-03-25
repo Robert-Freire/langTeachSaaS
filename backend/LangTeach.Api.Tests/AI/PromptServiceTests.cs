@@ -631,6 +631,95 @@ public class PromptServiceTests
         req.SystemPrompt.Should().NotContain("self-contained and work with text alone");
     }
 
+    // --- Mandatory Production and Practice ordering ---
+
+    [Fact]
+    public void LessonPlanPrompt_UserPrompt_RequiresProductionInEveryLesson()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("Production is MANDATORY");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_UserPrompt_AllFiveSectionsRequired()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("All five sections");
+        req.UserPrompt.Should().Contain("required in every lesson plan");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_A1_ProductionGuidance_MentionsGuidedWriting()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("guided writing");
+        req.UserPrompt.Should().Contain("3-5 sentences");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_A1_ProductionGuidance_ExcludesOralOnlyActivities()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Do NOT use");
+        req.UserPrompt.Should().Contain("discuss with your partner");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_B1_ProductionGuidance_MentionsCommunicativeTask()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("communicative task");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_UserPrompt_SpecifiesPracticeOrdering_ControlledFirst()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("controlled to meaningful");
+        req.UserPrompt.Should().Contain("mechanical");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_UserPrompt_SpecifiesPracticeOrdering_MeaningfulSecond()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("MC with close distractors");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_C1_ProductionGuidance_MentionsOpenEndedTask()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "C1" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("open-ended task");
+        req.UserPrompt.Should().Contain("structured argument");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_UnknownLevel_ProductionGuidance_FallsBackToGenericGuidance()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "X9" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("communicative production task");
+    }
+
     // --- CurriculumContext: weaknesses, difficulties, and personalization ---
 
     private static CurriculumContext BaseCurriculumCtx(string? studentName = "Marco") => new(

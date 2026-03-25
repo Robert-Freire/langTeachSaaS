@@ -331,6 +331,34 @@ public class GenerateController : ControllerBase
             return StatusCode(502, "AI provider returned an error. Please try again.");
         }
 
+        if (blockType == ContentBlockType.LessonPlan)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(response.Content);
+                if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                    doc.RootElement.TryGetProperty("sections", out var sectionsEl) &&
+                    sectionsEl.ValueKind == JsonValueKind.Object)
+                {
+                    var populatedSections = sectionsEl.EnumerateObject()
+                        .Count(p => p.Value.ValueKind == JsonValueKind.String &&
+                                    !string.IsNullOrWhiteSpace(p.Value.GetString()));
+                    if (populatedSections < 5)
+                        _logger.LogWarning(
+                            "LessonPlan generated with only {SectionCount}/5 sections. LessonId={LessonId}",
+                            populatedSections, lesson.Id);
+                }
+                else
+                {
+                    _logger.LogWarning("LessonPlan response missing/invalid 'sections' object. LessonId={LessonId}", lesson.Id);
+                }
+            }
+            catch (JsonException)
+            {
+                _logger.LogDebug("LessonPlan response is not valid JSON — cannot validate section count. LessonId={LessonId}", lesson.Id);
+            }
+        }
+
         var block = new LessonContentBlock
         {
             Id = Guid.NewGuid(),
