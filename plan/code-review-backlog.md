@@ -74,6 +74,13 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | Important | `.github/workflows/backend.yml`: `az rest` management-plane check confirms a secret resource *exists* but not that it is enabled or has a non-empty value. A disabled or empty secret passes CI but fails at app startup. Fixing this would require `az keyvault secret show` (data-plane), which needs a new Key Vault Secrets User role assignment for the CI service principal. Track as follow-up if false negatives become a problem. |
 | Minor | `validate-secrets` and `deploy` jobs both perform a separate OIDC Azure login on separate runners. Could be merged into a single job to save a runner and login round-trip if CI costs become a concern. |
 
+### PR (2026-03-25) — Curriculum walkthrough UI (#258)
+
+| Severity | Finding | Decision |
+|----------|---------|---------|
+| Reviewer flagged critical | Migration `AddCurriculumEntryVocabularyThemes.cs` uses `type: "nvarchar(max)"` — flagged as SQL Server-specific. | Declined: EF Core auto-generates this type for all SQL Server migrations; every other migration in the project uses the same pattern. Not a portability issue. |
+| Minor (arch) | `VocabBadge` and `CompetencyBadge` in `CourseDetail.tsx` use hand-rolled `<span>` instead of the shared `Badge` component already imported in the file. Pre-existing pattern (`CompetencyBadge` was there before). Convert to `<Badge variant="outline" className="...">` in a future polish pass. |
+
 ### PR (2026-03-25) — Mandatory Production + Practice ordering (#268)
 
 | Severity | Finding |

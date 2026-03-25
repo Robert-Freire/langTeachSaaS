@@ -22,11 +22,11 @@ const MOCK_COURSE = {
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   entries: [
-    { id: 'e1', orderIndex: 1, topic: 'Greetings and Introductions', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned' },
-    { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: 'Present simple habits', competencies: 'reading,writing', lessonType: 'Mixed', lessonId: null, status: 'planned' },
-    { id: 'e3', orderIndex: 3, topic: 'Past Events', grammarFocus: 'Past simple', competencies: 'speaking,listening', lessonType: 'Grammar-focused', lessonId: null, status: 'planned' },
-    { id: 'e4', orderIndex: 4, topic: 'Future Plans', grammarFocus: 'Going to / will', competencies: 'writing', lessonType: 'Communicative', lessonId: null, status: 'planned' },
-    { id: 'e5', orderIndex: 5, topic: 'Review and Practice', grammarFocus: null, competencies: 'reading,writing,speaking,listening', lessonType: 'Mixed', lessonId: null, status: 'planned' },
+    { id: 'e1', orderIndex: 1, topic: 'Greetings and Introductions', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: 'Ana introduces herself at language school', personalizationNotes: 'Prioritized oral production based on student goals', vocabularyThemes: 'Greetings,Names,Countries' },
+    { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: 'Present simple habits', competencies: 'reading,writing', lessonType: 'Mixed', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: 'Time expressions,Activities' },
+    { id: 'e3', orderIndex: 3, topic: 'Past Events', grammarFocus: 'Past simple', competencies: 'speaking,listening', lessonType: 'Grammar-focused', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+    { id: 'e4', orderIndex: 4, topic: 'Future Plans', grammarFocus: 'Going to / will', competencies: 'writing', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+    { id: 'e5', orderIndex: 5, topic: 'Review and Practice', grammarFocus: null, competencies: 'reading,writing,speaking,listening', lessonType: 'Mixed', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
   ],
 }
 
@@ -289,8 +289,8 @@ test('create course from structured curriculum template', async ({ browser }) =>
     name: 'B1 Spanish from Template',
     sessionCount: 5,
     entries: [
-      { id: 't1', orderIndex: 1, topic: 'Presentarse: Dar y pedir los datos personales', grammarFocus: 'El género, Los verbos ser y llamarse', competencies: 'reading,writing,listening,speaking', lessonType: 'Communicative', lessonId: null, status: 'planned' },
-      { id: 't2', orderIndex: 2, topic: 'Nosotros: Conocer a los compañeros', grammarFocus: 'Las tres conjugaciones: -ar, -er, -ir', competencies: 'reading,writing,listening,speaking', lessonType: 'Communicative', lessonId: null, status: 'planned' },
+      { id: 't1', orderIndex: 1, topic: 'Presentarse: Dar y pedir los datos personales', grammarFocus: 'El género, Los verbos ser y llamarse', competencies: 'reading,writing,listening,speaking', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: 'Números,Nacionalidades,Profesiones' },
+      { id: 't2', orderIndex: 2, topic: 'Nosotros: Conocer a los compañeros', grammarFocus: 'Las tres conjugaciones: -ar, -er, -ir', competencies: 'reading,writing,listening,speaking', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
     ],
   }
 
@@ -352,6 +352,42 @@ test('create course from structured curriculum template', async ({ browser }) =>
 
   // Should navigate to course detail
   await expect(page).toHaveURL(new RegExp(`/courses/${TEMPLATE_COURSE_ID}`), { timeout: UI_TIMEOUT })
+
+  await context.close()
+})
+
+test('expand toggle shows vocabulary themes and personalized context', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  await page.route(`**/api/courses/${MOCK_COURSE_ID}`, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_COURSE) })
+  })
+
+  await page.goto(`/courses/${MOCK_COURSE_ID}`)
+  await expect(page.getByTestId('course-title')).toHaveText('B2 English Course', { timeout: NAV_TIMEOUT })
+
+  // Details hidden by default
+  await expect(page.getByTestId('entry-details-0')).not.toBeVisible()
+
+  // Expand first entry
+  await page.getByTestId('expand-entry-0').click()
+  await expect(page.getByTestId('entry-details-0')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  // Vocabulary themes shown (scoped to entry-details to avoid matching topic text)
+  const entryDetails = page.getByTestId('entry-details-0')
+  await expect(entryDetails.getByText('Greetings', { exact: true })).toBeVisible()
+  await expect(entryDetails.getByText('Countries', { exact: true })).toBeVisible()
+
+  // Personalized context shown
+  await expect(page.getByTestId('context-description-0')).toHaveText('Ana introduces herself at language school')
+
+  // Personalization rationale shown
+  await expect(page.getByTestId('personalization-notes-0')).toContainText('Prioritized oral production')
+
+  // Collapse again
+  await page.getByTestId('expand-entry-0').click()
+  await expect(page.getByTestId('entry-details-0')).not.toBeVisible()
 
   await context.close()
 })

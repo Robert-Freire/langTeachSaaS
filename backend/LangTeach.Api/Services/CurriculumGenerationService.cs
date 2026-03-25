@@ -46,6 +46,7 @@ public class CurriculumGenerationService : ICurriculumGenerationService
                     ? string.Join(",", u.CompetencyFocus)
                     : null,
                 TemplateUnitRef = u.Title,
+                VocabularyThemes = u.VocabularyThemes.Count > 0 ? string.Join(",", u.VocabularyThemes) : null,
                 LessonType = "Communicative",
                 Status = "planned"
             }).ToList();
