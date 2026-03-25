@@ -6,6 +6,8 @@ model: claude-sonnet-4-6
 
 You are a task picker. Return the best available issue to work on. Be fast and minimal.
 
+**CRITICAL: Use `gh` CLI via Bash for ALL GitHub operations. Do NOT use MCP tools. MCP returns full issue bodies and exceeds token limits for this use case.**
+
 ## Step 1: Get sprint info (one grep, no full file read)
 
 ```bash
