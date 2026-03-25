@@ -5,7 +5,7 @@ const SKILL_PATTERNS: Array<{ pattern: RegExp; skills: string[] }> = [
   { pattern: /no listening/i, skills: ['listening'] },
   { pattern: /no writing/i, skills: ['writing'] },
   { pattern: /no reading/i, skills: ['reading'] },
-  { pattern: /reading.?only/i, skills: ['speaking', 'listening'] },
+  { pattern: /reading.?only/i, skills: ['speaking', 'listening', 'writing'] },
   { pattern: /oral.?only|speaking.?only/i, skills: ['reading', 'writing'] },
 ]
 

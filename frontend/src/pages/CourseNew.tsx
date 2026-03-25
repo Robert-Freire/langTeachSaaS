@@ -342,6 +342,7 @@ export default function CourseNew() {
           {/* Competency gap warning — shown when teacher notes suggest core skill constraints */}
           {studentId && teacherNotes.trim() && (
             <CompetencyGapWarning
+              key={studentId}
               teacherNotes={teacherNotes}
               sessionCount={parseInt(sessionCount, 10)}
             />

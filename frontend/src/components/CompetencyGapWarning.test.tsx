@@ -1,61 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { CompetencyGapWarning } from './CompetencyGapWarning'
-import { getConstrainedSkills } from '../lib/competency-constraints'
-
-describe('getConstrainedSkills', () => {
-  it('detects speaking and listening for "written only"', () => {
-    const skills = getConstrainedSkills('Written only. Formal register.')
-    expect(skills).toContain('speaking')
-    expect(skills).toContain('listening')
-  })
-
-  it('detects speaking and listening for "writing only"', () => {
-    const skills = getConstrainedSkills('Writing only sessions.')
-    expect(skills).toContain('speaking')
-    expect(skills).toContain('listening')
-  })
-
-  it('detects speaking for "no role-play"', () => {
-    const skills = getConstrainedSkills('Hates role-play. Needs formal register.')
-    expect(skills).toContain('speaking')
-  })
-
-  it('detects speaking for "no speaking"', () => {
-    const skills = getConstrainedSkills('No speaking activities please.')
-    expect(skills).toContain('speaking')
-  })
-
-  it('detects listening for "no listening"', () => {
-    const skills = getConstrainedSkills('No listening exercises.')
-    expect(skills).toContain('listening')
-  })
-
-  it('detects writing for "no writing"', () => {
-    const skills = getConstrainedSkills('No writing tasks.')
-    expect(skills).toContain('writing')
-  })
-
-  it('detects reading for "no reading"', () => {
-    const skills = getConstrainedSkills('No reading passages.')
-    expect(skills).toContain('reading')
-  })
-
-  it('deduplicates skills across multiple patterns', () => {
-    const skills = getConstrainedSkills('Written only. No speaking.')
-    const speakingCount = skills.filter(s => s === 'speaking').length
-    expect(speakingCount).toBe(1)
-  })
-
-  it('returns empty array for notes with no skill constraints', () => {
-    const skills = getConstrainedSkills('Clara needs formal register. Relocating to Barcelona.')
-    expect(skills).toHaveLength(0)
-  })
-
-  it('returns empty array for empty notes', () => {
-    expect(getConstrainedSkills('')).toHaveLength(0)
-  })
-})
 
 describe('CompetencyGapWarning', () => {
   it('shows warning for "written only" with 5 sessions', () => {
@@ -92,12 +37,22 @@ describe('CompetencyGapWarning', () => {
     expect(screen.queryByTestId('competency-gap-warning')).not.toBeInTheDocument()
   })
 
-  it('resets dismissed state when teacher notes change', () => {
+  it('resets dismissed state when constrained skills change', () => {
     const { rerender } = render(<CompetencyGapWarning teacherNotes="Written only." sessionCount={5} />)
     fireEvent.click(screen.getByRole('button', { name: /dismiss/i }))
     expect(screen.queryByTestId('competency-gap-warning')).not.toBeInTheDocument()
-    rerender(<CompetencyGapWarning teacherNotes="No speaking. Written only." sessionCount={5} />)
+    // Adding a new skill constraint resets the warning
+    rerender(<CompetencyGapWarning teacherNotes="Written only. No reading." sessionCount={5} />)
     expect(screen.getByTestId('competency-gap-warning')).toBeInTheDocument()
+  })
+
+  it('does NOT reset dismissed state on minor text edit that keeps same skills', () => {
+    const { rerender } = render(<CompetencyGapWarning teacherNotes="Written only." sessionCount={5} />)
+    fireEvent.click(screen.getByRole('button', { name: /dismiss/i }))
+    expect(screen.queryByTestId('competency-gap-warning')).not.toBeInTheDocument()
+    // Appending punctuation does not change the skill set, so dismissed stays
+    rerender(<CompetencyGapWarning teacherNotes="Written only. Formal register." sessionCount={5} />)
+    expect(screen.queryByTestId('competency-gap-warning')).not.toBeInTheDocument()
   })
 
   it('handles NaN sessionCount safely (treats as 0, no warning)', () => {

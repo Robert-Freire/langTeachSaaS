@@ -10,13 +10,15 @@ interface CompetencyGapWarningProps {
 export function CompetencyGapWarning({ teacherNotes, sessionCount }: CompetencyGapWarningProps) {
   const [dismissed, setDismissed] = useState(false)
 
+  const skills = getConstrainedSkills(teacherNotes)
+  const skillsKey = [...skills].sort().join(',')
+
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setDismissed(false)
-  }, [teacherNotes])
+  }, [skillsKey])
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const skills = getConstrainedSkills(teacherNotes)
   const count = isNaN(sessionCount) ? 0 : sessionCount
 
   if (skills.length === 0 || count < 3 || dismissed) return null
