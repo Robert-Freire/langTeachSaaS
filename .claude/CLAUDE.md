@@ -177,7 +177,10 @@ When a task is marked complete:
 8. Push the branch and open a PR against the **active sprint branch** with a summary of what was done and why. Immediately after creating the PR, post a comment with `@coderabbitai review` to trigger CodeRabbit (it only auto-reviews PRs targeting main, so sprint branch PRs need a manual trigger).
 8. Start a CodeRabbit monitoring cron (every 5 minutes) that invokes the `task-pr-check` agent each tick (keeps the main context clean). Based on the agent's STATUS:
    - **WAITING_CI**: do nothing, wait for next tick
-   - **READY** or **NEEDS_FIXES**: delete the cron and surface the full report to the user. Present each actionable comment with a recommended action (fix / decline + reason) and wait for the user to confirm before touching any code. The user has final say on what gets fixed and what gets declined.
+   - **READY** (CI pass + no actionable comments): delete the cron and notify the user the PR is ready for review
+   - **NEEDS_FIXES** (CI fail or actionable comments): delete the cron, investigate inside the worktree, fix, run pre-push checks, commit, push, re-start the cron
+   - For each actionable comment: **critically evaluate** (is it valid? does it contradict project conventions? does it over-engineer?), fix only what genuinely improves the code, reply to declined comments explaining the reasoning
+   - Safety limits: max 3 fix-and-push rounds, stop on test failures or ambiguous/architectural comments, always notify the user when stopping
 9. Stop -- do NOT merge. The user reviews the PR and merges manually.
 
 **Pre-push checks (must all pass before pushing):**
