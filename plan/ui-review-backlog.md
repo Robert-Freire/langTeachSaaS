@@ -35,6 +35,12 @@ All items from the previous backlog have been triaged. The backlog is now clean.
 - **[Minor]** CourseNew: "Profile completeness for curriculum planning" label wraps on sub-tablet widths. Consider shortening to "Curriculum completeness".
 - **[Minor]** Courses list mobile (375px): page subtitle wraps to two lines next to "New Course" button, creating uneven header height. Pre-existing issue exposed during regression check.
 
+### PR TBD — #262 (2026-03-25)
+
+- **[Important]** CourseNew desktop: Session count selector has no visual grouping with `SessionMappingPreview` card. Teacher doesn't see the cause-effect link between changing sessions and the preview updating. Could use a wrapper div or a helper label ("Sessions determine the mapping below").
+- **[Important]** CourseNew: Native `<input type="checkbox">` for "Use structured curriculum template" is inconsistent with the shadcn Select components elsewhere on the form. Pre-existing pattern.
+- **[Important]** CourseNew mobile (375px): Course type button cards create a jagged 2-column grid because description text wraps asymmetrically. Pre-existing pattern.
+
 ### PR #258 (2026-03-25) — Curriculum walkthrough UI
 
 - **[Important I3]** CourseDetail expanded entries: expand/collapse toggle stays at the top of tall expanded cards; users must scroll back to top to close. Consider a "Collapse" link at the bottom of the expanded section.
