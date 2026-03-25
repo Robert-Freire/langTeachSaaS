@@ -164,7 +164,7 @@ public class GenerateController : ControllerBase
             StudentDifficulties: TopDifficulties(student),
             GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
             TemplateName: templateName,
-            CurriculumObjectives: !string.IsNullOrEmpty(lesson.Objectives) ? lesson.Objectives : null
+            CurriculumObjectives: lesson.Objectives
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -311,7 +311,7 @@ public class GenerateController : ControllerBase
             StudentDifficulties: TopDifficulties(student),
             GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
             TemplateName: templateName,
-            CurriculumObjectives: !string.IsNullOrEmpty(lesson.Objectives) ? lesson.Objectives : null
+            CurriculumObjectives: lesson.Objectives
         );
 
         var claudeRequest = buildPrompt(ctx);
