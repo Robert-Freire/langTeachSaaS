@@ -194,7 +194,7 @@ export default function CourseDetail() {
         {entries.map((entry, idx) => {
           const isExpanded = expandedIds.has(entry.id)
           const vocabList = entry.vocabularyThemes ? entry.vocabularyThemes.split(',').map(v => v.trim()).filter(Boolean) : []
-          const competencyList = entry.competencies.split(',').filter(Boolean)
+          const competencyList = entry.competencies.split(',').map(c => c.trim()).filter(Boolean)
 
           return (
             <div
@@ -356,12 +356,12 @@ export default function CourseDetail() {
                       className="px-4 pb-4 border-t border-zinc-100 pt-3 space-y-3"
                     >
                       {/* Communicative skills */}
-                      {competencyList.length > 0 && (
+                      {(competencyList.length > 0 || entry.lessonType) && (
                         <div>
                           <p className="text-xs font-medium text-zinc-500 mb-1">Skills</p>
                           <div className="flex flex-wrap gap-1">
                             {competencyList.map(c => (
-                              <CompetencyBadge key={c} label={c.trim()} />
+                              <CompetencyBadge key={c} label={c} />
                             ))}
                             {entry.lessonType && (
                               <span className="inline-block rounded-full bg-zinc-50 border border-zinc-200 px-2 py-0.5 text-xs text-zinc-500">
