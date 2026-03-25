@@ -23,7 +23,7 @@ vi.mock('@dnd-kit/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@dnd-kit/core')>()
   return {
     ...actual,
-    DndContext: ({ children, onDragEnd, ...props }: { children: React.ReactNode; onDragEnd?: (e: any) => void; [key: string]: unknown }) => {
+    DndContext: ({ children, onDragEnd, ...props }: { children: React.ReactNode; onDragEnd?: (e: { active: { id: string }; over: { id: string } | null }) => void; [key: string]: unknown }) => {
       capturedOnDragEnd = onDragEnd ?? null
       return <div {...props}>{children}</div>
     },

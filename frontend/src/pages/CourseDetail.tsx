@@ -55,6 +55,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
+import { logger } from '../lib/logger'
 
 const STATUS_LABELS: Record<string, string> = {
   planned: 'Planned',
@@ -401,6 +402,7 @@ export default function CourseDetail() {
   const { mutate: doReorder } = useMutation({
     mutationFn: (orderedIds: string[]) => reorderCurriculum(id!, orderedIds),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course', id] }),
+    onError: (err) => logger.error('CourseDetail', 'reorder failed', err),
   })
 
   const { mutate: doUpdateEntry, isPending: updatingEntry } = useMutation({
@@ -415,6 +417,7 @@ export default function CourseDetail() {
   const { mutate: doMarkTaught } = useMutation({
     mutationFn: (entry: CurriculumEntry) => markEntryAsTaught(id!, entry.id, entry),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course', id] }),
+    onError: (err) => logger.error('CourseDetail', 'mark taught failed', err),
   })
 
   const { mutate: doGenerateLesson, isPending: generatingLesson } = useMutation({
@@ -437,6 +440,7 @@ export default function CourseDetail() {
       setShowAddForm(false)
       setAddState({ topic: '', grammarFocus: '', competencies: '' })
     },
+    onError: (err) => logger.error('CourseDetail', 'add entry failed', err),
   })
 
   const { mutate: doDeleteEntry } = useMutation({
@@ -445,6 +449,7 @@ export default function CourseDetail() {
       queryClient.invalidateQueries({ queryKey: ['course', id] })
       setConfirmDeleteId(null)
     },
+    onError: (err) => logger.error('CourseDetail', 'delete entry failed', err),
   })
 
   if (isLoading) {
