@@ -2,11 +2,6 @@ using LangTeach.Api.DTOs;
 
 namespace LangTeach.Api.Services;
 
-public interface ISessionMappingService
-{
-    SessionMappingResult Compute(IReadOnlyList<CurriculumTemplateUnit> units, int sessionCount);
-}
-
 public class SessionMappingService : ISessionMappingService
 {
     private static readonly string[] TwoSessionLabels = ["Foundation", "Extended Practice"];

@@ -36,3 +36,24 @@ This file tracks findings from previous Teacher QA runs and what was done to fix
 | — | Grammar blocks render correctly as structured content | All |
 | — | PDF export works across all personas | All |
 | — | Student view renders correctly for all personas | All |
+
+---
+
+## From: #262 - Session-count-to-curriculum mapping (2026-03-25)
+
+### Logic change (verify curriculum entry count and sub-focus labeling)
+
+Template-based courses now generate exactly `sessionCount` entries (not `unitCount`). Mapping strategies:
+
+| Strategy | When | What to verify |
+|----------|------|----------------|
+| exact | sessionCount == unitCount | One entry per unit, topic = unit title |
+| expand | sessionCount > unitCount | Multiple entries per unit with sub-focus labels: "UnitTitle: Introduction", "UnitTitle: Practice", "UnitTitle: Production" (or "Foundation"/"Extended Practice" for 2-session units) |
+| compress | sessionCount < unitCount | Only first N units covered; remaining units absent from curriculum |
+
+**Verify for any template-based course:**
+- Total curriculum entries = chosen session count (not template unit count)
+- For expand: each unit's entries have distinct sub-focus labels in the topic field
+- For compress: units beyond the chosen session count are entirely absent; no partial coverage
+- Grammar progression order is preserved (unit 1 before unit 2, etc.)
+- `TemplateUnitRef` on each entry points to the source unit title
