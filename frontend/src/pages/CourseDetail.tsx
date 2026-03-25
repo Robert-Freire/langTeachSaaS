@@ -65,6 +65,11 @@ export default function CourseDetail() {
   const [editState, setEditState] = useState<EditState>({ topic: '', grammarFocus: '', competencies: '', lessonType: '' })
   const [generatingId, setGeneratingId] = useState<string | null>(null)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+  const [expandedForCourseId, setExpandedForCourseId] = useState<string | undefined>(id)
+  if (expandedForCourseId !== id) {
+    setExpandedForCourseId(id)
+    setExpandedIds(new Set())
+  }
 
   const { data: course, isLoading, isError } = useQuery({
     queryKey: ['course', id],
