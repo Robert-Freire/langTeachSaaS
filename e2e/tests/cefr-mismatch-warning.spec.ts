@@ -89,3 +89,59 @@ test('CEFR mismatch warning appears and can be dismissed in CourseNew', async ({
 
   await context.close()
 })
+
+test('Competency gap warning appears and can be dismissed in CourseNew', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  // Mock POST /api/courses to avoid triggering AI generation
+  await page.route('**/api/courses', async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(MOCK_COURSE) })
+    } else {
+      await route.continue()
+    }
+  })
+
+  // Create a student — required so teacher notes textarea becomes visible
+  const studentName = `Competency Gap B1 ${Date.now()}`
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: NAV_TIMEOUT })
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'English' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL('/students', { timeout: NAV_TIMEOUT })
+
+  // Navigate to course creation
+  await page.goto('/courses/new')
+  await expect(page.locator('h1')).toHaveText('New Course', { timeout: NAV_TIMEOUT })
+
+  // Fill required fields
+  await page.getByTestId('course-name').fill('Written Only Course')
+  await page.getByTestId('language-select').click()
+  await page.getByRole('option', { name: 'English' }).click()
+  await page.getByTestId('cefr-select').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+
+  // Select the student to reveal teacher notes textarea
+  await page.getByTestId('student-select').click()
+  await page.getByRole('option', { name: studentName }).click()
+
+  // Type a skill-constraining note
+  await page.getByTestId('teacher-notes').fill('Written only. No speaking activities.')
+
+  // Competency gap warning should appear
+  const warningBanner = page.getByTestId('competency-gap-warning')
+  await expect(warningBanner).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(warningBanner).toContainText('speaking')
+  await expect(warningBanner).toContainText('listening')
+
+  // Dismiss the warning
+  await page.getByRole('button', { name: /dismiss/i }).click()
+  await expect(warningBanner).not.toBeVisible({ timeout: UI_TIMEOUT })
+
+  await context.close()
+})
