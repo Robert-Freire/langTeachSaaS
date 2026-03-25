@@ -38,7 +38,7 @@ gh project item-edit \
   --single-select-option-id 530fcec2
 ```
 
-If this fails, check that ITEM_ID starts with `PVTI_`. If you got a numeric ID instead, the jq filter didn't work — retry with `--jq '.items[] | select(.content.number == <N>)'` and inspect the full object to find the correct id field.
+If this fails, check that ITEM_ID starts with `PVTI_`. If you got a numeric ID instead, the jq filter did not work -- retry with `--jq '.items[] | select(.content.number == <N>)'` and inspect the full object to find the correct id field.
 
 ## Step 3: Confirm and return
 
@@ -54,4 +54,4 @@ Next: call ExitWorktree(action: "remove") to clean up the worktree.
 - Never move issues to "Done" (user does that manually after sanity check)
 - Never close the issue (the merged PR auto-closes it)
 - Never modify source code
-- If the item is not found on the board, report it and stop — do not guess
+- If the item is not found on the board, report it and stop -- do not guess
