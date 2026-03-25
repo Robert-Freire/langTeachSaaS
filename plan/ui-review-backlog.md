@@ -72,3 +72,14 @@ All items from the previous backlog have been triaged. The backlog is now clean.
 - **[Minor M3]** CourseDetail mobile: Breadcrumb and page title are compressed together (~4px gap). Pre-existing layout.
 - **[Minor M5]** CourseDetail: Delete dialog Cancel button (outlined) looks faint at default zoom; `variant="secondary"` would improve presence.
 - **[Minor M6]** Courses list: Progress bar track nearly invisible (`bg-zinc-100` on white). Fixed on detail view (changed to `bg-zinc-200`); list view not updated.
+
+### PR TBD (2026-03-25) — Regenerate button toggle (#142)
+
+All findings are pre-existing, unrelated to this PR's change:
+
+- **[Important I1]** LessonEditor mobile (375px): "Generate Full Lesson" button text clips off the right edge of the header.
+- **[Important I2]** LessonEditor tablet (768px): Title wraps to two lines, "Preview as Student" clips off screen. Pre-existing.
+- **[Important I3]** LessonEditor mobile: Metadata edit pencil icon sits below metadata chips instead of inline.
+- **[Minor M1]** LessonEditor: Empty sections area has no empty-state guidance copy.
+- **[Minor M2]** LessonEditor desktop: Tab focus order starts in sidebar nav before editor content.
+- **[Minor M3]** Dashboard mobile: Quick Actions panel requires scroll to reach below empty "Needs Preparation" card.
