@@ -22,7 +22,7 @@ const MOCK_COURSE = {
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   entries: [
-    { id: 'e1', orderIndex: 1, topic: 'Greetings and Introductions', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: 'Ana introduces herself at language school', personalizationNotes: 'Focus on oral fluency', vocabularyThemes: 'Greetings,Names,Countries' },
+    { id: 'e1', orderIndex: 1, topic: 'Greetings and Introductions', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: 'Ana introduces herself at language school', personalizationNotes: 'Prioritized oral production based on student goals', vocabularyThemes: 'Greetings,Names,Countries' },
     { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: 'Present simple habits', competencies: 'reading,writing', lessonType: 'Mixed', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: 'Time expressions,Activities' },
     { id: 'e3', orderIndex: 3, topic: 'Past Events', grammarFocus: 'Past simple', competencies: 'speaking,listening', lessonType: 'Grammar-focused', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
     { id: 'e4', orderIndex: 4, topic: 'Future Plans', grammarFocus: 'Going to / will', competencies: 'writing', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
@@ -380,6 +380,9 @@ test('expand toggle shows vocabulary themes and personalized context', async ({ 
 
   // Personalized context shown
   await expect(page.getByTestId('context-description-0')).toHaveText('Ana introduces herself at language school')
+
+  // Personalization rationale shown
+  await expect(page.getByTestId('personalization-notes-0')).toContainText('Prioritized oral production')
 
   // Collapse again
   await page.getByTestId('expand-entry-0').click()
