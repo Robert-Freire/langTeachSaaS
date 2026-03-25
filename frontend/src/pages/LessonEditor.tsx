@@ -789,7 +789,7 @@ export default function LessonEditor() {
                     lessonId={id!}
                     onUpdate={handleBlockUpdate}
                     onDelete={(blockId) => handleBlockDelete(blockId, sectionId)}
-                    onRegenerate={() => setGenerateOpen(type)}
+                    onRegenerate={() => generateOpen === type ? closeGeneratePanel() : setGenerateOpen(type)}
                   />
                 ))}
 
