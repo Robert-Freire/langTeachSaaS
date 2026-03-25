@@ -46,3 +46,13 @@ All items from the previous backlog have been triaged. The backlog is now clean.
 - **[Important I3]** CourseDetail expanded entries: expand/collapse toggle stays at the top of tall expanded cards; users must scroll back to top to close. Consider a "Collapse" link at the bottom of the expanded section.
 - **[Minor M1]** CourseDetail expanded: "Personalization rationale" and "Personalized context" section labels are visually identical (`text-xs font-medium text-zinc-500`). Semantic distinction could be reinforced by different font weight or color.
 - **[Minor M3]** CourseDetail expanded: `CompetencyBadge` (`bg-zinc-100`, no border) and lesson-type badge (`bg-zinc-50 border-zinc-200`) in the same row are too similar visually. Lesson type badge could use a distinct color (e.g. purple-50 border-purple-200).
+
+## PR for #151 (2026-03-25) — Competency Gap Warning
+
+| Severity | Finding |
+|----------|---------|
+| Important | /courses/new: CEFR mismatch + competency gap warnings appear below the fold when a student is selected; form is long, warnings require scrolling to see |
+| Important | /courses/new (tablet/mobile): Both warnings pushed off-screen when both conditions are active; form scroll depth is very long |
+| Minor | /courses/new: Warning banner `bg-amber-50 border-amber-200` is very light; `bg-amber-100` would improve visual distinctiveness |
+| Minor | /courses/new: Dismiss button hit target is 16x16px, below 44px guideline (same issue in CefrMismatchWarning) |
+| Minor | /courses/new: Two adjacent amber banners look like one block; small gap or separator would help differentiate |
