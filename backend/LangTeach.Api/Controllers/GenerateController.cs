@@ -336,10 +336,13 @@ public class GenerateController : ControllerBase
             try
             {
                 using var doc = JsonDocument.Parse(response.Content);
-                if (doc.RootElement.TryGetProperty("sections", out var sectionsEl))
+                if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                    doc.RootElement.TryGetProperty("sections", out var sectionsEl) &&
+                    sectionsEl.ValueKind == JsonValueKind.Object)
                 {
                     var populatedSections = sectionsEl.EnumerateObject()
-                        .Count(p => p.Value.ValueKind == JsonValueKind.String && p.Value.GetString()?.Length > 0);
+                        .Count(p => p.Value.ValueKind == JsonValueKind.String &&
+                                    !string.IsNullOrWhiteSpace(p.Value.GetString()));
                     if (populatedSections < 5)
                         _logger.LogWarning(
                             "LessonPlan generated with only {SectionCount}/5 sections. LessonId={LessonId}",
@@ -347,7 +350,7 @@ public class GenerateController : ControllerBase
                 }
                 else
                 {
-                    _logger.LogWarning("LessonPlan response missing 'sections' property. LessonId={LessonId}", lesson.Id);
+                    _logger.LogWarning("LessonPlan response missing/invalid 'sections' object. LessonId={LessonId}", lesson.Id);
                 }
             }
             catch (JsonException)
