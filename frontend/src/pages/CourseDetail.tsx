@@ -214,7 +214,7 @@ function SortableEntryRow({
             <button
               type="button"
               data-testid={`drag-handle-${idx}`}
-              className="mt-1 p-1 rounded text-zinc-300 hover:text-zinc-500 cursor-grab active:cursor-grabbing shrink-0"
+              className="mt-1 p-1 rounded text-zinc-300 hover:text-zinc-600 hover:bg-zinc-100 cursor-grab active:cursor-grabbing shrink-0"
               aria-label="Drag to reorder"
               {...attributes}
               {...listeners}
@@ -522,37 +522,39 @@ export default function CourseDetail() {
       />
 
       {/* Curriculum summary header */}
-      <div data-testid="course-summary-header" className="flex flex-wrap gap-2">
-        <StatChip label="Sessions" value={String(course.sessionCount)} testId="summary-sessions" />
-        {(course.targetCefrLevel || course.targetExam) && (
+      <div data-testid="course-summary-header" className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          <StatChip label="Sessions" value={String(course.sessionCount)} testId="summary-sessions" />
+          {(course.targetCefrLevel || course.targetExam) && (
+            <StatChip
+              label="Level"
+              value={course.targetCefrLevel ?? course.targetExam ?? ''}
+              testId="summary-level"
+            />
+          )}
+          {course.studentName && (
+            <StatChip label="Student" value={course.studentName} testId="summary-student" />
+          )}
           <StatChip
-            label="Level"
-            value={course.targetCefrLevel ?? course.targetExam ?? ''}
-            testId="summary-level"
+            label="Mode"
+            value={MODE_LABELS[course.mode] ?? course.mode}
+            testId="summary-mode"
           />
-        )}
-        {course.studentName && (
-          <StatChip label="Student" value={course.studentName} testId="summary-student" />
-        )}
-        <StatChip
-          label="Mode"
-          value={MODE_LABELS[course.mode] ?? course.mode}
-          testId="summary-mode"
-        />
-        <StatChip
-          label="Progress"
-          value={`${course.lessonsCreated}/${course.sessionCount}`}
-          testId="summary-progress"
-        />
-        {/* Progress bar */}
-        <div className="flex-1 flex items-center min-w-[120px]">
-          <div className="w-full h-2 rounded-full bg-zinc-100 overflow-hidden">
+          <StatChip
+            label="Progress"
+            value={`${course.lessonsCreated}/${course.sessionCount}`}
+            testId="summary-progress"
+          />
+        </div>
+        {/* Progress bar on its own row so it always has full width */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-2 rounded-full bg-zinc-200 overflow-hidden">
             <div
               className="h-full bg-blue-500 rounded-full transition-all"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
-          <span className="ml-2 text-sm text-zinc-500 shrink-0 whitespace-nowrap" data-testid="course-progress">
+          <span className="text-sm text-zinc-500 shrink-0 whitespace-nowrap" data-testid="course-progress">
             {course.lessonsCreated} of {course.sessionCount} lessons created
           </span>
         </div>
