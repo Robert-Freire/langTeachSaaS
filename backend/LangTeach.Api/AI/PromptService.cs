@@ -205,6 +205,18 @@ public class PromptService : IPromptService
             _ => string.Empty
         };
 
+    private static string CefrProductionGuidance(string cefrLevel) =>
+        cefrLevel.ToUpperInvariant() switch
+        {
+            "A1" or "A2" =>
+                "At A1/A2, Production MUST be a guided writing task: ask the student to write 3-5 sentences using vocabulary or structures from this lesson. Do NOT use 'discuss with your partner' or oral-only activities — guided writing is appropriate and achievable even at A1.",
+            "B1" or "B2" =>
+                "At B1/B2, Production must be a communicative task: an opinion paragraph, a short role-play scenario description, or a problem-solving task where the student uses new language in a meaningful context.",
+            "C1" or "C2" =>
+                "At C1/C2, Production must be an open-ended task requiring autonomous extended language use: a structured argument, a creative writing piece, or a task requiring register and pragmatic awareness.",
+            _ => string.Empty
+        };
+
     private static string ConversationUserPrompt(GenerationContext ctx)
     {
         var topic = Sanitize(ctx.Topic);
@@ -250,6 +262,7 @@ public class PromptService : IPromptService
         var cefrLevel = Sanitize(ctx.CefrLevel);
         const string schema = """{"title":"","objectives":[""],"sections":{"warmUp":"","presentation":"","practice":"","production":"","wrapUp":""}}""";
         var practiceLevelHint = CefrPracticeGuidance(cefrLevel);
+        var productionGuidance = CefrProductionGuidance(cefrLevel);
         var baseInstruction = $"""
         Generate a complete lesson plan for the lesson on "{topic}". Return JSON:
         {schema}
@@ -258,9 +271,11 @@ public class PromptService : IPromptService
         Section guidelines:
         - warmUp (2-5 min): A conversational icebreaker. Use a discussion question, opinion prompt, or anecdote starter that the student can answer freely. There is no right or wrong answer. NEVER generate a vocabulary list, grammar drill, translation exercise, or fill-in-blank activity for warmUp. The sole purpose is to get the student talking and relaxed before the lesson begins.
         - presentation: Introduce the new language (vocabulary, grammar, or structure) with examples in context. Explain meanings and usage.
-        - practice: Controlled activities where the student practises the new language (fill-in-blank, matching, short answers). Correction is expected. {practiceLevelHint}
-        - production: A free or communicative activity where the student uses the new language independently with minimal guidance.
+        - practice: Controlled activities where the student practises the new language. Order exercises from controlled to meaningful: start with mechanical items (matching, fill-in-blank with word bank, basic MC), then progress to more demanding items (MC with close distractors, fill-in-blank without a word bank, true/false with justification). At B1+, include an optional third block bridging toward Production. {practiceLevelHint}
+        - production: Production is MANDATORY in every lesson plan — never omit it. A free or communicative activity where the student uses the new language independently with minimal guidance. {productionGuidance}
         - wrapUp (2-3 min): Brief review of what was covered and preview of homework or next session.
+
+        All five sections (warmUp, presentation, practice, production, wrapUp) are required in every lesson plan. Do not collapse or omit any of them.
         """;
 
         if (string.Equals(ctx.TemplateName, "Reading & Comprehension", StringComparison.OrdinalIgnoreCase))
