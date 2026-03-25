@@ -28,6 +28,7 @@ import {
   BookOpen,
   Check,
   X,
+  AlertTriangle,
 } from 'lucide-react'
 import {
   getCourse,
@@ -37,7 +38,9 @@ import {
   generateLessonFromEntry,
   addCurriculumEntry,
   deleteCurriculumEntry,
+  dismissWarning,
   type CurriculumEntry,
+  type CurriculumWarning,
 } from '../api/courses'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -369,6 +372,66 @@ function SortableEntryRow({
   )
 }
 
+function GenerationWarningsPanel({
+  warnings,
+  dismissedKeys,
+  onDismiss,
+}: {
+  warnings: CurriculumWarning[] | null | undefined
+  dismissedKeys: string[] | null | undefined
+  onDismiss: (key: string) => void
+}) {
+  if (!warnings || warnings.length === 0) return null
+
+  const dismissed = new Set(dismissedKeys ?? [])
+  const visibleWarnings = warnings.filter(
+    w => !dismissed.has(`session:${w.sessionIndex}:${w.grammarFocus}`)
+  )
+
+  if (visibleWarnings.length === 0) {
+    return (
+      <div data-testid="warnings-panel-clear" className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2">
+        <Check className="h-4 w-4 shrink-0" />
+        All grammar structures are level-appropriate.
+      </div>
+    )
+  }
+
+  return (
+    <div data-testid="warnings-panel" className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+      <div className="flex items-center gap-2 text-amber-800 font-medium text-sm">
+        <AlertTriangle className="h-4 w-4 shrink-0" />
+        {visibleWarnings.length} out-of-level grammar {visibleWarnings.length === 1 ? 'structure' : 'structures'} detected
+      </div>
+      <ul className="space-y-2">
+        {visibleWarnings.map(w => {
+          const key = `session:${w.sessionIndex}:${w.grammarFocus}`
+          return (
+            <li key={key} className="flex items-start justify-between gap-3 text-sm">
+              <div className="space-y-0.5">
+                <span className="font-medium text-amber-900">Session {w.sessionIndex}: </span>
+                <span className="text-amber-800">{w.grammarFocus}</span>
+                {w.suggestedLevel && (
+                  <span className="text-amber-600"> (expected {w.suggestedLevel})</span>
+                )}
+                <p className="text-amber-700 text-xs">{w.flagReason}</p>
+              </div>
+              <button
+                data-testid={`dismiss-warning-${w.sessionIndex}`}
+                onClick={() => onDismiss(key)}
+                className="shrink-0 text-amber-600 hover:text-amber-800 text-xs underline"
+                aria-label={`Dismiss warning for session ${w.sessionIndex}`}
+              >
+                Dismiss
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -449,6 +512,12 @@ export default function CourseDetail() {
       setConfirmDeleteId(null)
     },
     onError: (err) => logger.error('CourseDetail', 'delete entry failed', err),
+  })
+
+  const { mutate: doDismissWarning } = useMutation({
+    mutationFn: (warningKey: string) => dismissWarning(id!, warningKey),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course', id] }),
+    onError: (err) => logger.error('CourseDetail', 'dismiss warning failed', err),
   })
 
   if (isLoading) {
@@ -559,6 +628,13 @@ export default function CourseDetail() {
           </span>
         </div>
       </div>
+
+      {/* Generation quality warnings */}
+      <GenerationWarningsPanel
+        warnings={course.warnings}
+        dismissedKeys={course.dismissedWarningKeys}
+        onDismiss={doDismissWarning}
+      />
 
       {/* Curriculum list */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

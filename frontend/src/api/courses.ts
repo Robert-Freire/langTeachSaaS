@@ -3,6 +3,13 @@ import { apiClient } from '../lib/apiClient'
 export type CourseMode = 'general' | 'exam-prep'
 export type EntryStatus = 'planned' | 'created' | 'taught'
 
+export interface CurriculumWarning {
+  sessionIndex: number
+  grammarFocus: string
+  flagReason: string
+  suggestedLevel: string | null
+}
+
 export interface CurriculumEntry {
   id: string
   orderIndex: number
@@ -33,6 +40,8 @@ export interface Course {
   createdAt: string
   updatedAt: string
   entries: CurriculumEntry[]
+  warnings: CurriculumWarning[] | null
+  dismissedWarningKeys: string[] | null
 }
 
 export interface CourseSummary {
@@ -138,4 +147,8 @@ export async function addCurriculumEntry(courseId: string, request: AddCurriculu
 
 export async function deleteCurriculumEntry(courseId: string, entryId: string): Promise<void> {
   await apiClient.delete(`/api/courses/${courseId}/curriculum/${entryId}`)
+}
+
+export async function dismissWarning(courseId: string, warningKey: string): Promise<void> {
+  await apiClient.post(`/api/courses/${courseId}/warnings/dismiss`, { warningKey })
 }
