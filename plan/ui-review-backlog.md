@@ -53,3 +53,13 @@ All items from the previous backlog have been triaged. The backlog is now clean.
 - **[Minor M1]** LessonEditor: Objective pills have no hover cursor or title tooltip for accessibility
 - **[Minor M2]** LessonEditor: Summary sentence is long with 4+ objectives, consider "and N more" truncation
 - **[Minor M3]** LessonEditor mobile: Pills visually dominate the summary text on mobile since each takes a full row
+
+### PR for #151 (2026-03-25) — Competency Gap Warning
+
+| Severity | Finding |
+|----------|---------|
+| Important | /courses/new: CEFR mismatch + competency gap warnings appear below the fold when a student is selected; form is long, warnings require scrolling to see |
+| Important | /courses/new (tablet/mobile): Both warnings pushed off-screen when both conditions are active; form scroll depth is very long |
+| Minor | /courses/new: Warning banner `bg-amber-50 border-amber-200` is very light; `bg-amber-100` would improve visual distinctiveness |
+| Minor | /courses/new: Dismiss button hit target is 16x16px, below 44px guideline (same issue in CefrMismatchWarning) |
+| Minor | /courses/new: Two adjacent amber banners look like one block; small gap or separator would help differentiate |
