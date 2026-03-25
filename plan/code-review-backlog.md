@@ -88,6 +88,15 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | Minor | `GenerateController.cs`: section-count warning added in `Generate` method (non-streaming path) only. The `Stream` endpoint parses no JSON so cannot log the same warning. The gap is acceptable — streaming is the primary path but has no post-completion hook. If observability is needed for streaming, consider logging after the `[DONE]` sentinel. |
 | Minor | No unit test for the controller warning path (AC4). Mocking the full `GenerateController` dependency graph is large work for a logging check. Acceptable gap; monitor via application logs. |
 
+### PR TBD (2026-03-25) — Session-count-to-curriculum mapping (#262)
+
+| Severity | Finding |
+|----------|---------|
+| Minor | `SessionMappingPreview.tsx`: `sessionsByUnit` computed on every render regardless of strategy. Harmless at current scale; could be a `useMemo` candidate if component becomes hot. |
+| Minor | `SessionMappingService.cs:BuildCompress`: rationale string embeds the full excluded-units list in each session entry. Verbose when many units are excluded; `ExcludedUnits` on the result already surfaces this. |
+
+---
+
 ### PR (2026-03-22) — Fix Reading & Comprehension template (#227)
 
 | Severity | Finding |

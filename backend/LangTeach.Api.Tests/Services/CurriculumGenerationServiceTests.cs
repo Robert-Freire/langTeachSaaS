@@ -140,6 +140,7 @@ public class CurriculumGenerationServiceTests
             claude ?? new ConfigurableClaudeClient("[]"),
             prompts ?? new FakePromptService(),
             templateService,
+            new SessionMappingService(),
             NullLogger<CurriculumGenerationService>.Instance);
 
     // -------------------------------------------------------------------------
@@ -153,7 +154,7 @@ public class CurriculumGenerationServiceTests
         var sut = BuildService(new FakeTemplateService(template));
 
         var ctx = new CurriculumContext(
-            Language: "Spanish", Mode: "general", SessionCount: 0,
+            Language: "Spanish", Mode: "general", SessionCount: 2,
             TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
             StudentName: null, StudentNativeLanguage: null,
             StudentInterests: null, StudentGoals: null,
@@ -171,7 +172,7 @@ public class CurriculumGenerationServiceTests
         var sut = BuildService(new FakeTemplateService(template));
 
         var ctx = new CurriculumContext(
-            Language: "Spanish", Mode: "general", SessionCount: 0,
+            Language: "Spanish", Mode: "general", SessionCount: 2,
             TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
             StudentName: null, StudentNativeLanguage: null,
             StudentInterests: null, StudentGoals: null,
@@ -193,7 +194,7 @@ public class CurriculumGenerationServiceTests
         var sut = BuildService(new FakeTemplateService(template));
 
         var ctx = new CurriculumContext(
-            Language: "Spanish", Mode: "general", SessionCount: 0,
+            Language: "Spanish", Mode: "general", SessionCount: 2,
             TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
             StudentName: null, StudentNativeLanguage: null,
             StudentInterests: null, StudentGoals: null,
@@ -215,7 +216,7 @@ public class CurriculumGenerationServiceTests
         var sut = BuildService(new FakeTemplateService(FakeTemplates.TwoUnitTemplate()), claude);
 
         var ctx = new CurriculumContext(
-            Language: "Spanish", Mode: "general", SessionCount: 0,
+            Language: "Spanish", Mode: "general", SessionCount: 2,
             TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
             StudentName: null, StudentNativeLanguage: null,
             StudentInterests: null, StudentGoals: null,
@@ -236,7 +237,7 @@ public class CurriculumGenerationServiceTests
         var sut = BuildService(new FakeTemplateService(FakeTemplates.TwoUnitTemplate()), claude, prompts);
 
         var ctx = new CurriculumContext(
-            Language: "Spanish", Mode: "general", SessionCount: 0,
+            Language: "Spanish", Mode: "general", SessionCount: 2,
             TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
             StudentName: "Marco", StudentNativeLanguage: "Italian",
             StudentInterests: ["football"], StudentGoals: null,
@@ -259,7 +260,7 @@ public class CurriculumGenerationServiceTests
             new ConfigurableClaudeClient(personalizationJson));
 
         var ctx = new CurriculumContext(
-            Language: "Spanish", Mode: "general", SessionCount: 0,
+            Language: "Spanish", Mode: "general", SessionCount: 2,
             TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
             StudentName: "Marco", StudentNativeLanguage: null,
             StudentInterests: null, StudentGoals: null,
@@ -282,7 +283,7 @@ public class CurriculumGenerationServiceTests
             new ConfigurableClaudeClient(partialJson));
 
         var ctx = new CurriculumContext(
-            Language: "Spanish", Mode: "general", SessionCount: 0,
+            Language: "Spanish", Mode: "general", SessionCount: 2,
             TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
             StudentName: "Marco", StudentNativeLanguage: null,
             StudentInterests: null, StudentGoals: null,
@@ -345,7 +346,7 @@ public class CurriculumGenerationServiceTests
         var sut = BuildService(new FakeTemplateService(FakeTemplates.TwoUnitTemplate()), claude);
 
         var ctx = new CurriculumContext(
-            Language: "Spanish", Mode: "general", SessionCount: 0,
+            Language: "Spanish", Mode: "general", SessionCount: 2,
             TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
             StudentName: "Marco", StudentNativeLanguage: "Italian",
             StudentInterests: ["football"], StudentGoals: null,
@@ -373,7 +374,7 @@ public class CurriculumGenerationServiceTests
         var sut = BuildService(new FakeTemplateService(FakeTemplates.TwoUnitTemplate()), claude);
 
         var ctx = new CurriculumContext(
-            Language: "Spanish", Mode: "general", SessionCount: 0,
+            Language: "Spanish", Mode: "general", SessionCount: 2,
             TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
             StudentName: "Marco", StudentNativeLanguage: "Italian",
             StudentInterests: null, StudentGoals: null,

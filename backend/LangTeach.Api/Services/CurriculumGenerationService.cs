@@ -10,17 +10,20 @@ public class CurriculumGenerationService : ICurriculumGenerationService
     private readonly IClaudeClient _claude;
     private readonly IPromptService _prompts;
     private readonly ICurriculumTemplateService _templateService;
+    private readonly ISessionMappingService _sessionMapping;
     private readonly ILogger<CurriculumGenerationService> _logger;
 
     public CurriculumGenerationService(
         IClaudeClient claude,
         IPromptService prompts,
         ICurriculumTemplateService templateService,
+        ISessionMappingService sessionMapping,
         ILogger<CurriculumGenerationService> logger)
     {
         _claude = claude;
         _prompts = prompts;
         _templateService = templateService;
+        _sessionMapping = sessionMapping;
         _logger = logger;
     }
 
@@ -31,34 +34,48 @@ public class CurriculumGenerationService : ICurriculumGenerationService
             var template = _templateService.GetByLevel(ctx.TemplateLevel)
                 ?? throw new CurriculumGenerationException($"Template '{ctx.TemplateLevel}' not found.");
 
-            var skeletons = template.Units.Select((u, i) => new CurriculumEntry
+            var mapping = _sessionMapping.Compute(template.Units, ctx.SessionCount);
+
+            // Build one skeleton entry per session (not per unit), using the mapping result.
+            // For expand: multiple sessions per unit with sub-focus labels.
+            // For compress: only the first N units are included.
+            // For exact: 1:1, same as previous behaviour.
+            var unitByTitle = template.Units.ToDictionary(u => u.Title, StringComparer.OrdinalIgnoreCase);
+
+            var skeletons = mapping.Sessions.Select(s =>
             {
-                Id = Guid.NewGuid(),
-                OrderIndex = i + 1,
-                Topic = u.CommunicativeFunctions.Count > 0
-                    ? $"{u.Title}: {string.Join(", ", u.CommunicativeFunctions.Take(2))}"
-                    : u.Title,
-                GrammarFocus = u.Grammar.Count > 0 ? string.Join(", ", u.Grammar) : null,
-                Competencies = u.CompetencyFocus.Count > 0
-                    ? string.Join(",", u.CompetencyFocus.Select(CefrCodeToSkill).Distinct())
-                    : "reading,writing,listening,speaking",
-                CompetencyFocus = u.CompetencyFocus.Count > 0
-                    ? string.Join(",", u.CompetencyFocus)
-                    : null,
-                TemplateUnitRef = u.Title,
-                VocabularyThemes = u.VocabularyThemes.Count > 0 ? string.Join(",", u.VocabularyThemes) : null,
-                LessonType = "Communicative",
-                Status = "planned"
+                unitByTitle.TryGetValue(s.UnitRef, out var unit);
+                var competencyFocus = unit?.CompetencyFocus ?? [];
+                var vocabularyThemes = unit?.VocabularyThemes ?? [];
+                return new CurriculumEntry
+                {
+                    Id = Guid.NewGuid(),
+                    OrderIndex = s.SessionIndex,
+                    Topic = s.SubFocus,
+                    GrammarFocus = s.GrammarFocus,
+                    Competencies = competencyFocus.Count > 0
+                        ? string.Join(",", competencyFocus.Select(CefrCodeToSkill).Distinct())
+                        : "reading,writing,listening,speaking",
+                    CompetencyFocus = competencyFocus.Count > 0
+                        ? string.Join(",", competencyFocus)
+                        : null,
+                    TemplateUnitRef = s.UnitRef,
+                    VocabularyThemes = vocabularyThemes.Count > 0 ? string.Join(",", vocabularyThemes) : null,
+                    LessonType = "Communicative",
+                    Status = "planned"
+                };
             }).ToList();
 
             if (ctx.StudentName is not null)
             {
-                var templateUnits = template.Units
-                    .Select((u, i) => new TemplateUnitContext(
-                        i + 1,
-                        u.Title,
-                        u.Grammar.Count > 0 ? string.Join(", ", u.Grammar) : null,
-                        u.CompetencyFocus))
+                var templateUnits = skeletons
+                    .Select(e => new TemplateUnitContext(
+                        e.OrderIndex,
+                        e.Topic,
+                        e.GrammarFocus,
+                        string.IsNullOrEmpty(e.CompetencyFocus)
+                            ? []
+                            : e.CompetencyFocus.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()))
                     .ToList();
 
                 var personalizationCtx = ctx with { TemplateUnits = templateUnits };
