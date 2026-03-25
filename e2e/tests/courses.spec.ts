@@ -161,7 +161,7 @@ test('create course (exam-prep mode)', async ({ browser }) => {
   await context.close()
 })
 
-test('reorder curriculum entries', async ({ browser }) => {
+test('reorder curriculum entries via drag and drop', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
@@ -178,8 +178,20 @@ test('reorder curriculum entries', async ({ browser }) => {
   await page.goto(`/courses/${MOCK_COURSE_ID}`)
   await expect(page.getByTestId('course-title')).toHaveText('B2 English Course', { timeout: NAV_TIMEOUT })
 
-  // Click move-down on first entry
-  await page.getByTestId('move-down-0').click()
+  // Simulate drag of entry 0 to position of entry 1 using mouse events
+  const handle0 = page.getByTestId('drag-handle-0')
+  const entry1 = page.getByTestId('curriculum-entry-1')
+
+  const handle0Box = await handle0.boundingBox()
+  const entry1Box = await entry1.boundingBox()
+  if (handle0Box && entry1Box) {
+    await page.mouse.move(handle0Box.x + handle0Box.width / 2, handle0Box.y + handle0Box.height / 2)
+    await page.mouse.down()
+    // Move past activation threshold
+    await page.mouse.move(handle0Box.x + handle0Box.width / 2, handle0Box.y + handle0Box.height / 2 + 10)
+    await page.mouse.move(handle0Box.x + handle0Box.width / 2, entry1Box.y + entry1Box.height / 2)
+    await page.mouse.up()
+  }
 
   // After reorder, the second GET returns reordered data
   await expect(page.getByTestId('curriculum-entry-0')).toContainText('Daily Routines', { timeout: UI_TIMEOUT })
@@ -485,6 +497,131 @@ test('expand toggle shows vocabulary themes and personalized context', async ({ 
   // Collapse again
   await page.getByTestId('expand-entry-0').click()
   await expect(page.getByTestId('entry-details-0')).not.toBeVisible()
+
+  await context.close()
+})
+
+test('course summary header shows key stats', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const courseWithStudent = {
+    ...MOCK_COURSE,
+    studentName: 'Ana',
+    studentId: 's1',
+    lessonsCreated: 2,
+  }
+
+  await page.route(`**/api/courses/${MOCK_COURSE_ID}`, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(courseWithStudent) })
+  })
+
+  await page.goto(`/courses/${MOCK_COURSE_ID}`)
+  await expect(page.getByTestId('course-title')).toHaveText('B2 English Course', { timeout: NAV_TIMEOUT })
+
+  await expect(page.getByTestId('course-summary-header')).toBeVisible()
+  await expect(page.getByTestId('summary-sessions')).toContainText('5')
+  await expect(page.getByTestId('summary-level')).toContainText('B2')
+  await expect(page.getByTestId('summary-student')).toContainText('Ana')
+  await expect(page.getByTestId('summary-mode')).toContainText('General Learning')
+  await expect(page.getByTestId('summary-progress')).toContainText('2/5')
+  await expect(page.getByTestId('course-progress')).toContainText('2 of 5 lessons created')
+
+  await context.close()
+})
+
+test('add session appends new entry to curriculum', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const newEntry = {
+    id: 'e-new',
+    orderIndex: 6,
+    topic: 'Travel Vocabulary',
+    grammarFocus: null,
+    competencies: 'reading',
+    lessonType: null,
+    lessonId: null,
+    status: 'planned',
+    contextDescription: null,
+    personalizationNotes: null,
+    vocabularyThemes: null,
+  }
+  const updatedCourse = { ...MOCK_COURSE, entries: [...MOCK_COURSE.entries, newEntry] }
+
+  let getCallCount = 0
+  await page.route(`**/api/courses/${MOCK_COURSE_ID}`, async (route) => {
+    getCallCount++
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(getCallCount === 1 ? MOCK_COURSE : updatedCourse),
+    })
+  })
+  await page.route(`**/api/courses/${MOCK_COURSE_ID}/curriculum`, async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(newEntry) })
+    } else {
+      await route.continue()
+    }
+  })
+
+  await page.goto(`/courses/${MOCK_COURSE_ID}`)
+  await expect(page.getByTestId('course-title')).toHaveText('B2 English Course', { timeout: NAV_TIMEOUT })
+
+  // Open add form
+  await page.getByTestId('add-entry-btn').click()
+  await expect(page.getByTestId('add-entry-form')).toBeVisible()
+
+  // Fill in topic and save
+  await page.getByTestId('add-topic').fill('Travel Vocabulary')
+  await page.getByTestId('save-add-entry-btn').click()
+
+  // After save, new entry appears in list
+  await expect(page.getByText('Travel Vocabulary')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await context.close()
+})
+
+test('remove session removes entry from curriculum after confirmation', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const courseAfterDelete = {
+    ...MOCK_COURSE,
+    entries: MOCK_COURSE.entries.slice(1).map((e, i) => ({ ...e, orderIndex: i + 1 })),
+  }
+
+  let getCallCount = 0
+  await page.route(`**/api/courses/${MOCK_COURSE_ID}`, async (route) => {
+    getCallCount++
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(getCallCount === 1 ? MOCK_COURSE : courseAfterDelete),
+    })
+  })
+  await page.route(`**/api/courses/${MOCK_COURSE_ID}/curriculum/e1`, async (route) => {
+    if (route.request().method() === 'DELETE') {
+      await route.fulfill({ status: 204 })
+    } else {
+      await route.continue()
+    }
+  })
+
+  await page.goto(`/courses/${MOCK_COURSE_ID}`)
+  await expect(page.getByTestId('course-title')).toHaveText('B2 English Course', { timeout: NAV_TIMEOUT })
+
+  // Click delete on first entry
+  await page.getByTestId('delete-entry-0').click()
+
+  // Confirm dialog appears
+  await expect(page.getByText('Remove session?')).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.getByTestId('confirm-delete-ok').click()
+
+  // After removal, first entry is now "Daily Routines"
+  await expect(page.getByTestId('curriculum-entry-0')).toContainText('Daily Routines', { timeout: UI_TIMEOUT })
+  await expect(page.getByText('Greetings and Introductions')).not.toBeVisible()
 
   await context.close()
 })

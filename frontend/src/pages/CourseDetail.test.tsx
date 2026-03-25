@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -11,7 +11,19 @@ vi.mock('../api/courses', () => ({
   updateCurriculumEntry: vi.fn(),
   markEntryAsTaught: vi.fn(),
   generateLessonFromEntry: vi.fn(),
+  addCurriculumEntry: vi.fn(),
+  deleteCurriculumEntry: vi.fn(),
 }))
+
+// dnd-kit drag simulation helper
+function simulateDragEnd(activeId: string, overId: string) {
+  // Dispatch a custom dragend via the onDragEnd prop by firing pointer events
+  // In tests, we trigger the logic by directly invoking the handler via the data-testid approach.
+  // Since dnd-kit doesn't expose internal state easily, we test via the mutation call.
+  const active = { id: activeId }
+  const over = { id: overId }
+  return { active, over }
+}
 
 function wrapper(ui: React.ReactElement, path = '/courses/course-1') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
@@ -36,8 +48,8 @@ const mockCourse = {
   targetExam: null,
   examDate: null,
   sessionCount: 3,
-  studentId: null,
-  studentName: null,
+  studentId: 's1',
+  studentName: 'Ana',
   lessonsCreated: 0,
   createdAt: '2026-03-10T10:00:00Z',
   updatedAt: '2026-03-10T10:00:00Z',
@@ -88,23 +100,6 @@ describe('CourseDetail', () => {
     expect(await screen.findByTestId('course-progress')).toHaveTextContent('0 of 3 lessons created')
   })
 
-  it('first entry move-up button is disabled', async () => {
-    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
-    wrapper(<CourseDetail />)
-
-    const moveUpFirst = await screen.findByTestId('move-up-0')
-    expect(moveUpFirst).toBeDisabled()
-  })
-
-  it('last entry move-down button is disabled', async () => {
-    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
-    wrapper(<CourseDetail />)
-
-    await screen.findByTestId('course-title')
-    const moveDownLast = screen.getByTestId('move-down-2')
-    expect(moveDownLast).toBeDisabled()
-  })
-
   it('clicking edit shows edit form', async () => {
     vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
     wrapper(<CourseDetail />)
@@ -129,10 +124,8 @@ describe('CourseDetail', () => {
 
     await screen.findByTestId('course-title')
 
-    // Details not visible before expanding
     expect(screen.queryByTestId('entry-details-0')).not.toBeInTheDocument()
 
-    // Click expand
     fireEvent.click(screen.getByTestId('expand-entry-0'))
     expect(screen.getByTestId('entry-details-0')).toBeInTheDocument()
   })
@@ -173,5 +166,122 @@ describe('CourseDetail', () => {
 
     fireEvent.click(screen.getByTestId('expand-entry-0'))
     expect(screen.queryByTestId('entry-details-0')).not.toBeInTheDocument()
+  })
+
+  // -------------------------------------------------------------------------
+  // Summary header
+  // -------------------------------------------------------------------------
+
+  it('renders summary header with course stats', async () => {
+    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+    wrapper(<CourseDetail />)
+
+    await screen.findByTestId('course-summary-header')
+    expect(screen.getByTestId('summary-sessions')).toHaveTextContent('3')
+    expect(screen.getByTestId('summary-level')).toHaveTextContent('B2')
+    expect(screen.getByTestId('summary-student')).toHaveTextContent('Ana')
+    expect(screen.getByTestId('summary-mode')).toHaveTextContent('General Learning')
+    expect(screen.getByTestId('summary-progress')).toHaveTextContent('0/3')
+  })
+
+  // -------------------------------------------------------------------------
+  // Add session
+  // -------------------------------------------------------------------------
+
+  it('shows add entry form when add button clicked', async () => {
+    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+    wrapper(<CourseDetail />)
+
+    await screen.findByTestId('course-title')
+    fireEvent.click(screen.getByTestId('add-entry-btn'))
+
+    expect(screen.getByTestId('add-entry-form')).toBeInTheDocument()
+    expect(screen.getByTestId('add-topic')).toBeInTheDocument()
+  })
+
+  it('add entry form calls addCurriculumEntry on save', async () => {
+    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+    vi.mocked(coursesApi.addCurriculumEntry).mockResolvedValue({
+      id: 'e4', orderIndex: 4, topic: 'New Session', grammarFocus: null,
+      competencies: '', lessonType: null, lessonId: null, status: 'planned',
+      contextDescription: null, personalizationNotes: null, vocabularyThemes: null,
+    })
+    wrapper(<CourseDetail />)
+
+    await screen.findByTestId('course-title')
+    fireEvent.click(screen.getByTestId('add-entry-btn'))
+    fireEvent.change(screen.getByTestId('add-topic'), { target: { value: 'New Session' } })
+    fireEvent.click(screen.getByTestId('save-add-entry-btn'))
+
+    await waitFor(() => {
+      expect(coursesApi.addCurriculumEntry).toHaveBeenCalledWith('course-1', expect.objectContaining({ topic: 'New Session' }))
+    })
+  })
+
+  it('cancel add entry hides the form', async () => {
+    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+    wrapper(<CourseDetail />)
+
+    await screen.findByTestId('course-title')
+    fireEvent.click(screen.getByTestId('add-entry-btn'))
+    expect(screen.getByTestId('add-entry-form')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('cancel-add-entry-btn'))
+    expect(screen.queryByTestId('add-entry-form')).not.toBeInTheDocument()
+  })
+
+  // -------------------------------------------------------------------------
+  // Remove session
+  // -------------------------------------------------------------------------
+
+  it('shows confirmation dialog when delete icon clicked', async () => {
+    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+    wrapper(<CourseDetail />)
+
+    await screen.findByTestId('course-title')
+    fireEvent.click(screen.getByTestId('delete-entry-0'))
+
+    // Wait for the dialog content to appear (base-ui uses portals)
+    expect(await screen.findByText('Remove session?')).toBeInTheDocument()
+    expect(screen.getByTestId('confirm-delete-ok')).toBeInTheDocument()
+  })
+
+  it('confirming delete calls deleteCurriculumEntry', async () => {
+    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+    vi.mocked(coursesApi.deleteCurriculumEntry).mockResolvedValue(undefined)
+    wrapper(<CourseDetail />)
+
+    await screen.findByTestId('course-title')
+    fireEvent.click(screen.getByTestId('delete-entry-0'))
+    fireEvent.click(screen.getByTestId('confirm-delete-ok'))
+
+    await waitFor(() => {
+      expect(coursesApi.deleteCurriculumEntry).toHaveBeenCalledWith('course-1', 'e1')
+    })
+  })
+
+  it('cancelling delete dialog does not call deleteCurriculumEntry', async () => {
+    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+    wrapper(<CourseDetail />)
+
+    await screen.findByTestId('course-title')
+    fireEvent.click(screen.getByTestId('delete-entry-1'))
+    fireEvent.click(screen.getByTestId('confirm-delete-cancel'))
+
+    expect(coursesApi.deleteCurriculumEntry).not.toHaveBeenCalled()
+  })
+
+  // -------------------------------------------------------------------------
+  // Drag handles
+  // -------------------------------------------------------------------------
+
+  it('renders drag handles for each entry', async () => {
+    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+    wrapper(<CourseDetail />)
+
+    await screen.findByTestId('course-title')
+    expect(screen.getByTestId('drag-handle-0')).toBeInTheDocument()
+    expect(screen.getByTestId('drag-handle-1')).toBeInTheDocument()
+    expect(screen.getByTestId('drag-handle-2')).toBeInTheDocument()
   })
 })
