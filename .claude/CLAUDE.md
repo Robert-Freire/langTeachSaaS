@@ -178,19 +178,22 @@ When a task is marked complete:
 8. Start a CodeRabbit monitoring cron (every 5 minutes) that invokes the `task-pr-check` agent each tick (keeps the main context clean). Based on the agent's STATUS:
    - **WAITING_CI**: do nothing, wait for next tick
    - **READY** (CI pass + no actionable comments): delete the cron and notify the user the PR is ready for review
-   - **NEEDS_FIXES** (CI fail or actionable comments): delete the cron, investigate inside the worktree, fix, run pre-push checks, commit, push, re-start the cron
+   - **NEEDS_FIXES** (CI fail or actionable comments): delete the cron, investigate inside the worktree, fix, run the `task-build-verify` agent, commit, push, re-start the cron
    - For each actionable comment: **critically evaluate** (is it valid? does it contradict project conventions? does it over-engineer?), fix only what genuinely improves the code, reply to declined comments explaining the reasoning
    - Safety limits: max 3 fix-and-push rounds, stop on test failures or ambiguous/architectural comments, always notify the user when stopping
 9. Stop -- do NOT merge. The user reviews the PR and merges manually.
 
 **Pre-push checks (must all pass before pushing):**
-- `az bicep build --file infra/main.bicep` -- zero warnings, zero errors
-- `cd backend && dotnet build` -- zero warnings, zero errors
-- `cd backend && dotnet test` -- all tests pass
-- `cd frontend && npm run lint` -- zero errors
-- `cd frontend && npm run build` -- zero errors
-- `cd frontend && npm test` -- all unit tests pass
-- If any check fails, fix it before pushing. Never push with known failures or warnings.
+
+Run the `task-build-verify` agent (use the Agent tool with `subagent_type: "task-build-verify"`), passing the absolute worktree path. It runs all 6 checks and returns a compact PASS/FAIL report:
+- `az bicep build` -- zero warnings, zero errors
+- `dotnet build` -- zero warnings, zero errors
+- `dotnet test` -- all tests pass
+- `npm run lint` -- zero errors
+- `npm run build` -- zero errors
+- `npm test` -- all unit tests pass
+
+If VERDICT is FAIL, fix the reported issues and re-run the agent. Never push with known failures or warnings.
 
 **Branch protection rules:**
 - Feature branches (`task/*`): commit and push freely
