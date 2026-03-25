@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/utils'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { CefrMismatchWarning } from '@/components/CefrMismatchWarning'
+import { CompetencyGapWarning } from '@/components/CompetencyGapWarning'
 import { StudentProfileSummary } from '@/components/StudentProfileSummary'
 import { SessionMappingPreview } from '@/components/SessionMappingPreview'
 
@@ -336,6 +337,15 @@ export default function CourseNew() {
               />
               <p className="text-xs text-zinc-500">Extra context the AI will use to personalize sessions.</p>
             </div>
+          )}
+
+          {/* Competency gap warning — shown when teacher notes suggest core skill constraints */}
+          {studentId && teacherNotes.trim() && (
+            <CompetencyGapWarning
+              key={studentId}
+              teacherNotes={teacherNotes}
+              sessionCount={parseInt(sessionCount, 10)}
+            />
           )}
 
           {/* CEFR mismatch warning (general mode only) */}
