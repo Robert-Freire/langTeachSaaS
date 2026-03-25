@@ -177,12 +177,8 @@ public class CoursesController : ControllerBase
 
         if (course is null) return NotFound();
 
-        var warnings = string.IsNullOrEmpty(course.GenerationWarnings)
-            ? null
-            : JsonSerializer.Deserialize<List<CurriculumWarning>>(course.GenerationWarnings, CaseInsensitiveOptions);
-        var dismissedKeys = string.IsNullOrEmpty(course.DismissedWarnings)
-            ? null
-            : JsonSerializer.Deserialize<List<string>>(course.DismissedWarnings);
+        var warnings = TryDeserializeWarnings(course.GenerationWarnings);
+        var dismissedKeys = TryDeserializeStringList(course.DismissedWarnings);
 
         return Ok(MapToDto(course, warnings, dismissedKeys));
     }
@@ -198,9 +194,7 @@ public class CoursesController : ControllerBase
 
         if (course is null) return NotFound();
 
-        var dismissed = string.IsNullOrEmpty(course.DismissedWarnings)
-            ? []
-            : JsonSerializer.Deserialize<List<string>>(course.DismissedWarnings) ?? [];
+        var dismissed = TryDeserializeStringList(course.DismissedWarnings) ?? [];
 
         if (!dismissed.Contains(request.WarningKey))
         {
@@ -465,6 +459,20 @@ public class CoursesController : ControllerBase
             warnings,
             dismissedKeys
         );
+
+    private static List<CurriculumWarning>? TryDeserializeWarnings(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+        try { return JsonSerializer.Deserialize<List<CurriculumWarning>>(json, CaseInsensitiveOptions); }
+        catch (JsonException) { return null; }
+    }
+
+    private static List<string>? TryDeserializeStringList(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+        try { return JsonSerializer.Deserialize<List<string>>(json); }
+        catch (JsonException) { return null; }
+    }
 
     private static string[] TryDeserializeStringArray(string json)
     {
