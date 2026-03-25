@@ -74,4 +74,27 @@ describe('StudyView', () => {
     renderStudyView()
     expect(await screen.findByText('Lesson not found.')).toBeInTheDocument()
   })
+
+  it('renders learning targets when lesson has learningTargets', async () => {
+    mockGetStudyLesson.mockResolvedValue({
+      ...mockLesson,
+      learningTargets: ['Subjunctive mood', 'Speaking'],
+    })
+    renderStudyView()
+    const container = await screen.findByTestId('study-learning-targets')
+    expect(container).toBeInTheDocument()
+    expect(screen.getByText('Subjunctive mood')).toBeInTheDocument()
+    expect(screen.getByText('Speaking')).toBeInTheDocument()
+    expect(screen.getByText('Practices:')).toBeInTheDocument()
+  })
+
+  it('does not render learning targets section when learningTargets is null', async () => {
+    mockGetStudyLesson.mockResolvedValue({
+      ...mockLesson,
+      learningTargets: null,
+    })
+    renderStudyView()
+    await screen.findByTestId('study-title')
+    expect(screen.queryByTestId('study-learning-targets')).toBeNull()
+  })
 })

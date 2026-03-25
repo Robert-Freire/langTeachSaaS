@@ -333,6 +333,45 @@ public class LessonService : ILessonService
         return MapToDto(copy);
     }
 
+    public async Task<LessonDto?> UpdateLearningTargetsAsync(Guid teacherId, Guid lessonId, string[]? labels, CancellationToken cancellationToken = default)
+    {
+        var lesson = await _db.Lessons
+            .Include(l => l.Sections).ThenInclude(s => s.Materials)
+            .Include(l => l.Student)
+            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
+        if (lesson is null) return null;
+
+        // Sanitize: trim and cap each label at 200 chars
+        var sanitized = labels?.Select(l => l.Trim()).Where(l => l.Length > 0)
+            .Select(l => l.Length > 200 ? l[..200] : l).ToArray();
+        lesson.LearningTargets = sanitized is { Length: > 0 } ? JsonSerializer.Serialize(sanitized) : null;
+        lesson.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Learning targets updated. TeacherId={TeacherId} LessonId={LessonId}", teacherId, lessonId);
+        return MapToDto(lesson);
+    }
+
+    public async Task EnsureLearningTargetsAsync(Lesson lesson, CancellationToken cancellationToken = default)
+    {
+        if (lesson.LearningTargets is not null) return;
+        var entry = await _db.CurriculumEntries
+            .FirstOrDefaultAsync(e => e.LessonId == lesson.Id && !e.IsDeleted, cancellationToken);
+        if (entry is null) return;
+
+        var labels = new List<string>();
+        if (!string.IsNullOrWhiteSpace(entry.GrammarFocus))
+            labels.Add(entry.GrammarFocus.Trim());
+        foreach (var c in (entry.Competencies ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (c.Length > 0)
+                labels.Add(char.ToUpper(c[0]) + c[1..]);
+        }
+        if (labels.Count == 0) return;
+
+        lesson.LearningTargets = JsonSerializer.Serialize(labels);
+        lesson.UpdatedAt = DateTime.UtcNow;
+    }
+
     private static LessonDto MapToDto(Lesson l) => new(
         l.Id,
         l.Title,
@@ -348,8 +387,16 @@ public class LessonService : ILessonService
         l.CreatedAt,
         l.UpdatedAt,
         l.ScheduledAt,
-        l.Student?.Name
+        l.Student?.Name,
+        DeserializeLearningTargets(l.LearningTargets)
     );
+
+    private static string[]? DeserializeLearningTargets(string? json)
+    {
+        if (json is null) return null;
+        try { return JsonSerializer.Deserialize<string[]>(json); }
+        catch { return null; }
+    }
 
     private static LessonSectionDto MapSectionToDto(LessonSection s) => new(
         s.Id,

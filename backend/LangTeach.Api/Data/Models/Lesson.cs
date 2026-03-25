@@ -14,6 +14,7 @@ public class Lesson
     public string? Objectives { get; set; }
     public string Status { get; set; } = "Draft";
     public bool IsDeleted { get; set; }
+    public string? LearningTargets { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public DateTime? ScheduledAt { get; set; }

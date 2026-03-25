@@ -29,6 +29,7 @@ export interface Lesson {
   updatedAt: string
   scheduledAt: string | null
   studentName: string | null
+  learningTargets?: string[] | null
 }
 
 export interface LessonListResponse {
@@ -146,6 +147,7 @@ export interface StudyLessonDto {
   cefrLevel: string
   topic: string
   sections: StudySectionDto[]
+  learningTargets?: string[] | null
 }
 
 export interface LessonNotesDto {
@@ -178,4 +180,8 @@ export async function saveLessonNotes(lessonId: string, data: SaveLessonNotesReq
 export async function getStudyLesson(id: string): Promise<StudyLessonDto> {
   const res = await apiClient.get<StudyLessonDto>(`/api/lessons/${id}/study`)
   return res.data
+}
+
+export function updateLearningTargets(lessonId: string, labels: string[]): Promise<Lesson> {
+  return apiClient.put<Lesson>(`/api/lessons/${lessonId}/learning-targets`, { learningTargets: labels }).then(r => r.data)
 }

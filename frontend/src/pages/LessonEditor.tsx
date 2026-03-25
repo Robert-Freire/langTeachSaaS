@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Copy, Trash2, UserPlus, CheckCircle, Sparkles, Square, CalendarPlus, Plus, Pencil } from 'lucide-react'
 import {
-  getLesson, updateLesson, updateSections, deleteLesson, duplicateLesson,
+  getLesson, updateLesson, updateSections, deleteLesson, duplicateLesson, updateLearningTargets,
   type Lesson, type LessonStatus, type SectionType,
 } from '../api/lessons'
 import { getStudents } from '../api/students'
@@ -790,6 +790,11 @@ export default function LessonEditor() {
                     onUpdate={handleBlockUpdate}
                     onDelete={(blockId) => handleBlockDelete(blockId, sectionId)}
                     onRegenerate={() => generateOpen === type ? closeGeneratePanel() : setGenerateOpen(type)}
+                    learningTargets={lesson.learningTargets ?? null}
+                    onUpdateLearningTargets={async (labels) => {
+                      await updateLearningTargets(id!, labels)
+                      queryClient.invalidateQueries({ queryKey: ['lesson', id] })
+                    }}
                   />
                 ))}
 

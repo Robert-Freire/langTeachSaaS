@@ -238,3 +238,153 @@ describe('ContentBlock - dirty / save state', () => {
     expect(screen.queryByText('Unsaved changes')).toBeNull()
   })
 })
+
+describe('ContentBlock - learning targets', () => {
+  it('renders learning target badges when learningTargets prop is provided', () => {
+    const block = makeBlock()
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+        learningTargets={['Subjunctive mood', 'Speaking']}
+      />
+    )
+    expect(screen.getByTestId('learning-targets')).toBeInTheDocument()
+    expect(screen.getByText('Subjunctive mood')).toBeInTheDocument()
+    expect(screen.getByText('Speaking')).toBeInTheDocument()
+  })
+
+  it('renders labels as read-only badges when learningTargets is provided but onUpdateLearningTargets is not', () => {
+    const block = makeBlock()
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+        learningTargets={['Grammar', 'Reading']}
+      />
+    )
+    expect(screen.getByTestId('learning-targets')).toBeInTheDocument()
+    expect(screen.getByText('Grammar')).toBeInTheDocument()
+    expect(screen.getByText('Reading')).toBeInTheDocument()
+    expect(screen.queryByTestId('edit-targets-btn')).toBeNull()
+  })
+
+  it('does not render targets area when learningTargets is null and no onUpdateLearningTargets', () => {
+    const block = makeBlock()
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+        learningTargets={null}
+      />
+    )
+    expect(screen.queryByTestId('learning-targets')).toBeNull()
+  })
+
+  it('shows "Edit targets" button when onUpdateLearningTargets is provided', () => {
+    const block = makeBlock()
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+        learningTargets={[]}
+        onUpdateLearningTargets={vi.fn()}
+      />
+    )
+    expect(screen.getByTestId('edit-targets-btn')).toBeInTheDocument()
+  })
+
+  it('clicking Edit targets opens tag editor with existing labels', async () => {
+    const user = userEvent.setup()
+    const block = makeBlock()
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+        learningTargets={['Grammar']}
+        onUpdateLearningTargets={vi.fn()}
+      />
+    )
+    await user.click(screen.getByTestId('edit-targets-btn'))
+    expect(screen.getByTestId('new-tag-input')).toBeInTheDocument()
+    expect(screen.getByText('Grammar')).toBeInTheDocument()
+  })
+
+  it('pressing Enter in input adds a new tag to the draft', async () => {
+    const user = userEvent.setup()
+    const block = makeBlock()
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+        learningTargets={[]}
+        onUpdateLearningTargets={vi.fn()}
+      />
+    )
+    await user.click(screen.getByTestId('edit-targets-btn'))
+    const input = screen.getByTestId('new-tag-input')
+    await user.type(input, 'New label{Enter}')
+    expect(screen.getByText('New label')).toBeInTheDocument()
+  })
+
+  it('clicking Save calls onUpdateLearningTargets with updated labels', async () => {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn().mockResolvedValue(undefined)
+    const block = makeBlock()
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+        learningTargets={['Grammar']}
+        onUpdateLearningTargets={onUpdate}
+      />
+    )
+    await user.click(screen.getByTestId('edit-targets-btn'))
+    await user.click(screen.getByTestId('save-targets-btn'))
+    expect(onUpdate).toHaveBeenCalledWith(['Grammar'])
+  })
+
+  it('save failure keeps edit mode open and shows error', async () => {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn().mockRejectedValue(new Error('Network error'))
+    const block = makeBlock()
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+        learningTargets={[]}
+        onUpdateLearningTargets={onUpdate}
+      />
+    )
+    await user.click(screen.getByTestId('edit-targets-btn'))
+    await user.click(screen.getByTestId('save-targets-btn'))
+    await waitFor(() => {
+      expect(screen.getByText('Failed to save learning targets. Please try again.')).toBeInTheDocument()
+    })
+    expect(screen.getByTestId('new-tag-input')).toBeInTheDocument() // still in edit mode
+  })
+})
