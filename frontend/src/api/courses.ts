@@ -72,6 +72,13 @@ export interface UpdateCurriculumEntryRequest {
   status?: EntryStatus
 }
 
+export interface AddCurriculumEntryRequest {
+  topic: string
+  grammarFocus?: string
+  competencies?: string
+  lessonType?: string
+}
+
 export async function getCourses(): Promise<CourseSummary[]> {
   const res = await apiClient.get<CourseSummary[]>('/api/courses')
   return res.data
@@ -122,4 +129,13 @@ export async function markEntryAsTaught(courseId: string, entryId: string, entry
 export async function generateLessonFromEntry(courseId: string, entryId: string): Promise<{ lessonId: string }> {
   const res = await apiClient.post<{ lessonId: string }>(`/api/courses/${courseId}/curriculum/${entryId}/lesson`, {})
   return res.data
+}
+
+export async function addCurriculumEntry(courseId: string, request: AddCurriculumEntryRequest): Promise<CurriculumEntry> {
+  const res = await apiClient.post<CurriculumEntry>(`/api/courses/${courseId}/curriculum`, request)
+  return res.data
+}
+
+export async function deleteCurriculumEntry(courseId: string, entryId: string): Promise<void> {
+  await apiClient.delete(`/api/courses/${courseId}/curriculum/${entryId}`)
 }

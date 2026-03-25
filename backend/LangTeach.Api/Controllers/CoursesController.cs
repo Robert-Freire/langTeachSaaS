@@ -211,6 +211,71 @@ public class CoursesController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:guid}/curriculum")]
+    public async Task<IActionResult> AddEntry(Guid id, [FromBody] AddCurriculumEntryRequest request, CancellationToken ct)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        var course = await _db.Courses
+            .Include(c => c.Entries)
+            .FirstOrDefaultAsync(c => c.Id == id && c.TeacherId == teacherId && !c.IsDeleted, ct);
+
+        if (course is null) return NotFound();
+
+        var maxIndex = course.Entries.Where(e => !e.IsDeleted).Select(e => (int?)e.OrderIndex).Max() ?? 0;
+        var entry = new CurriculumEntry
+        {
+            Id = Guid.NewGuid(),
+            CourseId = id,
+            Topic = request.Topic,
+            GrammarFocus = request.GrammarFocus,
+            Competencies = request.Competencies ?? string.Empty,
+            LessonType = request.LessonType,
+            OrderIndex = maxIndex + 1,
+            Status = "planned",
+        };
+
+        _db.CurriculumEntries.Add(entry);
+        course.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        return CreatedAtAction(nameof(GetById), new { id }, MapEntryToDto(entry));
+    }
+
+    [HttpDelete("{id:guid}/curriculum/{entryId:guid}")]
+    public async Task<IActionResult> DeleteEntry(Guid id, Guid entryId, CancellationToken ct)
+    {
+        if (Auth0Id is null) return Unauthorized();
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        var course = await _db.Courses
+            .Include(c => c.Entries)
+            .FirstOrDefaultAsync(c => c.Id == id && c.TeacherId == teacherId && !c.IsDeleted, ct);
+
+        if (course is null) return NotFound();
+
+        var entry = course.Entries.FirstOrDefault(e => e.Id == entryId && !e.IsDeleted);
+        if (entry is null) return NotFound();
+
+        entry.IsDeleted = true;
+
+        // Reindex remaining entries to keep orderIndex contiguous
+        var remaining = course.Entries
+            .Where(e => !e.IsDeleted)
+            .OrderBy(e => e.OrderIndex)
+            .ToList();
+        for (var i = 0; i < remaining.Count; i++)
+            remaining[i].OrderIndex = i + 1;
+
+        course.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
     [HttpPut("{id:guid}/curriculum/reorder")]
     public async Task<IActionResult> Reorder(Guid id, [FromBody] ReorderCurriculumRequest request, CancellationToken ct)
     {
@@ -223,7 +288,7 @@ public class CoursesController : ControllerBase
 
         if (course is null) return NotFound();
 
-        var entryMap = course.Entries.ToDictionary(e => e.Id);
+        var entryMap = course.Entries.Where(e => !e.IsDeleted).ToDictionary(e => e.Id);
         if (request.OrderedEntryIds.Count != entryMap.Count ||
             request.OrderedEntryIds.Distinct().Count() != entryMap.Count ||
             request.OrderedEntryIds.Any(eid => !entryMap.ContainsKey(eid)))
@@ -250,7 +315,7 @@ public class CoursesController : ControllerBase
         if (course is null) return NotFound();
 
         var entry = await _db.CurriculumEntries
-            .FirstOrDefaultAsync(e => e.Id == entryId && e.CourseId == id, ct);
+            .FirstOrDefaultAsync(e => e.Id == entryId && e.CourseId == id && !e.IsDeleted, ct);
         if (entry is null) return NotFound();
 
         entry.Topic = request.Topic;
@@ -275,7 +340,7 @@ public class CoursesController : ControllerBase
         if (course is null) return NotFound();
 
         var entry = await _db.CurriculumEntries
-            .FirstOrDefaultAsync(e => e.Id == entryId && e.CourseId == id, ct);
+            .FirstOrDefaultAsync(e => e.Id == entryId && e.CourseId == id && !e.IsDeleted, ct);
         if (entry is null) return NotFound();
 
         var now = DateTime.UtcNow;
@@ -356,9 +421,9 @@ public class CoursesController : ControllerBase
             c.Id, c.Name, c.Description, c.Language, c.Mode,
             c.TargetCefrLevel, c.TargetExam, c.ExamDate,
             c.SessionCount, c.StudentId, c.Student?.Name,
-            LessonsCreated: c.Entries.Count(e => e.Status == "created" || e.Status == "taught"),
+            LessonsCreated: c.Entries.Count(e => !e.IsDeleted && (e.Status == "created" || e.Status == "taught")),
             c.CreatedAt, c.UpdatedAt,
-            c.Entries.OrderBy(e => e.OrderIndex).Select(MapEntryToDto).ToList()
+            c.Entries.Where(e => !e.IsDeleted).OrderBy(e => e.OrderIndex).Select(MapEntryToDto).ToList()
         );
 
     private static string[] TryDeserializeStringArray(string json)
@@ -378,7 +443,7 @@ public class CoursesController : ControllerBase
             c.Id, c.Name, c.Description, c.Language, c.Mode,
             c.TargetCefrLevel, c.TargetExam,
             c.SessionCount, c.StudentId, c.Student?.Name,
-            LessonsCreated: c.Entries.Count(e => e.Status == "created" || e.Status == "taught"),
+            LessonsCreated: c.Entries.Count(e => !e.IsDeleted && (e.Status == "created" || e.Status == "taught")),
             c.CreatedAt
         );
 }

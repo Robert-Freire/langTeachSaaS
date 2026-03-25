@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace LangTeach.Api.DTOs;
 
 public record CurriculumEntryDto(
@@ -32,6 +34,13 @@ public record CourseDto(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     List<CurriculumEntryDto> Entries
+);
+
+public record AddCurriculumEntryRequest(
+    [Required][MaxLength(200)] string Topic,
+    [MaxLength(200)] string? GrammarFocus,
+    [MaxLength(500)] string? Competencies,
+    [MaxLength(100)] string? LessonType
 );
 
 public record CourseSummaryDto(
