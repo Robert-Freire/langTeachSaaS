@@ -65,7 +65,7 @@ export default function CourseNew() {
         name,
         language,
         mode,
-        sessionCount: parseInt(sessionCount),
+        sessionCount: parseInt(sessionCount, 10),
         studentId: studentId || undefined,
         targetCefrLevel: mode === 'general' ? targetCefrLevel || undefined : undefined,
         targetExam: mode === 'exam-prep' ? targetExam || undefined : undefined,
