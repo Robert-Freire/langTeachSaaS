@@ -47,7 +47,14 @@ All items from the previous backlog have been triaged. The backlog is now clean.
 - **[Minor M1]** CourseDetail expanded: "Personalization rationale" and "Personalized context" section labels are visually identical (`text-xs font-medium text-zinc-500`). Semantic distinction could be reinforced by different font weight or color.
 - **[Minor M3]** CourseDetail expanded: `CompetencyBadge` (`bg-zinc-100`, no border) and lesson-type badge (`bg-zinc-50 border-zinc-200`) in the same row are too similar visually. Lesson type badge could use a distinct color (e.g. purple-50 border-purple-200).
 
-## PR for #151 (2026-03-25) — Competency Gap Warning
+### PR #261 (2026-03-25) — Lesson objectives summary
+
+- **[Important I2]** LessonEditor mobile: "Preview as Student" button not visible in mobile action bar (pre-existing, not introduced by this PR)
+- **[Minor M1]** LessonEditor: Objective pills have no hover cursor or title tooltip for accessibility
+- **[Minor M2]** LessonEditor: Summary sentence is long with 4+ objectives, consider "and N more" truncation
+- **[Minor M3]** LessonEditor mobile: Pills visually dominate the summary text on mobile since each takes a full row
+
+### PR for #151 (2026-03-25) — Competency Gap Warning
 
 | Severity | Finding |
 |----------|---------|
