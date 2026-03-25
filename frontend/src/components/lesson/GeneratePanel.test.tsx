@@ -465,6 +465,70 @@ describe('GeneratePanel - quota exhausted', () => {
   })
 })
 
+describe('GeneratePanel - grammar constraints', () => {
+  it('renders grammar constraints textarea', () => {
+    mockUseGenerate.mockReturnValue({
+      status: 'idle',
+      output: null,
+      error: null,
+      quotaExceeded: false,
+      generate: vi.fn(),
+      abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    expect(screen.getByTestId('grammar-constraints-textarea')).toBeInTheDocument()
+  })
+
+  it('passes grammarConstraints to the generate call', async () => {
+    const generateFn = vi.fn()
+    mockUseGenerate.mockReturnValue({
+      status: 'idle',
+      output: null,
+      error: null,
+      quotaExceeded: false,
+      generate: generateFn,
+      abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    const user = userEvent.setup()
+    const textarea = screen.getByTestId('grammar-constraints-textarea')
+    await user.type(textarea, 'only regular verbs')
+
+    await user.click(screen.getByTestId('generate-btn'))
+
+    expect(generateFn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ grammarConstraints: 'only regular verbs' })
+    )
+  })
+
+  it('does not include grammarConstraints in request when textarea is empty', async () => {
+    const generateFn = vi.fn()
+    mockUseGenerate.mockReturnValue({
+      status: 'idle',
+      output: null,
+      error: null,
+      quotaExceeded: false,
+      generate: generateFn,
+      abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('generate-btn'))
+
+    expect(generateFn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.not.objectContaining({ grammarConstraints: expect.anything() })
+    )
+  })
+})
+
 describe('GeneratePanel - task type dropdown casing', () => {
   it('displays task type in Title Case in the trigger', () => {
     mockUseGenerate.mockReturnValue({
