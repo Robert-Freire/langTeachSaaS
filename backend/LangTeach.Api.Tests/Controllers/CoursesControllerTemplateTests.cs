@@ -205,7 +205,7 @@ public class CoursesControllerTemplateTests
             Language = "Spanish",
             Mode = "general",
             TargetCefrLevel = "A1",
-            SessionCount = 99,  // ignored for template path
+            SessionCount = 4,  // matches A1.1 unit count → exact 1:1 mapping
             TemplateLevel = "A1.1",
         };
 
@@ -278,7 +278,7 @@ public class CoursesControllerTemplateTests
             Language = "Spanish",
             Mode = "general",
             TargetCefrLevel = "A1",
-            SessionCount = 99,
+            SessionCount = 4,  // matches A1.1 unit count → exact 1:1 mapping
             TemplateLevel = "A1.1",
             StudentId = studentId,
         };

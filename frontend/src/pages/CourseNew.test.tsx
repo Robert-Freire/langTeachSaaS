@@ -18,6 +18,7 @@ vi.mock('../api/students', () => ({
 
 vi.mock('../api/curricula', () => ({
   getCurriculumTemplates: vi.fn(),
+  getMappingPreview: vi.fn(),
 }))
 
 function wrapper(ui: React.ReactElement) {
@@ -37,10 +38,21 @@ describe('CourseNew wizard', () => {
     { level: 'B1.2', cefrLevel: 'B1', unitCount: 5, sampleGrammar: ['Conditional sentences'] },
   ]
 
+  const MOCK_MAPPING = {
+    strategy: 'exact' as const,
+    sessionCount: 6,
+    unitCount: 6,
+    sessions: [
+      { sessionIndex: 1, unitRef: 'Unit 1', subFocus: 'Unit 1', rationale: '1:1', grammarFocus: null },
+    ],
+    excludedUnits: [],
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(studentsApi.getStudents).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
     vi.mocked(curriculaApi.getCurriculumTemplates).mockResolvedValue(MOCK_TEMPLATES)
+    vi.mocked(curriculaApi.getMappingPreview).mockResolvedValue(MOCK_MAPPING)
   })
 
   it('renders mode selection by default', () => {
@@ -276,6 +288,83 @@ describe('CourseNew wizard', () => {
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({ teacherNotes: 'No role-play. Written exercises only.' })
     )
+  })
+
+  describe('session count with template', () => {
+    it('shows session count selector when template is selected', async () => {
+      const user = userEvent.setup()
+      wrapper(<CourseNew />)
+
+      await user.click(screen.getByTestId('cefr-select'))
+      await user.click(await screen.findByRole('option', { name: 'A1' }))
+
+      await user.click(screen.getByTestId('use-template-checkbox'))
+
+      // Session count should be visible regardless of template selection
+      expect(screen.getByTestId('session-count-select')).toBeInTheDocument()
+    })
+
+    it('shows mapping preview after template and session count selected', async () => {
+      const user = userEvent.setup()
+      wrapper(<CourseNew />)
+
+      await user.click(screen.getByTestId('cefr-select'))
+      await user.click(await screen.findByRole('option', { name: 'A1' }))
+
+      await user.click(screen.getByTestId('use-template-checkbox'))
+
+      await user.click(screen.getByTestId('template-select'))
+      await user.click(await screen.findByRole('option', { name: /A1\.1/ }))
+
+      expect(await screen.findByTestId('session-mapping-preview')).toBeInTheDocument()
+    })
+
+    it('shows excluded units when compress strategy', async () => {
+      const user = userEvent.setup()
+      vi.mocked(curriculaApi.getMappingPreview).mockResolvedValue({
+        strategy: 'compress',
+        sessionCount: 2,
+        unitCount: 6,
+        sessions: [
+          { sessionIndex: 1, unitRef: 'Unit 1', subFocus: 'Unit 1', rationale: 'Covers 2 of 6', grammarFocus: null },
+          { sessionIndex: 2, unitRef: 'Unit 2', subFocus: 'Unit 2', rationale: 'Covers 2 of 6', grammarFocus: null },
+        ],
+        excludedUnits: ['Unit 3', 'Unit 4', 'Unit 5', 'Unit 6'],
+      })
+      wrapper(<CourseNew />)
+
+      await user.click(screen.getByTestId('cefr-select'))
+      await user.click(await screen.findByRole('option', { name: 'A1' }))
+      await user.click(screen.getByTestId('use-template-checkbox'))
+      await user.click(screen.getByTestId('template-select'))
+      await user.click(await screen.findByRole('option', { name: /A1\.1/ }))
+
+      const excluded = await screen.findByTestId('excluded-units')
+      expect(excluded.textContent).toContain('Unit 3')
+    })
+
+    it('submit sends actual sessionCount not unit count', async () => {
+      const user = userEvent.setup()
+      const mockCreate = vi.fn().mockResolvedValue({ id: 'course-1' })
+      vi.mocked(coursesApi.createCourse).mockImplementation(mockCreate)
+      wrapper(<CourseNew />)
+
+      fireEvent.change(screen.getByTestId('course-name'), { target: { value: 'My Course' } })
+      await user.click(screen.getByTestId('language-select'))
+      await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+      await user.click(screen.getByTestId('cefr-select'))
+      await user.click(await screen.findByRole('option', { name: 'A1' }))
+      await user.click(screen.getByTestId('use-template-checkbox'))
+      await user.click(screen.getByTestId('template-select'))
+      await user.click(await screen.findByRole('option', { name: /A1\.1/ }))
+
+      // Default session count is 10, not the template's unitCount (6)
+      await user.click(screen.getByTestId('generate-curriculum-btn'))
+
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionCount: 10 })
+      )
+    })
   })
 
   it('template checkbox label does not reference Instituto Cervantes', async () => {

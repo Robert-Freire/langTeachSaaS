@@ -294,9 +294,20 @@ test('create course from structured curriculum template', async ({ browser }) =>
     ],
   }
 
+  const MOCK_MAPPING = {
+    strategy: 'exact', sessionCount: 10, unitCount: 5,
+    sessions: [{ sessionIndex: 1, unitRef: 'Unit 1', subFocus: 'Unit 1', rationale: '1:1', grammarFocus: null }],
+    excludedUnits: [],
+  }
+
   // Mock curriculum templates endpoint
   await page.route('**/api/curriculum-templates', async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_TEMPLATES) })
+  })
+
+  // Mock mapping preview endpoint
+  await page.route('**/api/curriculum-templates/B1.1/mapping**', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_MAPPING) })
   })
 
   // Mock POST /api/courses - verify templateLevel is sent
@@ -338,11 +349,11 @@ test('create course from structured curriculum template', async ({ browser }) =>
   await page.getByRole('option', { name: /B1\.1/ }).click()
   await expect(page.getByTestId('template-select')).toContainText('B1.1', { timeout: UI_TIMEOUT })
 
-  // Session count picker should be hidden when template is selected
-  await expect(page.getByTestId('session-count-select')).not.toBeVisible()
+  // Session count picker is visible even when template is selected
+  await expect(page.getByTestId('session-count-select')).toBeVisible()
 
-  // Template preview card should be visible with sample grammar
-  await expect(page.getByTestId('template-preview')).toBeVisible({ timeout: UI_TIMEOUT })
+  // Mapping preview card is shown
+  await expect(page.getByTestId('session-mapping-preview')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Button label changes
   await expect(page.getByTestId('generate-curriculum-btn')).toHaveText('Create from Template')
@@ -352,6 +363,92 @@ test('create course from structured curriculum template', async ({ browser }) =>
 
   // Should navigate to course detail
   await expect(page).toHaveURL(new RegExp(`/courses/${TEMPLATE_COURSE_ID}`), { timeout: UI_TIMEOUT })
+
+  await context.close()
+})
+
+test('session mapping expand: 8 sessions for 4-unit template creates 8 entries', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const EXPAND_COURSE_ID = '00000000-0000-0000-0000-000000000087'
+  const TEMPLATES = [
+    { level: 'A1.1', cefrLevel: 'A1', unitCount: 4, sampleGrammar: ['El género', 'El presente'] },
+  ]
+  const EXPAND_MAPPING = {
+    strategy: 'expand', sessionCount: 8, unitCount: 4,
+    sessions: Array.from({ length: 8 }, (_, i) => ({
+      sessionIndex: i + 1,
+      unitRef: `Unit ${Math.floor(i / 2) + 1}`,
+      subFocus: i % 2 === 0 ? `Unit ${Math.floor(i / 2) + 1}: Introduction` : `Unit ${Math.floor(i / 2) + 1}: Practice`,
+      rationale: 'Unit spans 2 sessions for extended practice.',
+      grammarFocus: 'El género',
+    })),
+    excludedUnits: [],
+  }
+  const EXPAND_COURSE = {
+    ...MOCK_COURSE,
+    id: EXPAND_COURSE_ID,
+    name: 'A1.1 Expanded',
+    sessionCount: 8,
+    entries: Array.from({ length: 8 }, (_, i) => ({
+      id: `x${i + 1}`, orderIndex: i + 1, topic: `Session ${i + 1}`,
+      grammarFocus: 'El género', competencies: 'reading,writing', lessonType: 'Communicative',
+      lessonId: null, status: 'planned',
+      templateUnitRef: null, competencyFocus: null, contextDescription: null, personalizationNotes: null,
+    })),
+  }
+
+  await page.route('**/api/curriculum-templates', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEMPLATES) })
+  })
+  await page.route('**/api/curriculum-templates/A1.1/mapping**', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(EXPAND_MAPPING) })
+  })
+  await page.route('**/api/courses', async (route) => {
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON()
+      expect(body.sessionCount).toBe(8)
+      expect(body.templateLevel).toBe('A1.1')
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(EXPAND_COURSE) })
+    } else {
+      await route.continue()
+    }
+  })
+  await page.route(`**/api/courses/${EXPAND_COURSE_ID}`, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(EXPAND_COURSE) })
+  })
+
+  await page.goto('/courses/new')
+  await expect(page.locator('h1')).toHaveText('New Course', { timeout: NAV_TIMEOUT })
+
+  await page.getByTestId('course-name').fill('A1.1 Expanded')
+  await page.getByTestId('language-select').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await expect(page.getByTestId('language-select')).toContainText('Spanish', { timeout: UI_TIMEOUT })
+  await page.getByTestId('cefr-select').click()
+  await page.getByRole('option', { name: 'A1' }).click()
+  await expect(page.getByTestId('cefr-select')).toContainText('A1', { timeout: UI_TIMEOUT })
+
+  await page.getByTestId('use-template-checkbox').check()
+  await page.getByTestId('template-select').click()
+  await page.getByRole('option', { name: /A1\.1/ }).click()
+  await expect(page.getByTestId('template-select')).toContainText('A1.1', { timeout: UI_TIMEOUT })
+
+  // Select 8 sessions (expand strategy: 8 > 4 units)
+  await page.getByTestId('session-count-select').click()
+  await page.getByRole('option', { name: '8 sessions' }).click()
+
+  // Mapping preview shows expand strategy
+  await expect(page.getByTestId('session-mapping-preview')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await page.getByTestId('generate-curriculum-btn').click()
+
+  // Navigates to course detail with 8 entries
+  await expect(page).toHaveURL(new RegExp(`/courses/${EXPAND_COURSE_ID}`), { timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('course-title')).toHaveText('A1.1 Expanded', { timeout: NAV_TIMEOUT })
+  await expect(page.getByTestId('curriculum-list')).toBeVisible()
+  await expect(page.getByTestId('course-progress')).toHaveText('0 of 8 lessons created')
 
   await context.close()
 })

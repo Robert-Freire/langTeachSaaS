@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { GraduationCap, BookOpen, Loader2 } from 'lucide-react'
 import { createCourse, type CreateCourseRequest, type CourseMode } from '../api/courses'
-import { getCurriculumTemplates } from '../api/curricula'
+import { getCurriculumTemplates, getMappingPreview } from '../api/curricula'
 import { getStudents } from '../api/students'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { CefrMismatchWarning } from '@/components/CefrMismatchWarning'
 import { StudentProfileSummary } from '@/components/StudentProfileSummary'
+import { SessionMappingPreview } from '@/components/SessionMappingPreview'
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
 const EXAMS = ['DELE', 'DALF', 'Cambridge B2 First', 'Cambridge C1 Advanced', 'TOEFL', 'IELTS']
@@ -49,7 +50,12 @@ export default function CourseNew() {
   })
 
   const templates = allTemplates?.filter(t => t.cefrLevel === targetCefrLevel) ?? []
-  const selectedTemplateData = templates.find(t => t.level === selectedTemplate)
+
+  const { data: mappingPreview } = useQuery({
+    queryKey: ['mapping-preview', selectedTemplate, sessionCount],
+    queryFn: () => getMappingPreview(selectedTemplate, parseInt(sessionCount)),
+    enabled: useTemplate && !!selectedTemplate && !!sessionCount,
+  })
 
   const students = studentsData?.items ?? []
 
@@ -59,9 +65,7 @@ export default function CourseNew() {
         name,
         language,
         mode,
-        sessionCount: useTemplate && selectedTemplateData
-          ? selectedTemplateData.unitCount
-          : parseInt(sessionCount),
+        sessionCount: parseInt(sessionCount),
         studentId: studentId || undefined,
         targetCefrLevel: mode === 'general' ? targetCefrLevel || undefined : undefined,
         targetExam: mode === 'exam-prep' ? targetExam || undefined : undefined,
@@ -231,20 +235,8 @@ export default function CourseNew() {
                         </Select>
                       </div>
 
-                      {selectedTemplateData && selectedTemplateData.sampleGrammar.length > 0 && (
-                        <Card className="border-zinc-100 bg-zinc-50" data-testid="template-preview">
-                          <CardContent className="p-3 space-y-1">
-                            <p className="text-xs font-medium text-zinc-600">Sample grammar</p>
-                            <ul className="text-xs text-zinc-500 space-y-0.5">
-                              {selectedTemplateData.sampleGrammar.map((g, i) => (
-                                <li key={i}>{g}</li>
-                              ))}
-                            </ul>
-                            <p className="text-xs text-zinc-400 pt-1">
-                              {selectedTemplateData.unitCount} sessions will be created from the template
-                            </p>
-                          </CardContent>
-                        </Card>
+                      {mappingPreview && (
+                        <SessionMappingPreview mapping={mappingPreview} />
                       )}
                     </div>
                   )}
@@ -279,22 +271,20 @@ export default function CourseNew() {
             </div>
           )}
 
-          {/* Session count (hidden when template is selected since it auto-sets) */}
-          {!useTemplate && (
-            <div className="space-y-1.5">
-              <Label>Number of sessions</Label>
-              <Select value={sessionCount} onValueChange={v => setSessionCount(v ?? '10')}>
-                <SelectTrigger data-testid="session-count-select">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SESSION_COUNTS.map(n => (
-                    <SelectItem key={n} value={String(n)}>{n} sessions</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          {/* Session count */}
+          <div className="space-y-1.5">
+            <Label>Number of sessions</Label>
+            <Select value={sessionCount} onValueChange={v => setSessionCount(v ?? '10')}>
+              <SelectTrigger data-testid="session-count-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SESSION_COUNTS.map(n => (
+                  <SelectItem key={n} value={String(n)}>{n} sessions</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Student (optional) */}
           {students.length > 0 && (
