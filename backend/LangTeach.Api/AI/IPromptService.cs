@@ -60,5 +60,6 @@ public record GenerationContext(
     string[]? MaterialFileNames = null,
     DifficultyDto[]? StudentDifficulties = null,
     IReadOnlyList<string>? GrammarConstraints = null,
-    string? TemplateName = null
+    string? TemplateName = null,
+    string? CurriculumObjectives = null
 );

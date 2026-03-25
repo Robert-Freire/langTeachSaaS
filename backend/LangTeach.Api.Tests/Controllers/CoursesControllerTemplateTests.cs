@@ -298,4 +298,126 @@ public class CoursesControllerTemplateTests
         // TemplateUnitRef must still be set despite personalization
         course.Entries[0].TemplateUnitRef.Should().NotBeNullOrEmpty();
     }
+
+    // --- GenerateLessonFromEntry: objectives flow ---
+
+    [Fact]
+    public async Task GenerateLessonFromEntry_SetsObjectivesIncludingGrammarAndCompetencies()
+    {
+        const string auth0Id = "auth0|lesson-from-entry-objectives";
+        const string email = "lesson-from-entry-objectives@example.com";
+        await SeedApprovedTeacher(auth0Id, email);
+        var client = CreateClientWithFakeCurriculum(auth0Id, email);
+
+        // Seed a course and entry directly with known fields
+        Guid courseId;
+        Guid entryId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var teacher = db.Teachers.First(t => t.Auth0UserId == auth0Id);
+            courseId = Guid.NewGuid();
+            entryId = Guid.NewGuid();
+            var now = DateTime.UtcNow;
+            db.Courses.Add(new Course
+            {
+                Id = courseId,
+                TeacherId = teacher.Id,
+                Name = "Test Course",
+                Language = "Spanish",
+                Mode = "general",
+                TargetCefrLevel = "A1",
+                SessionCount = 1,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+            db.CurriculumEntries.Add(new CurriculumEntry
+            {
+                Id = entryId,
+                CourseId = courseId,
+                OrderIndex = 1,
+                Topic = "Daily routines",
+                GrammarFocus = "present tense -ar/-er/-ir",
+                Competencies = "reading,speaking",
+                CompetencyFocus = "EO,IO",
+                Status = "planned",
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var lessonResponse = await client.PostAsJsonAsync(
+            $"/api/courses/{courseId}/curriculum/{entryId}/lesson", new { });
+        lessonResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await lessonResponse.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        var lessonId = body.GetProperty("lessonId").GetGuid();
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var lesson = await verifyDb.Lessons.FindAsync(lessonId);
+        lesson.Should().NotBeNull();
+        lesson!.Objectives.Should().Contain("Grammar:");
+        lesson.Objectives.Should().Contain("present tense -ar/-er/-ir");
+        lesson.Objectives.Should().Contain("Communicative skills:");
+        lesson.Objectives.Should().Contain("reading,speaking");
+        lesson.Objectives.Should().Contain("CEFR skill focus:");
+    }
+
+    [Fact]
+    public async Task GenerateLessonFromEntry_ObjectivesOmitsGrammarLine_WhenGrammarFocusNull()
+    {
+        const string auth0Id = "auth0|lesson-from-entry-no-grammar";
+        const string email = "lesson-from-entry-no-grammar@example.com";
+        await SeedApprovedTeacher(auth0Id, email);
+        var client = CreateClientWithFakeCurriculum(auth0Id, email);
+
+        Guid courseId;
+        Guid entryId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var teacher = db.Teachers.First(t => t.Auth0UserId == auth0Id);
+            courseId = Guid.NewGuid();
+            entryId = Guid.NewGuid();
+            var now = DateTime.UtcNow;
+            db.Courses.Add(new Course
+            {
+                Id = courseId,
+                TeacherId = teacher.Id,
+                Name = "No Grammar Course",
+                Language = "Spanish",
+                Mode = "general",
+                TargetCefrLevel = "B1",
+                SessionCount = 1,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+            db.CurriculumEntries.Add(new CurriculumEntry
+            {
+                Id = entryId,
+                CourseId = courseId,
+                OrderIndex = 1,
+                Topic = "Travel",
+                GrammarFocus = null,
+                Competencies = "speaking",
+                Status = "planned",
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var lessonResponse = await client.PostAsJsonAsync(
+            $"/api/courses/{courseId}/curriculum/{entryId}/lesson", new { });
+        lessonResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await lessonResponse.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        var lessonId = body.GetProperty("lessonId").GetGuid();
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var lesson = await verifyDb.Lessons.FindAsync(lessonId);
+        lesson.Should().NotBeNull();
+        lesson!.Objectives.Should().NotBeNull();
+        lesson.Objectives.Should().NotContain("Grammar:");
+        lesson.Objectives.Should().Contain("Communicative skills: speaking");
+    }
 }

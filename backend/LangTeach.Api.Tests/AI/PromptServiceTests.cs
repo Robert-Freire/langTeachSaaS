@@ -792,6 +792,41 @@ public class PromptServiceTests
         _sut.BuildCurriculumPrompt(ctxEmpty).SystemPrompt.Should().NotContain("Documented difficulties");
     }
 
+    // --- CurriculumObjectives: pedagogical constraints section ---
+
+    [Fact]
+    public void LessonPlanPrompt_IncludesPedagogicalConstraints_WhenCurriculumObjectivesPresent()
+    {
+        var ctx = BaseCtx() with
+        {
+            CurriculumObjectives = "Grammar: present tense -ar/-er/-ir. Communicative skills: reading,speaking. CEFR skill focus: EO,CO"
+        };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("PEDAGOGICAL CONSTRAINTS");
+        req.UserPrompt.Should().Contain("present tense -ar/-er/-ir");
+        req.UserPrompt.Should().Contain("address these planned learning targets");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_OmitsPedagogicalConstraints_WhenCurriculumObjectivesNull()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().NotContain("PEDAGOGICAL CONSTRAINTS");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_OmitsPedagogicalConstraints_WhenCurriculumObjectivesEmpty()
+    {
+        var ctx = BaseCtx() with { CurriculumObjectives = "" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("PEDAGOGICAL CONSTRAINTS");
+    }
+
     [Fact]
     public void CurriculumPersonalizationPrompt_IncludesStudentProfileFields()
     {
