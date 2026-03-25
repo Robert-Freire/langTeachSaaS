@@ -575,7 +575,6 @@ export default function CourseDetail() {
                 updatingEntry={updatingEntry}
                 generatingId={generatingId}
                 generatingLesson={generatingLesson}
-                confirmDeleteId={confirmDeleteId}
                 onToggleExpand={toggleExpand}
                 onStartEdit={startEdit}
                 onCancelEdit={() => setEditingId(null)}
@@ -586,7 +585,7 @@ export default function CourseDetail() {
                   setGeneratingId(entryId)
                   doGenerateLesson(entryId)
                 }}
-                onRequestDelete={setConfirmDeleteId}
+                onRequestDelete={(id) => setConfirmDeleteId(id)}
               />
             ))}
           </div>
