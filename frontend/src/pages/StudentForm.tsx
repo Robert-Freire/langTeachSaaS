@@ -31,7 +31,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
 import { PageHeader } from '@/components/PageHeader'
@@ -352,18 +352,17 @@ export default function StudentForm() {
                   Create Course
                 </Button>
               ) : (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Button type="button" variant="outline" disabled data-testid="create-course-btn">
-                        Create Course
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Complete student profile (language and CEFR level required) to create a course.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  {/* render as span so pointer events fire even when the inner button is disabled */}
+                  <TooltipTrigger render={<span tabIndex={0} className="inline-flex" />}>
+                    <Button type="button" variant="outline" disabled data-testid="create-course-btn">
+                      Create Course
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Complete student profile (language and CEFR level required) to create a course.
+                  </TooltipContent>
+                </Tooltip>
               )
             })()}
             <Button type="button" variant="outline" onClick={() => navigate('/students')}>

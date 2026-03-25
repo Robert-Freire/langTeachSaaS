@@ -63,6 +63,11 @@ export default function CourseNew() {
 
   const students = studentsData?.items ?? []
 
+  // Auto-fill language and CEFR level from the locked student when the students list loads.
+  // Intentionally omits language/targetCefrLevel from deps: we only want to seed the fields
+  // on first load (when they're empty), never overwrite user edits on subsequent renders.
+  // If the students list ever refetches, the guards (if !language / if !targetCefrLevel) prevent
+  // overwriting values the user may have manually changed.
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!lockedStudentId || students.length === 0) return
