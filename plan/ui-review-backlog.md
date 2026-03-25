@@ -53,3 +53,12 @@ All items from the previous backlog have been triaged. The backlog is now clean.
 - **[Minor M1]** LessonEditor: Objective pills have no hover cursor or title tooltip for accessibility
 - **[Minor M2]** LessonEditor: Summary sentence is long with 4+ objectives, consider "and N more" truncation
 - **[Minor M3]** LessonEditor mobile: Pills visually dominate the summary text on mobile since each takes a full row
+
+### PR #284 (2026-03-25) — Course view improvements (#259)
+
+- **[Important I2]** CourseDetail mobile (375px): "Generate Lesson" button drops to icon-only with no text label. Pre-existing behavior (`hidden sm:inline` pattern used throughout); not introduced by this PR.
+- **[Important I4]** CourseDetail desktop: Mode chip appears to have a slightly thicker border than sibling chips due to wider content. May be rendering artifact; investigate in a polish pass.
+- **[Minor M1]** CourseDetail: "+ Add session" dashed-border button blends with bottom edge of last session card due to very light border. Consider `border-zinc-300` or adding top margin.
+- **[Minor M3]** CourseDetail mobile: Breadcrumb and page title are compressed together (~4px gap). Pre-existing layout.
+- **[Minor M5]** CourseDetail: Delete dialog Cancel button (outlined) looks faint at default zoom; `variant="secondary"` would improve presence.
+- **[Minor M6]** Courses list: Progress bar track nearly invisible (`bg-zinc-100` on white). Fixed on detail view (changed to `bg-zinc-200`); list view not updated.
