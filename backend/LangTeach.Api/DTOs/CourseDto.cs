@@ -10,7 +10,9 @@ public record CurriculumEntryDto(
     Guid? LessonId,
     string Status,
     string? TemplateUnitRef,
-    string? CompetencyFocus
+    string? CompetencyFocus,
+    string? ContextDescription,
+    string? PersonalizationNotes
 );
 
 public record CourseDto(

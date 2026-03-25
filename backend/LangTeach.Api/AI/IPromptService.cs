@@ -28,7 +28,8 @@ public record CurriculumContext(
     string[]? StudentWeaknesses = null,
     DifficultyDto[]? StudentDifficulties = null,
     string? TemplateLevel = null,
-    IReadOnlyList<TemplateUnitContext>? TemplateUnits = null
+    IReadOnlyList<TemplateUnitContext>? TemplateUnits = null,
+    string? TeacherNotes = null
 );
 
 /// <summary>
