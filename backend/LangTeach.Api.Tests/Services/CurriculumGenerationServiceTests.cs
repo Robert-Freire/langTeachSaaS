@@ -51,8 +51,38 @@ internal sealed class ConfigurableClaudeClient : IClaudeClient
     public async IAsyncEnumerable<string> StreamAsync(ClaudeRequest request,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
+        CompleteCallCount++;
         await Task.Yield();
         yield return _content;
+    }
+}
+
+/// <summary>
+/// Returns responses from a queue so different calls can return different content.
+/// </summary>
+internal sealed class SequentialClaudeClient : IClaudeClient
+{
+    private readonly Queue<string> _responses;
+    public int CompleteCallCount { get; private set; }
+
+    public SequentialClaudeClient(params string[] responses)
+    {
+        _responses = new Queue<string>(responses);
+    }
+
+    public Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default)
+    {
+        CompleteCallCount++;
+        var content = _responses.Count > 0 ? _responses.Dequeue() : "[]";
+        return Task.FromResult(new ClaudeResponse(content, "claude-haiku", 10, 20));
+    }
+
+    public async IAsyncEnumerable<string> StreamAsync(ClaudeRequest request,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+    {
+        CompleteCallCount++;
+        await Task.Yield();
+        yield return _responses.Count > 0 ? _responses.Dequeue() : "[]";
     }
 }
 
@@ -296,5 +326,122 @@ public class CurriculumGenerationServiceTests
         entries[0].GrammarFocus.Should().Be("ser/estar");
         entries[0].TemplateUnitRef.Should().BeNull();
         entries[0].CompetencyFocus.Should().BeNull();
+    }
+
+    // -------------------------------------------------------------------------
+    // Personalization: ContextDescription and PersonalizationNotes
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task TemplatePath_WithStudent_AppliesContextDescriptionAndNotes()
+    {
+        var personalizationJson = """
+            [
+                {"orderIndex":1,"topic":"Marco at the registration office","contextDescription":"Marco tells the clerk his name and phone number at a Barcelona registration office.","personalizationNotes":"Extra ser/estar practice. No role-play, written exercises only."},
+                {"orderIndex":2,"topic":"Marco counts the seats at Camp Nou","contextDescription":"Marco uses numbers to count seats and prices at Camp Nou.","personalizationNotes":"Reinforce false cognates with Italian numbers."}
+            ]
+            """;
+        var claude = new ConfigurableClaudeClient(personalizationJson);
+        var sut = BuildService(new FakeTemplateService(FakeTemplates.TwoUnitTemplate()), claude);
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 0,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: "Marco", StudentNativeLanguage: "Italian",
+            StudentInterests: ["football"], StudentGoals: null,
+            TemplateLevel: "A1.1");
+
+        var entries = await sut.GenerateAsync(ctx);
+
+        entries[0].ContextDescription.Should().Be("Marco tells the clerk his name and phone number at a Barcelona registration office.");
+        entries[0].PersonalizationNotes.Should().Contain("ser/estar");
+        entries[1].ContextDescription.Should().Be("Marco uses numbers to count seats and prices at Camp Nou.");
+        entries[1].PersonalizationNotes.Should().Contain("false cognates");
+    }
+
+    [Fact]
+    public async Task TemplatePath_WithStudent_SpreadsWeaknessNotesAcrossMultipleSessions()
+    {
+        // AI response where weakness emphasis ("ser/estar") appears in BOTH session notes
+        var personalizationJson = """
+            [
+                {"orderIndex":1,"topic":"Marco greets at the office","contextDescription":"Marco introduces himself at a Barcelona office.","personalizationNotes":"ser/estar focus: Marco uses 'soy' (not 'estoy') to introduce himself."},
+                {"orderIndex":2,"topic":"Marco discusses his work","contextDescription":"Marco talks about his job and daily routines.","personalizationNotes":"ser/estar revisited: describing permanent (ser) vs. temporary (estar) states."}
+            ]
+            """;
+        var claude = new ConfigurableClaudeClient(personalizationJson);
+        var sut = BuildService(new FakeTemplateService(FakeTemplates.TwoUnitTemplate()), claude);
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 0,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: "Marco", StudentNativeLanguage: "Italian",
+            StudentInterests: null, StudentGoals: null,
+            TemplateLevel: "A1.1",
+            TemplateUnits: null,
+            StudentWeaknesses: ["ser/estar distinction"]);
+
+        var entries = await sut.GenerateAsync(ctx);
+
+        // Weakness emphasis should appear in PersonalizationNotes for BOTH entries
+        entries[0].PersonalizationNotes.Should().Contain("ser/estar");
+        entries[1].PersonalizationNotes.Should().Contain("ser/estar");
+    }
+
+    [Fact]
+    public async Task FreePath_WithStudent_CallsAiTwice()
+    {
+        var freeGenJson = """
+            [
+                {"orderIndex":1,"topic":"Greetings","grammarFocus":"ser/estar","competencies":["speaking"],"lessonType":"Communicative"},
+                {"orderIndex":2,"topic":"Numbers","grammarFocus":"números","competencies":["listening"],"lessonType":"Grammar-focused"}
+            ]
+            """;
+        var personalizationJson = """
+            [
+                {"orderIndex":1,"topic":"Marco greets the team","contextDescription":"Marco introduces himself to his football team.","personalizationNotes":"Ser/estar focus for Italian speaker."},
+                {"orderIndex":2,"topic":"Marco counts goals","contextDescription":"Marco counts goals and match scores.","personalizationNotes":"Numbers in sports context."}
+            ]
+            """;
+        var claude = new SequentialClaudeClient(freeGenJson, personalizationJson);
+        var sut = BuildService(new FakeTemplateService(), claude);
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 2,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: "Marco", StudentNativeLanguage: "Italian",
+            StudentInterests: ["football"], StudentGoals: null);
+
+        await sut.GenerateAsync(ctx);
+
+        claude.CompleteCallCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task FreePath_WithStudent_AppliesContextDescriptionFromPersonalizationPass()
+    {
+        var freeGenJson = """
+            [
+                {"orderIndex":1,"topic":"Greetings","grammarFocus":"ser/estar","competencies":["speaking"],"lessonType":"Communicative"}
+            ]
+            """;
+        var personalizationJson = """
+            [
+                {"orderIndex":1,"topic":"Marco greets the team","contextDescription":"Marco introduces himself to his football team in Barcelona.","personalizationNotes":"Ser/estar for Italian speaker."}
+            ]
+            """;
+        var claude = new SequentialClaudeClient(freeGenJson, personalizationJson);
+        var sut = BuildService(new FakeTemplateService(), claude);
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 1,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: "Marco", StudentNativeLanguage: null,
+            StudentInterests: null, StudentGoals: null);
+
+        var entries = await sut.GenerateAsync(ctx);
+
+        entries[0].ContextDescription.Should().Be("Marco introduces himself to his football team in Barcelona.");
+        entries[0].PersonalizationNotes.Should().Contain("Ser/estar");
     }
 }

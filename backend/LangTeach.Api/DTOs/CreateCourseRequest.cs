@@ -34,4 +34,8 @@ public class CreateCourseRequest
     [RegularExpression(@"^[ABC][12]\.\d+\+?$", ErrorMessage = "Invalid TemplateLevel format.")]
     [MaxLength(10)]
     public string? TemplateLevel { get; set; }
+
+    // Optional teacher notes for constraints and context (e.g., "Relocating to Barcelona. Hates role-play.")
+    [MaxLength(2000)]
+    public string? TeacherNotes { get; set; }
 }

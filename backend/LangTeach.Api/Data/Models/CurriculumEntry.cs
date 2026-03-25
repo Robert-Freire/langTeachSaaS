@@ -17,6 +17,10 @@ public class CurriculumEntry
     public string? TemplateUnitRef { get; set; }
     // Comma-separated CEFR skill codes, e.g. "EO,CO" (null for AI-generated entries)
     public string? CompetencyFocus { get; set; }
+    // AI-generated personalized scenario for this session (e.g., "Marco at a Barcelona registration office")
+    public string? ContextDescription { get; set; }
+    // AI rationale for personalization choices (emphasis areas, constraint compliance)
+    public string? PersonalizationNotes { get; set; }
 
     public Course Course { get; set; } = null!;
     public Lesson? Lesson { get; set; }

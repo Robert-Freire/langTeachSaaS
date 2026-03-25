@@ -12,6 +12,8 @@ export interface CurriculumEntry {
   lessonType: string | null
   lessonId: string | null
   status: EntryStatus
+  contextDescription: string | null
+  personalizationNotes: string | null
 }
 
 export interface Course {
@@ -58,6 +60,7 @@ export interface CreateCourseRequest {
   sessionCount: number
   studentId?: string
   templateLevel?: string
+  teacherNotes?: string
 }
 
 export interface UpdateCurriculumEntryRequest {

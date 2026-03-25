@@ -61,9 +61,20 @@ public class CurriculumGenerationService : ICurriculumGenerationService
                     .ToList();
 
                 var personalizationCtx = ctx with { TemplateUnits = templateUnits };
-                var request = _prompts.BuildCurriculumPrompt(personalizationCtx);
-                var response = await _claude.CompleteAsync(request, ct);
-                ApplyPersonalizedTopics(skeletons, response.Content);
+                try
+                {
+                    var request = _prompts.BuildCurriculumPrompt(personalizationCtx);
+                    var response = await _claude.CompleteAsync(request, ct);
+                    ApplyPersonalization(skeletons, response.Content);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Curriculum personalization failed for template-based curriculum; returning base template.");
+                }
             }
 
             return skeletons;
@@ -91,7 +102,7 @@ public class CurriculumGenerationService : ICurriculumGenerationService
         if (aiEntries is null || aiEntries.Count == 0)
             throw new CurriculumGenerationException("AI returned an empty curriculum.");
 
-        return aiEntries.Select((e, i) => new CurriculumEntry
+        var freeEntries = aiEntries.Select((e, i) => new CurriculumEntry
         {
             Id = Guid.NewGuid(),
             OrderIndex = i + 1,
@@ -103,38 +114,82 @@ public class CurriculumGenerationService : ICurriculumGenerationService
             LessonType = e.LessonType,
             Status = "planned"
         }).ToList();
+
+        if (ctx.StudentName is not null)
+        {
+            var templateUnits = freeEntries
+                .Select(e => new TemplateUnitContext(
+                    e.OrderIndex,
+                    e.Topic,
+                    e.GrammarFocus,
+                    string.IsNullOrEmpty(e.Competencies)
+                        ? []
+                        : e.Competencies.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()))
+                .ToList();
+
+            var personalizationCtx = ctx with { TemplateUnits = templateUnits };
+            try
+            {
+                var personalizationRequest = _prompts.BuildCurriculumPrompt(personalizationCtx);
+                var personalizationResponse = await _claude.CompleteAsync(personalizationRequest, ct);
+                ApplyPersonalization(freeEntries, personalizationResponse.Content);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Curriculum personalization failed for free-generated curriculum; returning base curriculum.");
+            }
+        }
+
+        return freeEntries;
     }
 
-    private void ApplyPersonalizedTopics(List<CurriculumEntry> skeletons, string aiContent)
+    private void ApplyPersonalization(List<CurriculumEntry> skeletons, string aiContent)
     {
-        List<PersonalizationDto>? personalizedTopics;
+        List<PersonalizationDto>? personalization;
         try
         {
-            personalizedTopics = JsonSerializer.Deserialize<List<PersonalizationDto>>(
+            personalization = JsonSerializer.Deserialize<List<PersonalizationDto>>(
                 aiContent.Trim(),
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
         catch (JsonException ex)
         {
-            _logger.LogWarning(ex, "Failed to parse personalization JSON; keeping original template topics.");
+            _logger.LogWarning(ex, "Failed to parse personalization JSON; keeping original topics.");
             return;
         }
 
-        if (personalizedTopics is null || personalizedTopics.Count == 0)
+        if (personalization is null || personalization.Count == 0)
         {
-            _logger.LogWarning("AI returned empty personalization response; keeping original template topics.");
+            _logger.LogWarning("AI returned empty personalization response; keeping original topics.");
             return;
         }
 
-        var topicByOrder = personalizedTopics
-            .Where(p => !string.IsNullOrWhiteSpace(p.Topic))
-            .ToDictionary(p => p.OrderIndex, p => p.Topic!);
+        var byOrder = new Dictionary<int, PersonalizationDto>();
+        foreach (var p in personalization)
+        {
+            if (p.OrderIndex <= 0 || !byOrder.TryAdd(p.OrderIndex, p))
+            {
+                _logger.LogWarning(
+                    "Ignoring personalization item with invalid or duplicate OrderIndex={OrderIndex}.",
+                    p.OrderIndex);
+            }
+        }
 
         foreach (var skeleton in skeletons)
         {
-            if (topicByOrder.TryGetValue(skeleton.OrderIndex, out var personalizedTopic))
-                skeleton.Topic = personalizedTopic;
-            // If not matched, keep the original template topic (graceful degradation)
+            if (!byOrder.TryGetValue(skeleton.OrderIndex, out var p))
+                continue;
+
+            if (!string.IsNullOrWhiteSpace(p.Topic))
+                skeleton.Topic = p.Topic!;
+            if (!string.IsNullOrWhiteSpace(p.ContextDescription))
+                skeleton.ContextDescription = p.ContextDescription;
+            if (!string.IsNullOrWhiteSpace(p.PersonalizationNotes))
+                skeleton.PersonalizationNotes = p.PersonalizationNotes;
         }
     }
 
@@ -150,7 +205,9 @@ public class CurriculumGenerationService : ICurriculumGenerationService
 
     private record PersonalizationDto(
         int OrderIndex,
-        string? Topic
+        string? Topic,
+        string? ContextDescription,
+        string? PersonalizationNotes
     );
 }
 

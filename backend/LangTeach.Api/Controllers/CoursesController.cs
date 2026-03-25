@@ -332,17 +332,19 @@ public class CoursesController : ControllerBase
             StudentGoals: student is not null
                 ? TryDeserializeStringArray(student.LearningGoals)
                 : null,
+            TemplateLevel: string.IsNullOrWhiteSpace(req.TemplateLevel) ? null : req.TemplateLevel,
+            TemplateUnits: null,
             StudentWeaknesses: student is not null
                 ? TryDeserializeStringArray(student.Weaknesses)
                 : null,
             StudentDifficulties: student is not null
                 ? TryDeserializeDifficultyArray(student.Difficulties)
                 : null,
-            TemplateLevel: req.TemplateLevel
+            TeacherNotes: req.TeacherNotes
         );
 
     private static CurriculumEntryDto MapEntryToDto(CurriculumEntry e) =>
-        new(e.Id, e.OrderIndex, e.Topic, e.GrammarFocus, e.Competencies, e.LessonType, e.LessonId, e.Status, e.TemplateUnitRef, e.CompetencyFocus);
+        new(e.Id, e.OrderIndex, e.Topic, e.GrammarFocus, e.Competencies, e.LessonType, e.LessonId, e.Status, e.TemplateUnitRef, e.CompetencyFocus, e.ContextDescription, e.PersonalizationNotes);
 
     private static CourseDto MapToDto(Course c) =>
         new(
