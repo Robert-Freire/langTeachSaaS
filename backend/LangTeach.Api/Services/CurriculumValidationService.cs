@@ -7,6 +7,9 @@ namespace LangTeach.Api.Services;
 
 public class CurriculumValidationService : ICurriculumValidationService
 {
+    private static readonly JsonSerializerOptions CaseInsensitiveOptions =
+        new() { PropertyNameCaseInsensitive = true };
+
     private readonly IClaudeClient _claude;
     private readonly ILogger<CurriculumValidationService> _logger;
 
@@ -30,7 +33,9 @@ public class CurriculumValidationService : ICurriculumValidationService
             return [];
 
         var grammarList = string.Join("\n", allowedGrammar.Select(g => $"- {g}"));
-        var entriesList = string.Join("\n", entriesWithGrammar.Select(e => $"Session {e.OrderIndex}: {e.GrammarFocus}"));
+        // Strip newlines from grammar focus values to prevent prompt injection via teacher-edited content.
+        var entriesList = string.Join("\n", entriesWithGrammar.Select(e =>
+            $"Session {e.OrderIndex}: {e.GrammarFocus?.Replace("\r", "").Replace("\n", " ")}"));
 
         const string system = "You are a CEFR-level grammar expert. Evaluate whether grammar structures in a generated curriculum match the target level.";
         var jsonExample = """[ { "sessionIndex": <number>, "grammarFocus": "<exact string>", "flagReason": "<one sentence>", "suggestedLevel": "<CEFR level or null>" } ]""";
@@ -58,7 +63,7 @@ public class CurriculumValidationService : ICurriculumValidationService
 
             var warnings = JsonSerializer.Deserialize<List<ValidationWarningDto>>(
                 content,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                CaseInsensitiveOptions);
 
             return warnings?
                 .Select(w => new CurriculumWarning(w.SessionIndex, w.GrammarFocus, w.FlagReason, w.SuggestedLevel))

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace LangTeach.Api.DTOs;
 
 public record CurriculumWarning(
@@ -7,4 +9,4 @@ public record CurriculumWarning(
     string? SuggestedLevel
 );
 
-public record DismissWarningRequest(string WarningKey);
+public record DismissWarningRequest([MaxLength(500)] string WarningKey);
