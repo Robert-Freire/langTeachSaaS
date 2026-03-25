@@ -34,3 +34,9 @@ All items from the previous backlog have been triaged. The backlog is now clean.
 - **[Important]** CourseNew: "Student (optional)" label appears visually lighter than sibling labels (Language, Target CEFR level). All use the same `<Label>` component; may be a font rendering artifact from "(optional)" suffix. Investigate in a dedicated polish pass.
 - **[Minor]** CourseNew: "Profile completeness for curriculum planning" label wraps on sub-tablet widths. Consider shortening to "Curriculum completeness".
 - **[Minor]** Courses list mobile (375px): page subtitle wraps to two lines next to "New Course" button, creating uneven header height. Pre-existing issue exposed during regression check.
+
+### PR #258 (2026-03-25) — Curriculum walkthrough UI
+
+- **[Important I3]** CourseDetail expanded entries: expand/collapse toggle stays at the top of tall expanded cards; users must scroll back to top to close. Consider a "Collapse" link at the bottom of the expanded section.
+- **[Minor M1]** CourseDetail expanded: "Personalization rationale" and "Personalized context" section labels are visually identical (`text-xs font-medium text-zinc-500`). Semantic distinction could be reinforced by different font weight or color.
+- **[Minor M3]** CourseDetail expanded: `CompetencyBadge` (`bg-zinc-100`, no border) and lesson-type badge (`bg-zinc-50 border-zinc-200`) in the same row are too similar visually. Lesson type badge could use a distinct color (e.g. purple-50 border-purple-200).
