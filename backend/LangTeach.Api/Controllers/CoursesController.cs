@@ -332,7 +332,7 @@ public class CoursesController : ControllerBase
             StudentGoals: student is not null
                 ? TryDeserializeStringArray(student.LearningGoals)
                 : null,
-            TemplateLevel: req.TemplateLevel,
+            TemplateLevel: string.IsNullOrWhiteSpace(req.TemplateLevel) ? null : req.TemplateLevel,
             TemplateUnits: null,
             StudentWeaknesses: student is not null
                 ? TryDeserializeStringArray(student.Weaknesses)
