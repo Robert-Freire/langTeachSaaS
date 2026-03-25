@@ -374,9 +374,10 @@ test('expand toggle shows vocabulary themes and personalized context', async ({ 
   await page.getByTestId('expand-entry-0').click()
   await expect(page.getByTestId('entry-details-0')).toBeVisible({ timeout: UI_TIMEOUT })
 
-  // Vocabulary themes shown
-  await expect(page.getByText('Greetings')).toBeVisible()
-  await expect(page.getByText('Countries')).toBeVisible()
+  // Vocabulary themes shown (scoped to entry-details to avoid matching topic text)
+  const entryDetails = page.getByTestId('entry-details-0')
+  await expect(entryDetails.getByText('Greetings', { exact: true })).toBeVisible()
+  await expect(entryDetails.getByText('Countries', { exact: true })).toBeVisible()
 
   // Personalized context shown
   await expect(page.getByTestId('context-description-0')).toHaveText('Ana introduces herself at language school')
