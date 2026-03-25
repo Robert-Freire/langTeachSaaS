@@ -184,14 +184,15 @@ test('reorder curriculum entries via drag and drop', async ({ browser }) => {
 
   const handle0Box = await handle0.boundingBox()
   const entry1Box = await entry1.boundingBox()
-  if (handle0Box && entry1Box) {
-    await page.mouse.move(handle0Box.x + handle0Box.width / 2, handle0Box.y + handle0Box.height / 2)
-    await page.mouse.down()
-    // Move past activation threshold
-    await page.mouse.move(handle0Box.x + handle0Box.width / 2, handle0Box.y + handle0Box.height / 2 + 10)
-    await page.mouse.move(handle0Box.x + handle0Box.width / 2, entry1Box.y + entry1Box.height / 2)
-    await page.mouse.up()
-  }
+  expect(handle0Box).not.toBeNull()
+  expect(entry1Box).not.toBeNull()
+
+  await page.mouse.move(handle0Box!.x + handle0Box!.width / 2, handle0Box!.y + handle0Box!.height / 2)
+  await page.mouse.down()
+  // Move past dnd-kit activation threshold (5px)
+  await page.mouse.move(handle0Box!.x + handle0Box!.width / 2, handle0Box!.y + handle0Box!.height / 2 + 10)
+  await page.mouse.move(handle0Box!.x + handle0Box!.width / 2, entry1Box!.y + entry1Box!.height / 2)
+  await page.mouse.up()
 
   // After reorder, the second GET returns reordered data
   await expect(page.getByTestId('curriculum-entry-0')).toContainText('Daily Routines', { timeout: UI_TIMEOUT })

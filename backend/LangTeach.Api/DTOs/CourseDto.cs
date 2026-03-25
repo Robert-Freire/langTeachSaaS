@@ -37,10 +37,10 @@ public record CourseDto(
 );
 
 public record AddCurriculumEntryRequest(
-    [Required] string Topic,
-    string? GrammarFocus,
-    string? Competencies,
-    string? LessonType
+    [Required][MaxLength(200)] string Topic,
+    [MaxLength(200)] string? GrammarFocus,
+    [MaxLength(500)] string? Competencies,
+    [MaxLength(100)] string? LessonType
 );
 
 public record CourseSummaryDto(

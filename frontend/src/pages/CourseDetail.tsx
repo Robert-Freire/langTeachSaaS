@@ -121,7 +121,6 @@ interface SortableEntryRowProps {
   updatingEntry: boolean
   generatingId: string | null
   generatingLesson: boolean
-  confirmDeleteId: string | null
   onToggleExpand: (id: string) => void
   onStartEdit: (entry: CurriculumEntry) => void
   onCancelEdit: () => void
@@ -443,7 +442,7 @@ export default function CourseDetail() {
     onError: (err) => logger.error('CourseDetail', 'add entry failed', err),
   })
 
-  const { mutate: doDeleteEntry } = useMutation({
+  const { mutate: doDeleteEntry, isPending: deletingEntry } = useMutation({
     mutationFn: (entryId: string) => deleteCurriculumEntry(id!, entryId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['course', id] })
@@ -662,6 +661,7 @@ export default function CourseDetail() {
             <AlertDialogAction
               data-testid="confirm-delete-ok"
               onClick={() => confirmDeleteId && doDeleteEntry(confirmDeleteId)}
+              disabled={deletingEntry}
               className="bg-red-600 hover:bg-red-700"
             >
               Remove
