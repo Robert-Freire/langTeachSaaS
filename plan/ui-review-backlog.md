@@ -83,3 +83,9 @@ All findings are pre-existing, unrelated to this PR's change:
 - **[Minor M1]** LessonEditor: Empty sections area has no empty-state guidance copy.
 - **[Minor M2]** LessonEditor desktop: Tab focus order starts in sidebar nav before editor content.
 - **[Minor M3]** Dashboard mobile: Quick Actions panel requires scroll to reach below empty "Needs Preparation" card.
+
+### PR TBD (2026-03-25) — Create Course entry point (#289)
+
+- **[Important I1]** StudentForm edit (mobile 375px): Header action buttons ("Create Course", "Cancel", "Update Student") overlap the subtitle text at the smallest breakpoint. Pre-existing PageHeader layout issue compounded by 3 buttons in the actions area.
+- **[Minor M1]** StudentForm edit: "Create Course" and "Cancel" both use `variant="outline"` with identical visual weight. Cancel is dismissive; Create Course is constructive — subtle differentiation would improve scannability.
+- **[Minor M3]** CourseNew locked student: No secondary text explains why the student cannot be changed (lock icon added but no label like "Assigned from student profile"). Functional but lower affordance than ideal.
