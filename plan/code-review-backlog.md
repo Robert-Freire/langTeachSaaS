@@ -74,6 +74,13 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | Important | `.github/workflows/backend.yml`: `az rest` management-plane check confirms a secret resource *exists* but not that it is enabled or has a non-empty value. A disabled or empty secret passes CI but fails at app startup. Fixing this would require `az keyvault secret show` (data-plane), which needs a new Key Vault Secrets User role assignment for the CI service principal. Track as follow-up if false negatives become a problem. |
 | Minor | `validate-secrets` and `deploy` jobs both perform a separate OIDC Azure login on separate runners. Could be merged into a single job to save a runner and login round-trip if CI costs become a concern. |
 
+### PR (2026-03-25) — Mandatory Production + Practice ordering (#268)
+
+| Severity | Finding |
+|----------|---------|
+| Minor | `GenerateController.cs`: section-count warning added in `Generate` method (non-streaming path) only. The `Stream` endpoint parses no JSON so cannot log the same warning. The gap is acceptable — streaming is the primary path but has no post-completion hook. If observability is needed for streaming, consider logging after the `[DONE]` sentinel. |
+| Minor | No unit test for the controller warning path (AC4). Mocking the full `GenerateController` dependency graph is large work for a logging check. Acceptable gap; monitor via application logs. |
+
 ### PR (2026-03-22) — Fix Reading & Comprehension template (#227)
 
 | Severity | Finding |

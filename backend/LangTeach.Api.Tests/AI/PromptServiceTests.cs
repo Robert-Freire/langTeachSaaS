@@ -662,6 +662,17 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void LessonPlanPrompt_A1_ProductionGuidance_ExcludesOralOnlyActivities()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Do NOT use");
+        req.UserPrompt.Should().Contain("discuss with your partner");
+    }
+
+    [Fact]
     public void LessonPlanPrompt_B1_ProductionGuidance_MentionsCommunicativeTask()
     {
         var ctx = BaseCtx() with { CefrLevel = "B1" };
