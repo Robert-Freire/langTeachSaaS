@@ -349,7 +349,7 @@ public class CoursesController : ControllerBase
         );
 
     private static CurriculumEntryDto MapEntryToDto(CurriculumEntry e) =>
-        new(e.Id, e.OrderIndex, e.Topic, e.GrammarFocus, e.Competencies, e.LessonType, e.LessonId, e.Status, e.TemplateUnitRef, e.CompetencyFocus, e.ContextDescription, e.PersonalizationNotes);
+        new(e.Id, e.OrderIndex, e.Topic, e.GrammarFocus, e.Competencies, e.LessonType, e.LessonId, e.Status, e.TemplateUnitRef, e.CompetencyFocus, e.ContextDescription, e.PersonalizationNotes, e.VocabularyThemes);
 
     private static CourseDto MapToDto(Course c) =>
         new(

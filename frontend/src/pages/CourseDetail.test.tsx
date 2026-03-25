@@ -42,9 +42,29 @@ const mockCourse = {
   createdAt: '2026-03-10T10:00:00Z',
   updatedAt: '2026-03-10T10:00:00Z',
   entries: [
-    { id: 'e1', orderIndex: 1, topic: 'Greetings', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null },
-    { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: null, competencies: 'reading', lessonType: null, lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null },
-    { id: 'e3', orderIndex: 3, topic: 'Hobbies', grammarFocus: 'Present continuous', competencies: 'writing', lessonType: 'Grammar-focused', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null },
+    { id: 'e1', orderIndex: 1, topic: 'Greetings', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+    { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: null, competencies: 'reading', lessonType: null, lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+    { id: 'e3', orderIndex: 3, topic: 'Hobbies', grammarFocus: 'Present continuous', competencies: 'writing', lessonType: 'Grammar-focused', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+  ],
+}
+
+const mockCourseWithPersonalization = {
+  ...mockCourse,
+  studentName: 'Ana',
+  entries: [
+    {
+      id: 'e1',
+      orderIndex: 1,
+      topic: 'Greetings: Saludar y despedirse',
+      grammarFocus: 'Verbo llamarse, pronombres',
+      competencies: 'speaking,listening',
+      lessonType: 'Communicative',
+      lessonId: null,
+      status: 'planned' as const,
+      contextDescription: 'Ana introduces herself at a Barcelona language school',
+      personalizationNotes: 'Focused on oral production given Ana\'s speaking goal',
+      vocabularyThemes: 'Saludos,Despedidas,Números del 1 al 10',
+    },
   ],
 }
 
@@ -101,5 +121,57 @@ describe('CourseDetail', () => {
 
     await screen.findByTestId('course-title')
     expect(screen.getByTestId('generate-lesson-0')).toBeInTheDocument()
+  })
+
+  it('entry details are hidden by default and shown after expand click', async () => {
+    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourseWithPersonalization)
+    wrapper(<CourseDetail />)
+
+    await screen.findByTestId('course-title')
+
+    // Details not visible before expanding
+    expect(screen.queryByTestId('entry-details-0')).not.toBeInTheDocument()
+
+    // Click expand
+    fireEvent.click(screen.getByTestId('expand-entry-0'))
+    expect(screen.getByTestId('entry-details-0')).toBeInTheDocument()
+  })
+
+  it('expanded entry shows all fields when fully populated', async () => {
+    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourseWithPersonalization)
+    wrapper(<CourseDetail />)
+
+    await screen.findByTestId('course-title')
+    fireEvent.click(screen.getByTestId('expand-entry-0'))
+
+    expect(screen.getByTestId('context-description-0')).toHaveTextContent('Ana introduces herself at a Barcelona language school')
+    expect(screen.getByTestId('personalization-notes-0')).toHaveTextContent('Focused on oral production')
+    expect(screen.getByText('Saludos')).toBeInTheDocument()
+    expect(screen.getByText('Despedidas')).toBeInTheDocument()
+    expect(screen.getByText('speaking')).toBeInTheDocument()
+  })
+
+  it('expanded entry renders gracefully when optional fields are null', async () => {
+    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+    wrapper(<CourseDetail />)
+
+    await screen.findByTestId('course-title')
+    fireEvent.click(screen.getByTestId('expand-entry-0'))
+
+    expect(screen.getByTestId('entry-details-0')).toBeInTheDocument()
+    expect(screen.queryByTestId('context-description-0')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('personalization-notes-0')).not.toBeInTheDocument()
+  })
+
+  it('expand toggle collapses when clicked again', async () => {
+    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourseWithPersonalization)
+    wrapper(<CourseDetail />)
+
+    await screen.findByTestId('course-title')
+    fireEvent.click(screen.getByTestId('expand-entry-0'))
+    expect(screen.getByTestId('entry-details-0')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('expand-entry-0'))
+    expect(screen.queryByTestId('entry-details-0')).not.toBeInTheDocument()
   })
 })
