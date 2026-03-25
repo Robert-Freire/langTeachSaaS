@@ -46,6 +46,7 @@ public class CurriculumGenerationService : ICurriculumGenerationService
             {
                 unitByTitle.TryGetValue(s.UnitRef, out var unit);
                 var competencyFocus = unit?.CompetencyFocus ?? [];
+                var vocabularyThemes = unit?.VocabularyThemes ?? [];
                 return new CurriculumEntry
                 {
                     Id = Guid.NewGuid(),
@@ -59,6 +60,7 @@ public class CurriculumGenerationService : ICurriculumGenerationService
                         ? string.Join(",", competencyFocus)
                         : null,
                     TemplateUnitRef = s.UnitRef,
+                    VocabularyThemes = vocabularyThemes.Count > 0 ? string.Join(",", vocabularyThemes) : null,
                     LessonType = "Communicative",
                     Status = "planned"
                 };

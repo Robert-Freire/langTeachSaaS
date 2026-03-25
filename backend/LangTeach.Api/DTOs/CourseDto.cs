@@ -12,7 +12,8 @@ public record CurriculumEntryDto(
     string? TemplateUnitRef,
     string? CompetencyFocus,
     string? ContextDescription,
-    string? PersonalizationNotes
+    string? PersonalizationNotes,
+    string? VocabularyThemes
 );
 
 public record CourseDto(

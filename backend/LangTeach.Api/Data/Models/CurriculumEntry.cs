@@ -21,6 +21,8 @@ public class CurriculumEntry
     public string? ContextDescription { get; set; }
     // AI rationale for personalization choices (emphasis areas, constraint compliance)
     public string? PersonalizationNotes { get; set; }
+    // Comma-separated vocabulary themes from template unit (null for AI-generated entries)
+    public string? VocabularyThemes { get; set; }
 
     public Course Course { get; set; } = null!;
     public Lesson? Lesson { get; set; }

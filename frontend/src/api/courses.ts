@@ -14,6 +14,7 @@ export interface CurriculumEntry {
   status: EntryStatus
   contextDescription: string | null
   personalizationNotes: string | null
+  vocabularyThemes: string | null
 }
 
 export interface Course {

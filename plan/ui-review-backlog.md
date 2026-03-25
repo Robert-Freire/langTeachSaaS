@@ -40,3 +40,9 @@ All items from the previous backlog have been triaged. The backlog is now clean.
 - **[Important]** CourseNew desktop: Session count selector has no visual grouping with `SessionMappingPreview` card. Teacher doesn't see the cause-effect link between changing sessions and the preview updating. Could use a wrapper div or a helper label ("Sessions determine the mapping below").
 - **[Important]** CourseNew: Native `<input type="checkbox">` for "Use structured curriculum template" is inconsistent with the shadcn Select components elsewhere on the form. Pre-existing pattern.
 - **[Important]** CourseNew mobile (375px): Course type button cards create a jagged 2-column grid because description text wraps asymmetrically. Pre-existing pattern.
+
+### PR #258 (2026-03-25) — Curriculum walkthrough UI
+
+- **[Important I3]** CourseDetail expanded entries: expand/collapse toggle stays at the top of tall expanded cards; users must scroll back to top to close. Consider a "Collapse" link at the bottom of the expanded section.
+- **[Minor M1]** CourseDetail expanded: "Personalization rationale" and "Personalized context" section labels are visually identical (`text-xs font-medium text-zinc-500`). Semantic distinction could be reinforced by different font weight or color.
+- **[Minor M3]** CourseDetail expanded: `CompetencyBadge` (`bg-zinc-100`, no border) and lesson-type badge (`bg-zinc-50 border-zinc-200`) in the same row are too similar visually. Lesson type badge could use a distinct color (e.g. purple-50 border-purple-200).
