@@ -17,6 +17,10 @@ public class Course
     public bool IsDeleted { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    // JSON-serialized List<CurriculumWarning> from post-generation validation; null when no warnings.
+    public string? GenerationWarnings { get; set; }
+    // JSON-serialized List<string> of warning keys the teacher has dismissed.
+    public string? DismissedWarnings { get; set; }
 
     public Teacher Teacher { get; set; } = null!;
     public Student? Student { get; set; }

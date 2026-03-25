@@ -33,7 +33,9 @@ public record CourseDto(
     int LessonsCreated,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    List<CurriculumEntryDto> Entries
+    List<CurriculumEntryDto> Entries,
+    List<CurriculumWarning>? Warnings,
+    List<string>? DismissedWarningKeys
 );
 
 public record AddCurriculumEntryRequest(
