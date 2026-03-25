@@ -41,6 +41,7 @@ import { CefrMismatchWarning } from '@/components/CefrMismatchWarning'
 import { FullLessonGenerateButton } from '@/components/lesson/FullLessonGenerateButton'
 import { LessonNotesCard } from '@/components/lesson/LessonNotesCard'
 import { Skeleton } from '@/components/ui/skeleton'
+import { LessonObjectivesSummary } from '@/components/lesson/LessonObjectivesSummary'
 
 const SECTION_ORDER: SectionType[] = ['WarmUp', 'Presentation', 'Practice', 'Production', 'WrapUp']
 const SECTION_LABELS: Record<SectionType, string> = {
@@ -614,6 +615,9 @@ export default function LessonEditor() {
           </Tooltip>
         </div>
       </div>
+
+      {/* Objectives summary (curriculum-linked lessons only) */}
+      <LessonObjectivesSummary objectives={lesson.objectives} studentName={lesson.studentName} />
 
       {/* CEFR mismatch warning (view mode — hidden when edit form is open, which has its own warning) */}
       {!editingMeta && lesson.studentId && lesson.studentName && (() => {
