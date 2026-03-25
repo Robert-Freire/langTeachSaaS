@@ -365,11 +365,20 @@ public class GenerateController : ControllerBase
                 using var doc = JsonDocument.Parse(response.Content);
                 if (doc.RootElement.TryGetProperty("sections", out var sections))
                 {
-                    var sectionCount = sections.EnumerateObject().Count();
-                    if (sectionCount < 5)
+                    if (sections.ValueKind == JsonValueKind.Object)
+                    {
+                        var sectionCount = sections.EnumerateObject().Count();
+                        if (sectionCount < 5)
+                            _logger.LogWarning(
+                                "Generated lesson plan has only {Count} sections (expected >= 5). LessonId={LessonId}",
+                                sectionCount, lesson.Id);
+                    }
+                    else
+                    {
                         _logger.LogWarning(
-                            "Generated lesson plan has only {Count} sections (expected >= 5). LessonId={LessonId}",
-                            sectionCount, lesson.Id);
+                            "Generated lesson plan 'sections' is {Kind}, expected Object. LessonId={LessonId}",
+                            sections.ValueKind, lesson.Id);
+                    }
                 }
                 else
                 {
