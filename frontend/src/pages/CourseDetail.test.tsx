@@ -1,4 +1,5 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import React from 'react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -15,15 +16,19 @@ vi.mock('../api/courses', () => ({
   deleteCurriculumEntry: vi.fn(),
 }))
 
-// dnd-kit drag simulation helper
-function simulateDragEnd(activeId: string, overId: string) {
-  // Dispatch a custom dragend via the onDragEnd prop by firing pointer events
-  // In tests, we trigger the logic by directly invoking the handler via the data-testid approach.
-  // Since dnd-kit doesn't expose internal state easily, we test via the mutation call.
-  const active = { id: activeId }
-  const over = { id: overId }
-  return { active, over }
-}
+// Capture the onDragEnd handler from DndContext so we can trigger it in tests
+let capturedOnDragEnd: ((event: { active: { id: string }; over: { id: string } | null }) => void) | null = null
+
+vi.mock('@dnd-kit/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@dnd-kit/core')>()
+  return {
+    ...actual,
+    DndContext: ({ children, onDragEnd, ...props }: { children: React.ReactNode; onDragEnd?: (e: any) => void; [key: string]: unknown }) => {
+      capturedOnDragEnd = onDragEnd ?? null
+      return <div {...props}>{children}</div>
+    },
+  }
+})
 
 function wrapper(ui: React.ReactElement, path = '/courses/course-1') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
@@ -272,7 +277,7 @@ describe('CourseDetail', () => {
   })
 
   // -------------------------------------------------------------------------
-  // Drag handles
+  // Drag handles and reorder
   // -------------------------------------------------------------------------
 
   it('renders drag handles for each entry', async () => {
@@ -283,5 +288,28 @@ describe('CourseDetail', () => {
     expect(screen.getByTestId('drag-handle-0')).toBeInTheDocument()
     expect(screen.getByTestId('drag-handle-1')).toBeInTheDocument()
     expect(screen.getByTestId('drag-handle-2')).toBeInTheDocument()
+  })
+
+  it('drag-end event triggers reorderCurriculum with new order', async () => {
+    vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+    vi.mocked(coursesApi.reorderCurriculum).mockResolvedValue(undefined)
+    wrapper(<CourseDetail />)
+
+    await screen.findByTestId('course-title')
+
+    // Simulate dragging e1 to position of e2 (swap first two entries)
+    await act(async () => {
+      capturedOnDragEnd?.({ active: { id: 'e1' }, over: { id: 'e2' } })
+    })
+
+    await waitFor(() => {
+      expect(coursesApi.reorderCurriculum).toHaveBeenCalledWith(
+        'course-1',
+        expect.arrayContaining(['e2', 'e1'])
+      )
+    })
+    // e2 should come before e1 in the call
+    const call = vi.mocked(coursesApi.reorderCurriculum).mock.calls[0]
+    expect(call[1].indexOf('e2')).toBeLessThan(call[1].indexOf('e1'))
   })
 })
