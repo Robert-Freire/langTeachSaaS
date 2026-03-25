@@ -700,6 +700,17 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void LessonPlanPrompt_C1_ProductionGuidance_MentionsOpenEndedTask()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "C1" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("open-ended task");
+        req.UserPrompt.Should().Contain("structured argument");
+    }
+
+    [Fact]
     public void LessonPlanPrompt_UnknownLevel_ProductionGuidance_FallsBackToGenericGuidance()
     {
         var ctx = BaseCtx() with { CefrLevel = "X9" };
