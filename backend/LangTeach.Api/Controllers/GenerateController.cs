@@ -163,7 +163,8 @@ public class GenerateController : ControllerBase
             MaterialFileNames: materialFileNames,
             StudentDifficulties: TopDifficulties(student),
             GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
-            TemplateName: templateName
+            TemplateName: templateName,
+            CurriculumObjectives: !string.IsNullOrEmpty(lesson.Objectives) ? lesson.Objectives : null
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -309,7 +310,8 @@ public class GenerateController : ControllerBase
             MaterialFileNames: materialFileNames,
             StudentDifficulties: TopDifficulties(student),
             GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
-            TemplateName: templateName
+            TemplateName: templateName,
+            CurriculumObjectives: !string.IsNullOrEmpty(lesson.Objectives) ? lesson.Objectives : null
         );
 
         var claudeRequest = buildPrompt(ctx);
@@ -355,6 +357,31 @@ public class GenerateController : ControllerBase
         _db.LessonContentBlocks.Add(block);
         await _db.SaveChangesAsync(ct);
         await _usageLimitService.RecordGenerationAsync(teacherId, blockType, ct);
+
+        if (blockType == ContentBlockType.LessonPlan)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(response.Content);
+                if (doc.RootElement.TryGetProperty("sections", out var sections))
+                {
+                    var sectionCount = sections.EnumerateObject().Count();
+                    if (sectionCount < 5)
+                        _logger.LogWarning(
+                            "Generated lesson plan has only {Count} sections (expected >= 5). LessonId={LessonId}",
+                            sectionCount, lesson.Id);
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "Generated lesson plan is missing 'sections' key. LessonId={LessonId}", lesson.Id);
+                }
+            }
+            catch (JsonException)
+            {
+                // Malformed JSON — content parsing handles this separately
+            }
+        }
 
         _logger.LogInformation(
             "Generate/{BlockType} succeeded. LessonId={LessonId} BlockId={BlockId} InputTokens={InputTokens} OutputTokens={OutputTokens}",

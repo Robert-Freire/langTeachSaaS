@@ -279,11 +279,16 @@ public class CoursesController : ControllerBase
         if (entry is null) return NotFound();
 
         var now = DateTime.UtcNow;
-        var objectives = entry.GrammarFocus is not null
-            ? $"Grammar: {entry.GrammarFocus}. Competencies: {entry.Competencies}."
-            : $"Competencies: {entry.Competencies}.";
+        var objectiveParts = new List<string>();
+        if (!string.IsNullOrEmpty(entry.GrammarFocus))
+            objectiveParts.Add($"Grammar: {entry.GrammarFocus}");
+        if (!string.IsNullOrEmpty(entry.Competencies))
+            objectiveParts.Add($"Communicative skills: {entry.Competencies}");
         if (!string.IsNullOrEmpty(entry.CompetencyFocus))
-            objectives += $" Skill focus: {entry.CompetencyFocus}.";
+            objectiveParts.Add($"CEFR skill focus: {entry.CompetencyFocus}");
+        var objectives = objectiveParts.Count > 0
+            ? string.Join(". ", objectiveParts)
+            : null;
 
         var lesson = new Lesson
         {

@@ -287,6 +287,14 @@ public class PromptService : IPromptService
                 "All five sections (warmUp, presentation, practice, production, wrapUp) are required. Do not collapse or omit any of them.";
         }
 
+        if (!string.IsNullOrWhiteSpace(ctx.CurriculumObjectives))
+        {
+            baseInstruction +=
+                "\n\nPEDAGOGICAL CONSTRAINTS (mandatory) — this lesson was generated from a planned curriculum entry:\n" +
+                $"{Sanitize(ctx.CurriculumObjectives)}\n" +
+                "All activities, examples, and scenarios MUST be designed to address these planned learning targets.";
+        }
+
         return baseInstruction;
     }
 
