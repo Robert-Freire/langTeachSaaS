@@ -38,7 +38,8 @@ function parseObjectives(raw: string): ParsedObjective[] {
 function buildSummary(objectives: ParsedObjective[], studentName: string | null): string {
   const topics = objectives.map(o => {
     const colonIdx = o.label.indexOf(':')
-    return colonIdx > -1 ? o.label.slice(colonIdx + 1).trim() : o.label
+    const raw = colonIdx > -1 ? o.label.slice(colonIdx + 1).trim() : o.label
+    return raw ? raw.charAt(0).toLowerCase() + raw.slice(1) : raw
   }).filter(Boolean)
 
   if (studentName && topics.length > 0) {
