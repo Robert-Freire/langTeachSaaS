@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronUp, ChevronDown, Pencil, Loader2, BookOpen, Check, X } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronRight, Pencil, Loader2, BookOpen, Check, X } from 'lucide-react'
 import {
   getCourse,
   reorderCurriculum,
@@ -42,6 +42,14 @@ function CompetencyBadge({ label }: { label: string }) {
   )
 }
 
+function VocabBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-block rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs text-amber-700">
+      {label}
+    </span>
+  )
+}
+
 interface EditState {
   topic: string
   grammarFocus: string
@@ -56,6 +64,7 @@ export default function CourseDetail() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editState, setEditState] = useState<EditState>({ topic: '', grammarFocus: '', competencies: '', lessonType: '' })
   const [generatingId, setGeneratingId] = useState<string | null>(null)
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   const { data: course, isLoading, isError } = useQuery({
     queryKey: ['course', id],
@@ -141,6 +150,14 @@ export default function CourseDetail() {
     })
   }
 
+  function toggleExpand(entryId: string) {
+    setExpandedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(entryId)) { next.delete(entryId) } else { next.add(entryId) }
+      return next
+    })
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -169,159 +186,231 @@ export default function CourseDetail() {
 
       {/* Curriculum list */}
       <div className="space-y-2" data-testid="curriculum-list">
-        {entries.map((entry, idx) => (
-          <div
-            key={entry.id}
-            data-testid={`curriculum-entry-${idx}`}
-            className="rounded-lg border border-zinc-200 bg-white p-4"
-          >
-            {editingId === entry.id ? (
-              <div className="space-y-3">
-                <Input
-                  data-testid="edit-topic"
-                  value={editState.topic}
-                  onChange={e => setEditState(s => ({ ...s, topic: e.target.value }))}
-                  placeholder="Topic"
-                />
-                <Input
-                  data-testid="edit-grammar"
-                  value={editState.grammarFocus}
-                  onChange={e => setEditState(s => ({ ...s, grammarFocus: e.target.value }))}
-                  placeholder="Grammar focus (optional)"
-                />
-                <Input
-                  data-testid="edit-competencies"
-                  value={editState.competencies}
-                  onChange={e => setEditState(s => ({ ...s, competencies: e.target.value }))}
-                  placeholder="Competencies (e.g. reading,speaking)"
-                />
-                <Input
-                  data-testid="edit-lesson-type"
-                  value={editState.lessonType}
-                  onChange={e => setEditState(s => ({ ...s, lessonType: e.target.value }))}
-                  placeholder="Lesson type (optional)"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    data-testid="save-entry-btn"
-                    onClick={() => saveEdit(entry.id)}
-                    disabled={updatingEntry || !editState.topic.trim()}
-                  >
-                    <Check className="h-3.5 w-3.5 mr-1" /> Save
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setEditingId(null)}
-                  >
-                    <X className="h-3.5 w-3.5 mr-1" /> Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-start gap-3">
-                {/* Order number + reorder */}
-                <div className="flex flex-col items-center gap-0.5 shrink-0">
-                  <button
-                    type="button"
-                    data-testid={`move-up-${idx}`}
-                    onClick={() => moveEntry(entry, 'up')}
-                    disabled={idx === 0}
-                    className="p-2 rounded text-zinc-400 hover:text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                    aria-label="Move up"
-                  >
-                    <ChevronUp className="h-4 w-4" />
-                  </button>
-                  <span className="text-xs font-mono text-zinc-400 w-5 text-center">{entry.orderIndex}</span>
-                  <button
-                    type="button"
-                    data-testid={`move-down-${idx}`}
-                    onClick={() => moveEntry(entry, 'down')}
-                    disabled={idx === entries.length - 1}
-                    className="p-2 rounded text-zinc-400 hover:text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                    aria-label="Move down"
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
-                </div>
+        {entries.map((entry, idx) => {
+          const isExpanded = expandedIds.has(entry.id)
+          const vocabList = entry.vocabularyThemes ? entry.vocabularyThemes.split(',').map(v => v.trim()).filter(Boolean) : []
+          const competencyList = entry.competencies.split(',').filter(Boolean)
 
-                {/* Content */}
-                <div className="flex-1 min-w-0 space-y-1.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-zinc-900">{entry.topic}</span>
-                    <Badge
-                      variant="outline"
-                      className={cn('text-xs', STATUS_CLASSES[entry.status] ?? STATUS_CLASSES.planned)}
-                    >
-                      {STATUS_LABELS[entry.status] ?? entry.status}
-                    </Badge>
-                  </div>
-                  {entry.grammarFocus && (
-                    <p className="text-xs text-zinc-500">Grammar: {entry.grammarFocus}</p>
-                  )}
-                  <div className="flex flex-wrap gap-1">
-                    {entry.competencies.split(',').filter(Boolean).map(c => (
-                      <CompetencyBadge key={c} label={c.trim()} />
-                    ))}
-                    {entry.lessonType && (
-                      <span className="inline-block rounded-full bg-zinc-50 border border-zinc-200 px-2 py-0.5 text-xs text-zinc-500">
-                        {entry.lessonType}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    data-testid={`edit-entry-${idx}`}
-                    onClick={() => startEdit(entry)}
-                    className="p-1.5 rounded text-zinc-400 hover:text-zinc-700"
-                    aria-label="Edit entry"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  {entry.status === 'created' && (
+          return (
+            <div
+              key={entry.id}
+              data-testid={`curriculum-entry-${idx}`}
+              className="rounded-lg border border-zinc-200 bg-white"
+            >
+              {editingId === entry.id ? (
+                <div className="p-4 space-y-3">
+                  <Input
+                    data-testid="edit-topic"
+                    value={editState.topic}
+                    onChange={e => setEditState(s => ({ ...s, topic: e.target.value }))}
+                    placeholder="Topic"
+                  />
+                  <Input
+                    data-testid="edit-grammar"
+                    value={editState.grammarFocus}
+                    onChange={e => setEditState(s => ({ ...s, grammarFocus: e.target.value }))}
+                    placeholder="Grammar focus (optional)"
+                  />
+                  <Input
+                    data-testid="edit-competencies"
+                    value={editState.competencies}
+                    onChange={e => setEditState(s => ({ ...s, competencies: e.target.value }))}
+                    placeholder="Competencies (e.g. reading,speaking)"
+                  />
+                  <Input
+                    data-testid="edit-lesson-type"
+                    value={editState.lessonType}
+                    onChange={e => setEditState(s => ({ ...s, lessonType: e.target.value }))}
+                    placeholder="Lesson type (optional)"
+                  />
+                  <div className="flex gap-2">
                     <Button
                       size="sm"
-                      variant="outline"
-                      data-testid={`mark-taught-${idx}`}
-                      onClick={() => doMarkTaught(entry)}
-                      className="text-xs h-7 text-green-700 border-green-200 hover:bg-green-50"
+                      data-testid="save-entry-btn"
+                      onClick={() => saveEdit(entry.id)}
+                      disabled={updatingEntry || !editState.topic.trim()}
                     >
-                      <Check className="h-3.5 w-3.5 mr-1" />
-                      Mark as taught
+                      <Check className="h-3.5 w-3.5 mr-1" /> Save
                     </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    data-testid={`generate-lesson-${idx}`}
-                    disabled={generatingLesson || entry.status !== 'planned'}
-                    onClick={() => {
-                      setGeneratingId(entry.id)
-                      doGenerateLesson(entry.id)
-                    }}
-                    className="text-xs h-7"
-                  >
-                    {generatingId === entry.id ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <>
-                        <BookOpen className="h-3.5 w-3.5 sm:mr-1" />
-                        <span className="hidden sm:inline">
-                          {entry.status === 'planned' ? 'Generate Lesson' : entry.status === 'created' ? 'Created' : 'Taught'}
-                        </span>
-                      </>
-                    )}
-                  </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingId(null)}
+                    >
+                      <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+              ) : (
+                <>
+                  {/* Collapsed header row */}
+                  <div className="flex items-start gap-3 p-4">
+                    {/* Order number + reorder */}
+                    <div className="flex flex-col items-center gap-0.5 shrink-0">
+                      <button
+                        type="button"
+                        data-testid={`move-up-${idx}`}
+                        onClick={() => moveEntry(entry, 'up')}
+                        disabled={idx === 0}
+                        className="p-2 rounded text-zinc-400 hover:text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                        aria-label="Move up"
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </button>
+                      <span className="text-xs font-mono text-zinc-400 w-5 text-center">{entry.orderIndex}</span>
+                      <button
+                        type="button"
+                        data-testid={`move-down-${idx}`}
+                        onClick={() => moveEntry(entry, 'down')}
+                        disabled={idx === entries.length - 1}
+                        className="p-2 rounded text-zinc-400 hover:text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                        aria-label="Move down"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Content summary */}
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-zinc-900">{entry.topic}</span>
+                        <Badge
+                          variant="outline"
+                          className={cn('text-xs', STATUS_CLASSES[entry.status] ?? STATUS_CLASSES.planned)}
+                        >
+                          {STATUS_LABELS[entry.status] ?? entry.status}
+                        </Badge>
+                      </div>
+                      {entry.grammarFocus && (
+                        <p className="text-xs text-zinc-500">Grammar: {entry.grammarFocus}</p>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        data-testid={`expand-entry-${idx}`}
+                        onClick={() => toggleExpand(entry.id)}
+                        className="p-1.5 rounded text-zinc-400 hover:text-zinc-700"
+                        aria-label={isExpanded ? 'Collapse entry' : 'Expand entry'}
+                        aria-expanded={isExpanded}
+                      >
+                        <ChevronRight className={cn('h-4 w-4 transition-transform', isExpanded && 'rotate-90')} />
+                      </button>
+                      <button
+                        type="button"
+                        data-testid={`edit-entry-${idx}`}
+                        onClick={() => startEdit(entry)}
+                        className="p-1.5 rounded text-zinc-400 hover:text-zinc-700"
+                        aria-label="Edit entry"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      {entry.status === 'created' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          data-testid={`mark-taught-${idx}`}
+                          onClick={() => doMarkTaught(entry)}
+                          className="text-xs h-7 text-green-700 border-green-200 hover:bg-green-50"
+                        >
+                          <Check className="h-3.5 w-3.5 mr-1" />
+                          Mark as taught
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        data-testid={`generate-lesson-${idx}`}
+                        disabled={generatingLesson || entry.status !== 'planned'}
+                        onClick={() => {
+                          setGeneratingId(entry.id)
+                          doGenerateLesson(entry.id)
+                        }}
+                        className="text-xs h-7"
+                      >
+                        {generatingId === entry.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <>
+                            <BookOpen className="h-3.5 w-3.5 sm:mr-1" />
+                            <span className="hidden sm:inline">
+                              {entry.status === 'planned' ? 'Generate Lesson' : entry.status === 'created' ? 'Created' : 'Taught'}
+                            </span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Expanded details */}
+                  {isExpanded && (
+                    <div
+                      data-testid={`entry-details-${idx}`}
+                      className="px-4 pb-4 border-t border-zinc-100 pt-3 space-y-3"
+                    >
+                      {/* Communicative skills */}
+                      {competencyList.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-zinc-500 mb-1">Skills</p>
+                          <div className="flex flex-wrap gap-1">
+                            {competencyList.map(c => (
+                              <CompetencyBadge key={c} label={c.trim()} />
+                            ))}
+                            {entry.lessonType && (
+                              <span className="inline-block rounded-full bg-zinc-50 border border-zinc-200 px-2 py-0.5 text-xs text-zinc-500">
+                                {entry.lessonType}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Vocabulary themes */}
+                      {vocabList.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-zinc-500 mb-1">Vocabulary themes</p>
+                          <div className="flex flex-wrap gap-1">
+                            {vocabList.map(v => (
+                              <VocabBadge key={v} label={v} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Personalized context */}
+                      {entry.contextDescription && (
+                        <div>
+                          <p className="text-xs font-medium text-zinc-500 mb-1">Personalized context</p>
+                          <p
+                            data-testid={`context-description-${idx}`}
+                            className="text-sm text-zinc-700 bg-blue-50 rounded-md px-3 py-2"
+                          >
+                            {entry.contextDescription}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Personalization rationale */}
+                      {entry.personalizationNotes && (
+                        <div>
+                          <p className="text-xs font-medium text-zinc-500 mb-1">Personalization rationale</p>
+                          <p
+                            data-testid={`personalization-notes-${idx}`}
+                            className="text-xs text-zinc-500 italic"
+                          >
+                            {entry.personalizationNotes}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
