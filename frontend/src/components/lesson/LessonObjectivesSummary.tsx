@@ -71,9 +71,9 @@ export function LessonObjectivesSummary({ objectives, studentName }: LessonObjec
             {summary}
           </p>
           <div className="flex flex-wrap gap-1.5" data-testid="objectives-pills">
-            {parsed.map((obj, i) => (
+            {parsed.map((obj) => (
               <span
-                key={i}
+                key={obj.label}
                 className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${CATEGORY_STYLES[obj.category]}`}
               >
                 {obj.label}

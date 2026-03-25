@@ -64,6 +64,17 @@ describe('LessonObjectivesSummary', () => {
     expect(cefrPill.className).toContain('amber')
   })
 
+  it('applies orange style for vocabulary category', () => {
+    render(
+      <LessonObjectivesSummary objectives="Vocabulary: daily routines" studentName={null} />
+    )
+
+    const pills = screen.getByTestId('objectives-pills')
+    expect(pills.children).toHaveLength(1)
+    expect(pills).toHaveTextContent('Vocabulary: daily routines')
+    expect((pills.children[0] as HTMLElement).className).toContain('orange')
+  })
+
   it('handles single objective without trailing period', () => {
     render(
       <LessonObjectivesSummary objectives="Vocabulary: daily routines" studentName={null} />
