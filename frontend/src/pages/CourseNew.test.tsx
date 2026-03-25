@@ -21,11 +21,11 @@ vi.mock('../api/curricula', () => ({
   getMappingPreview: vi.fn(),
 }))
 
-function wrapper(ui: React.ReactElement) {
+function wrapper(ui: React.ReactElement, initialEntry = '/courses/new') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>{ui}</MemoryRouter>
+      <MemoryRouter initialEntries={[initialEntry]}>{ui}</MemoryRouter>
     </QueryClientProvider>
   )
 }
@@ -364,6 +364,59 @@ describe('CourseNew wizard', () => {
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({ sessionCount: 10 })
       )
+    })
+  })
+
+  describe('locked student via ?studentId param', () => {
+    const STUDENT_MARCO = {
+      items: [{
+        id: 'student-1', name: 'Marco', cefrLevel: 'B1',
+        learningLanguage: 'Spanish', interests: [], notes: null,
+        nativeLanguage: null, learningGoals: [], weaknesses: [],
+        difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01',
+      }],
+      totalCount: 1, page: 1, pageSize: 100,
+    }
+
+    it('shows student name as read-only text when ?studentId param is present', async () => {
+      vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT_MARCO)
+      wrapper(<CourseNew />, '/courses/new?studentId=student-1')
+
+      const locked = await screen.findByTestId('student-locked')
+      expect(locked).toBeInTheDocument()
+      expect(locked).toHaveTextContent('Marco')
+      expect(screen.queryByTestId('student-select')).not.toBeInTheDocument()
+    })
+
+    it('shows skeleton while students list is loading when locked student', async () => {
+      vi.mocked(studentsApi.getStudents).mockReturnValue(new Promise(() => {}))
+      wrapper(<CourseNew />, '/courses/new?studentId=student-1')
+
+      expect(screen.getByTestId('student-locked-loading')).toBeInTheDocument()
+      expect(screen.queryByTestId('student-select')).not.toBeInTheDocument()
+    })
+
+    it('auto-fills language and CEFR level from locked student', async () => {
+      vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT_MARCO)
+      wrapper(<CourseNew />, '/courses/new?studentId=student-1')
+
+      await screen.findByTestId('student-locked')
+
+      // The language and CEFR selects should be pre-filled from the student
+      const languageTrigger = screen.getByTestId('language-select')
+      expect(languageTrigger).toHaveTextContent('Spanish')
+
+      const cefrTrigger = screen.getByTestId('cefr-select')
+      expect(cefrTrigger).toHaveTextContent('B1')
+    })
+
+    it('student selector shows normal dropdown without ?studentId param', async () => {
+      vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT_MARCO)
+      wrapper(<CourseNew />)
+
+      const select = await screen.findByTestId('student-select')
+      expect(select).toBeInTheDocument()
+      expect(screen.queryByTestId('student-locked')).not.toBeInTheDocument()
     })
   })
 

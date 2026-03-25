@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { GraduationCap, BookOpen, Loader2 } from 'lucide-react'
 import { createCourse, type CreateCourseRequest, type CourseMode } from '../api/courses'
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/utils'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
@@ -25,6 +26,8 @@ const SESSION_COUNTS = [5, 8, 10, 12, 15, 20]
 
 export default function CourseNew() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const lockedStudentId = searchParams.get('studentId') ?? undefined
 
   const [mode, setMode] = useState<CourseMode>('general')
   const [name, setName] = useState('')
@@ -33,7 +36,7 @@ export default function CourseNew() {
   const [targetExam, setTargetExam] = useState('')
   const [examDate, setExamDate] = useState('')
   const [sessionCount, setSessionCount] = useState('10')
-  const [studentId, setStudentId] = useState<string | undefined>()
+  const [studentId, setStudentId] = useState<string | undefined>(lockedStudentId)
   const [useTemplate, setUseTemplate] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
   const [teacherNotes, setTeacherNotes] = useState('')
@@ -59,6 +62,16 @@ export default function CourseNew() {
   })
 
   const students = studentsData?.items ?? []
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!lockedStudentId || students.length === 0) return
+    const student = students.find(s => s.id === lockedStudentId)
+    if (!student) return
+    if (!language) setLanguage(student.learningLanguage)
+    if (!targetCefrLevel) setTargetCefrLevel(student.cefrLevel)
+  }, [students, lockedStudentId]) // eslint-disable-line react-hooks/exhaustive-deps
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const { mutate: doCreate, isPending } = useMutation({
     mutationFn: () => {
@@ -292,15 +305,28 @@ export default function CourseNew() {
             </Select>
           </div>
 
-          {/* Student (optional) */}
-          {students.length > 0 && (
+          {/* Student */}
+          {lockedStudentId ? (
+            <div className="space-y-1.5">
+              <Label>Student</Label>
+              {students.length === 0
+                ? <Skeleton className="h-9 w-full" data-testid="student-locked-loading" />
+                : <div
+                    className="flex h-9 w-full items-center rounded-md border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-700"
+                    data-testid="student-locked"
+                  >
+                    {students.find(s => s.id === lockedStudentId)?.name ?? lockedStudentId}
+                  </div>
+              }
+            </div>
+          ) : students.length > 0 ? (
             <div className="space-y-1.5">
               <Label>Student (optional)</Label>
               <Select value={studentId ?? 'none'} onValueChange={v => {
-              const next = v == null || v === 'none' ? undefined : v
-              setStudentId(next)
-              if (!next) setTeacherNotes('')
-            }}>
+                const next = v == null || v === 'none' ? undefined : v
+                setStudentId(next)
+                if (!next) setTeacherNotes('')
+              }}>
                 <SelectTrigger data-testid="student-select">
                   {studentId
                     ? <span>{students.find(s => s.id === studentId)?.name ?? 'No specific student'}</span>
@@ -315,7 +341,7 @@ export default function CourseNew() {
                 </SelectContent>
               </Select>
             </div>
-          )}
+          ) : null}
 
           {/* Student profile summary */}
           {studentId && (() => {

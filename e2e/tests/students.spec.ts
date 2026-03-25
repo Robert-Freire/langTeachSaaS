@@ -298,3 +298,50 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
 
   await context.close()
 })
+
+test('"Create Course" button on student edit page navigates to CourseNew with student pre-selected', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  // Create a student with full profile
+  const studentName = `Create Course Test ${Date.now()}`
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: 10000 })
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B2' }).click()
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL('/students', { timeout: 10000 })
+
+  // Navigate to edit page via edit button
+  const studentCard = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await expect(studentCard).toBeVisible({ timeout: 10000 })
+  await studentCard.getByTestId('edit-student').click()
+  await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: 10000 })
+
+  // Capture the student ID from the edit URL
+  const editUrl = page.url()
+  const studentId = editUrl.match(/\/students\/([^/]+)\/edit/)?.[1]
+  expect(studentId).toBeTruthy()
+
+  // "Create Course" button should be visible and enabled (profile is complete)
+  const createCourseBtn = page.getByTestId('create-course-btn')
+  await expect(createCourseBtn).toBeVisible({ timeout: 5000 })
+  await expect(createCourseBtn).not.toBeDisabled()
+
+  // Click it and verify navigation
+  await createCourseBtn.click()
+  await expect(page).toHaveURL(`/courses/new?studentId=${studentId}`, { timeout: 10000 })
+
+  // Student should appear as locked (not a dropdown)
+  const lockedStudent = page.getByTestId('student-locked')
+  await expect(lockedStudent).toBeVisible({ timeout: 10000 })
+  await expect(lockedStudent).toContainText(studentName)
+  await expect(page.getByTestId('student-select')).not.toBeVisible()
+
+  await context.close()
+})
