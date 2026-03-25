@@ -24,7 +24,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_CLASSES: Record<string, string> = {
-  planned: 'text-zinc-500 border-zinc-200',
+  planned: 'text-zinc-500 border-zinc-200 bg-zinc-50',
   created: 'text-blue-700 border-blue-200 bg-blue-50',
   taught: 'text-green-700 border-green-200 bg-green-50',
 }
@@ -292,12 +292,12 @@ export default function CourseDetail() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex flex-wrap items-center gap-1 shrink-0">
                       <button
                         type="button"
                         data-testid={`expand-entry-${idx}`}
                         onClick={() => toggleExpand(entry.id)}
-                        className="p-1.5 rounded text-zinc-400 hover:text-zinc-700"
+                        className="p-2.5 rounded-md text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100"
                         aria-label={isExpanded ? 'Collapse entry' : 'Expand entry'}
                         aria-expanded={isExpanded}
                       >
@@ -307,7 +307,7 @@ export default function CourseDetail() {
                         type="button"
                         data-testid={`edit-entry-${idx}`}
                         onClick={() => startEdit(entry)}
-                        className="p-1.5 rounded text-zinc-400 hover:text-zinc-700"
+                        className="p-2.5 rounded-md text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
                         aria-label="Edit entry"
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -318,10 +318,10 @@ export default function CourseDetail() {
                           variant="outline"
                           data-testid={`mark-taught-${idx}`}
                           onClick={() => doMarkTaught(entry)}
-                          className="text-xs h-7 text-green-700 border-green-200 hover:bg-green-50"
+                          className="text-xs h-9 min-w-[44px] text-green-700 border-green-200 hover:bg-green-50"
                         >
-                          <Check className="h-3.5 w-3.5 mr-1" />
-                          Mark as taught
+                          <Check className="h-3.5 w-3.5 sm:mr-1" />
+                          <span className="hidden sm:inline">Mark as taught</span>
                         </Button>
                       )}
                       <Button
@@ -333,7 +333,7 @@ export default function CourseDetail() {
                           setGeneratingId(entry.id)
                           doGenerateLesson(entry.id)
                         }}
-                        className="text-xs h-7"
+                        className="text-xs h-9 min-w-[44px]"
                       >
                         {generatingId === entry.id ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -390,7 +390,7 @@ export default function CourseDetail() {
                           <p className="text-xs font-medium text-zinc-500 mb-1">Personalized context</p>
                           <p
                             data-testid={`context-description-${idx}`}
-                            className="text-sm text-zinc-700 bg-blue-50 rounded-md px-3 py-2"
+                            className="text-sm text-zinc-700 bg-blue-50 border border-blue-100 rounded-md px-3 py-2"
                           >
                             {entry.contextDescription}
                           </p>
