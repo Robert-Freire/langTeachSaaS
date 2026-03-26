@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { BookOpen, MessageSquare, FileText, PenLine, GraduationCap, Plus, ArrowLeft } from 'lucide-react'
 import { getLessonTemplates, createLesson, type LessonTemplate } from '../api/lessons'
 import { getStudents } from '../api/students'
@@ -31,15 +31,22 @@ const TEMPLATE_ICONS: Record<string, React.ReactNode> = {
 export default function LessonNew() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [step, setStep] = useState<1 | 2>(1)
+  const queryClient = useQueryClient()
+
+  const courseId = searchParams.get('courseId') ?? undefined
+  const entryId = searchParams.get('entryId') ?? undefined
+
+  const [step, setStep] = useState<1 | 2>(entryId ? 2 : 1)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
 
-  const [title, setTitle] = useState('')
-  const [language, setLanguage] = useState('')
-  const [cefrLevel, setCefrLevel] = useState('')
-  const [topic, setTopic] = useState('')
+  const grammarParam = searchParams.get('grammar')
+
+  const [title, setTitle] = useState(searchParams.get('topic') ?? '')
+  const [language, setLanguage] = useState(searchParams.get('language') ?? '')
+  const [cefrLevel, setCefrLevel] = useState(searchParams.get('level') ?? '')
+  const [topic, setTopic] = useState(searchParams.get('topic') ?? '')
   const [duration, setDuration] = useState('60')
-  const [objectives, setObjectives] = useState('')
+  const [objectives, setObjectives] = useState(grammarParam ? `Grammar focus: ${grammarParam}` : '')
   const [studentId, setStudentId] = useState<string | undefined>(searchParams.get('studentId') ?? undefined)
   const [scheduledAt, setScheduledAt] = useState(searchParams.get('scheduledAt') ?? '')
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -72,9 +79,14 @@ export default function LessonNew() {
       templateId: selectedTemplateId,
       studentId: studentId ?? null,
       scheduledAt: scheduledAt || undefined,
+      courseId,
+      courseEntryId: entryId,
     }),
     onSuccess: (lesson) => {
       logger.info('LessonNew', 'lesson created', { id: lesson.id, templateId: selectedTemplateId })
+      if (courseId) {
+        queryClient.invalidateQueries({ queryKey: ['course', courseId] })
+      }
       navigate(`/lessons/${lesson.id}`)
     },
     onError: (err) => {

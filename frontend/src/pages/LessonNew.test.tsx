@@ -166,4 +166,47 @@ describe('LessonNew', () => {
     expect(hint).toBeInTheDocument()
     expect(hint.textContent).toContain('auto-fills language and level')
   })
+
+  // -------------------------------------------------------------------------
+  // Course entry pre-fill
+  // -------------------------------------------------------------------------
+
+  describe('pre-fill from course entry params', () => {
+    const COURSE_PARAMS = '/lessons/new?courseId=c1&entryId=e1&language=Spanish&level=B1&topic=Daily+Routines&grammar=Present+simple'
+
+    it('auto-advances to step 2 when entryId param is present', () => {
+      renderWithProviders([COURSE_PARAMS])
+      expect(screen.getByText('Lesson Details')).toBeInTheDocument()
+    })
+
+    it('pre-fills title from topic param', () => {
+      renderWithProviders([COURSE_PARAMS])
+      expect(screen.getByTestId('input-title')).toHaveValue('Daily Routines')
+    })
+
+    it('pre-fills topic from topic param', () => {
+      renderWithProviders([COURSE_PARAMS])
+      expect(screen.getByTestId('input-topic')).toHaveValue('Daily Routines')
+    })
+
+    it('pre-fills language from language param', () => {
+      renderWithProviders([COURSE_PARAMS])
+      expect(screen.getByTestId('select-language').textContent).toContain('Spanish')
+    })
+
+    it('pre-fills CEFR level from level param', () => {
+      renderWithProviders([COURSE_PARAMS])
+      expect(screen.getByTestId('select-level').textContent).toContain('B1')
+    })
+
+    it('pre-fills objectives with grammar hint from grammar param', () => {
+      renderWithProviders([COURSE_PARAMS])
+      expect(screen.getByTestId('input-objectives')).toHaveValue('Grammar focus: Present simple')
+    })
+
+    it('does not pre-fill objectives when grammar param is absent', () => {
+      renderWithProviders(['/lessons/new?courseId=c1&entryId=e1&topic=Topic'])
+      expect(screen.getByTestId('input-objectives')).toHaveValue('')
+    })
+  })
 })

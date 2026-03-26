@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   DndContext,
@@ -24,25 +24,24 @@ import {
   Pencil,
   Trash2,
   Plus,
-  Loader2,
   BookOpen,
   Check,
   X,
   AlertTriangle,
+  ExternalLink,
 } from 'lucide-react'
 import {
   getCourse,
   reorderCurriculum,
   updateCurriculumEntry,
   markEntryAsTaught,
-  generateLessonFromEntry,
   addCurriculumEntry,
   deleteCurriculumEntry,
   dismissWarning,
   type CurriculumEntry,
   type CurriculumWarning,
 } from '../api/courses'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -61,13 +60,13 @@ import { cn } from '@/lib/utils'
 import { logger } from '../lib/logger'
 
 const STATUS_LABELS: Record<string, string> = {
-  planned: 'Planned',
-  created: 'Created',
-  taught: 'Taught',
+  planned: 'Not generated',
+  created: 'Draft',
+  taught: 'Ready',
 }
 
 const STATUS_CLASSES: Record<string, string> = {
-  planned: 'text-zinc-500 border-zinc-200 bg-zinc-50',
+  planned: 'text-amber-700 border-amber-200 bg-amber-50',
   created: 'text-blue-700 border-blue-200 bg-blue-50',
   taught: 'text-green-700 border-green-200 bg-green-50',
 }
@@ -122,15 +121,13 @@ interface SortableEntryRowProps {
   isEditing: boolean
   editState: EditState
   updatingEntry: boolean
-  generatingId: string | null
-  generatingLesson: boolean
+  generateLessonUrl: string
   onToggleExpand: (id: string) => void
   onStartEdit: (entry: CurriculumEntry) => void
   onCancelEdit: () => void
   onSaveEdit: (entryId: string) => void
   onEditStateChange: (field: keyof EditState, value: string) => void
   onMarkTaught: (entry: CurriculumEntry) => void
-  onGenerateLesson: (entryId: string) => void
   onRequestDelete: (entryId: string) => void
 }
 
@@ -141,15 +138,13 @@ function SortableEntryRow({
   isEditing,
   editState,
   updatingEntry,
-  generatingId,
-  generatingLesson,
+  generateLessonUrl,
   onToggleExpand,
   onStartEdit,
   onCancelEdit,
   onSaveEdit,
   onEditStateChange,
   onMarkTaught,
-  onGenerateLesson,
   onRequestDelete,
 }: SortableEntryRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: entry.id })
@@ -286,25 +281,28 @@ function SortableEntryRow({
                   <span className="hidden sm:inline">Mark as taught</span>
                 </Button>
               )}
-              <Button
-                size="sm"
-                variant="outline"
-                data-testid={`generate-lesson-${idx}`}
-                disabled={generatingLesson || entry.status !== 'planned'}
-                onClick={() => onGenerateLesson(entry.id)}
-                className="text-xs h-9 min-w-[44px]"
-              >
-                {generatingId === entry.id ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <>
-                    <BookOpen className="h-3.5 w-3.5 sm:mr-1" />
-                    <span className="hidden sm:inline">
-                      {entry.status === 'planned' ? 'Generate Lesson' : entry.status === 'created' ? 'Created' : 'Taught'}
-                    </span>
-                  </>
-                )}
-              </Button>
+              {entry.status === 'planned' && (
+                <Link
+                  to={generateLessonUrl}
+                  data-testid={`generate-lesson-${idx}`}
+                  className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), 'text-xs h-9 min-w-[44px]')}
+                >
+                  <BookOpen className="h-3.5 w-3.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Generate lesson</span>
+                </Link>
+              )}
+              {(entry.status === 'created' || entry.status === 'taught') && entry.lessonId && (
+                <Link
+                  to={`/lessons/${entry.lessonId}`}
+                  data-testid={`lesson-link-${idx}`}
+                  className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), 'text-xs h-9 min-w-[44px]')}
+                >
+                  <ExternalLink className="h-3.5 w-3.5 sm:mr-1" />
+                  <span className="hidden sm:inline">
+                    {entry.status === 'created' ? 'Edit lesson' : 'View lesson'}
+                  </span>
+                </Link>
+              )}
             </div>
           </div>
 
@@ -434,11 +432,9 @@ function GenerationWarningsPanel({
 
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editState, setEditState] = useState<EditState>({ topic: '', grammarFocus: '', competencies: '', lessonType: '' })
-  const [generatingId, setGeneratingId] = useState<string | null>(null)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [expandedForCourseId, setExpandedForCourseId] = useState<string | undefined>(id)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
@@ -480,15 +476,6 @@ export default function CourseDetail() {
     mutationFn: (entry: CurriculumEntry) => markEntryAsTaught(id!, entry.id, entry),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course', id] }),
     onError: (err) => logger.error('CourseDetail', 'mark taught failed', err),
-  })
-
-  const { mutate: doGenerateLesson, isPending: generatingLesson } = useMutation({
-    mutationFn: (entryId: string) => generateLessonFromEntry(id!, entryId),
-    onSuccess: ({ lessonId }) => {
-      queryClient.invalidateQueries({ queryKey: ['course', id] })
-      navigate(`/lessons/${lessonId}`)
-    },
-    onSettled: () => setGeneratingId(null),
   })
 
   const { mutate: doAddEntry, isPending: addingEntry } = useMutation({
@@ -591,6 +578,20 @@ export default function CourseDetail() {
     })
   }
 
+  function buildGenerateLessonUrl(entry: CurriculumEntry): string {
+    // course is guaranteed non-null here (early return above handles !course)
+    const c = course!
+    const params = new URLSearchParams()
+    if (c.studentId) params.set('studentId', c.studentId)
+    if (c.language) params.set('language', c.language)
+    if (c.targetCefrLevel) params.set('level', c.targetCefrLevel)
+    if (entry.topic) params.set('topic', entry.topic)
+    if (entry.grammarFocus) params.set('grammar', entry.grammarFocus)
+    params.set('courseId', c.id)
+    params.set('entryId', entry.id)
+    return `/lessons/new?${params.toString()}`
+  }
+
   const progressPercent = course.sessionCount > 0
     ? (course.lessonsCreated / course.sessionCount) * 100
     : 0
@@ -663,18 +664,13 @@ export default function CourseDetail() {
                 isEditing={editingId === entry.id}
                 editState={editState}
                 updatingEntry={updatingEntry}
-                generatingId={generatingId}
-                generatingLesson={generatingLesson}
+                generateLessonUrl={buildGenerateLessonUrl(entry)}
                 onToggleExpand={toggleExpand}
                 onStartEdit={startEdit}
                 onCancelEdit={() => setEditingId(null)}
                 onSaveEdit={saveEdit}
                 onEditStateChange={(field, value) => setEditState(s => ({ ...s, [field]: value }))}
                 onMarkTaught={doMarkTaught}
-                onGenerateLesson={(entryId) => {
-                  setGeneratingId(entryId)
-                  doGenerateLesson(entryId)
-                }}
                 onRequestDelete={(id) => setConfirmDeleteId(id)}
               />
             ))}
