@@ -54,6 +54,7 @@
 - [All code/config changes require PR review](feedback_code_changes_require_review.md) — never push code, config, or dependency changes directly to main or sprint; must go through worktree + PR + review
 - [Update sprint references on creation](feedback_sprint_creation_updates.md) — when creating/closing milestones, update sprint overviews, PM skill story pointer, and task status memory
 - [Verify issues after creation](feedback_verify_issues_after_creation.md) — always verify correct milestone AND board visibility after creating issues; never hardcode milestone numbers; issues in wrong milestone are invisible to bots
+- [Epic management policy](feedback_epic_management.md) — epics are temporary placeholders; close them immediately when split, never keep open as parent containers; all sprint work through flat independent issues
 
 ## Reference
 - [Audio transcription method](reference_audio_transcription.md) — transcribe audio files locally using OpenAI Whisper + ffmpeg
