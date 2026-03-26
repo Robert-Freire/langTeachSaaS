@@ -434,6 +434,35 @@ describe('StudentForm', () => {
     expect(remaining.some((c) => c.textContent?.includes('Past Tenses'))).toBe(true)
   })
 
+  it('shows "Create Course" button and navigates correctly for a complete profile in edit mode', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderEdit()
+    const btn = await screen.findByTestId('create-course-btn')
+    expect(btn).toBeInTheDocument()
+    expect(btn).not.toBeDisabled()
+    await user.click(btn)
+    expect(mockNavigate).toHaveBeenCalledWith('/courses/new?studentId=stu-1')
+  })
+
+  it('"Create Course" button is disabled when student is missing CEFR level', async () => {
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1',
+      name: 'Ana',
+      learningLanguage: 'Spanish',
+      cefrLevel: '',
+      interests: [],
+      nativeLanguage: null,
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+      notes: '',
+    })
+    renderEdit()
+    const btn = await screen.findByTestId('create-course-btn')
+    expect(btn).toBeDisabled()
+  })
+
   it('allows adding a custom free-text weakness', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
     const user = userEvent.setup()
