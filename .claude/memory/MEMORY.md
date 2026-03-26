@@ -44,6 +44,7 @@
 - [Add issues to project board](feedback_add_issues_to_project.md) — always add new issues to the project board immediately after creation; has been forgotten before
 - [Verify project board after sprint prep](feedback_verify_project_board.md) — after preparing a sprint, verify the board matches expectations (columns, priorities, all items visible)
 - [Assign issue when picked](feedback_assign_issue_when_picked.md) — immediately self-assign the GitHub issue when picking a task, before any other work, so other agents don't pick it
+- [Self-assign issues via gh CLI only](feedback_self_assign_issues.md) — always use `gh issue edit <N> --add-assignee "@me"`, never MCP tool; MCP has no @me support and assigns to Robert-Freire by mistake
 - [Reply with understanding before acting](feedback_reply_before_acting.md) — after receiving feedback, reply with summary + planned issues, wait 4 days for corrections before creating issues
 - [Report observations not acted upon](feedback_report_noted_not_acted.md) — at the end of every summary, list things noticed but deferred so nothing silently drops
 - [Update dev-workflow.md on workflow changes](feedback_update_dev_workflow_doc.md) — any change to CLAUDE.md, agents, or skills must also update docs/dev-workflow.md
