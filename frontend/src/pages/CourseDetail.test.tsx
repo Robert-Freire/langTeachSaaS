@@ -14,6 +14,7 @@ vi.mock('../api/courses', () => ({
   generateLessonFromEntry: vi.fn(),
   addCurriculumEntry: vi.fn(),
   deleteCurriculumEntry: vi.fn(),
+  dismissWarning: vi.fn(),
 }))
 
 // Capture the onDragEnd handler from DndContext so we can trigger it in tests
@@ -63,6 +64,8 @@ const mockCourse = {
     { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: null, competencies: 'reading', lessonType: null, lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
     { id: 'e3', orderIndex: 3, topic: 'Hobbies', grammarFocus: 'Present continuous', competencies: 'writing', lessonType: 'Grammar-focused', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
   ],
+  warnings: null,
+  dismissedWarningKeys: null,
 }
 
 const mockCourseWithPersonalization = {
@@ -311,5 +314,61 @@ describe('CourseDetail', () => {
     // e2 should come before e1 in the call
     const call = vi.mocked(coursesApi.reorderCurriculum).mock.calls[0]
     expect(call[1].indexOf('e2')).toBeLessThan(call[1].indexOf('e1'))
+  })
+
+  it('shows error state with retry button when fetch fails', async () => {
+    vi.mocked(coursesApi.getCourse).mockRejectedValue(new Error('network error'))
+    wrapper(<CourseDetail />)
+
+    expect(await screen.findByTestId('course-load-error')).toBeInTheDocument()
+    expect(screen.getByText('Failed to load course.')).toBeInTheDocument()
+    expect(screen.getByTestId('course-load-retry-btn')).toBeInTheDocument()
+  })
+
+  describe('generation warnings panel', () => {
+    const warningCourse = {
+      ...mockCourse,
+      warnings: [
+        { sessionIndex: 1, grammarFocus: 'Subjunctive Mood', flagReason: 'C1 structure, above A1.', suggestedLevel: 'C1' },
+      ],
+      dismissedWarningKeys: null,
+    }
+
+    it('does not render warnings panel when warnings is null', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      expect(screen.queryByTestId('warnings-panel')).not.toBeInTheDocument()
+    })
+
+    it('renders warnings panel when warnings are present', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(warningCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('warnings-panel')
+      expect(screen.getByText(/Subjunctive Mood/)).toBeInTheDocument()
+      expect(screen.getByText(/C1 structure/)).toBeInTheDocument()
+    })
+
+    it('calls dismissWarning when dismiss button clicked', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(warningCourse)
+      vi.mocked(coursesApi.dismissWarning).mockResolvedValue(undefined)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('warnings-panel')
+      fireEvent.click(screen.getByTestId('dismiss-warning-1'))
+      await waitFor(() => {
+        expect(coursesApi.dismissWarning).toHaveBeenCalledWith('course-1', 'session:1:Subjunctive Mood')
+      })
+    })
+
+    it('shows clear badge when all warnings are dismissed', async () => {
+      const clearedCourse = {
+        ...warningCourse,
+        dismissedWarningKeys: ['session:1:Subjunctive Mood'],
+      }
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(clearedCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('warnings-panel-clear')
+      expect(screen.getByText(/All grammar structures are level-appropriate/)).toBeInTheDocument()
+    })
   })
 })

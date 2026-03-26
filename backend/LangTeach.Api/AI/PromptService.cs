@@ -59,6 +59,13 @@ public class PromptService : IPromptService
                 sb.AppendLine($"- {Sanitize(g)}");
         }
 
+        if (!string.IsNullOrWhiteSpace(ctx.TeacherGrammarConstraints))
+        {
+            sb.AppendLine();
+            sb.AppendLine("Additional grammar instructions from the teacher:");
+            sb.AppendLine(Sanitize(ctx.TeacherGrammarConstraints));
+        }
+
         if (ctx.StudentName is not null)
         {
             var interests  = ctx.StudentInterests?.Select(Sanitize).Where(s => s.Length > 0).ToArray() ?? [];

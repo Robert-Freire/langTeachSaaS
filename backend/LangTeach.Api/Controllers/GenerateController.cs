@@ -5,6 +5,7 @@ using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -22,6 +23,7 @@ public class GenerateController : ControllerBase
     private readonly IMaterialService _materialService;
     private readonly IUsageLimitService _usageLimitService;
     private readonly ICurriculumTemplateService _templateService;
+    private readonly ILessonService _lessonService;
     private readonly AppDbContext _db;
     private readonly ILogger<GenerateController> _logger;
 
@@ -33,6 +35,7 @@ public class GenerateController : ControllerBase
         IMaterialService materialService,
         IUsageLimitService usageLimitService,
         ICurriculumTemplateService templateService,
+        ILessonService lessonService,
         AppDbContext db,
         ILogger<GenerateController> logger)
     {
@@ -43,6 +46,7 @@ public class GenerateController : ControllerBase
         _materialService = materialService;
         _usageLimitService = usageLimitService;
         _templateService = templateService;
+        _lessonService = lessonService;
         _db = db;
         _logger = logger;
     }
@@ -164,7 +168,8 @@ public class GenerateController : ControllerBase
             StudentDifficulties: TopDifficulties(student),
             GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
             TemplateName: templateName,
-            CurriculumObjectives: lesson.Objectives
+            CurriculumObjectives: lesson.Objectives,
+            TeacherGrammarConstraints: request.GrammarConstraints
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -311,7 +316,8 @@ public class GenerateController : ControllerBase
             StudentDifficulties: TopDifficulties(student),
             GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
             TemplateName: templateName,
-            CurriculumObjectives: lesson.Objectives
+            CurriculumObjectives: lesson.Objectives,
+            TeacherGrammarConstraints: request.GrammarConstraints
         );
 
         var claudeRequest = buildPrompt(ctx);
@@ -361,6 +367,8 @@ public class GenerateController : ControllerBase
             }
         }
 
+        await _lessonService.EnsureLearningTargetsAsync(lesson, ct);
+
         var block = new LessonContentBlock
         {
             Id = Guid.NewGuid(),
@@ -377,6 +385,7 @@ public class GenerateController : ControllerBase
                 request.StudentId,
                 request.ExistingNotes,
                 request.Direction,
+                request.GrammarConstraints,
                 targetedDifficulties = ctx.StudentDifficulties
             }),
             CreatedAt = DateTime.UtcNow,

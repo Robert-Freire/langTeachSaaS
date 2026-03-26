@@ -8,7 +8,8 @@ public record StudyLessonDto(
     string Language,
     string CefrLevel,
     string Topic,
-    IReadOnlyList<StudySectionDto> Sections);
+    IReadOnlyList<StudySectionDto> Sections,
+    string[]? LearningTargets);
 
 public record StudySectionDto(
     Guid Id,

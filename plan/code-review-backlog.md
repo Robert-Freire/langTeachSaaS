@@ -97,6 +97,14 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 ---
 
+### PR TBD (2026-03-25) — Regenerate button toggle (#142)
+
+| Severity | Finding |
+|----------|---------|
+| Important | `LessonEditor.tsx:792`: toggle condition `generateOpen === type ? closeGeneratePanel() : setGenerateOpen(type)` is untested. No LessonEditor test file exists; adding one requires mocking router, auth, and multiple APIs — disproportionate for a one-liner. Low risk given the logic mirrors the adjacent Generate button pattern. |
+
+---
+
 ### PR (2026-03-22) — Fix Reading & Comprehension template (#227)
 
 | Severity | Finding |
