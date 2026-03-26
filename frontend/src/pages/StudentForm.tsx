@@ -34,6 +34,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
+import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
 import { PageHeader } from '@/components/PageHeader'
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
@@ -642,6 +643,7 @@ export default function StudentForm() {
         </Card>
       </form>
 
+      {isEdit && id && <StudentCoursesCard studentId={id} />}
       {isEdit && id && <LessonHistoryCard studentId={id} />}
     </div>
   )
