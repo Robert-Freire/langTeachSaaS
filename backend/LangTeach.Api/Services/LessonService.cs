@@ -341,10 +341,14 @@ public class LessonService : ILessonService
             .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
         if (lesson is null) return null;
 
-        // Sanitize: trim and cap each label at 200 chars
-        var sanitized = labels?.Select(l => l.Trim()).Where(l => l.Length > 0)
-            .Select(l => l.Length > 200 ? l[..200] : l).ToArray();
-        lesson.LearningTargets = sanitized is { Length: > 0 } ? JsonSerializer.Serialize(sanitized) : null;
+        // Sanitize: filter nulls, trim, and cap each label at 200 chars
+        var sanitized = labels?
+            .Where(l => !string.IsNullOrWhiteSpace(l))
+            .Select(l => l!.Trim())
+            .Select(l => l.Length > 200 ? l[..200] : l)
+            .ToArray();
+        // Store "[]" for teacher-cleared (distinct from null = never initialized)
+        lesson.LearningTargets = JsonSerializer.Serialize(sanitized ?? Array.Empty<string>());
         lesson.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Learning targets updated. TeacherId={TeacherId} LessonId={LessonId}", teacherId, lessonId);
@@ -353,6 +357,7 @@ public class LessonService : ILessonService
 
     public async Task EnsureLearningTargetsAsync(Lesson lesson, CancellationToken cancellationToken = default)
     {
+        // null = never initialized; any non-null value (including "[]" for teacher-cleared) = already decided
         if (lesson.LearningTargets is not null) return;
         var entry = await _db.CurriculumEntries
             .FirstOrDefaultAsync(e => e.LessonId == lesson.Id && !e.IsDeleted, cancellationToken);
@@ -394,7 +399,12 @@ public class LessonService : ILessonService
     private static string[]? DeserializeLearningTargets(string? json)
     {
         if (json is null) return null;
-        try { return JsonSerializer.Deserialize<string[]>(json); }
+        try
+        {
+            var result = JsonSerializer.Deserialize<string[]>(json);
+            // "[]" = teacher explicitly cleared; expose as null to the DTO
+            return result is { Length: > 0 } ? result : null;
+        }
         catch { return null; }
     }
 
