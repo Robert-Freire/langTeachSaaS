@@ -103,3 +103,10 @@ All findings are pre-existing, unrelated to this PR's change:
 - **[Important I1]** StudentForm edit (mobile 375px): Header action buttons ("Create Course", "Cancel", "Update Student") overlap the subtitle text at the smallest breakpoint. Pre-existing PageHeader layout issue compounded by 3 buttons in the actions area.
 - **[Minor M1]** StudentForm edit: "Create Course" and "Cancel" both use `variant="outline"` with identical visual weight. Cancel is dismissive; Create Course is constructive — subtle differentiation would improve scannability.
 - **[Minor M3]** CourseNew locked student: No secondary text explains why the student cannot be changed (lock icon added but no label like "Assigned from student profile"). Functional but lower affordance than ideal.
+
+## PR #291 - Session-to-lesson navigation (2026-03-26)
+| Severity | Finding |
+|----------|---------|
+| important | CourseDetail: "Generate lesson" Link+buttonVariants may lack visible focus ring on keyboard nav. Pre-existing pattern (CoursesOverview also uses Link+buttonVariants). Add focus-visible styles explicitly or use a wrapper button. |
+
+_Note: I4 (pre-fill not working) and M3 (badge states) were false positives — verified passing in e2e stack via 5/5 Playwright tests including "course detail all badge states" and "lesson new step 2 pre-filled from entryId"._

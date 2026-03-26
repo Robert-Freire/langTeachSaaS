@@ -55,6 +55,8 @@ export interface CreateLessonRequest {
   templateId?: string | null
   studentId?: string | null
   scheduledAt?: string | null
+  courseId?: string
+  courseEntryId?: string
 }
 
 export interface UpdateLessonRequest {

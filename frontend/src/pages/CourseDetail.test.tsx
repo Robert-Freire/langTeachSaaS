@@ -11,7 +11,6 @@ vi.mock('../api/courses', () => ({
   reorderCurriculum: vi.fn(),
   updateCurriculumEntry: vi.fn(),
   markEntryAsTaught: vi.fn(),
-  generateLessonFromEntry: vi.fn(),
   addCurriculumEntry: vi.fn(),
   deleteCurriculumEntry: vi.fn(),
   dismissWarning: vi.fn(),
@@ -56,13 +55,13 @@ const mockCourse = {
   sessionCount: 3,
   studentId: 's1',
   studentName: 'Ana',
-  lessonsCreated: 0,
+  lessonsCreated: 1,
   createdAt: '2026-03-10T10:00:00Z',
   updatedAt: '2026-03-10T10:00:00Z',
   entries: [
     { id: 'e1', orderIndex: 1, topic: 'Greetings', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
-    { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: null, competencies: 'reading', lessonType: null, lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
-    { id: 'e3', orderIndex: 3, topic: 'Hobbies', grammarFocus: 'Present continuous', competencies: 'writing', lessonType: 'Grammar-focused', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+    { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: null, competencies: 'reading', lessonType: null, lessonId: 'lesson-id-created', status: 'created' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+    { id: 'e3', orderIndex: 3, topic: 'Hobbies', grammarFocus: 'Present continuous', competencies: 'writing', lessonType: 'Grammar-focused', lessonId: 'lesson-id-taught', status: 'taught' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
   ],
   warnings: null,
   dismissedWarningKeys: null,
@@ -105,7 +104,7 @@ describe('CourseDetail', () => {
     vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
     wrapper(<CourseDetail />)
 
-    expect(await screen.findByTestId('course-progress')).toHaveTextContent('0 of 3 lessons created')
+    expect(await screen.findByTestId('course-progress')).toHaveTextContent('1 of 3 lessons created')
   })
 
   it('clicking edit shows edit form', async () => {
@@ -118,12 +117,72 @@ describe('CourseDetail', () => {
     expect(screen.getByTestId('edit-topic')).toHaveValue('Greetings')
   })
 
-  it('generate lesson button is visible for planned entries', async () => {
+  it('generate lesson link is visible for planned entries', async () => {
     vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
     wrapper(<CourseDetail />)
 
     await screen.findByTestId('course-title')
     expect(screen.getByTestId('generate-lesson-0')).toBeInTheDocument()
+  })
+
+  // -------------------------------------------------------------------------
+  // Status badges and lesson links
+  // -------------------------------------------------------------------------
+
+  describe('session lesson status badges', () => {
+    it('planned entry shows "Not generated" badge', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      expect(screen.getByTestId('curriculum-entry-0')).toHaveTextContent('Not generated')
+    })
+
+    it('created entry shows "Draft" badge', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      expect(screen.getByTestId('curriculum-entry-1')).toHaveTextContent('Draft')
+    })
+
+    it('taught entry shows "Ready" badge', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      expect(screen.getByTestId('curriculum-entry-2')).toHaveTextContent('Ready')
+    })
+
+    it('"Generate lesson" link includes correct pre-fill params from session data', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      const link = screen.getByTestId('generate-lesson-0')
+      const href = link.getAttribute('href') ?? ''
+      expect(href).toContain('studentId=s1')
+      expect(href).toContain('language=English')
+      expect(href).toContain('level=B2')
+      expect(href).toContain('topic=Greetings')
+      expect(href).toContain('grammar=Present+simple')
+      expect(href).toContain('courseId=course-1')
+      expect(href).toContain('entryId=e1')
+    })
+
+    it('created entry shows "Edit lesson" link to the lesson', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      const link = screen.getByTestId('lesson-link-1')
+      expect(link.getAttribute('href')).toBe('/lessons/lesson-id-created')
+      expect(link).toHaveTextContent('Edit lesson')
+    })
+
+    it('taught entry shows "View lesson" link to the lesson', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      const link = screen.getByTestId('lesson-link-2')
+      expect(link.getAttribute('href')).toBe('/lessons/lesson-id-taught')
+      expect(link).toHaveTextContent('View lesson')
+    })
   })
 
   it('entry details are hidden by default and shown after expand click', async () => {
@@ -189,7 +248,7 @@ describe('CourseDetail', () => {
     expect(screen.getByTestId('summary-level')).toHaveTextContent('B2')
     expect(screen.getByTestId('summary-student')).toHaveTextContent('Ana')
     expect(screen.getByTestId('summary-mode')).toHaveTextContent('General Learning')
-    expect(screen.getByTestId('summary-progress')).toHaveTextContent('0/3')
+    expect(screen.getByTestId('summary-progress')).toHaveTextContent('1/3')
   })
 
   // -------------------------------------------------------------------------

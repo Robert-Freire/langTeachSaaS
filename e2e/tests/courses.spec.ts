@@ -234,55 +234,101 @@ test('edit curriculum entry', async ({ browser }) => {
   await context.close()
 })
 
-test('generate lesson from curriculum entry', async ({ browser }) => {
+test('generate lesson from curriculum entry navigates to LessonNew pre-filled', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  const newLessonId = '00000000-0000-0000-0000-000000001234'
+  const STUDENT_COURSE_ID = '00000000-0000-0000-0000-000000000096'
+  const courseWithStudent = {
+    ...MOCK_COURSE,
+    id: STUDENT_COURSE_ID,
+    studentId: '00000000-0000-0000-0000-000000000001',
+    studentName: 'Ana',
+    targetCefrLevel: 'B2',
+    language: 'English',
+    entries: [
+      { id: 'e1', orderIndex: 1, topic: 'Greetings and Introductions', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      ...MOCK_COURSE.entries.slice(1),
+    ],
+  }
 
-  await page.route(`**/api/courses/${MOCK_COURSE_ID}`, async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_COURSE) })
+  const STUDENT_ID = '00000000-0000-0000-0000-000000000001'
+
+  await page.route(`**/api/courses/${STUDENT_COURSE_ID}`, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(courseWithStudent) })
   })
-  await page.route(`**/api/courses/${MOCK_COURSE_ID}/curriculum/e1/lesson`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ lessonId: newLessonId }),
-    })
+  await page.route('**/api/lesson-templates', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
   })
-  // Mock the lesson editor route so it doesn't 404
-  await page.route(`**/api/lessons/${newLessonId}`, async (route) => {
+  await page.route('**/api/students**', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        id: newLessonId,
-        title: 'Greetings and Introductions',
-        language: 'English',
-        cefrLevel: 'B2',
-        topic: 'Greetings and Introductions',
-        durationMinutes: 60,
-        objectives: null,
-        status: 'Draft',
-        studentId: null,
-        studentName: null,
-        templateId: null,
-        sections: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        scheduledAt: null,
+        items: [{ id: STUDENT_ID, name: 'Ana', learningLanguage: 'English', cefrLevel: 'B2', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '', updatedAt: '' }],
+        totalCount: 1,
       }),
     })
+  })
+
+  await page.goto(`/courses/${STUDENT_COURSE_ID}`)
+  await expect(page.getByTestId('course-title')).toHaveText('B2 English Course', { timeout: NAV_TIMEOUT })
+
+  // Verify "Not generated" badge on the first planned entry
+  await expect(page.getByTestId('curriculum-entry-0')).toContainText('Not generated')
+
+  // Verify the generate lesson link has the expected URL params (check href without clicking)
+  const generateLink = page.getByTestId('generate-lesson-0')
+  const href = await generateLink.getAttribute('href')
+  expect(href).toContain('level=B2')
+  expect(href).toContain(`studentId=${STUDENT_ID}`)
+  expect(href).toContain('language=English')
+  expect(href).toContain('topic=Greetings')
+
+  // Click "Generate lesson" — should navigate to LessonNew step 2 (auto-advanced due to entryId param)
+  await generateLink.click()
+
+  await expect(page).toHaveURL(/\/lessons\/new/, { timeout: UI_TIMEOUT })
+  // Auto-advanced to step 2: "Lesson Details" heading is visible
+  await expect(page.getByText('Lesson Details')).toBeVisible({ timeout: UI_TIMEOUT })
+  // Topic is pre-filled
+  await expect(page.getByTestId('input-topic')).toHaveValue('Greetings and Introductions', { timeout: UI_TIMEOUT })
+  // Level is pre-filled from URL param
+  await expect(page.getByTestId('select-level')).toContainText('B2', { timeout: UI_TIMEOUT })
+  // Student selector shows "Ana" (students query resolved via mock)
+  await expect(page.getByTestId('select-student')).toContainText('Ana', { timeout: UI_TIMEOUT })
+
+  await context.close()
+})
+
+test('course view shows Draft badge and Edit lesson link for created entries', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const EXISTING_LESSON_ID = '00000000-0000-0000-0000-000000009999'
+  const COURSE_WITH_CREATED = {
+    ...MOCK_COURSE,
+    entries: [
+      { ...MOCK_COURSE.entries[0], lessonId: EXISTING_LESSON_ID, status: 'created' },
+      ...MOCK_COURSE.entries.slice(1),
+    ],
+  }
+
+  await page.route(`**/api/courses/${MOCK_COURSE_ID}`, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(COURSE_WITH_CREATED) })
   })
 
   await page.goto(`/courses/${MOCK_COURSE_ID}`)
   await expect(page.getByTestId('course-title')).toHaveText('B2 English Course', { timeout: NAV_TIMEOUT })
 
-  // Click "Generate Lesson" on first entry
-  await page.getByTestId('generate-lesson-0').click()
+  // First entry should show "Draft" badge
+  await expect(page.getByTestId('curriculum-entry-0')).toContainText('Draft')
 
-  // Should navigate to lesson editor
-  await expect(page).toHaveURL(new RegExp(`/lessons/${newLessonId}`), { timeout: UI_TIMEOUT })
+  // "Edit lesson" link should be visible and link to the lesson
+  const lessonLink = page.getByTestId('lesson-link-0')
+  await expect(lessonLink).toBeVisible()
+  const href = await lessonLink.getAttribute('href')
+  expect(href).toBe(`/lessons/${EXISTING_LESSON_ID}`)
 
   await context.close()
 })

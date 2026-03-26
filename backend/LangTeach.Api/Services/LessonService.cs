@@ -145,6 +145,34 @@ public class LessonService : ILessonService
         await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Lesson created. TeacherId={TeacherId} LessonId={LessonId}", teacherId, lesson.Id);
 
+        if (request.CourseId.HasValue && request.CourseEntryId.HasValue)
+        {
+            var entry = await _db.CurriculumEntries
+                .Include(e => e.Course)
+                .FirstOrDefaultAsync(
+                    e => e.Id == request.CourseEntryId.Value
+                      && e.CourseId == request.CourseId.Value
+                      && e.Course.TeacherId == teacherId
+                      && !e.IsDeleted,
+                    cancellationToken);
+
+            if (entry is not null)
+            {
+                entry.LessonId = lesson.Id;
+                entry.Status = "created";
+                await _db.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation(
+                    "Linked lesson to course entry. TeacherId={TeacherId} LessonId={LessonId} EntryId={EntryId}",
+                    teacherId, lesson.Id, entry.Id);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "CourseEntryId={CourseEntryId} not found or not owned by teacher. LessonId={LessonId} TeacherId={TeacherId}",
+                    request.CourseEntryId.Value, lesson.Id, teacherId);
+            }
+        }
+
         if (lesson.StudentId.HasValue)
             await _db.Entry(lesson).Reference(l => l.Student).LoadAsync(cancellationToken);
 
