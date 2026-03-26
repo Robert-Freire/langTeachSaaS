@@ -316,6 +316,15 @@ describe('CourseDetail', () => {
     expect(call[1].indexOf('e2')).toBeLessThan(call[1].indexOf('e1'))
   })
 
+  it('shows error state with retry button when fetch fails', async () => {
+    vi.mocked(coursesApi.getCourse).mockRejectedValue(new Error('network error'))
+    wrapper(<CourseDetail />)
+
+    expect(await screen.findByTestId('course-load-error')).toBeInTheDocument()
+    expect(screen.getByText('Failed to load course.')).toBeInTheDocument()
+    expect(screen.getByTestId('course-load-retry-btn')).toBeInTheDocument()
+  })
+
   describe('generation warnings panel', () => {
     const warningCourse = {
       ...mockCourse,

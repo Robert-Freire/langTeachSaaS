@@ -84,6 +84,11 @@ All findings are pre-existing, unrelated to this PR's change:
 - **[Minor M2]** LessonEditor desktop: Tab focus order starts in sidebar nav before editor content.
 - **[Minor M3]** Dashboard mobile: Quick Actions panel requires scroll to reach below empty "Needs Preparation" card.
 
+### PR TBD (2026-03-26) — E2E course flow (#290)
+
+- **[Important I1]** StudentForm edit: "Courses" card title could be "Active Courses" for clearer parallelism with "Lesson History". Minor naming inconsistency, not a functional issue.
+- **[Minor M2]** StudentCoursesCard: "Create Course" empty-state CTA uses `variant="outline"` — it is the primary action in the card; `variant="default"` would improve visual hierarchy.
+
 ### PR TBD (2026-03-25) — Create Course entry point (#289)
 
 - **[Important I1]** StudentForm edit (mobile 375px): Header action buttons ("Create Course", "Cancel", "Update Student") overlap the subtitle text at the smallest breakpoint. Pre-existing PageHeader layout issue compounded by 3 buttons in the actions area.

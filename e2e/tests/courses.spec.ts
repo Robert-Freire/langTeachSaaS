@@ -627,6 +627,138 @@ test('remove session removes entry from curriculum after confirmation', async ({
   await context.close()
 })
 
+test('full happy path: student edit → CourseNew (locked) → generate → CourseDetail with personalized session', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const PERSONALIZED_COURSE_ID = '00000000-0000-0000-0000-000000000097'
+  const personalizedCourse = {
+    ...MOCK_COURSE,
+    id: PERSONALIZED_COURSE_ID,
+    name: 'A1 Spanish for Marco',
+    language: 'Spanish',
+    targetCefrLevel: 'A1',
+    sessionCount: 12,
+    studentId: null as string | null,
+    studentName: 'Marco',
+    entries: [
+      {
+        id: 'p1', orderIndex: 1, topic: 'Saludos y presentaciones', grammarFocus: 'Verbo llamarse',
+        competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned',
+        contextDescription: 'Marco introduces himself at his new office in Barcelona',
+        personalizationNotes: 'Focused on workplace greetings for relocation context',
+        vocabularyThemes: 'Saludos,Trabajo,Barcelona',
+      },
+      { id: 'p2', orderIndex: 2, topic: 'En la ciudad', grammarFocus: 'Preposiciones de lugar', competencies: 'reading,speaking', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: 'Ciudad,Transporte' },
+    ],
+  }
+
+  // Create a student with full Spanish A1 profile
+  const studentName = `Marco Test ${Date.now()}`
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: NAV_TIMEOUT })
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'A1' }).click()
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL('/students', { timeout: NAV_TIMEOUT })
+
+  // Navigate to student edit page
+  const studentCard = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName }),
+  })
+  await expect(studentCard).toBeVisible({ timeout: NAV_TIMEOUT })
+  await studentCard.getByTestId('edit-student').click()
+  await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: NAV_TIMEOUT })
+
+  const editUrl = page.url()
+  const studentId = editUrl.match(/\/students\/([^/]+)\/edit/)?.[1]
+  expect(studentId).toBeTruthy()
+
+  // Mock course creation and retrieval
+  await page.route('**/api/courses', async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ...personalizedCourse, studentId }) })
+    } else {
+      await route.continue()
+    }
+  })
+  await page.route(`**/api/courses/${PERSONALIZED_COURSE_ID}`, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...personalizedCourse, studentId }) })
+  })
+
+  // Click Create Course button
+  const createCourseBtn = page.getByTestId('create-course-btn')
+  await expect(createCourseBtn).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(createCourseBtn).not.toBeDisabled()
+  await createCourseBtn.click()
+
+  // CourseNew: student locked, language + CEFR auto-filled
+  await expect(page).toHaveURL(`/courses/new?studentId=${studentId}`, { timeout: NAV_TIMEOUT })
+  await expect(page.getByTestId('student-locked')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('student-locked')).toContainText(studentName)
+  await expect(page.getByTestId('language-select')).toContainText('Spanish', { timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('cefr-select')).toContainText('A1', { timeout: UI_TIMEOUT })
+
+  // Fill remaining required field (course name) and generate
+  await page.getByTestId('course-name').fill('A1 Spanish for Marco')
+  await page.getByTestId('generate-curriculum-btn').click()
+
+  // Should navigate to CourseDetail
+  await expect(page).toHaveURL(new RegExp(`/courses/${PERSONALIZED_COURSE_ID}`), { timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('course-title')).toHaveText('A1 Spanish for Marco', { timeout: NAV_TIMEOUT })
+  await expect(page.getByTestId('curriculum-list')).toBeVisible()
+  await expect(page.getByText('Saludos y presentaciones')).toBeVisible()
+
+  // Expand first entry and verify personalized context is shown
+  await page.getByTestId('expand-entry-0').click()
+  await expect(page.getByTestId('context-description-0')).toContainText('Barcelona', { timeout: UI_TIMEOUT })
+
+  await context.close()
+})
+
+test('generation failure: error card shown and form stays interactive for retry', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  // Mock POST /api/courses to return a server error
+  await page.route('**/api/courses', async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'AI generation failed. Please try again.' }) })
+    } else {
+      await route.continue()
+    }
+  })
+
+  await page.goto('/courses/new')
+  await expect(page.locator('h1')).toHaveText('New Course', { timeout: NAV_TIMEOUT })
+
+  await page.getByTestId('course-name').fill('Test Course')
+  await page.getByTestId('language-select').click()
+  await page.getByRole('option', { name: 'English' }).click()
+  await expect(page.getByTestId('language-select')).toContainText('English', { timeout: UI_TIMEOUT })
+  await page.getByTestId('cefr-select').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+  await expect(page.getByTestId('cefr-select')).toContainText('B1', { timeout: UI_TIMEOUT })
+
+  await page.getByTestId('generate-curriculum-btn').click()
+
+  // Error card should appear
+  await expect(page.getByTestId('generation-error')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('generation-error')).toContainText('AI generation failed', { timeout: UI_TIMEOUT })
+
+  // Form should remain visible (not replaced by loading spinner)
+  await expect(page.getByTestId('generate-curriculum-btn')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('generate-curriculum-btn')).not.toBeDisabled()
+
+  // URL should not have changed (still on CourseNew, not CourseDetail)
+  await expect(page).toHaveURL('/courses/new')
+
+  await context.close()
+})
+
 test('A1 templates appear in dropdown when A1 is selected', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()

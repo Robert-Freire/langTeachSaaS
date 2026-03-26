@@ -396,7 +396,7 @@ export default function CourseNew() {
           })()}
 
           {submitError && (
-            <Card className="border-red-200 bg-red-50">
+            <Card className="border-red-200 bg-red-50" data-testid="generation-error">
               <CardContent className="p-3 text-sm text-red-700">{submitError}</CardContent>
             </Card>
           )}

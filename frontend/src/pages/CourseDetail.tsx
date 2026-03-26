@@ -533,7 +533,21 @@ export default function CourseDetail() {
   }
 
   if (isError || !course) {
-    return <div className="text-red-500 text-sm">Failed to load course.</div>
+    return (
+      <div className="space-y-6">
+        <PageHeader backTo="/courses" backLabel="Courses" title="Course" />
+        <div className="flex flex-col items-center justify-center py-24 gap-4" data-testid="course-load-error">
+          <p className="text-sm text-red-500">Failed to load course.</p>
+          <Button
+            variant="outline"
+            data-testid="course-load-retry-btn"
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['course', id] })}
+          >
+            Try again
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   const entries = [...course.entries].sort((a, b) => a.orderIndex - b.orderIndex)
