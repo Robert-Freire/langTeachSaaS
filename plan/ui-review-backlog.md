@@ -103,3 +103,10 @@ All findings are pre-existing, unrelated to this PR's change:
 - **[Important I1]** StudentForm edit (mobile 375px): Header action buttons ("Create Course", "Cancel", "Update Student") overlap the subtitle text at the smallest breakpoint. Pre-existing PageHeader layout issue compounded by 3 buttons in the actions area.
 - **[Minor M1]** StudentForm edit: "Create Course" and "Cancel" both use `variant="outline"` with identical visual weight. Cancel is dismissive; Create Course is constructive — subtle differentiation would improve scannability.
 - **[Minor M3]** CourseNew locked student: No secondary text explains why the student cannot be changed (lock icon added but no label like "Assigned from student profile"). Functional but lower affordance than ideal.
+
+## PR #291 - Session-to-lesson navigation (2026-03-26)
+| Severity | Finding |
+|----------|---------|
+| important | CourseDetail: "Generate lesson" Link+buttonVariants may lack visible focus ring on keyboard nav. Pre-existing pattern (CoursesOverview also uses Link+buttonVariants). Add focus-visible styles explicitly or use a wrapper button. |
+| important | LessonNew: UI reviewer could not verify pre-fill from course params in e2e stack (I4). Unit tests pass. Investigate if Docker Vite hot-reload or routing config causes state initialization to miss URL params on first render. |
+| minor | CourseDetail: "Draft" and "Ready" badge states not visually verified in e2e stack (M3). Unit tests confirm badge labels; manual spot-check needed against real data. |
