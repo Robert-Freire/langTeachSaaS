@@ -4,7 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { GraduationCap, BookOpen, Loader2, Lock } from 'lucide-react'
 import { createCourse, type CreateCourseRequest, type CourseMode } from '../api/courses'
 import { getCurriculumTemplates, getMappingPreview } from '../api/curricula'
-import { getStudents } from '../api/students'
+import { getStudent, getStudents } from '../api/students'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -47,6 +47,12 @@ export default function CourseNew() {
     queryFn: () => getStudents(),
   })
 
+  const { data: lockedStudent, isLoading: lockedStudentLoading } = useQuery({
+    queryKey: ['students', lockedStudentId],
+    queryFn: () => getStudent(lockedStudentId!),
+    enabled: !!lockedStudentId,
+  })
+
   const { data: allTemplates, isLoading: templatesLoading } = useQuery({
     queryKey: ['curriculum-templates'],
     queryFn: getCurriculumTemplates,
@@ -63,19 +69,15 @@ export default function CourseNew() {
 
   const students = studentsData?.items ?? []
 
-  // Auto-fill language and CEFR level from the locked student when the students list loads.
+  // Auto-fill language and CEFR level from the locked student once their data loads.
   // Intentionally omits language/targetCefrLevel from deps: we only want to seed the fields
   // on first load (when they're empty), never overwrite user edits on subsequent renders.
-  // If the students list ever refetches, the guards (if !language / if !targetCefrLevel) prevent
-  // overwriting values the user may have manually changed.
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (!lockedStudentId || students.length === 0) return
-    const student = students.find(s => s.id === lockedStudentId)
-    if (!student) return
-    if (!language) setLanguage(student.learningLanguage)
-    if (!targetCefrLevel) setTargetCefrLevel(student.cefrLevel)
-  }, [students, lockedStudentId]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!lockedStudent) return
+    if (!language) setLanguage(lockedStudent.learningLanguage)
+    if (!targetCefrLevel) setTargetCefrLevel(lockedStudent.cefrLevel)
+  }, [lockedStudent, lockedStudentId]) // eslint-disable-line react-hooks/exhaustive-deps
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const { mutate: doCreate, isPending } = useMutation({
@@ -314,14 +316,14 @@ export default function CourseNew() {
           {lockedStudentId ? (
             <div className="space-y-1.5">
               <Label>Student</Label>
-              {students.length === 0
+              {lockedStudentLoading
                 ? <Skeleton className="h-9 w-full" data-testid="student-locked-loading" />
-                : <div
+                : lockedStudent && <div
                     className="flex h-9 w-full items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-700"
                     data-testid="student-locked"
                   >
                     <Lock className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
-                    {students.find(s => s.id === lockedStudentId)?.name ?? lockedStudentId}
+                    {lockedStudent.name}
                   </div>
               }
             </div>

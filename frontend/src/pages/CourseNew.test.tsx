@@ -14,6 +14,7 @@ vi.mock('../api/courses', () => ({
 
 vi.mock('../api/students', () => ({
   getStudents: vi.fn(),
+  getStudent: vi.fn(),
 }))
 
 vi.mock('../api/curricula', () => ({
@@ -51,6 +52,7 @@ describe('CourseNew wizard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(studentsApi.getStudents).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
+    vi.mocked(studentsApi.getStudent).mockResolvedValue(undefined as never)
     vi.mocked(curriculaApi.getCurriculumTemplates).mockResolvedValue(MOCK_TEMPLATES)
     vi.mocked(curriculaApi.getMappingPreview).mockResolvedValue(MOCK_MAPPING)
   })
@@ -368,18 +370,15 @@ describe('CourseNew wizard', () => {
   })
 
   describe('locked student via ?studentId param', () => {
-    const STUDENT_MARCO = {
-      items: [{
-        id: 'student-1', name: 'Marco', cefrLevel: 'B1',
-        learningLanguage: 'Spanish', interests: [], notes: null,
-        nativeLanguage: null, learningGoals: [], weaknesses: [],
-        difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01',
-      }],
-      totalCount: 1, page: 1, pageSize: 100,
+    const MARCO = {
+      id: 'student-1', name: 'Marco', cefrLevel: 'B1',
+      learningLanguage: 'Spanish', interests: [], notes: null,
+      nativeLanguage: null, learningGoals: [], weaknesses: [],
+      difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01',
     }
 
     it('shows student name as read-only text when ?studentId param is present', async () => {
-      vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT_MARCO)
+      vi.mocked(studentsApi.getStudent).mockResolvedValue(MARCO)
       wrapper(<CourseNew />, '/courses/new?studentId=student-1')
 
       const locked = await screen.findByTestId('student-locked')
@@ -388,8 +387,8 @@ describe('CourseNew wizard', () => {
       expect(screen.queryByTestId('student-select')).not.toBeInTheDocument()
     })
 
-    it('shows skeleton while students list is loading when locked student', async () => {
-      vi.mocked(studentsApi.getStudents).mockReturnValue(new Promise(() => {}))
+    it('shows skeleton while locked student is loading', async () => {
+      vi.mocked(studentsApi.getStudent).mockReturnValue(new Promise(() => {}))
       wrapper(<CourseNew />, '/courses/new?studentId=student-1')
 
       expect(screen.getByTestId('student-locked-loading')).toBeInTheDocument()
@@ -397,12 +396,11 @@ describe('CourseNew wizard', () => {
     })
 
     it('auto-fills language and CEFR level from locked student', async () => {
-      vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT_MARCO)
+      vi.mocked(studentsApi.getStudent).mockResolvedValue(MARCO)
       wrapper(<CourseNew />, '/courses/new?studentId=student-1')
 
       await screen.findByTestId('student-locked')
 
-      // The language and CEFR selects should be pre-filled from the student
       const languageTrigger = screen.getByTestId('language-select')
       expect(languageTrigger).toHaveTextContent('Spanish')
 
@@ -411,7 +409,9 @@ describe('CourseNew wizard', () => {
     })
 
     it('student selector shows normal dropdown without ?studentId param', async () => {
-      vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT_MARCO)
+      vi.mocked(studentsApi.getStudents).mockResolvedValue({
+        items: [MARCO], totalCount: 1, page: 1, pageSize: 100,
+      })
       wrapper(<CourseNew />)
 
       const select = await screen.findByTestId('student-select')
