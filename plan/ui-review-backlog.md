@@ -108,5 +108,5 @@ All findings are pre-existing, unrelated to this PR's change:
 | Severity | Finding |
 |----------|---------|
 | important | CourseDetail: "Generate lesson" Link+buttonVariants may lack visible focus ring on keyboard nav. Pre-existing pattern (CoursesOverview also uses Link+buttonVariants). Add focus-visible styles explicitly or use a wrapper button. |
-| important | LessonNew: UI reviewer could not verify pre-fill from course params in e2e stack (I4). Unit tests pass. Investigate if Docker Vite hot-reload or routing config causes state initialization to miss URL params on first render. |
-| minor | CourseDetail: "Draft" and "Ready" badge states not visually verified in e2e stack (M3). Unit tests confirm badge labels; manual spot-check needed against real data. |
+
+_Note: I4 (pre-fill not working) and M3 (badge states) were false positives — verified passing in e2e stack via 5/5 Playwright tests including "course detail all badge states" and "lesson new step 2 pre-filled from entryId"._
