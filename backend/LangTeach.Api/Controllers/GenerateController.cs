@@ -5,6 +5,7 @@ using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -22,6 +23,7 @@ public class GenerateController : ControllerBase
     private readonly IMaterialService _materialService;
     private readonly IUsageLimitService _usageLimitService;
     private readonly ICurriculumTemplateService _templateService;
+    private readonly ILessonService _lessonService;
     private readonly AppDbContext _db;
     private readonly ILogger<GenerateController> _logger;
 
@@ -33,6 +35,7 @@ public class GenerateController : ControllerBase
         IMaterialService materialService,
         IUsageLimitService usageLimitService,
         ICurriculumTemplateService templateService,
+        ILessonService lessonService,
         AppDbContext db,
         ILogger<GenerateController> logger)
     {
@@ -43,6 +46,7 @@ public class GenerateController : ControllerBase
         _materialService = materialService;
         _usageLimitService = usageLimitService;
         _templateService = templateService;
+        _lessonService = lessonService;
         _db = db;
         _logger = logger;
     }
@@ -362,6 +366,8 @@ public class GenerateController : ControllerBase
                 _logger.LogDebug("LessonPlan response is not valid JSON — cannot validate section count. LessonId={LessonId}", lesson.Id);
             }
         }
+
+        await _lessonService.EnsureLearningTargetsAsync(lesson, ct);
 
         var block = new LessonContentBlock
         {

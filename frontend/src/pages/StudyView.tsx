@@ -45,6 +45,17 @@ export default function StudyView() {
       <div className="max-w-2xl mx-auto space-y-8 py-8 px-4">
       <p className="text-sm text-zinc-500">{lesson.language} · {lesson.cefrLevel} · {lesson.topic}</p>
 
+      {lesson.learningTargets && lesson.learningTargets.length > 0 && (
+        <div className="flex flex-wrap gap-1 items-center" data-testid="study-learning-targets">
+          <span className="text-xs text-zinc-400 mr-1">Practices:</span>
+          {lesson.learningTargets.map((label) => (
+            <Badge key={label} variant="secondary" className="text-xs bg-teal-50 text-teal-700 border border-teal-200">
+              {label}
+            </Badge>
+          ))}
+        </div>
+      )}
+
       {lesson.sections.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <BookOpen className="h-12 w-12 text-zinc-300 mb-4" />

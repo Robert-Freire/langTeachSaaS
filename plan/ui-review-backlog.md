@@ -73,6 +73,15 @@ All items from the previous backlog have been triaged. The backlog is now clean.
 - **[Minor M5]** CourseDetail: Delete dialog Cancel button (outlined) looks faint at default zoom; `variant="secondary"` would improve presence.
 - **[Minor M6]** Courses list: Progress bar track nearly invisible (`bg-zinc-100` on white). Fixed on detail view (changed to `bg-zinc-200`); list view not updated.
 
+### PR TBD (2026-03-26) — Learning target labels (#166)
+
+- **[Important I1]** LessonEditor mobile (375px): PageHeader action buttons overflow ("Preview as Student" clipped). Pre-existing, tracked in #246.
+- **[Important I2]** ContentBlock tag editor: "Edit targets", Save/Cancel, and badge × remove buttons use h-5 (20px), below the 44px touch target minimum. Affects ContentBlock.tsx lines 205-254.
+- **[Minor M1]** LessonEditor: sidebar does not highlight "Lessons" nav item when inside the editor. Pre-existing.
+- **[Minor M2]** StudyView: loading state uses plain text instead of skeleton placeholder. Pre-existing.
+- **[Minor M3]** ContentBlock: when no targets exist, only a ghost "Edit targets" button is shown with no hint text. First-time users won't know what it does.
+- **[Minor M4]** StudyView mobile: long lesson titles truncate with ellipsis rather than wrapping. Pre-existing.
+
 ### PR TBD (2026-03-25) — Regenerate button toggle (#142)
 
 All findings are pre-existing, unrelated to this PR's change:
