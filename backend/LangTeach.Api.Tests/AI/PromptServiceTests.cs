@@ -975,5 +975,6 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("Strategy Session");
         req.UserPrompt.Should().Contain("Input Session");
         req.UserPrompt.Should().Contain("AT LEAST one Mock Test");
+        req.UserPrompt.Should().Contain("AT LEAST one Strategy Session");
     }
 }
