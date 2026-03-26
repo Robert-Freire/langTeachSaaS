@@ -123,6 +123,17 @@ test('create course (exam-prep mode)', async ({ browser }) => {
     mode: 'exam-prep',
     targetCefrLevel: null,
     targetExam: 'DELE',
+    sessionCount: 8,
+    entries: [
+      { id: 'x1', orderIndex: 1, topic: 'DELE exam overview', grammarFocus: 'Present subjunctive', competencies: 'reading,writing', lessonType: 'Input Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x2', orderIndex: 2, topic: 'Formal letter conventions', grammarFocus: null, competencies: 'writing', lessonType: 'Input Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x3', orderIndex: 3, topic: 'Time management in the exam', grammarFocus: null, competencies: 'reading,writing', lessonType: 'Strategy Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x4', orderIndex: 4, topic: 'Listening comprehension strategies', grammarFocus: null, competencies: 'listening', lessonType: 'Strategy Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x5', orderIndex: 5, topic: 'Speaking task practice', grammarFocus: null, competencies: 'speaking', lessonType: 'Input Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x6', orderIndex: 6, topic: 'Written production under conditions', grammarFocus: null, competencies: 'writing', lessonType: 'Input Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x7', orderIndex: 7, topic: 'Review exam marking criteria', grammarFocus: null, competencies: 'reading,writing', lessonType: 'Strategy Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x8', orderIndex: 8, topic: 'DELE B2 Full Mock Test', grammarFocus: null, competencies: 'reading,writing,listening,speaking', lessonType: 'Mock Test', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+    ],
   }
 
   await page.route('**/api/courses', async (route) => {
@@ -157,6 +168,10 @@ test('create course (exam-prep mode)', async ({ browser }) => {
 
   await expect(page).toHaveURL(new RegExp(`/courses/${examCourse.id}`), { timeout: UI_TIMEOUT })
   await expect(page.getByTestId('course-title')).toHaveText('DELE B2 Prep', { timeout: NAV_TIMEOUT })
+
+  // Verify session type badges: at least one Mock Test and one Strategy Session are visible
+  await expect(page.getByTestId('session-type-badge-7')).toHaveText('Mock Test', { timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('session-type-badge-2')).toHaveText('Strategy Session', { timeout: UI_TIMEOUT })
 
   await context.close()
 })

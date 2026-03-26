@@ -325,6 +325,44 @@ describe('CourseDetail', () => {
     expect(screen.getByTestId('course-load-retry-btn')).toBeInTheDocument()
   })
 
+  // -------------------------------------------------------------------------
+  // Exam prep session type badges
+  // -------------------------------------------------------------------------
+
+  describe('exam prep session type badges', () => {
+    const examPrepCourse = {
+      ...mockCourse,
+      mode: 'exam-prep' as const,
+      targetCefrLevel: null,
+      targetExam: 'DELE',
+      entries: [
+        { id: 'e1', orderIndex: 1, topic: 'Exam skills overview', grammarFocus: null, competencies: 'reading,writing', lessonType: 'Input Session', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+        { id: 'e2', orderIndex: 2, topic: 'Exam strategy deep-dive', grammarFocus: null, competencies: 'writing', lessonType: 'Strategy Session', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+        { id: 'e3', orderIndex: 3, topic: 'Full mock exam', grammarFocus: null, competencies: 'reading,writing,listening,speaking', lessonType: 'Mock Test', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      ],
+    }
+
+    it('shows session type badge in collapsed row for exam-prep course', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(examPrepCourse)
+      wrapper(<CourseDetail />)
+
+      await screen.findByTestId('course-title')
+
+      expect(screen.getByTestId('session-type-badge-0')).toHaveTextContent('Input Session')
+      expect(screen.getByTestId('session-type-badge-1')).toHaveTextContent('Strategy Session')
+      expect(screen.getByTestId('session-type-badge-2')).toHaveTextContent('Mock Test')
+    })
+
+    it('does not show session type badge for general mode course', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+
+      await screen.findByTestId('course-title')
+
+      expect(screen.queryByTestId('session-type-badge-0')).not.toBeInTheDocument()
+    })
+  })
+
   describe('generation warnings panel', () => {
     const warningCourse = {
       ...mockCourse,

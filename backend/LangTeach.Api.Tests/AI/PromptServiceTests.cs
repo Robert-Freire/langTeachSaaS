@@ -924,4 +924,56 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("Italian");
         req.UserPrompt.Should().Contain("false cognates");
     }
+
+    // --- CurriculumUserPrompt: exam-prep mode ---
+
+    [Fact]
+    public void CurriculumUserPrompt_ExamPrep_IncludesExamTypeAndDeadline()
+    {
+        var ctx = new CurriculumContext(
+            Language: "Spanish",
+            Mode: "exam-prep",
+            SessionCount: 8,
+            TargetCefrLevel: null,
+            TargetExam: "DELE",
+            ExamDate: new DateOnly(2026, 6, 15),
+            StudentName: null,
+            StudentNativeLanguage: null,
+            StudentInterests: null,
+            StudentGoals: null,
+            TemplateLevel: null,
+            TemplateUnits: null
+        );
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("DELE");
+        req.UserPrompt.Should().Contain("2026-06-15");
+    }
+
+    [Fact]
+    public void CurriculumUserPrompt_ExamPrep_IncludesSessionTypeGuidanceForEightPlusSessions()
+    {
+        var ctx = new CurriculumContext(
+            Language: "Spanish",
+            Mode: "exam-prep",
+            SessionCount: 8,
+            TargetCefrLevel: null,
+            TargetExam: "DELE",
+            ExamDate: null,
+            StudentName: null,
+            StudentNativeLanguage: null,
+            StudentInterests: null,
+            StudentGoals: null,
+            TemplateLevel: null,
+            TemplateUnits: null
+        );
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Mock Test");
+        req.UserPrompt.Should().Contain("Strategy Session");
+        req.UserPrompt.Should().Contain("Input Session");
+        req.UserPrompt.Should().Contain("AT LEAST one Mock Test");
+    }
 }

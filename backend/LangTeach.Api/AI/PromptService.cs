@@ -375,7 +375,24 @@ public class PromptService : IPromptService
             var exam = Sanitize(ctx.TargetExam);
             var dateStr = ctx.ExamDate.HasValue ? ctx.ExamDate.Value.ToString("yyyy-MM-dd") : "unspecified";
             sb.AppendLine($"Design a {ctx.SessionCount}-session {language} exam preparation course for {exam} (exam date: {dateStr}).");
-            sb.AppendLine("Each session should target specific exam sections and skill areas.");
+            sb.AppendLine();
+            sb.AppendLine("Use exactly these three session types for the lessonType field:");
+            sb.AppendLine("- \"Input Session\": builds the target language skills needed for the exam (grammar, vocabulary, reading, listening).");
+            sb.AppendLine("- \"Strategy Session\": teaches exam technique (time management, task analysis, answer strategies, mark-scheme awareness).");
+            sb.AppendLine("- \"Mock Test\": a timed, full-exam-conditions practice test with immediate feedback.");
+            sb.AppendLine();
+            sb.AppendLine("Pacing rules (mandatory):");
+            sb.AppendLine("- First third of sessions: mostly Input Sessions to build skills.");
+            sb.AppendLine("- Middle third: mix of Input Sessions and Strategy Sessions.");
+            sb.AppendLine("- Final third: at least one Mock Test, more Strategy Sessions.");
+            if (ctx.SessionCount >= 8)
+            {
+                sb.AppendLine("- This plan has 8+ sessions: include AT LEAST one Mock Test and AT LEAST one Strategy Session.");
+            }
+            if (ctx.ExamDate.HasValue)
+            {
+                sb.AppendLine($"- Exam date is {dateStr}: place the final Mock Test in one of the last two sessions to simulate real exam conditions close to the deadline.");
+            }
         }
         else
         {
@@ -388,9 +405,12 @@ public class PromptService : IPromptService
         sb.AppendLine("Return a JSON array with exactly one object per session. Each object must have these fields:");
         sb.AppendLine("- orderIndex (integer, 1-based)");
         sb.AppendLine("- topic (string, concise session topic)");
-        sb.AppendLine("- grammarFocus (string or null, main grammar point)");
+        sb.AppendLine("- grammarFocus (string or null, main grammar point for Input Sessions; null for Mock Tests)");
         sb.AppendLine("- competencies (array of strings, subset of: reading, writing, listening, speaking)");
-        sb.AppendLine("- lessonType (string, e.g. Communicative, Grammar-focused, Exam Practice, Mixed)");
+        if (ctx.Mode == "exam-prep")
+            sb.AppendLine("- lessonType (string, MUST be one of: \"Input Session\", \"Strategy Session\", \"Mock Test\")");
+        else
+            sb.AppendLine("- lessonType (string, e.g. Communicative, Grammar-focused, Mixed)");
         sb.AppendLine();
         sb.AppendLine("Output ONLY the JSON array. No markdown, no explanation.");
 

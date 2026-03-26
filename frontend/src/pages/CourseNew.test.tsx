@@ -87,6 +87,19 @@ describe('CourseNew wizard', () => {
     expect(screen.queryByTestId('use-template-checkbox')).not.toBeInTheDocument()
   })
 
+  it('generate button is disabled in exam-prep mode when no exam is selected', async () => {
+    const user = userEvent.setup()
+    wrapper(<CourseNew />)
+
+    fireEvent.click(screen.getByTestId('mode-exam-prep'))
+    fireEvent.change(screen.getByTestId('course-name'), { target: { value: 'DELE Prep Course' } })
+    await user.click(screen.getByTestId('language-select'))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+
+    // No exam selected — button must remain disabled
+    expect(screen.getByTestId('generate-curriculum-btn')).toBeDisabled()
+  })
+
   it('submitting without template omits templateLevel', async () => {
     const user = userEvent.setup()
     const mockCreate = vi.fn().mockResolvedValue({ id: 'course-1' })
