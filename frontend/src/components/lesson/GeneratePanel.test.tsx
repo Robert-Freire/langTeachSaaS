@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -565,7 +565,6 @@ describe('GeneratePanel - section content type allowlist', () => {
   it('WarmUp A1: shows only Free activity, no Vocabulary/Grammar/Exercises/Conversation options', async () => {
     mockUseGenerate.mockReturnValue(makeIdleGenerate())
 
-    const user = userEvent.setup()
     renderWithQuery(
       <GeneratePanel
         {...defaultProps}
@@ -605,11 +604,12 @@ describe('GeneratePanel - section content type allowlist', () => {
     // Open the dropdown to check available items
     await user.click(trigger)
 
-    expect(screen.getByText('Free activity')).toBeInTheDocument()
-    expect(screen.getByText('Conversation')).toBeInTheDocument()
-    expect(screen.queryByText('Vocabulary')).toBeNull()
-    expect(screen.queryByText('Grammar')).toBeNull()
-    expect(screen.queryByText('Exercises')).toBeNull()
+    const listbox = screen.getByRole('listbox')
+    expect(within(listbox).getByText('Free activity')).toBeInTheDocument()
+    expect(within(listbox).getByText('Conversation')).toBeInTheDocument()
+    expect(within(listbox).queryByText('Vocabulary')).toBeNull()
+    expect(within(listbox).queryByText('Grammar')).toBeNull()
+    expect(within(listbox).queryByText('Exercises')).toBeNull()
   })
 
   it('WrapUp: renders read-only label (no Select dropdown) with Free activity', () => {
@@ -649,11 +649,12 @@ describe('GeneratePanel - section content type allowlist', () => {
 
     await user.click(trigger)
 
-    expect(screen.getByText('Exercises')).toBeInTheDocument()
-    expect(screen.getByText('Conversation')).toBeInTheDocument()
-    expect(screen.queryByText('Vocabulary')).toBeNull()
-    expect(screen.queryByText('Grammar')).toBeNull()
-    expect(screen.queryByText('Reading')).toBeNull()
-    expect(screen.queryByText('Homework')).toBeNull()
+    const listbox = screen.getByRole('listbox')
+    expect(within(listbox).getByText('Exercises')).toBeInTheDocument()
+    expect(within(listbox).getByText('Conversation')).toBeInTheDocument()
+    expect(within(listbox).queryByText('Vocabulary')).toBeNull()
+    expect(within(listbox).queryByText('Grammar')).toBeNull()
+    expect(within(listbox).queryByText('Reading')).toBeNull()
+    expect(within(listbox).queryByText('Homework')).toBeNull()
   })
 })

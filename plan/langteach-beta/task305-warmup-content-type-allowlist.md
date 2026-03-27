@@ -1,79 +1,184 @@
-# Task 305: Restrict WarmUp to freeText/conversation content types
+# Task 305: Filter content type dropdown per lesson section
 
 ## Problem
-WarmUp sections generate vocabulary drills despite prompt fixes in PR #231. The root cause: soft "NEVER do X" constraints are ignored by the model. Solution: replace negative constraints with positive allowlists that specify exactly what activity *style* to generate for each section, keyed by CEFR band.
+WarmUp sections generate vocabulary drills. Prompt-based "NEVER do X" fixes have failed twice. The structural fix: prevent teachers from selecting pedagogically invalid content types per section.
 
-## Scope
-Prompt engineering only (`PromptService.cs` + tests). No schema changes, no new ContentBlockType values. "freeText" and "conversation" in the issue are activity style descriptors, not enum values.
+## Approach
+Frontend dropdown filter (primary UX) + backend validation (safety net). Also adds `freeText` as a new content type (the issue's allowlist requires it; it doesn't currently exist).
 
-## Key file
-- `backend/LangTeach.Api/AI/PromptService.cs` — `LessonPlanUserPrompt()`
-- `backend/LangTeach.Api.Tests/AI/PromptServiceTests.cs`
+## Key files
+- `frontend/src/components/lesson/GeneratePanel.tsx` — TASK_TYPES dropdown (lines 199-212), `sectionType` and `cefrLevel` already available as props; `SectionType` imported from `'../../api/lessons'`
+- `frontend/src/types/contentTypes.ts` — ContentBlockType union (no `freeText` today)
+- `backend/LangTeach.Api/Data/Models/ContentBlockType.cs` — ContentBlockType enum (no `FreeText` today)
+- `backend/LangTeach.Api/DTOs/GenerateRequest.cs` — GenerateRequest model (no SectionType today)
+- `backend/LangTeach.Api/Controllers/GenerateController.cs` — Stream action (line ~70) + Generate private method (line ~240)
+- `backend/LangTeach.Api/AI/PromptService.cs` — prompt builder methods
+
+## Section allowlist (from issue)
+
+| Section | Allowed types |
+|---|---|
+| WarmUp | `freeText`, `conversation` (B1+ only) |
+| Presentation | `grammar`, `vocabulary`, `reading`, `conversation`, `freeText` |
+| Practice | `exercises`, `conversation` |
+| Production | `freeText`, `conversation`, `reading` |
+| WrapUp | `freeText` only (auto-select, hide dropdown) |
 
 ## Implementation
 
-### 1. Rewrite `LessonPlanUserPrompt` section guidelines
+### Step 1 — Add `freeText` ContentBlockType (frontend + backend)
 
-Replace the current flat section-by-section text with a CEFR-banded allowlist approach.
+`freeText` does not exist today but is required by the allowlist. Add it as a proper type.
 
-**WarmUp (CEFR-banded positive constraints):**
+**Frontend `frontend/src/types/contentTypes.ts`:** add `'freeText'` to the union.
 
-Extract a helper `WarmUpGuidance(cefrLevel)` that returns the appropriate guidance string:
+**Backend `backend/LangTeach.Api/Data/Models/ContentBlockType.cs`:** add `FreeText` to the enum.
 
-- A1-A2: use `freeText` style (prose activity, no conversation). Examples: show an image and elicit a word, "odd one out" with pictures, one simple personal question recycling previous lesson language. No conversation — beginners lack linguistic resources.
-- B1-B2: use `freeText` or `conversation` style. Examples: agree/disagree statement about the lesson topic, "two truths and a lie" using target grammar, headlines prediction, short 2-3 turn opinion exchange.
-- C1-C2: use `freeText` or `conversation` style. Examples: ethical dilemma prompt, semantic brainstorm with connections to previous lesson, authentic tweet/quote as discussion trigger, define-without-using circumlocution game.
+**Backend `ContentBlockTypeExtensions.cs`** (or wherever the kebab-case mapping lives): add `FreeText -> "free-text"` mapping.
 
-**Other sections (positive constraints, lean):**
+**Backend `PromptService.cs`:** add `BuildFreeTextPrompt(GenerationContext ctx)` — a general-purpose activity prompt: "Generate an appropriate in-class activity for the [section] section at [CEFR level] on [topic] in [language]. The activity should be brief, engaging, and match the pedagogical purpose of the section. Return as clear prose instructions for the teacher." The `sectionType` from the request (added in Step 3) provides the section context to this prompt.
 
-- presentation: introduce new language with input. Do not include exercises or practice tasks here.
-- practice: controlled production only — exercises progressing from mechanical to meaningful, or guided conversation. No grammar explanations (if needed, that's a Presentation failure).
-- production: free/communicative output. No vocabulary lists, grammar tables, or structured exercises.
-- wrapUp: reflection and self-assessment only, 2-3 min. Concise prose, no drilling.
+**Frontend `GeneratePanel.tsx` TASK_TYPES array:** add `{ value: 'freeText', label: 'Free activity' }` entry.
 
-**Remove all negative/defensive WarmUp instructions:**
-- Remove "NEVER generate a vocabulary list, grammar drill, translation exercise, or fill-in-blank activity for warmUp"
-- Review and remove any other "do NOT" duplicates covered by the new positive constraints
+**Backend `GenerateController.cs` `PromptBuilders` dict (lines 57-67):** add `[ContentBlockType.FreeText] = (svc, ctx) => svc.BuildFreeTextPrompt(ctx)`. Without this, `free-text` requests hit the 404 branch and the new type never dispatches.
 
-### 2. Update tests
+### Step 2 — Frontend utility: `getAllowedContentTypes`
 
-**Remove (no longer match new prompt text):**
-- `LessonPlanPrompt_UserPrompt_ProhibitsVocabularyListInWarmUp` — asserts "NEVER generate a vocabulary list"
-- `LessonPlanPrompt_UserPrompt_ProhibitsGrammarDrillInWarmUp` — asserts "grammar drill"
+Create `frontend/src/utils/sectionContentTypes.ts`:
 
-**Keep (still valid):**
-- `LessonPlanPrompt_UserPrompt_ContainsWarmUpIcebreakerGuidance` — update assertion to match new text
+```ts
+import { ContentBlockType } from '../types/contentTypes';
+import { SectionType } from '../api/lessons'; // actual import path
 
-**Add (per acceptance criteria):**
-1. `LessonPlanPrompt_WarmUp_RestrictedToFreeTextStyle_ForA1` — A1 context: prompt contains an A1-specific activity phrase (e.g. "odd one out", "simple personal question"). Do NOT assert absence of "conversation" — that word appears elsewhere in the prompt (practice section has "guided conversation"). Assert presence of A1-specific positive content only.
-2. `LessonPlanPrompt_WarmUp_AllowsConversation_ForB1Plus` — B1 context (BaseCtx default): prompt contains a B1 conversation-style example phrase (e.g. "agree/disagree", "opinion exchange")
-3. `LessonPlanPrompt_WarmUp_IncludesLevelAppropriateExamples_A1` — A1 context: contains an A1 activity example distinct from B1/B2 examples
-4. `LessonPlanPrompt_WarmUp_IncludesLevelAppropriateExamples_B1` — B1 context: contains a B1/B2 activity example distinct from A1 examples
+function isB1Plus(cefrLevel: string): boolean {
+  return !cefrLevel.startsWith('A');
+}
 
-Note: tests 1 and 3 overlap; collapse into two tests: one for A1 (positive A1 phrases present) and one for B1+ (B1 conversation phrases present).
+export function getAllowedContentTypes(
+  sectionType: SectionType,
+  cefrLevel: string
+): ContentBlockType[] {
+  switch (sectionType) {
+    case 'WarmUp':
+      return isB1Plus(cefrLevel) ? ['freeText', 'conversation'] : ['freeText'];
+    case 'Presentation':
+      return ['grammar', 'vocabulary', 'reading', 'conversation', 'freeText'];
+    case 'Practice':
+      return ['exercises', 'conversation'];
+    case 'Production':
+      return ['freeText', 'conversation', 'reading'];
+    case 'WrapUp':
+      return ['freeText'];
+    default:
+      return ['vocabulary', 'grammar', 'exercises', 'conversation', 'reading', 'homework', 'freeText'];
+  }
+}
+```
+
+Note: SectionType values are PascalCase (`'WarmUp'`, `'WrapUp'`, etc.) — match exactly.
+
+### Step 3 — Add `SectionType` to GenerateRequest (frontend + backend)
+
+**Backend `GenerateRequest.cs`:** add `public string? SectionType { get; set; }`.
+
+**Frontend `GeneratePanel.tsx`:** in the `useMemo` that builds the GenerateRequest object (line ~116-126), add `SectionType: sectionType` so the backend receives it. (`sectionType` is already typed as non-nullable; no `?? null` needed.)
+
+### Step 4 — Filter dropdown + handle invalid default state
+
+In `GeneratePanel.tsx`:
+- Import `getAllowedContentTypes`
+- Compute `allowedTypes = getAllowedContentTypes(sectionType, cefrLevel)` (or full list when `sectionType` is null)
+- Filter TASK_TYPES: `const filteredTaskTypes = TASK_TYPES.filter(t => allowedTypes.includes(t.value))`
+- **State reset:** after computing `allowedTypes`, if the current `taskType` is not in `allowedTypes`, reset it to `allowedTypes[0]`. Use a `useEffect` keyed on `[sectionType, cefrLevel]`.
+- **WrapUp auto-select:** if `filteredTaskTypes.length === 1`, render a read-only label instead of the Select component, with the single value pre-selected.
+
+### Step 5 — Backend validation on BOTH Stream and Generate endpoints
+
+Create `backend/LangTeach.Api/AI/SectionContentTypeAllowlist.cs`:
+
+```csharp
+public static class SectionContentTypeAllowlist
+{
+    private static readonly Dictionary<string, HashSet<string>> _allowlist = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["warmup"]       = new(StringComparer.OrdinalIgnoreCase) { "free-text", "conversation" },
+        ["presentation"] = new(StringComparer.OrdinalIgnoreCase) { "grammar", "vocabulary", "reading", "conversation", "free-text" },
+        ["practice"]     = new(StringComparer.OrdinalIgnoreCase) { "exercises", "conversation" },
+        ["production"]   = new(StringComparer.OrdinalIgnoreCase) { "free-text", "conversation", "reading" },
+        ["wrapup"]       = new(StringComparer.OrdinalIgnoreCase) { "free-text" },
+    };
+
+    public static bool IsAllowed(string sectionType, string contentType)
+    {
+        // Normalize: strip spaces, lowercase for lookup
+        var key = sectionType.Replace(" ", "").ToLowerInvariant();
+        if (!_allowlist.TryGetValue(key, out var allowed)) return true;
+        return allowed.Contains(contentType);
+    }
+}
+```
+
+Note: WarmUp CEFR split (A1 = no conversation) is enforced by the frontend. Backend allows `conversation` for all WarmUp requests since it does not have the CEFR level in scope at validation time without a DB read. The frontend is the primary line of defense.
+
+In `GenerateController.cs`:
+- **Stream action:** insert after the 404 block (line ~77, after `TryFromKebabCase` check) and before the blank-field checks (~line 79). At this point `taskType` is the raw kebab string, which `IsAllowed` accepts.
+- **Generate private method:** insert after existing validation (~line 240+).
+
+Add in both places:
+
+```csharp
+if (!string.IsNullOrEmpty(request.SectionType) &&
+    !SectionContentTypeAllowlist.IsAllowed(request.SectionType, taskType))
+{
+    return BadRequest($"Content type '{taskType}' is not allowed for section '{request.SectionType}'.");
+}
+```
+
+### Step 6 — Frontend unit tests (extend `GeneratePanel.test.tsx`)
+
+Four new tests:
+1. `sectionType="WarmUp" cefrLevel="A1"` → vocabulary, grammar, exercises, conversation absent; freeText present
+2. `sectionType="WarmUp" cefrLevel="B1"` → conversation present; vocabulary absent
+3. `sectionType="WrapUp"` → only freeText rendered; no Select dropdown (auto-select label shown)
+4. `sectionType="Practice"` → only exercises + conversation visible
+
+Utility unit tests in `sectionContentTypes.test.ts`:
+- Each section returns the correct array
+- WarmUp A1 excludes conversation; B1 includes it
+- Default (unknown sectionType) returns full list
+
+### Step 7 — Backend unit tests (`SectionContentTypeAllowlistTests.cs`)
+
+- WarmUp + vocabulary → false
+- WarmUp + free-text → true
+- Practice + grammar → false
+- WrapUp + exercises → false
+- Unknown section → true (pass-through)
+- Case-insensitive: `"WarmUp"` and `"warmup"` and `"WARMUP"` all resolve the same
+
+### Step 8 — E2E test
+
+Extend `frontend/e2e/` lesson generation tests (find existing lesson e2e file). Add:
+- Open a lesson, open the WarmUp section's Generate panel
+- Assert the content type dropdown does NOT contain "Vocabulary" or "Grammar"
+- Assert "Free activity" IS present
 
 ## Acceptance criteria mapping
 
 | AC | Implementation |
 |---|---|
-| WarmUp requests `freeText` style (A1-A2) | WarmUpGuidance("A1") specifies freeText prose activities only |
-| WarmUp allows `conversation` for B1+ | WarmUpGuidance("B1") adds conversation option |
-| WarmUp includes CEFR-banded activity suggestions | WarmUpGuidance() has per-band examples |
-| Presentation never requests exercises | Positive constraint in presentation section |
-| Practice only requests exercises/guided conversation | Positive constraint in practice section |
-| Production never requests exercises | Positive constraint in production section |
-| WarmUp content never a vocabulary list or drill | Structural: positive allowlist makes drills an LLM mistake, not a prompt omission |
-| Unit test: WarmUp CEFR band constraints | Tests #1–4 above |
-| Teacher QA sprint reviewer confirms icebreaker | Run after implementation |
+| WarmUp shows only freeText + conversation (B1+) | Steps 2, 4 |
+| Presentation excludes exercises | Steps 2, 4 |
+| Practice shows only exercises + conversation | Steps 2, 4 |
+| Production excludes exercises | Steps 2, 4 |
+| WrapUp auto-selects freeText, no dropdown | Step 4 |
+| Backend returns 400 for disallowed type | Step 5 (both endpoints) |
+| Frontend unit tests per section | Step 6 |
+| Backend unit tests | Step 7 |
+| E2E: WarmUp has no Vocabulary option | Step 8 |
+| Teacher QA confirms icebreaker | Post-merge QA run (not in PR scope) |
 
-## Exam Prep and Reading & Comprehension template interaction
-
-The Exam Prep template override (line ~305 in PromptService.cs) already sets a custom WarmUp description: "review the exam format, the target task type, and the scoring criteria. No casual icebreakers or conversation warm-ups." This is intentionally different from the standard icebreaker WarmUp. The `WarmUpGuidance` helper applies only to the base instruction path. The Exam Prep block stays as-is. Explicitly document this in a comment near the Exam Prep block.
-
-The Reading & Comprehension template override says "warmUp: a pre-reading activation task only" which aligns with the new approach. No changes needed there.
-
-## No-ops / out of scope
-- No ContentBlockType enum changes
-- No DB migrations
-- No frontend changes
-- No e2e test changes (WarmUp content is inside the lesson plan JSON blob, not separately validated at e2e level)
+## Out of scope
+- Prompt changes (issue explicitly forbids prompt patching as primary fix; #306 tracks cleanup)
+- DB migrations
+- Removing existing prompt negative constraints (tracked in #306)

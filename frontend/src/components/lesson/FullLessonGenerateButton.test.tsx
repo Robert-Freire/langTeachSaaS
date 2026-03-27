@@ -191,7 +191,7 @@ describe('FullLessonGenerateButton', () => {
     await waitFor(() => expect(onBlockSaved).toHaveBeenCalledTimes(5), { timeout: 3000 })
 
     const blockTypes = onBlockSaved.mock.calls.map((c) => (c as [ContentBlockDto])[0].blockType)
-    expect(new Set(blockTypes)).toEqual(new Set(['vocabulary', 'grammar', 'exercises', 'conversation', 'homework']))
+    expect(new Set(blockTypes)).toEqual(new Set(['free-text', 'grammar', 'exercises']))
   })
 
   it('all sections show active status simultaneously during generation', async () => {

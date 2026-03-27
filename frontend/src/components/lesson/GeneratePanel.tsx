@@ -180,10 +180,8 @@ export function GeneratePanel({
   )
 
   useEffect(() => {
-    if (!allowedTypes.includes(taskType)) {
-      setTaskType(allowedTypes[0])
-    }
-  }, [sectionType, lessonContext.cefrLevel]) // eslint-disable-line react-hooks/exhaustive-deps
+    setTaskType(current => allowedTypes.includes(current) ? current : allowedTypes[0])
+  }, [allowedTypes])
 
   const isStreaming = status === 'streaming'
   const isDone = status === 'done'

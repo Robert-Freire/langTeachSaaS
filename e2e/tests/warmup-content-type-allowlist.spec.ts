@@ -67,28 +67,19 @@ test('WarmUp generate panel shows Free activity but not Vocabulary or Grammar', 
     const hasReadonly = await readonlyLabel.isVisible()
     const hasSelect = await selectTrigger.isVisible()
 
-    if (hasReadonly) {
-      // WrapUp-style: single option shown as label
-      await expect(readonlyLabel).not.toBeVisible()
-    }
-
     if (hasSelect) {
-      // B1: dropdown with freeText + conversation
-      // Open dropdown to check options
+      // Dropdown case (B1+): open and verify options
       await selectTrigger.click()
       await expect(page.getByRole('option', { name: 'Free activity' })).toBeVisible({ timeout: UI_TIMEOUT })
-      // Vocabulary and Grammar must NOT appear in the dropdown
+      // Vocabulary, Grammar, and Exercises must NOT appear in the dropdown
       await expect(page.getByRole('option', { name: 'Vocabulary' })).not.toBeVisible()
       await expect(page.getByRole('option', { name: 'Grammar' })).not.toBeVisible()
       await expect(page.getByRole('option', { name: 'Exercises' })).not.toBeVisible()
-      // Press Escape to close dropdown
       await page.keyboard.press('Escape')
     }
 
     // Either way, "Free activity" must be the trigger text or the readonly label text
-    const triggerOrLabel = hasReadonly
-      ? readonlyLabel
-      : selectTrigger
+    const triggerOrLabel = hasReadonly ? readonlyLabel : selectTrigger
     await expect(triggerOrLabel).toContainText('Free activity')
   } finally {
     await context.close()
