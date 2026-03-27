@@ -114,9 +114,28 @@ interface EditState {
   lessonType: string
 }
 
+const EXAM_SESSION_TYPE_CLASSES: Record<string, string> = {
+  'Mock Test': 'bg-amber-50 border-amber-300 text-amber-800',
+  'Strategy Session': 'bg-purple-50 border-purple-300 text-purple-800',
+  'Input Session': 'bg-blue-50 border-blue-200 text-blue-700',
+}
+
+function ExamSessionTypeBadge({ type, idx }: { type: string; idx: number }) {
+  const cls = EXAM_SESSION_TYPE_CLASSES[type] ?? 'bg-zinc-50 border-zinc-200 text-zinc-500'
+  return (
+    <span
+      data-testid={`session-type-badge-${idx}`}
+      className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${cls}`}
+    >
+      {type}
+    </span>
+  )
+}
+
 interface SortableEntryRowProps {
   entry: CurriculumEntry
   idx: number
+  courseMode: string
   isExpanded: boolean
   isEditing: boolean
   editState: EditState
@@ -134,6 +153,7 @@ interface SortableEntryRowProps {
 function SortableEntryRow({
   entry,
   idx,
+  courseMode,
   isExpanded,
   isEditing,
   editState,
@@ -233,6 +253,9 @@ function SortableEntryRow({
                 >
                   {STATUS_LABELS[entry.status] ?? entry.status}
                 </Badge>
+                {courseMode === 'exam-prep' && entry.lessonType && (
+                  <ExamSessionTypeBadge type={entry.lessonType} idx={idx} />
+                )}
               </div>
               {entry.grammarFocus && (
                 <p className="text-xs text-zinc-500">Grammar: {entry.grammarFocus}</p>
@@ -660,6 +683,7 @@ export default function CourseDetail() {
                 key={entry.id}
                 entry={entry}
                 idx={idx}
+                courseMode={course.mode}
                 isExpanded={expandedIds.has(entry.id)}
                 isEditing={editingId === entry.id}
                 editState={editState}
