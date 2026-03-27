@@ -17,6 +17,7 @@ public static class SectionContentTypeAllowlist
     /// </summary>
     public static bool IsAllowed(string sectionType, string contentType)
     {
+        if (string.IsNullOrEmpty(sectionType)) return true;
         // Frontend sends PascalCase ("WarmUp"); normalise to lowercase ("warmup") to match dictionary keys.
         var key = sectionType.Replace(" ", "", StringComparison.Ordinal).ToLowerInvariant();
         if (!_allowlist.TryGetValue(key, out var allowed)) return true;
