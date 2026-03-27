@@ -104,6 +104,14 @@ All findings are pre-existing, unrelated to this PR's change:
 - **[Minor M1]** StudentForm edit: "Create Course" and "Cancel" both use `variant="outline"` with identical visual weight. Cancel is dismissive; Create Course is constructive — subtle differentiation would improve scannability.
 - **[Minor M3]** CourseNew locked student: No secondary text explains why the student cannot be changed (lock icon added but no label like "Assigned from student profile"). Functional but lower affordance than ideal.
 
+## PR #308 - Content type allowlist (#305) (2026-03-27)
+| Severity | Finding |
+|----------|---------|
+| Minor | M1: Mobile header (375px) "Preview as Student" off-screen — pre-existing, tracked in #246 |
+| Minor | M2: Tablet title wrap (768px) — pre-existing |
+
+_I1 (readonly label affordance) and I2 (dropdown ordering) were fixed before merge._
+
 ## PR #291 - Session-to-lesson navigation (2026-03-26)
 | Severity | Finding |
 |----------|---------|
