@@ -225,7 +225,7 @@ public class PromptService : IPromptService
                 "Choose a communicative production task appropriate for the stated CEFR level."
         };
 
-    private static string WarmUpGuidance(string cefrLevel) =>
+    private static string CefrWarmUpGuidance(string cefrLevel) =>
         cefrLevel.ToUpperInvariant() switch
         {
             "A1" or "A2" =>
@@ -301,7 +301,7 @@ public class PromptService : IPromptService
         const string schema = """{"title":"","objectives":[""],"sections":{"warmUp":"","presentation":"","practice":"","production":"","wrapUp":""}}""";
         var practiceLevelHint = CefrPracticeGuidance(cefrLevel);
         var productionGuidance = CefrProductionGuidance(cefrLevel);
-        var warmUpGuidance = WarmUpGuidance(cefrLevel);
+        var warmUpGuidance = CefrWarmUpGuidance(cefrLevel);
         var baseInstruction = $"""
         Generate a complete lesson plan for the lesson on "{topic}". Return JSON:
         {schema}
