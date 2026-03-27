@@ -13,6 +13,7 @@ export interface GenerateRequest {
   existingNotes?: string
   direction?: string
   grammarConstraints?: string
+  sectionType?: string
 }
 
 export interface TargetedDifficulty {

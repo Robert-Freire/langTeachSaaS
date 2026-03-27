@@ -64,6 +64,7 @@ public class GenerateController : ControllerBase
             [ContentBlockType.Conversation] = (svc, ctx) => svc.BuildConversationPrompt(ctx),
             [ContentBlockType.Reading]      = (svc, ctx) => svc.BuildReadingPrompt(ctx),
             [ContentBlockType.Homework]     = (svc, ctx) => svc.BuildHomeworkPrompt(ctx),
+            [ContentBlockType.FreeText]     = (svc, ctx) => svc.BuildFreeTextPrompt(ctx),
         };
 
     [HttpPost("{taskType}/stream")]
@@ -73,6 +74,14 @@ public class GenerateController : ControllerBase
             !PromptBuilders.TryGetValue(blockTypeEnum, out var buildPrompt))
         {
             Response.StatusCode = 404;
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(request.SectionType) &&
+            !SectionContentTypeAllowlist.IsAllowed(request.SectionType, taskType))
+        {
+            Response.StatusCode = 400;
+            await Response.WriteAsync($"Content type '{taskType}' is not allowed for section '{request.SectionType}'.", CancellationToken.None);
             return;
         }
 
@@ -286,6 +295,12 @@ public class GenerateController : ControllerBase
 
         if (language.Length == 0 || cefrLevel.Length == 0 || topic.Length == 0)
             return BadRequest("Language, CefrLevel, and Topic must not be blank.");
+
+        if (!string.IsNullOrEmpty(request.SectionType) &&
+            !SectionContentTypeAllowlist.IsAllowed(request.SectionType, blockType.ToKebabCase()))
+        {
+            return BadRequest($"Content type '{blockType.ToKebabCase()}' is not allowed for section '{request.SectionType}'.");
+        }
 
         var materials = await _materialService.GetMaterialContentsAsync(teacherId, lesson.Id, ct);
         var materialFileNames = materials.Count > 0

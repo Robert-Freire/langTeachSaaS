@@ -549,3 +549,111 @@ describe('GeneratePanel - task type dropdown casing', () => {
     expect(trigger.textContent).not.toMatch(/^vocabulary$/)
   })
 })
+
+describe('GeneratePanel - section content type allowlist', () => {
+  function makeIdleGenerate() {
+    return {
+      status: 'idle',
+      output: null,
+      error: null,
+      quotaExceeded: false,
+      generate: vi.fn(),
+      abort: vi.fn(),
+    }
+  }
+
+  it('WarmUp A1: shows only Free activity, no Vocabulary/Grammar/Exercises/Conversation options', async () => {
+    mockUseGenerate.mockReturnValue(makeIdleGenerate())
+
+    const user = userEvent.setup()
+    renderWithQuery(
+      <GeneratePanel
+        {...defaultProps}
+        sectionType="WarmUp"
+        lessonContext={{ ...defaultProps.lessonContext, cefrLevel: 'A1' }}
+      />
+    )
+
+    // Trigger should show "Free activity" as the default (free-text is the only allowed type)
+    const label = screen.getByText('Task type')
+    const container = label.closest('.space-y-1')!
+
+    // WarmUp A1 has only 1 allowed type, so it renders the read-only label
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toHaveTextContent('Free activity')
+    expect(container.querySelector('[data-slot="select-trigger"]')).toBeNull()
+  })
+
+  it('WarmUp B1: shows conversation option, not vocabulary or grammar', async () => {
+    mockUseGenerate.mockReturnValue(makeIdleGenerate())
+
+    const user = userEvent.setup()
+    renderWithQuery(
+      <GeneratePanel
+        {...defaultProps}
+        sectionType="WarmUp"
+        lessonContext={{ ...defaultProps.lessonContext, cefrLevel: 'B1' }}
+      />
+    )
+
+    // WarmUp B1 has 2 options (free-text, conversation) so a Select is rendered
+    const label = screen.getByText('Task type')
+    const container = label.closest('.space-y-1')!
+    const trigger = container.querySelector('[data-slot="select-trigger"]')!
+    expect(trigger).toBeTruthy()
+
+    // Open the dropdown to check available items
+    await user.click(trigger)
+
+    expect(screen.getByText('Free activity')).toBeInTheDocument()
+    expect(screen.getByText('Conversation')).toBeInTheDocument()
+    expect(screen.queryByText('Vocabulary')).toBeNull()
+    expect(screen.queryByText('Grammar')).toBeNull()
+    expect(screen.queryByText('Exercises')).toBeNull()
+  })
+
+  it('WrapUp: renders read-only label (no Select dropdown) with Free activity', () => {
+    mockUseGenerate.mockReturnValue(makeIdleGenerate())
+
+    renderWithQuery(
+      <GeneratePanel
+        {...defaultProps}
+        sectionType="WrapUp"
+        lessonContext={{ ...defaultProps.lessonContext, cefrLevel: 'B1' }}
+      />
+    )
+
+    const label = screen.getByText('Task type')
+    const container = label.closest('.space-y-1')!
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toHaveTextContent('Free activity')
+    expect(container.querySelector('[data-slot="select-trigger"]')).toBeNull()
+  })
+
+  it('Practice: shows only Exercises and Conversation options', async () => {
+    mockUseGenerate.mockReturnValue(makeIdleGenerate())
+
+    const user = userEvent.setup()
+    renderWithQuery(
+      <GeneratePanel
+        {...defaultProps}
+        sectionType="Practice"
+        lessonContext={{ ...defaultProps.lessonContext, cefrLevel: 'B1' }}
+      />
+    )
+
+    const label = screen.getByText('Task type')
+    const container = label.closest('.space-y-1')!
+    const trigger = container.querySelector('[data-slot="select-trigger"]')!
+    expect(trigger).toBeTruthy()
+
+    await user.click(trigger)
+
+    expect(screen.getByText('Exercises')).toBeInTheDocument()
+    expect(screen.getByText('Conversation')).toBeInTheDocument()
+    expect(screen.queryByText('Vocabulary')).toBeNull()
+    expect(screen.queryByText('Grammar')).toBeNull()
+    expect(screen.queryByText('Reading')).toBeNull()
+    expect(screen.queryByText('Homework')).toBeNull()
+  })
+})

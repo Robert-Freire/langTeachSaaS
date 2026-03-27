@@ -25,6 +25,9 @@ public class PromptService : IPromptService
     public ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx) =>
         new(BuildSystemPrompt(ctx), HomeworkUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 1024);
 
+    public ClaudeRequest BuildFreeTextPrompt(GenerationContext ctx) =>
+        new(BuildSystemPrompt(ctx), FreeTextUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 1024);
+
     public ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx) =>
         ctx.TemplateUnits is { Count: > 0 }
             ? new(CurriculumSystemPrompt(ctx), CurriculumPersonalizationUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 4096)
@@ -292,6 +295,16 @@ public class PromptService : IPromptService
         Use human-readable type labels such as "Fill in the Blanks", "Sentence Writing", "Vocabulary in Context", "Matching", "Translation", or "Short Answer".
         {{lessonSummaryLine}}Include 3-5 varied tasks the student can complete independently.
         """;
+    }
+
+    private static string FreeTextUserPrompt(GenerationContext ctx)
+    {
+        var topic = Sanitize(ctx.Topic);
+        var level = Sanitize(ctx.CefrLevel);
+        return $"Generate an appropriate in-class activity for this lesson section at {level} level on \"{topic}\". " +
+               "The activity should be brief, engaging, and match the pedagogical purpose of the section. " +
+               "Return clear prose instructions for the teacher (no JSON required). " +
+               "Keep it practical and completable in a one-on-one online tutoring session.";
     }
 
     private static string LessonPlanUserPrompt(GenerationContext ctx)
