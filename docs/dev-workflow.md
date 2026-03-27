@@ -50,7 +50,7 @@ flowchart TD
         Q -- "FAIL / GAPS" --> M
         Q -- "PASS" --> R
 
-        R["review + architecture-reviewer agents\nRun in parallel\nCode review vs. sprint branch\n+ cross-codebase consistency"]
+        R["review + architecture-reviewer agents\n+ prompt-health-reviewer if PromptService.cs changed\nRun in parallel"]
         R --> S{Review verdicts}
         S -- "FAIL / NEEDS REVISION" --> M
         S -- "PASS WITH NOTES\nlog to backlog" --> T
@@ -119,10 +119,11 @@ flowchart TD
 
 **Implementation** is the only phase without a fixed checklist beyond the pre-push checks. The agent codes, commits incrementally, and runs the full check suite (Azure Bicep, .NET build and tests, frontend build and unit tests) before moving on. Any failure loops back to implementation, not forward. One hard rule: every main functionality must include an e2e happy path test, planned at task start (not added as an afterthought). Unit tests are required for any modified frontend component or hook.
 
-**Quality Gates** run after pre-push checks pass. The first gate (`qa-verify`) is sequential; the next two (`review` and `architecture-reviewer`) run in parallel; the last (`review-ui`) is conditional.
+**Quality Gates** run after pre-push checks pass. The first gate (`qa-verify`) is sequential; the next three (`review`, `architecture-reviewer`, and conditionally `prompt-health-reviewer`) run in parallel; the last (`review-ui`) is conditional.
 - `qa-verify` checks whether every acceptance criterion from the original issue is demonstrably met. Returns a compact checklist (under 2000 chars) with MET/NOT MET/PARTIAL status per criterion and test coverage summary.
 - `review` performs a code quality review against the sprint branch (auto-detected), looking for bugs, security concerns, missing validation, and error handling. Minor notes that are not worth fixing immediately are logged to `plan/code-review-backlog.md` rather than blocking the PR.
 - `architecture-reviewer` runs in parallel with `review` and has a different lens: it cross-references the diff against the rest of the codebase to detect inconsistent patterns, duplicated logic, missing reuse of shared utilities, and convention breaks. It reads 3-5 similar existing files for each changed file and compares. The canonical failure case it prevents: a new CI workflow that runs `npm run build` without the VITE_* env vars that the existing `frontend.yml` passes to the same command (this was caught by CodeRabbit on PR #197 but missed by the code reviewer). Minor notes go to `plan/code-review-backlog.md`; NEEDS REVISION verdicts require fixes before proceeding.
+- `prompt-health-reviewer` runs in parallel with the other reviewers **only when the PR changes `PromptService.cs`**. It checks whether the changes introduce redundant constraints, contradictions between sections, negative bloat ("NEVER do X" instead of "do Y"), stale patches, or duplication. Critical findings (contradictions that confuse the model) block the PR; important findings get logged to `plan/code-review-backlog.md`. This per-PR gate prevents prompt template drift; the sprint-close agent also runs a full-file review as a periodic sweep.
 - `review-ui` runs only when the issue touches frontend or design. It spins up the e2e stack, takes screenshots across viewports and user flows, and evaluates visual quality and interaction correctness. The full report is written to `e2e/screenshots/review-ui/REPORT.md`; the agent returns only a compact summary (verdict + one-liner per finding) to keep the caller's context small. Minor findings that are not fixed are logged to `plan/ui-review-backlog.md`.
 
 Any gate can send the task back to implementation. The loop repeats until all three pass.
@@ -184,6 +185,7 @@ The Bash tool runs in Git Bash on Windows. Git Bash automatically translates Uni
 | Acceptance criteria | `qa-verify` agent | PASS verdict |
 | Code review | `review` agent | PASS or PASS WITH NOTES |
 | Consistency review | `architecture-reviewer` agent | PASS or PASS WITH NOTES (run in parallel with `review`) |
+| Prompt health | `prompt-health-reviewer` agent | CLEAN or NEEDS CLEANUP (only if `PromptService.cs` changed, run in parallel with `review`) |
 | UI review | `review-ui` agent | GOOD or POLISHED (only if `area:frontend` or `area:design`) |
 | CI + CodeRabbit | `gh pr checks` + `gh api` | No failures, no unresolved comments |
 

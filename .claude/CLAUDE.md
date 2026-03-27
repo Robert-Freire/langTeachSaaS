@@ -160,11 +160,15 @@ When a task is marked complete:
    - If verdict is **PASS WITH GAPS**: add missing test coverage, re-commit, re-run checks and QA.
    - If verdict is **PASS**: proceed to code review.
 4. Run the `review` agent and the `architecture-reviewer` agent **in parallel** (send both Agent tool calls in the same message). They have different lenses and do not depend on each other.
+   - **If `backend/LangTeach.Api/AI/PromptService.cs` is in the diff**, also run the `prompt-health-reviewer` agent in the same parallel batch. Pass it: "Review the prompt template changes in this PR. Diff: <paste the PromptService.cs diff>. Check for redundant constraints, contradictions, negative bloat, stale patches, and duplication introduced by these changes. Cross-reference against structural enforcement in the codebase." If no changes to PromptService.cs, skip it.
    - `review` verdict **FAIL**: fix all critical issues, re-commit, re-run checks and review.
    - `review` verdict **PASS WITH NOTES**: address important items where reasonable, then proceed. Append any unfixed notes to `plan/code-review-backlog.md` with PR number, date, severity, and description.
    - `architecture-reviewer` verdict **NEEDS REVISION**: fix pattern violations and convention breaks, re-commit, re-run checks, and re-run the architecture reviewer.
    - `architecture-reviewer` verdict **PASS WITH NOTES**: address items where reasonable, then proceed. Minor notes not worth fixing go to `plan/code-review-backlog.md`.
-   - Both at **PASS** or **PASS WITH NOTES** (after addressing or logging notes): proceed to UI review (or push if not applicable).
+   - `prompt-health-reviewer` verdict **URGENT** or any critical finding: fix before pushing. Contradictory or redundant prompt instructions must not ship.
+   - `prompt-health-reviewer` verdict **NEEDS CLEANUP** with no critical findings: address important items, log the rest in `plan/code-review-backlog.md`.
+   - `prompt-health-reviewer` verdict **CLEAN**: proceed.
+   - All agents at **PASS** or equivalent (after addressing or logging notes): proceed to UI review (or push if not applicable).
 5. **UI Review (review-ui agent):** Skip this step ONLY if the issue has NONE of these labels: `area:frontend`, `area:design`. If the issue has `area:frontend` OR `area:design` (either one is sufficient), you MUST run `review-ui`. **`area:frontend` alone triggers UI review. You do NOT need `area:design`.** Never ask the user whether to skip UI review; if the label is present, run it.
    - The review-ui agent manages its own e2e stack (`docker-compose.e2e.yml`). Do NOT start the dev stack for UI review. The agent handles stack startup and teardown automatically. **Do NOT check for running e2e containers before launching review-ui.** The E2E Stack Coordination section does not apply here. Just launch the agent directly.
    - In the agent prompt, list the specific routes and screens the feature modified so the agent runs in **focused review mode** (screenshots of changed screens + regression check on dashboard/lesson editor). Example prompt: *"Review UI for lesson editor header redesign. Changed screens: /lessons/:id (editor view), /lessons/:id/study (study view). The header layout and metadata section were restructured."*
