@@ -1,16 +1,17 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { GraduationCap, BookOpen, Loader2 } from 'lucide-react'
+import { GraduationCap, BookOpen, Loader2, Lock } from 'lucide-react'
 import { createCourse, type CreateCourseRequest, type CourseMode } from '../api/courses'
 import { getCurriculumTemplates, getMappingPreview } from '../api/curricula'
-import { getStudents } from '../api/students'
+import { getStudent, getStudents } from '../api/students'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/utils'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
@@ -25,6 +26,8 @@ const SESSION_COUNTS = [5, 8, 10, 12, 15, 20]
 
 export default function CourseNew() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const lockedStudentId = searchParams.get('studentId') ?? undefined
 
   const [mode, setMode] = useState<CourseMode>('general')
   const [name, setName] = useState('')
@@ -33,7 +36,7 @@ export default function CourseNew() {
   const [targetExam, setTargetExam] = useState('')
   const [examDate, setExamDate] = useState('')
   const [sessionCount, setSessionCount] = useState('10')
-  const [studentId, setStudentId] = useState<string | undefined>()
+  const [studentId, setStudentId] = useState<string | undefined>(lockedStudentId)
   const [useTemplate, setUseTemplate] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
   const [teacherNotes, setTeacherNotes] = useState('')
@@ -42,6 +45,12 @@ export default function CourseNew() {
   const { data: studentsData } = useQuery({
     queryKey: ['students'],
     queryFn: () => getStudents(),
+  })
+
+  const { data: lockedStudent, isLoading: lockedStudentLoading } = useQuery({
+    queryKey: ['students', lockedStudentId],
+    queryFn: () => getStudent(lockedStudentId!),
+    enabled: !!lockedStudentId,
   })
 
   const { data: allTemplates, isLoading: templatesLoading } = useQuery({
@@ -59,6 +68,17 @@ export default function CourseNew() {
   })
 
   const students = studentsData?.items ?? []
+
+  // Auto-fill language and CEFR level from the locked student once their data loads.
+  // Intentionally omits language/targetCefrLevel from deps: we only want to seed the fields
+  // on first load (when they're empty), never overwrite user edits on subsequent renders.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!lockedStudent) return
+    if (!language) setLanguage(lockedStudent.learningLanguage)
+    if (!targetCefrLevel) setTargetCefrLevel(lockedStudent.cefrLevel)
+  }, [lockedStudent, lockedStudentId]) // eslint-disable-line react-hooks/exhaustive-deps
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const { mutate: doCreate, isPending } = useMutation({
     mutationFn: () => {
@@ -292,15 +312,29 @@ export default function CourseNew() {
             </Select>
           </div>
 
-          {/* Student (optional) */}
-          {students.length > 0 && (
+          {/* Student */}
+          {lockedStudentId ? (
+            <div className="space-y-1.5">
+              <Label>Student</Label>
+              {lockedStudentLoading
+                ? <Skeleton className="h-9 w-full" data-testid="student-locked-loading" />
+                : lockedStudent && <div
+                    className="flex h-9 w-full items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-700"
+                    data-testid="student-locked"
+                  >
+                    <Lock className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+                    {lockedStudent.name}
+                  </div>
+              }
+            </div>
+          ) : students.length > 0 ? (
             <div className="space-y-1.5">
               <Label>Student (optional)</Label>
               <Select value={studentId ?? 'none'} onValueChange={v => {
-              const next = v == null || v === 'none' ? undefined : v
-              setStudentId(next)
-              if (!next) setTeacherNotes('')
-            }}>
+                const next = v == null || v === 'none' ? undefined : v
+                setStudentId(next)
+                if (!next) setTeacherNotes('')
+              }}>
                 <SelectTrigger data-testid="student-select">
                   {studentId
                     ? <span>{students.find(s => s.id === studentId)?.name ?? 'No specific student'}</span>
@@ -315,7 +349,7 @@ export default function CourseNew() {
                 </SelectContent>
               </Select>
             </div>
-          )}
+          ) : null}
 
           {/* Student profile summary */}
           {studentId && (() => {
@@ -362,7 +396,7 @@ export default function CourseNew() {
           })()}
 
           {submitError && (
-            <Card className="border-red-200 bg-red-50">
+            <Card className="border-red-200 bg-red-50" data-testid="generation-error">
               <CardContent className="p-3 text-sm text-red-700">{submitError}</CardContent>
             </Card>
           )}

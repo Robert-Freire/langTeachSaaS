@@ -34,8 +34,14 @@ namespace LangTeach.Api.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("DismissedWarnings")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateOnly?>("ExamDate")
                         .HasColumnType("date");
+
+                    b.Property<string>("GenerationWarnings")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
@@ -192,6 +198,9 @@ namespace LangTeach.Api.Migrations
 
                     b.Property<string>("Language")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LearningTargets")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Objectives")

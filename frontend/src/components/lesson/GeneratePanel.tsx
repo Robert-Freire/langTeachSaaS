@@ -101,6 +101,7 @@ export function GeneratePanel({
   )
   const [style, setStyle] = useState('Conversational')
   const [direction, setDirection] = useState<string | undefined>(undefined)
+  const [grammarConstraints, setGrammarConstraints] = useState<string | undefined>(undefined)
   const [inserting, setInserting] = useState(false)
   const [insertError, setInsertError] = useState<string | null>(null)
 
@@ -121,7 +122,8 @@ export function GeneratePanel({
     studentId: lessonContext.studentId ?? undefined,
     existingNotes: lessonContext.existingNotes ?? undefined,
     direction,
-  }), [lessonId, lessonContext, style, direction])
+    grammarConstraints,
+  }), [lessonId, lessonContext, style, direction, grammarConstraints])
 
   const handleGenerate = () => {
     generate(taskType, request)
@@ -219,6 +221,20 @@ export function GeneratePanel({
             placeholder="e.g. Conversational"
           />
         </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs">Grammar constraints (optional)</Label>
+        <Textarea
+          value={grammarConstraints ?? ''}
+          onChange={(e) => setGrammarConstraints(e.target.value || undefined)}
+          disabled={isStreaming}
+          rows={2}
+          maxLength={500}
+          className="resize-none text-xs"
+          placeholder="e.g. include subjunctive, only regular verbs, avoid passive voice"
+          data-testid="grammar-constraints-textarea"
+        />
       </div>
 
       {existingBlocks.length > 0 && (

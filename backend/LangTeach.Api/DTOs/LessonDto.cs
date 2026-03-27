@@ -15,5 +15,6 @@ public record LessonDto(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     DateTime? ScheduledAt,
-    string? StudentName
+    string? StudentName,
+    string[]? LearningTargets
 );

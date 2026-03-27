@@ -425,6 +425,39 @@ public class PromptServiceTests
         req.SystemPrompt.Should().NotContain("Target grammar structures");
     }
 
+    // --- Teacher grammar instructions ---
+
+    [Fact]
+    public void SystemPrompt_IncludesTeacherGrammarConstraints_WhenProvided()
+    {
+        var ctx = BaseCtx() with { TeacherGrammarConstraints = "include subjunctive, only regular verbs" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Additional grammar instructions from the teacher:");
+        req.SystemPrompt.Should().Contain("include subjunctive, only regular verbs");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsTeacherGrammarConstraints_WhenNull()
+    {
+        var ctx = BaseCtx();
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Additional grammar instructions from the teacher:");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsTeacherGrammarConstraints_WhenWhitespace()
+    {
+        var ctx = BaseCtx() with { TeacherGrammarConstraints = "   " };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Additional grammar instructions from the teacher:");
+    }
+
     // --- WarmUp icebreaker constraint ---
 
     [Fact]
@@ -890,5 +923,58 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("L1 interference");
         req.UserPrompt.Should().Contain("Italian");
         req.UserPrompt.Should().Contain("false cognates");
+    }
+
+    // --- CurriculumUserPrompt: exam-prep mode ---
+
+    [Fact]
+    public void CurriculumUserPrompt_ExamPrep_IncludesExamTypeAndDeadline()
+    {
+        var ctx = new CurriculumContext(
+            Language: "Spanish",
+            Mode: "exam-prep",
+            SessionCount: 8,
+            TargetCefrLevel: null,
+            TargetExam: "DELE",
+            ExamDate: new DateOnly(2026, 6, 15),
+            StudentName: null,
+            StudentNativeLanguage: null,
+            StudentInterests: null,
+            StudentGoals: null,
+            TemplateLevel: null,
+            TemplateUnits: null
+        );
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("DELE");
+        req.UserPrompt.Should().Contain("2026-06-15");
+    }
+
+    [Fact]
+    public void CurriculumUserPrompt_ExamPrep_IncludesSessionTypeGuidanceForEightPlusSessions()
+    {
+        var ctx = new CurriculumContext(
+            Language: "Spanish",
+            Mode: "exam-prep",
+            SessionCount: 8,
+            TargetCefrLevel: null,
+            TargetExam: "DELE",
+            ExamDate: null,
+            StudentName: null,
+            StudentNativeLanguage: null,
+            StudentInterests: null,
+            StudentGoals: null,
+            TemplateLevel: null,
+            TemplateUnits: null
+        );
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Mock Test");
+        req.UserPrompt.Should().Contain("Strategy Session");
+        req.UserPrompt.Should().Contain("Input Session");
+        req.UserPrompt.Should().Contain("AT LEAST one Mock Test");
+        req.UserPrompt.Should().Contain("AT LEAST one Strategy Session");
     }
 }

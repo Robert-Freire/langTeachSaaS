@@ -11,6 +11,7 @@ public class CurriculumGenerationService : ICurriculumGenerationService
     private readonly IPromptService _prompts;
     private readonly ICurriculumTemplateService _templateService;
     private readonly ISessionMappingService _sessionMapping;
+    private readonly ICurriculumValidationService _validationService;
     private readonly ILogger<CurriculumGenerationService> _logger;
 
     public CurriculumGenerationService(
@@ -18,16 +19,18 @@ public class CurriculumGenerationService : ICurriculumGenerationService
         IPromptService prompts,
         ICurriculumTemplateService templateService,
         ISessionMappingService sessionMapping,
+        ICurriculumValidationService validationService,
         ILogger<CurriculumGenerationService> logger)
     {
         _claude = claude;
         _prompts = prompts;
         _templateService = templateService;
         _sessionMapping = sessionMapping;
+        _validationService = validationService;
         _logger = logger;
     }
 
-    public async Task<List<CurriculumEntry>> GenerateAsync(CurriculumContext ctx, CancellationToken ct = default)
+    public async Task<(List<CurriculumEntry> Entries, List<CurriculumWarning> Warnings)> GenerateAsync(CurriculumContext ctx, CancellationToken ct = default)
     {
         if (ctx.TemplateLevel is not null)
         {
@@ -95,7 +98,8 @@ public class CurriculumGenerationService : ICurriculumGenerationService
                 }
             }
 
-            return skeletons;
+            // Template-based curricula are inherently level-correct; skip validation.
+            return (skeletons, []);
         }
 
         // Free AI generation path
@@ -162,7 +166,15 @@ public class CurriculumGenerationService : ICurriculumGenerationService
             }
         }
 
-        return freeEntries;
+        // Validate generated content against target level boundaries.
+        var warnings = new List<CurriculumWarning>();
+        if (!string.IsNullOrEmpty(ctx.TargetCefrLevel))
+        {
+            var allowedGrammar = _templateService.GetGrammarForCefrPrefix(ctx.TargetCefrLevel);
+            warnings = await _validationService.ValidateAsync(freeEntries, ctx.TargetCefrLevel, allowedGrammar, ct);
+        }
+
+        return (freeEntries, warnings);
     }
 
     private void ApplyPersonalization(List<CurriculumEntry> skeletons, string aiContent)

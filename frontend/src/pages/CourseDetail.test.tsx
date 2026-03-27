@@ -11,9 +11,9 @@ vi.mock('../api/courses', () => ({
   reorderCurriculum: vi.fn(),
   updateCurriculumEntry: vi.fn(),
   markEntryAsTaught: vi.fn(),
-  generateLessonFromEntry: vi.fn(),
   addCurriculumEntry: vi.fn(),
   deleteCurriculumEntry: vi.fn(),
+  dismissWarning: vi.fn(),
 }))
 
 // Capture the onDragEnd handler from DndContext so we can trigger it in tests
@@ -55,14 +55,16 @@ const mockCourse = {
   sessionCount: 3,
   studentId: 's1',
   studentName: 'Ana',
-  lessonsCreated: 0,
+  lessonsCreated: 1,
   createdAt: '2026-03-10T10:00:00Z',
   updatedAt: '2026-03-10T10:00:00Z',
   entries: [
     { id: 'e1', orderIndex: 1, topic: 'Greetings', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
-    { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: null, competencies: 'reading', lessonType: null, lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
-    { id: 'e3', orderIndex: 3, topic: 'Hobbies', grammarFocus: 'Present continuous', competencies: 'writing', lessonType: 'Grammar-focused', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+    { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: null, competencies: 'reading', lessonType: null, lessonId: 'lesson-id-created', status: 'created' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+    { id: 'e3', orderIndex: 3, topic: 'Hobbies', grammarFocus: 'Present continuous', competencies: 'writing', lessonType: 'Grammar-focused', lessonId: 'lesson-id-taught', status: 'taught' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
   ],
+  warnings: null,
+  dismissedWarningKeys: null,
 }
 
 const mockCourseWithPersonalization = {
@@ -102,7 +104,7 @@ describe('CourseDetail', () => {
     vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
     wrapper(<CourseDetail />)
 
-    expect(await screen.findByTestId('course-progress')).toHaveTextContent('0 of 3 lessons created')
+    expect(await screen.findByTestId('course-progress')).toHaveTextContent('1 of 3 lessons created')
   })
 
   it('clicking edit shows edit form', async () => {
@@ -115,12 +117,72 @@ describe('CourseDetail', () => {
     expect(screen.getByTestId('edit-topic')).toHaveValue('Greetings')
   })
 
-  it('generate lesson button is visible for planned entries', async () => {
+  it('generate lesson link is visible for planned entries', async () => {
     vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
     wrapper(<CourseDetail />)
 
     await screen.findByTestId('course-title')
     expect(screen.getByTestId('generate-lesson-0')).toBeInTheDocument()
+  })
+
+  // -------------------------------------------------------------------------
+  // Status badges and lesson links
+  // -------------------------------------------------------------------------
+
+  describe('session lesson status badges', () => {
+    it('planned entry shows "Not generated" badge', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      expect(screen.getByTestId('curriculum-entry-0')).toHaveTextContent('Not generated')
+    })
+
+    it('created entry shows "Draft" badge', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      expect(screen.getByTestId('curriculum-entry-1')).toHaveTextContent('Draft')
+    })
+
+    it('taught entry shows "Ready" badge', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      expect(screen.getByTestId('curriculum-entry-2')).toHaveTextContent('Ready')
+    })
+
+    it('"Generate lesson" link includes correct pre-fill params from session data', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      const link = screen.getByTestId('generate-lesson-0')
+      const href = link.getAttribute('href') ?? ''
+      expect(href).toContain('studentId=s1')
+      expect(href).toContain('language=English')
+      expect(href).toContain('level=B2')
+      expect(href).toContain('topic=Greetings')
+      expect(href).toContain('grammar=Present+simple')
+      expect(href).toContain('courseId=course-1')
+      expect(href).toContain('entryId=e1')
+    })
+
+    it('created entry shows "Edit lesson" link to the lesson', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      const link = screen.getByTestId('lesson-link-1')
+      expect(link.getAttribute('href')).toBe('/lessons/lesson-id-created')
+      expect(link).toHaveTextContent('Edit lesson')
+    })
+
+    it('taught entry shows "View lesson" link to the lesson', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      const link = screen.getByTestId('lesson-link-2')
+      expect(link.getAttribute('href')).toBe('/lessons/lesson-id-taught')
+      expect(link).toHaveTextContent('View lesson')
+    })
   })
 
   it('entry details are hidden by default and shown after expand click', async () => {
@@ -186,7 +248,7 @@ describe('CourseDetail', () => {
     expect(screen.getByTestId('summary-level')).toHaveTextContent('B2')
     expect(screen.getByTestId('summary-student')).toHaveTextContent('Ana')
     expect(screen.getByTestId('summary-mode')).toHaveTextContent('General Learning')
-    expect(screen.getByTestId('summary-progress')).toHaveTextContent('0/3')
+    expect(screen.getByTestId('summary-progress')).toHaveTextContent('1/3')
   })
 
   // -------------------------------------------------------------------------
@@ -311,5 +373,99 @@ describe('CourseDetail', () => {
     // e2 should come before e1 in the call
     const call = vi.mocked(coursesApi.reorderCurriculum).mock.calls[0]
     expect(call[1].indexOf('e2')).toBeLessThan(call[1].indexOf('e1'))
+  })
+
+  it('shows error state with retry button when fetch fails', async () => {
+    vi.mocked(coursesApi.getCourse).mockRejectedValue(new Error('network error'))
+    wrapper(<CourseDetail />)
+
+    expect(await screen.findByTestId('course-load-error')).toBeInTheDocument()
+    expect(screen.getByText('Failed to load course.')).toBeInTheDocument()
+    expect(screen.getByTestId('course-load-retry-btn')).toBeInTheDocument()
+  })
+
+  // -------------------------------------------------------------------------
+  // Exam prep session type badges
+  // -------------------------------------------------------------------------
+
+  describe('exam prep session type badges', () => {
+    const examPrepCourse = {
+      ...mockCourse,
+      mode: 'exam-prep' as const,
+      targetCefrLevel: null,
+      targetExam: 'DELE',
+      entries: [
+        { id: 'e1', orderIndex: 1, topic: 'Exam skills overview', grammarFocus: null, competencies: 'reading,writing', lessonType: 'Input Session', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+        { id: 'e2', orderIndex: 2, topic: 'Exam strategy deep-dive', grammarFocus: null, competencies: 'writing', lessonType: 'Strategy Session', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+        { id: 'e3', orderIndex: 3, topic: 'Full mock exam', grammarFocus: null, competencies: 'reading,writing,listening,speaking', lessonType: 'Mock Test', lessonId: null, status: 'planned' as const, contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      ],
+    }
+
+    it('shows session type badge in collapsed row for exam-prep course', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(examPrepCourse)
+      wrapper(<CourseDetail />)
+
+      await screen.findByTestId('course-title')
+
+      expect(screen.getByTestId('session-type-badge-0')).toHaveTextContent('Input Session')
+      expect(screen.getByTestId('session-type-badge-1')).toHaveTextContent('Strategy Session')
+      expect(screen.getByTestId('session-type-badge-2')).toHaveTextContent('Mock Test')
+    })
+
+    it('does not show session type badge for general mode course', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+
+      await screen.findByTestId('course-title')
+
+      expect(screen.queryByTestId('session-type-badge-0')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('generation warnings panel', () => {
+    const warningCourse = {
+      ...mockCourse,
+      warnings: [
+        { sessionIndex: 1, grammarFocus: 'Subjunctive Mood', flagReason: 'C1 structure, above A1.', suggestedLevel: 'C1' },
+      ],
+      dismissedWarningKeys: null,
+    }
+
+    it('does not render warnings panel when warnings is null', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('course-title')
+      expect(screen.queryByTestId('warnings-panel')).not.toBeInTheDocument()
+    })
+
+    it('renders warnings panel when warnings are present', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(warningCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('warnings-panel')
+      expect(screen.getByText(/Subjunctive Mood/)).toBeInTheDocument()
+      expect(screen.getByText(/C1 structure/)).toBeInTheDocument()
+    })
+
+    it('calls dismissWarning when dismiss button clicked', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(warningCourse)
+      vi.mocked(coursesApi.dismissWarning).mockResolvedValue(undefined)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('warnings-panel')
+      fireEvent.click(screen.getByTestId('dismiss-warning-1'))
+      await waitFor(() => {
+        expect(coursesApi.dismissWarning).toHaveBeenCalledWith('course-1', 'session:1:Subjunctive Mood')
+      })
+    })
+
+    it('shows clear badge when all warnings are dismissed', async () => {
+      const clearedCourse = {
+        ...warningCourse,
+        dismissedWarningKeys: ['session:1:Subjunctive Mood'],
+      }
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(clearedCourse)
+      wrapper(<CourseDetail />)
+      await screen.findByTestId('warnings-panel-clear')
+      expect(screen.getByText(/All grammar structures are level-appropriate/)).toBeInTheDocument()
+    })
   })
 })

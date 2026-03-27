@@ -123,6 +123,17 @@ test('create course (exam-prep mode)', async ({ browser }) => {
     mode: 'exam-prep',
     targetCefrLevel: null,
     targetExam: 'DELE',
+    sessionCount: 8,
+    entries: [
+      { id: 'x1', orderIndex: 1, topic: 'DELE exam overview', grammarFocus: 'Present subjunctive', competencies: 'reading,writing', lessonType: 'Input Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x2', orderIndex: 2, topic: 'Formal letter conventions', grammarFocus: null, competencies: 'writing', lessonType: 'Input Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x3', orderIndex: 3, topic: 'Time management in the exam', grammarFocus: null, competencies: 'reading,writing', lessonType: 'Strategy Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x4', orderIndex: 4, topic: 'Listening comprehension strategies', grammarFocus: null, competencies: 'listening', lessonType: 'Strategy Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x5', orderIndex: 5, topic: 'Speaking task practice', grammarFocus: null, competencies: 'speaking', lessonType: 'Input Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x6', orderIndex: 6, topic: 'Written production under conditions', grammarFocus: null, competencies: 'writing', lessonType: 'Input Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x7', orderIndex: 7, topic: 'Review exam marking criteria', grammarFocus: null, competencies: 'reading,writing', lessonType: 'Strategy Session', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      { id: 'x8', orderIndex: 8, topic: 'DELE B2 Full Mock Test', grammarFocus: null, competencies: 'reading,writing,listening,speaking', lessonType: 'Mock Test', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+    ],
   }
 
   await page.route('**/api/courses', async (route) => {
@@ -157,6 +168,10 @@ test('create course (exam-prep mode)', async ({ browser }) => {
 
   await expect(page).toHaveURL(new RegExp(`/courses/${examCourse.id}`), { timeout: UI_TIMEOUT })
   await expect(page.getByTestId('course-title')).toHaveText('DELE B2 Prep', { timeout: NAV_TIMEOUT })
+
+  // Verify session type badges: at least one Mock Test and one Strategy Session are visible
+  await expect(page.getByTestId('session-type-badge-7')).toHaveText('Mock Test', { timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('session-type-badge-2')).toHaveText('Strategy Session', { timeout: UI_TIMEOUT })
 
   await context.close()
 })
@@ -234,55 +249,101 @@ test('edit curriculum entry', async ({ browser }) => {
   await context.close()
 })
 
-test('generate lesson from curriculum entry', async ({ browser }) => {
+test('generate lesson from curriculum entry navigates to LessonNew pre-filled', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  const newLessonId = '00000000-0000-0000-0000-000000001234'
+  const STUDENT_COURSE_ID = '00000000-0000-0000-0000-000000000096'
+  const courseWithStudent = {
+    ...MOCK_COURSE,
+    id: STUDENT_COURSE_ID,
+    studentId: '00000000-0000-0000-0000-000000000001',
+    studentName: 'Ana',
+    targetCefrLevel: 'B2',
+    language: 'English',
+    entries: [
+      { id: 'e1', orderIndex: 1, topic: 'Greetings and Introductions', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
+      ...MOCK_COURSE.entries.slice(1),
+    ],
+  }
 
-  await page.route(`**/api/courses/${MOCK_COURSE_ID}`, async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_COURSE) })
+  const STUDENT_ID = '00000000-0000-0000-0000-000000000001'
+
+  await page.route(`**/api/courses/${STUDENT_COURSE_ID}`, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(courseWithStudent) })
   })
-  await page.route(`**/api/courses/${MOCK_COURSE_ID}/curriculum/e1/lesson`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ lessonId: newLessonId }),
-    })
+  await page.route('**/api/lesson-templates', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
   })
-  // Mock the lesson editor route so it doesn't 404
-  await page.route(`**/api/lessons/${newLessonId}`, async (route) => {
+  await page.route('**/api/students**', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        id: newLessonId,
-        title: 'Greetings and Introductions',
-        language: 'English',
-        cefrLevel: 'B2',
-        topic: 'Greetings and Introductions',
-        durationMinutes: 60,
-        objectives: null,
-        status: 'Draft',
-        studentId: null,
-        studentName: null,
-        templateId: null,
-        sections: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        scheduledAt: null,
+        items: [{ id: STUDENT_ID, name: 'Ana', learningLanguage: 'English', cefrLevel: 'B2', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '', updatedAt: '' }],
+        totalCount: 1,
       }),
     })
+  })
+
+  await page.goto(`/courses/${STUDENT_COURSE_ID}`)
+  await expect(page.getByTestId('course-title')).toHaveText('B2 English Course', { timeout: NAV_TIMEOUT })
+
+  // Verify "Not generated" badge on the first planned entry
+  await expect(page.getByTestId('curriculum-entry-0')).toContainText('Not generated')
+
+  // Verify the generate lesson link has the expected URL params (check href without clicking)
+  const generateLink = page.getByTestId('generate-lesson-0')
+  const href = await generateLink.getAttribute('href')
+  expect(href).toContain('level=B2')
+  expect(href).toContain(`studentId=${STUDENT_ID}`)
+  expect(href).toContain('language=English')
+  expect(href).toContain('topic=Greetings')
+
+  // Click "Generate lesson" — should navigate to LessonNew step 2 (auto-advanced due to entryId param)
+  await generateLink.click()
+
+  await expect(page).toHaveURL(/\/lessons\/new/, { timeout: UI_TIMEOUT })
+  // Auto-advanced to step 2: "Lesson Details" heading is visible
+  await expect(page.getByText('Lesson Details')).toBeVisible({ timeout: UI_TIMEOUT })
+  // Topic is pre-filled
+  await expect(page.getByTestId('input-topic')).toHaveValue('Greetings and Introductions', { timeout: UI_TIMEOUT })
+  // Level is pre-filled from URL param
+  await expect(page.getByTestId('select-level')).toContainText('B2', { timeout: UI_TIMEOUT })
+  // Student selector shows "Ana" (students query resolved via mock)
+  await expect(page.getByTestId('select-student')).toContainText('Ana', { timeout: UI_TIMEOUT })
+
+  await context.close()
+})
+
+test('course view shows Draft badge and Edit lesson link for created entries', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const EXISTING_LESSON_ID = '00000000-0000-0000-0000-000000009999'
+  const COURSE_WITH_CREATED = {
+    ...MOCK_COURSE,
+    entries: [
+      { ...MOCK_COURSE.entries[0], lessonId: EXISTING_LESSON_ID, status: 'created' },
+      ...MOCK_COURSE.entries.slice(1),
+    ],
+  }
+
+  await page.route(`**/api/courses/${MOCK_COURSE_ID}`, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(COURSE_WITH_CREATED) })
   })
 
   await page.goto(`/courses/${MOCK_COURSE_ID}`)
   await expect(page.getByTestId('course-title')).toHaveText('B2 English Course', { timeout: NAV_TIMEOUT })
 
-  // Click "Generate Lesson" on first entry
-  await page.getByTestId('generate-lesson-0').click()
+  // First entry should show "Draft" badge
+  await expect(page.getByTestId('curriculum-entry-0')).toContainText('Draft')
 
-  // Should navigate to lesson editor
-  await expect(page).toHaveURL(new RegExp(`/lessons/${newLessonId}`), { timeout: UI_TIMEOUT })
+  // "Edit lesson" link should be visible and link to the lesson
+  const lessonLink = page.getByTestId('lesson-link-0')
+  await expect(lessonLink).toBeVisible()
+  const href = await lessonLink.getAttribute('href')
+  expect(href).toBe(`/lessons/${EXISTING_LESSON_ID}`)
 
   await context.close()
 })
@@ -623,6 +684,138 @@ test('remove session removes entry from curriculum after confirmation', async ({
   // After removal, first entry is now "Daily Routines"
   await expect(page.getByTestId('curriculum-entry-0')).toContainText('Daily Routines', { timeout: UI_TIMEOUT })
   await expect(page.getByText('Greetings and Introductions')).not.toBeVisible()
+
+  await context.close()
+})
+
+test('full happy path: student edit → CourseNew (locked) → generate → CourseDetail with personalized session', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const PERSONALIZED_COURSE_ID = '00000000-0000-0000-0000-000000000097'
+  const personalizedCourse = {
+    ...MOCK_COURSE,
+    id: PERSONALIZED_COURSE_ID,
+    name: 'A1 Spanish for Marco',
+    language: 'Spanish',
+    targetCefrLevel: 'A1',
+    sessionCount: 12,
+    studentId: null as string | null,
+    studentName: 'Marco',
+    entries: [
+      {
+        id: 'p1', orderIndex: 1, topic: 'Saludos y presentaciones', grammarFocus: 'Verbo llamarse',
+        competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned',
+        contextDescription: 'Marco introduces himself at his new office in Barcelona',
+        personalizationNotes: 'Focused on workplace greetings for relocation context',
+        vocabularyThemes: 'Saludos,Trabajo,Barcelona',
+      },
+      { id: 'p2', orderIndex: 2, topic: 'En la ciudad', grammarFocus: 'Preposiciones de lugar', competencies: 'reading,speaking', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: 'Ciudad,Transporte' },
+    ],
+  }
+
+  // Create a student with full Spanish A1 profile
+  const studentName = `Marco Test ${Date.now()}`
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: NAV_TIMEOUT })
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'A1' }).click()
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL('/students', { timeout: NAV_TIMEOUT })
+
+  // Navigate to student edit page
+  const studentCard = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName }),
+  })
+  await expect(studentCard).toBeVisible({ timeout: NAV_TIMEOUT })
+  await studentCard.getByTestId('edit-student').click()
+  await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: NAV_TIMEOUT })
+
+  const editUrl = page.url()
+  const studentId = editUrl.match(/\/students\/([^/]+)\/edit/)?.[1]
+  expect(studentId).toBeTruthy()
+
+  // Mock course creation and retrieval
+  await page.route('**/api/courses', async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ...personalizedCourse, studentId }) })
+    } else {
+      await route.continue()
+    }
+  })
+  await page.route(`**/api/courses/${PERSONALIZED_COURSE_ID}`, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...personalizedCourse, studentId }) })
+  })
+
+  // Click Create Course button
+  const createCourseBtn = page.getByTestId('create-course-btn')
+  await expect(createCourseBtn).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(createCourseBtn).not.toBeDisabled()
+  await createCourseBtn.click()
+
+  // CourseNew: student locked, language + CEFR auto-filled
+  await expect(page).toHaveURL(`/courses/new?studentId=${studentId}`, { timeout: NAV_TIMEOUT })
+  await expect(page.getByTestId('student-locked')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('student-locked')).toContainText(studentName)
+  await expect(page.getByTestId('language-select')).toContainText('Spanish', { timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('cefr-select')).toContainText('A1', { timeout: UI_TIMEOUT })
+
+  // Fill remaining required field (course name) and generate
+  await page.getByTestId('course-name').fill('A1 Spanish for Marco')
+  await page.getByTestId('generate-curriculum-btn').click()
+
+  // Should navigate to CourseDetail
+  await expect(page).toHaveURL(new RegExp(`/courses/${PERSONALIZED_COURSE_ID}`), { timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('course-title')).toHaveText('A1 Spanish for Marco', { timeout: NAV_TIMEOUT })
+  await expect(page.getByTestId('curriculum-list')).toBeVisible()
+  await expect(page.getByText('Saludos y presentaciones')).toBeVisible()
+
+  // Expand first entry and verify personalized context is shown
+  await page.getByTestId('expand-entry-0').click()
+  await expect(page.getByTestId('context-description-0')).toContainText('Barcelona', { timeout: UI_TIMEOUT })
+
+  await context.close()
+})
+
+test('generation failure: error card shown and form stays interactive for retry', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  // Mock POST /api/courses to return a server error
+  await page.route('**/api/courses', async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'AI generation failed. Please try again.' }) })
+    } else {
+      await route.continue()
+    }
+  })
+
+  await page.goto('/courses/new')
+  await expect(page.locator('h1')).toHaveText('New Course', { timeout: NAV_TIMEOUT })
+
+  await page.getByTestId('course-name').fill('Test Course')
+  await page.getByTestId('language-select').click()
+  await page.getByRole('option', { name: 'English' }).click()
+  await expect(page.getByTestId('language-select')).toContainText('English', { timeout: UI_TIMEOUT })
+  await page.getByTestId('cefr-select').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+  await expect(page.getByTestId('cefr-select')).toContainText('B1', { timeout: UI_TIMEOUT })
+
+  await page.getByTestId('generate-curriculum-btn').click()
+
+  // Error card should appear
+  await expect(page.getByTestId('generation-error')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('generation-error')).toContainText('AI generation failed', { timeout: UI_TIMEOUT })
+
+  // Form should remain visible (not replaced by loading spinner)
+  await expect(page.getByTestId('generate-curriculum-btn')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('generate-curriculum-btn')).not.toBeDisabled()
+
+  // URL should not have changed (still on CourseNew, not CourseDetail)
+  await expect(page).toHaveURL('/courses/new')
 
   await context.close()
 })

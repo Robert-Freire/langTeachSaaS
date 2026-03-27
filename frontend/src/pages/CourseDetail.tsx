@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   DndContext,
@@ -24,22 +24,24 @@ import {
   Pencil,
   Trash2,
   Plus,
-  Loader2,
   BookOpen,
   Check,
   X,
+  AlertTriangle,
+  ExternalLink,
 } from 'lucide-react'
 import {
   getCourse,
   reorderCurriculum,
   updateCurriculumEntry,
   markEntryAsTaught,
-  generateLessonFromEntry,
   addCurriculumEntry,
   deleteCurriculumEntry,
+  dismissWarning,
   type CurriculumEntry,
+  type CurriculumWarning,
 } from '../api/courses'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -58,13 +60,13 @@ import { cn } from '@/lib/utils'
 import { logger } from '../lib/logger'
 
 const STATUS_LABELS: Record<string, string> = {
-  planned: 'Planned',
-  created: 'Created',
-  taught: 'Taught',
+  planned: 'Not generated',
+  created: 'Draft',
+  taught: 'Ready',
 }
 
 const STATUS_CLASSES: Record<string, string> = {
-  planned: 'text-zinc-500 border-zinc-200 bg-zinc-50',
+  planned: 'text-amber-700 border-amber-200 bg-amber-50',
   created: 'text-blue-700 border-blue-200 bg-blue-50',
   taught: 'text-green-700 border-green-200 bg-green-50',
 }
@@ -112,41 +114,57 @@ interface EditState {
   lessonType: string
 }
 
+const EXAM_SESSION_TYPE_CLASSES: Record<string, string> = {
+  'Mock Test': 'bg-amber-50 border-amber-300 text-amber-800',
+  'Strategy Session': 'bg-purple-50 border-purple-300 text-purple-800',
+  'Input Session': 'bg-blue-50 border-blue-200 text-blue-700',
+}
+
+function ExamSessionTypeBadge({ type, idx }: { type: string; idx: number }) {
+  const cls = EXAM_SESSION_TYPE_CLASSES[type] ?? 'bg-zinc-50 border-zinc-200 text-zinc-500'
+  return (
+    <span
+      data-testid={`session-type-badge-${idx}`}
+      className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${cls}`}
+    >
+      {type}
+    </span>
+  )
+}
+
 interface SortableEntryRowProps {
   entry: CurriculumEntry
   idx: number
+  courseMode: string
   isExpanded: boolean
   isEditing: boolean
   editState: EditState
   updatingEntry: boolean
-  generatingId: string | null
-  generatingLesson: boolean
+  generateLessonUrl: string
   onToggleExpand: (id: string) => void
   onStartEdit: (entry: CurriculumEntry) => void
   onCancelEdit: () => void
   onSaveEdit: (entryId: string) => void
   onEditStateChange: (field: keyof EditState, value: string) => void
   onMarkTaught: (entry: CurriculumEntry) => void
-  onGenerateLesson: (entryId: string) => void
   onRequestDelete: (entryId: string) => void
 }
 
 function SortableEntryRow({
   entry,
   idx,
+  courseMode,
   isExpanded,
   isEditing,
   editState,
   updatingEntry,
-  generatingId,
-  generatingLesson,
+  generateLessonUrl,
   onToggleExpand,
   onStartEdit,
   onCancelEdit,
   onSaveEdit,
   onEditStateChange,
   onMarkTaught,
-  onGenerateLesson,
   onRequestDelete,
 }: SortableEntryRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: entry.id })
@@ -235,6 +253,9 @@ function SortableEntryRow({
                 >
                   {STATUS_LABELS[entry.status] ?? entry.status}
                 </Badge>
+                {courseMode === 'exam-prep' && entry.lessonType && (
+                  <ExamSessionTypeBadge type={entry.lessonType} idx={idx} />
+                )}
               </div>
               {entry.grammarFocus && (
                 <p className="text-xs text-zinc-500">Grammar: {entry.grammarFocus}</p>
@@ -283,25 +304,28 @@ function SortableEntryRow({
                   <span className="hidden sm:inline">Mark as taught</span>
                 </Button>
               )}
-              <Button
-                size="sm"
-                variant="outline"
-                data-testid={`generate-lesson-${idx}`}
-                disabled={generatingLesson || entry.status !== 'planned'}
-                onClick={() => onGenerateLesson(entry.id)}
-                className="text-xs h-9 min-w-[44px]"
-              >
-                {generatingId === entry.id ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <>
-                    <BookOpen className="h-3.5 w-3.5 sm:mr-1" />
-                    <span className="hidden sm:inline">
-                      {entry.status === 'planned' ? 'Generate Lesson' : entry.status === 'created' ? 'Created' : 'Taught'}
-                    </span>
-                  </>
-                )}
-              </Button>
+              {entry.status === 'planned' && (
+                <Link
+                  to={generateLessonUrl}
+                  data-testid={`generate-lesson-${idx}`}
+                  className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), 'text-xs h-9 min-w-[44px]')}
+                >
+                  <BookOpen className="h-3.5 w-3.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Generate lesson</span>
+                </Link>
+              )}
+              {(entry.status === 'created' || entry.status === 'taught') && entry.lessonId && (
+                <Link
+                  to={`/lessons/${entry.lessonId}`}
+                  data-testid={`lesson-link-${idx}`}
+                  className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), 'text-xs h-9 min-w-[44px]')}
+                >
+                  <ExternalLink className="h-3.5 w-3.5 sm:mr-1" />
+                  <span className="hidden sm:inline">
+                    {entry.status === 'created' ? 'Edit lesson' : 'View lesson'}
+                  </span>
+                </Link>
+              )}
             </div>
           </div>
 
@@ -369,13 +393,71 @@ function SortableEntryRow({
   )
 }
 
+function GenerationWarningsPanel({
+  warnings,
+  dismissedKeys,
+  onDismiss,
+}: {
+  warnings: CurriculumWarning[] | null | undefined
+  dismissedKeys: string[] | null | undefined
+  onDismiss: (key: string) => void
+}) {
+  if (!warnings || warnings.length === 0) return null
+
+  const dismissed = new Set(dismissedKeys ?? [])
+  const visibleWarnings = warnings.filter(
+    w => !dismissed.has(`session:${w.sessionIndex}:${w.grammarFocus}`)
+  )
+
+  if (visibleWarnings.length === 0) {
+    return (
+      <div data-testid="warnings-panel-clear" className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2">
+        <Check className="h-4 w-4 shrink-0" />
+        All grammar structures are level-appropriate.
+      </div>
+    )
+  }
+
+  return (
+    <div data-testid="warnings-panel" className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+      <div className="flex items-center gap-2 text-amber-800 font-medium text-sm">
+        <AlertTriangle className="h-4 w-4 shrink-0" />
+        {visibleWarnings.length} out-of-level grammar {visibleWarnings.length === 1 ? 'structure' : 'structures'} detected
+      </div>
+      <ul className="space-y-2">
+        {visibleWarnings.map(w => {
+          const key = `session:${w.sessionIndex}:${w.grammarFocus}`
+          return (
+            <li key={key} className="flex items-start justify-between gap-3 text-sm">
+              <div className="space-y-0.5">
+                <span className="font-medium text-amber-900">Session {w.sessionIndex}: </span>
+                <span className="text-amber-800">{w.grammarFocus}</span>
+                {w.suggestedLevel && (
+                  <span className="text-amber-600"> (expected {w.suggestedLevel})</span>
+                )}
+                <p className="text-amber-700 text-xs">{w.flagReason}</p>
+              </div>
+              <button
+                data-testid={`dismiss-warning-${w.sessionIndex}`}
+                onClick={() => onDismiss(key)}
+                className="shrink-0 text-amber-600 hover:text-amber-800 text-xs underline"
+                aria-label={`Dismiss warning for session ${w.sessionIndex}`}
+              >
+                Dismiss
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editState, setEditState] = useState<EditState>({ topic: '', grammarFocus: '', competencies: '', lessonType: '' })
-  const [generatingId, setGeneratingId] = useState<string | null>(null)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [expandedForCourseId, setExpandedForCourseId] = useState<string | undefined>(id)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
@@ -419,15 +501,6 @@ export default function CourseDetail() {
     onError: (err) => logger.error('CourseDetail', 'mark taught failed', err),
   })
 
-  const { mutate: doGenerateLesson, isPending: generatingLesson } = useMutation({
-    mutationFn: (entryId: string) => generateLessonFromEntry(id!, entryId),
-    onSuccess: ({ lessonId }) => {
-      queryClient.invalidateQueries({ queryKey: ['course', id] })
-      navigate(`/lessons/${lessonId}`)
-    },
-    onSettled: () => setGeneratingId(null),
-  })
-
   const { mutate: doAddEntry, isPending: addingEntry } = useMutation({
     mutationFn: () => addCurriculumEntry(id!, {
       topic: addState.topic,
@@ -451,6 +524,12 @@ export default function CourseDetail() {
     onError: (err) => logger.error('CourseDetail', 'delete entry failed', err),
   })
 
+  const { mutate: doDismissWarning } = useMutation({
+    mutationFn: (warningKey: string) => dismissWarning(id!, warningKey),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course', id] }),
+    onError: (err) => logger.error('CourseDetail', 'dismiss warning failed', err),
+  })
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -464,7 +543,21 @@ export default function CourseDetail() {
   }
 
   if (isError || !course) {
-    return <div className="text-red-500 text-sm">Failed to load course.</div>
+    return (
+      <div className="space-y-6">
+        <PageHeader backTo="/courses" backLabel="Courses" title="Course" />
+        <div className="flex flex-col items-center justify-center py-24 gap-4" data-testid="course-load-error">
+          <p className="text-sm text-red-500">Failed to load course.</p>
+          <Button
+            variant="outline"
+            data-testid="course-load-retry-btn"
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['course', id] })}
+          >
+            Try again
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   const entries = [...course.entries].sort((a, b) => a.orderIndex - b.orderIndex)
@@ -506,6 +599,20 @@ export default function CourseDetail() {
       if (next.has(entryId)) { next.delete(entryId) } else { next.add(entryId) }
       return next
     })
+  }
+
+  function buildGenerateLessonUrl(entry: CurriculumEntry): string {
+    // course is guaranteed non-null here (early return above handles !course)
+    const c = course!
+    const params = new URLSearchParams()
+    if (c.studentId) params.set('studentId', c.studentId)
+    if (c.language) params.set('language', c.language)
+    if (c.targetCefrLevel) params.set('level', c.targetCefrLevel)
+    if (entry.topic) params.set('topic', entry.topic)
+    if (entry.grammarFocus) params.set('grammar', entry.grammarFocus)
+    params.set('courseId', c.id)
+    params.set('entryId', entry.id)
+    return `/lessons/new?${params.toString()}`
   }
 
   const progressPercent = course.sessionCount > 0
@@ -560,6 +667,13 @@ export default function CourseDetail() {
         </div>
       </div>
 
+      {/* Generation quality warnings */}
+      <GenerationWarningsPanel
+        warnings={course.warnings}
+        dismissedKeys={course.dismissedWarningKeys}
+        onDismiss={doDismissWarning}
+      />
+
       {/* Curriculum list */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={entries.map(e => e.id)} strategy={verticalListSortingStrategy}>
@@ -569,22 +683,18 @@ export default function CourseDetail() {
                 key={entry.id}
                 entry={entry}
                 idx={idx}
+                courseMode={course.mode}
                 isExpanded={expandedIds.has(entry.id)}
                 isEditing={editingId === entry.id}
                 editState={editState}
                 updatingEntry={updatingEntry}
-                generatingId={generatingId}
-                generatingLesson={generatingLesson}
+                generateLessonUrl={buildGenerateLessonUrl(entry)}
                 onToggleExpand={toggleExpand}
                 onStartEdit={startEdit}
                 onCancelEdit={() => setEditingId(null)}
                 onSaveEdit={saveEdit}
                 onEditStateChange={(field, value) => setEditState(s => ({ ...s, [field]: value }))}
                 onMarkTaught={doMarkTaught}
-                onGenerateLesson={(entryId) => {
-                  setGeneratingId(entryId)
-                  doGenerateLesson(entryId)
-                }}
                 onRequestDelete={(id) => setConfirmDeleteId(id)}
               />
             ))}

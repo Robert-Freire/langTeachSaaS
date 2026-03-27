@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace LangTeach.Api.Controllers;
 
@@ -226,7 +227,27 @@ public class LessonsController : ControllerBase
 
         _logger.LogInformation("GET /api/lessons/{LessonId}/study. TeacherId={TeacherId}", lessonId, teacherId);
 
-        return Ok(new StudyLessonDto(lesson.Id, lesson.Title, lesson.Language, lesson.CefrLevel, lesson.Topic, sections));
+        string[]? learningTargets = null;
+        if (lesson.LearningTargets is not null)
+        {
+            try { learningTargets = JsonSerializer.Deserialize<string[]>(lesson.LearningTargets); }
+            catch { /* malformed JSON — treat as no targets */ }
+        }
+
+        return Ok(new StudyLessonDto(lesson.Id, lesson.Title, lesson.Language, lesson.CefrLevel, lesson.Topic, sections, learningTargets));
+    }
+
+    [HttpPut("{lessonId:guid}/learning-targets")]
+    public async Task<IActionResult> UpdateLearningTargets(
+        Guid lessonId,
+        [FromBody] UpdateLearningTargetsRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email!);
+        var result = await _lessonService.UpdateLearningTargetsAsync(teacherId, lessonId, request.LearningTargets, cancellationToken);
+        if (result is null) return NotFound("Lesson not found.");
+        return Ok(result);
     }
 
     [HttpGet("{lessonId:guid}/export/pdf")]

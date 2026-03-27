@@ -16,11 +16,11 @@ namespace LangTeach.Api.Tests.Controllers;
 /// </summary>
 internal sealed class FakeCurriculumGenerationService : ICurriculumGenerationService
 {
-    public Task<List<CurriculumEntry>> GenerateAsync(CurriculumContext ctx, CancellationToken ct = default) =>
-        Task.FromResult(new List<CurriculumEntry>
-        {
-            new() { Id = Guid.NewGuid(), OrderIndex = 1, Topic = "Fake Session", Status = "planned" }
-        });
+    public Task<(List<CurriculumEntry> Entries, List<CurriculumWarning> Warnings)> GenerateAsync(CurriculumContext ctx, CancellationToken ct = default) =>
+        Task.FromResult<(List<CurriculumEntry>, List<CurriculumWarning>)>((
+            [new() { Id = Guid.NewGuid(), OrderIndex = 1, Topic = "Fake Session", Status = "planned" }],
+            []
+        ));
 }
 
 [Collection("ApiTests")]
