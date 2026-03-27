@@ -21,9 +21,16 @@ Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Wor
 - Phase 2A: Teacher Workflow: CLOSED (reorganized 2026-03-21)
 - Curriculum & Personalization: CLOSED (2026-03-24, 35/35 done, merged to main)
 - Pedagogical Credibility: CLOSED (merged into Student-Aware Curriculum)
-- Student-Aware Curriculum: ACTIVE (20/21 done, 1 open: #261)
-  - All issues closed except #261 (Lesson objectives summary in editor header, P2)
+- Student-Aware Curriculum: CLOSING (21/21 original done, sprint close in progress)
+  - All 21 original issues closed (including #261 which was done but not tracked)
+  - #305 OPEN — restrict WarmUp to freeText/conversation content types (P1, qa:ready, in Ready column)
   - Board fixed 2026-03-27: 16 missing issues added to board, 9 done issues closed manually
+  - Sprint close progress (2026-03-27):
+    - Stage 1 DONE: backlogs triaged, 44 deleted, 29 batched into #298-#304 (backlog issues for next sprint)
+    - Stage 2 PARTIAL: board verified, Teacher QA ran (sprint reviewer only), pedagogy review done (ADJUST verdict)
+    - Stage 3 NOT STARTED: awaiting user merge trigger after testing
+    - Pedagogy findings: WarmUp vocabulary drill recurring (P0, now #305), Practice variety limited (P1, covered by Pedagogical Quality sprint)
+    - Dev stack running locally for user testing (sprint branch)
   - #292 DONE — PR #296 merged (exam prep mode: learning goal toggle, exam selector, deadline picker, session type badges)
   - #291 DONE — PR #297 merged (session-to-lesson navigation: status badges, Generate lesson nav, Edit/View links)
   - #290 DONE — PR #295 merged (course creation e2e flow: StudentCoursesCard, error state, 2 e2e + 5 unit tests)
