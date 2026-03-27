@@ -17,7 +17,7 @@ Before reviewing, read these files:
 1. **Prompt templates**: `backend/LangTeach.Api/AI/PromptService.cs` (the file under review)
 2. **Content type definitions**: grep for `ContentBlockType` or content type enums in `backend/` to understand what the code enforces structurally
 3. **Generation controller**: `backend/LangTeach.Api/Controllers/GenerateController.cs` to see what validation happens before prompts are built
-4. **Previous review** (if exists): glob `plan/prompt-health-review-*.md` and read the most recent one for context on known issues and prior findings
+4. **Previous review** (if exists): glob `plan/sprints/prompt-health-review-*.md` and read the most recent one for context on known issues and prior findings
 
 ## What You Evaluate
 

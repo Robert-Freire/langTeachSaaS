@@ -69,7 +69,7 @@ Sprint close prompt health review for <sprint name>. Review backend/LangTeach.Ap
 <If relevant: note any recent structural changes that affect what prompts need to say, e.g. "Content type allowlists were added in #305, restricting which types each section can generate.">
 ```
 
-Log findings in `plan/prompt-health-review-<sprint-slug>.md`. If any findings are severity critical, include them in the pre-merge summary as blocking items.
+Log findings in `plan/sprints/prompt-health-review-<sprint-slug>.md`. If any findings are severity critical, include them in the pre-merge summary as blocking items.
 
 ## Phase 4: Pre-Merge Summary
 
@@ -94,7 +94,7 @@ Present the final summary:
 ### Prompt Health
 - Findings: N redundant, N contradictory, N negative bloat, N stale, N duplication
 - Critical items: [list or "none"]
-- Report: plan/prompt-health-review-<sprint-slug>.md
+- Report: plan/sprints/prompt-health-review-<sprint-slug>.md
 
 ### Ready to merge?
 YES — user can trigger merge-sprint-to-main GitHub Action
