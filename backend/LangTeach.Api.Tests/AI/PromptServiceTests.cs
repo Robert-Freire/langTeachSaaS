@@ -491,6 +491,18 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void LessonPlanPrompt_WarmUp_UsesHigherOrderActivities_ForC1Plus()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "C1" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        // C1 band: higher-order thinking activities
+        req.UserPrompt.Should().Contain("ethical dilemma");
+        req.UserPrompt.Should().Contain("circumlocution");
+    }
+
+    [Fact]
     public void LessonPlanPrompt_WarmUp_DoesNotContainNegativeVocabularyConstraint()
     {
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
