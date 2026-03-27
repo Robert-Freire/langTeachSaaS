@@ -175,7 +175,7 @@ export function GeneratePanel({
   )
 
   const filteredTaskTypes = useMemo(
-    () => TASK_TYPES.filter(t => allowedTypes.includes(t.value)),
+    () => allowedTypes.map(v => TASK_TYPES.find(t => t.value === v)).filter(Boolean) as typeof TASK_TYPES,
     [allowedTypes]
   )
 
@@ -214,11 +214,15 @@ export function GeneratePanel({
         <div className="space-y-1">
           <Label className="text-xs">Task type</Label>
           {filteredTaskTypes.length === 1 ? (
-            <div
-              className="h-8 flex items-center px-3 text-xs rounded-md border border-input bg-muted text-muted-foreground"
-              data-testid="task-type-readonly"
-            >
-              {filteredTaskTypes[0].label}
+            <div>
+              <div
+                className="h-8 flex items-center px-3 text-xs rounded-md border border-input bg-muted text-muted-foreground"
+                data-testid="task-type-readonly"
+                title="Only one content type is allowed for this section"
+              >
+                {filteredTaskTypes[0].label}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Only type for this section</p>
             </div>
           ) : (
             <Select value={taskType} onValueChange={(v) => v && setTaskType(v as ContentBlockType)} disabled={isStreaming}>
