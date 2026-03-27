@@ -87,7 +87,10 @@ Freeze = Robert does not trigger the merge action. The sprint branch keeps recei
 1. Sprint start: create `sprint/<slug>` from `main`, update "Current milestone" view filter on the Roadmap board in GitHub UI
 2. During sprint: agents open PRs against the sprint branch. New sprint issues use `add-to-board.sh <url> <status>` to add to the Roadmap board
 3. Robert periodically triggers merge action to sync sprint -> main (unless frozen)
-4. Sprint end: final merge to main, delete the sprint branch
+4. Sprint close (three stages):
+   - **Stage 1 (PM, main conversation):** Read the three backlog files (`plan/code-review-backlog.md`, `plan/ui-review-backlog.md`, `plan/observed-issues.md`). Triage each entry as FIX NOW / NEXT SPRINT / DELETE. Present triage to user. If FIX NOW items exist, those get implemented via normal worktree flow before proceeding. Batch NEXT SPRINT items into themed GitHub issues. Clear triaged entries from backlog files.
+   - **Stage 2 (agent):** After user approves backlogs, run the `sprint-close` agent. It verifies board/issues, runs Teacher QA, runs pedagogy review on QA results, and returns a pre-merge summary with a READY/NOT READY verdict.
+   - **Stage 3 (cleanup, after user triggers merge action):** Close the milestone, delete the sprint branch, update memory (task status, sprint overviews), clear remaining backlog entries.
 5. Next sprint: new `sprint/<slug>` from `main`, update milestone view filter
 
 ### Exceptions (can target main directly)
@@ -116,16 +119,21 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 - **Skip already-assigned issues** — only pick issues with no assignee. Check the `assignees` field in the list output, or filter with `gh issue list ... --assignee ""` (no assignee)
 - **Immediately self-assign the issue when you pick it** (before worktree, before plan): `gh issue edit <number> --add-assignee "@me"` — this signals to other agents that the issue is taken
 
+**Creating and editing issues:**
+- Run `/qa` on every newly created issue before considering the work done
+- Before editing a `qa:ready` issue: check it's not assigned (stop if it is), remove `qa:ready`, make the edit, re-run `/qa`, restore the label only if QA passes
+
 **Adding issues to the project board:**
 - Every new issue must be added to the board with a status. **Never use `gh project item-add` directly** (it leaves items in "No Status").
 - Use the helper script: `./scripts/add-to-board.sh <issue-url> [status]`
 - Status values: `backlog` (default), `ready`, `in-progress`, `ready-to-test`, `done`
 
 **Closing issues via PR:**
-- PR body must include `Closes #N` to auto-close the issue on merge
+- PR body must include `Closes #N` for documentation, but **auto-close only works when PRs target `main`**. Since sprint PRs target the sprint branch, auto-close will NOT trigger.
 - Apply appropriate area/type labels when creating issues
 
 **After PR is merged (when user confirms merge):**
+- **Manually close the issue** (auto-close does not work for sprint-branch PRs): `gh issue close <N> --repo Robert-Freire/langTeachSaaS --reason completed`
 - Move the issue to "Ready to Test" on the project board: `gh project item-edit --project-id PVT_kwHOAF1Pks4BSLsS --id <ITEM_ID> --field-id PVTSSF_lAHOAF1Pks4BSLsSzg_ysiA --single-select-option-id 530fcec2`
   - To find the item ID: `gh project item-list 2 --owner Robert-Freire --format json` and match by issue number
 - Never move issues to "Done." The user does sanity checks and moves to Done manually.

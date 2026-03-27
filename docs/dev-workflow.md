@@ -85,7 +85,7 @@ flowchart TD
     subgraph CLOSE ["Close"]
         Y["Notify user\nPR ready for review"]
         Y --> Z["User reviews + merges to sprint branch"]
-        Z --> AA["Move issue to Ready to Test\nproject board"]
+        Z --> AA["task-merged agent:\nClose issue + move to Ready to Test"]
         AA --> AB["ExitWorktree remove"]
         AB --> G
     end
@@ -131,13 +131,19 @@ Any gate can send the task back to implementation. The loop repeats until all th
 
 **E2E Stack Contention** is handled gracefully. Only one e2e stack can run at a time. If an agent needs the stack (for e2e tests or UI review) but another agent owns it, the agent stops, notifies the user, and starts a cron that checks every 5 minutes whether the stack has been freed. When the containers disappear, the cron notifies the user and the agent can proceed.
 
-**Pull Request** opens against the active sprint branch (not main) with a `Closes #N` reference so the issue auto-closes on merge. Since CodeRabbit only auto-reviews PRs targeting main, the agent immediately posts `@coderabbitai review` as a PR comment to trigger the review manually. A cron then runs every five minutes to check CI status and new CodeRabbit comments. The agent evaluates each comment critically (not every automated suggestion is correct), fixes what is genuinely valid, replies to declined suggestions with reasoning, and pushes fixes. Safety limits apply: maximum 3 fix-and-push rounds, and the agent stops on test failures or architectural disagreements rather than looping indefinitely. If the agent stops, the user is notified.
+**Pull Request** opens against the active sprint branch (not main) with a `Closes #N` reference in the body for documentation. Note: `Closes #N` does NOT auto-close the issue when the PR targets a sprint branch (auto-close only works for PRs merged into the default branch). The agent must close the issue manually after merge. Since CodeRabbit only auto-reviews PRs targeting main, the agent immediately posts `@coderabbitai review` as a PR comment to trigger the review manually. A cron then runs every five minutes to check CI status and new CodeRabbit comments. The agent evaluates each comment critically (not every automated suggestion is correct), fixes what is genuinely valid, replies to declined suggestions with reasoning, and pushes fixes. Safety limits apply: maximum 3 fix-and-push rounds, and the agent stops on test failures or architectural disagreements rather than looping indefinitely. If the agent stops, the user is notified.
 
-**Close** is the human step. The user receives a notification that the PR is ready, reviews at their own pace, and merges to the sprint branch. After merge, the issue moves to "Ready to Test" on the project board (not "Done") so the user can do a final sanity check before closing it out. The worktree is then removed and the cycle starts again with the next highest-priority issue.
+**Close** is the human step. The user receives a notification that the PR is ready, reviews at their own pace, and merges to the sprint branch. After merge, the `task-merged` agent runs: it manually closes the GitHub issue (since auto-close doesn't work for sprint-branch PRs), then moves it to "Ready to Test" on the project board (not "Done") so the user can do a final sanity check. The worktree is then removed and the cycle starts again with the next highest-priority issue.
 
 **Deploy** is decoupled from the development loop. The sprint branch accumulates merged PRs. When the user is satisfied with the sprint branch state, they trigger the `merge-sprint-to-main` GitHub Action. This merges the sprint branch into main, and the existing CD pipeline deploys main to Azure automatically. Deploy freeze simply means not triggering the merge action; the sprint branch keeps receiving work while main and Azure stay stable.
 
-**End-of-sprint backlog review** closes the loop on deferred findings. At the end of each sprint, the PM reviews all three backlogs (`plan/code-review-backlog.md`, `plan/ui-review-backlog.md`, and `plan/observed-issues.md`) and decides what to do with the accumulated items. Findings are never converted one-to-one into issues. Instead, related items are grouped and batched into a single `type:polish` or `type:tech-debt` issue that covers a coherent theme (e.g., "Polish: lesson editor visual consistency" or "Tech debt: error handling gaps in generation endpoints"). Items that are not worth batching are discarded. The resulting batched issues go through the standard `/qa` gate before entering a sprint.
+**Sprint Close** is a three-stage process triggered when all sprint work is done:
+
+1. **Backlog triage (PM, interactive):** The PM reads the three backlog files (`plan/code-review-backlog.md`, `plan/ui-review-backlog.md`, `plan/observed-issues.md`) and classifies each entry as FIX NOW (blocks sprint quality), NEXT SPRINT (batch into a themed issue), or DELETE (not worth tracking). The user reviews and approves the triage. FIX NOW items get implemented via normal worktree flow before proceeding. NEXT SPRINT items are grouped into `type:polish` or `type:tech-debt` issues that go through the standard `/qa` gate.
+
+2. **Verification and quality gate (sprint-close agent):** After backlogs are clean, the `sprint-close` agent runs. It verifies all milestone issues are closed and on the board, runs Teacher QA against the sprint branch (all personas), passes the results to the pedagogy reviewer for a sprint-level quality assessment, and returns a READY/NOT READY verdict. If the pedagogy reviewer says RETHINK on any systemic issue, the sprint is not ready to merge.
+
+3. **Cleanup (after user triggers merge):** Close the GitHub milestone, delete the sprint branch, update memory (task status, sprint overviews), clear the backlog files.
 
 ---
 
@@ -187,9 +193,9 @@ The Bash tool runs in Git Bash on Windows. Git Bash automatically translates Uni
 - Only pick issues with `qa:ready` label
 - Self-assign immediately when picking (signals to other agents)
 - PRs target the active sprint branch, not main
-- PR body must include `Closes #N` for auto-close on merge
+- PR body includes `Closes #N` for documentation (auto-close does NOT work for sprint-branch PRs; the `task-merged` agent closes issues manually)
 - Never merge, user reviews and merges manually
-- After merge: move to "Ready to Test", not "Done" (user does final sanity check)
+- After merge: `task-merged` agent closes the issue and moves to "Ready to Test", not "Done" (user does final sanity check)
 - Never guess milestone names, always query `gh milestone list --state open`
 - E2E happy path test required for every main functionality, planned at task start
 - Unit tests required for any modified frontend component or hook

@@ -1,7 +1,7 @@
 {
   "config": {
-    "configFile": "C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\worktrees\\fix-qa-stack-independence\\.claude\\skills\\teacher-qa\\playwright\\playwright.config.ts",
-    "rootDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/worktrees/fix-qa-stack-independence/.claude/skills/teacher-qa/playwright/tests",
+    "configFile": "C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\playwright\\playwright.config.ts",
+    "rootDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/playwright/tests",
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -16,7 +16,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/worktrees/fix-qa-stack-independence/.claude/skills/teacher-qa/output/test-artifacts",
+        "outputDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/output/test-artifacts",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -24,7 +24,7 @@
         },
         "id": "",
         "name": "",
-        "testDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/worktrees/fix-qa-stack-independence/.claude/skills/teacher-qa/playwright/tests",
+        "testDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/playwright/tests",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -81,32 +81,31 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 70767,
+                  "duration": 43970,
                   "errors": [],
                   "stdout": [
                     {
-                      "text": "Sprint Reviewer run complete. Output: C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\worktrees\\fix-qa-stack-independence\\.claude\\skills\\teacher-qa\\output\\sprint-reviewer-2026-03-23T11-04-58\n"
+                      "text": "[teacher-qa] PDF export succeeded: lesson_teacher.pdf\n"
                     },
                     {
-                      "text": "Topic: \"Past tenses: contrasting preterito indefinido and imperfecto for narrating past events\"\n"
+                      "text": "Sprint Reviewer run complete. Output: C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\output\\sprint-reviewer-2026-03-27T19-21-26\n"
                     },
                     {
-                      "text": "Sprint issues: 8 items\n"
+                      "text": "Topic: \"pretérito indefinido vs imperfecto en contexto cotidiano\"\n"
                     },
                     {
-                      "text": "Generation took 30s. 5 blocks across 5 sections.\n"
+                      "text": "Sprint issues: 21 items\n"
                     },
                     {
-                      "text": "Artifacts: student-view=true, pdf=false\n"
+                      "text": "Generation took 34s. 5 blocks across 5 sections.\n"
+                    },
+                    {
+                      "text": "Artifacts: student-view=true, pdf=true\n"
                     }
                   ],
-                  "stderr": [
-                    {
-                      "text": "[teacher-qa] PDF export failed for lesson d6a8dd71-da53-4acb-b99b-7807d960bb48: TimeoutError: page.waitForEvent: Timeout 30000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================\n"
-                    }
-                  ],
+                  "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-03-23T11:04:58.527Z",
+                  "startTime": "2026-03-27T19:21:26.884Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -124,8 +123,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-03-23T11:04:57.705Z",
-    "duration": 71733.749,
+    "startTime": "2026-03-27T19:21:26.080Z",
+    "duration": 44905.378000000004,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,
