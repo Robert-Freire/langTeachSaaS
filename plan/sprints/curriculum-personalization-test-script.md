@@ -22,11 +22,11 @@
 
 > Learning Goals and Areas to Improve now accept custom text, not just predefined options.
 
-- [ ] Go to any existing student (or create one)
-- [ ] In **Learning Goals**, type something custom (e.g., "prepare presentations for port meetings") and press Enter
-- [ ] Verify it appears as a chip alongside any predefined selections
-- [ ] Do the same in **Areas to Improve** (e.g., "confuses ser/estar in past tense")
-- [ ] Save the student, reopen, verify custom entries persisted
+- [X] Go to any existing student (or create one)
+- [X] In **Learning Goals**, type something custom (e.g., "prepare presentations for port meetings") and press Enter
+- [X] Verify it appears as a chip alongside any predefined selections
+- [X] Do the same in **Areas to Improve** (e.g., "confuses ser/estar in past tense")
+- [X] Save the student, reopen, verify custom entries persisted
 
 ---
 
@@ -34,10 +34,10 @@
 
 > Areas to Improve now shows language-appropriate options.
 
-- [ ] Open a student whose target language is **Spanish**
-- [ ] Open the Areas to Improve dropdown: you should see Spanish-relevant items (ser/estar, subjunctive, por/para...) and NOT English-only items (phrasal verbs, articles)
-- [ ] If you have an **English** student, check theirs too: should show phrasal verbs, conditionals, etc.
-- [ ] Verify the custom free-text entries from step 1 are still there (they coexist with filtered presets)
+- [X] Open a student whose target language is **Spanish**
+- [X] Open the Areas to Improve dropdown: you should see Spanish-relevant items (ser/estar, subjunctive, por/para...) and NOT English-only items (phrasal verbs, articles)
+- [X] If you have an **English** student, check theirs too: should show phrasal verbs, conditionals, etc.
+- [X] Verify the custom free-text entries from step 1 are still there (they coexist with filtered presets)
 
 ---
 
@@ -45,12 +45,12 @@
 
 > Selecting a student pre-populates language and CEFR level.
 
-- [ ] Create a new lesson
-- [ ] Notice the **student selector is now above** language and level fields
-- [ ] Select a student who has a language and level set
-- [ ] Verify language and level auto-fill from the student profile
-- [ ] Verify you can still manually change the auto-filled values
-- [ ] Clear the student selection: language/level should NOT be cleared
+- [X] Create a new lesson
+- [X] Notice the **student selector is now above** language and level fields
+- [X] Select a student who has a language and level set
+- [X] Verify language and level auto-fill from the student profile
+- [X] Verify you can still manually change the auto-filled values
+- [X] Clear the student selection: language/level should NOT be cleared
 
 ---
 
@@ -171,4 +171,4 @@
 | 11 | Student form polish (#241, #242) | | |
 | 12 | Regression | | |
 
-**Decision:** [ ] Ready to merge to main / [ ] Needs fixes first
+**Decision:** [X ] Ready to merge to main / [ ] Needs fixes first
