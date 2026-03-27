@@ -458,30 +458,45 @@ public class PromptServiceTests
         req.SystemPrompt.Should().NotContain("Additional grammar instructions from the teacher:");
     }
 
-    // --- WarmUp icebreaker constraint ---
+    // --- WarmUp content type allowlist (per CEFR band) ---
 
     [Fact]
-    public void LessonPlanPrompt_UserPrompt_ContainsWarmUpIcebreakerGuidance()
+    public void LessonPlanPrompt_WarmUp_ContainsIcebreakerGuidance_ForB1()
     {
-        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx()); // BaseCtx defaults to B1
 
-        req.UserPrompt.Should().Contain("conversational icebreaker");
+        req.UserPrompt.Should().Contain("icebreaker");
     }
 
     [Fact]
-    public void LessonPlanPrompt_UserPrompt_ProhibitsVocabularyListInWarmUp()
+    public void LessonPlanPrompt_WarmUp_UsesPositiveActivityExamples_ForA1()
     {
-        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
 
-        req.UserPrompt.Should().Contain("NEVER generate a vocabulary list");
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        // A1 band: specific activity types listed as positive guidance
+        req.UserPrompt.Should().Contain("odd one out");
+        req.UserPrompt.Should().Contain("simple personal question");
     }
 
     [Fact]
-    public void LessonPlanPrompt_UserPrompt_ProhibitsGrammarDrillInWarmUp()
+    public void LessonPlanPrompt_WarmUp_AllowsConversationActivities_ForB1Plus()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx()); // B1
+
+        // B1 band: conversation-style activities are included
+        req.UserPrompt.Should().Contain("agree/disagree");
+        req.UserPrompt.Should().Contain("two truths and a lie");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_WarmUp_DoesNotContainNegativeVocabularyConstraint()
     {
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
 
-        req.UserPrompt.Should().Contain("grammar drill");
+        // Positive allowlist replaces old "NEVER" defensive wording
+        req.UserPrompt.Should().NotContain("NEVER generate a vocabulary list");
     }
 
     // --- Reading & Comprehension template ---

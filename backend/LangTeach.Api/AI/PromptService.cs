@@ -225,6 +225,36 @@ public class PromptService : IPromptService
                 "Choose a communicative production task appropriate for the stated CEFR level."
         };
 
+    private static string WarmUpGuidance(string cefrLevel) =>
+        cefrLevel.ToUpperInvariant() switch
+        {
+            "A1" or "A2" =>
+                "A short free-text icebreaker that activates the student with minimal linguistic demand. " +
+                "Use one of these activity types: show an image and ask the student to say one word they see, " +
+                "an 'odd one out' with three items (e.g. 'apple, banana, chair — which is different and why?'), " +
+                "or one simple personal question recycling vocabulary from the previous lesson " +
+                "(e.g. 'What did you eat for breakfast today?'). " +
+                "Keep it to 1-2 teacher turns. Do not introduce new vocabulary or explain grammar here.",
+            "B1" or "B2" =>
+                "A free-text or short conversation icebreaker that activates schema and gets the student speaking. " +
+                "Use one of these activity types: an agree/disagree statement related to the lesson topic " +
+                "(e.g. 'Social media does more harm than good — agree or disagree?'), " +
+                "'two truths and a lie' using grammar or vocabulary from the previous lesson, " +
+                "or a headlines-prediction task (show a headline, ask the student to predict the story). " +
+                "Limit the exchange to 2-3 turns. Do not teach new language here.",
+            "C1" or "C2" =>
+                "A free-text or conversation icebreaker that activates higher-order thinking around the lesson theme. " +
+                "Use one of these activity types: an ethical dilemma or thought-experiment prompt, " +
+                "a semantic brainstorm (e.g. 'Give me five words connected to power — now connect them to today's topic'), " +
+                "an authentic short text (tweet, quote, or headline) as a discussion trigger, " +
+                "or a define-without-using circumlocution challenge using target vocabulary. " +
+                "Keep it focused and purposeful — 2-3 minutes maximum.",
+            _ =>
+                "A short icebreaker that gets the student talking and relaxed before the lesson begins. " +
+                "Use a discussion question, opinion prompt, or short task connected to the lesson topic. " +
+                "Do not introduce new vocabulary or explain grammar here."
+        };
+
     private static string ConversationUserPrompt(GenerationContext ctx)
     {
         var topic = Sanitize(ctx.Topic);
@@ -271,17 +301,18 @@ public class PromptService : IPromptService
         const string schema = """{"title":"","objectives":[""],"sections":{"warmUp":"","presentation":"","practice":"","production":"","wrapUp":""}}""";
         var practiceLevelHint = CefrPracticeGuidance(cefrLevel);
         var productionGuidance = CefrProductionGuidance(cefrLevel);
+        var warmUpGuidance = WarmUpGuidance(cefrLevel);
         var baseInstruction = $"""
         Generate a complete lesson plan for the lesson on "{topic}". Return JSON:
         {schema}
         Each section should be detailed enough for the teacher to follow without additional preparation. Focus on activities suitable for one-on-one online tutoring. Do not reference physical classroom resources like whiteboards, projectors, or video players.
 
         Section guidelines:
-        - warmUp (2-5 min): A conversational icebreaker. Use a discussion question, opinion prompt, or anecdote starter that the student can answer freely. There is no right or wrong answer. NEVER generate a vocabulary list, grammar drill, translation exercise, or fill-in-blank activity for warmUp. The sole purpose is to get the student talking and relaxed before the lesson begins.
-        - presentation: Introduce the new language (vocabulary, grammar, or structure) with examples in context. Explain meanings and usage.
-        - practice: Controlled activities where the student practises the new language. Order exercises from controlled to meaningful: start with mechanical items (matching, fill-in-blank with word bank, basic MC), then progress to more demanding items (MC with close distractors, fill-in-blank without a word bank, true/false with justification). At B1+, include an optional third block bridging toward Production. {practiceLevelHint}
+        - warmUp (2-5 min): {warmUpGuidance}
+        - presentation: Introduce the new language (vocabulary, grammar, or structure) with examples in context. Explain meanings and usage. Do not include exercises or practice tasks here.
+        - practice: Controlled production only. Order exercises from controlled to meaningful: start with mechanical items (matching, fill-in-blank with word bank, basic MC), then progress to more demanding items (MC with close distractors, fill-in-blank without word bank, true/false with justification). Guided conversation may be included at B1+. {practiceLevelHint}
         - production: Production is MANDATORY in every lesson plan — never omit it. A free or communicative activity where the student uses the new language independently with minimal guidance. {productionGuidance}
-        - wrapUp (2-3 min): Brief review of what was covered and preview of homework or next session.
+        - wrapUp (2-3 min): Reflection and self-assessment only. Ask the student what they learned, what felt easy, and what they want to practise more. Brief preview of homework or next session.
 
         All five sections (warmUp, presentation, practice, production, wrapUp) are required in every lesson plan. Do not collapse or omit any of them.
         """;
