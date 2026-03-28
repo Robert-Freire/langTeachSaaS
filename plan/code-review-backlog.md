@@ -8,6 +8,16 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 ---
 
+## PR #323 - 2026-03-28
+
+| Severity | Location | Finding |
+|----------|----------|---------|
+| Medium | l1-influence.json + consumer (#324) | `persian.family: null` — PedagogyConfigService must null-guard family lookup; `families[language.family]` without null check will throw |
+| Low | style-substitutions.json + consumer (#324) | `neverSubstituteWith: ["EE-*"]` uses glob-style wildcard; consumer must handle pattern matching, not plain `Array.includes()` |
+| Low | course-rules.json | Skill distribution maxes sum to 1.05 — these are per-competency ranges (not simultaneous), matches Isaac's spec. No change needed unless a validator enforces total=1. |
+
+---
+
 ## PR #320 — CEFR level rules JSON (2026-03-28) — MEDIUM
 
 **Schema split: vocabularyPerLesson (A1-B2) vs vocabularyApproach (C1-C2)**
