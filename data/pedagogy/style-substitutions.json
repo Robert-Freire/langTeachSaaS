@@ -1,0 +1,32 @@
+{
+  "substitutions": [
+    {
+      "rejects": ["EO-01", "EO-02"],
+      "label": "role-play",
+      "substituteWith": ["EO-04", "EO-08", "EO-03"],
+      "neverSubstituteWith": ["EE-*"],
+      "rule": "Never replace an oral activity with a written one. Preserve the competency."
+    },
+    {
+      "rejects": ["EE-07", "EE-09", "EE-10"],
+      "label": "long writing",
+      "substituteWith": ["EE-03", "EE-06", "EO-10"],
+      "neverSubstituteWith": [],
+      "rule": "Always keep some writing. Shorten, don't eliminate. EO-10 (audio recording) is a supplementary option when written alternatives are not feasible; it must not be the sole replacement for all writing in the lesson."
+    },
+    {
+      "rejects": ["GR-01", "GR-02", "GR-05"],
+      "label": "mechanical grammar",
+      "substituteWith": ["GR-08", "GR-03", "PRAG-01"],
+      "neverSubstituteWith": [],
+      "rule": "Change format, don't eliminate grammar practice."
+    },
+    {
+      "rejects": ["CO-01", "CO-02", "CO-03"],
+      "label": "listening",
+      "substituteWith": ["CO-04", "CO-07"],
+      "neverSubstituteWith": [],
+      "rule": "Never eliminate listening comprehension entirely."
+    }
+  ]
+}

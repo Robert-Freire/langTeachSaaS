@@ -1,0 +1,68 @@
+{
+  "varietyRules": {
+    "practiceTypeCombination": {
+      "noRepeatWithinSessions": 3,
+      "description": "Do not repeat the same combination of Practice exercise types in 3 consecutive sessions."
+    },
+    "productionTypeAlternation": {
+      "alternateWrittenOral": true,
+      "description": "Alternate between written and oral production in consecutive lessons."
+    },
+    "warmUpFormat": {
+      "maxConsecutiveRepeats": 2,
+      "description": "Do not repeat the same warm-up format more than 2 times in a row."
+    },
+    "competencyCoverage": {
+      "windowSize": 5,
+      "requiredCompetencies": ["CE", "CO", "EE", "EO"],
+      "description": "In every 5 consecutive lessons, all 4 macro-skills must appear as primary competency at least once."
+    },
+    "exerciseTypeCoverage": {
+      "sessions20": "All level-appropriate exercise types should appear at least once in a 20-session course.",
+      "sessions10": "All Production types used at the level should appear at least once."
+    }
+  },
+  "skillDistribution": {
+    "general": {
+      "CE": { "min": 0.20, "max": 0.25 },
+      "CO": { "min": 0.15, "max": 0.20 },
+      "EE": { "min": 0.20, "max": 0.25 },
+      "EO": { "min": 0.30, "max": 0.35 }
+    },
+    "conversational": {
+      "CE": { "min": 0.10, "max": 0.15 },
+      "CO": { "min": 0.10, "max": 0.15 },
+      "EE": { "min": 0.10, "max": 0.15 },
+      "EO": { "min": 0.55, "max": 0.65 }
+    }
+  },
+  "grammarProgression": {
+    "model": "spiral",
+    "recyclingRules": [
+      {
+        "trigger": "Systematic errors in a previously-taught structure",
+        "action": "Dedicate 1-2 exercises in Practice to the structure within the current lesson context"
+      },
+      {
+        "trigger": "Correct in exercises but not in free production",
+        "action": "Create more production opportunities with that structure, not more exercises"
+      },
+      {
+        "trigger": "Mastered in free production",
+        "action": "Advance. No more dedicated time except as natural input."
+      },
+      {
+        "trigger": "5+ lessons without using a key structure for the level",
+        "action": "Include recycling: a sentence or two in a text, a couple of mixed exercises"
+      }
+    ],
+    "validRecyclingExamples": [
+      "Reviewing indefinido in a travel vocabulary lesson using past-tense sentences",
+      "Using indefinido in a B1 role-play where before it was only practiced in written exercises"
+    ],
+    "lazyRecyclingExamples": [
+      "Repeating the same fill-in-blank indefinido exercises from 3 lessons ago",
+      "Re-explaining regular indefinido endings at B1"
+    ]
+  }
+}
