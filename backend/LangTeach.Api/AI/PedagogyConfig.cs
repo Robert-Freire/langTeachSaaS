@@ -3,7 +3,7 @@ namespace LangTeach.Api.AI;
 // Exercise catalog (exercise-types.json)
 public record ExerciseCatalog(ExerciseTypeEntry[] ExerciseTypes);
 
-public record ExerciseTypeEntry(string Id, string Category);
+public record ExerciseTypeEntry(string Id, string Name, string Category);
 
 // CEFR level rules (cefr-levels/*.json)
 // A1-B2 use vocabularyPerLesson (numeric); C1-C2 use vocabularyApproach (string).
