@@ -30,7 +30,8 @@ public record CurriculumContext(
     DifficultyDto[]? StudentDifficulties = null,
     string? TemplateLevel = null,
     IReadOnlyList<TemplateUnitContext>? TemplateUnits = null,
-    string? TeacherNotes = null
+    string? TeacherNotes = null,
+    string CourseType = "general"
 );
 
 /// <summary>

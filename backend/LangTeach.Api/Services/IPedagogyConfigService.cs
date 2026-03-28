@@ -51,4 +51,9 @@ public interface IPedagogyConfigService
     /// Returns substitution entries whose Rejects list contains any of the given type IDs.
     /// </summary>
     StyleSubstitution[] GetStyleSubstitutions(string[] rejectedTypes);
+
+    /// <summary>
+    /// Returns all style substitution entries.
+    /// </summary>
+    StyleSubstitution[] GetAllStyleSubstitutions();
 }

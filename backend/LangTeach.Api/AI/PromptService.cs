@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using LangTeach.Api.Services;
 
 namespace LangTeach.Api.AI;
@@ -6,10 +7,12 @@ namespace LangTeach.Api.AI;
 public class PromptService : IPromptService
 {
     private readonly ISectionProfileService _profiles;
+    private readonly IPedagogyConfigService _pedagogy;
 
-    public PromptService(ISectionProfileService profiles)
+    public PromptService(ISectionProfileService profiles, IPedagogyConfigService pedagogy)
     {
         _profiles = profiles;
+        _pedagogy = pedagogy;
     }
 
     public ClaudeRequest BuildLessonPlanPrompt(GenerationContext ctx) =>
@@ -382,7 +385,7 @@ public class PromptService : IPromptService
         return sb.ToString();
     }
 
-    private static string CurriculumUserPrompt(CurriculumContext ctx)
+    private string CurriculumUserPrompt(CurriculumContext ctx)
     {
         var language = Sanitize(ctx.Language);
         var sb = new StringBuilder();
@@ -416,6 +419,8 @@ public class PromptService : IPromptService
             var level = Sanitize(ctx.TargetCefrLevel ?? "B1");
             sb.AppendLine($"Design a {ctx.SessionCount}-session {language} course for a {level} learner.");
             sb.AppendLine("Distribute reading, writing, listening, and speaking across sessions with a logical grammar progression.");
+            sb.AppendLine();
+            AppendCourseDistributionRules(sb, ctx);
         }
 
         sb.AppendLine();
@@ -432,6 +437,79 @@ public class PromptService : IPromptService
         sb.AppendLine("Output ONLY the JSON array. No markdown, no explanation.");
 
         return sb.ToString();
+    }
+
+    private void AppendCourseDistributionRules(StringBuilder sb, CurriculumContext ctx)
+    {
+        var rules = _pedagogy.GetCourseRules();
+        var v = rules.VarietyRules;
+
+        sb.AppendLine("COURSE DISTRIBUTION RULES (mandatory):");
+        sb.AppendLine();
+        sb.AppendLine("Variety:");
+        sb.AppendLine($"- Practice: do not repeat the same combination of exercise types in {v.PracticeTypeCombination.NoRepeatWithinSessions} consecutive sessions.");
+        sb.AppendLine("- Production: alternate between written and oral production in consecutive lessons.");
+        sb.AppendLine($"- Macro-skills: in every {v.CompetencyCoverage.WindowSize} consecutive lessons, all 4 macro-skills must appear as primary focus at least once (CE=reading, CO=listening, EE=writing, EO=speaking).");
+        sb.AppendLine();
+
+        var courseTypeKey = string.IsNullOrWhiteSpace(ctx.CourseType) ? "general" : ctx.CourseType.ToLowerInvariant();
+        if (!rules.SkillDistribution.TryGetValue(courseTypeKey, out var dist))
+            dist = rules.SkillDistribution["general"];
+
+        sb.AppendLine($"Skill distribution ({courseTypeKey} course):");
+        foreach (var (code, range) in dist.OrderBy(kv => kv.Key))
+        {
+            var skillName = CefrCodeToSkillName(code);
+            var displayName = skillName.Length > 0
+                ? char.ToUpperInvariant(skillName[0]) + skillName[1..]
+                : code;
+            sb.AppendLine($"- {displayName} ({code}): {range.Min * 100:0}-{range.Max * 100:0}% of sessions as primary skill");
+        }
+        sb.AppendLine();
+
+        var gp = rules.GrammarProgression;
+        sb.AppendLine("Grammar — spiral recycling model:");
+        foreach (var rule in gp.RecyclingRules)
+            sb.AppendLine($"- If {rule.Trigger}: {rule.Action}");
+
+        if (gp.ValidRecyclingExamples is { Length: > 0 })
+        {
+            sb.AppendLine();
+            sb.AppendLine("Valid recycling examples:");
+            foreach (var ex in gp.ValidRecyclingExamples)
+                sb.AppendLine($"- {ex}");
+        }
+
+        if (gp.LazyRecyclingExamples is { Length: > 0 })
+        {
+            sb.AppendLine();
+            sb.AppendLine("Avoid lazy recycling:");
+            foreach (var ex in gp.LazyRecyclingExamples)
+                sb.AppendLine($"- {ex}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(ctx.TeacherNotes))
+        {
+            var notes = ctx.TeacherNotes;
+            var substitutions = _pedagogy.GetAllStyleSubstitutions()
+                .Where(s => Regex.IsMatch(notes, $@"\b{Regex.Escape(s.Label)}\b", RegexOptions.IgnoreCase))
+                .ToArray();
+
+            if (substitutions.Length > 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine("Activity substitution guidance:");
+                foreach (var sub in substitutions)
+                {
+                    sb.AppendLine($"- When [{sub.Label}] is not feasible: substitute with types {string.Join(", ", sub.SubstituteWith)}.");
+                    if (sub.NeverSubstituteWith.Length > 0)
+                        sb.AppendLine($"  Never substitute with: {string.Join(", ", sub.NeverSubstituteWith)}.");
+                    sb.AppendLine($"  Rule: {sub.Rule}");
+                }
+            }
+        }
+
+        sb.AppendLine();
     }
 
     private static string CurriculumPersonalizationUserPrompt(CurriculumContext ctx)

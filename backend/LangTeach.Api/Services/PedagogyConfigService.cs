@@ -219,6 +219,8 @@ public class PedagogyConfigService : IPedagogyConfigService
             .ToArray();
     }
 
+    public StyleSubstitution[] GetAllStyleSubstitutions() => _substitutions;
+
     // --- Private helpers ---
 
     private static T LoadJson<T>(Assembly assembly, string resourceName)

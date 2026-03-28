@@ -96,7 +96,12 @@ public record ProductionTypeAlternationRule(bool AlternateWrittenOral, string De
 public record WarmUpFormatRule(int MaxConsecutiveRepeats, string Description);
 public record CompetencyCoverageRule(int WindowSize, string[] RequiredCompetencies, string Description);
 public record SkillRange(double Min, double Max);
-public record GrammarProgression(string Model, RecyclingRule[] RecyclingRules);
+public record GrammarProgression(
+    string Model,
+    RecyclingRule[] RecyclingRules,
+    string[]? ValidRecyclingExamples = null,
+    string[]? LazyRecyclingExamples = null
+);
 public record RecyclingRule(string Trigger, string Action);
 
 // Style substitutions (style-substitutions.json)
