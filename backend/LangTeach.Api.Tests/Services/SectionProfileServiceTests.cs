@@ -1,4 +1,6 @@
+using System.Text.Json;
 using FluentAssertions;
+using LangTeach.Api.AI;
 using LangTeach.Api.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -239,5 +241,122 @@ public class SectionProfileServiceTests
     {
         var types = _sut.GetAllowedContentTypes("production", "A1");
         types.Should().NotContain("reading");
+    }
+
+    // --- Exercise type reference validation ---
+
+    private static readonly JsonSerializerOptions _catalogJsonOpts = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    };
+
+    private record ExerciseCatalogDoc(ExerciseCatalogEntry[] ExerciseTypes);
+    private record ExerciseCatalogEntry(string Id, string Name);
+
+    private static HashSet<string> LoadCatalogIds()
+    {
+        var assembly = typeof(SectionProfileService).Assembly;
+        using var stream = assembly.GetManifestResourceStream("LangTeach.Api.Pedagogy.exercise-types.json");
+        stream.Should().NotBeNull("exercise-types.json must be embedded in the API assembly as LangTeach.Api.Pedagogy.exercise-types.json");
+        var catalog = JsonSerializer.Deserialize<ExerciseCatalogDoc>(stream!, _catalogJsonOpts);
+        catalog.Should().NotBeNull();
+        return catalog!.ExerciseTypes.Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+    }
+
+    private static IEnumerable<(string Section, string Level, SectionLevelProfile Data)> LoadAllLevelProfiles()
+    {
+        var assembly = typeof(SectionProfileService).Assembly;
+        foreach (var sectionName in new[] { "warmup", "presentation", "practice", "production", "wrapup" })
+        {
+            using var stream = assembly.GetManifestResourceStream($"LangTeach.Api.SectionProfiles.{sectionName}.json");
+            if (stream is null) continue;
+            var profile = JsonSerializer.Deserialize<SectionProfile>(stream, _catalogJsonOpts);
+            if (profile is null) continue;
+            foreach (var (level, data) in profile.Levels)
+                yield return (sectionName, level, data);
+        }
+    }
+
+    private static bool MatchesForbiddenPattern(string id, string pattern)
+    {
+        // Supports trailing wildcard only: "GR-*" matches any ID starting with "GR-"
+        if (pattern.EndsWith('*'))
+            return id.StartsWith(pattern[..^1], StringComparison.Ordinal);
+        return id.Equals(pattern, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ExerciseTypeReferences_ValidIds_AllExistInCatalog()
+    {
+        var knownIds = LoadCatalogIds();
+        var failures = new List<string>();
+
+        foreach (var (section, level, data) in LoadAllLevelProfiles())
+        {
+            if (data.ValidExerciseTypes is null) continue;
+            foreach (var id in data.ValidExerciseTypes)
+            {
+                if (!knownIds.Contains(id))
+                    failures.Add($"{section}/{level}: validExerciseTypes contains unknown ID '{id}'");
+            }
+        }
+
+        failures.Should().BeEmpty(because: "every ID in validExerciseTypes must exist in exercise-types.json");
+    }
+
+    [Fact]
+    public void ExerciseTypeReferences_ForbiddenExplicitIds_AllExistInCatalog()
+    {
+        var knownIds = LoadCatalogIds();
+        var failures = new List<string>();
+
+        foreach (var (section, level, data) in LoadAllLevelProfiles())
+        {
+            if (data.ForbiddenExerciseTypes is null) continue;
+            foreach (var entry in data.ForbiddenExerciseTypes)
+            {
+                if (entry.Id is null) continue; // pattern-only entry; skip
+                if (!knownIds.Contains(entry.Id))
+                    failures.Add($"{section}/{level}: forbiddenExerciseTypes contains unknown explicit ID '{entry.Id}'");
+            }
+        }
+
+        failures.Should().BeEmpty(because: "every explicit id in forbiddenExerciseTypes must exist in exercise-types.json");
+    }
+
+    [Fact]
+    public void ExerciseTypeReferences_NoIdAppearsInBothValidAndForbidden()
+    {
+        var knownIds = LoadCatalogIds();
+        var failures = new List<string>();
+
+        foreach (var (section, level, data) in LoadAllLevelProfiles())
+        {
+            var validSet = (data.ValidExerciseTypes ?? []).ToHashSet(StringComparer.Ordinal);
+
+            var forbiddenIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var entry in data.ForbiddenExerciseTypes ?? [])
+            {
+                if (entry.Id is not null)
+                {
+                    forbiddenIds.Add(entry.Id);
+                }
+                else if (entry.Pattern is not null)
+                {
+                    // Expand glob pattern against the full catalog
+                    foreach (var catalogId in knownIds)
+                    {
+                        if (MatchesForbiddenPattern(catalogId, entry.Pattern))
+                            forbiddenIds.Add(catalogId);
+                    }
+                }
+            }
+
+            foreach (var conflict in validSet.Intersect(forbiddenIds))
+                failures.Add($"{section}/{level}: ID '{conflict}' appears in both validExerciseTypes and forbiddenExerciseTypes");
+        }
+
+        failures.Should().BeEmpty(because: "no exercise type ID should be in both valid and forbidden lists for the same section/level");
     }
 }

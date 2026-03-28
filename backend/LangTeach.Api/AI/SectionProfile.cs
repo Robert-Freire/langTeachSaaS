@@ -11,7 +11,15 @@ public record SectionLevelProfile(
     DurationRange? Duration,
     string[] Competencies,
     string Scaffolding,
-    string InteractionPattern
+    string InteractionPattern,
+    string[]? ValidExerciseTypes = null,
+    ForbiddenExerciseType[]? ForbiddenExerciseTypes = null,
+    LevelSpecificNote[]? LevelSpecificNotes = null,
+    int? MinExerciseVariety = null
 );
 
 public record DurationRange(int Min, int Max);
+
+public record ForbiddenExerciseType(string? Id, string? Pattern, string Reason);
+
+public record LevelSpecificNote(string ExerciseTypeId, string Note);
