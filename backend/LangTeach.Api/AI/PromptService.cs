@@ -147,7 +147,7 @@ public class PromptService : IPromptService
         else
         {
             sb.AppendLine();
-            sb.AppendLine("IMPORTANT: All content must be self-contained and work with text alone. Do not reference images, audio clips, videos, physical objects, or any external materials. Every exercise, example, and activity must be completable using only the text provided.");
+            sb.AppendLine("All content must be text-only and self-contained. Every exercise, example, and activity must be completable using only the text provided.");
         }
 
         sb.AppendLine();
@@ -290,7 +290,7 @@ public class PromptService : IPromptService
 
         Section guidelines:
         - warmUp (2-5 min): {warmUpGuidance}
-        - presentation: Introduce the new language (vocabulary, grammar, or structure) with examples in context. Explain meanings and usage. Do not include exercises or practice tasks here.
+        - presentation: Introduce the new language (vocabulary, grammar, or structure) with examples in context. Explain meanings and usage.
         - practice: Controlled production only. Order exercises from controlled to meaningful: start with mechanical items (matching, fill-in-blank with word bank, basic MC), then progress to more demanding items (MC with close distractors, fill-in-blank without word bank, true/false with justification). Guided conversation may be included at B1+. {practiceLevelHint}
         - production: Production is MANDATORY in every lesson plan — never omit it. A free or communicative activity where the student uses the new language independently with minimal guidance. {productionGuidance}
         - wrapUp (2-3 min): Reflection and self-assessment only. Ask the student what they learned, what felt easy, and what they want to practise more. Brief preview of homework or next session.
@@ -302,12 +302,11 @@ public class PromptService : IPromptService
         {
             baseInstruction +=
                 "\n\nREADING & COMPREHENSION TEMPLATE REQUIREMENTS (mandatory):\n" +
-                "- warmUp: a pre-reading activation task only. Activate schema, predict content from the title, or discuss the topic. Do NOT use grammar drills, vocabulary lists, or fill-in-blank exercises here.\n" +
+                "- warmUp: a pre-reading activation task only. Activate schema, predict content from the title, or discuss the topic.\n" +
                 "- presentation: embed a complete reading passage (300-500 words, using vocabulary and grammar appropriate for the stated CEFR level) inside this section's notes. The teacher reads it with the student: first read for gist, second read for detail. Pre-teach any blocking vocabulary before reading.\n" +
                 "- practice: comprehension questions covering three types: (1) factual - explicitly stated in the text, (2) inferential - requiring the student to read between the lines, (3) vocabulary in context - explain the meaning of a word or phrase as used in the passage. Include at least 2 questions of each type.\n" +
                 "- production: a free-production task connected to the passage topic (e.g. short written response, opinion discussion, or a creative extension). The student works independently.\n" +
-                "- wrapUp: student summarises the passage in 1-2 sentences; brief discussion of the author's purpose or the student's reaction.\n" +
-                "All five sections (warmUp, presentation, practice, production, wrapUp) are required. Do not collapse or omit any of them.";
+                "- wrapUp: student summarises the passage in 1-2 sentences; brief discussion of the author's purpose or the student's reaction.";
         }
 
         else if (string.Equals(ctx.TemplateName, "Exam Prep", StringComparison.OrdinalIgnoreCase))
@@ -316,10 +315,9 @@ public class PromptService : IPromptService
                 "\n\nEXAM PREP TEMPLATE REQUIREMENTS (mandatory):\n" +
                 "- warmUp: review the exam format, the target task type, and the scoring criteria. Briefly discuss what the examiner is looking for. No casual icebreakers or conversation warm-ups.\n" +
                 "- presentation: teach the strategy for the target exam task (e.g. essay structure, formal letter conventions, skimming for gist). Use authentic exam-task examples. Formal register throughout.\n" +
-                "- practice: timed written practice under exam conditions. Specify an explicit time limit in the section notes (e.g. '15 minutes'). Use written task types only (opinion paragraph, gap-fill, reading comprehension questions). Do NOT use oral role-play or conversation activities here.\n" +
-                "- production: a full written exam task the student attempts independently. Specify a time limit (in minutes) and a target word count. Task type must match the target exam format: opinion essay, formal letter, short report, or similar written genre. Do NOT use oral role-play or conversation activities.\n" +
-                "- wrapUp: student self-assesses against the mark scheme criteria; teacher identifies one strength and one area to improve before the next session.\n" +
-                "All five sections (warmUp, presentation, practice, production, wrapUp) are required. Do not collapse or omit any of them.";
+                "- practice: timed written practice under exam conditions. Specify an explicit time limit in the section notes (e.g. '15 minutes'). All practice and production tasks must be written (essay, formal letter, reading comprehension, gap-fill).\n" +
+                "- production: a full written exam task the student attempts independently. Specify a time limit (in minutes) and a target word count. Task type must match the target exam format: opinion essay, formal letter, short report, or similar written genre.\n" +
+                "- wrapUp: student self-assesses against the mark scheme criteria; teacher identifies one strength and one area to improve before the next session.";
         }
 
         if (!string.IsNullOrWhiteSpace(ctx.CurriculumObjectives))
@@ -338,7 +336,6 @@ public class PromptService : IPromptService
         var language = Sanitize(ctx.Language);
         var sb = new StringBuilder();
         sb.AppendLine($"You are an expert {language} language teacher and curriculum designer.");
-        sb.AppendLine("You output ONLY valid JSON arrays with no markdown, no prose, no code fences.");
 
         if (ctx.StudentName is not null)
         {

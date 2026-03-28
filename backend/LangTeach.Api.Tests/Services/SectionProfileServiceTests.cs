@@ -131,62 +131,75 @@ public class SectionProfileServiceTests
     // --- IsAllowed ---
 
     [Theory]
-    [InlineData("WarmUp", "vocabulary")]
-    [InlineData("WarmUp", "grammar")]
-    [InlineData("WarmUp", "exercises")]
-    [InlineData("WarmUp", "homework")]
-    [InlineData("Practice", "grammar")]
-    [InlineData("Practice", "vocabulary")]
-    [InlineData("Practice", "reading")]
-    [InlineData("Practice", "free-text")]
-    [InlineData("WrapUp", "exercises")]
-    [InlineData("WrapUp", "vocabulary")]
-    [InlineData("WrapUp", "grammar")]
-    [InlineData("WrapUp", "free-text")]
-    [InlineData("Presentation", "exercises")]
-    [InlineData("Production", "exercises")]
-    [InlineData("Production", "grammar")]
-    [InlineData("Production", "vocabulary")]
-    public void IsAllowed_ReturnsFalse_ForDisallowedCombinations(string sectionType, string contentType)
+    [InlineData("WarmUp", "vocabulary", "B1")]
+    [InlineData("WarmUp", "grammar", "B1")]
+    [InlineData("WarmUp", "exercises", "B1")]
+    [InlineData("WarmUp", "homework", "B1")]
+    [InlineData("Practice", "grammar", "B1")]
+    [InlineData("Practice", "vocabulary", "B1")]
+    [InlineData("Practice", "reading", "B1")]
+    [InlineData("Practice", "free-text", "B1")]
+    [InlineData("WrapUp", "exercises", "B1")]
+    [InlineData("WrapUp", "vocabulary", "B1")]
+    [InlineData("WrapUp", "grammar", "B1")]
+    [InlineData("WrapUp", "free-text", "B1")]
+    [InlineData("Presentation", "exercises", "B1")]
+    [InlineData("Production", "exercises", "B1")]
+    [InlineData("Production", "grammar", "B1")]
+    [InlineData("Production", "vocabulary", "B1")]
+    public void IsAllowed_ReturnsFalse_ForDisallowedCombinations(string sectionType, string contentType, string cefrLevel)
     {
-        _sut.IsAllowed(sectionType, contentType).Should().BeFalse();
+        _sut.IsAllowed(sectionType, contentType, cefrLevel).Should().BeFalse();
     }
 
     [Theory]
-    [InlineData("WarmUp", "conversation")]
-    [InlineData("Practice", "exercises")]
-    [InlineData("Practice", "conversation")]
-    [InlineData("WrapUp", "conversation")]
-    [InlineData("Presentation", "grammar")]
-    [InlineData("Presentation", "vocabulary")]
-    [InlineData("Presentation", "reading")]
-    [InlineData("Presentation", "conversation")]
-    [InlineData("Production", "conversation")]
-    [InlineData("Production", "reading")]
-    public void IsAllowed_ReturnsTrue_ForAllowedCombinations(string sectionType, string contentType)
+    [InlineData("WarmUp", "conversation", "B1")]
+    [InlineData("Practice", "exercises", "B1")]
+    [InlineData("Practice", "conversation", "B1")]
+    [InlineData("WrapUp", "conversation", "B1")]
+    [InlineData("Presentation", "grammar", "B1")]
+    [InlineData("Presentation", "vocabulary", "B1")]
+    [InlineData("Presentation", "reading", "B1")]
+    [InlineData("Presentation", "conversation", "B1")]
+    [InlineData("Production", "conversation", "B1")]
+    [InlineData("Production", "reading", "B2")]
+    public void IsAllowed_ReturnsTrue_ForAllowedCombinations(string sectionType, string contentType, string cefrLevel)
     {
-        _sut.IsAllowed(sectionType, contentType).Should().BeTrue();
+        _sut.IsAllowed(sectionType, contentType, cefrLevel).Should().BeTrue();
     }
 
     [Theory]
-    [InlineData("warmup", "conversation")]
-    [InlineData("WARMUP", "conversation")]
-    [InlineData("WarmUp", "CONVERSATION")]
-    [InlineData("WRAPUP", "conversation")]
-    [InlineData("wrapup", "CONVERSATION")]
-    public void IsAllowed_IsCaseInsensitive(string sectionType, string contentType)
+    [InlineData("warmup", "conversation", "B1")]
+    [InlineData("WARMUP", "conversation", "B1")]
+    [InlineData("WarmUp", "CONVERSATION", "B1")]
+    [InlineData("WRAPUP", "conversation", "B1")]
+    [InlineData("wrapup", "CONVERSATION", "B1")]
+    public void IsAllowed_IsCaseInsensitive(string sectionType, string contentType, string cefrLevel)
     {
-        _sut.IsAllowed(sectionType, contentType).Should().BeTrue();
+        _sut.IsAllowed(sectionType, contentType, cefrLevel).Should().BeTrue();
     }
 
     [Theory]
-    [InlineData("UnknownSection", "vocabulary")]
-    [InlineData("UnknownSection", "exercises")]
-    [InlineData("", "grammar")]
-    [InlineData("SomeOtherSection", "free-text")]
-    public void IsAllowed_ReturnsTrue_ForUnknownSection(string sectionType, string contentType)
+    [InlineData("UnknownSection", "vocabulary", "B1")]
+    [InlineData("UnknownSection", "exercises", "B1")]
+    [InlineData("", "grammar", "B1")]
+    [InlineData("SomeOtherSection", "free-text", "B1")]
+    public void IsAllowed_ReturnsTrue_ForUnknownSection(string sectionType, string contentType, string cefrLevel)
     {
-        _sut.IsAllowed(sectionType, contentType).Should().BeTrue();
+        _sut.IsAllowed(sectionType, contentType, cefrLevel).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsAllowed_Production_Reading_A1_ReturnsFalse()
+    {
+        // Reading is only allowed in Production at B2+ — an A1 student must not be able to request it
+        _sut.IsAllowed("Production", "reading", "A1").Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsAllowed_Production_Reading_B2_ReturnsTrue()
+    {
+        _sut.IsAllowed("Production", "reading", "B2").Should().BeTrue();
     }
 
     // --- GetAllowedContentTypes ---

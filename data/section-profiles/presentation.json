@@ -1,9 +1,5 @@
 {
   "sectionType": "presentation",
-  "hardConstraints": [
-    "No exercises or practice tasks here.",
-    "No free production. Input and explanation only."
-  ],
   "levels": {
     "A1": {
       "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
