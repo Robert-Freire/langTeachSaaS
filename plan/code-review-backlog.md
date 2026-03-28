@@ -8,6 +8,10 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 ---
 
+| PR | Date | Severity | Description |
+|----|------|----------|-------------|
+| #322 | 2026-03-28 | minor | `template-overrides.json` uses camelCase keys `warmUp`/`wrapUp` while `section-profiles/` uses lowercase `warmup`/`wrapup`. AC specifies camelCase; PedagogyConfigService (#324) must handle this mapping explicitly to avoid silent lookup failures. |
+
 ## PR #312 (2026-03-28) — prompt-health-fixes
 
 | Severity | File | Note |
