@@ -1,3 +1,5 @@
+using LangTeach.Api.AI;
+
 namespace LangTeach.Api.Services;
 
 public interface ISectionProfileService
@@ -20,4 +22,18 @@ public interface ISectionProfileService
     /// Returns an empty array if the section or level is not found.
     /// </summary>
     string[] GetAllowedContentTypes(string sectionType, string cefrLevel);
+
+    /// <summary>
+    /// Returns the valid exercise type IDs for a section at the given CEFR level.
+    /// Returns null if the section or level is not found (no filter defined).
+    /// Used by PedagogyConfigService for composition.
+    /// </summary>
+    string[]? GetRawValidExerciseTypes(string sectionType, string cefrLevel);
+
+    /// <summary>
+    /// Returns the raw ForbiddenExerciseType entries for a section at the given CEFR level.
+    /// Patterns (e.g. "GR-*") are returned unexpanded. Returns empty if not found.
+    /// Used by PedagogyConfigService for pattern expansion and composition.
+    /// </summary>
+    ForbiddenExerciseType[] GetRawForbiddenExerciseTypes(string sectionType, string cefrLevel);
 }
