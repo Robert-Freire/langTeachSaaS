@@ -111,7 +111,7 @@ flowchart TD
 
 **Discovery** starts with a `/pm` session: an interactive conversation that evaluates the idea against the teacher workflow, the current phase goals, and the demo timeline before anything gets written down. Only ideas that survive PM scrutiny become GitHub Issues. Issues include acceptance criteria, labels (priority, area, type), and milestone assignment.
 
-**Issue Readiness** is a separate gate. Just because an issue exists does not mean it is ready to implement. The `/qa` skill reviews whether the acceptance criteria are testable, unambiguous, and scoped correctly. The issue iterates until it earns the `qa:ready` label. This label is the only signal an agent needs to know a task is safe to pick up.
+**Issue Readiness** is a separate gate. Just because an issue exists does not mean it is ready to implement. The `/qa` skill reviews whether the acceptance criteria are testable, unambiguous, and scoped correctly. If the issue touches data (new tables, schema, JSON data files, content types, entity relationships), QA also invokes Sophy to review the issue definition for hidden data model implications before approving. The issue iterates until it earns the `qa:ready` label. This label is the only signal an agent needs to know a task is safe to pick up.
 
 **Task Pickup** is deliberately mechanical. Agents query `gh milestone list --state open` to find the current milestone (never hardcoded), sort by priority (P0 before P1 before P2), skip assigned issues, self-assign immediately to prevent conflicts, fetch the active sprint branch, and create an isolated git worktree. A post-creation hook automatically copies environment files from the main repo and installs dependencies (`npm ci` for frontend and e2e, `dotnet restore` for backend), so agents start with a fully working environment. The worktree keeps the main directory clean and allows multiple agents to work in parallel without stepping on each other.
 
@@ -119,7 +119,7 @@ flowchart TD
 
 **Implementation** is the only phase without a fixed checklist beyond the pre-push checks. The agent codes, commits incrementally, and runs the full check suite (Azure Bicep, .NET build and tests, frontend build and unit tests) before moving on. Any failure loops back to implementation, not forward. One hard rule: every main functionality must include an e2e happy path test, planned at task start (not added as an afterthought). Unit tests are required for any modified frontend component or hook.
 
-**Quality Gates** run after pre-push checks pass. The first gate (`qa-verify`) is sequential; the next three (`review`, `architecture-reviewer`, and conditionally `prompt-health-reviewer`) run in parallel; the last (`review-ui`) is conditional.
+**Quality Gates** run after pre-push checks pass. The first gate (`qa-verify`) is sequential; the next batch (`review`, `architecture-reviewer`, and conditionally `prompt-health-reviewer` and/or `Sophy data model review`) run in parallel; the last (`review-ui`) is conditional.
 - `qa-verify` checks whether every acceptance criterion from the original issue is demonstrably met. Returns a compact checklist (under 2000 chars) with MET/NOT MET/PARTIAL status per criterion and test coverage summary.
 - `review` performs a code quality review against the sprint branch (auto-detected), looking for bugs, security concerns, missing validation, and error handling. Minor notes that are not worth fixing immediately are logged to `plan/code-review-backlog.md` rather than blocking the PR.
 - `architecture-reviewer` runs in parallel with `review` and has a different lens: it cross-references the diff against the rest of the codebase to detect inconsistent patterns, duplicated logic, missing reuse of shared utilities, and convention breaks. It reads 3-5 similar existing files for each changed file and compares. The canonical failure case it prevents: a new CI workflow that runs `npm run build` without the VITE_* env vars that the existing `frontend.yml` passes to the same command (this was caught by CodeRabbit on PR #197 but missed by the code reviewer). Minor notes go to `plan/code-review-backlog.md`; NEEDS REVISION verdicts require fixes before proceeding.
@@ -185,12 +185,13 @@ The Bash tool runs in Git Bash on Windows. Git Bash automatically translates Uni
 | Gate | Tool | Pass Condition |
 |------|------|----------------|
 | Issue readiness | `/qa` skill | `qa:ready` label applied |
-| Plan validation | `review-plan` agent | Plan approved |
+| Plan validation | `review-plan` agent (invokes Sophy if plan touches data) | Plan approved |
 | Pre-push checks | Bash | bicep + dotnet + frontend all green |
 | Acceptance criteria | `qa-verify` agent | PASS verdict |
 | Code review | `review` agent | PASS or PASS WITH NOTES |
 | Consistency review | `architecture-reviewer` agent | PASS or PASS WITH NOTES (run in parallel with `review`) |
 | Prompt health (per-PR) | `prompt-health-reviewer` agent | CLEAN or NEEDS CLEANUP (only if `PromptService.cs` changed, run in parallel with `review`); URGENT blocks push |
+| Data model review (per-PR) | Sophy (via general-purpose agent) | APPROVE or NEEDS CLARIFICATION (only if diff touches Models, DTOs, Migrations, data JSON, contentTypes; run in parallel with `review`); NEEDS CLARIFICATION blocks push |
 | Prompt health (sprint close) | `prompt-health-reviewer` agent | Reviews `PromptService.cs` + all `data/section-profiles/*.json`; runs before pedagogy review |
 | UI review | `review-ui` agent | GOOD or POLISHED (only if `area:frontend` or `area:design`) |
 | CI + CodeRabbit | `gh pr checks` + `gh api` | No failures, no unresolved comments |

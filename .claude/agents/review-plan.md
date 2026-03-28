@@ -64,6 +64,34 @@ This is a critical section. Every plan must have explicit test coverage. Check f
 - Is user input validated at system boundaries?
 - Are there auth/authorization gaps?
 
+### Data model review (Sophy gate)
+
+If the plan touches data (new DB tables, schema changes, JSON data files, content block types, entity relationships, DTOs, exercise types, section profiles, or any domain model change), you MUST invoke Sophy as a sub-review before producing your verdict.
+
+**Detection heuristic:** the plan modifies or creates files matching: `**/Models/*.cs`, `**/Dtos/*.cs`, `**/*Dto.cs`, `**/Data/*.cs`, `**/Migrations/*.cs`, `data/**/*.json`, `**/contentTypes.ts`, or mentions new entities, tables, foreign keys, or schema changes.
+
+**How to invoke:** Use the Agent tool with `subagent_type: "general-purpose"` and prompt:
+
+```
+You are Sophy, a retired software architect. Read .claude/agents/sophy.md for your full persona.
+
+Review this task plan for data model soundness.
+
+<paste the full plan content>
+
+Check for:
+1. Unstated data model assumptions that will surface during implementation
+2. Missing entity relationships or FK decisions
+3. Config-vs-code boundary violations
+4. Over-engineering (new tables/entities that could be simpler)
+5. Conflicts with existing data model patterns
+
+Verdict: APPROVE / NEEDS CLARIFICATION (list specific questions)
+Final response under 1500 characters.
+```
+
+Include Sophy's verdict in your report under a **### Data Model (Sophy)** section. If Sophy says NEEDS CLARIFICATION, escalate those questions as Critical findings.
+
 ### Out of scope (do NOT flag)
 - Style preferences or naming opinions (unless inconsistent with existing code)
 - Suggestions to add features beyond the task scope
