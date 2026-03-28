@@ -1,0 +1,61 @@
+{
+  "level": "A1",
+  "grammarInScope": [
+    "Presente de indicativo: regulares (-ar, -er, -ir)",
+    "Presente de indicativo: irregulares frecuentes (ser, estar, tener, ir, hacer, poder, querer)",
+    "Genero y numero de sustantivos y adjetivos",
+    "Articulos determinados e indeterminados",
+    "Posesivos (mi, tu, su, nuestro)",
+    "Pronombres personales sujeto",
+    "Interrogativos (que, quien, donde, como, cuando, cuanto, por que)",
+    "Hay vs esta/estan",
+    "Gustar + infinitivo / sustantivo (A1.2)",
+    "Demostrativos (este, ese, aquel) (A1.2)",
+    "Tambien/tampoco (A1.2)",
+    "Verbos reflexivos frecuentes (llamarse, levantarse) (A1.2)",
+    "Ir a + infinitivo (planes), tener que + infinitivo (obligacion)",
+    "Preposiciones basicas (en, de, a, con, por, para)",
+    "Numeros, hora, dias, meses"
+  ],
+  "grammarOutOfScope": [
+    "Preterito indefinido (A2.1)",
+    "Preterito imperfecto (A2.2-B1)",
+    "Imperativo (A2.2)",
+    "Subjuntivo (B1.2+)",
+    "Pronombres OD/OI (A2)",
+    "Oraciones subordinadas con que + subjuntivo (B1)",
+    "Condicional (B1.2)",
+    "Perifrasis verbales excepto ir a + inf y tener que + inf"
+  ],
+  "appropriateExerciseTypes": [
+    "GR-01", "GR-02", "GR-05", "GR-06", "GR-07", "GR-09",
+    "VOC-01", "VOC-02", "VOC-03", "VOC-05", "VOC-09",
+    "CE-01", "CE-02",
+    "EE-01", "EE-02", "EE-03",
+    "EO-01", "EO-03", "EO-04",
+    "LUD-01", "LUD-02", "LUD-06", "LUD-07"
+  ],
+  "inappropriateExerciseTypes": [
+    { "id": "GR-03", "reason": "Transformation too cognitively demanding at A1" },
+    { "id": "GR-04", "reason": "Error correction requires system knowledge to detect errors; student has not internalized the system" },
+    { "id": "GR-08", "reason": "Inductive discovery only possible at end of A1.2 with heavy scaffolding" },
+    { "id": "CE-04", "reason": "Matching headings/paragraphs requires texts too long and abstract for A1" },
+    { "id": "CE-05", "reason": "Ordering paragraphs requires logical cohesion skills not yet developed" },
+    { "id": "CE-06", "reason": "Cloze without word bank too abstract; only appropriate with full word bank at A2+" },
+    { "id": "CE-07", "reason": "Inference and deduction require reading skills not yet developed" },
+    { "id": "CE-08", "reason": "Register and intent identification requires pragmatic awareness beyond A1" },
+    { "id": "CE-09", "reason": "Critical reading requires argumentation skills" },
+    { "id": "EO-02", "reason": "Open role-play: insufficient linguistic resources to sustain unguided interaction" },
+    { "id": "EO-05", "reason": "Sustained monologue (2+ min) exceeds A1 productive capacity" },
+    { "id": "EO-06", "reason": "Debate requires argumentation the A1 student does not yet have" },
+    { "id": "EO-07", "reason": "Negotiation too cognitively and linguistically demanding" }
+  ],
+  "vocabularyPerLesson": {
+    "productive": { "min": 8, "max": 12 },
+    "receptive": { "min": 0, "max": 5 }
+  },
+  "instructionLanguage": "L1 for procedural instructions, L2 for linguistic content",
+  "metalanguageLevel": "Minimal: verbo, nombre, adjetivo only. Avoid: conjugar, concordancia, paradigma.",
+  "errorCorrection": "Immediate and explicit. Teacher provides correct form. Brief explanation. Student cannot self-correct because the system is not yet internalized. Example: 'Es soy, no estoy, porque hablamos de identidad, no de estado.'",
+  "scaffoldingDefault": "high"
+}
