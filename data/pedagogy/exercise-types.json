@@ -7,9 +7,13 @@
       "category": "CE",
       "secondaryCompetencies": [],
       "description": "Read a text and answer a general question about its topic or purpose.",
-      "cefrRange": ["A1", "C2"],
+      "cefrRange": [
+        "A1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "reading"
+      "uiRenderer": "reading",
+      "available": true
     },
     {
       "id": "CE-02",
@@ -18,20 +22,31 @@
       "category": "CE",
       "secondaryCompetencies": [],
       "description": "Answer questions about specific information in the text (who, what, when, where).",
-      "cefrRange": ["A1", "C2"],
+      "cefrRange": [
+        "A1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "reading"
+      "uiRenderer": "reading",
+      "available": true
     },
     {
       "id": "CE-03",
       "name": "True/False/Not stated",
       "nameEs": "Verdadero/Falso/No se dice",
       "category": "CE",
-      "secondaryCompetencies": ["GR", "EE"],
+      "secondaryCompetencies": [
+        "GR",
+        "EE"
+      ],
       "description": "Evaluate statements against the content of a text as true, false, or not stated.",
-      "cefrRange": ["A2", "C2"],
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "reading"
+      "uiRenderer": "reading",
+      "available": true
     },
     {
       "id": "CE-04",
@@ -40,64 +55,99 @@
       "category": "CE",
       "secondaryCompetencies": [],
       "description": "Match headings, summaries, or main ideas to sections of a text.",
-      "cefrRange": ["B1", "C2"],
+      "cefrRange": [
+        "B1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "reading"
+      "uiRenderer": "reading",
+      "available": true
     },
     {
       "id": "CE-05",
       "name": "Ordering paragraphs/fragments",
       "nameEs": "Ordenar párrafos/fragmentos",
       "category": "CE",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Reconstruct the logical order of a scrambled text.",
-      "cefrRange": ["B1", "C2"],
+      "cefrRange": [
+        "B1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "reading"
+      "uiRenderer": "reading",
+      "available": true
     },
     {
       "id": "CE-06",
       "name": "Gap-fill in text (cloze)",
       "nameEs": "Rellenar huecos en texto (cloze)",
       "category": "CE",
-      "secondaryCompetencies": ["VOC", "GR"],
+      "secondaryCompetencies": [
+        "VOC",
+        "GR"
+      ],
       "description": "Complete a text by filling in deleted words, with or without a word bank.",
-      "cefrRange": ["A2", "C2"],
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "reading"
+      "uiRenderer": "reading",
+      "available": true
     },
     {
       "id": "CE-07",
       "name": "Inference and deduction",
       "nameEs": "Inferencia y deducción",
       "category": "CE",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Answer questions whose responses are implicit rather than explicit in the text.",
-      "cefrRange": ["B2", "C2"],
+      "cefrRange": [
+        "B2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "reading"
+      "uiRenderer": "reading",
+      "available": true
     },
     {
       "id": "CE-08",
       "name": "Register and intent identification",
       "nameEs": "Identificación de registro/intención",
       "category": "CE",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Determine the tone, register, target audience, or communicative intent of a text.",
-      "cefrRange": ["B2", "C2"],
+      "cefrRange": [
+        "B2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "reading"
+      "uiRenderer": "reading",
+      "available": true
     },
     {
       "id": "CE-09",
       "name": "Critical reading / argued opinion",
       "nameEs": "Lectura crítica / opinión argumentada",
       "category": "CE",
-      "secondaryCompetencies": ["EE"],
+      "secondaryCompetencies": [
+        "EE"
+      ],
       "description": "Read a text and formulate a reasoned opinion about its ideas.",
-      "cefrRange": ["B2", "C2"],
+      "cefrRange": [
+        "B2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "reading"
+      "uiRenderer": "reading",
+      "available": true
     },
     {
       "id": "CO-01",
@@ -106,9 +156,15 @@
       "category": "CO",
       "secondaryCompetencies": [],
       "description": "Listen to an audio recording and identify the general idea.",
-      "cefrRange": ["A1", "C2"],
-      "specialResources": ["audio"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A1",
+        "C2"
+      ],
+      "specialResources": [
+        "audio"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "CO-02",
@@ -117,9 +173,15 @@
       "category": "CO",
       "secondaryCompetencies": [],
       "description": "Extract specific data from an audio recording (names, numbers, dates, places).",
-      "cefrRange": ["A1", "C2"],
-      "specialResources": ["audio"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A1",
+        "C2"
+      ],
+      "specialResources": [
+        "audio"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "CO-03",
@@ -128,31 +190,54 @@
       "category": "CO",
       "secondaryCompetencies": [],
       "description": "Answer comprehension questions about the full content of an audio recording.",
-      "cefrRange": ["A2", "C2"],
-      "specialResources": ["audio"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
+      "specialResources": [
+        "audio"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "CO-04",
       "name": "Listen and complete",
       "nameEs": "Completar mientras escucha",
       "category": "CO",
-      "secondaryCompetencies": ["VOC", "GR"],
+      "secondaryCompetencies": [
+        "VOC",
+        "GR"
+      ],
       "description": "Fill in gaps in a partial transcript while listening.",
-      "cefrRange": ["A2", "C2"],
-      "specialResources": ["audio"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
+      "specialResources": [
+        "audio"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "CO-05",
       "name": "Listen and take notes",
       "nameEs": "Tomar notas de escucha",
       "category": "CO",
-      "secondaryCompetencies": ["EE"],
+      "secondaryCompetencies": [
+        "EE"
+      ],
       "description": "Listen and take notes on key points independently.",
-      "cefrRange": ["B1", "C2"],
-      "specialResources": ["audio"],
-      "uiRenderer": null
+      "cefrRange": [
+        "B1",
+        "C2"
+      ],
+      "specialResources": [
+        "audio"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "CO-06",
@@ -161,9 +246,15 @@
       "category": "CO",
       "secondaryCompetencies": [],
       "description": "Distinguish sounds, stress patterns, or minimal pairs.",
-      "cefrRange": ["A1", "B2"],
-      "specialResources": ["audio"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A1",
+        "B2"
+      ],
+      "specialResources": [
+        "audio"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "CO-07",
@@ -172,119 +263,195 @@
       "category": "CO",
       "secondaryCompetencies": [],
       "description": "Transcribe a spoken fragment, partially or in full.",
-      "cefrRange": ["A1", "C1"],
-      "specialResources": ["audio"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A1",
+        "C1"
+      ],
+      "specialResources": [
+        "audio"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "CO-08",
       "name": "Authentic media comprehension",
       "nameEs": "Comprensión de medios reales",
       "category": "CO",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Understand authentic media such as podcasts, news, interviews, or films without adaptation.",
-      "cefrRange": ["B2", "C2"],
-      "specialResources": ["audio", "video"],
-      "uiRenderer": null
+      "cefrRange": [
+        "B2",
+        "C2"
+      ],
+      "specialResources": [
+        "audio",
+        "video"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "EE-01",
       "name": "Guided writing with model",
       "nameEs": "Escritura guiada con modelo",
       "category": "EE",
-      "secondaryCompetencies": ["GR"],
+      "secondaryCompetencies": [
+        "GR"
+      ],
       "description": "Write a text following a provided model by filling in a structure.",
-      "cefrRange": ["A1", "A2"],
+      "cefrRange": [
+        "A1",
+        "A2"
+      ],
       "specialResources": [],
-      "uiRenderer": "exercises"
+      "uiRenderer": "exercises",
+      "available": true
     },
     {
       "id": "EE-02",
       "name": "Complete sentences/paragraphs",
       "nameEs": "Completar frases/párrafos",
       "category": "EE",
-      "secondaryCompetencies": ["GR", "VOC"],
+      "secondaryCompetencies": [
+        "GR",
+        "VOC"
+      ],
       "description": "Complete sentences or paragraphs with scaffolded prompts.",
-      "cefrRange": ["A1", "B1"],
+      "cefrRange": [
+        "A1",
+        "B1"
+      ],
       "specialResources": [],
-      "uiRenderer": "exercises"
+      "uiRenderer": "exercises",
+      "available": true
     },
     {
       "id": "EE-03",
       "name": "Short functional text",
       "nameEs": "Texto breve funcional",
       "category": "EE",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Write a short functional text such as a message, note, postcard, or form.",
-      "cefrRange": ["A1", "B1"],
+      "cefrRange": [
+        "A1",
+        "B1"
+      ],
       "specialResources": [],
-      "uiRenderer": "exercises"
+      "uiRenderer": "exercises",
+      "available": true
     },
     {
       "id": "EE-04",
       "name": "Description (person, place, object)",
       "nameEs": "Descripción (persona, lugar, objeto)",
       "category": "EE",
-      "secondaryCompetencies": ["VOC"],
+      "secondaryCompetencies": [
+        "VOC"
+      ],
       "description": "Produce a descriptive text about a person, place, or object following guidelines.",
-      "cefrRange": ["A1", "B2"],
-      "specialResources": ["image"],
-      "uiRenderer": "homework"
+      "cefrRange": [
+        "A1",
+        "B2"
+      ],
+      "specialResources": [
+        "image"
+      ],
+      "uiRenderer": "homework",
+      "available": true
     },
     {
       "id": "EE-05",
       "name": "Narration",
       "nameEs": "Narración",
       "category": "EE",
-      "secondaryCompetencies": ["GR"],
+      "secondaryCompetencies": [
+        "GR"
+      ],
       "description": "Write a story, anecdote, or sequence of events.",
-      "cefrRange": ["A2", "C2"],
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "homework"
+      "uiRenderer": "homework",
+      "available": true
     },
     {
       "id": "EE-06",
       "name": "Letter/email (formal and informal)",
       "nameEs": "Carta/email (formal e informal)",
       "category": "EE",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Compose formal or informal correspondence with appropriate register.",
-      "cefrRange": ["A2", "C2"],
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "homework"
+      "uiRenderer": "homework",
+      "available": true
     },
     {
       "id": "EE-07",
       "name": "Opinion/argumentative essay",
       "nameEs": "Opinión/ensayo argumentativo",
       "category": "EE",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Write a text expressing and justifying a personal stance.",
-      "cefrRange": ["B1", "C2"],
+      "cefrRange": [
+        "B1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "homework"
+      "uiRenderer": "homework",
+      "available": true
     },
     {
       "id": "EE-08",
       "name": "Summary",
       "nameEs": "Resumen",
       "category": "EE",
-      "secondaryCompetencies": ["CE"],
+      "secondaryCompetencies": [
+        "CE"
+      ],
       "description": "Condense a source text into fewer words.",
-      "cefrRange": ["B1", "C2"],
-      "specialResources": ["source-text"],
-      "uiRenderer": "homework"
+      "cefrRange": [
+        "B1",
+        "C2"
+      ],
+      "specialResources": [
+        "source-text"
+      ],
+      "uiRenderer": "homework",
+      "available": true
     },
     {
       "id": "EE-09",
       "name": "Register transformation",
       "nameEs": "Transformación de registro",
       "category": "EE",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Rewrite a text changing its register (e.g., informal to formal).",
-      "cefrRange": ["B2", "C2"],
-      "specialResources": ["source-text"],
-      "uiRenderer": "exercises"
+      "cefrRange": [
+        "B2",
+        "C2"
+      ],
+      "specialResources": [
+        "source-text"
+      ],
+      "uiRenderer": "exercises",
+      "available": true
     },
     {
       "id": "EE-10",
@@ -293,9 +460,13 @@
       "category": "EE",
       "secondaryCompetencies": [],
       "description": "Free creative production such as a poem, micro-story, diary entry, or chronicle.",
-      "cefrRange": ["B1", "C2"],
+      "cefrRange": [
+        "B1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "free-text"
+      "uiRenderer": "free-text",
+      "available": true
     },
     {
       "id": "EE-11",
@@ -304,31 +475,49 @@
       "category": "EE",
       "secondaryCompetencies": [],
       "description": "Explain a complex text in simpler terms for a different audience.",
-      "cefrRange": ["B2", "C2"],
-      "specialResources": ["source-text"],
-      "uiRenderer": "homework"
+      "cefrRange": [
+        "B2",
+        "C2"
+      ],
+      "specialResources": [
+        "source-text"
+      ],
+      "uiRenderer": "homework",
+      "available": true
     },
     {
       "id": "EO-01",
       "name": "Guided dialogue (closed role-play)",
       "nameEs": "Diálogo guiado (role-play cerrado)",
       "category": "EO",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Act out a situation with concrete turn-by-turn instructions.",
-      "cefrRange": ["A1", "B1"],
+      "cefrRange": [
+        "A1",
+        "B1"
+      ],
       "specialResources": [],
-      "uiRenderer": "conversation"
+      "uiRenderer": "conversation",
+      "available": true
     },
     {
       "id": "EO-02",
       "name": "Open role-play",
       "nameEs": "Role-play abierto",
       "category": "EO",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Participate in a communicative situation with a goal but no fixed script.",
-      "cefrRange": ["A2", "C2"],
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "conversation"
+      "uiRenderer": "conversation",
+      "available": true
     },
     {
       "id": "EO-03",
@@ -337,53 +526,85 @@
       "category": "EO",
       "secondaryCompetencies": [],
       "description": "Conduct a structured interview: one student asks prepared questions, the other answers.",
-      "cefrRange": ["A1", "B2"],
-      "specialResources": ["question-list"],
-      "uiRenderer": "conversation"
+      "cefrRange": [
+        "A1",
+        "B2"
+      ],
+      "specialResources": [
+        "question-list"
+      ],
+      "uiRenderer": "conversation",
+      "available": true
     },
     {
       "id": "EO-04",
       "name": "Oral description (image, experience)",
       "nameEs": "Descripción oral (imagen, experiencia)",
       "category": "EO",
-      "secondaryCompetencies": ["VOC"],
+      "secondaryCompetencies": [
+        "VOC"
+      ],
       "description": "Describe a photo, scene, person, or place orally.",
-      "cefrRange": ["A1", "C1"],
-      "specialResources": ["image"],
-      "uiRenderer": "conversation"
+      "cefrRange": [
+        "A1",
+        "C1"
+      ],
+      "specialResources": [
+        "image"
+      ],
+      "uiRenderer": "conversation",
+      "available": true
     },
     {
       "id": "EO-05",
       "name": "Sustained monologue / presentation",
       "nameEs": "Monólogo sostenido / exposición",
       "category": "EO",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Prepare and present a topic orally for 2 to 5 minutes.",
-      "cefrRange": ["B1", "C2"],
+      "cefrRange": [
+        "B1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "conversation"
+      "uiRenderer": "conversation",
+      "available": true
     },
     {
       "id": "EO-06",
       "name": "Debate / discussion",
       "nameEs": "Debate / discusión",
       "category": "EO",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Defend a position with arguments in a debate or discussion.",
-      "cefrRange": ["B1", "C2"],
+      "cefrRange": [
+        "B1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "conversation"
+      "uiRenderer": "conversation",
+      "available": true
     },
     {
       "id": "EO-07",
       "name": "Negotiation / problem-solving",
       "nameEs": "Negociación / resolución de problemas",
       "category": "EO",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Negotiate and reach an agreement in a problem-solving scenario.",
-      "cefrRange": ["B1", "C2"],
+      "cefrRange": [
+        "B1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "conversation"
+      "uiRenderer": "conversation",
+      "available": true
     },
     {
       "id": "EO-08",
@@ -392,9 +613,13 @@
       "category": "EO",
       "secondaryCompetencies": [],
       "description": "Speak freely about a topic without a rigid structure, with teacher involvement.",
-      "cefrRange": ["A2", "C2"],
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "conversation"
+      "uiRenderer": "conversation",
+      "available": true
     },
     {
       "id": "EO-09",
@@ -403,20 +628,35 @@
       "category": "EO",
       "secondaryCompetencies": [],
       "description": "Explain, summarize, or paraphrase information for another person to understand.",
-      "cefrRange": ["B2", "C2"],
-      "specialResources": ["source-text", "audio"],
-      "uiRenderer": "conversation"
+      "cefrRange": [
+        "B2",
+        "C2"
+      ],
+      "specialResources": [
+        "source-text",
+        "audio"
+      ],
+      "uiRenderer": "conversation",
+      "available": true
     },
     {
       "id": "EO-10",
       "name": "Audio recording (oral homework)",
       "nameEs": "Grabación de audio (homework oral)",
       "category": "EO",
-      "secondaryCompetencies": ["EE"],
+      "secondaryCompetencies": [
+        "EE"
+      ],
       "description": "Record a voice message describing, giving an opinion, or narrating.",
-      "cefrRange": ["A2", "C2"],
-      "specialResources": ["recorder"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
+      "specialResources": [
+        "recorder"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "GR-01",
@@ -425,9 +665,13 @@
       "category": "GR",
       "secondaryCompetencies": [],
       "description": "Complete sentences with the correct grammatical form.",
-      "cefrRange": ["A1", "C2"],
+      "cefrRange": [
+        "A1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "exercises"
+      "uiRenderer": "exercises",
+      "available": true
     },
     {
       "id": "GR-02",
@@ -436,31 +680,47 @@
       "category": "GR",
       "secondaryCompetencies": [],
       "description": "Choose the correct grammatical form from 3 to 4 options.",
-      "cefrRange": ["A1", "C2"],
+      "cefrRange": [
+        "A1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "exercises"
+      "uiRenderer": "exercises",
+      "available": true
     },
     {
       "id": "GR-03",
       "name": "Sentence transformation",
       "nameEs": "Transformación de frases",
       "category": "GR",
-      "secondaryCompetencies": ["EE"],
+      "secondaryCompetencies": [
+        "EE"
+      ],
       "description": "Rewrite a sentence changing one element (tense, person, voice).",
-      "cefrRange": ["A2", "C2"],
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "exercises"
+      "uiRenderer": "exercises",
+      "available": true
     },
     {
       "id": "GR-04",
       "name": "Error correction",
       "nameEs": "Corrección de errores",
       "category": "GR",
-      "secondaryCompetencies": ["CE"],
+      "secondaryCompetencies": [
+        "CE"
+      ],
       "description": "Identify and correct grammatical errors in sentences or texts.",
-      "cefrRange": ["B1", "C2"],
+      "cefrRange": [
+        "B1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "exercises"
+      "uiRenderer": "exercises",
+      "available": true
     },
     {
       "id": "GR-05",
@@ -469,20 +729,30 @@
       "category": "GR",
       "secondaryCompetencies": [],
       "description": "Complete conjugation tables or write verb forms.",
-      "cefrRange": ["A1", "B2"],
+      "cefrRange": [
+        "A1",
+        "B2"
+      ],
       "specialResources": [],
-      "uiRenderer": "exercises"
+      "uiRenderer": "exercises",
+      "available": true
     },
     {
       "id": "GR-06",
       "name": "Matching",
       "nameEs": "Emparejamiento (matching)",
       "category": "GR",
-      "secondaryCompetencies": ["VOC"],
+      "secondaryCompetencies": [
+        "VOC"
+      ],
       "description": "Match elements from two columns (form-function, sentence-image, etc.).",
-      "cefrRange": ["A1", "B2"],
+      "cefrRange": [
+        "A1",
+        "B2"
+      ],
       "specialResources": [],
-      "uiRenderer": "exercises"
+      "uiRenderer": "exercises",
+      "available": true
     },
     {
       "id": "GR-07",
@@ -491,9 +761,13 @@
       "category": "GR",
       "secondaryCompetencies": [],
       "description": "Reorder individual words to form a correct sentence.",
-      "cefrRange": ["A1", "B1"],
+      "cefrRange": [
+        "A1",
+        "B1"
+      ],
       "specialResources": [],
-      "uiRenderer": "exercises"
+      "uiRenderer": "exercises",
+      "available": true
     },
     {
       "id": "GR-08",
@@ -502,9 +776,13 @@
       "category": "GR",
       "secondaryCompetencies": [],
       "description": "Observe examples and deduce the grammatical rule without drilling.",
-      "cefrRange": ["A2", "C2"],
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "grammar"
+      "uiRenderer": "grammar",
+      "available": true
     },
     {
       "id": "GR-09",
@@ -513,20 +791,32 @@
       "category": "GR",
       "secondaryCompetencies": [],
       "description": "Classify grammatical forms into categories (e.g., regular/irregular, indicative/subjunctive).",
-      "cefrRange": ["A1", "C1"],
+      "cefrRange": [
+        "A1",
+        "C1"
+      ],
       "specialResources": [],
-      "uiRenderer": "exercises"
+      "uiRenderer": "exercises",
+      "available": true
     },
     {
       "id": "GR-10",
       "name": "Complete a paradigm from text",
       "nameEs": "Completar un paradigma desde el texto",
       "category": "GR",
-      "secondaryCompetencies": ["CE"],
+      "secondaryCompetencies": [
+        "CE"
+      ],
       "description": "Extract grammatical forms from a read text and organize them in a paradigm.",
-      "cefrRange": ["B1", "C2"],
-      "specialResources": ["source-text"],
-      "uiRenderer": "exercises"
+      "cefrRange": [
+        "B1",
+        "C2"
+      ],
+      "specialResources": [
+        "source-text"
+      ],
+      "uiRenderer": "exercises",
+      "available": true
     },
     {
       "id": "VOC-01",
@@ -535,9 +825,13 @@
       "category": "VOC",
       "secondaryCompetencies": [],
       "description": "Present new vocabulary with its L1 equivalent or L2 definition.",
-      "cefrRange": ["A1", "C2"],
+      "cefrRange": [
+        "A1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "vocabulary"
+      "uiRenderer": "vocabulary",
+      "available": true
     },
     {
       "id": "VOC-02",
@@ -546,9 +840,15 @@
       "category": "VOC",
       "secondaryCompetencies": [],
       "description": "Match words to their meanings or images.",
-      "cefrRange": ["A1", "B2"],
-      "specialResources": ["image"],
-      "uiRenderer": "vocabulary"
+      "cefrRange": [
+        "A1",
+        "B2"
+      ],
+      "specialResources": [
+        "image"
+      ],
+      "uiRenderer": "vocabulary",
+      "available": true
     },
     {
       "id": "VOC-03",
@@ -557,31 +857,49 @@
       "category": "VOC",
       "secondaryCompetencies": [],
       "description": "Classify words into thematic categories.",
-      "cefrRange": ["A1", "B2"],
+      "cefrRange": [
+        "A1",
+        "B2"
+      ],
       "specialResources": [],
-      "uiRenderer": "vocabulary"
+      "uiRenderer": "vocabulary",
+      "available": true
     },
     {
       "id": "VOC-04",
       "name": "Find in text (vocabulary in context)",
       "nameEs": "Buscar en texto (vocabulary in context)",
       "category": "VOC",
-      "secondaryCompetencies": ["CE"],
+      "secondaryCompetencies": [
+        "CE"
+      ],
       "description": "Locate and deduce the meaning of unknown words in a text.",
-      "cefrRange": ["A2", "C2"],
-      "specialResources": ["source-text"],
-      "uiRenderer": "vocabulary"
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
+      "specialResources": [
+        "source-text"
+      ],
+      "uiRenderer": "vocabulary",
+      "available": true
     },
     {
       "id": "VOC-05",
       "name": "Complete sentences with vocabulary",
       "nameEs": "Completar frases con vocabulario",
       "category": "VOC",
-      "secondaryCompetencies": ["GR"],
+      "secondaryCompetencies": [
+        "GR"
+      ],
       "description": "Use words from a lexical field in contextualized sentences.",
-      "cefrRange": ["A1", "C2"],
+      "cefrRange": [
+        "A1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "vocabulary"
+      "uiRenderer": "vocabulary",
+      "available": true
     },
     {
       "id": "VOC-06",
@@ -590,9 +908,13 @@
       "category": "VOC",
       "secondaryCompetencies": [],
       "description": "Match or produce synonyms and antonyms.",
-      "cefrRange": ["A2", "C2"],
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "vocabulary"
+      "uiRenderer": "vocabulary",
+      "available": true
     },
     {
       "id": "VOC-07",
@@ -601,9 +923,13 @@
       "category": "VOC",
       "secondaryCompetencies": [],
       "description": "Match verbs, nouns, and adjectives that collocate naturally.",
-      "cefrRange": ["B1", "C2"],
+      "cefrRange": [
+        "B1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "vocabulary"
+      "uiRenderer": "vocabulary",
+      "available": true
     },
     {
       "id": "VOC-08",
@@ -612,9 +938,15 @@
       "category": "VOC",
       "secondaryCompetencies": [],
       "description": "Organize vocabulary visually in a conceptual mind map.",
-      "cefrRange": ["A2", "C2"],
-      "specialResources": ["visual-map"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
+      "specialResources": [
+        "visual-map"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "VOC-09",
@@ -623,108 +955,160 @@
       "category": "VOC",
       "secondaryCompetencies": [],
       "description": "Use flashcards with word, translation, and example for spaced review.",
-      "cefrRange": ["A1", "C2"],
-      "specialResources": ["flashcard-system"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A1",
+        "C2"
+      ],
+      "specialResources": [
+        "flashcard-system"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "VOC-10",
       "name": "Idioms and fixed expressions",
       "nameEs": "Expresiones idiomáticas y frases hechas",
       "category": "VOC",
-      "secondaryCompetencies": ["PRAG"],
+      "secondaryCompetencies": [
+        "PRAG"
+      ],
       "description": "Present and practice idioms and fixed expressions.",
-      "cefrRange": ["B2", "C2"],
+      "cefrRange": [
+        "B2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "vocabulary"
+      "uiRenderer": "vocabulary",
+      "available": true
     },
     {
       "id": "VOC-11",
       "name": "Word formation (derivation, composition)",
       "nameEs": "Formación de palabras (derivación, composición)",
       "category": "VOC",
-      "secondaryCompetencies": ["GR"],
+      "secondaryCompetencies": [
+        "GR"
+      ],
       "description": "Work with prefixes, suffixes, and word families.",
-      "cefrRange": ["B1", "C2"],
+      "cefrRange": [
+        "B1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "vocabulary"
+      "uiRenderer": "vocabulary",
+      "available": true
     },
     {
       "id": "PRAG-01",
       "name": "Communicative functions",
       "nameEs": "Funciones comunicativas",
       "category": "PRAG",
-      "secondaryCompetencies": ["EO", "EE"],
+      "secondaryCompetencies": [
+        "EO",
+        "EE"
+      ],
       "description": "Practice speech acts (requesting, apologizing, inviting, refusing) with appropriate register.",
-      "cefrRange": ["A1", "C2"],
+      "cefrRange": [
+        "A1",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "conversation"
-    },
-    {
-      "id": "PRAG-02",
-      "name": "Register adaptation (formal/informal)",
-      "nameEs": "Adecuación de registro (formal/informal)",
-      "category": "PRAG",
-      "secondaryCompetencies": ["EE"],
-      "description": "Reformulate the same message in different registers.",
-      "cefrRange": ["A2", "C2"],
-      "specialResources": [],
-      "uiRenderer": "exercises"
+      "uiRenderer": "conversation",
+      "available": true
     },
     {
       "id": "PRAG-03",
       "name": "Cultural/intercultural content",
       "nameEs": "Contenido cultural / intercultural",
       "category": "PRAG",
-      "secondaryCompetencies": ["CE", "EO"],
+      "secondaryCompetencies": [
+        "CE",
+        "EO"
+      ],
       "description": "Read, discuss, or investigate a cultural aspect of the Spanish-speaking world.",
-      "cefrRange": ["A1", "C2"],
-      "specialResources": ["video", "image"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A1",
+        "C2"
+      ],
+      "specialResources": [
+        "video",
+        "image"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "PRAG-04",
       "name": "Intercultural comparison",
       "nameEs": "Comparación intercultural",
       "category": "PRAG",
-      "secondaryCompetencies": ["EO"],
+      "secondaryCompetencies": [
+        "EO"
+      ],
       "description": "Compare cultural practices of the Spanish-speaking world with the student's own.",
-      "cefrRange": ["A2", "C2"],
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": null
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "PRAG-05",
       "name": "Social simulation",
       "nameEs": "Simulación social",
       "category": "PRAG",
-      "secondaryCompetencies": ["EO"],
+      "secondaryCompetencies": [
+        "EO"
+      ],
       "description": "Act out scenarios requiring sociolinguistic competence (a complaint, a job interview, a toast).",
-      "cefrRange": ["A2", "C2"],
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
       "specialResources": [],
-      "uiRenderer": "conversation"
+      "uiRenderer": "conversation",
+      "available": true
     },
     {
       "id": "LUD-01",
       "name": "Crossword",
       "nameEs": "Crucigrama",
       "category": "LUD",
-      "secondaryCompetencies": ["VOC"],
+      "secondaryCompetencies": [
+        "VOC"
+      ],
       "description": "Complete a crossword puzzle with lesson vocabulary.",
-      "cefrRange": ["A1", "B2"],
-      "specialResources": ["crossword-generator"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A1",
+        "B2"
+      ],
+      "specialResources": [
+        "crossword-generator"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "LUD-02",
       "name": "Word search",
       "nameEs": "Sopa de letras",
       "category": "LUD",
-      "secondaryCompetencies": ["VOC"],
+      "secondaryCompetencies": [
+        "VOC"
+      ],
       "description": "Find hidden words in a letter grid.",
-      "cefrRange": ["A1", "A2"],
-      "specialResources": ["word-search-generator"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A1",
+        "A2"
+      ],
+      "specialResources": [
+        "word-search-generator"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "LUD-03",
@@ -733,9 +1117,15 @@
       "category": "LUD",
       "secondaryCompetencies": [],
       "description": "Answer questions or perform tasks when landing on board game squares.",
-      "cefrRange": ["A1", "C1"],
-      "specialResources": ["printable-board"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A1",
+        "C1"
+      ],
+      "specialResources": [
+        "printable-board"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "LUD-04",
@@ -744,53 +1134,92 @@
       "category": "LUD",
       "secondaryCompetencies": [],
       "description": "Answer multiple-choice questions against a timer.",
-      "cefrRange": ["A1", "C2"],
-      "specialResources": ["platform"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A1",
+        "C2"
+      ],
+      "specialResources": [
+        "platform"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "LUD-05",
       "name": "Taboo / Describe without saying",
       "nameEs": "Taboo / Describe sin decir",
       "category": "LUD",
-      "secondaryCompetencies": ["VOC", "EO"],
+      "secondaryCompetencies": [
+        "VOC",
+        "EO"
+      ],
       "description": "Describe a word without using certain forbidden words.",
-      "cefrRange": ["A2", "C2"],
-      "specialResources": ["cards"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
+      "specialResources": [
+        "cards"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "LUD-06",
       "name": "Memory / pairs",
       "nameEs": "Memory / parejas",
       "category": "LUD",
-      "secondaryCompetencies": ["VOC"],
+      "secondaryCompetencies": [
+        "VOC"
+      ],
       "description": "Match pairs of cards (word-image, question-answer, synonyms).",
-      "cefrRange": ["A1", "B1"],
-      "specialResources": ["cards"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A1",
+        "B1"
+      ],
+      "specialResources": [
+        "cards"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "LUD-07",
       "name": "Who is who / 20 questions",
       "nameEs": "Quién es quién / 20 preguntas",
       "category": "LUD",
-      "secondaryCompetencies": ["EO"],
+      "secondaryCompetencies": [
+        "EO"
+      ],
       "description": "Ask yes/no questions to guess a person or object.",
-      "cefrRange": ["A1", "B1"],
-      "specialResources": ["image"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A1",
+        "B1"
+      ],
+      "specialResources": [
+        "image"
+      ],
+      "uiRenderer": null,
+      "available": false
     },
     {
       "id": "LUD-08",
       "name": "Pasapalabra / alphabet quiz",
       "nameEs": "Pasapalabra / rosco",
       "category": "LUD",
-      "secondaryCompetencies": ["VOC"],
+      "secondaryCompetencies": [
+        "VOC"
+      ],
       "description": "Give definitions as a student says the word beginning with each letter of the alphabet.",
-      "cefrRange": ["A2", "C1"],
-      "specialResources": ["word-list"],
-      "uiRenderer": null
+      "cefrRange": [
+        "A2",
+        "C1"
+      ],
+      "specialResources": [
+        "word-list"
+      ],
+      "uiRenderer": null,
+      "available": false
     }
   ]
 }

@@ -5,7 +5,7 @@
       "strengths": ["Cognates", "Similar verb system", "Grammatical gender exists"],
       "weaknesses": ["False friends", "Interference by similarity"],
       "adjustments": {
-        "increaseEmphasis": ["VOC-10", "PRAG-02"],
+        "increaseEmphasis": ["VOC-10", "EE-09"],
         "decreaseEmphasis": ["GR-05", "GR-09"],
         "additionalExerciseTypes": [],
         "templatePreference": ["conversation", "reading-comprehension"],

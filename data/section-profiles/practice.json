@@ -72,15 +72,14 @@
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "low",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-07", "VOC-10", "CE-01", "CE-02", "CE-03", "CE-04", "CE-06", "CE-07", "PRAG-02"],
+      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-07", "VOC-10", "CE-01", "CE-02", "CE-03", "CE-04", "CE-06", "CE-07"],
       "forbiddenExerciseTypes": [
         {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task, not a practice drill"},
         {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"},
         {"id": null, "pattern": "LUD-*", "reason": "Ludic activities belong to warm-up or optional extension, not structured practice"}
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "GR-04", "note": "Discourse-level error correction is appropriate at B2; include cohesion and register errors, not only morphosyntax"},
-        {"exerciseTypeId": "PRAG-02", "note": "Register adaptation tasks at B2 should involve formal/informal and professional/casual contrasts"}
+        {"exerciseTypeId": "GR-04", "note": "Discourse-level error correction is appropriate at B2; include cohesion and register errors, not only morphosyntax"}
       ],
       "minExerciseVariety": 2
     },
@@ -91,7 +90,7 @@
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "none",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-04", "GR-10", "VOC-04", "VOC-07", "VOC-10", "VOC-11", "CE-01", "CE-02", "CE-03", "CE-04", "CE-05", "CE-07", "CE-08", "CE-09", "PRAG-02", "EE-09"],
+      "validExerciseTypes": ["GR-04", "GR-10", "VOC-04", "VOC-07", "VOC-10", "VOC-11", "CE-01", "CE-02", "CE-03", "CE-04", "CE-05", "CE-07", "CE-08", "CE-09", "EE-09"],
       "forbiddenExerciseTypes": [
         {"id": "GR-01", "pattern": null, "reason": "Basic fill-in-blank is too mechanical for C1; use reformulation or transformation tasks instead"},
         {"id": "GR-02", "pattern": null, "reason": "Simple multiple choice is too mechanical for C1"},
@@ -114,7 +113,7 @@
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "none",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-04", "GR-10", "VOC-07", "VOC-10", "VOC-11", "CE-01", "CE-02", "CE-03", "CE-04", "CE-05", "CE-07", "CE-08", "CE-09", "PRAG-02", "EE-09", "EE-11"],
+      "validExerciseTypes": ["GR-04", "GR-10", "VOC-07", "VOC-10", "VOC-11", "CE-01", "CE-02", "CE-03", "CE-04", "CE-05", "CE-07", "CE-08", "CE-09", "EE-09", "EE-11"],
       "forbiddenExerciseTypes": [
         {"id": "GR-01", "pattern": null, "reason": "Basic fill-in-blank is too mechanical for C2; use reformulation or transformation tasks instead"},
         {"id": "GR-02", "pattern": null, "reason": "Simple multiple choice is too mechanical for C2"},
