@@ -120,6 +120,16 @@ public class SectionProfileService : ISectionProfileService
         return [];
     }
 
+    public DurationRange? GetDuration(string sectionType, string cefrLevel)
+    {
+        var profile = GetProfile(sectionType);
+        if (profile is null) return null;
+        var level = NormalizeLevel(cefrLevel);
+        if (profile.Levels.TryGetValue(level, out var lp))
+            return lp.Duration;
+        return null;
+    }
+
     private SectionProfile? GetProfile(string sectionType)
     {
         var key = sectionType.Replace(" ", "", StringComparison.Ordinal).ToLowerInvariant();

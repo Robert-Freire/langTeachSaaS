@@ -387,4 +387,28 @@ public class SectionProfileServiceTests
 
         failures.Should().BeEmpty(because: "no exercise type ID should be in both valid and forbidden lists for the same section/level");
     }
+
+    // --- GetDuration ---
+
+    [Fact]
+    public void GetDuration_WarmUp_A1_ReturnsCorrectRange()
+    {
+        var duration = _sut.GetDuration("warmup", "A1");
+
+        duration.Should().NotBeNull();
+        duration!.Min.Should().Be(2);
+        duration.Max.Should().Be(3);
+    }
+
+    [Fact]
+    public void GetDuration_UnknownSection_ReturnsNull()
+    {
+        _sut.GetDuration("nosuchsection", "B1").Should().BeNull();
+    }
+
+    [Fact]
+    public void GetDuration_UnknownLevel_ReturnsNull()
+    {
+        _sut.GetDuration("warmup", "Z9").Should().BeNull();
+    }
 }

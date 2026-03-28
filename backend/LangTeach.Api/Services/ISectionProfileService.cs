@@ -36,4 +36,10 @@ public interface ISectionProfileService
     /// Used by PedagogyConfigService for pattern expansion and composition.
     /// </summary>
     ForbiddenExerciseType[] GetRawForbiddenExerciseTypes(string sectionType, string cefrLevel);
+
+    /// <summary>
+    /// Returns the duration range for a section at the given CEFR level.
+    /// Returns null if the section, level, or duration field is not found.
+    /// </summary>
+    DurationRange? GetDuration(string sectionType, string cefrLevel);
 }

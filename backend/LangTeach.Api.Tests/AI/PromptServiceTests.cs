@@ -529,8 +529,7 @@ public class PromptServiceTests
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
         req.UserPrompt.Should().Contain("Generate a complete lesson plan");
-        // Template override content from template-overrides.json (data-driven, replaces hardcoded block)
-        req.UserPrompt.Should().Contain("READING & COMPREHENSION TEMPLATE");
+        // Template override content is now inline per-section (additive model — no monolithic block header)
         req.UserPrompt.Should().Contain("reading passage");
         req.UserPrompt.Should().Contain("Comprehension questions");
         req.UserPrompt.Should().Contain("inferential");
@@ -560,8 +559,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        // Template override content from template-overrides.json (data-driven, replaces hardcoded block)
-        req.UserPrompt.Should().Contain("EXAM PREP TEMPLATE");
+        // Template override content is now inline per-section (additive model — no monolithic block header)
         req.UserPrompt.Should().Contain("written exam task");
         req.UserPrompt.Should().Contain("All tasks must be written");
         req.UserPrompt.Should().Contain("opinion essay, formal letter, short report");
@@ -596,6 +594,69 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().NotContain("EXAM PREP TEMPLATE");
         req.UserPrompt.Should().NotContain("Timer is mandatory");
+    }
+
+    // --- Additive section guidance model ---
+
+    [Fact]
+    public void LessonPlanPrompt_IncludesTemplateFocusInlineWithSectionGuidance()
+    {
+        // Template override guidance must appear inline with section, not appended as a separate block
+        var ctx = BaseCtx() with { TemplateName = "Reading & Comprehension" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        // Inline: "Template focus:" appears inside Section guidelines block
+        req.UserPrompt.Should().Contain("Template focus:");
+        // Substance of the inline override for presentation section
+        req.UserPrompt.Should().Contain("reading passage");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_EnforcesRestrictions_WhenTemplateHasRestrictions()
+    {
+        // R&C template has restrictions: [{type: "exerciseCategory", value: "LUD"}]
+        var ctx = BaseCtx() with { TemplateName = "Reading & Comprehension" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Do not use [LUD] exercises in this lesson.");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_PresentationUsesProfileGuidance_WhenNoTemplate()
+    {
+        // presentation section must come from section profile, not hardcoded prose
+        var ctx = BaseCtx() with { TemplateName = null };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        // B1 presentation profile guidance contains conditional grammar-discovery framing
+        req.UserPrompt.Should().Contain("When the lesson includes a grammar point");
+        req.UserPrompt.Should().NotContain("Introduce the new language (vocabulary, grammar, or structure) with examples in context");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_WrapUpUsesProfileGuidance_WhenNoTemplate()
+    {
+        // wrapUp section must come from section profile, not hardcoded prose
+        var ctx = BaseCtx() with { TemplateName = null };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        // B1 wrapUp profile guidance: student summarises lesson in 3-4 sentences
+        req.UserPrompt.Should().Contain("summarises");
+        req.UserPrompt.Should().NotContain("Reflection and self-assessment only. Ask the student what they learned");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_SectionIncludesDuration_WhenProfileHasDuration()
+    {
+        // Section headers should include duration when the profile defines it
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        // B1 warmup duration: min=2, max=5 (from warmup.json)
+        req.UserPrompt.Should().MatchRegex(@"warmUp \(\d+-\d+ min\)");
     }
 
     // --- CEFR-level exercise guidance ---
@@ -708,7 +769,8 @@ public class PromptServiceTests
     {
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
 
-        req.UserPrompt.Should().Contain("Production is MANDATORY");
+        // Production section guidance is now data-driven from the section profile
+        req.UserPrompt.Should().Contain("Production must be");
     }
 
     [Fact]
@@ -754,18 +816,20 @@ public class PromptServiceTests
     [Fact]
     public void LessonPlanPrompt_UserPrompt_SpecifiesPracticeOrdering_ControlledFirst()
     {
+        // Practice section guidance is now data-driven from the section profile
+        // B1 practice profile specifies variety of exercise formats
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
 
-        req.UserPrompt.Should().Contain("controlled to meaningful");
-        req.UserPrompt.Should().Contain("mechanical");
+        req.UserPrompt.Should().Contain("at least 2 different exercise formats");
     }
 
     [Fact]
     public void LessonPlanPrompt_UserPrompt_SpecifiesPracticeOrdering_MeaningfulSecond()
     {
+        // B1 practice profile includes error correction and transformation tasks
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
 
-        req.UserPrompt.Should().Contain("MC with close distractors");
+        req.UserPrompt.Should().Contain("error correction");
     }
 
     [Fact]
@@ -786,9 +850,9 @@ public class PromptServiceTests
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        // Unknown level: profile guidance is empty, but the static production section text is always present
-        req.UserPrompt.Should().Contain("Production is MANDATORY");
-        req.UserPrompt.Should().Contain("communicative activity");
+        // Unknown level: profile guidance is empty, fallback text is used
+        req.UserPrompt.Should().Contain("communicative task");
+        req.UserPrompt.Should().Contain("independently");
     }
 
     // --- CurriculumContext: weaknesses, difficulties, and personalization ---
@@ -1244,7 +1308,8 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("SECTION COHERENCE RULES");
         req.UserPrompt.Should().Contain("GRAMMAR SCOPE for A1");
         req.UserPrompt.Should().Contain("VOCABULARY TARGETS for A1");
-        req.UserPrompt.Should().Contain("GRAMMAR FOCUS TEMPLATE");
+        // Template override guidance is now inline per-section, not a monolithic block
+        req.UserPrompt.Should().Contain("Template focus:");
     }
 
     [Fact]
@@ -1261,7 +1326,8 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().Contain("SECTION COHERENCE RULES");
         req.UserPrompt.Should().Contain("GRAMMAR SCOPE for B2");
-        req.UserPrompt.Should().Contain("READING & COMPREHENSION TEMPLATE");
+        // Template override guidance is now inline per-section, not a monolithic block
+        req.UserPrompt.Should().Contain("reading passage");
         req.UserPrompt.Should().Contain("L1 ADJUSTMENTS for Italian speakers");
     }
 
@@ -1274,7 +1340,8 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().Contain("SECTION COHERENCE RULES");
         req.UserPrompt.Should().Contain("VOCABULARY APPROACH for C1");
-        req.UserPrompt.Should().Contain("CONVERSATION TEMPLATE");
+        // Template override level variation is emitted as "{TEMPLATE NAME} level note for {level}:"
+        req.UserPrompt.Should().Contain("CONVERSATION level note for C1");
     }
 
     // --- Available type filtering ---

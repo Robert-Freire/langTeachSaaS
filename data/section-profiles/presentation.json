@@ -65,7 +65,7 @@
     },
     "B1": {
       "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
-      "guidance": "Vocabulary via authentic-ish excerpts (100-150 words). Grammar through guided discovery: present data, ask student to formulate the rule. Include typical L1 interference notes.",
+      "guidance": "Introduce new language through authentic-style excerpts (100-150 words). When the lesson includes a grammar point, use guided discovery: present data, ask the student to formulate the rule. Include typical L1 interference notes. When no grammar point is targeted, let the text or content carry the input.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["reading", "listening"],
       "scaffolding": "medium",
@@ -96,7 +96,7 @@
     },
     "B2": {
       "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
-      "guidance": "Register-appropriate authentic texts. Grammar nuance: indicative vs subjunctive, aspect, discourse markers. Vocabulary in extended context. Student formulates rules from data.",
+      "guidance": "Register-appropriate authentic texts as the primary input vehicle. When the lesson targets grammar, focus on nuance: indicative vs subjunctive, aspect, discourse markers. Student formulates rules from data. When grammar is not the focus, the text serves vocabulary expansion and comprehension.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["reading", "listening"],
       "scaffolding": "low",

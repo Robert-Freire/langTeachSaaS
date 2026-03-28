@@ -110,25 +110,15 @@ public class PromptService : IPromptService
                $"Allowed types: {string.Join(", ", listed)}";
     }
 
-    private string BuildTemplateOverrideBlock(TemplateOverrideEntry entry, string level)
+    private static string GetSectionFallbackGuidance(string sectionName) => sectionName switch
     {
-        var sb = new StringBuilder();
-        sb.AppendLine($"\n{entry.Name.ToUpperInvariant()} TEMPLATE:");
-        foreach (var sectionName in SectionOrder)
-        {
-            if (!entry.Sections.TryGetValue(sectionName, out var sec))
-                continue;
-            if (!string.IsNullOrWhiteSpace(sec.OverrideGuidance))
-            {
-                sb.AppendLine($"- {sectionName}: {sec.OverrideGuidance}");
-                if (!string.IsNullOrWhiteSpace(sec.Notes))
-                    sb.AppendLine($"  NOTE: {sec.Notes}");
-            }
-        }
-        if (entry.LevelVariations.TryGetValue(level, out var variation))
-            sb.AppendLine($"Level note for {level}: {variation}");
-        return sb.ToString().TrimEnd();
-    }
+        "warmUp"       => "A brief conversational warm-up activity to activate prior knowledge.",
+        "presentation" => "Introduce new language with examples in context. Explain meanings and usage.",
+        "practice"     => "Use a variety of exercise formats appropriate to the stated CEFR level.",
+        "production"   => "A communicative task where the student uses the new language independently.",
+        "wrapUp"       => "Student reflects on what they learned. Brief preview of homework or next session.",
+        _              => string.Empty
+    };
 
     // --- Sanitize helper ---
 
@@ -414,17 +404,33 @@ public class PromptService : IPromptService
         var cefrLevel = Sanitize(ctx.CefrLevel);
         const string schema = """{"title":"","objectives":[""],"sections":{"warmUp":"","presentation":"","practice":"","production":"","wrapUp":""}}""";
 
-        var warmUpGuidance = _profiles.GetGuidance("warmup", cefrLevel);
-        if (string.IsNullOrEmpty(warmUpGuidance))
-            warmUpGuidance = "A brief conversational warm-up activity to activate prior knowledge.";
+        // Look up template entry upfront (may be null when no template selected)
+        var templateName = Sanitize(ctx.TemplateName);
+        TemplateOverrideEntry? templateEntry = string.IsNullOrEmpty(templateName)
+            ? null
+            : _pedagogy.GetTemplateOverrideByName(templateName);
 
-        var practiceLevelHint = _profiles.GetGuidance("practice", cefrLevel);
-        if (string.IsNullOrEmpty(practiceLevelHint))
-            practiceLevelHint = "Use a variety of exercise formats appropriate to the stated CEFR level.";
+        // Build section guidelines — additive model: base guidance + inline template focus
+        var sbSections = new StringBuilder();
+        foreach (var sectionName in SectionOrder)
+        {
+            var baseGuidance = _profiles.GetGuidance(sectionName, cefrLevel);
+            if (string.IsNullOrEmpty(baseGuidance))
+                baseGuidance = GetSectionFallbackGuidance(sectionName);
 
-        var productionGuidance = _profiles.GetGuidance("production", cefrLevel);
-        if (string.IsNullOrEmpty(productionGuidance))
-            productionGuidance = "A communicative task where the student uses the new language independently.";
+            var duration = _profiles.GetDuration(sectionName, cefrLevel);
+            var durationStr = duration != null ? $" ({duration.Min}-{duration.Max} min)" : "";
+
+            sbSections.AppendLine($"- {sectionName}{durationStr}: {baseGuidance}");
+
+            if (templateEntry?.Sections.TryGetValue(sectionName, out var secOverride) == true
+                && !string.IsNullOrWhiteSpace(secOverride.OverrideGuidance))
+            {
+                sbSections.AppendLine($"  Template focus: {secOverride.OverrideGuidance}");
+                if (!string.IsNullOrWhiteSpace(secOverride.Notes))
+                    sbSections.AppendLine($"  NOTE: {secOverride.Notes}");
+            }
+        }
 
         var baseInstruction = $"""
         Generate a complete lesson plan for the lesson on "{topic}". Return JSON:
@@ -432,14 +438,20 @@ public class PromptService : IPromptService
         Each section should be detailed enough for the teacher to follow without additional preparation. Focus on activities suitable for one-on-one online tutoring. Do not reference physical classroom resources like whiteboards, projectors, or video players.
 
         Section guidelines:
-        - warmUp (2-5 min): {warmUpGuidance}
-        - presentation: Introduce the new language (vocabulary, grammar, or structure) with examples in context. Explain meanings and usage.
-        - practice: Controlled production only. Order exercises from controlled to meaningful: start with mechanical items (matching, fill-in-blank with word bank, basic MC), then progress to more demanding items (MC with close distractors, fill-in-blank without word bank, true/false with justification). Guided conversation may be included at B1+. {practiceLevelHint}
-        - production: Production is MANDATORY in every lesson plan — never omit it. A free or communicative activity where the student uses the new language independently with minimal guidance. {productionGuidance}
-        - wrapUp (2-3 min): Reflection and self-assessment only. Ask the student what they learned, what felt easy, and what they want to practise more. Brief preview of homework or next session.
+        {sbSections.ToString().TrimEnd()}
 
         All five sections (warmUp, presentation, practice, production, wrapUp) are required in every lesson plan.
         """;
+
+        // Level variation from template (if present)
+        if (templateEntry is not null
+            && templateEntry.LevelVariations.TryGetValue(cefrLevel, out var levelVariation))
+            baseInstruction += $"\n\n{templateEntry.Name.ToUpperInvariant()} level note for {cefrLevel}: {levelVariation}";
+
+        // Restrictions from template (currently enforced as explicit constraints)
+        if (templateEntry?.Restrictions is { Length: > 0 })
+            foreach (var r in templateEntry.Restrictions)
+                baseInstruction += $"\nDo not use [{r.Value}] exercises in this lesson.";
 
         // Grammar scope from CEFR level rules
         var grammarScope = BuildGrammarScopeBlock(cefrLevel);
@@ -458,15 +470,6 @@ public class PromptService : IPromptService
             var l1 = _pedagogy.GetL1Adjustments(nativeLang);
             if (l1 is not null)
                 baseInstruction += "\n\n" + BuildL1Block(l1, nativeLang);
-        }
-
-        // Template override — replaces hardcoded R&C and Exam Prep if/else blocks
-        var templateName = Sanitize(ctx.TemplateName);
-        if (!string.IsNullOrEmpty(templateName))
-        {
-            var templateEntry = _pedagogy.GetTemplateOverrideByName(templateName);
-            if (templateEntry is not null)
-                baseInstruction += BuildTemplateOverrideBlock(templateEntry, cefrLevel);
         }
 
         // Declared weakness targeting (StudentWeaknesses, not StudentDifficulties)
