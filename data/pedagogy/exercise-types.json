@@ -3,7 +3,7 @@
     {
       "id": "CE-01",
       "name": "Global comprehension (gist reading)",
-      "nameEs": "Comprension global (gist reading)",
+      "nameEs": "Comprensión global (gist reading)",
       "category": "CE",
       "secondaryCompetencies": [],
       "description": "Read a text and answer a general question about its topic or purpose.",
@@ -14,7 +14,7 @@
     {
       "id": "CE-02",
       "name": "Detailed comprehension",
-      "nameEs": "Comprension detallada",
+      "nameEs": "Comprensión detallada",
       "category": "CE",
       "secondaryCompetencies": [],
       "description": "Answer questions about specific information in the text (who, what, when, where).",
@@ -36,7 +36,7 @@
     {
       "id": "CE-04",
       "name": "Matching headings to paragraphs",
-      "nameEs": "Relacionar titulo/parrafo",
+      "nameEs": "Relacionar título/párrafo",
       "category": "CE",
       "secondaryCompetencies": [],
       "description": "Match headings, summaries, or main ideas to sections of a text.",
@@ -47,7 +47,7 @@
     {
       "id": "CE-05",
       "name": "Ordering paragraphs/fragments",
-      "nameEs": "Ordenar parrafos/fragmentos",
+      "nameEs": "Ordenar párrafos/fragmentos",
       "category": "CE",
       "secondaryCompetencies": ["PRAG"],
       "description": "Reconstruct the logical order of a scrambled text.",
@@ -69,7 +69,7 @@
     {
       "id": "CE-07",
       "name": "Inference and deduction",
-      "nameEs": "Inferencia y deduccion",
+      "nameEs": "Inferencia y deducción",
       "category": "CE",
       "secondaryCompetencies": ["PRAG"],
       "description": "Answer questions whose responses are implicit rather than explicit in the text.",
@@ -80,7 +80,7 @@
     {
       "id": "CE-08",
       "name": "Register and intent identification",
-      "nameEs": "Identificacion de registro/intencion",
+      "nameEs": "Identificación de registro/intención",
       "category": "CE",
       "secondaryCompetencies": ["PRAG"],
       "description": "Determine the tone, register, target audience, or communicative intent of a text.",
@@ -91,7 +91,7 @@
     {
       "id": "CE-09",
       "name": "Critical reading / argued opinion",
-      "nameEs": "Lectura critica / opinion argumentada",
+      "nameEs": "Lectura crítica / opinión argumentada",
       "category": "CE",
       "secondaryCompetencies": ["EE"],
       "description": "Read a text and formulate a reasoned opinion about its ideas.",
@@ -157,7 +157,7 @@
     {
       "id": "CO-06",
       "name": "Phonetic discrimination",
-      "nameEs": "Discriminacion fonetica",
+      "nameEs": "Discriminación fonética",
       "category": "CO",
       "secondaryCompetencies": [],
       "description": "Distinguish sounds, stress patterns, or minimal pairs.",
@@ -179,7 +179,7 @@
     {
       "id": "CO-08",
       "name": "Authentic media comprehension",
-      "nameEs": "Comprension de medios reales",
+      "nameEs": "Comprensión de medios reales",
       "category": "CO",
       "secondaryCompetencies": ["PRAG"],
       "description": "Understand authentic media such as podcasts, news, interviews, or films without adaptation.",
@@ -201,7 +201,7 @@
     {
       "id": "EE-02",
       "name": "Complete sentences/paragraphs",
-      "nameEs": "Completar frases/parrafos",
+      "nameEs": "Completar frases/párrafos",
       "category": "EE",
       "secondaryCompetencies": ["GR", "VOC"],
       "description": "Complete sentences or paragraphs with scaffolded prompts.",
@@ -223,7 +223,7 @@
     {
       "id": "EE-04",
       "name": "Description (person, place, object)",
-      "nameEs": "Descripcion (persona, lugar, objeto)",
+      "nameEs": "Descripción (persona, lugar, objeto)",
       "category": "EE",
       "secondaryCompetencies": ["VOC"],
       "description": "Produce a descriptive text about a person, place, or object following guidelines.",
@@ -234,7 +234,7 @@
     {
       "id": "EE-05",
       "name": "Narration",
-      "nameEs": "Narracion",
+      "nameEs": "Narración",
       "category": "EE",
       "secondaryCompetencies": ["GR"],
       "description": "Write a story, anecdote, or sequence of events.",
@@ -256,7 +256,7 @@
     {
       "id": "EE-07",
       "name": "Opinion/argumentative essay",
-      "nameEs": "Opinion/ensayo argumentativo",
+      "nameEs": "Opinión/ensayo argumentativo",
       "category": "EE",
       "secondaryCompetencies": ["PRAG"],
       "description": "Write a text expressing and justifying a personal stance.",
@@ -278,7 +278,7 @@
     {
       "id": "EE-09",
       "name": "Register transformation",
-      "nameEs": "Transformacion de registro",
+      "nameEs": "Transformación de registro",
       "category": "EE",
       "secondaryCompetencies": ["PRAG"],
       "description": "Rewrite a text changing its register (e.g., informal to formal).",
@@ -300,7 +300,7 @@
     {
       "id": "EE-11",
       "name": "Written mediation",
-      "nameEs": "Mediacion escrita",
+      "nameEs": "Mediación escrita",
       "category": "EE",
       "secondaryCompetencies": [],
       "description": "Explain a complex text in simpler terms for a different audience.",
@@ -311,7 +311,7 @@
     {
       "id": "EO-01",
       "name": "Guided dialogue (closed role-play)",
-      "nameEs": "Dialogo guiado (role-play cerrado)",
+      "nameEs": "Diálogo guiado (role-play cerrado)",
       "category": "EO",
       "secondaryCompetencies": ["PRAG"],
       "description": "Act out a situation with concrete turn-by-turn instructions.",
@@ -344,7 +344,7 @@
     {
       "id": "EO-04",
       "name": "Oral description (image, experience)",
-      "nameEs": "Descripcion oral (imagen, experiencia)",
+      "nameEs": "Descripción oral (imagen, experiencia)",
       "category": "EO",
       "secondaryCompetencies": ["VOC"],
       "description": "Describe a photo, scene, person, or place orally.",
@@ -355,7 +355,7 @@
     {
       "id": "EO-05",
       "name": "Sustained monologue / presentation",
-      "nameEs": "Monologo sostenido / exposicion",
+      "nameEs": "Monólogo sostenido / exposición",
       "category": "EO",
       "secondaryCompetencies": ["PRAG"],
       "description": "Prepare and present a topic orally for 2 to 5 minutes.",
@@ -366,7 +366,7 @@
     {
       "id": "EO-06",
       "name": "Debate / discussion",
-      "nameEs": "Debate / discusion",
+      "nameEs": "Debate / discusión",
       "category": "EO",
       "secondaryCompetencies": ["PRAG"],
       "description": "Defend a position with arguments in a debate or discussion.",
@@ -377,7 +377,7 @@
     {
       "id": "EO-07",
       "name": "Negotiation / problem-solving",
-      "nameEs": "Negociacion / resolucion de problemas",
+      "nameEs": "Negociación / resolución de problemas",
       "category": "EO",
       "secondaryCompetencies": ["PRAG"],
       "description": "Negotiate and reach an agreement in a problem-solving scenario.",
@@ -388,7 +388,7 @@
     {
       "id": "EO-08",
       "name": "Thematic free conversation",
-      "nameEs": "Conversacion libre tematica",
+      "nameEs": "Conversación libre temática",
       "category": "EO",
       "secondaryCompetencies": [],
       "description": "Speak freely about a topic without a rigid structure, with teacher involvement.",
@@ -399,7 +399,7 @@
     {
       "id": "EO-09",
       "name": "Oral mediation",
-      "nameEs": "Mediacion oral",
+      "nameEs": "Mediación oral",
       "category": "EO",
       "secondaryCompetencies": [],
       "description": "Explain, summarize, or paraphrase information for another person to understand.",
@@ -410,7 +410,7 @@
     {
       "id": "EO-10",
       "name": "Audio recording (oral homework)",
-      "nameEs": "Grabacion de audio (homework oral)",
+      "nameEs": "Grabación de audio (homework oral)",
       "category": "EO",
       "secondaryCompetencies": ["EE"],
       "description": "Record a voice message describing, giving an opinion, or narrating.",
@@ -432,7 +432,7 @@
     {
       "id": "GR-02",
       "name": "Multiple choice",
-      "nameEs": "Seleccion multiple",
+      "nameEs": "Selección múltiple",
       "category": "GR",
       "secondaryCompetencies": [],
       "description": "Choose the correct grammatical form from 3 to 4 options.",
@@ -443,7 +443,7 @@
     {
       "id": "GR-03",
       "name": "Sentence transformation",
-      "nameEs": "Transformacion de frases",
+      "nameEs": "Transformación de frases",
       "category": "GR",
       "secondaryCompetencies": ["EE"],
       "description": "Rewrite a sentence changing one element (tense, person, voice).",
@@ -454,7 +454,7 @@
     {
       "id": "GR-04",
       "name": "Error correction",
-      "nameEs": "Correccion de errores",
+      "nameEs": "Corrección de errores",
       "category": "GR",
       "secondaryCompetencies": ["CE"],
       "description": "Identify and correct grammatical errors in sentences or texts.",
@@ -465,7 +465,7 @@
     {
       "id": "GR-05",
       "name": "Conjugation (paradigms)",
-      "nameEs": "Conjugacion (paradigmas)",
+      "nameEs": "Conjugación (paradigmas)",
       "category": "GR",
       "secondaryCompetencies": [],
       "description": "Complete conjugation tables or write verb forms.",
@@ -509,7 +509,7 @@
     {
       "id": "GR-09",
       "name": "Classification/categorization",
-      "nameEs": "Clasificacion/categorizacion",
+      "nameEs": "Clasificación/categorización",
       "category": "GR",
       "secondaryCompetencies": [],
       "description": "Classify grammatical forms into categories (e.g., regular/irregular, indicative/subjunctive).",
@@ -531,7 +531,7 @@
     {
       "id": "VOC-01",
       "name": "List with translation/definition",
-      "nameEs": "Lista con traduccion/definicion",
+      "nameEs": "Lista con traducción/definición",
       "category": "VOC",
       "secondaryCompetencies": [],
       "description": "Present new vocabulary with its L1 equivalent or L2 definition.",
@@ -542,7 +542,7 @@
     {
       "id": "VOC-02",
       "name": "Matching (word-definition, word-image)",
-      "nameEs": "Emparejamiento (palabra-definicion, palabra-imagen)",
+      "nameEs": "Emparejamiento (palabra-definición, palabra-imagen)",
       "category": "VOC",
       "secondaryCompetencies": [],
       "description": "Match words to their meanings or images.",
@@ -553,7 +553,7 @@
     {
       "id": "VOC-03",
       "name": "Categorize/group by semantic field",
-      "nameEs": "Categorizar / agrupar por campo semantico",
+      "nameEs": "Categorizar / agrupar por campo semántico",
       "category": "VOC",
       "secondaryCompetencies": [],
       "description": "Classify words into thematic categories.",
@@ -586,7 +586,7 @@
     {
       "id": "VOC-06",
       "name": "Synonyms and antonyms",
-      "nameEs": "Sinonimos y antonimos",
+      "nameEs": "Sinónimos y antónimos",
       "category": "VOC",
       "secondaryCompetencies": [],
       "description": "Match or produce synonyms and antonyms.",
@@ -608,7 +608,7 @@
     {
       "id": "VOC-08",
       "name": "Mind map / lexical network",
-      "nameEs": "Mapa mental / red lexica",
+      "nameEs": "Mapa mental / red léxica",
       "category": "VOC",
       "secondaryCompetencies": [],
       "description": "Organize vocabulary visually in a conceptual mind map.",
@@ -619,7 +619,7 @@
     {
       "id": "VOC-09",
       "name": "Flashcards (spaced repetition)",
-      "nameEs": "Flashcards (revision espaciada)",
+      "nameEs": "Flashcards (revisión espaciada)",
       "category": "VOC",
       "secondaryCompetencies": [],
       "description": "Use flashcards with word, translation, and example for spaced review.",
@@ -630,7 +630,7 @@
     {
       "id": "VOC-10",
       "name": "Idioms and fixed expressions",
-      "nameEs": "Expresiones idiomaticas y frases hechas",
+      "nameEs": "Expresiones idiomáticas y frases hechas",
       "category": "VOC",
       "secondaryCompetencies": ["PRAG"],
       "description": "Present and practice idioms and fixed expressions.",
@@ -641,7 +641,7 @@
     {
       "id": "VOC-11",
       "name": "Word formation (derivation, composition)",
-      "nameEs": "Formacion de palabras (derivacion, composicion)",
+      "nameEs": "Formación de palabras (derivación, composición)",
       "category": "VOC",
       "secondaryCompetencies": ["GR"],
       "description": "Work with prefixes, suffixes, and word families.",
@@ -663,7 +663,7 @@
     {
       "id": "PRAG-02",
       "name": "Register adaptation (formal/informal)",
-      "nameEs": "Adecuacion de registro (formal/informal)",
+      "nameEs": "Adecuación de registro (formal/informal)",
       "category": "PRAG",
       "secondaryCompetencies": ["EE"],
       "description": "Reformulate the same message in different registers.",
@@ -685,7 +685,7 @@
     {
       "id": "PRAG-04",
       "name": "Intercultural comparison",
-      "nameEs": "Comparacion intercultural",
+      "nameEs": "Comparación intercultural",
       "category": "PRAG",
       "secondaryCompetencies": ["EO"],
       "description": "Compare cultural practices of the Spanish-speaking world with the student's own.",
@@ -696,7 +696,7 @@
     {
       "id": "PRAG-05",
       "name": "Social simulation",
-      "nameEs": "Simulacion social",
+      "nameEs": "Simulación social",
       "category": "PRAG",
       "secondaryCompetencies": ["EO"],
       "description": "Act out scenarios requiring sociolinguistic competence (a complaint, a job interview, a toast).",
@@ -773,7 +773,7 @@
     {
       "id": "LUD-07",
       "name": "Who is who / 20 questions",
-      "nameEs": "Quien es quien / 20 preguntas",
+      "nameEs": "Quién es quién / 20 preguntas",
       "category": "LUD",
       "secondaryCompetencies": ["EO"],
       "description": "Ask yes/no questions to guess a person or object.",
