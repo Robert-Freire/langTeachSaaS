@@ -6,6 +6,15 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-03-28 during Student-Aware Curriculum sprint close (round 2). 9 entries processed: 4 batched into #347 (pedagogy data consistency), 2 into #349 (UX polish), 3 deleted (redundant tests nit, harmless prompt duplication, undocumented fallback comment).*
 
+## PR #351 (2026-03-28) — #351 additive section guidance model
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `PromptService.cs` restrictions block | Restrictions render as negative constraints ("Do not use [LUD] exercises"). Future authoring pass should consider positive framing ("Use written tasks only. Exclude LUD exercises.") as restrictions list grows. |
+| Minor | `template-overrides.json:culture-society:practice` | "Avoid purely mechanical grammar drills" is soft negative bloat. Replace with positive task description on next authoring pass. |
+| Minor | `PromptServiceTests.cs` fragile assertions | Tests `LessonPlanPrompt_UserPrompt_PracticeGuidance_*` and `LessonPlanPrompt_UserPrompt_RequiresProductionInEveryLesson` assert against B1 profile prose substrings. Any future wording change to `practice.json`/`production.json` B1 will silently break these. |
+| Minor | `PromptService.cs:GetSectionFallbackGuidance` | Expression-body switch syntax; other private helpers in PromptService.cs use block-body. Style inconsistency only. |
+
 ## PR #346 (2026-03-28) — #346 fix Docker e2e build context
 
 | Severity | File | Note |

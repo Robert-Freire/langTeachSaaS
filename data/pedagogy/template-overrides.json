@@ -56,8 +56,8 @@
       "sections": {
         "warmUp": {
           "required": true,
-          "overrideGuidance": "Activate prior knowledge of the target grammar structure. Use an inductive noticing task or a quick diagnostic exercise.",
-          "priorityExerciseTypes": ["GR-08", "GR-01"],
+          "overrideGuidance": "Open with a single question that reveals what the student already knows or assumes about today's grammar point. One question, one student response, brief teacher reaction. This is activation, not practice or discovery.",
+          "priorityExerciseTypes": ["EO-08", "PRAG-01"],
           "minExerciseVarietyOverride": null,
           "notes": null
         },
@@ -106,7 +106,7 @@
       "sections": {
         "warmUp": {
           "required": true,
-          "overrideGuidance": "Pre-reading activation only. Activate background knowledge, predict content from the title, or brainstorm vocabulary around the topic. No grammar drills.",
+          "overrideGuidance": "Pre-reading activation only. Activate background knowledge, predict content from the title, or brainstorm vocabulary around the topic.",
           "priorityExerciseTypes": ["VOC-03", "EO-08"],
           "minExerciseVarietyOverride": null,
           "notes": null
@@ -162,7 +162,7 @@
       "sections": {
         "warmUp": {
           "required": true,
-          "overrideGuidance": "Activate writing-related background knowledge. Discuss a sample text type, analyse a model, or brainstorm ideas for the writing task.",
+          "overrideGuidance": "Activate the student's awareness of the target text type. Ask one question about when and why people write this type of text. This is activation, not model analysis.",
           "priorityExerciseTypes": ["EE-01", "CE-01"],
           "minExerciseVarietyOverride": null,
           "notes": null
@@ -190,7 +190,7 @@
         },
         "wrapUp": {
           "required": true,
-          "overrideGuidance": "Peer review or self-correction using the lesson success criteria. Student identifies one strength and one area to improve in their written text.",
+          "overrideGuidance": "Self-assessment against the lesson's success criteria. Student identifies one strength and one area to improve in their written text.",
           "priorityExerciseTypes": [],
           "minExerciseVarietyOverride": null,
           "notes": null
@@ -218,7 +218,7 @@
       "sections": {
         "warmUp": {
           "required": true,
-          "overrideGuidance": "Review the exam format, the target task type, and the scoring criteria. Briefly discuss what the examiner is looking for. No casual icebreakers or conversation warm-ups.",
+          "overrideGuidance": "Orient the student to today's exam task type. State the task, the time limit, and the one scoring criterion the student should prioritise. No conversational icebreaker. This is briefing, not teaching.",
           "priorityExerciseTypes": ["CE-01", "GR-01", "GR-02"],
           "minExerciseVarietyOverride": null,
           "notes": null
@@ -239,7 +239,7 @@
         },
         "production": {
           "required": true,
-          "overrideGuidance": "Full written exam task the student attempts independently. Specify a time limit (in minutes) and a target word count. Task type must match the exam format: opinion essay, formal letter, short report, or similar written genre. Do NOT use oral role-play or conversation activities.",
+          "overrideGuidance": "Full written exam task the student attempts independently. Specify a time limit (in minutes) and a target word count. Task type must match the exam format: opinion essay, formal letter, short report, or similar written genre. Use written tasks only.",
           "priorityExerciseTypes": ["EE-06", "EE-07", "EE-08", "EE-09", "CE-01", "CE-02"],
           "minExerciseVarietyOverride": null,
           "notes": null
@@ -300,7 +300,7 @@
         },
         "wrapUp": {
           "required": true,
-          "overrideGuidance": "Consolidation activity. Student recalls as many new words as possible (e.g. mind map from memory) and notes items for spaced review.",
+          "overrideGuidance": "Student recalls new words from memory (e.g., reconstruct the mind map without notes). Note items the student could not recall for spaced review.",
           "priorityExerciseTypes": ["VOC-08", "VOC-09"],
           "minExerciseVarietyOverride": null,
           "notes": null
