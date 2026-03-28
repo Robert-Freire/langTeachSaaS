@@ -401,6 +401,13 @@ public class PedagogyConfigService : IPedagogyConfigService
             }
         }
 
+        // Validate section profile scope values against the same known scopes set
+        foreach (var scopeValue in _sectionProfileService.GetAllScopeValues())
+        {
+            if (scopeValue != "full" && !knownScopes.Contains(scopeValue))
+                errors.Add($"Section profile contains unknown scope value '{scopeValue}' (not in scope-constraints.json and not 'full')");
+        }
+
         // Validate template override scope values
         foreach (var (tId, tmpl) in _templates)
         {

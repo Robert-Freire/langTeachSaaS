@@ -290,7 +290,7 @@ public class PedagogyConfigServiceTests
     [InlineData("warmup", "B2")]
     [InlineData("wrapup", "B1")]
     [InlineData("wrapup", "C1")]
-    public void GetResolvedScope_WarmUpWrapUp_ReturnsBreif_NoTemplate(string section, string level)
+    public void GetResolvedScope_WarmUpWrapUp_ReturnsBrief_NoTemplate(string section, string level)
     {
         _sut.GetResolvedScope(section, level, null).Should().Be("brief");
     }

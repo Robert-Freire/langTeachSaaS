@@ -48,4 +48,10 @@ public interface ISectionProfileService
     /// Returns null if the scope field is not set in the section profile (caller defaults to "full").
     /// </summary>
     string? GetScope(string sectionType, string cefrLevel);
+
+    /// <summary>
+    /// Returns all distinct non-null scope values found across all section profile levels.
+    /// Used by PedagogyConfigService to validate scope values against scope-constraints.json.
+    /// </summary>
+    string[] GetAllScopeValues();
 }

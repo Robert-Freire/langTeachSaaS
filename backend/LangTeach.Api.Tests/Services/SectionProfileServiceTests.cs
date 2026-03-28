@@ -421,7 +421,7 @@ public class SectionProfileServiceTests
     [InlineData("B2")]
     [InlineData("C1")]
     [InlineData("C2")]
-    public void GetScope_WarmUp_ReturnsBreif_AtAllLevels(string level)
+    public void GetScope_WarmUp_ReturnsBrief_AtAllLevels(string level)
     {
         _sut.GetScope("warmup", level).Should().Be("brief");
     }
@@ -433,7 +433,7 @@ public class SectionProfileServiceTests
     [InlineData("B2")]
     [InlineData("C1")]
     [InlineData("C2")]
-    public void GetScope_WrapUp_ReturnsBreif_AtAllLevels(string level)
+    public void GetScope_WrapUp_ReturnsBrief_AtAllLevels(string level)
     {
         _sut.GetScope("wrapup", level).Should().Be("brief");
     }
