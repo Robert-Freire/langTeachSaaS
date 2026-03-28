@@ -5,6 +5,40 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GeneratePanel } from './GeneratePanel'
 import type { ContentBlockDto } from '../../api/generate'
 import * as generateApi from '../../api/generate'
+import type { SectionRulesMap } from '../../api/pedagogy'
+
+const MOCK_SECTION_RULES: SectionRulesMap = {
+  WarmUp: {
+    A1: ['conversation'], A2: ['conversation'], B1: ['conversation'],
+    B2: ['conversation'], C1: ['conversation'], C2: ['conversation'],
+  },
+  Presentation: {
+    A1: ['grammar', 'vocabulary', 'reading', 'conversation'],
+    A2: ['grammar', 'vocabulary', 'reading', 'conversation'],
+    B1: ['grammar', 'vocabulary', 'reading', 'conversation'],
+    B2: ['grammar', 'vocabulary', 'reading', 'conversation'],
+    C1: ['grammar', 'vocabulary', 'reading', 'conversation'],
+    C2: ['grammar', 'vocabulary', 'reading', 'conversation'],
+  },
+  Practice: {
+    A1: ['exercises', 'conversation'], A2: ['exercises', 'conversation'],
+    B1: ['exercises', 'conversation'], B2: ['exercises', 'conversation'],
+    C1: ['exercises', 'conversation'], C2: ['exercises', 'conversation'],
+  },
+  Production: {
+    A1: ['conversation'], A2: ['conversation'], B1: ['conversation'],
+    B2: ['conversation', 'reading'], C1: ['conversation', 'reading'], C2: ['conversation', 'reading'],
+  },
+  WrapUp: {
+    A1: ['conversation'], A2: ['conversation'], B1: ['conversation'],
+    B2: ['conversation'], C1: ['conversation'], C2: ['conversation'],
+  },
+}
+
+// Mock useSectionRules — data is static config, always available in tests
+vi.mock('../../hooks/useSectionRules', () => ({
+  useSectionRules: () => ({ data: MOCK_SECTION_RULES, isLoading: false }),
+}))
 
 // Mock Auth0
 vi.mock('@auth0/auth0-react', () => ({
