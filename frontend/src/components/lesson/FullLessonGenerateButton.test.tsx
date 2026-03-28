@@ -191,7 +191,8 @@ describe('FullLessonGenerateButton', () => {
     await waitFor(() => expect(onBlockSaved).toHaveBeenCalledTimes(5), { timeout: 3000 })
 
     const blockTypes = onBlockSaved.mock.calls.map((c) => (c as [ContentBlockDto])[0].blockType)
-    expect(new Set(blockTypes)).toEqual(new Set(['free-text', 'grammar', 'exercises']))
+    // WarmUp/Production/WrapUp use 'conversation'; Presentation uses 'grammar'; Practice uses 'exercises'
+    expect(new Set(blockTypes)).toEqual(new Set(['conversation', 'grammar', 'exercises']))
   })
 
   it('all sections show active status simultaneously during generation', async () => {
@@ -275,8 +276,6 @@ describe('FullLessonGenerateButton', () => {
     await waitFor(() => expect(screen.getByText('Lesson generated!')).toBeInTheDocument(), { timeout: 3000 })
     // Only 4 blocks saved (Production skipped)
     expect(onBlockSaved).toHaveBeenCalledTimes(4)
-    const blockTypes = onBlockSaved.mock.calls.map((c) => (c as [ContentBlockDto])[0].blockType)
-    expect(blockTypes).not.toContain('conversation')
   })
 
   it('progress counter reflects actual section count for partial lesson', async () => {

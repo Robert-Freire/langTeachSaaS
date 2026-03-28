@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FluentAssertions;
 using LangTeach.Api.AI;
+using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Helpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,7 +40,7 @@ public class PromptServiceIntegrationTests
 
         var sp = services.BuildServiceProvider();
         var client = new ClaudeApiClient(sp.GetRequiredService<IHttpClientFactory>(), NullLogger<ClaudeApiClient>.Instance);
-        return new TestClients(client, new PromptService(), sp);
+        return new TestClients(client, new PromptService(new SectionProfileService(NullLogger<SectionProfileService>.Instance)), sp);
     }
 
     /// <summary>

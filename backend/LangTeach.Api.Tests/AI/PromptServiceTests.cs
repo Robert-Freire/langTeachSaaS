@@ -1,12 +1,17 @@
 using FluentAssertions;
 using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Services;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LangTeach.Api.Tests.AI;
 
 public class PromptServiceTests
 {
-    private readonly PromptService _sut = new();
+    private static readonly ISectionProfileService ProfileService =
+        new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+
+    private readonly PromptService _sut = new(ProfileService);
 
     private static GenerationContext BaseCtx(string? studentName = null) => new(
         Language: "English",
@@ -461,33 +466,33 @@ public class PromptServiceTests
     // --- WarmUp content type allowlist (per CEFR band) ---
 
     [Fact]
-    public void LessonPlanPrompt_WarmUp_ContainsIcebreakerGuidance_ForB1()
+    public void LessonPlanPrompt_WarmUp_ContainsOpinionPromptGuidance_ForB1()
     {
         var req = _sut.BuildLessonPlanPrompt(BaseCtx()); // BaseCtx defaults to B1
 
-        req.UserPrompt.Should().Contain("icebreaker");
+        req.UserPrompt.Should().Contain("Opinion prompts");
     }
 
     [Fact]
-    public void LessonPlanPrompt_WarmUp_UsesPositiveActivityExamples_ForA1()
+    public void LessonPlanPrompt_WarmUp_UsesLowDemandActivities_ForA1()
     {
         var ctx = BaseCtx() with { CefrLevel = "A1" };
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        // A1 band: specific activity types listed as positive guidance
-        req.UserPrompt.Should().Contain("odd one out");
-        req.UserPrompt.Should().Contain("simple personal question");
+        // A1: yes/no questions and a concrete example
+        req.UserPrompt.Should().Contain("yes/no");
+        req.UserPrompt.Should().Contain("Te gusta");
     }
 
     [Fact]
-    public void LessonPlanPrompt_WarmUp_AllowsConversationActivities_ForB1Plus()
+    public void LessonPlanPrompt_WarmUp_AllowsDiscussionActivities_ForB2()
     {
-        var req = _sut.BuildLessonPlanPrompt(BaseCtx()); // B1
+        var ctx = BaseCtx() with { CefrLevel = "B2" };
+        var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        // B1 band: conversation-style activities are included
+        // B2: agree/disagree or headline prediction format
         req.UserPrompt.Should().Contain("agree/disagree");
-        req.UserPrompt.Should().Contain("two truths and a lie");
     }
 
     [Fact]
@@ -595,7 +600,6 @@ public class PromptServiceTests
         var req = _sut.BuildExercisesPrompt(ctx);
 
         req.UserPrompt.Should().Contain("word bank");
-        req.UserPrompt.Should().Contain("A1/A2");
     }
 
     [Fact]
@@ -606,7 +610,6 @@ public class PromptServiceTests
         var req = _sut.BuildExercisesPrompt(ctx);
 
         req.UserPrompt.Should().Contain("at least 2 different exercise formats");
-        req.UserPrompt.Should().Contain("B1/B2");
     }
 
     [Fact]
@@ -616,8 +619,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildExercisesPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("Minimize purely mechanical items");
-        req.UserPrompt.Should().Contain("C1/C2");
+        req.UserPrompt.Should().Contain("Minimize purely mechanical");
     }
 
     [Fact]
@@ -637,7 +639,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("at least 2 different activity formats");
+        req.UserPrompt.Should().Contain("at least 2 different exercise formats");
     }
 
     [Fact]
@@ -771,13 +773,15 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public void LessonPlanPrompt_UnknownLevel_ProductionGuidance_FallsBackToGenericGuidance()
+    public void LessonPlanPrompt_UnknownLevel_ProductionGuidance_ContainsStaticProductionText()
     {
         var ctx = BaseCtx() with { CefrLevel = "X9" };
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("communicative production task");
+        // Unknown level: profile guidance is empty, but the static production section text is always present
+        req.UserPrompt.Should().Contain("Production is MANDATORY");
+        req.UserPrompt.Should().Contain("communicative activity");
     }
 
     // --- CurriculumContext: weaknesses, difficulties, and personalization ---

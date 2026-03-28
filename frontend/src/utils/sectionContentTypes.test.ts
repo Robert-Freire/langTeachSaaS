@@ -1,33 +1,38 @@
 import { describe, it, expect } from 'vitest'
-import { getAllowedContentTypes } from './sectionContentTypes'
+import { getAllowedContentTypes, getContentTypeLabel } from './sectionContentTypes'
 
 describe('getAllowedContentTypes', () => {
   describe('WarmUp section', () => {
-    it('returns only free-text for A1 level', () => {
-      expect(getAllowedContentTypes('WarmUp', 'A1')).toEqual(['free-text'])
+    it('returns only conversation for A1 level', () => {
+      expect(getAllowedContentTypes('WarmUp', 'A1')).toEqual(['conversation'])
     })
 
-    it('returns only free-text for A2 level', () => {
-      expect(getAllowedContentTypes('WarmUp', 'A2')).toEqual(['free-text'])
+    it('returns only conversation for A2 level', () => {
+      expect(getAllowedContentTypes('WarmUp', 'A2')).toEqual(['conversation'])
     })
 
-    it('returns free-text and conversation for B1 level', () => {
-      expect(getAllowedContentTypes('WarmUp', 'B1')).toEqual(['free-text', 'conversation'])
+    it('returns only conversation for B1 level', () => {
+      expect(getAllowedContentTypes('WarmUp', 'B1')).toEqual(['conversation'])
     })
 
-    it('returns free-text and conversation for B2 level', () => {
-      expect(getAllowedContentTypes('WarmUp', 'B2')).toEqual(['free-text', 'conversation'])
+    it('returns only conversation for B2 level', () => {
+      expect(getAllowedContentTypes('WarmUp', 'B2')).toEqual(['conversation'])
     })
 
-    it('returns free-text and conversation for C1 level', () => {
-      expect(getAllowedContentTypes('WarmUp', 'C1')).toEqual(['free-text', 'conversation'])
+    it('returns only conversation for C1 level', () => {
+      expect(getAllowedContentTypes('WarmUp', 'C1')).toEqual(['conversation'])
     })
 
-    it('excludes vocabulary, grammar, exercises from WarmUp', () => {
+    it('returns only conversation for C2 level', () => {
+      expect(getAllowedContentTypes('WarmUp', 'C2')).toEqual(['conversation'])
+    })
+
+    it('excludes vocabulary, grammar, exercises, free-text from WarmUp', () => {
       const types = getAllowedContentTypes('WarmUp', 'A1')
       expect(types).not.toContain('vocabulary')
       expect(types).not.toContain('grammar')
       expect(types).not.toContain('exercises')
+      expect(types).not.toContain('free-text')
     })
   })
 
@@ -52,17 +57,30 @@ describe('getAllowedContentTypes', () => {
       expect(getAllowedContentTypes('Practice', 'B1')).toEqual(['exercises', 'conversation'])
     })
 
-    it('excludes vocabulary, grammar, reading from Practice', () => {
+    it('excludes vocabulary, grammar, reading, free-text from Practice', () => {
       const types = getAllowedContentTypes('Practice', 'B1')
       expect(types).not.toContain('vocabulary')
       expect(types).not.toContain('grammar')
       expect(types).not.toContain('reading')
+      expect(types).not.toContain('free-text')
     })
   })
 
   describe('Production section', () => {
-    it('returns free-text, conversation, reading', () => {
-      expect(getAllowedContentTypes('Production', 'B1')).toEqual(['free-text', 'conversation', 'reading'])
+    it('returns only conversation for A1', () => {
+      expect(getAllowedContentTypes('Production', 'A1')).toEqual(['conversation'])
+    })
+
+    it('returns only conversation for B1', () => {
+      expect(getAllowedContentTypes('Production', 'B1')).toEqual(['conversation'])
+    })
+
+    it('returns conversation and reading for B2', () => {
+      expect(getAllowedContentTypes('Production', 'B2')).toEqual(['conversation', 'reading'])
+    })
+
+    it('returns conversation and reading for C1', () => {
+      expect(getAllowedContentTypes('Production', 'C1')).toEqual(['conversation', 'reading'])
     })
 
     it('excludes exercises from Production', () => {
@@ -72,14 +90,20 @@ describe('getAllowedContentTypes', () => {
   })
 
   describe('WrapUp section', () => {
-    it('returns only free-text', () => {
-      expect(getAllowedContentTypes('WrapUp', 'B1')).toEqual(['free-text'])
+    it('returns only conversation for all levels', () => {
+      for (const level of ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']) {
+        expect(getAllowedContentTypes('WrapUp', level)).toEqual(['conversation'])
+      }
+    })
+
+    it('excludes free-text from WrapUp', () => {
+      const types = getAllowedContentTypes('WrapUp', 'B1')
+      expect(types).not.toContain('free-text')
     })
   })
 
   describe('default (unknown section)', () => {
-    it('returns full list including free-text for unknown section type', () => {
-      // TypeScript prevents this at compile time but the default branch exists for safety
+    it('returns full list for unknown section type', () => {
       const types = getAllowedContentTypes('Unknown' as never, 'B1')
       expect(types).toContain('vocabulary')
       expect(types).toContain('grammar')
@@ -89,5 +113,24 @@ describe('getAllowedContentTypes', () => {
       expect(types).toContain('homework')
       expect(types).toContain('free-text')
     })
+  })
+})
+
+describe('getContentTypeLabel', () => {
+  it('returns Conversation starter for WarmUp + conversation', () => {
+    expect(getContentTypeLabel('WarmUp', 'conversation', 'Conversation')).toBe('Conversation starter')
+  })
+
+  it('returns Reflection for WrapUp + conversation', () => {
+    expect(getContentTypeLabel('WrapUp', 'conversation', 'Conversation')).toBe('Reflection')
+  })
+
+  it('returns generic label for non-override combinations', () => {
+    expect(getContentTypeLabel('Practice', 'exercises', 'Exercises')).toBe('Exercises')
+    expect(getContentTypeLabel('Presentation', 'grammar', 'Grammar')).toBe('Grammar')
+  })
+
+  it('returns generic label for WarmUp non-conversation types', () => {
+    expect(getContentTypeLabel('WarmUp', 'grammar', 'Grammar')).toBe('Grammar')
   })
 })

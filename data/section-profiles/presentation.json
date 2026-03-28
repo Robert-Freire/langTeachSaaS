@@ -1,0 +1,57 @@
+{
+  "sectionType": "presentation",
+  "hardConstraints": [
+    "No exercises or practice tasks here.",
+    "No free production. Input and explanation only."
+  ],
+  "levels": {
+    "A1": {
+      "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
+      "guidance": "Isolated vocabulary with L1 translations. Clear grammar paradigms with minimal metalanguage. Max 8-10 new items. L1 support appropriate. Use simple, concrete examples the student can relate to.",
+      "duration": { "min": 8, "max": 12 },
+      "competencies": ["reading", "listening"],
+      "scaffolding": "high",
+      "interactionPattern": "teacher-led"
+    },
+    "A2": {
+      "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
+      "guidance": "Vocabulary in short contextual sentences. Grammar through noticing tasks: present examples, elicit the rule. Short authentic-style texts (50-80 words) as input.",
+      "duration": { "min": 8, "max": 12 },
+      "competencies": ["reading", "listening"],
+      "scaffolding": "medium",
+      "interactionPattern": "teacher-led"
+    },
+    "B1": {
+      "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
+      "guidance": "Vocabulary via authentic-ish excerpts (100-150 words). Grammar through guided discovery: present data, ask student to formulate the rule. Include typical L1 interference notes.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["reading", "listening"],
+      "scaffolding": "medium",
+      "interactionPattern": "teacher-guided"
+    },
+    "B2": {
+      "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
+      "guidance": "Register-appropriate authentic texts. Grammar nuance: indicative vs subjunctive, aspect, discourse markers. Vocabulary in extended context. Student formulates rules from data.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["reading", "listening"],
+      "scaffolding": "low",
+      "interactionPattern": "student-led"
+    },
+    "C1": {
+      "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
+      "guidance": "Collocations, idioms, pragmatic functions, register shifts. Ungraded authentic texts. Grammar: pragmatic and sociolinguistic nuance. Student analyses and categorises independently.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["reading", "listening"],
+      "scaffolding": "none",
+      "interactionPattern": "student-led"
+    },
+    "C2": {
+      "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
+      "guidance": "Collocations, idioms, pragmatic functions at near-native level. Authentic texts without grading. Mediation, paraphrase, register transfer as input tasks. Student leads analysis.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["reading", "listening"],
+      "scaffolding": "none",
+      "interactionPattern": "student-led"
+    }
+  }
+}

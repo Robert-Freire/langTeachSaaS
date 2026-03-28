@@ -120,6 +120,7 @@ builder.Services.AddHttpClient("Claude", (sp, client) =>
     client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
 });
 builder.Services.AddScoped<IClaudeClient, ClaudeApiClient>();
+builder.Services.AddSingleton<ISectionProfileService, SectionProfileService>();
 builder.Services.AddScoped<IPromptService, PromptService>();
 
 builder.Services.AddOptions<GenerationLimitsOptions>()
@@ -155,6 +156,9 @@ QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddScoped<IPdfExportService, PdfExportService>();
 
 var app = builder.Build();
+
+// Eagerly resolve singletons that load embedded resources so malformed JSON fails at startup.
+_ = app.Services.GetRequiredService<ISectionProfileService>();
 
 // Apply pending migrations and seed reference data on startup
 using (var scope = app.Services.CreateScope())

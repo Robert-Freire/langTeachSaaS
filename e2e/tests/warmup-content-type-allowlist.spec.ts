@@ -11,7 +11,7 @@ test.beforeAll(async ({ browser }) => {
   await ctx.close()
 })
 
-test('WarmUp generate panel shows Free activity but not Vocabulary or Grammar', async ({ browser }) => {
+test('WarmUp generate panel shows Conversation starter (read-only), not Vocabulary or Grammar', async ({ browser }) => {
   test.setTimeout(TEST_TIMEOUT)
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
@@ -27,7 +27,7 @@ test('WarmUp generate panel shows Free activity but not Vocabulary or Grammar', 
     await expect(page.getByTestId('template-grid')).toBeVisible({ timeout: UI_TIMEOUT })
     await page.getByTestId('template-grammar-focus').click()
 
-    // Fill in lesson metadata with B1 level so conversation is also allowed
+    // Fill in lesson metadata
     await expect(page.locator('h1')).toHaveText('Lesson Details', { timeout: UI_TIMEOUT })
     const lessonTitle = `WarmUp Allowlist Test ${Date.now()}`
     await page.getByTestId('input-title').fill(lessonTitle)
@@ -49,7 +49,7 @@ test('WarmUp generate panel shows Free activity but not Vocabulary or Grammar', 
     await expect(page).toHaveURL(/\/lessons\/[0-9a-f-]+$/, { timeout: UI_TIMEOUT })
     await expect(page.getByTestId('lesson-title')).toHaveText(lessonTitle, { timeout: UI_TIMEOUT })
 
-    // Save WarmUp section notes so section exists in DB (required for generate button to be active)
+    // Save WarmUp section notes so section exists in DB
     const warmupSection = page.getByTestId('section-warmup')
     await warmupSection.fill('An icebreaker about daily routines.')
     await warmupSection.blur()
@@ -59,28 +59,18 @@ test('WarmUp generate panel shows Free activity but not Vocabulary or Grammar', 
     await page.getByTestId('generate-btn-warmup').click()
     await expect(page.getByTestId('generate-panel')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
-    // Check that "Free activity" IS present (either as read-only label or in the dropdown)
+    // WarmUp now only allows 'conversation' (labeled "Conversation starter") at all levels
+    // It should render as a read-only label, not a dropdown
     const taskTypeContainer = page.locator('.space-y-1').filter({ has: page.getByText('Task type') })
     const readonlyLabel = taskTypeContainer.locator('[data-testid="task-type-readonly"]')
-    const selectTrigger = taskTypeContainer.locator('[data-slot="select-trigger"]')
 
-    const hasReadonly = await readonlyLabel.isVisible()
-    const hasSelect = await selectTrigger.isVisible()
+    await expect(readonlyLabel).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(readonlyLabel).toContainText('Conversation starter')
 
-    if (hasSelect) {
-      // Dropdown case (B1+): open and verify options
-      await selectTrigger.click()
-      await expect(page.getByRole('option', { name: 'Free activity' })).toBeVisible({ timeout: UI_TIMEOUT })
-      // Vocabulary, Grammar, and Exercises must NOT appear in the dropdown
-      await expect(page.getByRole('option', { name: 'Vocabulary' })).not.toBeVisible()
-      await expect(page.getByRole('option', { name: 'Grammar' })).not.toBeVisible()
-      await expect(page.getByRole('option', { name: 'Exercises' })).not.toBeVisible()
-      await page.keyboard.press('Escape')
-    }
-
-    // Either way, "Free activity" must be the trigger text or the readonly label text
-    const triggerOrLabel = hasReadonly ? readonlyLabel : selectTrigger
-    await expect(triggerOrLabel).toContainText('Free activity')
+    // Vocabulary, Grammar, Exercises must not appear anywhere in the generate panel
+    await expect(page.getByTestId('generate-panel').getByText('Vocabulary')).not.toBeVisible()
+    await expect(page.getByTestId('generate-panel').getByText('Grammar')).not.toBeVisible()
+    await expect(page.getByTestId('generate-panel').getByText('Exercises')).not.toBeVisible()
   } finally {
     await context.close()
   }

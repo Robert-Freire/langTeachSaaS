@@ -63,5 +63,6 @@ public record GenerationContext(
     IReadOnlyList<string>? GrammarConstraints = null,
     string? TemplateName = null,
     string? CurriculumObjectives = null,
-    string? TeacherGrammarConstraints = null
+    string? TeacherGrammarConstraints = null,
+    string? SectionType = null
 );

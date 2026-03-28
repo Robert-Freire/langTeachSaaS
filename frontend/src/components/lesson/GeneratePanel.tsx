@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { usePartialJsonParse } from '../../hooks/usePartialJsonParse'
 import type { SectionType } from '../../api/lessons'
-import { getAllowedContentTypes } from '../../utils/sectionContentTypes'
+import { getAllowedContentTypes, getContentTypeLabel } from '../../utils/sectionContentTypes'
 import {
   saveContentBlock,
   deleteContentBlock,
@@ -175,8 +175,11 @@ export function GeneratePanel({
   )
 
   const filteredTaskTypes = useMemo(
-    () => allowedTypes.map(v => TASK_TYPES.find(t => t.value === v)).filter(Boolean) as typeof TASK_TYPES,
-    [allowedTypes]
+    () => allowedTypes
+      .map(v => TASK_TYPES.find(t => t.value === v))
+      .filter(Boolean)
+      .map(t => ({ ...t!, label: getContentTypeLabel(sectionType, t!.value, t!.label) })),
+    [allowedTypes, sectionType]
   )
 
   useEffect(() => {
@@ -222,7 +225,7 @@ export function GeneratePanel({
               >
                 {filteredTaskTypes[0].label}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Only type for this section</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Only type for this section</p>
             </div>
           ) : (
             <Select value={taskType} onValueChange={(v) => v && setTaskType(v as ContentBlockType)} disabled={isStreaming}>
