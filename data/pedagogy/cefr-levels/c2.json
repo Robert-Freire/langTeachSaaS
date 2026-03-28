@@ -1,0 +1,37 @@
+{
+  "level": "C2",
+  "grammarInScope": [
+    "C2 is not more grammar. It is pragmatic, stylistic, and cultural mastery at the level of a cultured native speaker.",
+    "Literary, essayistic, and technical texts as primary input material",
+    "Stylistic and rhetorical analysis",
+    "Complex mediation: summarizing a technical report for a general audience",
+    "Multi-register production across all genres",
+    "Humor, irony, and intertextuality",
+    "Deep dialectal variation: rioplatense, andino, caribeno, peninsular"
+  ],
+  "grammarOutOfScope": [],
+  "appropriateExerciseTypes": [
+    "GR-03", "GR-04", "GR-06", "GR-07", "GR-08", "GR-09", "GR-10",
+    "VOC-02", "VOC-03", "VOC-04", "VOC-05", "VOC-06", "VOC-07", "VOC-08", "VOC-09", "VOC-10", "VOC-11",
+    "CE-01", "CE-02", "CE-03", "CE-04", "CE-05", "CE-06", "CE-07", "CE-08", "CE-09",
+    "EE-01", "EE-02", "EE-03", "EE-04", "EE-05", "EE-06", "EE-07", "EE-08", "EE-09", "EE-10", "EE-11",
+    "EO-01", "EO-02", "EO-03", "EO-04", "EO-05", "EO-06", "EO-07", "EO-08", "EO-09", "EO-10",
+    "CO-01", "CO-02", "CO-03", "CO-04", "CO-05", "CO-06", "CO-07", "CO-08",
+    "PRAG-01", "PRAG-02", "PRAG-03", "PRAG-04", "PRAG-05",
+    "LUD-03", "LUD-04", "LUD-05", "LUD-07", "LUD-08"
+  ],
+  "inappropriateExerciseTypes": [
+    { "id": "GR-01", "reason": "Mechanical fill-in-the-blank too simple for C2 level" },
+    { "id": "GR-02", "reason": "Mechanical multiple choice too simple for C2 level" },
+    { "id": "GR-05", "reason": "Pure conjugation paradigm drilling has no place at C2" },
+    { "id": "VOC-01", "reason": "Word lists without context do not serve C2 lexical development" },
+    { "id": "LUD-01", "reason": "Crossword too cognitively simple for C2 level" },
+    { "id": "LUD-02", "reason": "Word search too cognitively simple for C2 level" },
+    { "id": "LUD-06", "reason": "Memory/pairs too cognitively simple for C2 level" }
+  ],
+  "vocabularyApproach": "Academic and literary depth: precision, stylistic register, dialectal awareness, rhetorical figures, intertextual references.",
+  "instructionLanguage": "L2 exclusively",
+  "metalanguageLevel": "Full academic, rhetorical, and stylistic metalanguage. C2 lessons are language seminars, not traditional classes.",
+  "errorCorrection": "Self-correction with teacher recasting. Focus on register, style, and dialectal precision. Seminar-style feedback: two strengths and one improvement area.",
+  "scaffoldingDefault": "low"
+}
