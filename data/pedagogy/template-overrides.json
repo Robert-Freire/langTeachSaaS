@@ -239,7 +239,7 @@
         },
         "production": {
           "required": true,
-          "overrideGuidance": "Full written exam task the student attempts independently. Specify a time limit (in minutes) and a target word count. Task type must match the exam format: opinion essay, formal letter, short report, or similar written genre. Do NOT use oral role-play or conversation activities.",
+          "overrideGuidance": "Full written exam task the student attempts independently. Specify a time limit (in minutes) and a target word count. Task type must match the exam format: opinion essay, formal letter, short report, or similar written genre. Use written tasks only.",
           "priorityExerciseTypes": ["EE-06", "EE-07", "EE-08", "EE-09", "CE-01", "CE-02"],
           "minExerciseVarietyOverride": null,
           "notes": null

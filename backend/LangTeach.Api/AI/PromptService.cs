@@ -448,10 +448,10 @@ public class PromptService : IPromptService
             && templateEntry.LevelVariations.TryGetValue(cefrLevel, out var levelVariation))
             baseInstruction += $"\n\n{templateEntry.Name.ToUpperInvariant()} level note for {cefrLevel}: {levelVariation}";
 
-        // Restrictions from template (currently enforced as explicit constraints)
+        // Restrictions from template (enforced as explicit constraints)
         if (templateEntry?.Restrictions is { Length: > 0 })
-            foreach (var r in templateEntry.Restrictions)
-                baseInstruction += $"\nDo not use [{r.Value}] exercises in this lesson.";
+            baseInstruction += "\n\n" + string.Join("\n", templateEntry.Restrictions
+                .Select(r => $"Do not use [{r.Value}] exercises in this lesson."));
 
         // Grammar scope from CEFR level rules
         var grammarScope = BuildGrammarScopeBlock(cefrLevel);

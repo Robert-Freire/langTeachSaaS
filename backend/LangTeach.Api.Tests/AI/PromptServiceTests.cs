@@ -814,9 +814,9 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public void LessonPlanPrompt_UserPrompt_SpecifiesPracticeOrdering_ControlledFirst()
+    public void LessonPlanPrompt_UserPrompt_PracticeGuidance_SpecifiesExerciseVariety()
     {
-        // Practice section guidance is now data-driven from the section profile
+        // Practice section guidance is data-driven from the section profile
         // B1 practice profile specifies variety of exercise formats
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
 
@@ -824,7 +824,7 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public void LessonPlanPrompt_UserPrompt_SpecifiesPracticeOrdering_MeaningfulSecond()
+    public void LessonPlanPrompt_UserPrompt_PracticeGuidance_IncludesErrorCorrection()
     {
         // B1 practice profile includes error correction and transformation tasks
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
