@@ -51,4 +51,16 @@ public interface IPedagogyConfigService
     /// Returns substitution entries whose Rejects list contains any of the given type IDs.
     /// </summary>
     StyleSubstitution[] GetStyleSubstitutions(string[] rejectedTypes);
+
+    /// <summary>
+    /// Returns the template override entry whose Name matches the display name (case-insensitive).
+    /// Use when TemplateName from the DB is a display name (e.g. "Reading &amp; Comprehension"), not an ID.
+    /// Returns null if not found.
+    /// </summary>
+    TemplateOverrideEntry? GetTemplateOverrideByName(string name);
+
+    /// <summary>
+    /// Returns the display name for an exercise type ID. Returns the ID itself if not found.
+    /// </summary>
+    string GetExerciseTypeName(string id);
 }
