@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LangTeach.Api.AI;
+using LangTeach.Api.Data.Models;
 
 namespace LangTeach.Api.Services;
 
@@ -62,6 +63,20 @@ public class SectionProfileService : ISectionProfileService
         }
 
         _profiles = loaded;
+
+        // Validate scope values — unrecognized values rejected at startup
+        var errors = new List<string>();
+        foreach (var (sectionType, profile) in _profiles)
+        {
+            foreach (var (levelKey, lp) in profile.Levels)
+            {
+                if (lp.Scope is not null && lp.Scope != "brief" && lp.Scope != "full")
+                    errors.Add($"Section profile '{sectionType}' level '{levelKey}': unknown scope value '{lp.Scope}' (must be 'brief', 'full', or absent)");
+            }
+        }
+        if (errors.Count > 0)
+            throw new InvalidOperationException(
+                $"SectionProfileService startup validation failed:{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
     }
 
     public string GetGuidance(string sectionType, string cefrLevel)
@@ -127,6 +142,16 @@ public class SectionProfileService : ISectionProfileService
         var level = NormalizeLevel(cefrLevel);
         if (profile.Levels.TryGetValue(level, out var lp))
             return lp.Duration;
+        return null;
+    }
+
+    public string? GetScope(string sectionType, string cefrLevel)
+    {
+        var profile = GetProfile(sectionType);
+        if (profile is null) return null;
+        var level = NormalizeLevel(cefrLevel);
+        if (profile.Levels.TryGetValue(level, out var lp))
+            return lp.Scope;
         return null;
     }
 

@@ -68,4 +68,20 @@ public interface IPedagogyConfigService
     /// Returns the display name for an exercise type ID. Returns the ID itself if not found.
     /// </summary>
     string GetExerciseTypeName(string id);
+
+    /// <summary>
+    /// Resolves the scope for a section/level/template combination.
+    /// Resolution order: template override scope > section profile scope > "full".
+    /// Returns "brief" or "full". Never returns null.
+    /// <paramref name="templateName"/> is the display name (e.g. "Reading &amp; Comprehension"), resolved internally.
+    /// </summary>
+    string GetResolvedScope(string section, string level, string? templateName);
+
+    /// <summary>
+    /// Returns the scope constraint text for the given section, level, template, and content type.
+    /// Resolves scope first, then looks up the constraint text in scope-constraints.json.
+    /// Returns null when scope is "full" or no constraint is defined for the (scope, contentType) pair.
+    /// <paramref name="contentType"/> must be a kebab-case ContentBlockType value (e.g. "conversation", "free-text").
+    /// </summary>
+    string? GetScopeConstraint(string section, string level, string? templateName, string contentType);
 }

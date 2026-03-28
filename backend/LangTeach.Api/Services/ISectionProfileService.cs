@@ -42,4 +42,10 @@ public interface ISectionProfileService
     /// Returns null if the section, level, or duration field is not found.
     /// </summary>
     DurationRange? GetDuration(string sectionType, string cefrLevel);
+
+    /// <summary>
+    /// Returns the scope value for a section at the given CEFR level.
+    /// Returns null if the scope field is not set in the section profile (caller defaults to "full").
+    /// </summary>
+    string? GetScope(string sectionType, string cefrLevel);
 }

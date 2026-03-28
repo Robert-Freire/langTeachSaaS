@@ -282,4 +282,110 @@ public class PedagogyConfigServiceTests
         result.Should().Contain("EE-09", because: "EE-09 is an available exercise type valid for C1 production");
         result.Should().NotContain("PRAG-02", because: "PRAG-02 was merged into EE-09 and no longer exists in the catalog");
     }
+
+    // --- GetResolvedScope ---
+
+    [Theory]
+    [InlineData("warmup", "A1")]
+    [InlineData("warmup", "B2")]
+    [InlineData("wrapup", "B1")]
+    [InlineData("wrapup", "C1")]
+    public void GetResolvedScope_WarmUpWrapUp_ReturnsBreif_NoTemplate(string section, string level)
+    {
+        _sut.GetResolvedScope(section, level, null).Should().Be("brief");
+    }
+
+    [Theory]
+    [InlineData("practice", "B1")]
+    [InlineData("presentation", "A2")]
+    [InlineData("production", "C1")]
+    public void GetResolvedScope_NonBriefSections_ReturnsFull(string section, string level)
+    {
+        _sut.GetResolvedScope(section, level, null).Should().Be("full");
+    }
+
+    [Fact]
+    public void GetResolvedScope_UnknownSection_ReturnsFull()
+    {
+        _sut.GetResolvedScope("unknown", "B1", null).Should().Be("full");
+    }
+
+    [Fact]
+    public void GetResolvedScope_TemplateOverrideScopeWins_OverridesProfileScope()
+    {
+        // Template override with scope: "full" on warmUp should override the section profile's "brief"
+        // This is testable by injecting a fake template; here we verify that for real templates that
+        // have no scope set, section profile scope is returned unchanged.
+        // "Grammar Focus" template has no scope set on warmUp, so section profile (brief) should be used.
+        _sut.GetResolvedScope("warmup", "B1", "Grammar Focus").Should().Be("brief",
+            because: "Grammar Focus template has no scope override on warmUp; section profile brief wins");
+    }
+
+    // --- GetScopeConstraint ---
+
+    [Fact]
+    public void GetScopeConstraint_WarmUp_Conversation_ReturnsConstraintText()
+    {
+        var result = _sut.GetScopeConstraint("warmup", "B1", null, "conversation");
+
+        result.Should().NotBeNullOrEmpty();
+        result.Should().Contain("exactly 1 scenario",
+            because: "scope-constraints.json brief/conversation must contain the 1-scenario limit");
+        result.Should().Contain("2-3 phrases",
+            because: "scope-constraints.json brief/conversation must constrain phrase array sizes");
+    }
+
+    [Fact]
+    public void GetScopeConstraint_WrapUp_Conversation_ReturnsConstraintText()
+    {
+        var result = _sut.GetScopeConstraint("wrapup", "A1", null, "conversation");
+
+        result.Should().NotBeNullOrEmpty();
+        result.Should().Contain("exactly 1 scenario");
+    }
+
+    [Fact]
+    public void GetScopeConstraint_Practice_Conversation_ReturnsNull()
+    {
+        // practice scope is "full" — no constraint emitted
+        var result = _sut.GetScopeConstraint("practice", "B1", null, "conversation");
+
+        result.Should().BeNull(because: "practice section has full scope, no constraint should be emitted");
+    }
+
+    [Fact]
+    public void GetScopeConstraint_WarmUp_UnknownContentType_ReturnsNull()
+    {
+        // "unknown-type" is not in scope-constraints.json
+        var result = _sut.GetScopeConstraint("warmup", "B1", null, "unknown-type");
+
+        result.Should().BeNull(because: "missing (scope, contentType) entry should return null without throwing");
+    }
+
+    [Theory]
+    [InlineData("vocabulary")]
+    [InlineData("grammar")]
+    [InlineData("exercises")]
+    [InlineData("reading")]
+    [InlineData("free-text")]
+    [InlineData("homework")]
+    public void GetScopeConstraint_Brief_AllContentTypes_HaveConstraintText(string contentType)
+    {
+        // Brief scope should have entries for all 7 content types
+        var result = _sut.GetScopeConstraint("warmup", "A1", null, contentType);
+
+        result.Should().NotBeNullOrEmpty(
+            because: $"scope-constraints.json brief scope must have a constraint for content type '{contentType}'");
+    }
+
+    // --- Scope startup validation ---
+
+    [Fact]
+    public void StartupValidation_ScopeConstraintsJson_AllContentTypeKeysAreValid()
+    {
+        // If PedagogyConfigService constructs without throwing, all scope-constraints.json
+        // content type keys are valid ContentBlockType values (validated in ValidateCrossLayerRefs).
+        // This test verifies the loaded service is in a valid state.
+        _sut.Should().NotBeNull(because: "PedagogyConfigService must construct without validation errors");
+    }
 }

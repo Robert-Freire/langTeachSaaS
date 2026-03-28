@@ -1,0 +1,13 @@
+{
+  "scopes": {
+    "brief": {
+      "conversation": "Generate exactly 1 scenario. Each role (roleAPhrases, roleBPhrases) must have 2-3 phrases maximum. Total interaction should fit within 2-3 minutes of class time.",
+      "exercises": "Generate 2-3 exercises maximum across all formats.",
+      "vocabulary": "5-8 items maximum.",
+      "grammar": "Brief explanation only: 2-3 paragraphs, focus on the single key rule.",
+      "reading": "Short text (100-150 words) with 2-3 comprehension questions.",
+      "free-text": "2-3 short paragraphs maximum.",
+      "homework": "1-2 tasks maximum."
+    }
+  }
+}

@@ -411,4 +411,52 @@ public class SectionProfileServiceTests
     {
         _sut.GetDuration("warmup", "Z9").Should().BeNull();
     }
+
+    // --- GetScope ---
+
+    [Theory]
+    [InlineData("A1")]
+    [InlineData("A2")]
+    [InlineData("B1")]
+    [InlineData("B2")]
+    [InlineData("C1")]
+    [InlineData("C2")]
+    public void GetScope_WarmUp_ReturnsBreif_AtAllLevels(string level)
+    {
+        _sut.GetScope("warmup", level).Should().Be("brief");
+    }
+
+    [Theory]
+    [InlineData("A1")]
+    [InlineData("A2")]
+    [InlineData("B1")]
+    [InlineData("B2")]
+    [InlineData("C1")]
+    [InlineData("C2")]
+    public void GetScope_WrapUp_ReturnsBreif_AtAllLevels(string level)
+    {
+        _sut.GetScope("wrapup", level).Should().Be("brief");
+    }
+
+    [Theory]
+    [InlineData("practice")]
+    [InlineData("presentation")]
+    [InlineData("production")]
+    public void GetScope_NonBriefSections_ReturnsNull(string section)
+    {
+        _sut.GetScope(section, "B1").Should().BeNull(
+            because: $"section '{section}' has no scope set and should return null (defaults to full)");
+    }
+
+    [Fact]
+    public void GetScope_UnknownSection_ReturnsNull()
+    {
+        _sut.GetScope("unknown", "B1").Should().BeNull();
+    }
+
+    [Fact]
+    public void GetScope_UnknownLevel_ReturnsNull()
+    {
+        _sut.GetScope("warmup", "Z9").Should().BeNull();
+    }
 }
