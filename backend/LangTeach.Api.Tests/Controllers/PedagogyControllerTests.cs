@@ -5,6 +5,7 @@ using FluentAssertions;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.Tests.Fixtures;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LangTeach.Api.Tests.Controllers;
@@ -31,7 +32,7 @@ public class PedagogyControllerTests
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        if (db.Teachers.Any(t => t.Auth0UserId == auth0Id)) return;
+        if (await db.Teachers.AnyAsync(t => t.Auth0UserId == auth0Id)) return;
         db.Teachers.Add(new Teacher
         {
             Id = Guid.NewGuid(),
