@@ -113,7 +113,7 @@
         },
         "presentation": {
           "required": true,
-          "overrideGuidance": "Embed a complete reading passage (300-500 words at the stated CEFR level) in this section. First read for gist, second read for detail. Pre-teach blocking vocabulary before reading.",
+          "overrideGuidance": "Embed a complete reading passage with CEFR-appropriate length in this section (A1: 100-150 words, A2: 150-250 words, B1+: 300-500 words). First read for gist, second read for detail. Pre-teach blocking vocabulary before reading.",
           "priorityExerciseTypes": ["CE-01", "CE-02", "VOC-04"],
           "minExerciseVarietyOverride": null,
           "notes": "The reading passage TEXT MUST appear in this section. Do not move the passage to practice or production."
@@ -208,7 +208,7 @@
         {
           "type": "exerciseCategory",
           "value": "EO",
-          "reason": "Oral exercises are not the goal of this template. Oral tasks may supplement but must not replace the written production section."
+          "reason": "Oral exercises are excluded in this template to keep focus on written production outcomes."
         }
       ]
     },
