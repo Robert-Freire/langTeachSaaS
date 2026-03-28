@@ -6,6 +6,21 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-03-27 during Student-Aware Curriculum sprint close. 14 entries deleted, 9 batched into issues #301, #302, #304.*
 
+## PR #334 (2026-03-28) — #326 frontend section content types
+
+| Severity | File | Note |
+|---|---|---|
+| Important | `frontend/src/components/lesson/GeneratePanel.tsx` | `useSectionRules` has no `isError` handling — if the fetch fails permanently, `sectionRules` stays `undefined` and ALL_CONTENT_TYPES is silently returned (content-type filtering disabled with no user feedback). Graceful degradation is intentional but should surface an inline error or toast. |
+| Minor | `backend/LangTeach.Api.Tests/Controllers/PedagogyControllerTests.cs` | The 3 tests all call the same endpoint; second/third tests are redundant round-trips. Could collapse assertions into a single test. |
+
+---
+
+## PR #325 - 2026-03-28
+
+| Severity | Location | Finding |
+|----------|----------|---------|
+| Low | PromptService.cs | `CurriculumSystemPrompt` emits "You output ONLY valid JSON arrays..." and `CurriculumUserPrompt` ends with "Output ONLY the JSON array." — duplicate JSON-only instruction across system+user prompt pair. Remove from system prompt, keep in user prompt. |
+
 ---
 
 ## PR #323 - 2026-03-28

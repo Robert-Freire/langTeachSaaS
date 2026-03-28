@@ -44,8 +44,98 @@ public class PromptService : IPromptService
             ? new(CurriculumSystemPrompt(ctx), CurriculumPersonalizationUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 4096)
             : new(CurriculumSystemPrompt(ctx), CurriculumUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 8192);
 
+    // --- Section coherence rules (static, never changes) ---
+
+    private const string SectionCoherenceRules =
+        "SECTION COHERENCE RULES (mandatory, never omit):\n" +
+        "1. The THEME of Warm Up must relate to the THEME of Presentation (same field, not identical).\n" +
+        "2. Practice MUST use EXCLUSIVELY content from Presentation. No new grammar or vocabulary.\n" +
+        "3. Production MUST be achievable with the language practiced in Practice.\n" +
+        "4. Wrap Up MUST refer to lesson content, not external topics.\n" +
+        "5. Linguistic level must NOT increase between sections. If Presentation is A2, Practice cannot demand B1.";
+
+    private static readonly string[] SectionOrder = ["warmUp", "presentation", "practice", "production", "wrapUp"];
+
+    // --- Pedagogy block builders ---
+
+    private string BuildGrammarScopeBlock(string level)
+    {
+        var scope = _pedagogy.GetGrammarScope(level);
+        if (scope.InScope.Length == 0 && scope.OutOfScope.Length == 0)
+            return string.Empty;
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"GRAMMAR SCOPE for {level}:");
+        if (scope.InScope.Length > 0)
+            sb.AppendLine($"In scope: {string.Join(", ", scope.InScope)}");
+        if (scope.OutOfScope.Length > 0)
+            sb.AppendLine($"Exclude from teaching targets: {string.Join(", ", scope.OutOfScope)}");
+        return sb.ToString().TrimEnd();
+    }
+
+    private string BuildVocabularyBlock(string level)
+    {
+        var vocab = _pedagogy.GetVocabularyGuidance(level);
+        if (vocab.Approach is not null)
+            return $"VOCABULARY APPROACH for {level}: {vocab.Approach}";
+        if (vocab.ProductiveMin.HasValue)
+            return $"VOCABULARY TARGETS for {level}: {vocab.ProductiveMin}-{vocab.ProductiveMax} productive items, " +
+                   $"{vocab.ReceptiveMin}-{vocab.ReceptiveMax} receptive items per lesson.";
+        return string.Empty;
+    }
+
+    private string BuildL1Block(L1Adjustments adj, string nativeLang)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"L1 ADJUSTMENTS for {nativeLang} speakers:");
+        if (adj.IncreaseEmphasis.Length > 0)
+            sb.AppendLine($"Increase emphasis on: {string.Join(", ", adj.IncreaseEmphasis)}");
+        if (adj.DecreaseEmphasis.Length > 0)
+            sb.AppendLine($"Decrease emphasis on: {string.Join(", ", adj.DecreaseEmphasis)}");
+        if (adj.AdditionalExerciseTypes.Length > 0)
+            sb.AppendLine($"Additional exercise types: {string.Join(", ", adj.AdditionalExerciseTypes)}");
+        if (!string.IsNullOrWhiteSpace(adj.Notes))
+            sb.AppendLine(adj.Notes);
+        return sb.ToString().TrimEnd();
+    }
+
+    private string BuildExerciseGuidanceBlock(string section, string level)
+    {
+        var valid = _pedagogy.GetValidExerciseTypes(section, level);
+        if (valid.Length == 0)
+            return string.Empty;
+
+        var listed = valid.Take(15).Select(id => $"{id} ({_pedagogy.GetExerciseTypeName(id)})");
+        return $"EXERCISE GUIDANCE for {section} at {level}:\n" +
+               $"Allowed types: {string.Join(", ", listed)}";
+    }
+
+    private string BuildTemplateOverrideBlock(TemplateOverrideEntry entry, string level)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"\n{entry.Name.ToUpperInvariant()} TEMPLATE:");
+        foreach (var sectionName in SectionOrder)
+        {
+            if (!entry.Sections.TryGetValue(sectionName, out var sec))
+                continue;
+            if (!string.IsNullOrWhiteSpace(sec.OverrideGuidance))
+            {
+                sb.AppendLine($"- {sectionName}: {sec.OverrideGuidance}");
+                if (!string.IsNullOrWhiteSpace(sec.Notes))
+                    sb.AppendLine($"  NOTE: {sec.Notes}");
+            }
+        }
+        if (entry.LevelVariations.TryGetValue(level, out var variation))
+            sb.AppendLine($"Level note for {level}: {variation}");
+        return sb.ToString().TrimEnd();
+    }
+
+    // --- Sanitize helper ---
+
     private static string Sanitize(string? value) =>
         value is null ? string.Empty : string.Concat(value.Where(c => c >= ' ' || c == '\t')).Trim();
+
+    // --- System prompt (shared across all content types) ---
 
     private static string BuildSystemPrompt(GenerationContext ctx)
     {
@@ -113,9 +203,6 @@ public class PromptService : IPromptService
                 sb.AppendLine($"- Be aware of common errors {nativeLang} speakers make in {language}.");
             }
 
-            if (weaknesses.Length > 0)
-                sb.AppendLine("Focus practice on weak areas when relevant to the topic.");
-
             if (ctx.StudentDifficulties is { Length: > 0 })
             {
                 sb.AppendLine();
@@ -159,7 +246,9 @@ public class PromptService : IPromptService
         return sb.ToString().TrimEnd();
     }
 
-    private static string VocabularyUserPrompt(GenerationContext ctx)
+    // --- Individual prompt builders ---
+
+    private string VocabularyUserPrompt(GenerationContext ctx)
     {
         var topic      = Sanitize(ctx.Topic);
         var level      = Sanitize(ctx.CefrLevel);
@@ -170,37 +259,59 @@ public class PromptService : IPromptService
             ? $"The 'definition' field must be a concise translation or gloss in {nativeLang} (the student's native language), not a definition in the target language."
             : "The 'definition' field should be a short definition or translation.";
 
-        return $$"""
+        var prompt = $$"""
         Generate a vocabulary list for the lesson on "{{topic}}". Return JSON:
         {"items":[{"word":"","definition":"","exampleSentence":""}]}
         Limit to 10-15 items. All vocabulary items must be at {{level}} level — do not include words above this CEFR level.
         {{definitionInstruction}}
         Choose a varied and unexpected selection — avoid the most obvious or common words for this topic (seed: {{seed}}).
         """;
+
+        var vocabBlock = BuildVocabularyBlock(level);
+        if (!string.IsNullOrEmpty(vocabBlock))
+            prompt += "\n" + vocabBlock;
+
+        return prompt;
     }
 
-    private static string GrammarUserPrompt(GenerationContext ctx)
+    private string GrammarUserPrompt(GenerationContext ctx)
     {
         var topic = Sanitize(ctx.Topic);
-        return $$"""
+        var level = Sanitize(ctx.CefrLevel);
+
+        var prompt = $$"""
         Generate a grammar explanation for the lesson on "{{topic}}". Return JSON:
         {"title":"","explanation":"","examples":[{"sentence":"","note":""}],"commonMistakes":[""]}
         Include 3-5 examples and 2-3 common mistakes.
         """;
+
+        var grammarScope = BuildGrammarScopeBlock(level);
+        if (!string.IsNullOrEmpty(grammarScope))
+            prompt += "\n" + grammarScope;
+
+        return prompt;
     }
 
     private string ExercisesUserPrompt(GenerationContext ctx)
     {
         var topic = Sanitize(ctx.Topic);
-        var levelGuidance = _profiles.GetGuidance("practice", Sanitize(ctx.CefrLevel));
+        var level = Sanitize(ctx.CefrLevel);
+        var levelGuidance = _profiles.GetGuidance("practice", level);
         if (string.IsNullOrEmpty(levelGuidance))
             levelGuidance = "Use a variety of exercise formats appropriate to the stated CEFR level.";
-        return $$"""
+
+        var prompt = $$"""
         Generate practice exercises for the lesson on "{{topic}}". Return JSON:
         {"fillInBlank":[{"sentence":"","answer":"","hint":"","explanation":""}],"multipleChoice":[{"question":"","options":[""],"answer":"","explanation":""}],"matching":[{"left":"","right":"","explanation":""}]}
         {{levelGuidance}}
         Include at least 3 items for each format you use. For each exercise, include a concise explanation (2-3 sentences) of why the correct answer is correct, considering the student's level and common L1 interference patterns.
         """;
+
+        var exerciseGuidance = BuildExerciseGuidanceBlock("practice", level);
+        if (!string.IsNullOrEmpty(exerciseGuidance))
+            prompt += "\n" + exerciseGuidance;
+
+        return prompt;
     }
 
     private string ConversationUserPrompt(GenerationContext ctx)
@@ -238,42 +349,63 @@ public class PromptService : IPromptService
         """;
     }
 
-    private static string ReadingUserPrompt(GenerationContext ctx)
+    private string ReadingUserPrompt(GenerationContext ctx)
     {
         var topic = Sanitize(ctx.Topic);
         var level = Sanitize(ctx.CefrLevel);
-        return $$"""
+
+        var prompt = $$"""
         Generate a reading passage for the lesson on "{{topic}}". Return JSON:
         {"passage":"","comprehensionQuestions":[{"question":"","answer":"","type":"factual|inferential|vocabulary"}],"vocabularyHighlights":[{"word":"","definition":""}]}
         IMPORTANT: Emit the passage field completely before writing comprehensionQuestions.
         Passage must use {{level}} vocabulary and grammar. Include 3-5 questions and 5-8 vocabulary highlights.
         """;
+
+        var vocabBlock = BuildVocabularyBlock(level);
+        if (!string.IsNullOrEmpty(vocabBlock))
+            prompt += "\n" + vocabBlock;
+
+        return prompt;
     }
 
-    private static string HomeworkUserPrompt(GenerationContext ctx)
+    private string HomeworkUserPrompt(GenerationContext ctx)
     {
         var topic         = Sanitize(ctx.Topic);
+        var level         = Sanitize(ctx.CefrLevel);
         var lessonSummary = Sanitize(ctx.LessonSummary);
         var lessonSummaryLine = lessonSummary.Length > 0
             ? $"This homework follows a lesson where: {lessonSummary}\n"
             : string.Empty;
 
-        return $$"""
+        var prompt = $$"""
         Generate homework tasks for the lesson on "{{topic}}". Return JSON:
         {"tasks":[{"type":"","instructions":"","examples":[""]}]}
         Use human-readable type labels such as "Fill in the Blanks", "Sentence Writing", "Vocabulary in Context", "Matching", "Translation", or "Short Answer".
         {{lessonSummaryLine}}Include 3-5 varied tasks the student can complete independently.
         """;
+
+        var vocabBlock = BuildVocabularyBlock(level);
+        if (!string.IsNullOrEmpty(vocabBlock))
+            prompt += "\n" + vocabBlock;
+
+        return prompt;
     }
 
-    private static string FreeTextUserPrompt(GenerationContext ctx)
+    private string FreeTextUserPrompt(GenerationContext ctx)
     {
         var topic = Sanitize(ctx.Topic);
         var level = Sanitize(ctx.CefrLevel);
-        return $"Generate an appropriate in-class activity for this lesson section at {level} level on \"{topic}\". " +
+
+        var prompt = $"Generate an appropriate in-class activity for this lesson section at {level} level on \"{topic}\". " +
                "The activity should be brief, engaging, and match the pedagogical purpose of the section. " +
                "Return clear prose instructions for the teacher (no JSON required). " +
                "Keep it practical and completable in a one-on-one online tutoring session.";
+
+        var vocabBlock = BuildVocabularyBlock(level);
+        if (!string.IsNullOrEmpty(vocabBlock))
+            prompt += "\n" + vocabBlock;
+
+        return prompt;
     }
 
     private string LessonPlanUserPrompt(GenerationContext ctx)
@@ -306,31 +438,58 @@ public class PromptService : IPromptService
         - production: Production is MANDATORY in every lesson plan — never omit it. A free or communicative activity where the student uses the new language independently with minimal guidance. {productionGuidance}
         - wrapUp (2-3 min): Reflection and self-assessment only. Ask the student what they learned, what felt easy, and what they want to practise more. Brief preview of homework or next session.
 
-        All five sections (warmUp, presentation, practice, production, wrapUp) are required in every lesson plan. Do not collapse or omit any of them.
+        All five sections (warmUp, presentation, practice, production, wrapUp) are required in every lesson plan.
         """;
 
-        if (string.Equals(ctx.TemplateName, "Reading & Comprehension", StringComparison.OrdinalIgnoreCase))
+        // Grammar scope from CEFR level rules
+        var grammarScope = BuildGrammarScopeBlock(cefrLevel);
+        if (!string.IsNullOrEmpty(grammarScope))
+            baseInstruction += "\n\n" + grammarScope;
+
+        // Vocabulary targets from CEFR level rules
+        var vocabBlock = BuildVocabularyBlock(cefrLevel);
+        if (!string.IsNullOrEmpty(vocabBlock))
+            baseInstruction += "\n\n" + vocabBlock;
+
+        // L1 adjustments when native language is known
+        var nativeLang = Sanitize(ctx.StudentNativeLanguage);
+        if (!string.IsNullOrEmpty(nativeLang))
         {
-            baseInstruction +=
-                "\n\nREADING & COMPREHENSION TEMPLATE REQUIREMENTS (mandatory):\n" +
-                "- warmUp: a pre-reading activation task only. Activate schema, predict content from the title, or discuss the topic.\n" +
-                "- presentation: embed a complete reading passage (300-500 words, using vocabulary and grammar appropriate for the stated CEFR level) inside this section's notes. The teacher reads it with the student: first read for gist, second read for detail. Pre-teach any blocking vocabulary before reading.\n" +
-                "- practice: comprehension questions covering three types: (1) factual - explicitly stated in the text, (2) inferential - requiring the student to read between the lines, (3) vocabulary in context - explain the meaning of a word or phrase as used in the passage. Include at least 2 questions of each type.\n" +
-                "- production: a free-production task connected to the passage topic (e.g. short written response, opinion discussion, or a creative extension). The student works independently.\n" +
-                "- wrapUp: student summarises the passage in 1-2 sentences; brief discussion of the author's purpose or the student's reaction.";
+            var l1 = _pedagogy.GetL1Adjustments(nativeLang);
+            if (l1 is not null)
+                baseInstruction += "\n\n" + BuildL1Block(l1, nativeLang);
         }
 
-        else if (string.Equals(ctx.TemplateName, "Exam Prep", StringComparison.OrdinalIgnoreCase))
+        // Template override — replaces hardcoded R&C and Exam Prep if/else blocks
+        var templateName = Sanitize(ctx.TemplateName);
+        if (!string.IsNullOrEmpty(templateName))
         {
-            baseInstruction +=
-                "\n\nEXAM PREP TEMPLATE REQUIREMENTS (mandatory):\n" +
-                "- warmUp: review the exam format, the target task type, and the scoring criteria. Briefly discuss what the examiner is looking for. No casual icebreakers or conversation warm-ups.\n" +
-                "- presentation: teach the strategy for the target exam task (e.g. essay structure, formal letter conventions, skimming for gist). Use authentic exam-task examples. Formal register throughout.\n" +
-                "- practice: timed written practice under exam conditions. Specify an explicit time limit in the section notes (e.g. '15 minutes'). All practice and production tasks must be written (essay, formal letter, reading comprehension, gap-fill).\n" +
-                "- production: a full written exam task the student attempts independently. Specify a time limit (in minutes) and a target word count. Task type must match the target exam format: opinion essay, formal letter, short report, or similar written genre.\n" +
-                "- wrapUp: student self-assesses against the mark scheme criteria; teacher identifies one strength and one area to improve before the next session.";
+            var templateEntry = _pedagogy.GetTemplateOverrideByName(templateName);
+            if (templateEntry is not null)
+                baseInstruction += BuildTemplateOverrideBlock(templateEntry, cefrLevel);
         }
 
+        // Declared weakness targeting (StudentWeaknesses, not StudentDifficulties)
+        // Truncate each entry to 120 chars to prevent over-long prompt injection
+        var weaknesses = ctx.StudentWeaknesses
+            ?.Select(Sanitize).Where(s => s.Length > 0)
+            .Take(2)
+            .Select(s => s.Length > 120 ? s[..120] : s)
+            .ToArray() ?? [];
+        if (weaknesses.Length > 0)
+        {
+            var weaknessText = string.Join("; ", weaknesses);
+            baseInstruction +=
+                $"\n\nDECLARED WEAKNESSES (max 1-2 targeted exercises per lesson):\n" +
+                $"Practice: include at least 1 exercise targeting: {weaknessText}\n" +
+                $"Production: create a context where these areas arise naturally.\n" +
+                $"WrapUp: invite the student to reflect on progress with these topics.";
+        }
+
+        // Section coherence rules — always present
+        baseInstruction += "\n\n" + SectionCoherenceRules;
+
+        // Curriculum objectives — kept last (most specific constraint)
         if (!string.IsNullOrWhiteSpace(ctx.CurriculumObjectives))
         {
             baseInstruction +=
@@ -341,6 +500,8 @@ public class PromptService : IPromptService
 
         return baseInstruction;
     }
+
+    // --- Curriculum prompts ---
 
     private static string CurriculumSystemPrompt(CurriculumContext ctx)
     {

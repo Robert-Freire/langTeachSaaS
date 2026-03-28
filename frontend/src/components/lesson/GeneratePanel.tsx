@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { usePartialJsonParse } from '../../hooks/usePartialJsonParse'
 import type { SectionType } from '../../api/lessons'
 import { getAllowedContentTypes, getContentTypeLabel } from '../../utils/sectionContentTypes'
+import { useSectionRules } from '../../hooks/useSectionRules'
 import {
   saveContentBlock,
   deleteContentBlock,
@@ -107,6 +108,7 @@ export function GeneratePanel({
   const [inserting, setInserting] = useState(false)
   const [insertError, setInsertError] = useState<string | null>(null)
 
+  const { data: sectionRules } = useSectionRules()
   const { data: profile } = useProfile()
   const queryClient = useQueryClient()
   const { status, output, error, quotaExceeded, generate, abort } = useGenerate()
@@ -170,8 +172,8 @@ export function GeneratePanel({
   }
 
   const allowedTypes = useMemo(
-    () => getAllowedContentTypes(sectionType, lessonContext.cefrLevel),
-    [sectionType, lessonContext.cefrLevel]
+    () => getAllowedContentTypes(sectionRules, sectionType, lessonContext.cefrLevel),
+    [sectionRules, sectionType, lessonContext.cefrLevel]
   )
 
   const filteredTaskTypes = useMemo(

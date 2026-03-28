@@ -1,5 +1,8 @@
 import type { ContentBlockType } from '../types/contentTypes'
 import type { SectionType } from '../api/lessons'
+import type { SectionRulesMap } from '../api/pedagogy'
+
+export type { SectionRulesMap }
 
 // Section-specific display labels for content types (overrides generic label)
 const SECTION_CONTENT_TYPE_LABELS: Partial<Record<SectionType, Partial<Record<ContentBlockType, string>>>> = {
@@ -7,27 +10,38 @@ const SECTION_CONTENT_TYPE_LABELS: Partial<Record<SectionType, Partial<Record<Co
   WrapUp: { conversation: 'Reflection' },
 }
 
+// All content types — shown when rules are not yet loaded (loading fallback)
+export const ALL_CONTENT_TYPES: ContentBlockType[] = [
+  'vocabulary',
+  'grammar',
+  'exercises',
+  'conversation',
+  'reading',
+  'homework',
+  'free-text',
+]
+
+/**
+ * Normalizes a CEFR level string to its base form (e.g. "B2.1" -> "B2").
+ */
+export function normalizeLevel(cefrLevel: string): string {
+  return cefrLevel.replace(/\.\d+$/, '')
+}
+
+/**
+ * Returns the allowed content types for a section at the given CEFR level,
+ * driven by backend section profile data.
+ *
+ * - When rules is undefined (loading): returns ALL_CONTENT_TYPES as a safe fallback.
+ * - When rules is loaded but the section/level is not found: returns [].
+ */
 export function getAllowedContentTypes(
+  rules: SectionRulesMap | undefined,
   sectionType: SectionType,
   cefrLevel: string
 ): ContentBlockType[] {
-  switch (sectionType) {
-    case 'WarmUp':
-      return ['conversation']
-    case 'Presentation':
-      return ['grammar', 'vocabulary', 'reading', 'conversation', 'free-text']
-    case 'Practice':
-      return ['exercises', 'conversation']
-    case 'Production': {
-      // B2 and above: reading may be used as a stimulus
-      const isB2Plus = cefrLevel === 'B2' || cefrLevel.startsWith('C')
-      return isB2Plus ? ['conversation', 'reading'] : ['conversation']
-    }
-    case 'WrapUp':
-      return ['conversation']
-    default:
-      return ['vocabulary', 'grammar', 'exercises', 'conversation', 'reading', 'homework', 'free-text']
-  }
+  if (rules === undefined) return ALL_CONTENT_TYPES
+  return rules[sectionType]?.[normalizeLevel(cefrLevel)] ?? []
 }
 
 /**

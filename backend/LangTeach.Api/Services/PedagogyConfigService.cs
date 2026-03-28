@@ -11,6 +11,7 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly ISectionProfileService _sectionProfileService;
 
     private readonly HashSet<string> _catalogIds;
+    private readonly Dictionary<string, string> _exerciseNames; // id (ci) -> display name
     private readonly Dictionary<string, CefrLevelRules> _cefrRules;
     private readonly L1InfluenceFile _l1;
     private readonly Dictionary<string, TemplateOverrideEntry> _templates;
@@ -36,6 +37,10 @@ public class PedagogyConfigService : IPedagogyConfigService
         // Load exercise type catalog (must be first — other validation depends on it)
         var catalog = LoadJson<ExerciseCatalog>(assembly, "LangTeach.Api.Pedagogy.exercise-types.json");
         _catalogIds = catalog.ExerciseTypes.Select(e => e.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _exerciseNames = catalog.ExerciseTypes.ToDictionary(
+            e => e.Id,
+            e => e.Name,
+            StringComparer.OrdinalIgnoreCase);
         _log.LogInformation("PedagogyConfigService: loaded exercise catalog with {Count} types", _catalogIds.Count);
 
         // Load CEFR level rules
@@ -220,6 +225,13 @@ public class PedagogyConfigService : IPedagogyConfigService
     }
 
     public StyleSubstitution[] GetAllStyleSubstitutions() => _substitutions;
+
+    // Linear scan is intentional: ~6 templates total, called once per lesson generation.
+    public TemplateOverrideEntry? GetTemplateOverrideByName(string name) =>
+        _templates.Values.FirstOrDefault(t => string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase));
+
+    public string GetExerciseTypeName(string id) =>
+        _exerciseNames.TryGetValue(id, out var name) ? name : id;
 
     // --- Private helpers ---
 

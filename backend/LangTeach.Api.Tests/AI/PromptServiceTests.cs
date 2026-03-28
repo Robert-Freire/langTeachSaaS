@@ -529,9 +529,10 @@ public class PromptServiceTests
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
         req.UserPrompt.Should().Contain("Generate a complete lesson plan");
-        req.UserPrompt.Should().Contain("READING & COMPREHENSION TEMPLATE REQUIREMENTS");
+        // Template override content from template-overrides.json (data-driven, replaces hardcoded block)
+        req.UserPrompt.Should().Contain("READING & COMPREHENSION TEMPLATE");
         req.UserPrompt.Should().Contain("reading passage");
-        req.UserPrompt.Should().Contain("comprehension questions");
+        req.UserPrompt.Should().Contain("Comprehension questions");
         req.UserPrompt.Should().Contain("inferential");
         req.UserPrompt.Should().Contain("warmUp");
         req.UserPrompt.Should().Contain("presentation");
@@ -546,7 +547,8 @@ public class PromptServiceTests
     {
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
 
-        req.UserPrompt.Should().NotContain("READING & COMPREHENSION TEMPLATE REQUIREMENTS");
+        req.UserPrompt.Should().NotContain("READING & COMPREHENSION TEMPLATE");
+        req.UserPrompt.Should().NotContain("Embed a complete reading passage");
     }
 
     // --- Exam Prep template ---
@@ -558,9 +560,10 @@ public class PromptServiceTests
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("EXAM PREP TEMPLATE REQUIREMENTS");
+        // Template override content from template-overrides.json (data-driven, replaces hardcoded block)
+        req.UserPrompt.Should().Contain("EXAM PREP TEMPLATE");
         req.UserPrompt.Should().Contain("written exam task");
-        req.UserPrompt.Should().Contain("All practice and production tasks must be written");
+        req.UserPrompt.Should().Contain("All tasks must be written");
         req.UserPrompt.Should().Contain("opinion essay, formal letter, short report");
     }
 
@@ -580,7 +583,8 @@ public class PromptServiceTests
     {
         var req = _sut.BuildLessonPlanPrompt(BaseCtx() with { TemplateName = null });
 
-        req.UserPrompt.Should().NotContain("EXAM PREP TEMPLATE REQUIREMENTS");
+        req.UserPrompt.Should().NotContain("EXAM PREP TEMPLATE");
+        req.UserPrompt.Should().NotContain("Timer is mandatory");
     }
 
     [Fact]
@@ -590,7 +594,8 @@ public class PromptServiceTests
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.UserPrompt.Should().NotContain("EXAM PREP TEMPLATE REQUIREMENTS");
+        req.UserPrompt.Should().NotContain("EXAM PREP TEMPLATE");
+        req.UserPrompt.Should().NotContain("Timer is mandatory");
     }
 
     // --- CEFR-level exercise guidance ---
@@ -1113,5 +1118,162 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().NotContain("COURSE DISTRIBUTION RULES");
         req.UserPrompt.Should().NotContain("spiral recycling model");
+    }
+
+    // --- PedagogyConfigService integration: new blocks in lesson plan prompt ---
+
+    [Fact]
+    public void LessonPlanPrompt_ContainsSectionCoherenceRules()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("SECTION COHERENCE RULES");
+        req.UserPrompt.Should().Contain("Practice MUST use EXCLUSIVELY content from Presentation");
+        req.UserPrompt.Should().Contain("Production MUST be achievable");
+        req.UserPrompt.Should().Contain("Wrap Up MUST refer to lesson content");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_ContainsGrammarScopeBlock()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx()); // B1
+
+        req.UserPrompt.Should().Contain("GRAMMAR SCOPE for B1");
+        req.UserPrompt.Should().Contain("In scope:");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_ContainsVocabularyTargetsBlock()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx()); // B1 uses numeric targets
+
+        req.UserPrompt.Should().Contain("VOCABULARY TARGETS for B1");
+        req.UserPrompt.Should().Contain("productive items");
+        req.UserPrompt.Should().Contain("receptive items");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_ContainsVocabularyApproachBlock_ForC1()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "C1" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("VOCABULARY APPROACH for C1");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_InjectsL1Adjustments_WhenNativeLanguageKnown()
+    {
+        // Italian is in the romance family in l1-influence.json
+        var ctx = BaseCtx("Marco") with { StudentNativeLanguage = "Italian" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("L1 ADJUSTMENTS for Italian speakers");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_NoL1Block_WhenNativeLanguageNull()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().NotContain("L1 ADJUSTMENTS");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_InjectsDifficultyTargeting_WhenWeaknessesPresent()
+    {
+        var ctx = BaseCtx("Ana") with { StudentWeaknesses = ["articles", "ser vs estar"] };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("DECLARED WEAKNESSES");
+        req.UserPrompt.Should().Contain("articles");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_NoDifficultyBlock_WhenWeaknessesNull()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().NotContain("DECLARED WEAKNESSES");
+    }
+
+    // --- Grammar prompt: grammar scope injection ---
+
+    [Fact]
+    public void GrammarPrompt_ContainsGrammarScope()
+    {
+        var req = _sut.BuildGrammarPrompt(BaseCtx()); // B1
+
+        req.UserPrompt.Should().Contain("GRAMMAR SCOPE for B1");
+        req.UserPrompt.Should().Contain("In scope:");
+    }
+
+    // --- Vocabulary prompt: vocabulary constraints injection ---
+
+    [Fact]
+    public void VocabularyPrompt_ContainsVocabularyConstraints()
+    {
+        var req = _sut.BuildVocabularyPrompt(BaseCtx()); // B1
+
+        req.UserPrompt.Should().Contain("VOCABULARY TARGETS for B1");
+    }
+
+    // --- Exercises prompt: exercise guidance injection ---
+
+    [Fact]
+    public void ExercisesPrompt_ContainsExerciseGuidanceBlock()
+    {
+        var req = _sut.BuildExercisesPrompt(BaseCtx()); // B1
+
+        req.UserPrompt.Should().Contain("EXERCISE GUIDANCE for practice at B1");
+        req.UserPrompt.Should().Contain("Allowed types:");
+    }
+
+    // --- Snapshot: key blocks present for representative combinations ---
+
+    [Fact]
+    public void Snapshot_A1GrammarFocus_LessonPlan_ContainsAllPedagogyBlocks()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1", TemplateName = "Grammar Focus" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION COHERENCE RULES");
+        req.UserPrompt.Should().Contain("GRAMMAR SCOPE for A1");
+        req.UserPrompt.Should().Contain("VOCABULARY TARGETS for A1");
+        req.UserPrompt.Should().Contain("GRAMMAR FOCUS TEMPLATE");
+    }
+
+    [Fact]
+    public void Snapshot_B2ReadingComprehension_LessonPlan_ContainsTemplateAndPedagogyBlocks()
+    {
+        var ctx = BaseCtx("Maria") with
+        {
+            CefrLevel = "B2",
+            TemplateName = "Reading & Comprehension",
+            StudentNativeLanguage = "Italian"
+        };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION COHERENCE RULES");
+        req.UserPrompt.Should().Contain("GRAMMAR SCOPE for B2");
+        req.UserPrompt.Should().Contain("READING & COMPREHENSION TEMPLATE");
+        req.UserPrompt.Should().Contain("L1 ADJUSTMENTS for Italian speakers");
+    }
+
+    [Fact]
+    public void Snapshot_C1Conversation_LessonPlan_ContainsApproachString()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "C1", TemplateName = "Conversation" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION COHERENCE RULES");
+        req.UserPrompt.Should().Contain("VOCABULARY APPROACH for C1");
+        req.UserPrompt.Should().Contain("CONVERSATION TEMPLATE");
     }
 }

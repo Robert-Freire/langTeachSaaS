@@ -40,9 +40,9 @@ public class PromptServiceIntegrationTests
 
         var sp = services.BuildServiceProvider();
         var client = new ClaudeApiClient(sp.GetRequiredService<IHttpClientFactory>(), NullLogger<ClaudeApiClient>.Instance);
-        var sectionProfiles = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
-        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sectionProfiles);
-        return new TestClients(client, new PromptService(sectionProfiles, pedagogy), sp);
+        var profileService = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogyService = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, profileService);
+        return new TestClients(client, new PromptService(profileService, pedagogyService), sp);
     }
 
     /// <summary>
