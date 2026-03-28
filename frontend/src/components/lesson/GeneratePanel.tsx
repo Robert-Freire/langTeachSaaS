@@ -225,7 +225,7 @@ export function GeneratePanel({
               >
                 {filteredTaskTypes[0].label}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Only type for this section</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Only type for this section</p>
             </div>
           ) : (
             <Select value={taskType} onValueChange={(v) => v && setTaskType(v as ContentBlockType)} disabled={isStreaming}>
