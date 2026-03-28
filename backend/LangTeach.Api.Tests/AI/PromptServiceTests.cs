@@ -2,9 +2,21 @@ using FluentAssertions;
 using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LangTeach.Api.Tests.AI;
+
+file sealed class FakeLogger<T> : ILogger<T>
+{
+    public record LogEntry(LogLevel Level, string Message);
+    public List<LogEntry> Entries { get; } = [];
+
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+    public bool IsEnabled(LogLevel logLevel) => true;
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        => Entries.Add(new(logLevel, formatter(state, exception)));
+}
 
 public class PromptServiceTests
 {
@@ -14,7 +26,7 @@ public class PromptServiceTests
     private static readonly IPedagogyConfigService PedagogyService =
         new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, ProfileService);
 
-    private readonly PromptService _sut = new(ProfileService, PedagogyService);
+    private readonly PromptService _sut = new(ProfileService, PedagogyService, NullLogger<PromptService>.Instance);
 
     private static GenerationContext BaseCtx(string? studentName = null) => new(
         Language: "English",
@@ -1355,5 +1367,20 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().NotContain("CO-01", because: "CO-01 is unavailable (no UI renderer) and must not appear in the exercises prompt");
         req.UserPrompt.Should().NotContain("LUD-01", because: "LUD-01 is unavailable (no UI renderer) and must not appear in the exercises prompt");
+    }
+
+    [Fact]
+    public void BuildLessonPlanPrompt_LogsSystemAndUserPromptAtDebug()
+    {
+        var fakeLogger = new FakeLogger<PromptService>();
+        var sut = new PromptService(ProfileService, PedagogyService, fakeLogger);
+
+        sut.BuildLessonPlanPrompt(BaseCtx());
+
+        var debugEntries = fakeLogger.Entries.Where(e => e.Level == LogLevel.Debug).ToList();
+        debugEntries.Should().HaveCount(2, because: "one Debug entry for system prompt and one for user prompt");
+        debugEntries[0].Message.Should().Contain("PromptSystem");
+        debugEntries[1].Message.Should().Contain("PromptUser");
+        debugEntries[1].Message.Should().Contain("blockType=lesson-plan");
     }
 }
