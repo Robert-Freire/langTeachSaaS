@@ -249,6 +249,7 @@ public class SectionProfileServiceTests
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
+        NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString,
     };
 
     private record ExerciseCatalogDoc(ExerciseCatalogEntry[] ExerciseTypes);
@@ -257,22 +258,30 @@ public class SectionProfileServiceTests
     private static HashSet<string> LoadCatalogIds()
     {
         var assembly = typeof(SectionProfileService).Assembly;
-        using var stream = assembly.GetManifestResourceStream("LangTeach.Api.Pedagogy.exercise-types.json");
-        stream.Should().NotBeNull("exercise-types.json must be embedded in the API assembly as LangTeach.Api.Pedagogy.exercise-types.json");
-        var catalog = JsonSerializer.Deserialize<ExerciseCatalogDoc>(stream!, _catalogJsonOpts);
+        var stream = assembly.GetManifestResourceStream("LangTeach.Api.Pedagogy.exercise-types.json")
+            ?? throw new InvalidOperationException(
+                "exercise-types.json must be embedded in the API assembly as LangTeach.Api.Pedagogy.exercise-types.json");
+        using var _ = stream;
+        var catalog = JsonSerializer.Deserialize<ExerciseCatalogDoc>(stream, _catalogJsonOpts);
         catalog.Should().NotBeNull();
         return catalog!.ExerciseTypes.Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
     }
 
     private static IEnumerable<(string Section, string Level, SectionLevelProfile Data)> LoadAllLevelProfiles()
     {
+        // Discover dynamically — consistent with SectionProfileService and picks up future profiles automatically
         var assembly = typeof(SectionProfileService).Assembly;
-        foreach (var sectionName in new[] { "warmup", "presentation", "practice", "production", "wrapup" })
+        const string prefix = "LangTeach.Api.SectionProfiles.";
+        var resourceNames = assembly.GetManifestResourceNames()
+            .Where(n => n.StartsWith(prefix, StringComparison.Ordinal) && n.EndsWith(".json", StringComparison.Ordinal));
+
+        foreach (var resourceName in resourceNames)
         {
-            using var stream = assembly.GetManifestResourceStream($"LangTeach.Api.SectionProfiles.{sectionName}.json");
+            using var stream = assembly.GetManifestResourceStream(resourceName);
             if (stream is null) continue;
             var profile = JsonSerializer.Deserialize<SectionProfile>(stream, _catalogJsonOpts);
             if (profile is null) continue;
+            var sectionName = profile.SectionType.ToLowerInvariant();
             foreach (var (level, data) in profile.Levels)
                 yield return (sectionName, level, data);
         }
