@@ -22,16 +22,16 @@ public class PromptService : IPromptService
         new(BuildSystemPrompt(ctx), VocabularyUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 2048);
 
     public ClaudeRequest BuildGrammarPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), GrammarUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 1500);
+        new(BuildSystemPrompt(ctx), GrammarUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 3000);
 
     public ClaudeRequest BuildExercisesPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), ExercisesUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 2048);
+        new(BuildSystemPrompt(ctx), ExercisesUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 4096);
 
     public ClaudeRequest BuildConversationPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), ConversationUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 1500);
+        new(BuildSystemPrompt(ctx), ConversationUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 3000);
 
     public ClaudeRequest BuildReadingPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), ReadingUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 2048);
+        new(BuildSystemPrompt(ctx), ReadingUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 4096);
 
     public ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx) =>
         new(BuildSystemPrompt(ctx), HomeworkUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 1024);

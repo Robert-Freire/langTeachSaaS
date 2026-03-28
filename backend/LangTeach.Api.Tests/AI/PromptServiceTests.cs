@@ -217,20 +217,20 @@ public class PromptServiceTests
         => _sut.BuildVocabularyPrompt(BaseCtx()).MaxTokens.Should().Be(2048);
 
     [Fact]
-    public void GrammarPrompt_HasMaxTokens1500()
-        => _sut.BuildGrammarPrompt(BaseCtx()).MaxTokens.Should().Be(1500);
+    public void GrammarPrompt_HasMaxTokens3000()
+        => _sut.BuildGrammarPrompt(BaseCtx()).MaxTokens.Should().Be(3000);
 
     [Fact]
-    public void ExercisesPrompt_HasMaxTokens2048()
-        => _sut.BuildExercisesPrompt(BaseCtx()).MaxTokens.Should().Be(2048);
+    public void ExercisesPrompt_HasMaxTokens4096()
+        => _sut.BuildExercisesPrompt(BaseCtx()).MaxTokens.Should().Be(4096);
 
     [Fact]
-    public void ConversationPrompt_HasMaxTokens1500()
-        => _sut.BuildConversationPrompt(BaseCtx()).MaxTokens.Should().Be(1500);
+    public void ConversationPrompt_HasMaxTokens3000()
+        => _sut.BuildConversationPrompt(BaseCtx()).MaxTokens.Should().Be(3000);
 
     [Fact]
-    public void ReadingPrompt_HasMaxTokens2048()
-        => _sut.BuildReadingPrompt(BaseCtx()).MaxTokens.Should().Be(2048);
+    public void ReadingPrompt_HasMaxTokens4096()
+        => _sut.BuildReadingPrompt(BaseCtx()).MaxTokens.Should().Be(4096);
 
     [Fact]
     public void HomeworkPrompt_HasMaxTokens1024()
