@@ -6,6 +6,12 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-03-27 during Student-Aware Curriculum sprint close. 14 entries deleted, 9 batched into issues #301, #302, #304.*
 
+## PR #346 (2026-03-28) — #346 fix Docker e2e build context
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `.dockerignore` | `scripts/` and `.github/` dirs not excluded — tiny size (~8KB), no functional impact. Could be added for completeness. |
+
 ## PR #334 (2026-03-28) — #326 frontend section content types
 
 | Severity | File | Note |

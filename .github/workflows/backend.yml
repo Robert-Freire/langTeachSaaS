@@ -3,9 +3,9 @@ name: Backend CI/CD
 on:
   push:
     branches: [main, 'sprint/*']
-    paths: ['backend/**', '.github/workflows/backend.yml']
+    paths: ['backend/**', 'data/**', '.github/workflows/backend.yml']
   pull_request:
-    paths: ['backend/**', '.github/workflows/backend.yml']
+    paths: ['backend/**', 'data/**', '.github/workflows/backend.yml']
 
 permissions:
   contents: read
@@ -133,7 +133,7 @@ jobs:
             --image ${{ env.IMAGE_NAME }}:${{ github.sha }} \
             --image ${{ env.IMAGE_NAME }}:latest \
             -f backend/LangTeach.Api/Dockerfile \
-            backend
+            .
 
       - name: Configure ACR registry on Container App
         run: |
