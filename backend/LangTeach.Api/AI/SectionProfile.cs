@@ -2,7 +2,6 @@ namespace LangTeach.Api.AI;
 
 public record SectionProfile(
     string SectionType,
-    string[] HardConstraints,
     Dictionary<string, SectionLevelProfile> Levels
 );
 

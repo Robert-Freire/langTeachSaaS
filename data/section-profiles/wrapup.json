@@ -1,9 +1,5 @@
 {
   "sectionType": "wrapup",
-  "hardConstraints": [
-    "No new content. Backward-looking only.",
-    "No exercises or drills."
-  ],
   "levels": {
     "A1": {
       "contentTypes": ["conversation"],

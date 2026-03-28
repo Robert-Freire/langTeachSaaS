@@ -1,13 +1,9 @@
 {
   "sectionType": "production",
-  "hardConstraints": [
-    "Mandatory in every lesson plan. Never omit.",
-    "Output not verifiable. No single correct answer."
-  ],
   "levels": {
     "A1": {
       "contentTypes": ["conversation"],
-      "guidance": "Production MUST be a guided writing task with sentence frames provided. Ask the student to write 3-5 sentences using new vocabulary or structures from this lesson. Do NOT use 'discuss with your partner' or oral-only activities — guided writing is appropriate and achievable even at A1.",
+      "guidance": "Production MUST be a guided writing task with sentence frames provided. Ask the student to write 3-5 sentences using new vocabulary or structures from this lesson. Guided writing is appropriate and achievable even at A1.",
       "duration": { "min": 5, "max": 8 },
       "competencies": ["writing"],
       "scaffolding": "high",

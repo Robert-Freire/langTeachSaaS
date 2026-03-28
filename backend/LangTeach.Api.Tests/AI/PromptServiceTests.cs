@@ -557,7 +557,7 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().Contain("EXAM PREP TEMPLATE REQUIREMENTS");
         req.UserPrompt.Should().Contain("written exam task");
-        req.UserPrompt.Should().Contain("Do NOT use oral role-play");
+        req.UserPrompt.Should().Contain("All practice and production tasks must be written");
         req.UserPrompt.Should().Contain("opinion essay, formal letter, short report");
     }
 
@@ -649,7 +649,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("minimize mechanical drills");
+        req.UserPrompt.Should().Contain("Minimize purely mechanical items");
     }
 
     [Fact]
@@ -669,8 +669,8 @@ public class PromptServiceTests
     {
         var req = _sut.BuildExercisesPrompt(BaseCtx());
 
-        req.SystemPrompt.Should().Contain("self-contained and work with text alone");
-        req.SystemPrompt.Should().Contain("Do not reference images, audio clips, videos, physical objects");
+        req.SystemPrompt.Should().Contain("text-only and self-contained");
+        req.SystemPrompt.Should().Contain("completable using only the text provided");
     }
 
     [Fact]
@@ -680,7 +680,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildExercisesPrompt(ctx);
 
-        req.SystemPrompt.Should().Contain("self-contained and work with text alone");
+        req.SystemPrompt.Should().Contain("text-only and self-contained");
     }
 
     [Fact]
@@ -690,7 +690,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildExercisesPrompt(ctx);
 
-        req.SystemPrompt.Should().NotContain("self-contained and work with text alone");
+        req.SystemPrompt.Should().NotContain("text-only and self-contained");
     }
 
     // --- Mandatory Production and Practice ordering ---
@@ -730,8 +730,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("Do NOT use");
-        req.UserPrompt.Should().Contain("discuss with your partner");
+        req.UserPrompt.Should().Contain("Guided writing is appropriate and achievable even at A1");
     }
 
     [Fact]

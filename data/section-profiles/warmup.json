@@ -1,9 +1,5 @@
 {
   "sectionType": "warmup",
-  "hardConstraints": [
-    "No exercises, vocabulary lists, or grammar drills. Ever.",
-    "No new content introduced. Activation only."
-  ],
   "levels": {
     "A1": {
       "contentTypes": ["conversation"],

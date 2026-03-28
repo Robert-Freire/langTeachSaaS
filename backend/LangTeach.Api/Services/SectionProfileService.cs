@@ -79,15 +79,15 @@ public class SectionProfileService : ISectionProfileService
         return string.Empty;
     }
 
-    public bool IsAllowed(string sectionType, string contentType)
+    public bool IsAllowed(string sectionType, string contentType, string cefrLevel)
     {
         if (string.IsNullOrEmpty(sectionType)) return true;
 
         var profile = GetProfile(sectionType);
         if (profile is null) return true; // Unknown section: permissive
 
-        return profile.Levels.Values.Any(l =>
-            l.ContentTypes.Any(ct => string.Equals(ct, contentType, StringComparison.OrdinalIgnoreCase)));
+        var allowedTypes = GetAllowedContentTypes(sectionType, cefrLevel);
+        return allowedTypes.Any(ct => string.Equals(ct, contentType, StringComparison.OrdinalIgnoreCase));
     }
 
     public string[] GetAllowedContentTypes(string sectionType, string cefrLevel)

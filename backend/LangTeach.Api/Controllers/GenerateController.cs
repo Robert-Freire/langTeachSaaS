@@ -80,17 +80,17 @@ public class GenerateController : ControllerBase
             return;
         }
 
-        if (!string.IsNullOrEmpty(request.SectionType) &&
-            !_sectionProfiles.IsAllowed(request.SectionType, taskType))
-        {
-            Response.StatusCode = 400;
-            await Response.WriteAsync($"Content type '{taskType}' is not allowed for section '{request.SectionType}'.", CancellationToken.None);
-            return;
-        }
-
         if (Auth0Id is null)
         {
             Response.StatusCode = 401;
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(request.SectionType) &&
+            !_sectionProfiles.IsAllowed(request.SectionType, taskType, request.CefrLevel.Trim()))
+        {
+            Response.StatusCode = 400;
+            await Response.WriteAsync($"Content type '{taskType}' is not allowed for section '{request.SectionType}'.", CancellationToken.None);
             return;
         }
 
@@ -301,7 +301,7 @@ public class GenerateController : ControllerBase
             return BadRequest("Language, CefrLevel, and Topic must not be blank.");
 
         if (!string.IsNullOrEmpty(request.SectionType) &&
-            !_sectionProfiles.IsAllowed(request.SectionType, blockType.ToKebabCase()))
+            !_sectionProfiles.IsAllowed(request.SectionType, blockType.ToKebabCase(), cefrLevel))
         {
             return BadRequest($"Content type '{blockType.ToKebabCase()}' is not allowed for section '{request.SectionType}'.");
         }
