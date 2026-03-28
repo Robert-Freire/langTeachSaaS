@@ -1,6 +1,6 @@
 ---
 name: sprint-close
-description: Sprint close process (mechanical phases). Run AFTER backlog triage is done and user has approved. Verifies board/issues, runs Teacher QA + pedagogy review, and prepares the sprint for final merge to main.
+description: Sprint close process (mechanical phases). Run AFTER backlog triage is done and user has approved. Verifies board/issues, then runs a three-phase quality gate: Teacher QA, prompt health review (PromptService.cs + section profiles), and pedagogy review. Returns a READY/NOT READY verdict.
 model: claude-opus-4-6
 ---
 
@@ -40,36 +40,41 @@ This runs all personas (Ana A1, Marco B1, Carmen B2, Ana Exam) against the live 
 
 **Save the full Teacher QA output.** You will pass it to the pedagogy reviewer in Phase 3.
 
-## Phase 3: Pedagogy Review
+## Phase 2b: Prompt Health Review
 
-After Teacher QA completes, invoke the `pedagogy-reviewer` agent (use the Agent tool with `subagent_type: "pedagogy-reviewer"`). Pass it:
-
-```
-Sprint close pedagogy review. The Teacher QA agent just ran all personas against the sprint branch. Here are the results:
-
-<paste full Teacher QA output>
-
-Evaluate the overall pedagogical quality of the AI-generated content across all personas and levels. Focus on:
-1. Are CEFR level boundaries respected across all personas?
-2. Is the curriculum progression sound (grammar sequencing, competency balance)?
-3. Are L1 interference patterns being addressed appropriately for each student's native language?
-4. Is the exercise variety and methodology appropriate per level?
-5. Any systemic issues that appear across multiple personas?
-
-This is a sprint-level review, not individual lesson review. We want to know: is the AI generation quality good enough to ship to a real teacher?
-```
-
-## Phase 3b: Prompt Health Review
-
-After the pedagogy review, invoke the `prompt-health-reviewer` agent (use the Agent tool with `subagent_type: "prompt-health-reviewer"`). Pass it:
+After Teacher QA completes (and before the pedagogy review), invoke the `prompt-health-reviewer` agent (use the Agent tool with `subagent_type: "prompt-health-reviewer"`). Pass it:
 
 ```
-Sprint close prompt health review for <sprint name>. Review backend/LangTeach.Api/AI/PromptService.cs for redundancy, contradictions, negative bloat, stale patches, and duplication. Cross-reference against structural enforcement in the codebase (content type allowlists, controller validation, schema constraints).
+Sprint close prompt health review for <sprint name>.
 
-<If relevant: note any recent structural changes that affect what prompts need to say, e.g. "Content type allowlists were added in #305, restricting which types each section can generate.">
+Review both:
+1. backend/LangTeach.Api/AI/PromptService.cs -- check for redundancy, contradictions, negative bloat, stale patches, and duplication. Cross-reference against structural enforcement (content type allowlists in SectionProfileService, controller validation, schema constraints).
+2. data/section-profiles/*.json -- check each file's `guidance` strings per CEFR level for: negative bloat ("do not / never / avoid"), redundancy with structural enforcement (the contentTypes array already restricts what the AI can generate), contradictions between levels, and unclear or hedging language. Note: hardConstraints are NOT sent to the AI; focus on guidance strings and contentTypes correctness.
+
+<If relevant: note any recent structural changes, e.g. "Section profiles replaced the static SectionContentTypeAllowlist in #309. Content types are now enforced structurally per section per level.">
 ```
 
 Log findings in `plan/sprints/prompt-health-review-<sprint-slug>.md`. If any findings are severity critical, include them in the pre-merge summary as blocking items.
+
+## Phase 3: Pedagogy Review
+
+After the prompt health review completes, invoke the `pedagogy-reviewer` agent (use the Agent tool with `subagent_type: "pedagogy-reviewer"`). Pass it both the Teacher QA output AND a request to evaluate the section profiles directly:
+
+```
+Sprint close pedagogy review. Two inputs for you:
+
+1. Teacher QA results (all personas against the sprint branch):
+<paste full Teacher QA output>
+
+2. Section profile guidance strings (from data/section-profiles/*.json -- these are injected into AI prompts per section and CEFR level):
+<paste the guidance strings from each profile's levels, formatted clearly>
+
+Evaluate:
+A. Teacher QA quality: Are CEFR level boundaries respected? Is curriculum progression sound? Are L1 interference patterns addressed? Is exercise variety appropriate per level? Any systemic issues across personas?
+B. Section profile pedagogy: Is the CEFR progression correct across levels (A1 through C2)? Are activity types appropriate per level? Are duration estimates realistic for one-on-one online tutoring? Is the scaffolding progression sound (high at A1, none at C1/C2)? Are competency assignments correct per section type? Are interaction patterns appropriate?
+
+This is a sprint-level review. We want to know: is the AI generation quality good enough to ship to a real teacher?
+```
 
 ## Phase 4: Pre-Merge Summary
 
@@ -87,14 +92,15 @@ Present the final summary:
 - Overall quality: [summary]
 - Key findings: [list]
 
-### Pedagogy Review
-- Verdict: SOUND / ADJUST / RETHINK
-- Key findings: [summary]
-
-### Prompt Health
+### Prompt Health (Phase 2b)
+- Files reviewed: PromptService.cs + N section profile JSONs
 - Findings: N redundant, N contradictory, N negative bloat, N stale, N duplication
 - Critical items: [list or "none"]
 - Report: plan/sprints/prompt-health-review-<sprint-slug>.md
+
+### Pedagogy Review
+- Verdict: SOUND / ADJUST / RETHINK
+- Key findings: [summary]
 
 ### Ready to merge?
 YES — user can trigger merge-sprint-to-main GitHub Action
@@ -110,5 +116,6 @@ Return this summary to the main conversation. The main agent will present it to 
 
 - Never merge to main yourself. The user triggers the GitHub Action.
 - Never delete issues. Report open issues with no PR; the user decides.
-- The pedagogy reviewer must see Teacher QA results. Never skip Phase 3.
+- Prompt health review (Phase 2b) must run BEFORE pedagogy review (Phase 3). Clean the noise first, then the pedagogy expert reviews clean templates.
+- The pedagogy reviewer must see BOTH Teacher QA results AND section profile guidance strings. Never skip Phase 3.
 - Keep your final response under 3000 characters. Summary, not process narration.

@@ -14,12 +14,26 @@ You are a prompt engineer reviewing LLM instruction templates for a language tea
 
 Before reviewing, read these files:
 
-1. **Prompt templates**: `backend/LangTeach.Api/AI/PromptService.cs` (the file under review)
-2. **Content type definitions**: grep for `ContentBlockType` or content type enums in `backend/` to understand what the code enforces structurally
-3. **Generation controller**: `backend/LangTeach.Api/Controllers/GenerateController.cs` to see what validation happens before prompts are built
-4. **Previous review** (if exists): glob `plan/sprints/prompt-health-review-*.md` and read the most recent one for context on known issues and prior findings
+1. **Prompt templates**: `backend/LangTeach.Api/AI/PromptService.cs` (always review)
+2. **Section profiles**: glob `data/section-profiles/*.json` and read all files (review if called during sprint close, or if the caller asks)
+3. **Structural enforcement**: read `backend/LangTeach.Api/Services/SectionProfileService.cs` to understand which profile fields reach the AI. Key fact: `GetGuidance()` returns ONLY the `guidance` string per level -- `hardConstraints` and metadata fields are NOT sent to the AI. `GetAllowedContentTypes()` drives the frontend dropdown but does NOT appear in prompts.
+4. **Generation controller**: `backend/LangTeach.Api/Controllers/GenerateController.cs` to see what validation happens before prompts are built
+5. **Previous review** (if exists): glob `plan/sprints/prompt-health-review-*.md` and read the most recent one for context on known issues and prior findings
 
 ## What You Evaluate
+
+### Section profiles (`data/section-profiles/*.json`)
+
+Only evaluate if you have been asked to review them (sprint close) or the caller provides them. For each profile's `guidance` strings per CEFR level:
+
+1. **Negative bloat in guidance**: "do not / never / avoid / do NOT" instructions in guidance strings. These reach the AI via `GetGuidance()`. Replace with positive equivalents where possible.
+2. **Redundancy with structural enforcement**: if a `contentType` is already excluded from the level's `contentTypes` array, a prompt instruction prohibiting that content type is dead weight. Cross-reference `contentTypes` before flagging.
+3. **Contradictions between levels**: guidance for adjacent levels (e.g. A2 and B1) should progress smoothly, not contradict.
+4. **Hedging language**: "minimize", "try to", "if possible" weaken instructions. Use clear, direct guidance.
+5. **`contentTypes` correctness**: verify the content types listed per level are plausible for that section and CEFR band. For example, `exercises` should not appear in `warmup` or `wrapup`. This is structural enforcement -- wrong entries here allow incorrect content types through the allowlist check. Flag obvious mismatches.
+6. **`hardConstraints` array**: these are NOT sent to the AI (confirmed: not in any `GetGuidance()` path). Do NOT flag them as prompt health issues. Note their existence in the report but mark as "not in AI path."
+
+### PromptService.cs
 
 For each prompt method in `PromptService.cs`, check:
 
@@ -65,17 +79,20 @@ Duplication wastes tokens and can create subtle contradictions when one copy get
 
 ### Sprint: <sprint name>
 ### Date: <date>
-### File: backend/LangTeach.Api/AI/PromptService.cs
+### Files reviewed: PromptService.cs [+ N section profile JSONs if applicable]
 
 ### Findings
 
 | # | Location | Category | Severity | Description | Recommended fix |
 |---|----------|----------|----------|-------------|-----------------|
-| 1 | method:line | redundant/contradictory/negative-bloat/stale/duplication | critical/important/minor | What's wrong | Specific fix |
+| 1 | PromptService.cs:method:line | redundant/contradictory/negative-bloat/stale/duplication | critical/important/minor | What's wrong | Specific fix |
+| 2 | warmup.json:A1:guidance | negative-bloat | important | ... | ... |
 
 ### Summary
 - N critical, N important, N minor
-- Overall health: CLEAN / NEEDS CLEANUP / URGENT (has contradictions affecting output)
+- PromptService.cs health: CLEAN / NEEDS CLEANUP / URGENT
+- Section profiles health: CLEAN / NEEDS CLEANUP / URGENT (or "not reviewed")
+- Overall: CLEAN / NEEDS CLEANUP / URGENT
 
 ### Delta from last review
 <If a previous review exists: which findings are new, which were fixed, which persist>
