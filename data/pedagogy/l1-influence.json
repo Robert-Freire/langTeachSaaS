@@ -1,0 +1,101 @@
+{
+  "languageFamilies": {
+    "romance": {
+      "languages": ["italian", "portuguese", "french", "romanian", "catalan"],
+      "strengths": ["Cognates", "Similar verb system", "Grammatical gender exists"],
+      "weaknesses": ["False friends", "Interference by similarity"],
+      "adjustments": {
+        "increaseEmphasis": ["VOC-10", "PRAG-02"],
+        "decreaseEmphasis": ["GR-05", "GR-09"],
+        "additionalExerciseTypes": [],
+        "templatePreference": ["conversation", "reading-comprehension"],
+        "notes": "Reduce grammar presentation time. Increase practice on false friends and subtle register differences."
+      }
+    },
+    "germanic": {
+      "languages": ["english", "german", "dutch", "swedish", "norwegian", "danish"],
+      "strengths": ["High motivation", "Good resource access"],
+      "weaknesses": ["Subjunctive", "Ser/estar", "Grammatical gender", "Prepositions"],
+      "adjustments": {
+        "increaseEmphasis": ["GR-08", "GR-01", "GR-04"],
+        "decreaseEmphasis": [],
+        "additionalExerciseTypes": [],
+        "templatePreference": [],
+        "notes": "Explicit explanation of concepts not in L1. Extra ser/estar practice at every level until B2."
+      }
+    },
+    "sinitic-japonic": {
+      "languages": ["mandarin", "cantonese", "japanese"],
+      "strengths": ["Study discipline", "Strong memory"],
+      "weaknesses": ["Entire inflectional system", "Phonology", "Gender", "Articles", "Subjunctive"],
+      "adjustments": {
+        "increaseEmphasis": ["CO-06", "GR-01", "GR-05", "GR-06", "GR-09"],
+        "decreaseEmphasis": [],
+        "additionalExerciseTypes": ["CO-06"],
+        "templatePreference": ["grammar-focus"],
+        "notes": "Very gradual approach. Heavy repetition. Strong visual support. CO-06 in every lesson during A1-A2."
+      }
+    },
+    "slavic": {
+      "languages": ["russian", "polish", "czech", "ukrainian", "serbian", "croatian"],
+      "strengths": ["Verbal inflection accepted", "Aspectual distinctions"],
+      "weaknesses": ["Articles (don't exist)", "Prepositions", "Silent h"],
+      "adjustments": {
+        "increaseEmphasis": ["GR-01", "VOC-05"],
+        "decreaseEmphasis": ["GR-05"],
+        "additionalExerciseTypes": [],
+        "templatePreference": [],
+        "notes": "Heavy emphasis on article use/omission. Preposition practice in every lesson."
+      }
+    },
+    "arabic": {
+      "languages": ["arabic"],
+      "strengths": ["Grammatical gender exists", "Verbal inflection"],
+      "weaknesses": ["Vowels (Arabic has 3, Spanish 5)", "LTR writing", "Articles"],
+      "adjustments": {
+        "increaseEmphasis": ["CO-06", "EE-01", "EE-02"],
+        "decreaseEmphasis": [],
+        "additionalExerciseTypes": ["CO-06"],
+        "templatePreference": [],
+        "notes": "Intensive phonetic discrimination for vowels. Additional writing exercises."
+      }
+    }
+  },
+  "specificLanguages": {
+    "italian": {
+      "family": "romance",
+      "falseFriends": [
+        "guardare (mirar, no guardar)",
+        "burro (mantequilla, no burro)",
+        "salire (subir, no salir)",
+        "carta (papel, no carta postal)"
+      ],
+      "positiveTransfer": [
+        "R/RR pronunciation similar",
+        "Subjunctive exists and functions similarly"
+      ],
+      "additionalNotes": "Critical interference on ser/estar (Italian essere covers both). Student will say '*Soy cansado'. Needs specific GR-02 and GR-04 for ser/estar from A1."
+    },
+    "french": {
+      "family": "romance",
+      "falseFriends": [],
+      "positiveTransfer": [
+        "Similar verb system",
+        "Grammatical gender"
+      ],
+      "additionalNotes": "Less false friend interference than Italian. Good cognate base. Watch for preposition transfer errors."
+    },
+    "persian": {
+      "family": null,
+      "falseFriends": [],
+      "positiveTransfer": [],
+      "additionalNotes": "Persian is Indo-European, NOT Semitic like Arabic. Unlike Arabic, Persian has 6 vowels (closer to Spanish). CO-06 is less critical than for Arabic speakers. Shares some script patterns with Arabic but phonological profile is different. Treat as its own case, do not apply Arabic vowel rules."
+    },
+    "mandarin": {
+      "family": "sinitic-japonic",
+      "falseFriends": [],
+      "positiveTransfer": [],
+      "additionalNotes": "No grammatical gender, no articles, no conjugations in L1. Everything is new. Functional approach (for expressing wishes/doubts we use this special form) rather than rule-based."
+    }
+  }
+}
