@@ -224,6 +224,7 @@ public class PedagogyConfigService : IPedagogyConfigService
             .ToArray();
     }
 
+    // Linear scan is intentional: ~6 templates total, called once per lesson generation.
     public TemplateOverrideEntry? GetTemplateOverrideByName(string name) =>
         _templates.Values.FirstOrDefault(t => string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase));
 

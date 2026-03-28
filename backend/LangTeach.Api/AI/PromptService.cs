@@ -68,7 +68,7 @@ public class PromptService : IPromptService
         if (scope.InScope.Length > 0)
             sb.AppendLine($"In scope: {string.Join(", ", scope.InScope)}");
         if (scope.OutOfScope.Length > 0)
-            sb.AppendLine($"Out of scope (do not use as teaching targets): {string.Join(", ", scope.OutOfScope)}");
+            sb.AppendLine($"Exclude from teaching targets: {string.Join(", ", scope.OutOfScope)}");
         return sb.ToString().TrimEnd();
     }
 
@@ -101,23 +101,12 @@ public class PromptService : IPromptService
     private string BuildExerciseGuidanceBlock(string section, string level)
     {
         var valid = _pedagogy.GetValidExerciseTypes(section, level);
-        var forbidden = _pedagogy.GetForbiddenExerciseTypeIds(section, level);
-        if (valid.Length == 0 && forbidden.Length == 0)
+        if (valid.Length == 0)
             return string.Empty;
 
-        var sb = new StringBuilder();
-        sb.AppendLine($"EXERCISE GUIDANCE for {section} at {level}:");
-        if (valid.Length > 0)
-        {
-            var listed = valid.Take(15).Select(id => $"{id} ({_pedagogy.GetExerciseTypeName(id)})");
-            sb.AppendLine($"Allowed types: {string.Join(", ", listed)}");
-        }
-        if (forbidden.Length > 0)
-        {
-            var listed = forbidden.Take(10).Select(id => $"{id} ({_pedagogy.GetExerciseTypeName(id)})");
-            sb.AppendLine($"Forbidden types: {string.Join(", ", listed)}");
-        }
-        return sb.ToString().TrimEnd();
+        var listed = valid.Take(15).Select(id => $"{id} ({_pedagogy.GetExerciseTypeName(id)})");
+        return $"EXERCISE GUIDANCE for {section} at {level}:\n" +
+               $"Allowed types: {string.Join(", ", listed)}";
     }
 
     private string BuildTemplateOverrideBlock(TemplateOverrideEntry entry, string level)
@@ -212,9 +201,6 @@ public class PromptService : IPromptService
                 sb.AppendLine($"- Flag false cognates between {nativeLang} and {language} when relevant.");
                 sb.AppendLine($"- Be aware of common errors {nativeLang} speakers make in {language}.");
             }
-
-            if (weaknesses.Length > 0)
-                sb.AppendLine("Focus practice on weak areas when relevant to the topic.");
 
             if (ctx.StudentDifficulties is { Length: > 0 })
             {
@@ -416,7 +402,7 @@ public class PromptService : IPromptService
 
         var vocabBlock = BuildVocabularyBlock(level);
         if (!string.IsNullOrEmpty(vocabBlock))
-            prompt += " " + vocabBlock;
+            prompt += "\n" + vocabBlock;
 
         return prompt;
     }
@@ -451,7 +437,7 @@ public class PromptService : IPromptService
         - production: Production is MANDATORY in every lesson plan — never omit it. A free or communicative activity where the student uses the new language independently with minimal guidance. {productionGuidance}
         - wrapUp (2-3 min): Reflection and self-assessment only. Ask the student what they learned, what felt easy, and what they want to practise more. Brief preview of homework or next session.
 
-        All five sections (warmUp, presentation, practice, production, wrapUp) are required in every lesson plan. Do not collapse or omit any of them.
+        All five sections (warmUp, presentation, practice, production, wrapUp) are required in every lesson plan.
         """;
 
         // Grammar scope from CEFR level rules
@@ -483,7 +469,12 @@ public class PromptService : IPromptService
         }
 
         // Declared weakness targeting (StudentWeaknesses, not StudentDifficulties)
-        var weaknesses = ctx.StudentWeaknesses?.Select(Sanitize).Where(s => s.Length > 0).Take(2).ToArray() ?? [];
+        // Truncate each entry to 120 chars to prevent over-long prompt injection
+        var weaknesses = ctx.StudentWeaknesses
+            ?.Select(Sanitize).Where(s => s.Length > 0)
+            .Take(2)
+            .Select(s => s.Length > 120 ? s[..120] : s)
+            .ToArray() ?? [];
         if (weaknesses.Length > 0)
         {
             var weaknessText = string.Join("; ", weaknesses);

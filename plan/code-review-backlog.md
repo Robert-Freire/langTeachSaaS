@@ -8,6 +8,14 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 ---
 
+## PR #325 - 2026-03-28
+
+| Severity | Location | Finding |
+|----------|----------|---------|
+| Low | PromptService.cs | `CurriculumSystemPrompt` emits "You output ONLY valid JSON arrays..." and `CurriculumUserPrompt` ends with "Output ONLY the JSON array." — duplicate JSON-only instruction across system+user prompt pair. Remove from system prompt, keep in user prompt. |
+
+---
+
 ## PR #323 - 2026-03-28
 
 | Severity | Location | Finding |
