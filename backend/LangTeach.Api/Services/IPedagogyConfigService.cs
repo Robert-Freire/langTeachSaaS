@@ -53,6 +53,11 @@ public interface IPedagogyConfigService
     StyleSubstitution[] GetStyleSubstitutions(string[] rejectedTypes);
 
     /// <summary>
+    /// Returns all style substitution entries.
+    /// </summary>
+    StyleSubstitution[] GetAllStyleSubstitutions();
+
+    /// <summary>
     /// Returns the template override entry whose Name matches the display name (case-insensitive).
     /// Use when TemplateName from the DB is a display name (e.g. "Reading &amp; Comprehension"), not an ID.
     /// Returns null if not found.
