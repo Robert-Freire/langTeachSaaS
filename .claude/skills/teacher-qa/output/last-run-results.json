@@ -81,17 +81,17 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 48120,
+                  "duration": 49031,
                   "errors": [],
                   "stdout": [
                     {
                       "text": "[teacher-qa] PDF export succeeded: lesson_teacher.pdf\n"
                     },
                     {
-                      "text": "Ana Exam Prep B2 run complete. Output: C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\output\\ana-exam-b2-2026-03-28T18-51-04\n"
+                      "text": "Ana Exam Prep B2 run complete. Output: C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\output\\ana-exam-b2-2026-03-28T21-16-43\n"
                     },
                     {
-                      "text": "Generation took 31s. 5 blocks across 5 sections.\n"
+                      "text": "Generation took 32s. 5 blocks across 5 sections.\n"
                     },
                     {
                       "text": "Artifacts: student-view=true, pdf=true\n"
@@ -99,7 +99,7 @@
                   ],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-03-28T18:51:04.110Z",
+                  "startTime": "2026-03-28T21:16:43.205Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -117,8 +117,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-03-28T18:51:03.294Z",
-    "duration": 49053.399,
+    "startTime": "2026-03-28T21:16:42.412Z",
+    "duration": 49941.872,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,

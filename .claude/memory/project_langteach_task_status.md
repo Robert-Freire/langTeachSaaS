@@ -28,10 +28,11 @@ Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Wor
   - #306 PARTIAL — PR #311 merged (Part A); Part B still open (pedagogy review on cleaned profiles + Teacher QA re-run)
   - #312 DONE — PR #313 merged (prompt health fixes: level-aware IsAllowed, removed hardConstraints, cleaned stale negatives in PromptService.cs + JSON profiles)
   - Board fixed 2026-03-27: 16 missing issues added to board, 9 done issues closed manually
+  - #351 DONE — PR #356 merged (additive section guidance model: inline template overrides per section, GetDuration, 7 template-overrides.json fixes, presentation B1/B2 conditional grammar framing, restrictions enforcement)
   - Sprint close progress (2026-03-28):
     - Stage 1 DONE: backlogs triaged, 44 deleted, 29 batched into #298-#304 (backlog issues for next sprint)
-    - Stage 2 PARTIAL: board verified, Teacher QA ran (sprint reviewer only), pedagogy review done (ADJUST verdict), #312 done (prompt health fixes)
-    - Stage 3 NOT STARTED: next step is #306 Part B (pedagogy review on cleaned profiles + Teacher QA re-run), then user merge trigger
+    - Stage 2 COMPLETE: #312 done, #351 done (additive prompt model)
+    - Stage 3 READY: user can trigger merge-sprint-to-main; post-merge: run Teacher QA full 5-persona, add prior-findings.md traceability rows for #351
     - Pedagogy findings: WarmUp vocabulary drill recurring (P0, fixed in #305), Practice variety limited (P1, covered by Pedagogical Quality sprint)
   - #321 DONE — PR #330 merged (section profiles extended: validExerciseTypes, forbiddenExerciseTypes, levelSpecificNotes, minExerciseVariety per level in all 5 profiles; 4 validation tests; ForbiddenExerciseType/LevelSpecificNote C# records)
   - #320 DONE — PR #329 merged (CEFR level rules JSON: a1-c2.json, grammar scope, exercise type appropriate/inappropriate lists, vocabulary targets, instruction language, error correction strategy per level)
