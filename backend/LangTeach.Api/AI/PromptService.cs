@@ -279,9 +279,17 @@ public class PromptService : IPromptService
         var cefrLevel = Sanitize(ctx.CefrLevel);
         const string schema = """{"title":"","objectives":[""],"sections":{"warmUp":"","presentation":"","practice":"","production":"","wrapUp":""}}""";
 
-        var warmUpGuidance   = _profiles.GetGuidance("warmup",    cefrLevel);
-        var practiceLevelHint  = _profiles.GetGuidance("practice",  cefrLevel);
+        var warmUpGuidance = _profiles.GetGuidance("warmup", cefrLevel);
+        if (string.IsNullOrEmpty(warmUpGuidance))
+            warmUpGuidance = "A brief conversational warm-up activity to activate prior knowledge.";
+
+        var practiceLevelHint = _profiles.GetGuidance("practice", cefrLevel);
+        if (string.IsNullOrEmpty(practiceLevelHint))
+            practiceLevelHint = "Use a variety of exercise formats appropriate to the stated CEFR level.";
+
         var productionGuidance = _profiles.GetGuidance("production", cefrLevel);
+        if (string.IsNullOrEmpty(productionGuidance))
+            productionGuidance = "A communicative task where the student uses the new language independently.";
 
         var baseInstruction = $"""
         Generate a complete lesson plan for the lesson on "{topic}". Return JSON:

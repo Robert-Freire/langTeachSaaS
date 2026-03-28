@@ -80,17 +80,17 @@ public class GenerateController : ControllerBase
             return;
         }
 
+        if (Auth0Id is null)
+        {
+            Response.StatusCode = 401;
+            return;
+        }
+
         if (!string.IsNullOrEmpty(request.SectionType) &&
             !_sectionProfiles.IsAllowed(request.SectionType, taskType, request.CefrLevel.Trim()))
         {
             Response.StatusCode = 400;
             await Response.WriteAsync($"Content type '{taskType}' is not allowed for section '{request.SectionType}'.", CancellationToken.None);
-            return;
-        }
-
-        if (Auth0Id is null)
-        {
-            Response.StatusCode = 401;
             return;
         }
 
