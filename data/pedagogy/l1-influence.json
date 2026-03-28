@@ -51,7 +51,7 @@
     "arabic": {
       "languages": ["arabic"],
       "strengths": ["Grammatical gender exists", "Verbal inflection"],
-      "weaknesses": ["Vowels (Arabic has 3, Spanish 5)", "LTR writing", "Articles"],
+      "weaknesses": ["Vowels (Arabic has 3, Spanish 5)", "RTL writing direction", "Articles"],
       "adjustments": {
         "increaseEmphasis": ["CO-06", "EE-01", "EE-02"],
         "decreaseEmphasis": [],
