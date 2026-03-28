@@ -24,6 +24,7 @@ public class GenerateController : ControllerBase
     private readonly IUsageLimitService _usageLimitService;
     private readonly ICurriculumTemplateService _templateService;
     private readonly ILessonService _lessonService;
+    private readonly ISectionProfileService _sectionProfiles;
     private readonly AppDbContext _db;
     private readonly ILogger<GenerateController> _logger;
 
@@ -36,6 +37,7 @@ public class GenerateController : ControllerBase
         IUsageLimitService usageLimitService,
         ICurriculumTemplateService templateService,
         ILessonService lessonService,
+        ISectionProfileService sectionProfiles,
         AppDbContext db,
         ILogger<GenerateController> logger)
     {
@@ -47,6 +49,7 @@ public class GenerateController : ControllerBase
         _usageLimitService = usageLimitService;
         _templateService = templateService;
         _lessonService = lessonService;
+        _sectionProfiles = sectionProfiles;
         _db = db;
         _logger = logger;
     }
@@ -78,7 +81,7 @@ public class GenerateController : ControllerBase
         }
 
         if (!string.IsNullOrEmpty(request.SectionType) &&
-            !SectionContentTypeAllowlist.IsAllowed(request.SectionType, taskType))
+            !_sectionProfiles.IsAllowed(request.SectionType, taskType))
         {
             Response.StatusCode = 400;
             await Response.WriteAsync($"Content type '{taskType}' is not allowed for section '{request.SectionType}'.", CancellationToken.None);
@@ -178,7 +181,8 @@ public class GenerateController : ControllerBase
             GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
             TemplateName: templateName,
             CurriculumObjectives: lesson.Objectives,
-            TeacherGrammarConstraints: request.GrammarConstraints
+            TeacherGrammarConstraints: request.GrammarConstraints,
+            SectionType: request.SectionType
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -297,7 +301,7 @@ public class GenerateController : ControllerBase
             return BadRequest("Language, CefrLevel, and Topic must not be blank.");
 
         if (!string.IsNullOrEmpty(request.SectionType) &&
-            !SectionContentTypeAllowlist.IsAllowed(request.SectionType, blockType.ToKebabCase()))
+            !_sectionProfiles.IsAllowed(request.SectionType, blockType.ToKebabCase()))
         {
             return BadRequest($"Content type '{blockType.ToKebabCase()}' is not allowed for section '{request.SectionType}'.");
         }

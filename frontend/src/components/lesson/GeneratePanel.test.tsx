@@ -563,7 +563,7 @@ describe('GeneratePanel - section content type allowlist', () => {
     }
   }
 
-  it('WarmUp A1: shows only Free activity, no Vocabulary/Grammar/Exercises/Conversation options', async () => {
+  it('WarmUp A1: shows Conversation starter (read-only), no dropdown', async () => {
     mockUseGenerate.mockReturnValue(makeIdleGenerate())
 
     renderWithQuery(
@@ -574,20 +574,18 @@ describe('GeneratePanel - section content type allowlist', () => {
       />
     )
 
-    // Trigger should show "Free activity" as the default (free-text is the only allowed type)
     const label = screen.getByText('Task type')
     const container = label.closest('.space-y-1')!
 
-    // WarmUp A1 has only 1 allowed type, so it renders the read-only label
+    // WarmUp has only 1 allowed type (conversation), so it renders the read-only label
     expect(container.querySelector('[data-testid="task-type-readonly"]')).toBeInTheDocument()
-    expect(container.querySelector('[data-testid="task-type-readonly"]')).toHaveTextContent('Free activity')
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toHaveTextContent('Conversation starter')
     expect(container.querySelector('[data-slot="select-trigger"]')).toBeNull()
   })
 
-  it('WarmUp B1: shows conversation option, not vocabulary or grammar', async () => {
+  it('WarmUp B1: shows Conversation starter (read-only), no dropdown', async () => {
     mockUseGenerate.mockReturnValue(makeIdleGenerate())
 
-    const user = userEvent.setup()
     renderWithQuery(
       <GeneratePanel
         {...defaultProps}
@@ -596,24 +594,16 @@ describe('GeneratePanel - section content type allowlist', () => {
       />
     )
 
-    // WarmUp B1 has 2 options (free-text, conversation) so a Select is rendered
+    // WarmUp B1 now has only 1 allowed type (conversation), so it renders read-only
     const label = screen.getByText('Task type')
     const container = label.closest('.space-y-1')!
-    const trigger = container.querySelector('[data-slot="select-trigger"]')!
-    expect(trigger).toBeTruthy()
 
-    // Open the dropdown to check available items
-    await user.click(trigger)
-
-    const listbox = screen.getByRole('listbox')
-    expect(within(listbox).getByText('Free activity')).toBeInTheDocument()
-    expect(within(listbox).getByText('Conversation')).toBeInTheDocument()
-    expect(within(listbox).queryByText('Vocabulary')).toBeNull()
-    expect(within(listbox).queryByText('Grammar')).toBeNull()
-    expect(within(listbox).queryByText('Exercises')).toBeNull()
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toHaveTextContent('Conversation starter')
+    expect(container.querySelector('[data-slot="select-trigger"]')).toBeNull()
   })
 
-  it('WrapUp: renders read-only label (no Select dropdown) with Free activity', () => {
+  it('WrapUp: renders read-only label with Reflection, no dropdown', () => {
     mockUseGenerate.mockReturnValue(makeIdleGenerate())
 
     renderWithQuery(
@@ -627,7 +617,7 @@ describe('GeneratePanel - section content type allowlist', () => {
     const label = screen.getByText('Task type')
     const container = label.closest('.space-y-1')!
     expect(container.querySelector('[data-testid="task-type-readonly"]')).toBeInTheDocument()
-    expect(container.querySelector('[data-testid="task-type-readonly"]')).toHaveTextContent('Free activity')
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toHaveTextContent('Reflection')
     expect(container.querySelector('[data-slot="select-trigger"]')).toBeNull()
   })
 

@@ -20,11 +20,11 @@ import type { LessonSection } from '../../api/lessons'
 import type { ContentBlockType } from '../../types/contentTypes'
 
 const SECTION_TASK_MAP: Record<string, ContentBlockType> = {
-  WarmUp: 'free-text',
+  WarmUp: 'conversation',
   Presentation: 'grammar',
   Practice: 'exercises',
-  Production: 'free-text',
-  WrapUp: 'free-text',
+  Production: 'conversation',
+  WrapUp: 'conversation',
 }
 
 const SECTION_ORDER = ['WarmUp', 'Presentation', 'Practice', 'Production', 'WrapUp']

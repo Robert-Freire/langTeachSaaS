@@ -1,0 +1,57 @@
+{
+  "sectionType": "production",
+  "hardConstraints": [
+    "Mandatory in every lesson plan. Never omit.",
+    "Output not verifiable. No single correct answer."
+  ],
+  "levels": {
+    "A1": {
+      "contentTypes": ["conversation"],
+      "guidance": "Production MUST be a guided writing task with sentence frames provided. Ask the student to write 3-5 sentences using new vocabulary or structures from this lesson. Do NOT use 'discuss with your partner' or oral-only activities — guided writing is appropriate and achievable even at A1.",
+      "duration": { "min": 5, "max": 8 },
+      "competencies": ["writing"],
+      "scaffolding": "high",
+      "interactionPattern": "independent"
+    },
+    "A2": {
+      "contentTypes": ["conversation"],
+      "guidance": "Guided writing with a model paragraph provided. Student writes 4-6 sentences using the target grammar and vocabulary. A short opinion sentence or simple description. Scaffolding phrase starters optional.",
+      "duration": { "min": 5, "max": 8 },
+      "competencies": ["writing"],
+      "scaffolding": "medium",
+      "interactionPattern": "independent"
+    },
+    "B1": {
+      "contentTypes": ["conversation"],
+      "guidance": "Production must be a communicative task: an opinion paragraph, a short role-play scenario description, or a problem-solving task where the student uses new language in a meaningful context. 80-120 words.",
+      "duration": { "min": 8, "max": 12 },
+      "competencies": ["writing", "speaking"],
+      "scaffolding": "low",
+      "interactionPattern": "independent"
+    },
+    "B2": {
+      "contentTypes": ["conversation", "reading"],
+      "guidance": "Structured argument, formal email, or extended communicative task using the target register. 150-200 words. Authentic stimulus (text or question) may be used as springboard.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["writing", "speaking"],
+      "scaffolding": "low",
+      "interactionPattern": "independent"
+    },
+    "C1": {
+      "contentTypes": ["conversation", "reading"],
+      "guidance": "open-ended task requiring autonomous extended language use: a structured argument, a creative writing piece, or a task requiring register and pragmatic awareness. 200+ words.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["writing", "speaking"],
+      "scaffolding": "none",
+      "interactionPattern": "independent"
+    },
+    "C2": {
+      "contentTypes": ["conversation", "reading"],
+      "guidance": "Essay, debate position, mediation task, or creative writing requiring near-native register control. 200+ words. Student selects appropriate register and genre without prompting.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["writing", "speaking"],
+      "scaffolding": "none",
+      "interactionPattern": "independent"
+    }
+  }
+}

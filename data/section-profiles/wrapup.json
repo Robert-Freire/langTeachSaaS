@@ -1,0 +1,57 @@
+{
+  "sectionType": "wrapup",
+  "hardConstraints": [
+    "No new content. Backward-looking only.",
+    "No exercises or drills."
+  ],
+  "levels": {
+    "A1": {
+      "contentTypes": ["conversation"],
+      "guidance": "Teacher-led recap: ask the student to repeat 2-3 key words or phrases from the lesson. Ask: What did we learn today? Use yes/no or either/or questions. Preview homework with one simple sentence.",
+      "duration": { "min": 2, "max": 3 },
+      "competencies": ["interaction"],
+      "scaffolding": "high",
+      "interactionPattern": "teacher-led"
+    },
+    "A2": {
+      "contentTypes": ["conversation"],
+      "guidance": "Student names 3-4 things they learned or practiced. Teacher prompts if needed: Que aprendiste hoy? Brief homework preview. Keep to 2-3 teacher turns.",
+      "duration": { "min": 2, "max": 4 },
+      "competencies": ["interaction"],
+      "scaffolding": "medium",
+      "interactionPattern": "teacher-guided"
+    },
+    "B1": {
+      "contentTypes": ["conversation"],
+      "guidance": "Student summarises the lesson in 3-4 sentences. Teacher corrects and adds. Ask: What felt easy? What do you want to practise more? Brief homework or next session preview.",
+      "duration": { "min": 2, "max": 4 },
+      "competencies": ["interaction"],
+      "scaffolding": "low",
+      "interactionPattern": "student-led"
+    },
+    "B2": {
+      "contentTypes": ["conversation"],
+      "guidance": "Student summarises and evaluates: what was new, what was confirmed, what needs more practice. Teacher adds nuance. Optional: identify one item to research independently before next session.",
+      "duration": { "min": 2, "max": 5 },
+      "competencies": ["interaction"],
+      "scaffolding": "low",
+      "interactionPattern": "student-led"
+    },
+    "C1": {
+      "contentTypes": ["conversation"],
+      "guidance": "Student reflects on difficulty and explains why: what was cognitively demanding, what register choices were made, what gaps remain. Teacher listens, adds metalinguistic comment if relevant.",
+      "duration": { "min": 3, "max": 5 },
+      "competencies": ["interaction"],
+      "scaffolding": "none",
+      "interactionPattern": "student-led"
+    },
+    "C2": {
+      "contentTypes": ["conversation"],
+      "guidance": "Student reflects on difficulty, metalinguistic awareness, and register decisions. Identifies one self-directed learning goal for the week. Teacher confirms or refines.",
+      "duration": { "min": 3, "max": 5 },
+      "competencies": ["interaction"],
+      "scaffolding": "none",
+      "interactionPattern": "student-led"
+    }
+  }
+}

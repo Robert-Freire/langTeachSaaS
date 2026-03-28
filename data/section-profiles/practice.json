@@ -1,0 +1,57 @@
+{
+  "sectionType": "practice",
+  "hardConstraints": [
+    "No free production. Answers must be verifiable.",
+    "Progression from controlled to meaningful: start mechanical, progress to contextual."
+  ],
+  "levels": {
+    "A1": {
+      "contentTypes": ["exercises", "conversation"],
+      "guidance": "Prefer matching and categorization tasks. For fill-in-blank items, always provide a word bank — list the answer options in the hint field. Max 3 options for multiple-choice. Do not include sentence transformation or error correction tasks.",
+      "duration": { "min": 8, "max": 12 },
+      "competencies": ["reading", "writing"],
+      "scaffolding": "high",
+      "interactionPattern": "teacher-led"
+    },
+    "A2": {
+      "contentTypes": ["exercises", "conversation"],
+      "guidance": "Fill-in-blank with optional word bank, multiple-choice with 4 options, true/false with justification required. Avoid purely mechanical drills; use simple contextual items.",
+      "duration": { "min": 8, "max": 12 },
+      "competencies": ["reading", "writing"],
+      "scaffolding": "medium",
+      "interactionPattern": "teacher-guided"
+    },
+    "B1": {
+      "contentTypes": ["exercises", "conversation"],
+      "guidance": "Use at least 2 different exercise formats (e.g. fill-in-blank AND multiple-choice — do not rely on just one type). Include transformation and error correction items.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["reading", "writing", "speaking"],
+      "scaffolding": "low",
+      "interactionPattern": "student-led"
+    },
+    "B2": {
+      "contentTypes": ["exercises", "conversation"],
+      "guidance": "Pragmatic appropriateness, register selection, discourse completion tasks. Multi-step activities with nuanced distractors. Error correction at discourse level.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["reading", "writing", "speaking"],
+      "scaffolding": "low",
+      "interactionPattern": "student-led"
+    },
+    "C1": {
+      "contentTypes": ["exercises", "conversation"],
+      "guidance": "Minimize purely mechanical items (basic fill-in-blank, simple matching). minimize mechanical drills. Favor reformulation, paraphrase, register transfer, and pragmatic inference tasks.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["reading", "writing", "speaking"],
+      "scaffolding": "none",
+      "interactionPattern": "student-led"
+    },
+    "C2": {
+      "contentTypes": ["exercises", "conversation"],
+      "guidance": "Reformulation, paraphrase, register transfer, pragmatic inference. No mechanical drills. Tasks require nuance and register awareness. Student evaluates alternative formulations.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["reading", "writing", "speaking"],
+      "scaffolding": "none",
+      "interactionPattern": "student-led"
+    }
+  }
+}

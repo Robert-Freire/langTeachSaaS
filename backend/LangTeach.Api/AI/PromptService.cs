@@ -1,9 +1,17 @@
 using System.Text;
+using LangTeach.Api.Services;
 
 namespace LangTeach.Api.AI;
 
 public class PromptService : IPromptService
 {
+    private readonly ISectionProfileService _profiles;
+
+    public PromptService(ISectionProfileService profiles)
+    {
+        _profiles = profiles;
+    }
+
     public ClaudeRequest BuildLessonPlanPrompt(GenerationContext ctx) =>
         new(BuildSystemPrompt(ctx), LessonPlanUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 8192);
 
@@ -178,10 +186,12 @@ public class PromptService : IPromptService
         """;
     }
 
-    private static string ExercisesUserPrompt(GenerationContext ctx)
+    private string ExercisesUserPrompt(GenerationContext ctx)
     {
         var topic = Sanitize(ctx.Topic);
-        var levelGuidance = CefrExerciseGuidance(Sanitize(ctx.CefrLevel));
+        var levelGuidance = _profiles.GetGuidance("practice", Sanitize(ctx.CefrLevel));
+        if (string.IsNullOrEmpty(levelGuidance))
+            levelGuidance = "Use a variety of exercise formats appropriate to the stated CEFR level.";
         return $$"""
         Generate practice exercises for the lesson on "{{topic}}". Return JSON:
         {"fillInBlank":[{"sentence":"","answer":"","hint":"","explanation":""}],"multipleChoice":[{"question":"","options":[""],"answer":"","explanation":""}],"matching":[{"left":"","right":"","explanation":""}]}
@@ -190,78 +200,34 @@ public class PromptService : IPromptService
         """;
     }
 
-    private static string CefrExerciseGuidance(string cefrLevel) =>
-        cefrLevel.ToUpperInvariant() switch
-        {
-            "A1" or "A2" =>
-                "LEVEL CONSTRAINTS (A1/A2): For fill-in-blank items, always provide a word bank — list the answer options in the hint field (never leave gaps open-ended). Do not include sentence transformation or error correction tasks; these are too cognitively demanding at this level. Prefer matching and categorization items.",
-            "B1" or "B2" =>
-                "LEVEL CONSTRAINTS (B1/B2): Include at least 2 different exercise formats (e.g. fill-in-blank AND multiple-choice AND matching — do not rely on just one type). Include error correction or transformation items where the exercise formats support it. Multiple-choice alone is not sufficient.",
-            "C1" or "C2" =>
-                "LEVEL CONSTRAINTS (C1/C2): Minimize purely mechanical items (basic fill-in-blank, simple matching). Prefer exercises that require inference, nuance, register awareness, or pragmatic appropriateness. Make exercises meaningful, not rote.",
-            _ =>
-                "Use a variety of exercise formats appropriate to the stated CEFR level."
-        };
-
-    private static string CefrPracticeGuidance(string cefrLevel) =>
-        cefrLevel.ToUpperInvariant() switch
-        {
-            "A1" or "A2" =>
-                "At this level, prefer matching and categorization tasks. If fill-in-blank is used, always provide a word bank.",
-            "B1" or "B2" =>
-                "At this level, use at least 2 different activity formats. Do not rely on a single exercise type.",
-            "C1" or "C2" =>
-                "At this level, minimize mechanical drills. Favor activities requiring nuance, register awareness, or inference.",
-            _ => string.Empty
-        };
-
-    private static string CefrProductionGuidance(string cefrLevel) =>
-        cefrLevel.ToUpperInvariant() switch
-        {
-            "A1" or "A2" =>
-                "At A1/A2, Production MUST be a guided writing task: ask the student to write 3-5 sentences using vocabulary or structures from this lesson. Do NOT use 'discuss with your partner' or oral-only activities — guided writing is appropriate and achievable even at A1.",
-            "B1" or "B2" =>
-                "At B1/B2, Production must be a communicative task: an opinion paragraph, a short role-play scenario description, or a problem-solving task where the student uses new language in a meaningful context.",
-            "C1" or "C2" =>
-                "At C1/C2, Production must be an open-ended task requiring autonomous extended language use: a structured argument, a creative writing piece, or a task requiring register and pragmatic awareness.",
-            _ =>
-                "Choose a communicative production task appropriate for the stated CEFR level."
-        };
-
-    private static string CefrWarmUpGuidance(string cefrLevel) =>
-        cefrLevel.ToUpperInvariant() switch
-        {
-            "A1" or "A2" =>
-                "A short free-text icebreaker that activates the student with minimal linguistic demand. " +
-                "Use one of these activity types: show an image and ask the student to say one word they see, " +
-                "an 'odd one out' with three items (e.g. 'apple, banana, chair — which is different and why?'), " +
-                "or one simple personal question recycling vocabulary from the previous lesson " +
-                "(e.g. 'What did you eat for breakfast today?'). " +
-                "Keep it to 1-2 teacher turns. Do not introduce new vocabulary or explain grammar here.",
-            "B1" or "B2" =>
-                "A free-text or short conversation icebreaker that activates schema and gets the student speaking. " +
-                "Use one of these activity types: an agree/disagree statement related to the lesson topic " +
-                "(e.g. 'Social media does more harm than good — agree or disagree?'), " +
-                "'two truths and a lie' using grammar or vocabulary from the previous lesson, " +
-                "or a headlines-prediction task (show a headline, ask the student to predict the story). " +
-                "Limit the exchange to 2-3 turns. Do not teach new language here.",
-            "C1" or "C2" =>
-                "A free-text or conversation icebreaker that activates higher-order thinking around the lesson theme. " +
-                "Use one of these activity types: an ethical dilemma or thought-experiment prompt, " +
-                "a semantic brainstorm (e.g. 'Give me five words connected to power — now connect them to today's topic'), " +
-                "an authentic short text (tweet, quote, or headline) as a discussion trigger, " +
-                "or a define-without-using circumlocution challenge using target vocabulary. " +
-                "Keep it focused and purposeful — 2-3 minutes maximum.",
-            _ =>
-                "A short icebreaker that gets the student talking and relaxed before the lesson begins. " +
-                "Use a discussion question, opinion prompt, or short task connected to the lesson topic. " +
-                "Do not introduce new vocabulary or explain grammar here."
-        };
-
-    private static string ConversationUserPrompt(GenerationContext ctx)
+    private string ConversationUserPrompt(GenerationContext ctx)
     {
         var topic = Sanitize(ctx.Topic);
         var level = Sanitize(ctx.CefrLevel);
+        var section = ctx.SectionType;
+
+        if (string.Equals(section, "WarmUp", StringComparison.OrdinalIgnoreCase))
+        {
+            var guidance = _profiles.GetGuidance("warmup", level);
+            return $$"""
+            Generate a warm-up icebreaker conversation activity for a {{level}} level lesson on "{{topic}}". Return JSON:
+            {"scenarios":[{"setup":"","roleA":"Teacher","roleB":"Student","roleAPhrases":[""],"roleBPhrases":[""]}]}
+            {{guidance}}
+            Include exactly 1 brief scenario suitable for lesson activation (not teaching new content).
+            """;
+        }
+
+        if (string.Equals(section, "WrapUp", StringComparison.OrdinalIgnoreCase))
+        {
+            var guidance = _profiles.GetGuidance("wrapup", level);
+            return $$"""
+            Generate a wrap-up reflection conversation for a {{level}} level lesson on "{{topic}}". Return JSON:
+            {"scenarios":[{"setup":"","roleA":"Teacher","roleB":"Student","roleAPhrases":[""],"roleBPhrases":[""]}]}
+            {{guidance}}
+            Include exactly 1 brief scenario for lesson closure and self-assessment (backward-looking only, no new content).
+            """;
+        }
+
         return $$"""
         Generate conversation scenarios for the lesson on "{{topic}}". Return JSON:
         {"scenarios":[{"setup":"","roleA":"","roleB":"","roleAPhrases":[""],"roleBPhrases":[""]}]}
@@ -307,14 +273,16 @@ public class PromptService : IPromptService
                "Keep it practical and completable in a one-on-one online tutoring session.";
     }
 
-    private static string LessonPlanUserPrompt(GenerationContext ctx)
+    private string LessonPlanUserPrompt(GenerationContext ctx)
     {
         var topic = Sanitize(ctx.Topic);
         var cefrLevel = Sanitize(ctx.CefrLevel);
         const string schema = """{"title":"","objectives":[""],"sections":{"warmUp":"","presentation":"","practice":"","production":"","wrapUp":""}}""";
-        var practiceLevelHint = CefrPracticeGuidance(cefrLevel);
-        var productionGuidance = CefrProductionGuidance(cefrLevel);
-        var warmUpGuidance = CefrWarmUpGuidance(cefrLevel);
+
+        var warmUpGuidance   = _profiles.GetGuidance("warmup",    cefrLevel);
+        var practiceLevelHint  = _profiles.GetGuidance("practice",  cefrLevel);
+        var productionGuidance = _profiles.GetGuidance("production", cefrLevel);
+
         var baseInstruction = $"""
         Generate a complete lesson plan for the lesson on "{topic}". Return JSON:
         {schema}
