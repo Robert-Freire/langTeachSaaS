@@ -1016,6 +1016,110 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("AT LEAST one Strategy Session");
     }
 
+    // --- CurriculumUserPrompt: course distribution rules ---
+
+    private static CurriculumContext BaseGeneralCtx(string? teacherNotes = null) => new(
+        Language: "Spanish",
+        Mode: "general",
+        SessionCount: 10,
+        TargetCefrLevel: "B1",
+        TargetExam: null,
+        ExamDate: null,
+        StudentName: null,
+        StudentNativeLanguage: null,
+        StudentInterests: null,
+        StudentGoals: null,
+        TeacherNotes: teacherNotes
+    );
+
+    [Fact]
+    public void CurriculumUserPrompt_InjectsVarietyRules_WhenGeneralMode()
+    {
+        var req = _sut.BuildCurriculumPrompt(BaseGeneralCtx());
+
+        req.UserPrompt.Should().Contain("COURSE DISTRIBUTION RULES");
+        req.UserPrompt.Should().Contain("do not repeat the same combination of exercise types in");
+        req.UserPrompt.Should().Contain("alternate between written and oral");
+        req.UserPrompt.Should().Contain("macro-skills must appear as primary focus at least once");
+    }
+
+    [Fact]
+    public void CurriculumUserPrompt_InjectsGeneralSkillDistribution_WhenCourseTypeGeneral()
+    {
+        var req = _sut.BuildCurriculumPrompt(BaseGeneralCtx());
+
+        req.UserPrompt.Should().Contain("general course");
+        // CE 20-25%, EO 30-35% from course-rules.json
+        req.UserPrompt.Should().Contain("(CE):");
+        req.UserPrompt.Should().Contain("(EO):");
+    }
+
+    [Fact]
+    public void CurriculumUserPrompt_InjectsConversationalSkillDistribution_WhenCourseTypeConversational()
+    {
+        var ctx = BaseGeneralCtx() with { CourseType = "conversational" };
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("conversational course");
+        // EO 55-65% for conversational courses
+        req.UserPrompt.Should().Contain("55-65%");
+    }
+
+    [Fact]
+    public void CurriculumUserPrompt_InjectsSpiralGrammarRecyclingGuidance()
+    {
+        var req = _sut.BuildCurriculumPrompt(BaseGeneralCtx());
+
+        req.UserPrompt.Should().Contain("spiral recycling model");
+        req.UserPrompt.Should().Contain("Systematic errors");
+        req.UserPrompt.Should().Contain("Valid recycling examples");
+        req.UserPrompt.Should().Contain("Avoid lazy recycling");
+    }
+
+    [Fact]
+    public void CurriculumUserPrompt_InjectsStyleSubstitutionGuidance_WhenTeacherNotesContainKeyword()
+    {
+        var ctx = BaseGeneralCtx(teacherNotes: "Student hates role-play. Prefers written exercises.");
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Activity substitution guidance");
+        req.UserPrompt.Should().Contain("role-play");
+    }
+
+    [Fact]
+    public void CurriculumUserPrompt_OmitsStyleSubstitutionGuidance_WhenTeacherNotesHaveNoMatchingKeyword()
+    {
+        var ctx = BaseGeneralCtx(teacherNotes: "Student relocating to Barcelona. Loves sports.");
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("Activity substitution guidance");
+    }
+
+    [Fact]
+    public void CurriculumUserPrompt_DoesNotInjectDistributionRules_ForExamPrepMode()
+    {
+        var ctx = new CurriculumContext(
+            Language: "English",
+            Mode: "exam-prep",
+            SessionCount: 6,
+            TargetCefrLevel: null,
+            TargetExam: "IELTS",
+            ExamDate: null,
+            StudentName: null,
+            StudentNativeLanguage: null,
+            StudentInterests: null,
+            StudentGoals: null
+        );
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("COURSE DISTRIBUTION RULES");
+        req.UserPrompt.Should().NotContain("spiral recycling model");
+    }
+
     // --- PedagogyConfigService integration: new blocks in lesson plan prompt ---
 
     [Fact]
