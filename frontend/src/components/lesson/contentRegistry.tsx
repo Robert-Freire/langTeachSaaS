@@ -35,6 +35,7 @@ export interface ContentRenderer {
 const registry: Partial<Record<ContentBlockType, ContentRenderer>> = {
   conversation: ConversationRenderer,
   exercises: ExercisesRenderer,
+  'free-text': FreeTextRenderer,
   grammar: GrammarRenderer,
   homework: HomeworkRenderer,
   reading: ReadingRenderer,

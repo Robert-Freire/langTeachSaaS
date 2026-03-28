@@ -6,6 +6,7 @@ export type ContentBlockType =
   | 'conversation'
   | 'reading'
   | 'homework'
+  | 'free-text'
 
 export interface VocabularyItem {
   word: string

@@ -115,6 +115,9 @@ public class PdfExportService : IPdfExportService
                     if (mode == PdfExportMode.Teacher)
                         RenderLessonPlan(container, JsonSerializer.Deserialize<LessonPlanContent>(stripped, JsonOpts)!);
                     break;
+                case ContentBlockType.FreeText:
+                    RenderFreeText(container, stripped);
+                    break;
             }
         }
         catch (JsonException)
@@ -361,6 +364,15 @@ public class PdfExportService : IPdfExportService
                     }
                 });
             }
+        });
+    }
+
+    private static void RenderFreeText(IContainer container, string rawContent)
+    {
+        container.Column(col =>
+        {
+            foreach (var line in rawContent.Split('\n'))
+                col.Item().Text(line.TrimEnd()).FontSize(10);
         });
     }
 

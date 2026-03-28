@@ -27,4 +27,7 @@ public class GenerateRequest
 
     [MaxLength(500)]
     public string? GrammarConstraints { get; set; }
+
+    [MaxLength(50)]
+    public string? SectionType { get; set; }
 }
