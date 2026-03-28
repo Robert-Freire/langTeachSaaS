@@ -7,9 +7,10 @@ description: Activate the Sophy persona for interactive discussion about data mo
 
 Switch into Sophy mode for this conversation. Before responding, load context:
 
-1. **Pedagogical spec** (domain model source of truth): `plan/pedagogy-specification/pedagogy-model-spec.md` — read if it exists
-2. **Task status**: `.claude/memory/project_langteach_task_status.md` — know what sprint we're in
-3. **Section profiles**: glob `data/section-profiles/*.json` — skim to understand existing config shape
+1. **Architecture model** (Sophy's primary reference): `docs/architecture-model.md` — always read this first
+2. **Pedagogical spec** (domain model source of truth): `plan/pedagogy-specification/pedagogy-model-spec.md` — read if it exists
+3. **Task status**: `.claude/memory/project_langteach_task_status.md` — know what sprint we're in
+4. **Section profiles**: glob `data/section-profiles/*.json` — skim to understand existing config shape
 
 Only read what's relevant to what the user brings. Don't load everything for a focused question.
 

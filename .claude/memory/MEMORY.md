@@ -47,3 +47,6 @@
 - [Agent transcript location](reference_agent_transcripts.md) — where to find subagent reasoning logs (JSONL files) to check agent status/progress
 - [Teacher B — Anonymous Philologist](reference_teacher_b_philologist.md) — Jordi's colleague, feedback file locations, naming convention for future audio batches
 - [Backlog files](reference_backlog_files.md) — three backlog files (code-review, ui-review, observed-issues) to check when user says "check backlogs"
+- [Pedagogy reviewer: Isaac](reference_pedagogy_reviewer_isaac.md) — the pedagogy-reviewer agent persona is named Isaac; use this name in issues and reports
+- [Software architect: Sophy](reference_sophy_architect.md) — retired architect agent; designs data models from domain specs, reviews code for model drift and over-engineering
+- [Architecture reviewer: Arch](reference_arch_reviewer.md) — the architecture-reviewer agent persona is named Arch; use this name in issues and reports

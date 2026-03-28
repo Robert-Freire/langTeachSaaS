@@ -4,7 +4,7 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 ---
 
-*Cleared 2026-03-27 during Student-Aware Curriculum sprint close. 14 entries deleted, 9 batched into issues #301, #302, #304.*
+*Cleared 2026-03-28 during Student-Aware Curriculum sprint close (round 2). 9 entries processed: 4 batched into #347 (pedagogy data consistency), 2 into #349 (UX polish), 3 deleted (redundant tests nit, harmless prompt duplication, undocumented fallback comment).*
 
 ## PR #346 (2026-03-28) — #346 fix Docker e2e build context
 
