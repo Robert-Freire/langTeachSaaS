@@ -1,7 +1,7 @@
 ---
 name: sprint-close
 description: Sprint close process (mechanical phases). Run AFTER backlog triage is done and user has approved. Verifies board/issues, then runs a three-phase quality gate: Teacher QA, prompt health review (PromptService.cs + section profiles), and pedagogy review. Returns a READY/NOT READY verdict.
-model: claude-opus-4-6
+model: opus
 ---
 
 # Sprint Close Agent

@@ -1,7 +1,7 @@
 ---
 name: review-plan
 description: Validate a task plan against the actual codebase before implementation
-model: claude-opus-4-6
+model: opus
 ---
 
 # Pre-Implementation Plan Review

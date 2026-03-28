@@ -1,7 +1,7 @@
 ---
 name: pm
 description: Product manager agent for LangTeach. Evaluates features, tasks, priorities, and UX decisions against the product vision and teacher workflows. Pass it a question, feature idea, task plan, or UX decision to get a PM perspective.
-model: claude-opus-4-6
+model: opus
 ---
 
 # LangTeach Product Manager

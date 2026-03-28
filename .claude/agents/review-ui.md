@@ -1,7 +1,7 @@
 ---
 name: review-ui
 description: UI/UX design review with multi-viewport screenshots, interaction capture, and visual analysis. Use this agent to evaluate visual design quality, interaction quality, and responsive behavior of the running app. Requires the app to be running locally.
-model: claude-opus-4-6
+model: opus
 ---
 
 # UI/UX Design Review
