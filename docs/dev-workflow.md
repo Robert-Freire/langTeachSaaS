@@ -142,7 +142,12 @@ Any gate can send the task back to implementation. The loop repeats until all th
 
 1. **Backlog triage (PM, interactive):** The PM reads the three backlog files (`plan/code-review-backlog.md`, `plan/ui-review-backlog.md`, `plan/observed-issues.md`) and classifies each entry as FIX NOW (blocks sprint quality), NEXT SPRINT (batch into a themed issue), or DELETE (not worth tracking). The user reviews and approves the triage. FIX NOW items get implemented via normal worktree flow before proceeding. NEXT SPRINT items are grouped into `type:polish` or `type:tech-debt` issues that go through the standard `/qa` gate.
 
-2. **Verification and quality gate (sprint-close agent):** After backlogs are clean, the `sprint-close` agent runs. It verifies all milestone issues are closed and on the board, runs Teacher QA against the sprint branch (all personas), passes the results to the pedagogy reviewer for a sprint-level quality assessment, then runs a **prompt health review** where a dedicated prompt-health-reviewer agent audits `PromptService.cs` for redundant constraints, contradictory instructions, negative bloat, stale patches, and duplication. Findings are logged to `plan/sprints/prompt-health-review-<sprint-slug>.md`. The agent returns a READY/NOT READY verdict. Blockers: pedagogy RETHINK on any systemic issue, or critical prompt health findings (contradictions that actively produce wrong output).
+2. **Verification and quality gate (sprint-close agent):** After backlogs are clean, the `sprint-close` agent runs. It verifies all milestone issues are closed and on the board, then runs a three-phase quality gate in order:
+   - **Teacher QA (Phase 2):** All personas run against the live sprint branch.
+   - **Prompt health review (Phase 2b):** A `prompt-health-reviewer` agent audits both `PromptService.cs` and `data/section-profiles/*.json` for redundant constraints, contradictory instructions, negative bloat (in guidance strings), stale patches, and duplication. Findings are logged to `plan/sprints/prompt-health-review-<sprint-slug>.md`. Running this BEFORE the pedagogy review means the pedagogy expert reviews clean templates, not noise.
+   - **Pedagogy review (Phase 3):** A `pedagogy-reviewer` agent evaluates Teacher QA output for sprint-level quality AND reviews the section profile guidance strings directly (CEFR progression, activity type appropriateness, duration estimates, scaffolding progression).
+
+   The agent returns a READY/NOT READY verdict. Blockers: pedagogy RETHINK on any systemic issue, or critical prompt health findings (contradictions that actively produce wrong output).
 
 3. **Cleanup (after user triggers merge):** Close the GitHub milestone, delete the sprint branch, update memory (task status, sprint overviews), clear the backlog files.
 
@@ -185,7 +190,8 @@ The Bash tool runs in Git Bash on Windows. Git Bash automatically translates Uni
 | Acceptance criteria | `qa-verify` agent | PASS verdict |
 | Code review | `review` agent | PASS or PASS WITH NOTES |
 | Consistency review | `architecture-reviewer` agent | PASS or PASS WITH NOTES (run in parallel with `review`) |
-| Prompt health | `prompt-health-reviewer` agent | CLEAN or NEEDS CLEANUP (only if `PromptService.cs` changed, run in parallel with `review`) |
+| Prompt health (per-PR) | `prompt-health-reviewer` agent | CLEAN or NEEDS CLEANUP (only if `PromptService.cs` changed, run in parallel with `review`); URGENT blocks push |
+| Prompt health (sprint close) | `prompt-health-reviewer` agent | Reviews `PromptService.cs` + all `data/section-profiles/*.json`; runs before pedagogy review |
 | UI review | `review-ui` agent | GOOD or POLISHED (only if `area:frontend` or `area:design`) |
 | CI + CodeRabbit | `gh pr checks` + `gh api` | No failures, no unresolved comments |
 

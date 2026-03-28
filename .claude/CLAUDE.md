@@ -89,7 +89,7 @@ Freeze = Robert does not trigger the merge action. The sprint branch keeps recei
 3. Robert periodically triggers merge action to sync sprint -> main (unless frozen)
 4. Sprint close (three stages):
    - **Stage 1 (PM, main conversation):** Read the three backlog files (`plan/code-review-backlog.md`, `plan/ui-review-backlog.md`, `plan/observed-issues.md`). Triage each entry as FIX NOW / NEXT SPRINT / DELETE. Present triage to user. If FIX NOW items exist, those get implemented via normal worktree flow before proceeding. Batch NEXT SPRINT items into themed GitHub issues. Clear triaged entries from backlog files.
-   - **Stage 2 (agent):** After user approves backlogs, run the `sprint-close` agent. It verifies board/issues, runs Teacher QA, runs pedagogy review on QA results, and returns a pre-merge summary with a READY/NOT READY verdict.
+   - **Stage 2 (agent):** After user approves backlogs, run the `sprint-close` agent. It verifies board/issues, then runs a three-phase quality gate in order: (1) Teacher QA against the sprint branch, (2) prompt health review of `PromptService.cs` and `data/section-profiles/*.json` for redundancy/contradictions/negative bloat, (3) pedagogy review of Teacher QA output AND section profile guidance strings. Returns a READY/NOT READY verdict. Blockers: pedagogy RETHINK on a systemic issue, or critical prompt health findings (contradictions that actively produce wrong output).
    - **Stage 3 (cleanup, after user triggers merge action):** Close the milestone, delete the sprint branch, update memory (task status, sprint overviews), clear remaining backlog entries.
 5. Next sprint: new `sprint/<slug>` from `main`, update milestone view filter
 
@@ -148,7 +148,7 @@ GitHub Issues is the single source of truth for task tracking. Plan files remain
 
 ## Review Tools: Always Use Agents
 
-All review steps (`review-plan`, `qa-verify`, `review`, `architecture-reviewer`, `review-ui`) must be invoked as **agents** (via the Agent tool with the appropriate `subagent_type`), never as skills or slash commands. This keeps the main context window clean and prevents review output from consuming token budget. The `/qa` skill is the only exception (it's for interactive issue review with the user, not part of the task completion pipeline).
+All review steps (`review-plan`, `qa-verify`, `review`, `architecture-reviewer`, `prompt-health-reviewer`, `review-ui`) must be invoked as **agents** (via the Agent tool with the appropriate `subagent_type`), never as skills or slash commands. This keeps the main context window clean and prevents review output from consuming token budget. The `/qa` skill is the only exception (it's for interactive issue review with the user, not part of the task completion pipeline).
 
 ## Task Completion Protocol
 
