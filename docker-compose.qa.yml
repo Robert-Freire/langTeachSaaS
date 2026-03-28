@@ -42,8 +42,8 @@ services:
 
   api:
     build:
-      context: ./backend
-      dockerfile: LangTeach.Api/Dockerfile
+      context: .
+      dockerfile: backend/LangTeach.Api/Dockerfile
     environment:
       # Development environment uses real Auth0 JWT validation (not E2ETesting bypass)
       ASPNETCORE_ENVIRONMENT: Development
