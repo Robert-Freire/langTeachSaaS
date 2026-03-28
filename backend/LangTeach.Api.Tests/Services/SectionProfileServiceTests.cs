@@ -287,6 +287,25 @@ public class SectionProfileServiceTests
         }
     }
 
+    [Fact]
+    public void ExerciseTypeReferences_ForbiddenEntries_RequireExactlyOneSelector()
+    {
+        var failures = new List<string>();
+
+        foreach (var (section, level, data) in LoadAllLevelProfiles())
+        {
+            foreach (var entry in data.ForbiddenExerciseTypes ?? [])
+            {
+                var hasId = !string.IsNullOrWhiteSpace(entry.Id);
+                var hasPattern = !string.IsNullOrWhiteSpace(entry.Pattern);
+                if (hasId == hasPattern)
+                    failures.Add($"{section}/{level}: forbiddenExerciseTypes entry must set exactly one of 'id' or 'pattern'");
+            }
+        }
+
+        failures.Should().BeEmpty(because: "each forbiddenExerciseTypes entry must provide a single selector");
+    }
+
     private static bool MatchesForbiddenPattern(string id, string pattern)
     {
         // Supports trailing wildcard only: "GR-*" matches any ID starting with "GR-"
