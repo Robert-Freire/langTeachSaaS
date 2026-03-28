@@ -21,16 +21,23 @@ Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Wor
 - Phase 2A: Teacher Workflow: CLOSED (reorganized 2026-03-21)
 - Curriculum & Personalization: CLOSED (2026-03-24, 35/35 done, merged to main)
 - Pedagogical Credibility: CLOSED (merged into Student-Aware Curriculum)
-- Student-Aware Curriculum: CLOSING (21/21 original done, sprint close in progress)
+- Student-Aware Curriculum: CLOSING (sprint close in progress)
   - All 21 original issues closed (including #261 which was done but not tracked)
-  - #305 OPEN — restrict WarmUp to freeText/conversation content types (P1, qa:ready, in Ready column)
+  - #305 DONE — PR #308 merged (WarmUp content type allowlist, dropdown filtering)
+  - #309 DONE — PR #310 merged (extract section guidance to JSON profiles)
+  - #306 PARTIAL — PR #311 merged (Part A); Part B still open (pedagogy review on cleaned profiles + Teacher QA re-run)
+  - #312 DONE — PR #313 merged (prompt health fixes: level-aware IsAllowed, removed hardConstraints, cleaned stale negatives in PromptService.cs + JSON profiles)
   - Board fixed 2026-03-27: 16 missing issues added to board, 9 done issues closed manually
-  - Sprint close progress (2026-03-27):
+  - Sprint close progress (2026-03-28):
     - Stage 1 DONE: backlogs triaged, 44 deleted, 29 batched into #298-#304 (backlog issues for next sprint)
-    - Stage 2 PARTIAL: board verified, Teacher QA ran (sprint reviewer only), pedagogy review done (ADJUST verdict)
-    - Stage 3 NOT STARTED: awaiting user merge trigger after testing
-    - Pedagogy findings: WarmUp vocabulary drill recurring (P0, now #305), Practice variety limited (P1, covered by Pedagogical Quality sprint)
-    - Dev stack running locally for user testing (sprint branch)
+    - Stage 2 PARTIAL: board verified, Teacher QA ran (sprint reviewer only), pedagogy review done (ADJUST verdict), #312 done (prompt health fixes)
+    - Stage 3 NOT STARTED: next step is #306 Part B (pedagogy review on cleaned profiles + Teacher QA re-run), then user merge trigger
+    - Pedagogy findings: WarmUp vocabulary drill recurring (P0, fixed in #305), Practice variety limited (P1, covered by Pedagogical Quality sprint)
+  - #321 DONE — PR #330 merged (section profiles extended: validExerciseTypes, forbiddenExerciseTypes, levelSpecificNotes, minExerciseVariety per level in all 5 profiles; 4 validation tests; ForbiddenExerciseType/LevelSpecificNote C# records)
+  - #320 DONE — PR #329 merged (CEFR level rules JSON: a1-c2.json, grammar scope, exercise type appropriate/inappropriate lists, vocabulary targets, instruction language, error correction strategy per level)
+  - #323 DONE — PR #332 merged (l1-influence.json: 5 language families + 4 specific languages; course-rules.json: variety rules, skill distribution, spiral grammar model; style-substitutions.json: 4 competency-preserving substitution entries)
+  - #322 DONE — PR #331 merged (template-overrides.json: 7 lesson templates with section overrides, priority exercise types, level variations, restrictions)
+  - #319 DONE — PR #328 merged (exercise type catalog JSON: 72 types, data/pedagogy/exercise-types.json, foundation for pedagogical config architecture)
   - #292 DONE — PR #296 merged (exam prep mode: learning goal toggle, exam selector, deadline picker, session type badges)
   - #291 DONE — PR #297 merged (session-to-lesson navigation: status badges, Generate lesson nav, Edit/View links)
   - #290 DONE — PR #295 merged (course creation e2e flow: StudentCoursesCard, error state, 2 e2e + 5 unit tests)
