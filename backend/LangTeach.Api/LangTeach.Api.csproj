@@ -16,6 +16,8 @@
                       Link="Curricula\%(Filename)%(Extension)" />
     <EmbeddedResource Include="..\..\data\section-profiles\*.json"
                       Link="SectionProfiles\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\data\pedagogy\exercise-types.json"
+                      Link="Pedagogy\exercise-types.json" />
   </ItemGroup>
 
   <ItemGroup>
