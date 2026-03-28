@@ -1,0 +1,370 @@
+{
+  "templates": [
+    {
+      "id": "conversation",
+      "name": "Conversation",
+      "sections": {
+        "warmUp": {
+          "required": true,
+          "overrideGuidance": null,
+          "priorityExerciseTypes": ["EO-08"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "presentation": {
+          "required": false,
+          "overrideGuidance": "Optional. When included, set up a communicative scenario or introduce useful expressions and gambits for the session topic. Keep brief — no more than 5 minutes.",
+          "priorityExerciseTypes": ["PRAG-01"],
+          "minExerciseVarietyOverride": null,
+          "notes": "Presentation is optional in conversation lessons. The session may move directly from warm-up to practice if no new language needs to be introduced."
+        },
+        "practice": {
+          "required": true,
+          "overrideGuidance": "Controlled oral practice using structured role-plays and guided dialogues. Start with closed role-play before moving to open scenarios.",
+          "priorityExerciseTypes": ["EO-01", "EO-02", "EO-03", "PRAG-01", "PRAG-05"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "production": {
+          "required": true,
+          "overrideGuidance": "Free communicative activity where the student speaks independently. Use open role-play, debate, or thematic free conversation.",
+          "priorityExerciseTypes": ["EO-02", "EO-06", "EO-07", "EO-08"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "wrapUp": {
+          "required": true,
+          "overrideGuidance": null,
+          "priorityExerciseTypes": [],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        }
+      },
+      "levelVariations": {
+        "A1": "Use closed role-plays (EO-01) and guided dialogues only. Provide phrase banks. High tolerance for L1 use.",
+        "A2": "Introduce open role-play (EO-02) with a clear scenario and vocabulary support.",
+        "B1": "Move toward free conversation (EO-08) on familiar topics. Introduce negotiation and problem-solving (EO-07).",
+        "B2": "Open discussion, debate (EO-06), and structured interviews (EO-03) are all appropriate.",
+        "C1": "Debate, mediation (EO-09), and sustained monologue (EO-05). Minimal scaffolding.",
+        "C2": "Peer-level discussion, mediation (EO-09), register-aware extended discourse. No scaffolding needed."
+      },
+      "restrictions": []
+    },
+    {
+      "id": "grammar-focus",
+      "name": "Grammar Focus",
+      "sections": {
+        "warmUp": {
+          "required": true,
+          "overrideGuidance": "Activate prior knowledge of the target grammar structure. Use an inductive noticing task or a quick diagnostic exercise.",
+          "priorityExerciseTypes": ["GR-08", "GR-01"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "presentation": {
+          "required": true,
+          "overrideGuidance": "Introduce the grammar rule through examples and guided discovery. Use noticing (GR-08) at B1+, paradigms (GR-05) at A1-A2. Explain meaning, form, and use.",
+          "priorityExerciseTypes": ["GR-08", "GR-05", "GR-09"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "practice": {
+          "required": true,
+          "overrideGuidance": "Controlled grammar practice. Order from mechanical (fill-in-blank, conjugation) to meaningful (sentence transformation, error correction). Use at least 3 different exercise formats.",
+          "priorityExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-05", "GR-06", "GR-07", "GR-09"],
+          "minExerciseVarietyOverride": 3,
+          "notes": null
+        },
+        "production": {
+          "required": true,
+          "overrideGuidance": "Communicative task requiring natural use of the target structure. Guided dialogue or structured interview at lower levels; free conversation or role-play at higher levels.",
+          "priorityExerciseTypes": ["EO-01", "EO-02", "EO-08", "EE-02", "EE-03"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "wrapUp": {
+          "required": true,
+          "overrideGuidance": null,
+          "priorityExerciseTypes": [],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        }
+      },
+      "levelVariations": {
+        "A1": "Focus on paradigms (GR-05) and basic fill-in-blank (GR-01). No error correction or transformation tasks.",
+        "A2": "Add matching (GR-06) and simple word ordering (GR-07). Still no error correction.",
+        "B1": "Add sentence transformation (GR-03) and error correction (GR-04). Introduce inductive discovery (GR-08).",
+        "B2": "Nuance tasks: aspect, mood, register. Use GR-08 and GR-10 (paradigm from text).",
+        "C1": "Focus on pragmatic grammar, discourse markers, and register. GR-08 and GR-10 are the primary discovery tools.",
+        "C2": "Sociolinguistic nuance. Student analyses and categorises independently. GR-10 (complete paradigm from text)."
+      },
+      "restrictions": []
+    },
+    {
+      "id": "reading-comprehension",
+      "name": "Reading & Comprehension",
+      "sections": {
+        "warmUp": {
+          "required": true,
+          "overrideGuidance": "Pre-reading activation only. Activate background knowledge, predict content from the title, or brainstorm vocabulary around the topic. No grammar drills.",
+          "priorityExerciseTypes": ["VOC-03", "EO-08"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "presentation": {
+          "required": true,
+          "overrideGuidance": "Embed a complete reading passage with CEFR-appropriate length in this section (A1: 100-150 words, A2: 150-250 words, B1+: 300-500 words). First read for gist, second read for detail. Pre-teach blocking vocabulary before reading.",
+          "priorityExerciseTypes": ["CE-01", "CE-02", "VOC-04"],
+          "minExerciseVarietyOverride": null,
+          "notes": "The reading passage TEXT MUST appear in this section. Do not move the passage to practice or production."
+        },
+        "practice": {
+          "required": true,
+          "overrideGuidance": "Comprehension questions covering three types: (1) factual — explicitly stated in the text, (2) inferential — requiring reading between the lines, (3) vocabulary in context — meaning of a word or phrase as used in the passage. Include at least 2 questions of each type.",
+          "priorityExerciseTypes": ["CE-01", "CE-02", "CE-03", "CE-07", "VOC-04", "CE-06"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "production": {
+          "required": true,
+          "overrideGuidance": "Free-production task connected to the passage topic. Short written response, opinion discussion, or creative extension. Student works independently.",
+          "priorityExerciseTypes": ["EE-03", "EE-07", "EO-06", "EO-08"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "wrapUp": {
+          "required": true,
+          "overrideGuidance": "Student summarises the passage in 1-2 sentences. Brief discussion of the author's purpose or the student's reaction.",
+          "priorityExerciseTypes": [],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        }
+      },
+      "levelVariations": {
+        "A1": "Very short passages (100-150 words). Factual questions only (CE-01, CE-02). Heavy vocabulary pre-teaching required.",
+        "A2": "Short passages (150-250 words). Add true/false questions (CE-03). Simple vocabulary in context.",
+        "B1": "300-500 word authentic-style passages. Include inferential questions (CE-07). Vocabulary in context (VOC-04).",
+        "B2": "Authentic texts. Inference (CE-07), register identification (CE-08), ordering paragraphs (CE-05).",
+        "C1": "Complex authentic texts. Emphasise critical reading (CE-09), inference (CE-07), and register analysis (CE-08).",
+        "C2": "Ungraded authentic texts. Critical reading (CE-09), register (CE-08), and mediation-based responses."
+      },
+      "restrictions": [
+        {
+          "type": "exerciseCategory",
+          "value": "LUD",
+          "reason": "Ludic activities are inappropriate in reading comprehension lessons where the focus is on text processing and comprehension skills."
+        }
+      ]
+    },
+    {
+      "id": "writing-skills",
+      "name": "Writing Skills",
+      "sections": {
+        "warmUp": {
+          "required": true,
+          "overrideGuidance": "Activate writing-related background knowledge. Discuss a sample text type, analyse a model, or brainstorm ideas for the writing task.",
+          "priorityExerciseTypes": ["EE-01", "CE-01"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "presentation": {
+          "required": true,
+          "overrideGuidance": "Present a model text of the target genre. Analyse its structure, register, and key phrases. Students identify organisational features and useful expressions.",
+          "priorityExerciseTypes": ["EE-01", "PRAG-02"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "practice": {
+          "required": true,
+          "overrideGuidance": "Guided writing tasks building toward the production text. Sentence completion, paragraph building, or structured exercises focusing on the target writing features.",
+          "priorityExerciseTypes": ["EE-02", "EE-03", "EE-04", "EE-05", "GR-03", "GR-04"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "production": {
+          "required": true,
+          "overrideGuidance": "The student produces a complete written text of the target type independently. Specify text type, length (word count), and communicative purpose clearly.",
+          "priorityExerciseTypes": ["EE-04", "EE-05", "EE-06", "EE-07", "EE-08", "EE-09", "EE-10", "EE-11"],
+          "minExerciseVarietyOverride": null,
+          "notes": "Production is the central section of this template. This is where the student writes independently. Do not abbreviate or collapse this section."
+        },
+        "wrapUp": {
+          "required": true,
+          "overrideGuidance": "Peer review or self-correction using the lesson success criteria. Student identifies one strength and one area to improve in their written text.",
+          "priorityExerciseTypes": [],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        }
+      },
+      "levelVariations": {
+        "A1": "Guided writing with full model (EE-01). Short functional texts (EE-03). Sentence completion tasks. L1 support appropriate.",
+        "A2": "Semi-guided writing: notes, postcards, short messages (EE-03). Paragraph completion (EE-02).",
+        "B1": "Guided letter/email (EE-06), short narration (EE-05), or simple opinion paragraph (EE-07).",
+        "B2": "Letter/email (EE-06), argumentative paragraph (EE-07), or summary (EE-08). Register awareness introduced.",
+        "C1": "Full autonomy: argumentative essay (EE-07), register transformation (EE-09), creative text (EE-10).",
+        "C2": "Written mediation (EE-11), complex register transformation (EE-09), and near-native creative production (EE-10)."
+      },
+      "restrictions": [
+        {
+          "type": "exerciseCategory",
+          "value": "EO",
+          "reason": "Oral exercises are excluded in this template to keep focus on written production outcomes."
+        }
+      ]
+    },
+    {
+      "id": "exam-prep",
+      "name": "Exam Prep",
+      "sections": {
+        "warmUp": {
+          "required": true,
+          "overrideGuidance": "Review the exam format, the target task type, and the scoring criteria. Briefly discuss what the examiner is looking for. No casual icebreakers or conversation warm-ups.",
+          "priorityExerciseTypes": ["CE-01", "GR-01", "GR-02"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "presentation": {
+          "required": true,
+          "overrideGuidance": "Teach the strategy for the target exam task (e.g. essay structure, formal letter conventions, skimming for gist). Use authentic exam-task examples. Formal register throughout.",
+          "priorityExerciseTypes": ["CE-03", "CE-04", "GR-08", "EE-01"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "practice": {
+          "required": true,
+          "overrideGuidance": "Timed written practice under exam conditions. All tasks must be written (essay, formal letter, reading comprehension, gap-fill). Debrief answers with reference to the mark scheme after each task.",
+          "priorityExerciseTypes": ["CE-01", "CE-02", "CE-03", "CE-06", "GR-01", "GR-02", "GR-03", "GR-04", "EE-06", "EE-07", "EE-08"],
+          "minExerciseVarietyOverride": null,
+          "notes": "Timer is mandatory: specify an explicit time limit (e.g. '15 minutes') for every timed practice task in this section."
+        },
+        "production": {
+          "required": true,
+          "overrideGuidance": "Full written exam task the student attempts independently. Specify a time limit (in minutes) and a target word count. Task type must match the exam format: opinion essay, formal letter, short report, or similar written genre. Do NOT use oral role-play or conversation activities.",
+          "priorityExerciseTypes": ["EE-06", "EE-07", "EE-08", "EE-09", "CE-01", "CE-02"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "wrapUp": {
+          "required": true,
+          "overrideGuidance": "Student self-assesses against the mark scheme criteria. Teacher identifies one strength and one area to improve before the next session.",
+          "priorityExerciseTypes": [],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        }
+      },
+      "levelVariations": {
+        "B1": "DELE B1 task types: short emails, opinion paragraphs, simple formal letters. Word counts 80-150 words.",
+        "B2": "DELE B2 task types: formal letters, opinion essays, short reports. Word counts 150-250 words.",
+        "C1": "DELE C1 tasks: argumentative essays, written mediation, formal reports. Higher word counts (250-350 words).",
+        "C2": "DELE C2 tasks: near-native precision, complex register, mediation. Word counts 300-400 words."
+      },
+      "restrictions": [
+        {
+          "type": "exerciseCategory",
+          "value": "LUD",
+          "reason": "Ludic activities are inappropriate in exam preparation lessons where the focus is on exam-format written tasks."
+        }
+      ]
+    },
+    {
+      "id": "thematic-vocabulary",
+      "name": "Thematic Vocabulary",
+      "sections": {
+        "warmUp": {
+          "required": true,
+          "overrideGuidance": "Activate existing vocabulary on the theme. Brainstorm, mind-map, or categorize words the student already knows. Identify gaps before introducing new items.",
+          "priorityExerciseTypes": ["VOC-03", "VOC-08", "LUD-05"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "presentation": {
+          "required": true,
+          "overrideGuidance": "Introduce new vocabulary items in context. Use semantic fields, collocations, and word families. Present words in sentences or short texts, never as isolated lists.",
+          "priorityExerciseTypes": ["VOC-01", "VOC-02", "VOC-03", "VOC-07", "VOC-11", "CE-06"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "practice": {
+          "required": true,
+          "overrideGuidance": "Vocabulary practice exercises. Prefer contextual exercises (words in sentences, vocabulary in text) over decontextualized drills.",
+          "priorityExerciseTypes": ["VOC-02", "VOC-04", "VOC-05", "VOC-06", "VOC-07", "VOC-11", "CE-06", "GR-06"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "production": {
+          "required": true,
+          "overrideGuidance": "Communicative task requiring natural use of the target vocabulary. Oral description, thematic free conversation, or a short written text using the learned items.",
+          "priorityExerciseTypes": ["EO-04", "EO-08", "EE-03", "EE-04", "PRAG-01"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "wrapUp": {
+          "required": true,
+          "overrideGuidance": "Consolidation activity. Student recalls as many new words as possible (e.g. mind map from memory) and notes items for spaced review.",
+          "priorityExerciseTypes": ["VOC-08", "VOC-09"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        }
+      },
+      "levelVariations": {
+        "A1": "Concrete, everyday vocabulary (food, family, home). L1 translations appropriate (VOC-01). Picture-word matching (VOC-02).",
+        "A2": "Vocabulary in sentences. Synonyms/antonyms at basic level (VOC-06). Categorization (VOC-03).",
+        "B1": "Collocations (VOC-07), word formation prefixes/suffixes (VOC-11), vocabulary in context (VOC-04).",
+        "B2": "Advanced collocations, register-sensitive choices, fixed phrases (VOC-10).",
+        "C1": "Idioms and fixed expressions (VOC-10), advanced word formation (VOC-11), near-native lexical range.",
+        "C2": "Register-aware lexical choices, academic and professional vocabulary, idiomatic expression at native level."
+      },
+      "restrictions": []
+    },
+    {
+      "id": "culture-society",
+      "name": "Culture & Society",
+      "sections": {
+        "warmUp": {
+          "required": true,
+          "overrideGuidance": "Cultural activation. Use a provocative image, headline, or question to stimulate interest in the cultural topic. Encourage the student to share their own cultural perspective.",
+          "priorityExerciseTypes": ["PRAG-04", "EO-08", "CE-01"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "presentation": {
+          "required": true,
+          "overrideGuidance": "Present cultural content through a text, video description, or curated facts. Include both factual information and an opportunity for the student to respond to the content.",
+          "priorityExerciseTypes": ["PRAG-03", "CE-01", "CE-02", "CE-07"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "practice": {
+          "required": true,
+          "overrideGuidance": "Cultural comprehension and analysis tasks. Compare cultural practices, analyse a cultural text, or explore a societal theme. Avoid purely mechanical grammar drills.",
+          "priorityExerciseTypes": ["CE-07", "PRAG-03", "PRAG-04", "EO-06"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "production": {
+          "required": true,
+          "overrideGuidance": "Intercultural reflection or discussion. Student compares the target culture with their own, expresses a reasoned opinion, or produces a short written reflection.",
+          "priorityExerciseTypes": ["EO-06", "EO-08", "PRAG-04", "EE-07", "EO-09"],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        },
+        "wrapUp": {
+          "required": true,
+          "overrideGuidance": "Student reflects on one thing they found surprising or interesting about the cultural topic. Brief discussion of how it connects to their own culture or experience.",
+          "priorityExerciseTypes": [],
+          "minExerciseVarietyOverride": null,
+          "notes": null
+        }
+      },
+      "levelVariations": {
+        "A1": "Simple cultural facts with visual support. Focus on familiar everyday culture (food, celebrations, greetings). Very short texts.",
+        "A2": "Short authentic-style cultural texts. Basic intercultural comparison (PRAG-04). Everyday societal topics.",
+        "B1": "Authentic or near-authentic cultural texts. Intercultural comparison and opinion expression (PRAG-04).",
+        "B2": "Complex societal topics (inequality, environment, traditions). Inference (CE-07) and critical discussion (EO-06).",
+        "C1": "Nuanced cultural and literary topics. Oral mediation (EO-09) and critical analysis (CE-09).",
+        "C2": "Identity, politics, literature, and philosophy. Mediation (EO-09), register-aware argumentation, near-native precision."
+      },
+      "restrictions": []
+    }
+  ]
+}
