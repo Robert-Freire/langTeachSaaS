@@ -121,6 +121,7 @@ builder.Services.AddHttpClient("Claude", (sp, client) =>
 });
 builder.Services.AddScoped<IClaudeClient, ClaudeApiClient>();
 builder.Services.AddSingleton<ISectionProfileService, SectionProfileService>();
+builder.Services.AddSingleton<IPedagogyConfigService, PedagogyConfigService>();
 builder.Services.AddScoped<IPromptService, PromptService>();
 
 builder.Services.AddOptions<GenerationLimitsOptions>()
@@ -159,6 +160,7 @@ var app = builder.Build();
 
 // Eagerly resolve singletons that load embedded resources so malformed JSON fails at startup.
 _ = app.Services.GetRequiredService<ISectionProfileService>();
+_ = app.Services.GetRequiredService<IPedagogyConfigService>();
 
 // Apply pending migrations and seed reference data on startup
 using (var scope = app.Services.CreateScope())

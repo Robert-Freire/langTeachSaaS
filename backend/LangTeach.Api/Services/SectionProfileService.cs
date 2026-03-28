@@ -18,8 +18,6 @@ public class SectionProfileService : ISectionProfileService
         NumberHandling = JsonNumberHandling.AllowReadingFromString,
     };
 
-    private static readonly string[] KnownLevels = ["A1", "A2", "B1", "B2", "C1", "C2"];
-
     public SectionProfileService(ILogger<SectionProfileService> logger)
     {
         _log = logger;
@@ -102,25 +100,32 @@ public class SectionProfileService : ISectionProfileService
         return [];
     }
 
+    public string[]? GetRawValidExerciseTypes(string sectionType, string cefrLevel)
+    {
+        var profile = GetProfile(sectionType);
+        if (profile is null) return null;
+        var level = NormalizeLevel(cefrLevel);
+        if (profile.Levels.TryGetValue(level, out var lp))
+            return lp.ValidExerciseTypes;
+        return null;
+    }
+
+    public ForbiddenExerciseType[] GetRawForbiddenExerciseTypes(string sectionType, string cefrLevel)
+    {
+        var profile = GetProfile(sectionType);
+        if (profile is null) return [];
+        var level = NormalizeLevel(cefrLevel);
+        if (profile.Levels.TryGetValue(level, out var lp))
+            return lp.ForbiddenExerciseTypes ?? [];
+        return [];
+    }
+
     private SectionProfile? GetProfile(string sectionType)
     {
         var key = sectionType.Replace(" ", "", StringComparison.Ordinal).ToLowerInvariant();
         return _profiles.TryGetValue(key, out var profile) ? profile : null;
     }
 
-    private static string NormalizeLevel(string cefrLevel)
-    {
-        // Accept "A1", "A1.1", "B2.2" etc — normalise to major band
-        if (string.IsNullOrWhiteSpace(cefrLevel)) return string.Empty;
-        var upper = cefrLevel.Trim().ToUpperInvariant();
-        // Exact match first
-        if (KnownLevels.Contains(upper, StringComparer.Ordinal)) return upper;
-        // Prefix match: "A1.1" -> "A1"
-        foreach (var known in KnownLevels)
-        {
-            if (upper.StartsWith(known, StringComparison.Ordinal))
-                return known;
-        }
-        return upper; // Return as-is; profile lookup will miss and return empty
-    }
+    private static string NormalizeLevel(string cefrLevel) =>
+        CefrLevelNormalizer.Normalize(cefrLevel);
 }
