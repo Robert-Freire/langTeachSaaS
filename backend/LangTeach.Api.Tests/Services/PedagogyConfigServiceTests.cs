@@ -258,4 +258,28 @@ public class PedagogyConfigServiceTests
         result.VarietyRules.PracticeTypeCombination.NoRepeatWithinSessions.Should().Be(3);
         result.VarietyRules.WarmUpFormat.MaxConsecutiveRepeats.Should().Be(2);
     }
+
+    // --- Available type filtering ---
+
+    [Fact]
+    public void GetValidExerciseTypes_Practice_B1_DoesNotReturnUnavailableTypes()
+    {
+        // CO-* types require audio (uiRenderer: null); LUD-* have no renderer; EO-10 has no renderer.
+        // None should appear in valid types regardless of what section profiles reference.
+        var result = _sut.GetValidExerciseTypes("practice", "B1");
+
+        result.Should().NotContain("CO-01", because: "CO-01 requires audio and has no UI renderer (available: false)");
+        result.Should().NotContain("LUD-01", because: "LUD-01 has no UI renderer (available: false)");
+        result.Should().NotContain("EO-10", because: "EO-10 has no UI renderer (available: false)");
+    }
+
+    [Fact]
+    public void GetValidExerciseTypes_Production_C1_ContainsEE09_NotPRAG02()
+    {
+        // EE-09 is available (uiRenderer: exercises). PRAG-02 was merged into EE-09 and deleted from the catalog.
+        var result = _sut.GetValidExerciseTypes("production", "C1");
+
+        result.Should().Contain("EE-09", because: "EE-09 is an available exercise type valid for C1 production");
+        result.Should().NotContain("PRAG-02", because: "PRAG-02 was merged into EE-09 and no longer exists in the catalog");
+    }
 }

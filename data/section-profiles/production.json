@@ -93,7 +93,7 @@
       "competencies": ["writing", "speaking"],
       "scaffolding": "low",
       "interactionPattern": "independent",
-      "validExerciseTypes": ["EE-06", "EE-07", "EE-08", "EO-02", "EO-05", "EO-06", "EO-07", "EO-09", "PRAG-01", "PRAG-02", "PRAG-05"],
+      "validExerciseTypes": ["EE-06", "EE-07", "EE-08", "EE-09", "EO-02", "EO-05", "EO-06", "EO-07", "EO-09", "PRAG-01", "PRAG-05"],
       "forbiddenExerciseTypes": [
         {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is controlled practice, not free production"},
         {"id": "GR-02", "pattern": null, "reason": "Multiple choice is controlled practice, not free production"},
@@ -121,7 +121,7 @@
       "competencies": ["writing", "speaking"],
       "scaffolding": "none",
       "interactionPattern": "independent",
-      "validExerciseTypes": ["EE-07", "EE-08", "EE-09", "EE-10", "EE-11", "EO-05", "EO-06", "EO-07", "EO-09", "PRAG-01", "PRAG-02", "PRAG-05"],
+      "validExerciseTypes": ["EE-07", "EE-08", "EE-09", "EE-10", "EE-11", "EO-05", "EO-06", "EO-07", "EO-09", "PRAG-01", "PRAG-05"],
       "forbiddenExerciseTypes": [
         {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is controlled practice, not free production"},
         {"id": "GR-02", "pattern": null, "reason": "Multiple choice is controlled practice, not free production"},
@@ -149,7 +149,7 @@
       "competencies": ["writing", "speaking"],
       "scaffolding": "none",
       "interactionPattern": "independent",
-      "validExerciseTypes": ["EE-07", "EE-08", "EE-09", "EE-10", "EE-11", "EO-05", "EO-06", "EO-07", "EO-09", "PRAG-01", "PRAG-02", "PRAG-05"],
+      "validExerciseTypes": ["EE-07", "EE-08", "EE-09", "EE-10", "EE-11", "EO-05", "EO-06", "EO-07", "EO-09", "PRAG-01", "PRAG-05"],
       "forbiddenExerciseTypes": [
         {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is controlled practice, not free production"},
         {"id": "GR-02", "pattern": null, "reason": "Multiple choice is controlled practice, not free production"},

@@ -170,7 +170,7 @@
         "presentation": {
           "required": true,
           "overrideGuidance": "Present a model text of the target genre. Analyse its structure, register, and key phrases. Students identify organisational features and useful expressions.",
-          "priorityExerciseTypes": ["EE-01", "PRAG-02"],
+          "priorityExerciseTypes": ["EE-01", "EE-09"],
           "minExerciseVarietyOverride": null,
           "notes": null
         },

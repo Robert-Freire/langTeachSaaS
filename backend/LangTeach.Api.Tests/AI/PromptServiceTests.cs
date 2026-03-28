@@ -1276,4 +1276,17 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("VOCABULARY APPROACH for C1");
         req.UserPrompt.Should().Contain("CONVERSATION TEMPLATE");
     }
+
+    // --- Available type filtering ---
+
+    [Fact]
+    public void BuildExercisesPrompt_ExerciseGuidance_DoesNotContainUnavailableTypeIds()
+    {
+        // The exercises guidance block is built from GetValidExerciseTypes("practice", level).
+        // CO-01 (audio) and LUD-01 (ludic) are unavailable types that must never reach the prompt.
+        var req = _sut.BuildExercisesPrompt(BaseCtx());
+
+        req.UserPrompt.Should().NotContain("CO-01", because: "CO-01 is unavailable (no UI renderer) and must not appear in the exercises prompt");
+        req.UserPrompt.Should().NotContain("LUD-01", because: "LUD-01 is unavailable (no UI renderer) and must not appear in the exercises prompt");
+    }
 }

@@ -49,3 +49,5 @@ A1-B2 use `vocabularyPerLesson: { productive: {min,max}, receptive: {min,max} }`
 | Severity | File | Note |
 |----------|------|------|
 | minor | `PromptService.cs:FreeTextUserPrompt` | Does not call `_profiles.GetGuidance(...)` unlike all other prompt builders. Intentional generic fallback but undocumented. Worth a comment explaining why section profile guidance is skipped. |
+
+| PR#338 | 2026-03-28 | low | PedagogyConfig.cs ExerciseTypeEntry: `bool Available = false` uses value-type default while other optional fields use nullable types. Functionally correct; minor style divergence. |

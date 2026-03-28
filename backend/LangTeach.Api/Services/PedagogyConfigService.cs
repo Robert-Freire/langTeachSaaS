@@ -11,6 +11,7 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly ISectionProfileService _sectionProfileService;
 
     private readonly HashSet<string> _catalogIds;
+    private readonly HashSet<string> _availableIds; // types with available: true (working UI renderer)
     private readonly Dictionary<string, string> _exerciseNames; // id (ci) -> display name
     private readonly Dictionary<string, CefrLevelRules> _cefrRules;
     private readonly L1InfluenceFile _l1;
@@ -37,11 +38,16 @@ public class PedagogyConfigService : IPedagogyConfigService
         // Load exercise type catalog (must be first — other validation depends on it)
         var catalog = LoadJson<ExerciseCatalog>(assembly, "LangTeach.Api.Pedagogy.exercise-types.json");
         _catalogIds = catalog.ExerciseTypes.Select(e => e.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _availableIds = catalog.ExerciseTypes
+            .Where(e => e.Available)
+            .Select(e => e.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         _exerciseNames = catalog.ExerciseTypes.ToDictionary(
             e => e.Id,
             e => e.Name,
             StringComparer.OrdinalIgnoreCase);
-        _log.LogInformation("PedagogyConfigService: loaded exercise catalog with {Count} types", _catalogIds.Count);
+        _log.LogInformation("PedagogyConfigService: loaded exercise catalog with {Count} types ({Available} available)",
+            _catalogIds.Count, _availableIds.Count);
 
         // Load CEFR level rules
         _cefrRules = new Dictionary<string, CefrLevelRules>(StringComparer.OrdinalIgnoreCase);
@@ -150,7 +156,11 @@ public class PedagogyConfigService : IPedagogyConfigService
 
         // Step 8: RE-FILTER forbidden — critical: L1 additions must not bypass section forbidden rules
         base_ = base_.Where(t => !forbidden.Contains(t)).ToList();
-        _log.LogDebug("PedagogyConfigService: Final after re-filter={Count}", base_.Count);
+        _log.LogDebug("PedagogyConfigService: After re-filter forbidden={Count}", base_.Count);
+
+        // Step 9: Filter to available types only (must have a working UI renderer)
+        base_ = base_.Where(t => _availableIds.Contains(t)).ToList();
+        _log.LogDebug("PedagogyConfigService: Final after available filter={Count}", base_.Count);
 
         return base_.ToArray();
     }
