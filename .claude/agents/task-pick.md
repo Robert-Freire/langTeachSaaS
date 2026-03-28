@@ -1,7 +1,7 @@
 ---
 name: task-pick
-description: Find the highest-priority unassigned qa:ready issue in the active sprint. Run this agent when the user asks to pick a task, find the next task, or start work.
-model: sonnet
+description: Find the highest-priority unassigned qa:ready issue in the active sprint. Run this agent ONLY when the user asks to find the next task without specifying an issue number (e.g., "pick a task", "next task", "start work"). Do NOT use this agent when the user specifies a specific issue number (e.g., "pick 359") because the scanning/ranking logic is unnecessary and wastes tokens.
+model: haiku
 ---
 
 You are a task picker. Return the best available issue to work on. Be fast and minimal.
