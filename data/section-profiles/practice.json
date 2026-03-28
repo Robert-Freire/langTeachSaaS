@@ -39,7 +39,7 @@
     },
     "C1": {
       "contentTypes": ["exercises", "conversation"],
-      "guidance": "Minimize purely mechanical items (basic fill-in-blank, simple matching). minimize mechanical drills. Favor reformulation, paraphrase, register transfer, and pragmatic inference tasks.",
+      "guidance": "minimize mechanical drills and purely mechanical items (basic fill-in-blank, simple matching). Favor reformulation, paraphrase, register transfer, and pragmatic inference tasks.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "none",

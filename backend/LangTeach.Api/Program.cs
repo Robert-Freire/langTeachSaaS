@@ -157,6 +157,9 @@ builder.Services.AddScoped<IPdfExportService, PdfExportService>();
 
 var app = builder.Build();
 
+// Eagerly resolve singletons that load embedded resources so malformed JSON fails at startup.
+_ = app.Services.GetRequiredService<ISectionProfileService>();
+
 // Apply pending migrations and seed reference data on startup
 using (var scope = app.Services.CreateScope())
 {
