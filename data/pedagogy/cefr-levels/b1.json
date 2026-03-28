@@ -25,23 +25,81 @@
     "Perifrasis modales sofisticadas (venir a + infinitivo, dar por + participio)"
   ],
   "appropriateExerciseTypes": [
-    "GR-01", "GR-02", "GR-03", "GR-04", "GR-05", "GR-06", "GR-07", "GR-08", "GR-09", "GR-10",
-    "VOC-01", "VOC-02", "VOC-03", "VOC-04", "VOC-05", "VOC-06", "VOC-07", "VOC-09", "VOC-11",
-    "CE-01", "CE-02", "CE-03", "CE-04", "CE-05", "CE-06",
-    "EE-01", "EE-02", "EE-03", "EE-04", "EE-05", "EE-06", "EE-07", "EE-08",
-    "EO-01", "EO-02", "EO-03", "EO-04", "EO-05", "EO-06", "EO-07", "EO-08",
+    "GR-01",
+    "GR-02",
+    "GR-03",
+    "GR-04",
+    "GR-05",
+    "GR-06",
+    "GR-07",
+    "GR-08",
+    "GR-09",
+    "GR-10",
+    "VOC-01",
+    "VOC-02",
+    "VOC-03",
+    "VOC-04",
+    "VOC-05",
+    "VOC-06",
+    "VOC-07",
+    "VOC-09",
+    "VOC-11",
+    "CE-01",
+    "CE-02",
+    "CE-03",
+    "CE-04",
+    "CE-05",
+    "CE-06",
+    "EE-02",
+    "EE-03",
+    "EE-04",
+    "EE-05",
+    "EE-06",
+    "EE-07",
+    "EE-08",
+    "EO-01",
+    "EO-02",
+    "EO-03",
+    "EO-04",
+    "EO-05",
+    "EO-06",
+    "EO-07",
+    "EO-08",
     "CO-05",
-    "PRAG-01", "PRAG-04", "PRAG-05",
-    "LUD-01", "LUD-02", "LUD-03", "LUD-04", "LUD-05", "LUD-06", "LUD-07", "LUD-08"
+    "PRAG-01",
+    "PRAG-04",
+    "PRAG-05",
+    "LUD-01",
+    "LUD-03",
+    "LUD-04",
+    "LUD-05",
+    "LUD-06",
+    "LUD-07",
+    "LUD-08"
   ],
   "inappropriateExerciseTypes": [
-    { "id": "CE-08", "reason": "Register and intent identification requires pragmatic awareness developed at B2+" },
-    { "id": "EE-09", "reason": "Register transformation requires full register command introduced at B2" },
-    { "id": "EE-11", "reason": "Written mediation (resuming/adapting texts for different audiences) requires B2+ competence" }
+    {
+      "id": "CE-08",
+      "reason": "Register and intent identification requires pragmatic awareness developed at B2+"
+    },
+    {
+      "id": "EE-09",
+      "reason": "Register transformation requires full register command introduced at B2"
+    },
+    {
+      "id": "EE-11",
+      "reason": "Written mediation (resuming/adapting texts for different audiences) requires B2+ competence"
+    }
   ],
   "vocabularyPerLesson": {
-    "productive": { "min": 12, "max": 18 },
-    "receptive": { "min": 8, "max": 10 }
+    "productive": {
+      "min": 12,
+      "max": 18
+    },
+    "receptive": {
+      "min": 8,
+      "max": 10
+    }
   },
   "instructionLanguage": "Entirely in L2. Grammatical metalanguage may be used freely in L2.",
   "metalanguageLevel": "Full grammatical metalanguage in L2: subjuntivo, condicional, oracion subordinada, pluscuamperfecto",
