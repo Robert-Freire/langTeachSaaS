@@ -45,8 +45,8 @@ services:
 
   api:
     build:
-      context: ./backend
-      dockerfile: LangTeach.Api/Dockerfile
+      context: .
+      dockerfile: backend/LangTeach.Api/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: E2ETesting
       ConnectionStrings__Default: "Server=sqlserver,1433;Database=LangTeach;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=true"

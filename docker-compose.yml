@@ -28,8 +28,8 @@ services:
 
   api:
     build:
-      context: ./backend
-      dockerfile: LangTeach.Api/Dockerfile
+      context: .
+      dockerfile: backend/LangTeach.Api/Dockerfile
     container_name: langteach-api
     ports:
       - "5000:5000"

@@ -1,0 +1,13 @@
+# Used when building the API image with context = repo root.
+# Excludes directories not needed by the backend build.
+.git
+**/bin
+**/obj
+**/node_modules
+frontend/
+e2e/
+.claude/
+plan/
+docs/
+feedback/
+template-specific/
