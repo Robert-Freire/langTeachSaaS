@@ -1,4 +1,4 @@
-namespace LangTeach.Api.AI;
+namespace LangTeach.Api.Services;
 
 public interface IContentSchemaService
 {

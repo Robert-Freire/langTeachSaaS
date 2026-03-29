@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace LangTeach.Api.AI;
+namespace LangTeach.Api.Services;
 
 /// <summary>
 /// Loads JSON Schema definitions for content types from embedded resources at startup.

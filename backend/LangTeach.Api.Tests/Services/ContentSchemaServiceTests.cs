@@ -1,9 +1,9 @@
 using System.Text.Json;
 using FluentAssertions;
-using LangTeach.Api.AI;
+using LangTeach.Api.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace LangTeach.Api.Tests.AI;
+namespace LangTeach.Api.Tests.Services;
 
 public class ContentSchemaServiceTests
 {
