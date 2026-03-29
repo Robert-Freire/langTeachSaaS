@@ -49,6 +49,7 @@ services:
       dockerfile: backend/LangTeach.Api/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: E2ETesting
+      Logging__LogLevel__LangTeach.Api.AI: Debug
       ConnectionStrings__Default: "Server=sqlserver,1433;Database=LangTeach;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=true"
       Auth0__Domain: "${AUTH0_DOMAIN}"
       Auth0__Audience: "${AUTH0_AUDIENCE}"

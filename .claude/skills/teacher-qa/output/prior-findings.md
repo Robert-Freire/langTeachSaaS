@@ -57,3 +57,55 @@ Template-based courses now generate exactly `sessionCount` entries (not `unitCou
 - For compress: units beyond the chosen session count are entirely absent; no partial coverage
 - Grammar progression order is preserved (unit 1 before unit 2, etc.)
 - `TemplateUnitRef` on each entry points to the source unit title
+
+---
+
+## From: #351 - Additive section guidance model (2026-03-28)
+
+### What #351 changed
+Replaced hardcoded per-section prose in `PromptService.cs` with a loop that assembles section instructions from config (sectionProfile guidance + templateOverride overrideGuidance). Enforced `restrictions` field from template-overrides.json. Fixed 7 template-overrides.json entries (Grammar Focus warmUp, Writing Skills warmUp/wrapUp, Exam Prep warmUp, R&C warmUp, Thematic Vocabulary wrapUp). Updated Presentation B1/B2 guidance with conditional grammar-discovery framing.
+
+### Verified in full 5-persona QA run (2026-03-28)
+
+| ID | Finding | #351 AC | Status | Notes |
+|----|---------|---------|--------|-------|
+| CQ-1 | WarmUp vocabulary drill (all personas) | N/A (fixed by #226) | **HOLDS** | WarmUp no longer generates vocabulary drills. All personas produce conversation content type. Original fix from #226 is stable. |
+| GAP-1 | Carmen R&C no reading passage in Presentation | Carmen B2.1: Presentation contains a reading passage | **NOT FIXED** | Presentation still generates a grammar block (indicativo/subjuntivo) instead of a reading passage. Grammar content is excellent but wrong section purpose for R&C template. |
+| GAP-2 | Carmen R&C missing Production section | Carmen B2.1: Production section is present | **NOT FIXED** | Lesson still has only 4 sections (WarmUp, Presentation, Practice, WrapUp). Production is missing. |
+| CQ-4 | Ana Exam Production is oral instead of written | Ana Exam B2: Production contains written tasks with time/word-count targets | **NOT FIXED** | Production still generates conversation scenarios (oral practice). No written exam tasks, no time limits, no word count targets. |
+| GAP-3 | Ana Exam no timed practice guidance | Ana Exam B2: timed practice awareness | **NOT FIXED** | No time limits mentioned anywhere in the lesson. |
+| CQ-2 | C1 vocabulary in B2 lesson | N/A (fixed by #229) | **HOLDS** | No C1 vocabulary detected in Ana Exam B2. Fix stable. |
+| CQ-3 | Vocabulary definitions in Spanish for English L1 | N/A (fixed by #229) | **N/A** | No standalone vocabulary block in Ana Exam to test. |
+| NEW-1 | Grammar Focus WarmUp overgeneration | WarmUp is a single brief activation | **NOT FIXED** | All Grammar Focus personas (Marco B1, Sprint Reviewer) generate 3 full conversation scenarios (5-6 exchanges each) instead of the specified "single question, one student response, brief teacher reaction." |
+| NEW-2 | WrapUp overgeneration across all personas | WrapUp is reflection/closure, no new practice | **NOT FIXED** | All 5 personas generate 3 full conversation scenarios in WrapUp. No reflection, self-assessment, or summary is present. This is new practice material. |
+| NEW-3 | Exam Prep WarmUp not following briefing format | Exam Prep warmUp: exam briefing, not icebreaker | **NOT FIXED** | Ana Exam WarmUp generates 3 full conversation scenarios instead of the specified "Orient the student to today's exam task type. State the task, the time limit, and the one scoring criterion." |
+| S-2 | Marco quality benchmark | N/A | **HOLDS** | Marco remains the quality benchmark. L1 Italian accommodation and personalization are excellent. |
+
+### Root cause analysis
+
+The additive prompt model (#351) successfully replaced hardcoded prose with config-driven section instructions. The template overrides are loaded and composed correctly (confirmed in unit tests). However, the AI does not follow section-level guidance strings when the generated content type is `conversation`.
+
+The **conversation content type schema** always produces 3 full scenarios with 5-6 exchanges each, regardless of the section guidance saying "single question" or "brief reflection." The content type's inherent structure overrides the section-level instruction.
+
+**Carmen R&C** and **Ana Exam** regressions persist because the prompt changes in #351 affect the section guidance text, but the AI still generates the wrong content type for these template-specific requirements (grammar block instead of reading passage; conversation instead of written exam tasks).
+
+### Recommendation
+
+These are structural issues for the **Pedagogical Quality** sprint to address:
+1. **Content type selection per section**: The prompt or config should constrain which content type is generated per section, not just what guidance text is shown. A R&C Presentation should always generate a `reading` block; Exam Prep Production should generate `exercises` with written tasks.
+2. **Section-aware conversation mode**: The conversation schema could support a "brief" mode (1 scenario, 2-3 exchanges) for WarmUp/WrapUp, vs the full mode (3 scenarios, 5-6 exchanges) for Practice/Production.
+
+### Positive findings (protect these)
+
+| Finding | Persona |
+|---------|---------|
+| No phantom media references | All 5 personas |
+| No raw JSON visible | All 5 personas |
+| Grammar blocks render correctly | All 5 personas |
+| PDF export works | 4/5 (Sprint Reviewer timed out, non-blocking) |
+| Student view renders correctly | All 5 personas |
+| Presentation grammar quality is excellent | Marco B1, Carmen B2, Ana Exam B2 |
+| Exercise variety is good across all personas | All 5 personas |
+| L1 awareness is strong in Marco (Italian) | Marco B1 |
+| Student personalization (interests, weaknesses) is good | All 5 personas |
+| CEFR level boundaries respected (no C1 in B1/B2 lessons) | All 5 personas |
