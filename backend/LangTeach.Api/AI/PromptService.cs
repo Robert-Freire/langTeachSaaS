@@ -10,12 +10,15 @@ public class PromptService : IPromptService
     private readonly ISectionProfileService _profiles;
     private readonly IPedagogyConfigService _pedagogy;
     private readonly ILogger<PromptService> _logger;
+    private readonly IContentSchemaService _schemas;
 
-    public PromptService(ISectionProfileService profiles, IPedagogyConfigService pedagogy, ILogger<PromptService> logger)
+    public PromptService(ISectionProfileService profiles, IPedagogyConfigService pedagogy,
+        ILogger<PromptService> logger, IContentSchemaService schemas)
     {
         _profiles = profiles;
         _pedagogy = pedagogy;
         _logger = logger;
+        _schemas = schemas;
     }
 
     public ClaudeRequest BuildLessonPlanPrompt(GenerationContext ctx)
@@ -102,6 +105,10 @@ public class PromptService : IPromptService
         ClaudeModel model,
         int maxTokens)
     {
+        var schema = _schemas.GetSchema(blockType);
+        if (schema != null)
+            userPrompt += $"\n\nGenerate JSON strictly matching this schema:\n{schema}";
+
         _logger.LogDebug(
             "PromptSystem | blockType={BlockType} level={Level}\n{SystemPrompt}",
             blockType, level, systemPrompt);
