@@ -1,8 +1,18 @@
 # Review Routing
 
-Run the `review` and `architecture-reviewer` agents **in parallel** (always). Conditionally add more reviewers in the same parallel batch based on the diff.
+Run the `review` and `architecture-reviewer` agents **in parallel** (always). Conditionally add more reviewers in the same parallel batch based on the diff **and the linked issue's labels**.
 
-## Conditional reviewers
+## Step 0: Check the linked issue label FIRST
+
+Before looking at the diff, check whether the issue being closed by this PR has the `review:sophy` label:
+
+```bash
+gh issue view <N> --json labels --jq '.labels[].name' | grep "review:sophy"
+```
+
+If `review:sophy` is present: **always run Sophy**, regardless of what the diff looks like.
+
+## Conditional reviewers (diff-based)
 
 | Diff matches | Reviewer | `subagent_type` |
 |---|---|---|
