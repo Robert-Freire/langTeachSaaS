@@ -27,6 +27,15 @@ const SECTION_TASK_MAP: Record<string, ContentBlockType> = {
   WrapUp: 'conversation',
 }
 
+// Exam prep uses written tasks for WarmUp (briefing) and Production (written exam task)
+const EXAM_PREP_SECTION_TASK_MAP: Record<string, ContentBlockType> = {
+  WarmUp: 'free-text',
+  Presentation: 'grammar',
+  Practice: 'exercises',
+  Production: 'free-text',
+  WrapUp: 'free-text',
+}
+
 const SECTION_ORDER = ['WarmUp', 'Presentation', 'Practice', 'Production', 'WrapUp']
 
 const SECTION_LABELS: Record<string, string> = {
@@ -47,6 +56,7 @@ interface FullLessonGenerateButtonProps {
     cefrLevel: string
     topic: string
     studentId?: string
+    templateName?: string | null
   }
   onBlockSaved: (block: ContentBlockDto) => void
 }
@@ -97,9 +107,13 @@ export function FullLessonGenerateButton({
 
     const errors: string[] = []
 
+    const taskMap = lessonContext.templateName?.toLowerCase() === 'exam prep'
+      ? EXAM_PREP_SECTION_TASK_MAP
+      : SECTION_TASK_MAP
+
     await Promise.allSettled(activeSections.map(async (sectionType) => {
       const section = sections.find(s => s.sectionType === sectionType)!
-      const taskType = SECTION_TASK_MAP[sectionType]
+      const taskType = taskMap[sectionType]
 
       try {
         const content = await streamText(

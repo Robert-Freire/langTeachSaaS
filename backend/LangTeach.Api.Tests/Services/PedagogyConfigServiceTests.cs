@@ -246,6 +246,51 @@ public class PedagogyConfigServiceTests
         result.Should().BeEmpty();
     }
 
+    // --- Data consistency edge cases ---
+
+    [Fact]
+    public void GetL1Adjustments_Persian_DoesNotThrowAndReturnsSpecificNotes()
+    {
+        // Persian has family: null in l1-influence.json.
+        // ResolveLang must not throw on null family; it should return only specific language data.
+        var result = _sut.GetL1Adjustments("persian");
+
+        result.Should().NotBeNull(because: "Persian has additionalNotes even though family is null");
+        result!.Notes.Should().NotBeNullOrEmpty(because: "Persian has additionalNotes in specificLanguages");
+        result.AdditionalExerciseTypes.Should().BeEmpty(
+            because: "Persian has no family, so no family-level additional exercise types apply");
+    }
+
+    [Fact]
+    public void GetValidExerciseTypes_WarmUp_B1_ConversationTemplate_LowercaseKeyFindsWarmUpSection()
+    {
+        // template-overrides.json uses "warmUp" (camelCase) as the section key.
+        // Callers pass "warmup" (lowercase, the SectionProfileService convention).
+        // The case-insensitive Sections dictionary must find the section and apply priority re-ordering.
+        var result = _sut.GetValidExerciseTypes("warmup", "B1", templateId: "conversation");
+
+        result.Should().Contain("EO-08",
+            because: "Conversation template warmUp section lists EO-08 as a priority type");
+        result[0].Should().Be("EO-08",
+            because: "EO-08 is the only priority type for warmUp in the Conversation template and must appear first");
+    }
+
+    [Fact]
+    public void GetAllStyleSubstitutions_RolePlay_NeverSubstituteWithPreservesGlobPattern()
+    {
+        // style-substitutions.json uses ["EE-*"] in neverSubstituteWith.
+        // The raw glob pattern must be preserved so consumers (e.g. PromptService) can pass it
+        // to the AI and future services can implement proper pattern matching.
+        var subs = _sut.GetAllStyleSubstitutions();
+
+        var rolePlay = subs.FirstOrDefault(s => s.Label == "role-play");
+        rolePlay.Should().NotBeNull(because: "style-substitutions.json must have a role-play entry");
+        rolePlay!.NeverSubstituteWith.Should().Contain("EE-*",
+            because: "role-play neverSubstituteWith uses a glob pattern that must be preserved verbatim");
+        rolePlay.NeverSubstituteWith.Should().NotContain("EE-01",
+            because: "the pattern must not be pre-expanded to concrete IDs; consumers handle matching");
+    }
+
     // --- GetCourseRules ---
 
     [Fact]
