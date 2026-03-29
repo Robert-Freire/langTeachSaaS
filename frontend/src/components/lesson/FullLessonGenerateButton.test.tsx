@@ -311,6 +311,31 @@ describe('FullLessonGenerateButton', () => {
     await waitFor(() => expect(vi.mocked(generateApi.saveContentBlock)).toHaveBeenCalledTimes(4), { timeout: 3000 })
   })
 
+  it('streamText receives correct sectionType for each section', async () => {
+    const user = userEvent.setup()
+    const streamMock = vi.mocked(streamText)
+
+    streamMock.mockResolvedValue('{}')
+    vi.mocked(generateApi.saveContentBlock).mockImplementation((_lessonId, req) =>
+      Promise.resolve(makeBlock(req.lessonSectionId!, req.blockType as string))
+    )
+
+    renderButton()
+    await user.click(screen.getByTestId('generate-full-lesson-btn'))
+    await user.click(screen.getByTestId('confirm-generate-full-lesson'))
+
+    await waitFor(() => expect(streamMock).toHaveBeenCalledTimes(5), { timeout: 3000 })
+
+    const calledSectionTypes = streamMock.mock.calls.map(
+      (c) => (c[1] as { sectionType?: string }).sectionType
+    )
+    expect(calledSectionTypes).toContain('WarmUp')
+    expect(calledSectionTypes).toContain('Presentation')
+    expect(calledSectionTypes).toContain('Practice')
+    expect(calledSectionTypes).toContain('Production')
+    expect(calledSectionTypes).toContain('WrapUp')
+  })
+
   it('error in one section does not stop other sections from completing', async () => {
     const user = userEvent.setup()
     const streamMock = vi.mocked(streamText)
