@@ -655,7 +655,7 @@ public class PromptService : IPromptService
                 sbSections.AppendLine($"  Valid content types: {string.Join(", ", validContentTypes)}");
 
             // Emit preferred content type from template override (when present)
-            var preferredType = _pedagogy.GetPreferredContentType(sectionName, string.IsNullOrEmpty(templateName) ? null : templateName);
+            var preferredType = _pedagogy.GetPreferredContentType(sectionName, templateName);
             if (preferredType is not null)
                 sbSections.AppendLine($"  Preferred content type: {preferredType}. Use this type unless there is a strong pedagogical reason not to.");
         }
