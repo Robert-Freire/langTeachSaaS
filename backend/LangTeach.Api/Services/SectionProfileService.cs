@@ -130,6 +130,24 @@ public class SectionProfileService : ISectionProfileService
         return null;
     }
 
+    public string? GetScope(string sectionType, string cefrLevel)
+    {
+        var profile = GetProfile(sectionType);
+        if (profile is null) return null;
+        var level = NormalizeLevel(cefrLevel);
+        if (profile.Levels.TryGetValue(level, out var lp))
+            return lp.Scope;
+        return null;
+    }
+
+    public string[] GetAllScopeValues() =>
+        _profiles.Values
+            .SelectMany(p => p.Levels.Values)
+            .Select(lp => lp.Scope)
+            .Where(s => s is not null)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray()!;
+
     private SectionProfile? GetProfile(string sectionType)
     {
         var key = sectionType.Replace(" ", "", StringComparison.Ordinal).ToLowerInvariant();

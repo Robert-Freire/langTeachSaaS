@@ -328,6 +328,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(vocabBlock))
             prompt += "\n" + vocabBlock;
 
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "vocabulary");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
+
         return prompt;
     }
 
@@ -345,6 +349,10 @@ public class PromptService : IPromptService
         var grammarScope = BuildGrammarScopeBlock(level);
         if (!string.IsNullOrEmpty(grammarScope))
             prompt += "\n" + grammarScope;
+
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "grammar");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
 
         return prompt;
     }
@@ -368,6 +376,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(exerciseGuidance))
             prompt += "\n" + exerciseGuidance;
 
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "exercises");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
+
         return prompt;
     }
 
@@ -380,23 +392,29 @@ public class PromptService : IPromptService
         if (string.Equals(section, "WarmUp", StringComparison.OrdinalIgnoreCase))
         {
             var guidance = _profiles.GetGuidance("warmup", level);
-            return $$"""
+            var constraint = _pedagogy.GetScopeConstraint("warmup", level, ctx.TemplateName, "conversation");
+            var prompt = $$"""
             Generate a warm-up icebreaker conversation activity for a {{level}} level lesson on "{{topic}}". Return JSON:
             {"scenarios":[{"setup":"","roleA":"Teacher","roleB":"Student","roleAPhrases":[""],"roleBPhrases":[""]}]}
             {{guidance}}
-            Include exactly 1 brief scenario suitable for lesson activation (not teaching new content).
             """;
+            if (!string.IsNullOrEmpty(constraint))
+                prompt += "\n" + constraint;
+            return prompt;
         }
 
         if (string.Equals(section, "WrapUp", StringComparison.OrdinalIgnoreCase))
         {
             var guidance = _profiles.GetGuidance("wrapup", level);
-            return $$"""
+            var constraint = _pedagogy.GetScopeConstraint("wrapup", level, ctx.TemplateName, "conversation");
+            var prompt = $$"""
             Generate a wrap-up reflection conversation for a {{level}} level lesson on "{{topic}}". Return JSON:
             {"scenarios":[{"setup":"","roleA":"Teacher","roleB":"Student","roleAPhrases":[""],"roleBPhrases":[""]}]}
             {{guidance}}
-            Include exactly 1 brief scenario for lesson closure and self-assessment (backward-looking only, no new content).
             """;
+            if (!string.IsNullOrEmpty(constraint))
+                prompt += "\n" + constraint;
+            return prompt;
         }
 
         return $$"""
@@ -422,6 +440,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(vocabBlock))
             prompt += "\n" + vocabBlock;
 
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "reading");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
+
         return prompt;
     }
 
@@ -445,6 +467,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(vocabBlock))
             prompt += "\n" + vocabBlock;
 
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "homework");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
+
         return prompt;
     }
 
@@ -461,6 +487,10 @@ public class PromptService : IPromptService
         var vocabBlock = BuildVocabularyBlock(level);
         if (!string.IsNullOrEmpty(vocabBlock))
             prompt += "\n" + vocabBlock;
+
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "free-text");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
 
         return prompt;
     }
@@ -486,7 +516,11 @@ public class PromptService : IPromptService
                 baseGuidance = GetSectionFallbackGuidance(sectionName);
 
             var duration = _profiles.GetDuration(sectionName, cefrLevel);
-            var durationStr = duration != null ? $" ({duration.Min}-{duration.Max} min)" : "";
+            var scope = _pedagogy.GetResolvedScope(sectionName, cefrLevel, string.IsNullOrEmpty(templateName) ? null : templateName);
+            var scopeLabel = scope == "brief" ? ", scope: brief" : "";
+            var durationStr = duration != null
+                ? $" ({duration.Min}-{duration.Max} min{scopeLabel})"
+                : (scope == "brief" ? " (scope: brief)" : "");
 
             sbSections.AppendLine($"- {sectionName}{durationStr}: {baseGuidance}");
 

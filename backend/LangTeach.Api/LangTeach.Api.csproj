@@ -28,6 +28,8 @@
                       Link="Pedagogy\course-rules.json" />
     <EmbeddedResource Include="..\..\data\pedagogy\style-substitutions.json"
                       Link="Pedagogy\style-substitutions.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\scope-constraints.json"
+                      Link="Pedagogy\scope-constraints.json" />
   </ItemGroup>
 
   <ItemGroup>
