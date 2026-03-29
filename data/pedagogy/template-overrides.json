@@ -116,7 +116,8 @@
           "overrideGuidance": "Embed a complete reading passage with CEFR-appropriate length in this section (A1: 100-150 words, A2: 150-250 words, B1+: 300-500 words). First read for gist, second read for detail. Pre-teach blocking vocabulary before reading.",
           "priorityExerciseTypes": ["CE-01", "CE-02", "VOC-04"],
           "minExerciseVarietyOverride": null,
-          "notes": "The reading passage TEXT MUST appear in this section. Do not move the passage to practice or production."
+          "notes": "The reading passage TEXT MUST appear in this section. Do not move the passage to practice or production.",
+          "preferredContentType": "reading"
         },
         "practice": {
           "required": true,
@@ -235,14 +236,16 @@
           "overrideGuidance": "Timed written practice under exam conditions. All tasks must be written (essay, formal letter, reading comprehension, gap-fill). Debrief answers with reference to the mark scheme after each task.",
           "priorityExerciseTypes": ["CE-01", "CE-02", "CE-03", "CE-06", "GR-01", "GR-02", "GR-03", "GR-04", "EE-06", "EE-07", "EE-08"],
           "minExerciseVarietyOverride": null,
-          "notes": "Timer is mandatory: specify an explicit time limit (e.g. '15 minutes') for every timed practice task in this section."
+          "notes": "Timer is mandatory: specify an explicit time limit (e.g. '15 minutes') for every timed practice task in this section.",
+          "preferredContentType": "exercises"
         },
         "production": {
           "required": true,
           "overrideGuidance": "Full written exam task the student attempts independently. Specify a time limit (in minutes) and a target word count. Task type must match the exam format: opinion essay, formal letter, short report, or similar written genre. Use written tasks only.",
           "priorityExerciseTypes": ["EE-06", "EE-07", "EE-08", "EE-09", "CE-01", "CE-02"],
           "minExerciseVarietyOverride": null,
-          "notes": null
+          "notes": null,
+          "preferredContentType": "exercises"
         },
         "wrapUp": {
           "required": true,
