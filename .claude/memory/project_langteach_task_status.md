@@ -13,7 +13,7 @@ Use `gh issue list` to see current state. Key queries:
 - Must-haves: `gh issue list --label "P1:must"`
 - Ready to pick up: `gh issue list --label "qa:ready"`
 
-**Active sprint branch:** `sprint/student-aware-curriculum`
+**Active sprint branch:** `sprint/pedagogical-quality`
 Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Workflow" section.
 
 **Milestones:**
@@ -21,7 +21,7 @@ Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Wor
 - Phase 2A: Teacher Workflow: CLOSED (reorganized 2026-03-21)
 - Curriculum & Personalization: CLOSED (2026-03-24, 35/35 done, merged to main)
 - Pedagogical Credibility: CLOSED (merged into Student-Aware Curriculum)
-- Student-Aware Curriculum: CLOSING (sprint close in progress)
+- Student-Aware Curriculum: CLOSED (2026-03-29, merged to main)
   - All 21 original issues closed (including #261 which was done but not tracked)
   - #305 DONE — PR #308 merged (WarmUp content type allowlist, dropdown filtering)
   - #309 DONE — PR #310 merged (extract section guidance to JSON profiles)
@@ -64,11 +64,13 @@ Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Wor
   - #254 DONE — PR #264 merged (fix curriculum template attribution)
   - #257 DONE — closed (personalized context generation, completed as part of other work)
   - #206 DONE — epic closed (parent issue for the sprint)
-- Pedagogical Quality: AFTER STUDENT-AWARE (#269, #270, #271, #272, #273, #274, #275, #276)
+- Pedagogical Quality: ACTIVE — sprint/pedagogical-quality (#269, #270, #271, #272, #273, #274, #275, #276, #378, #379)
   - New exercise formats: sentence ordering (#269), error correction (#270), true/false (#271), transformation (#272)
   - New content types: guided writing (#273), noticing task (#274)
   - Practice scaffolding with stage field (#275)
   - L1 contrastive notes in grammar blocks (#276)
+  - #378 Exam Prep wrong subjunctive temporal correlation (P1, from 2026-03-29 QA run)
+  - #379 B2 error correction explanations truncated (P2, from 2026-03-29 QA run)
 - Solo Whiteboard: AFTER PEDAGOGICAL QUALITY (5 sub-issues from #174)
 - Adaptive Replanning: AFTER WHITEBOARD (audio input, post-class reflections, auto-difficulty updates, course replanning, progress dashboard)
 - Group Classes: FUTURE (#146, #147)
