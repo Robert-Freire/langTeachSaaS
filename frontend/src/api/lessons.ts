@@ -24,6 +24,7 @@ export interface Lesson {
   status: LessonStatus
   studentId: string | null
   templateId: string | null
+  templateName?: string | null
   sections: LessonSection[]
   createdAt: string
   updatedAt: string

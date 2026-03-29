@@ -195,6 +195,43 @@ describe('FullLessonGenerateButton', () => {
     expect(new Set(blockTypes)).toEqual(new Set(['conversation', 'grammar', 'exercises']))
   })
 
+  it('exam-prep template uses free-text for WarmUp, Production, WrapUp', async () => {
+    const user = userEvent.setup()
+    const onBlockSaved = vi.fn()
+    const streamMock = vi.mocked(streamText)
+    const saveMock = vi.mocked(generateApi.saveContentBlock)
+
+    streamMock.mockResolvedValue('{"items":[]}')
+    saveMock.mockImplementation((_lessonId, req) =>
+      Promise.resolve(makeBlock(req.lessonSectionId!, req.blockType as string))
+    )
+
+    renderWithQuery(
+      <FullLessonGenerateButton
+        lessonId="lesson-1"
+        sections={SECTIONS}
+        lessonContext={{ ...LESSON_CONTEXT, templateName: 'Exam Prep' }}
+        onBlockSaved={onBlockSaved}
+      />
+    )
+
+    await user.click(screen.getByTestId('generate-full-lesson-btn'))
+    await user.click(screen.getByTestId('confirm-generate-full-lesson'))
+
+    await waitFor(() => expect(onBlockSaved).toHaveBeenCalledTimes(5), { timeout: 3000 })
+
+    const calls = onBlockSaved.mock.calls.map((c) => {
+      const block = (c as [ContentBlockDto])[0]
+      return { section: block.lessonSectionId, type: block.blockType }
+    })
+    const bySection = Object.fromEntries(calls.map(c => [c.section, c.type]))
+    expect(bySection['s1']).toBe('free-text')   // WarmUp
+    expect(bySection['s2']).toBe('grammar')      // Presentation
+    expect(bySection['s3']).toBe('exercises')    // Practice
+    expect(bySection['s4']).toBe('free-text')    // Production
+    expect(bySection['s5']).toBe('free-text')    // WrapUp
+  })
+
   it('all sections show active status simultaneously during generation', async () => {
     const user = userEvent.setup()
     const resolvers: Array<(v: string) => void> = []
