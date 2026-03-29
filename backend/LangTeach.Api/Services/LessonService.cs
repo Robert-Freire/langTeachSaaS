@@ -75,6 +75,7 @@ public class LessonService : ILessonService
             .Include(l => l.Sections)
                 .ThenInclude(s => s.Materials)
             .Include(l => l.Student)
+            .Include(l => l.Template)
             .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
         return lesson is null ? null : MapToDto(lesson);
@@ -416,6 +417,7 @@ public class LessonService : ILessonService
         l.Status,
         l.StudentId,
         l.TemplateId,
+        l.Template?.Name,
         l.Sections.OrderBy(s => s.OrderIndex).Select(MapSectionToDto).ToList(),
         l.CreatedAt,
         l.UpdatedAt,
