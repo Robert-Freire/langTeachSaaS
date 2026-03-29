@@ -210,6 +210,7 @@ The Bash tool runs in Git Bash on Windows. Git Bash automatically translates Uni
 - Never guess milestone names, always query `gh milestone list --state open`
 - E2E happy path test required for every main functionality, planned at task start
 - Unit tests required for any modified frontend component or hook
+- Never run the frontend dev server locally (`npm run dev`, `npx vite`); frontend runs exclusively inside Docker
 - Log out-of-scope observations to `plan/observed-issues.md`, never fix them (scope creep) or ignore them
 
 ## Backlogs
