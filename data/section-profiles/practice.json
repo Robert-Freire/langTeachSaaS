@@ -8,14 +8,13 @@
       "competencies": ["reading", "writing"],
       "scaffolding": "high",
       "interactionPattern": "teacher-led",
-      "validExerciseTypes": ["GR-01", "GR-02", "GR-06", "GR-07", "GR-09", "VOC-05", "EO-01"],
+      "validExerciseTypes": ["GR-01", "GR-02", "GR-06", "GR-07", "GR-09", "VOC-05", "EO-01", "LUD-06", "LUD-07"],
       "forbiddenExerciseTypes": [
         {"id": "GR-03", "pattern": null, "reason": "Sentence transformation requires prior command of the target form; inappropriate at A1"},
         {"id": "GR-04", "pattern": null, "reason": "Error correction requires meta-awareness of the rule; too demanding at A1"},
         {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task, not a practice drill"},
-        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension tasks are not practice exercises for grammar/vocabulary"},
-        {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"},
-        {"id": null, "pattern": "LUD-*", "reason": "Ludic activities belong to warm-up or optional extension, not structured practice"}
+        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension tasks are not practice exercises for grammar/vocabulary at A1"},
+        {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"}
       ],
       "levelSpecificNotes": [
         {"exerciseTypeId": "GR-01", "note": "Always provide a word bank listing all answer options in the hint field"},
@@ -31,14 +30,12 @@
       "competencies": ["reading", "writing"],
       "scaffolding": "medium",
       "interactionPattern": "teacher-guided",
-      "validExerciseTypes": ["GR-01", "GR-02", "GR-06", "GR-07", "GR-09", "VOC-05", "VOC-06", "EO-01"],
+      "validExerciseTypes": ["GR-01", "GR-02", "GR-06", "GR-07", "GR-09", "VOC-05", "VOC-06", "EO-01", "CE-01", "CE-02", "LUD-05", "LUD-06", "LUD-07"],
       "forbiddenExerciseTypes": [
         {"id": "GR-03", "pattern": null, "reason": "Sentence transformation requires prior command of the target form; not yet appropriate at A2"},
         {"id": "GR-04", "pattern": null, "reason": "Error correction requires meta-awareness of the rule; too demanding at A2"},
         {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task, not a practice drill"},
-        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension tasks are not practice exercises for grammar/vocabulary"},
-        {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"},
-        {"id": null, "pattern": "LUD-*", "reason": "Ludic activities belong to warm-up or optional extension, not structured practice"}
+        {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"}
       ],
       "levelSpecificNotes": [
         {"exerciseTypeId": "GR-02", "note": "Maximum 4 options per item at A2"},
@@ -53,11 +50,10 @@
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "low",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-05", "VOC-07", "CE-01", "CE-03", "CE-06", "EO-01"],
+      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-05", "VOC-07", "CE-01", "CE-03", "CE-06", "EO-01", "LUD-05", "LUD-06", "LUD-07"],
       "forbiddenExerciseTypes": [
         {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task, not a practice drill"},
-        {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"},
-        {"id": null, "pattern": "LUD-*", "reason": "Ludic activities belong to warm-up or optional extension, not structured practice"}
+        {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"}
       ],
       "levelSpecificNotes": [
         {"exerciseTypeId": "GR-04", "note": "Sentence-level corrections only at B1; discourse-level error correction is B2+"},
@@ -72,11 +68,10 @@
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "low",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-07", "VOC-10", "CE-01", "CE-02", "CE-03", "CE-04", "CE-06", "CE-07"],
+      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-07", "VOC-10", "CE-01", "CE-02", "CE-03", "CE-04", "CE-06", "CE-07", "LUD-05"],
       "forbiddenExerciseTypes": [
         {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task, not a practice drill"},
-        {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"},
-        {"id": null, "pattern": "LUD-*", "reason": "Ludic activities belong to warm-up or optional extension, not structured practice"}
+        {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"}
       ],
       "levelSpecificNotes": [
         {"exerciseTypeId": "GR-04", "note": "Discourse-level error correction is appropriate at B2; include cohesion and register errors, not only morphosyntax"}
