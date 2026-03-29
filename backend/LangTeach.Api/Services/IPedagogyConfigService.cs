@@ -78,6 +78,13 @@ public interface IPedagogyConfigService
     string GetResolvedScope(string section, string level, string? templateName);
 
     /// <summary>
+    /// Returns grammar constraints for the given target language (e.g. "spanish").
+    /// These are accuracy rules that must be enforced in generated exercises and grammar content.
+    /// Returns an empty array if no constraints are defined for the language.
+    /// </summary>
+    TargetLanguageGrammarConstraint[] GetGrammarConstraints(string targetLanguage);
+
+    /// <summary>
     /// Returns the scope constraint text for the given section, level, template, and content type.
     /// Resolves scope first, then looks up the constraint text in scope-constraints.json.
     /// Returns null when scope is "full" or no constraint is defined for the (scope, contentType) pair.
