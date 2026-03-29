@@ -9,34 +9,51 @@ public class ContentSchemaServiceTests
 {
     private readonly ContentSchemaService _sut = new(NullLogger<ContentSchemaService>.Instance);
 
-    private static readonly string[] ExpectedKeys =
-    [
-        "vocabulary", "grammar", "exercises", "conversation",
-        "reading", "homework", "lesson-plan"
-    ];
-
-    [Theory]
-    [MemberData(nameof(ExpectedKeys_Data))]
-    public void GetSchema_ReturnsNonNull_ForAllExpectedContentTypes(string key)
+    /// Discovers keys directly from embedded resources so tests automatically cover new schema files.
+    public static TheoryData<string> EmbeddedSchemaKeys_Data()
     {
-        _sut.GetSchema(key).Should().NotBeNullOrWhiteSpace(
-            because: $"schema file for '{key}' must be embedded as a resource");
-    }
-
-    public static TheoryData<string> ExpectedKeys_Data()
-    {
+        var assembly = typeof(ContentSchemaService).Assembly;
+        const string prefix = "LangTeach.Api.ContentSchemas.";
         var data = new TheoryData<string>();
-        foreach (var key in ExpectedKeys) data.Add(key);
+        foreach (var name in assembly.GetManifestResourceNames()
+            .Where(n => n.StartsWith(prefix, StringComparison.Ordinal) && n.EndsWith(".json", StringComparison.Ordinal)))
+        {
+            data.Add(name[prefix.Length..^".json".Length]);
+        }
         return data;
     }
 
+    [Fact]
+    public void LoadsAtLeastSevenSchemas()
+    {
+        EmbeddedSchemaKeys_Data().Count.Should().BeGreaterThanOrEqualTo(7,
+            because: "vocabulary, grammar, exercises, conversation, reading, homework, lesson-plan must all be present");
+    }
+
     [Theory]
-    [MemberData(nameof(ExpectedKeys_Data))]
-    public void GetSchema_ReturnsValidJson_ForAllExpectedContentTypes(string key)
+    [MemberData(nameof(EmbeddedSchemaKeys_Data))]
+    public void GetSchema_ReturnsNonNull_ForAllEmbeddedKeys(string key)
+    {
+        _sut.GetSchema(key).Should().NotBeNullOrWhiteSpace(
+            because: $"schema file for '{key}' must be loadable by key");
+    }
+
+    [Theory]
+    [MemberData(nameof(EmbeddedSchemaKeys_Data))]
+    public void GetSchema_ReturnsValidJson_ForAllEmbeddedKeys(string key)
     {
         var schema = _sut.GetSchema(key)!;
-        var act = () => JsonDocument.Parse(schema);
-        act.Should().NotThrow(because: $"schema for '{key}' must be valid JSON");
+        using var doc = JsonDocument.Parse(schema);
+        doc.Should().NotBeNull(because: $"schema for '{key}' must be valid JSON");
+    }
+
+    [Theory]
+    [MemberData(nameof(EmbeddedSchemaKeys_Data))]
+    public void GetSchema_ContainsDraftSevenSchemaDeclaration(string key)
+    {
+        var schema = _sut.GetSchema(key)!;
+        schema.Should().Contain("json-schema.org/draft-07",
+            because: $"all schemas should declare JSON Schema draft-07 for '{key}'");
     }
 
     [Fact]
@@ -50,14 +67,5 @@ public class ContentSchemaServiceTests
     {
         _sut.GetSchema("Vocabulary").Should().NotBeNull();
         _sut.GetSchema("GRAMMAR").Should().NotBeNull();
-    }
-
-    [Theory]
-    [MemberData(nameof(ExpectedKeys_Data))]
-    public void GetSchema_ContainsDraftSevenSchemaDeclaration(string key)
-    {
-        var schema = _sut.GetSchema(key)!;
-        schema.Should().Contain("json-schema.org/draft-07",
-            because: $"all schemas should declare JSON Schema draft-07 for '{key}'");
     }
 }
