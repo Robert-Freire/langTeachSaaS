@@ -26,8 +26,9 @@ const MOCK_SECTION_RULES: SectionRulesMap = {
     C1: ['exercises', 'conversation'], C2: ['exercises', 'conversation'],
   },
   Production: {
-    A1: ['conversation'], A2: ['conversation'], B1: ['conversation'],
-    B2: ['conversation', 'reading'], C1: ['conversation', 'reading'], C2: ['conversation', 'reading'],
+    A1: ['conversation'], A2: ['conversation'],
+    B1: ['conversation', 'exercises'],
+    B2: ['conversation', 'reading', 'exercises'], C1: ['conversation', 'reading', 'exercises'], C2: ['conversation', 'reading', 'exercises'],
   },
   WrapUp: {
     A1: ['conversation'], A2: ['conversation'], B1: ['conversation'],
@@ -674,7 +675,7 @@ describe('GeneratePanel - section content type allowlist', () => {
 
     await user.click(trigger)
 
-    const listbox = screen.getByRole('listbox')
+    const listbox = await screen.findByRole('listbox')
     expect(within(listbox).getByText('Exercises')).toBeInTheDocument()
     expect(within(listbox).getByText('Conversation')).toBeInTheDocument()
     expect(within(listbox).queryByText('Vocabulary')).toBeNull()
