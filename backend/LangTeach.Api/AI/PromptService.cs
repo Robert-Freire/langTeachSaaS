@@ -206,6 +206,30 @@ public class PromptService : IPromptService
                $"Allowed types: {string.Join(", ", listed)}";
     }
 
+    /// <summary>
+    /// Builds a reinforcement block that tells the AI which content types are valid for the section
+    /// and which type the template prefers. Appended to individual block prompts so the AI has
+    /// structural context about the section it is generating content for.
+    /// Returns null when section type is unknown or no content type data is available.
+    /// </summary>
+    private string? BuildContentTypeContextBlock(string? sectionType, string cefrLevel, string? templateName)
+    {
+        if (string.IsNullOrEmpty(sectionType)) return null;
+
+        var validTypes = _profiles.GetAllowedContentTypes(sectionType, cefrLevel);
+        if (validTypes.Length == 0) return null;
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"SECTION CONTENT TYPE CONTEXT for {sectionType}:");
+        sb.AppendLine($"Valid content types: {string.Join(", ", validTypes)}");
+
+        var preferred = _pedagogy.GetPreferredContentType(sectionType, templateName);
+        if (preferred is not null)
+            sb.AppendLine($"Preferred type: {preferred}. This content block is the expected type for this section in this template.");
+
+        return sb.ToString().TrimEnd();
+    }
+
     private static string GetSectionFallbackGuidance(string sectionName) => sectionName switch
     {
         "warmUp"       => "A brief conversational warm-up activity to activate prior knowledge.",
@@ -383,6 +407,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
+        var contentTypeContext = BuildContentTypeContextBlock(ctx.SectionType, level, ctx.TemplateName);
+        if (!string.IsNullOrEmpty(contentTypeContext))
+            prompt += "\n\n" + contentTypeContext;
+
         return prompt;
     }
 
@@ -412,6 +440,10 @@ public class PromptService : IPromptService
         var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
         if (!string.IsNullOrEmpty(templateGuidance))
             prompt += "\n\n" + templateGuidance;
+
+        var contentTypeContext = BuildContentTypeContextBlock(ctx.SectionType, level, ctx.TemplateName);
+        if (!string.IsNullOrEmpty(contentTypeContext))
+            prompt += "\n\n" + contentTypeContext;
 
         var grammarConstraints = _pedagogy.GetGrammarConstraints(ctx.Language)
             .Where(c => c.AppliesTo.Contains("exercises", StringComparer.OrdinalIgnoreCase))
@@ -517,6 +549,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
+        var contentTypeContext = BuildContentTypeContextBlock(ctx.SectionType, level, ctx.TemplateName);
+        if (!string.IsNullOrEmpty(contentTypeContext))
+            prompt += "\n\n" + contentTypeContext;
+
         return prompt;
     }
 
@@ -569,6 +605,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(templateGuidance))
             prompt += "\n\n" + templateGuidance;
 
+        var contentTypeContext = BuildContentTypeContextBlock(ctx.SectionType, level, ctx.TemplateName);
+        if (!string.IsNullOrEmpty(contentTypeContext))
+            prompt += "\n\n" + contentTypeContext;
+
         return prompt;
     }
 
@@ -608,6 +648,16 @@ public class PromptService : IPromptService
                 if (!string.IsNullOrWhiteSpace(secOverride.Notes))
                     sbSections.AppendLine($"  NOTE: {secOverride.Notes}");
             }
+
+            // Emit valid content types from section profile (structural constraint for AI)
+            var validContentTypes = _profiles.GetAllowedContentTypes(sectionName, cefrLevel);
+            if (validContentTypes.Length > 0)
+                sbSections.AppendLine($"  Valid content types: {string.Join(", ", validContentTypes)}");
+
+            // Emit preferred content type from template override (when present)
+            var preferredType = _pedagogy.GetPreferredContentType(sectionName, templateName);
+            if (preferredType is not null)
+                sbSections.AppendLine($"  Preferred content type: {preferredType}. Use this type unless there is a strong pedagogical reason not to.");
         }
 
         var baseInstruction = $"""
