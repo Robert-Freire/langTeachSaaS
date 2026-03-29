@@ -15,7 +15,8 @@ public record SectionLevelProfile(
     string[]? ValidExerciseTypes = null,
     ForbiddenExerciseType[]? ForbiddenExerciseTypes = null,
     LevelSpecificNote[]? LevelSpecificNotes = null,
-    int? MinExerciseVariety = null
+    int? MinExerciseVariety = null,
+    string? Scope = null
 );
 
 public record DurationRange(int Min, int Max);

@@ -74,8 +74,15 @@ public record SectionOverride(
     string? OverrideGuidance,
     string[] PriorityExerciseTypes,
     int? MinExerciseVarietyOverride,
-    string? Notes
+    string? Notes,
+    string? Scope = null
 );
+
+// Scope constraints config (scope-constraints.json)
+// Outer key: scope value (e.g. "brief")
+// Inner key: content type in kebab-case (e.g. "conversation", "free-text")
+// Value: constraint text appended to the prompt
+public record ScopeConstraintsFile(Dictionary<string, Dictionary<string, string>> Scopes);
 
 // Course rules (course-rules.json)
 public record CourseRulesFile(

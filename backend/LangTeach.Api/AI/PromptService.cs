@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using LangTeach.Api.Services;
+using Microsoft.Extensions.Logging;
 
 namespace LangTeach.Api.AI;
 
@@ -8,41 +9,107 @@ public class PromptService : IPromptService
 {
     private readonly ISectionProfileService _profiles;
     private readonly IPedagogyConfigService _pedagogy;
+    private readonly ILogger<PromptService> _logger;
 
-    public PromptService(ISectionProfileService profiles, IPedagogyConfigService pedagogy)
+    public PromptService(ISectionProfileService profiles, IPedagogyConfigService pedagogy, ILogger<PromptService> logger)
     {
         _profiles = profiles;
         _pedagogy = pedagogy;
+        _logger = logger;
     }
 
-    public ClaudeRequest BuildLessonPlanPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), LessonPlanUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 8192);
+    public ClaudeRequest BuildLessonPlanPrompt(GenerationContext ctx)
+    {
+        var system = BuildSystemPrompt(ctx);
+        var user   = LessonPlanUserPrompt(ctx);
+        return BuildRequest("lesson-plan", "lesson-plan", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 8192);
+    }
 
-    public ClaudeRequest BuildVocabularyPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), VocabularyUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 2048);
+    public ClaudeRequest BuildVocabularyPrompt(GenerationContext ctx)
+    {
+        var system = BuildSystemPrompt(ctx);
+        var user   = VocabularyUserPrompt(ctx);
+        return BuildRequest("vocabulary", "vocabulary", ctx.CefrLevel, null, system, user, ClaudeModel.Haiku, 2048);
+    }
 
-    public ClaudeRequest BuildGrammarPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), GrammarUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 3000);
+    public ClaudeRequest BuildGrammarPrompt(GenerationContext ctx)
+    {
+        var system = BuildSystemPrompt(ctx);
+        var user   = GrammarUserPrompt(ctx);
+        return BuildRequest("grammar", "grammar", ctx.CefrLevel, null, system, user, ClaudeModel.Sonnet, 3000);
+    }
 
-    public ClaudeRequest BuildExercisesPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), ExercisesUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 4096);
+    public ClaudeRequest BuildExercisesPrompt(GenerationContext ctx)
+    {
+        var system = BuildSystemPrompt(ctx);
+        var user   = ExercisesUserPrompt(ctx);
+        return BuildRequest("exercises", "practice", ctx.CefrLevel, null, system, user, ClaudeModel.Haiku, 4096);
+    }
 
-    public ClaudeRequest BuildConversationPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), ConversationUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 3000);
+    public ClaudeRequest BuildConversationPrompt(GenerationContext ctx)
+    {
+        var system  = BuildSystemPrompt(ctx);
+        var user    = ConversationUserPrompt(ctx);
+        var section = ctx.SectionType ?? "conversation";
+        return BuildRequest("conversation", section, ctx.CefrLevel, null, system, user, ClaudeModel.Haiku, 3000);
+    }
 
-    public ClaudeRequest BuildReadingPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), ReadingUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 4096);
+    public ClaudeRequest BuildReadingPrompt(GenerationContext ctx)
+    {
+        var system = BuildSystemPrompt(ctx);
+        var user   = ReadingUserPrompt(ctx);
+        return BuildRequest("reading", "reading", ctx.CefrLevel, null, system, user, ClaudeModel.Sonnet, 4096);
+    }
 
-    public ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), HomeworkUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 1024);
+    public ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx)
+    {
+        var system = BuildSystemPrompt(ctx);
+        var user   = HomeworkUserPrompt(ctx);
+        return BuildRequest("homework", "homework", ctx.CefrLevel, null, system, user, ClaudeModel.Sonnet, 1024);
+    }
 
-    public ClaudeRequest BuildFreeTextPrompt(GenerationContext ctx) =>
-        new(BuildSystemPrompt(ctx), FreeTextUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 1024);
+    public ClaudeRequest BuildFreeTextPrompt(GenerationContext ctx)
+    {
+        var system  = BuildSystemPrompt(ctx);
+        var user    = FreeTextUserPrompt(ctx);
+        var section = ctx.SectionType ?? "free-text";
+        return BuildRequest("free-text", section, ctx.CefrLevel, null, system, user, ClaudeModel.Haiku, 1024);
+    }
 
-    public ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx) =>
-        ctx.TemplateUnits is { Count: > 0 }
-            ? new(CurriculumSystemPrompt(ctx), CurriculumPersonalizationUserPrompt(ctx), ClaudeModel.Haiku, MaxTokens: 4096)
-            : new(CurriculumSystemPrompt(ctx), CurriculumUserPrompt(ctx), ClaudeModel.Sonnet, MaxTokens: 8192);
+    public ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx)
+    {
+        var system = CurriculumSystemPrompt(ctx);
+        var level  = ctx.TargetCefrLevel ?? "(none)";
+        if (ctx.TemplateUnits is { Count: > 0 })
+        {
+            var user = CurriculumPersonalizationUserPrompt(ctx);
+            return BuildRequest("curriculum", "curriculum", level, null, system, user, ClaudeModel.Haiku, 4096);
+        }
+        else
+        {
+            var user = CurriculumUserPrompt(ctx);
+            return BuildRequest("curriculum", "curriculum", level, null, system, user, ClaudeModel.Sonnet, 8192);
+        }
+    }
+
+    private ClaudeRequest BuildRequest(
+        string blockType,
+        string section,
+        string level,
+        string? template,
+        string systemPrompt,
+        string userPrompt,
+        ClaudeModel model,
+        int maxTokens)
+    {
+        _logger.LogDebug(
+            "PromptSystem | blockType={BlockType} level={Level}\n{SystemPrompt}",
+            blockType, level, systemPrompt);
+        _logger.LogDebug(
+            "PromptUser | blockType={BlockType} section={Section} level={Level} template={Template}\n{UserPrompt}",
+            blockType, section, level, template ?? "(none)", userPrompt);
+        return new ClaudeRequest(systemPrompt, userPrompt, model, maxTokens);
+    }
 
     // --- Section coherence rules (static, never changes) ---
 
@@ -261,6 +328,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(vocabBlock))
             prompt += "\n" + vocabBlock;
 
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "vocabulary");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
+
         return prompt;
     }
 
@@ -278,6 +349,10 @@ public class PromptService : IPromptService
         var grammarScope = BuildGrammarScopeBlock(level);
         if (!string.IsNullOrEmpty(grammarScope))
             prompt += "\n" + grammarScope;
+
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "grammar");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
 
         return prompt;
     }
@@ -301,6 +376,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(exerciseGuidance))
             prompt += "\n" + exerciseGuidance;
 
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "exercises");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
+
         return prompt;
     }
 
@@ -313,23 +392,29 @@ public class PromptService : IPromptService
         if (string.Equals(section, "WarmUp", StringComparison.OrdinalIgnoreCase))
         {
             var guidance = _profiles.GetGuidance("warmup", level);
-            return $$"""
+            var constraint = _pedagogy.GetScopeConstraint("warmup", level, ctx.TemplateName, "conversation");
+            var prompt = $$"""
             Generate a warm-up icebreaker conversation activity for a {{level}} level lesson on "{{topic}}". Return JSON:
             {"scenarios":[{"setup":"","roleA":"Teacher","roleB":"Student","roleAPhrases":[""],"roleBPhrases":[""]}]}
             {{guidance}}
-            Include exactly 1 brief scenario suitable for lesson activation (not teaching new content).
             """;
+            if (!string.IsNullOrEmpty(constraint))
+                prompt += "\n" + constraint;
+            return prompt;
         }
 
         if (string.Equals(section, "WrapUp", StringComparison.OrdinalIgnoreCase))
         {
             var guidance = _profiles.GetGuidance("wrapup", level);
-            return $$"""
+            var constraint = _pedagogy.GetScopeConstraint("wrapup", level, ctx.TemplateName, "conversation");
+            var prompt = $$"""
             Generate a wrap-up reflection conversation for a {{level}} level lesson on "{{topic}}". Return JSON:
             {"scenarios":[{"setup":"","roleA":"Teacher","roleB":"Student","roleAPhrases":[""],"roleBPhrases":[""]}]}
             {{guidance}}
-            Include exactly 1 brief scenario for lesson closure and self-assessment (backward-looking only, no new content).
             """;
+            if (!string.IsNullOrEmpty(constraint))
+                prompt += "\n" + constraint;
+            return prompt;
         }
 
         return $$"""
@@ -355,6 +440,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(vocabBlock))
             prompt += "\n" + vocabBlock;
 
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "reading");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
+
         return prompt;
     }
 
@@ -378,6 +467,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(vocabBlock))
             prompt += "\n" + vocabBlock;
 
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "homework");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
+
         return prompt;
     }
 
@@ -394,6 +487,10 @@ public class PromptService : IPromptService
         var vocabBlock = BuildVocabularyBlock(level);
         if (!string.IsNullOrEmpty(vocabBlock))
             prompt += "\n" + vocabBlock;
+
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "free-text");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
 
         return prompt;
     }
@@ -419,7 +516,11 @@ public class PromptService : IPromptService
                 baseGuidance = GetSectionFallbackGuidance(sectionName);
 
             var duration = _profiles.GetDuration(sectionName, cefrLevel);
-            var durationStr = duration != null ? $" ({duration.Min}-{duration.Max} min)" : "";
+            var scope = _pedagogy.GetResolvedScope(sectionName, cefrLevel, string.IsNullOrEmpty(templateName) ? null : templateName);
+            var scopeLabel = scope == "brief" ? ", scope: brief" : "";
+            var durationStr = duration != null
+                ? $" ({duration.Min}-{duration.Max} min{scopeLabel})"
+                : (scope == "brief" ? " (scope: brief)" : "");
 
             sbSections.AppendLine($"- {sectionName}{durationStr}: {baseGuidance}");
 

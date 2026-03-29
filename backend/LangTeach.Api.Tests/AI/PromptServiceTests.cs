@@ -2,9 +2,21 @@ using FluentAssertions;
 using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LangTeach.Api.Tests.AI;
+
+file sealed class FakeLogger<T> : ILogger<T>
+{
+    public record LogEntry(LogLevel Level, string Message);
+    public List<LogEntry> Entries { get; } = [];
+
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+    public bool IsEnabled(LogLevel logLevel) => true;
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        => Entries.Add(new(logLevel, formatter(state, exception)));
+}
 
 public class PromptServiceTests
 {
@@ -14,7 +26,7 @@ public class PromptServiceTests
     private static readonly IPedagogyConfigService PedagogyService =
         new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, ProfileService);
 
-    private readonly PromptService _sut = new(ProfileService, PedagogyService);
+    private readonly PromptService _sut = new(ProfileService, PedagogyService, NullLogger<PromptService>.Instance);
 
     private static GenerationContext BaseCtx(string? studentName = null) => new(
         Language: "English",
@@ -655,8 +667,8 @@ public class PromptServiceTests
         // Section headers should include duration when the profile defines it
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
 
-        // B1 warmup duration: min=2, max=5 (from warmup.json)
-        req.UserPrompt.Should().MatchRegex(@"warmUp \(\d+-\d+ min\)");
+        // B1 warmup duration: min=2, max=5 (from warmup.json); may include scope label
+        req.UserPrompt.Should().MatchRegex(@"warmUp \(\d+-\d+ min[^)]*\)");
     }
 
     // --- CEFR-level exercise guidance ---
@@ -1355,5 +1367,113 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().NotContain("CO-01", because: "CO-01 is unavailable (no UI renderer) and must not appear in the exercises prompt");
         req.UserPrompt.Should().NotContain("LUD-01", because: "LUD-01 is unavailable (no UI renderer) and must not appear in the exercises prompt");
+    }
+
+    // --- Scope constraint emission ---
+
+    [Fact]
+    public void ConversationUserPrompt_WarmUp_IncludesScopeConstraint()
+    {
+        var ctx = BaseCtx() with { SectionType = "WarmUp" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("exactly 1 scenario",
+            because: "WarmUp scope is brief; scope-constraints.json brief/conversation must be appended");
+        req.UserPrompt.Should().Contain("2-3 phrases",
+            because: "scope constraint must include phraseArray size limit");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_WrapUp_IncludesScopeConstraint()
+    {
+        var ctx = BaseCtx() with { SectionType = "WrapUp" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("exactly 1 scenario",
+            because: "WrapUp scope is brief; scope constraint must be appended");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_WarmUp_DoesNotContainHardcodedBriefText()
+    {
+        var ctx = BaseCtx() with { SectionType = "WarmUp" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("Include exactly 1 brief scenario suitable for lesson activation",
+            because: "hardcoded brevity text must be replaced by config-driven scope constraint");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_WrapUp_DoesNotContainHardcodedBriefText()
+    {
+        var ctx = BaseCtx() with { SectionType = "WrapUp" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("Include exactly 1 brief scenario for lesson closure",
+            because: "hardcoded brevity text must be replaced by config-driven scope constraint");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_Practice_NoScopeConstraintAppended()
+    {
+        // Practice section has full scope — no constraint text should be appended
+        var ctx = BaseCtx() with { SectionType = "practice" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("exactly 1 scenario",
+            because: "practice section has full scope; no scope constraint should be emitted");
+    }
+
+    [Fact]
+    public void LessonPlanUserPrompt_WarmUp_HasScopeLabelInSectionHeader()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("warmUp", because: "warmUp must appear in the section guidelines");
+        req.UserPrompt.Should().Contain("scope: brief", because: "warmUp scope is brief and must be labelled in the section header");
+    }
+
+    [Fact]
+    public void LessonPlanUserPrompt_WrapUp_HasScopeLabelInSectionHeader()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("wrapUp");
+        req.UserPrompt.Should().Contain("scope: brief");
+    }
+
+    [Fact]
+    public void LessonPlanUserPrompt_Practice_HasNoScopeLabel()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        // Practice section line should not contain scope label
+        var practiceLineContainsScope = req.UserPrompt
+            .Split('\n')
+            .Where(l => l.Contains("practice"))
+            .Any(l => l.Contains("scope:"));
+
+        practiceLineContainsScope.Should().BeFalse(
+            because: "practice has full scope and must not have a scope label in its section header");
+    }
+
+    [Fact]
+    public void BuildLessonPlanPrompt_LogsSystemAndUserPromptAtDebug()
+    {
+        var fakeLogger = new FakeLogger<PromptService>();
+        var sut = new PromptService(ProfileService, PedagogyService, fakeLogger);
+
+        sut.BuildLessonPlanPrompt(BaseCtx());
+
+        var debugEntries = fakeLogger.Entries.Where(e => e.Level == LogLevel.Debug).ToList();
+        debugEntries.Should().HaveCount(2, because: "one Debug entry for system prompt and one for user prompt");
+        debugEntries[0].Message.Should().Contain("PromptSystem");
+        debugEntries[1].Message.Should().Contain("PromptUser");
+        debugEntries[1].Message.Should().Contain("blockType=lesson-plan");
     }
 }

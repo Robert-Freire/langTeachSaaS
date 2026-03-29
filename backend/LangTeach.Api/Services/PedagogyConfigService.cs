@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LangTeach.Api.AI;
+using LangTeach.Api.Data.Models;
 
 namespace LangTeach.Api.Services;
 
@@ -18,6 +19,8 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly Dictionary<string, TemplateOverrideEntry> _templates;
     private readonly CourseRulesFile _courseRules;
     private readonly StyleSubstitution[] _substitutions;
+    // Outer key: scope value ("brief"); inner key: content type kebab ("conversation"); value: constraint text
+    private readonly Dictionary<string, Dictionary<string, string>> _scopeConstraints;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -85,6 +88,14 @@ public class PedagogyConfigService : IPedagogyConfigService
         // Load style substitutions
         var subsFile = LoadJson<StyleSubstitutionsFile>(assembly, "LangTeach.Api.Pedagogy.style-substitutions.json");
         _substitutions = subsFile.Substitutions;
+
+        // Load scope constraints
+        var scopeFile = LoadJson<ScopeConstraintsFile>(assembly, "LangTeach.Api.Pedagogy.scope-constraints.json");
+        _scopeConstraints = scopeFile.Scopes
+            .ToDictionary(
+                kv => kv.Key,
+                kv => new Dictionary<string, string>(kv.Value, StringComparer.OrdinalIgnoreCase),
+                StringComparer.OrdinalIgnoreCase);
 
         // Validate cross-layer references — fail fast on dangling IDs
         ValidateCrossLayerRefs();
@@ -243,6 +254,39 @@ public class PedagogyConfigService : IPedagogyConfigService
     public string GetExerciseTypeName(string id) =>
         _exerciseNames.TryGetValue(id, out var name) ? name : id;
 
+    public string GetResolvedScope(string section, string level, string? templateName)
+    {
+        // Template override scope wins
+        if (!string.IsNullOrEmpty(templateName))
+        {
+            var tmplEntry = GetTemplateOverrideByName(templateName);
+            if (tmplEntry is not null)
+            {
+                var normalSection = NormalizeSection(section);
+                if (tmplEntry.Sections.TryGetValue(normalSection, out var secOverride)
+                    && secOverride.Scope is not null)
+                    return secOverride.Scope;
+            }
+        }
+
+        // Section profile scope
+        var profileScope = _sectionProfileService.GetScope(section, level);
+        return profileScope ?? "full";
+    }
+
+    public string? GetScopeConstraint(string section, string level, string? templateName, string contentType)
+    {
+        var scope = GetResolvedScope(section, level, templateName);
+        if (scope == "full") return null;
+
+        if (_scopeConstraints.TryGetValue(scope, out var byType)
+            && byType.TryGetValue(contentType, out var constraint))
+            return constraint;
+
+        _log.LogDebug("PedagogyConfigService: no scope constraint for ({Scope}, {ContentType})", scope, contentType);
+        return null;
+    }
+
     // --- Private helpers ---
 
     private static T LoadJson<T>(Assembly assembly, string resourceName)
@@ -343,6 +387,34 @@ public class PedagogyConfigService : IPedagogyConfigService
             {
                 if (!_catalogIds.Contains(id))
                     errors.Add($"StyleSubstitution '{sub.Label}': unknown ID '{id}'");
+            }
+        }
+
+        // Validate scope-constraints.json: every content type key must be a valid ContentBlockType
+        var knownScopes = _scopeConstraints.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var (scopeName, byType) in _scopeConstraints)
+        {
+            foreach (var contentTypeKey in byType.Keys)
+            {
+                if (!ContentBlockTypeExtensions.TryFromKebabCase(contentTypeKey, out _))
+                    errors.Add($"scope-constraints.json scope '{scopeName}': unknown content type key '{contentTypeKey}'");
+            }
+        }
+
+        // Validate section profile scope values against the same known scopes set
+        foreach (var scopeValue in _sectionProfileService.GetAllScopeValues())
+        {
+            if (scopeValue != "full" && !knownScopes.Contains(scopeValue))
+                errors.Add($"Section profile contains unknown scope value '{scopeValue}' (not in scope-constraints.json and not 'full')");
+        }
+
+        // Validate template override scope values
+        foreach (var (tId, tmpl) in _templates)
+        {
+            foreach (var (secName, sec) in tmpl.Sections)
+            {
+                if (sec.Scope is not null && sec.Scope != "full" && !knownScopes.Contains(sec.Scope))
+                    errors.Add($"Template '{tId}' section '{secName}': unknown scope value '{sec.Scope}'");
             }
         }
 
