@@ -30,6 +30,8 @@
                       Link="Pedagogy\style-substitutions.json" />
     <EmbeddedResource Include="..\..\data\pedagogy\scope-constraints.json"
                       Link="Pedagogy\scope-constraints.json" />
+    <EmbeddedResource Include="..\..\data\content-schemas\*.json"
+                      Link="ContentSchemas\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
