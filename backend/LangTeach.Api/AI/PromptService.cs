@@ -380,6 +380,14 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
+        if (string.Equals(ctx.Language, "Spanish", StringComparison.OrdinalIgnoreCase))
+            prompt += "\nGRAMMAR ACCURACY — SUBJUNCTIVE TEMPORAL CORRELATION (mandatory): " +
+                      "When generating exercises or answer choices that involve the subjunctive mood, " +
+                      "apply the correct temporal correlation rule: " +
+                      "present or future tense in the main clause → present subjunctive (e.g. 'pueda', 'haga'); " +
+                      "past or conditional tense in the main clause → imperfect subjunctive (e.g. 'pudiera', 'hiciera'). " +
+                      "Never mark an answer correct if it violates this rule.";
+
         return prompt;
     }
 

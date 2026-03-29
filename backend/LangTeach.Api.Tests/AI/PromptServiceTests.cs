@@ -258,6 +258,29 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("\"explanation\":\"\"");
     }
 
+    [Fact]
+    public void ExercisesPrompt_Spanish_IncludesSubjunctiveTemporalCorrelationRule()
+    {
+        var ctx = BaseCtx() with { Language = "Spanish" };
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SUBJUNCTIVE TEMPORAL CORRELATION");
+        req.UserPrompt.Should().Contain("present subjunctive");
+        req.UserPrompt.Should().Contain("imperfect subjunctive");
+    }
+
+    [Theory]
+    [InlineData("English")]
+    [InlineData("French")]
+    [InlineData("German")]
+    public void ExercisesPrompt_NonSpanish_DoesNotIncludeSubjunctiveTemporalCorrelationRule(string language)
+    {
+        var ctx = BaseCtx() with { Language = language };
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("SUBJUNCTIVE TEMPORAL CORRELATION");
+    }
+
     // --- JSON schema injected ---
 
     [Theory]
