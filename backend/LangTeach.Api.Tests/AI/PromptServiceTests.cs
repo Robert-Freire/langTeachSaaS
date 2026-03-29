@@ -1681,4 +1681,26 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().NotContain("SECTION REQUIREMENT");
     }
+
+    // --- Grammar constraints from pedagogy config ---
+
+    [Fact]
+    public void BuildExercisesPrompt_Spanish_IncludesSubjunctiveTemporalCorrelationConstraint()
+    {
+        var ctx = BaseCtx() with { Language = "Spanish" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("GRAMMAR ACCURACY CONSTRAINTS");
+        req.UserPrompt.Should().Contain("present subjunctive", because: "rule must specify present subjunctive after present-tense main clause");
+        req.UserPrompt.Should().Contain("pueda", because: "rule must give a concrete present-subjunctive example");
+    }
+
+    [Fact]
+    public void BuildExercisesPrompt_English_OmitsGrammarConstraintsBlock()
+    {
+        var req = _sut.BuildExercisesPrompt(BaseCtx()); // Language: "English"
+
+        req.UserPrompt.Should().NotContain("GRAMMAR ACCURACY CONSTRAINTS");
+    }
 }

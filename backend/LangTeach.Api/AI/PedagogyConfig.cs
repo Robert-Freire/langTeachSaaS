@@ -53,7 +53,15 @@ public record SpecificLanguage(
     string? Family,
     string[] FalseFriends,
     string[] PositiveTransfer,
-    string AdditionalNotes
+    string AdditionalNotes,
+    TargetLanguageGrammarConstraint[]? GrammarConstraints = null
+);
+
+public record TargetLanguageGrammarConstraint(
+    string Topic,
+    string Rule,
+    string Enforcement,
+    string[] AppliesTo
 );
 
 // Template overrides (template-overrides.json)
