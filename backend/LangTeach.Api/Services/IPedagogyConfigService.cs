@@ -84,4 +84,10 @@ public interface IPedagogyConfigService
     /// <paramref name="contentType"/> must be a kebab-case ContentBlockType value (e.g. "conversation", "free-text").
     /// </summary>
     string? GetScopeConstraint(string section, string level, string? templateName, string contentType);
+
+    /// <summary>
+    /// Returns the preferred content type for a template section, or null if not specified.
+    /// <paramref name="templateName"/> is the display name (e.g. "Exam Prep"), resolved internally.
+    /// </summary>
+    string? GetPreferredContentType(string section, string? templateName);
 }

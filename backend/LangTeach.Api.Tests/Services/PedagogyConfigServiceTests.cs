@@ -433,4 +433,56 @@ public class PedagogyConfigServiceTests
         // This test verifies the loaded service is in a valid state.
         _sut.Should().NotBeNull(because: "PedagogyConfigService must construct without validation errors");
     }
+
+    // --- preferredContentType (#358) ---
+
+    [Fact]
+    public void GetPreferredContentType_ReadingComprehension_Presentation_ReturnsReading()
+    {
+        var result = _sut.GetPreferredContentType("presentation", "Reading & Comprehension");
+
+        result.Should().Be("reading", because: "R&C template declares preferredContentType: reading for presentation");
+    }
+
+    [Fact]
+    public void GetPreferredContentType_ExamPrep_Production_ReturnsExercises()
+    {
+        var result = _sut.GetPreferredContentType("production", "Exam Prep");
+
+        result.Should().Be("exercises", because: "Exam Prep template declares preferredContentType: exercises for production");
+    }
+
+    [Fact]
+    public void GetPreferredContentType_ExamPrep_Practice_ReturnsExercises()
+    {
+        var result = _sut.GetPreferredContentType("practice", "Exam Prep");
+
+        result.Should().Be("exercises", because: "Exam Prep template declares preferredContentType: exercises for practice");
+    }
+
+    [Fact]
+    public void GetPreferredContentType_NoTemplate_ReturnsNull()
+    {
+        var result = _sut.GetPreferredContentType("production", null);
+
+        result.Should().BeNull(because: "null template name should return null preferred type");
+    }
+
+    [Fact]
+    public void GetPreferredContentType_TemplateWithoutPreference_ReturnsNull()
+    {
+        // Conversation Skills template has no preferredContentType on any section
+        var result = _sut.GetPreferredContentType("warmUp", "Conversation Skills");
+
+        result.Should().BeNull(because: "templates without preferredContentType on a section should return null");
+    }
+
+    [Fact]
+    public void StartupValidation_PreferredContentTypes_AllValidAgainstSectionProfiles()
+    {
+        // Construction must succeed — ValidateCrossLayerRefs validates preferredContentType values
+        // against section profile contentTypes for applicable CEFR levels.
+        // This test verifies the loaded config passes all cross-layer validation.
+        _sut.Should().NotBeNull(because: "PedagogyConfigService must construct without validation errors for preferredContentType entries");
+    }
 }

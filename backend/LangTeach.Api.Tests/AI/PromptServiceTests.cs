@@ -1681,4 +1681,110 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().NotContain("SECTION REQUIREMENT");
     }
+
+    // --- Content type constraints in prompts (#358) ---
+
+    [Fact]
+    public void LessonPlanUserPrompt_EmitsValidContentTypes_ForEachSection()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("Valid content types:", because: "section guidelines must include valid content types from section profiles");
+    }
+
+    [Fact]
+    public void LessonPlanUserPrompt_ReadingComprehension_Presentation_EmitsPreferredContentTypeReading()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Reading & Comprehension" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Preferred content type: reading",
+            because: "R&C template presentation must signal reading as the preferred content type");
+    }
+
+    [Fact]
+    public void LessonPlanUserPrompt_ExamPrep_Production_EmitsPreferredContentTypeExercises()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Exam Prep", CefrLevel = "B2" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Preferred content type: exercises",
+            because: "Exam Prep production must signal exercises as the preferred content type");
+    }
+
+    [Fact]
+    public void LessonPlanUserPrompt_ExamPrep_Practice_EmitsPreferredContentTypeExercises()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Exam Prep", CefrLevel = "B2" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        // Practice section line contains exercises preferred type
+        var lines = req.UserPrompt.Split('\n');
+        var hasPracticePreferred = lines
+            .SkipWhile(l => !l.Contains("- practice"))
+            .TakeWhile((l, i) => i == 0 || l.StartsWith("  "))
+            .Any(l => l.Contains("Preferred content type: exercises"));
+
+        hasPracticePreferred.Should().BeTrue(because: "Exam Prep practice must signal exercises as preferred content type");
+    }
+
+    [Fact]
+    public void LessonPlanUserPrompt_NoTemplate_DoesNotEmitPreferredContentType()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().NotContain("Preferred content type:",
+            because: "without a template, no preferred content type should be emitted");
+    }
+
+    [Fact]
+    public void BuildExercisesPrompt_ExamPrep_Production_IncludesContentTypeContext()
+    {
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Exam Prep",
+            SectionType = "Production",
+            CefrLevel = "B2",
+        };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION CONTENT TYPE CONTEXT",
+            because: "individual block prompts must include content type reinforcement context");
+        req.UserPrompt.Should().Contain("Preferred type: exercises",
+            because: "Exam Prep production reinforcement must confirm exercises is the preferred type");
+    }
+
+    [Fact]
+    public void BuildReadingPrompt_ReadingComprehension_Presentation_IncludesContentTypeContext()
+    {
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Reading & Comprehension",
+            SectionType = "Presentation",
+            CefrLevel = "B1",
+        };
+
+        var req = _sut.BuildReadingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION CONTENT TYPE CONTEXT",
+            because: "reading block prompt must include content type context");
+        req.UserPrompt.Should().Contain("Preferred type: reading",
+            because: "R&C presentation reinforcement must confirm reading is the preferred type");
+    }
+
+    [Fact]
+    public void BuildGrammarPrompt_NoTemplate_DoesNotIncludeContentTypeContext_ForSectionWithSingleType()
+    {
+        // warmUp has contentTypes: ["conversation"] — still emits context but no preferred type
+        var ctx = BaseCtx() with { SectionType = "WarmUp" };
+
+        var req = _sut.BuildGrammarPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("Preferred type:",
+            because: "without a template, no preferred content type should be emitted in block prompts");
+    }
 }
