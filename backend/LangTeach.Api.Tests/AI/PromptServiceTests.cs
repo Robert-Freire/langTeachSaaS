@@ -1601,4 +1601,84 @@ public class PromptServiceTests
         debugEntries[1].Message.Should().Contain("PromptUser");
         debugEntries[1].Message.Should().Contain("blockType=lesson-plan");
     }
+
+    // --- Exam Prep template guidance injection ---
+
+    [Fact]
+    public void BuildFreeTextPrompt_ExamPrep_WarmUp_IncludesExamBriefingRequirement()
+    {
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Exam Prep",
+            SectionType = "WarmUp",
+            CefrLevel = "B2",
+        };
+
+        var req = _sut.BuildFreeTextPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION REQUIREMENT");
+        req.UserPrompt.Should().Contain("exam task type");
+        req.UserPrompt.Should().Contain("No conversational icebreaker",
+            because: "exam-prep WarmUp must explicitly forbid an icebreaker");
+    }
+
+    [Fact]
+    public void BuildFreeTextPrompt_ExamPrep_Production_IncludesWrittenTaskRequirement()
+    {
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Exam Prep",
+            SectionType = "Production",
+            CefrLevel = "B2",
+        };
+
+        var req = _sut.BuildFreeTextPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION REQUIREMENT");
+        req.UserPrompt.Should().Contain("written");
+        req.UserPrompt.Should().Contain("time limit");
+    }
+
+    [Fact]
+    public void BuildFreeTextPrompt_ExamPrep_IncludesLevelVariation()
+    {
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Exam Prep",
+            SectionType = "Production",
+            CefrLevel = "B1",
+        };
+
+        var req = _sut.BuildFreeTextPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Level note (B1)");
+        req.UserPrompt.Should().Contain("DELE B1");
+    }
+
+    [Fact]
+    public void BuildExercisesPrompt_ExamPrep_Practice_IncludesTimedPracticeRequirement()
+    {
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Exam Prep",
+            SectionType = "Practice",
+            CefrLevel = "B2",
+        };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION REQUIREMENT");
+        req.UserPrompt.Should().Contain("Timed written practice");
+        req.UserPrompt.Should().Contain("Timer is mandatory");
+    }
+
+    [Fact]
+    public void BuildFreeTextPrompt_NoTemplate_DoesNotIncludeTemplateGuidance()
+    {
+        var ctx = BaseCtx() with { SectionType = "WarmUp" };
+
+        var req = _sut.BuildFreeTextPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("SECTION REQUIREMENT");
+    }
 }

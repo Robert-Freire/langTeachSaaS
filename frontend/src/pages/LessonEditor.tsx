@@ -501,6 +501,7 @@ export default function LessonEditor() {
               cefrLevel: lesson.cefrLevel,
               topic: lesson.topic,
               studentId: lesson.studentId ?? undefined,
+              templateName: lesson.templateName,
             }}
             onBlockSaved={handleBlockInsert}
           />
