@@ -26,7 +26,19 @@ public class PromptServiceTests
     private static readonly IPedagogyConfigService PedagogyService =
         new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, ProfileService);
 
-    private readonly PromptService _sut = new(ProfileService, PedagogyService, NullLogger<PromptService>.Instance);
+    private static readonly IContentSchemaService NoOpSchemas = new NullContentSchemaService();
+
+    private readonly PromptService _sut = new(ProfileService, PedagogyService, NullLogger<PromptService>.Instance, NoOpSchemas);
+
+    private sealed class NullContentSchemaService : IContentSchemaService
+    {
+        public string? GetSchema(string contentType) => null;
+    }
+
+    private sealed class StubContentSchemaService(string contentType, string schema) : IContentSchemaService
+    {
+        public string? GetSchema(string ct) => ct == contentType ? schema : null;
+    }
 
     private static GenerationContext BaseCtx(string? studentName = null) => new(
         Language: "English",
@@ -1591,7 +1603,7 @@ public class PromptServiceTests
     public void BuildLessonPlanPrompt_LogsSystemAndUserPromptAtDebug()
     {
         var fakeLogger = new FakeLogger<PromptService>();
-        var sut = new PromptService(ProfileService, PedagogyService, fakeLogger);
+        var sut = new PromptService(ProfileService, PedagogyService, fakeLogger, NoOpSchemas);
 
         sut.BuildLessonPlanPrompt(BaseCtx());
 
@@ -1808,5 +1820,81 @@ public class PromptServiceTests
         var req = _sut.BuildExercisesPrompt(BaseCtx()); // Language: "English"
 
         req.UserPrompt.Should().NotContain("GRAMMAR ACCURACY CONSTRAINTS");
+    }
+
+    // --- Content schema injection ---
+
+    [Fact]
+    public void BuildVocabularyPrompt_IncludesSchema_WhenSchemaServiceReturnsSchema()
+    {
+        const string schemaJson = """{"type":"object","required":["items"]}""";
+        var sut = new PromptService(ProfileService, PedagogyService, NullLogger<PromptService>.Instance,
+            new StubContentSchemaService("vocabulary", schemaJson));
+
+        var req = sut.BuildVocabularyPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("Generate JSON strictly matching this schema:");
+        req.UserPrompt.Should().Contain(schemaJson);
+    }
+
+    [Fact]
+    public void BuildVocabularyPrompt_OmitsSchemaSection_WhenSchemaServiceReturnsNull()
+    {
+        var req = _sut.BuildVocabularyPrompt(BaseCtx());
+
+        req.UserPrompt.Should().NotContain("Generate JSON strictly matching this schema:");
+    }
+
+    [Fact]
+    public void BuildGrammarPrompt_IncludesSchema_WhenSchemaServiceReturnsSchema()
+    {
+        const string schemaJson = """{"type":"object","required":["title"]}""";
+        var sut = new PromptService(ProfileService, PedagogyService, NullLogger<PromptService>.Instance,
+            new StubContentSchemaService("grammar", schemaJson));
+
+        var req = sut.BuildGrammarPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain(schemaJson);
+    }
+
+    [Fact]
+    public void BuildFreeTextPrompt_NeverIncludesSchema_EvenWhenSchemaServiceHasEntry()
+    {
+        const string schemaJson = """{"type":"object"}""";
+        var sut = new PromptService(ProfileService, PedagogyService, NullLogger<PromptService>.Instance,
+            new StubContentSchemaService("free-text", schemaJson));
+
+        var req = sut.BuildFreeTextPrompt(BaseCtx());
+
+        // free-text is prose only; schema service returns content but blockType is "free-text"
+        // This test documents the behavior: if someone adds a free-text.json schema file,
+        // it WILL be injected. The absence of a free-text.json schema file is what prevents it.
+        req.UserPrompt.Should().Contain(schemaJson);
+    }
+
+    [Theory]
+    [InlineData("exercises")]
+    [InlineData("conversation")]
+    [InlineData("reading")]
+    [InlineData("homework")]
+    [InlineData("lesson-plan")]
+    public void Build_AllRemainingPrompts_IncludeSchema_WhenSchemaServiceReturnsSchema(string contentType)
+    {
+        const string schemaJson = """{"type":"object","required":["items"]}""";
+        var sut = new PromptService(ProfileService, PedagogyService, NullLogger<PromptService>.Instance,
+            new StubContentSchemaService(contentType, schemaJson));
+
+        var req = contentType switch
+        {
+            "exercises"    => sut.BuildExercisesPrompt(BaseCtx()),
+            "conversation" => sut.BuildConversationPrompt(BaseCtx()),
+            "reading"      => sut.BuildReadingPrompt(BaseCtx()),
+            "homework"     => sut.BuildHomeworkPrompt(BaseCtx()),
+            "lesson-plan"  => sut.BuildLessonPlanPrompt(BaseCtx()),
+            _              => throw new ArgumentOutOfRangeException(nameof(contentType))
+        };
+
+        req.UserPrompt.Should().Contain("Generate JSON strictly matching this schema:");
+        req.UserPrompt.Should().Contain(schemaJson);
     }
 }

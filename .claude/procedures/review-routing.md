@@ -1,14 +1,24 @@
 # Review Routing
 
-Run the `review` and `architecture-reviewer` agents **in parallel** (always). Conditionally add more reviewers in the same parallel batch based on the diff.
+Run the `review` and `architecture-reviewer` agents **in parallel** (always). Conditionally add more reviewers in the same parallel batch based on the diff **and the linked issue's labels**.
 
-## Conditional reviewers
+## Step 0: Check the linked issue label FIRST
+
+Before looking at the diff, check whether the issue being closed by this PR has the `review:sophy` label:
+
+```bash
+gh issue view <N> --json labels --jq '.labels[].name' | grep "review:sophy"
+```
+
+If `review:sophy` is present: **always run Sophy**, regardless of what the diff looks like.
+
+## Conditional reviewers (diff-based)
 
 | Diff matches | Reviewer | `subagent_type` |
 |---|---|---|
 | `**/PromptService.cs` | Prompt Health | `prompt-health-reviewer` |
 | `**/Models/*.cs`, `**/Dtos/*.cs`, `**/*Dto.cs`, `**/Data/*.cs`, `**/Migrations/*.cs`, `data/**/*.json`, `**/contentTypes.ts`, or new entities/tables/FKs | Sophy | `sophy` |
-| Any diff that adds hardcoded conditional logic (if/else, switch) based on language, level, template, or student properties in `**/PromptService.cs`, prompt builders, or generation services — i.e. logic that belongs in config rather than code | Sophy | `sophy` |
+| Any diff that adds hardcoded conditional logic (if/else, switch) based on language, level, template, or student properties in `**/PromptService.cs`, prompt builders, generation services, or validation services — i.e. logic that belongs in config rather than code. Includes hardcoded regex patterns or rule lists for language-specific validation. | Sophy | `sophy` |
 | `data/pedagogy/*.json`, `data/section-profiles/*.json`, `data/pedagogy/cefr-level-rules/*.json` | Isaac | `pedagogy-reviewer` |
 
 ### Prompt Health prompt
