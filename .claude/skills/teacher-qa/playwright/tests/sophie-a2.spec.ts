@@ -32,6 +32,9 @@ const PERSONA = {
     cefrLevel: 'A2',
     nativeLanguage: 'French',
     interests: ['cooking', 'cinema'],
+    difficulties: [
+      { description: 'false cognates with French (querer/croire, mirar/regarder)', category: 'Vocabulary', severity: 'Medium' },
+    ],
   },
   lesson: {
     templateName: 'Conversation',
