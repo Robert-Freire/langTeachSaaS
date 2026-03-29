@@ -23,7 +23,7 @@
     },
     "A2": {
       "contentTypes": ["conversation"],
-      "guidance": "Open personal questions using preterite/present tense. Expect a 2-3 sentence response. Example: Que hiciste el fin de semana? Include 2-3 suggested follow-up questions. Note: preterite only after introduction in A2.1+.",
+      "guidance": "Open personal questions using present tense. Expect a 2-3 sentence response. Example: Que haces los fines de semana? Include 2-3 suggested follow-up questions. Note: Use preterite only if the student has already learned it.",
       "duration": { "min": 2, "max": 4 },
       "scope": "brief",
       "competencies": ["interaction"],
