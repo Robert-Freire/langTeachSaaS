@@ -66,3 +66,5 @@ A1-B2 use `vocabularyPerLesson: { productive: {min,max}, receptive: {min,max} }`
 | minor | `PromptService.cs:FreeTextUserPrompt` | Does not call `_profiles.GetGuidance(...)` unlike all other prompt builders. Intentional generic fallback but undocumented. Worth a comment explaining why section profile guidance is skipped. |
 
 | PR#338 | 2026-03-28 | low | PedagogyConfig.cs ExerciseTypeEntry: `bool Available = false` uses value-type default while other optional fields use nullable types. Functionally correct; minor style divergence. |
+
+| PR#360 | 2026-03-28 | low | PromptService.cs BuildRequest: StudentName and other PII are logged via named structured parameters ({SystemPrompt}, {UserPrompt}). Structured logging backends (Seq, App Insights) index these as searchable fields. Currently safe (Debug only in test/QA compose files), but worth switching to unstructured embedding or documenting as a known constraint to prevent accidental production enablement. |
