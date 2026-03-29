@@ -1,10 +1,44 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GeneratePanel } from './GeneratePanel'
 import type { ContentBlockDto } from '../../api/generate'
 import * as generateApi from '../../api/generate'
+import type { SectionRulesMap } from '../../api/pedagogy'
+
+const MOCK_SECTION_RULES: SectionRulesMap = {
+  WarmUp: {
+    A1: ['conversation'], A2: ['conversation'], B1: ['conversation'],
+    B2: ['conversation'], C1: ['conversation'], C2: ['conversation'],
+  },
+  Presentation: {
+    A1: ['grammar', 'vocabulary', 'reading', 'conversation'],
+    A2: ['grammar', 'vocabulary', 'reading', 'conversation'],
+    B1: ['grammar', 'vocabulary', 'reading', 'conversation'],
+    B2: ['grammar', 'vocabulary', 'reading', 'conversation'],
+    C1: ['grammar', 'vocabulary', 'reading', 'conversation'],
+    C2: ['grammar', 'vocabulary', 'reading', 'conversation'],
+  },
+  Practice: {
+    A1: ['exercises', 'conversation'], A2: ['exercises', 'conversation'],
+    B1: ['exercises', 'conversation'], B2: ['exercises', 'conversation'],
+    C1: ['exercises', 'conversation'], C2: ['exercises', 'conversation'],
+  },
+  Production: {
+    A1: ['conversation'], A2: ['conversation'], B1: ['conversation'],
+    B2: ['conversation', 'reading'], C1: ['conversation', 'reading'], C2: ['conversation', 'reading'],
+  },
+  WrapUp: {
+    A1: ['conversation'], A2: ['conversation'], B1: ['conversation'],
+    B2: ['conversation'], C1: ['conversation'], C2: ['conversation'],
+  },
+}
+
+// Mock useSectionRules — data is static config, always available in tests
+vi.mock('../../hooks/useSectionRules', () => ({
+  useSectionRules: () => ({ data: MOCK_SECTION_RULES, isLoading: false }),
+}))
 
 // Mock Auth0
 vi.mock('@auth0/auth0-react', () => ({
@@ -465,6 +499,70 @@ describe('GeneratePanel - quota exhausted', () => {
   })
 })
 
+describe('GeneratePanel - grammar constraints', () => {
+  it('renders grammar constraints textarea', () => {
+    mockUseGenerate.mockReturnValue({
+      status: 'idle',
+      output: null,
+      error: null,
+      quotaExceeded: false,
+      generate: vi.fn(),
+      abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    expect(screen.getByTestId('grammar-constraints-textarea')).toBeInTheDocument()
+  })
+
+  it('passes grammarConstraints to the generate call', async () => {
+    const generateFn = vi.fn()
+    mockUseGenerate.mockReturnValue({
+      status: 'idle',
+      output: null,
+      error: null,
+      quotaExceeded: false,
+      generate: generateFn,
+      abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    const user = userEvent.setup()
+    const textarea = screen.getByTestId('grammar-constraints-textarea')
+    await user.type(textarea, 'only regular verbs')
+
+    await user.click(screen.getByTestId('generate-btn'))
+
+    expect(generateFn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ grammarConstraints: 'only regular verbs' })
+    )
+  })
+
+  it('does not include grammarConstraints in request when textarea is empty', async () => {
+    const generateFn = vi.fn()
+    mockUseGenerate.mockReturnValue({
+      status: 'idle',
+      output: null,
+      error: null,
+      quotaExceeded: false,
+      generate: generateFn,
+      abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('generate-btn'))
+
+    expect(generateFn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.not.objectContaining({ grammarConstraints: expect.anything() })
+    )
+  })
+})
+
 describe('GeneratePanel - task type dropdown casing', () => {
   it('displays task type in Title Case in the trigger', () => {
     mockUseGenerate.mockReturnValue({
@@ -478,10 +576,110 @@ describe('GeneratePanel - task type dropdown casing', () => {
 
     renderWithQuery(<GeneratePanel {...defaultProps} sectionType="Presentation" />)
 
-    // Default task type for Presentation is "vocabulary", should display as "Vocabulary"
+    // Default task type for Presentation is "vocabulary".
+    // In a real browser, Radix SelectValue shows the SelectItem label ("Vocabulary").
+    // In JSDOM, it shows the raw value ("vocabulary"). Either way, the trigger contains "vocabulary".
     const label = screen.getByText('Task type')
     const trigger = label.closest('.space-y-1')!.querySelector('[data-slot="select-trigger"]')!
-    expect(trigger).toHaveTextContent('Vocabulary')
-    expect(trigger.textContent).not.toMatch(/^vocabulary$/)
+    expect(trigger.textContent?.toLowerCase()).toContain('vocabulary')
+  })
+})
+
+describe('GeneratePanel - section content type allowlist', () => {
+  function makeIdleGenerate() {
+    return {
+      status: 'idle',
+      output: null,
+      error: null,
+      quotaExceeded: false,
+      generate: vi.fn(),
+      abort: vi.fn(),
+    }
+  }
+
+  it('WarmUp A1: shows Conversation starter (read-only), no dropdown', async () => {
+    mockUseGenerate.mockReturnValue(makeIdleGenerate())
+
+    renderWithQuery(
+      <GeneratePanel
+        {...defaultProps}
+        sectionType="WarmUp"
+        lessonContext={{ ...defaultProps.lessonContext, cefrLevel: 'A1' }}
+      />
+    )
+
+    const label = screen.getByText('Task type')
+    const container = label.closest('.space-y-1')!
+
+    // WarmUp has only 1 allowed type (conversation), so it renders the read-only label
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toHaveTextContent('Conversation starter')
+    expect(container.querySelector('[data-slot="select-trigger"]')).toBeNull()
+  })
+
+  it('WarmUp B1: shows Conversation starter (read-only), no dropdown', async () => {
+    mockUseGenerate.mockReturnValue(makeIdleGenerate())
+
+    renderWithQuery(
+      <GeneratePanel
+        {...defaultProps}
+        sectionType="WarmUp"
+        lessonContext={{ ...defaultProps.lessonContext, cefrLevel: 'B1' }}
+      />
+    )
+
+    // WarmUp B1 now has only 1 allowed type (conversation), so it renders read-only
+    const label = screen.getByText('Task type')
+    const container = label.closest('.space-y-1')!
+
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toHaveTextContent('Conversation starter')
+    expect(container.querySelector('[data-slot="select-trigger"]')).toBeNull()
+  })
+
+  it('WrapUp: renders read-only label with Reflection, no dropdown', () => {
+    mockUseGenerate.mockReturnValue(makeIdleGenerate())
+
+    renderWithQuery(
+      <GeneratePanel
+        {...defaultProps}
+        sectionType="WrapUp"
+        lessonContext={{ ...defaultProps.lessonContext, cefrLevel: 'B1' }}
+      />
+    )
+
+    const label = screen.getByText('Task type')
+    const container = label.closest('.space-y-1')!
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-testid="task-type-readonly"]')).toHaveTextContent('Reflection')
+    expect(container.querySelector('[data-slot="select-trigger"]')).toBeNull()
+  })
+
+  it('Practice: shows only Exercises and Conversation options', async () => {
+    mockUseGenerate.mockReturnValue(makeIdleGenerate())
+
+    const user = userEvent.setup()
+    renderWithQuery(
+      <GeneratePanel
+        {...defaultProps}
+        sectionType="Practice"
+        lessonContext={{ ...defaultProps.lessonContext, cefrLevel: 'B1' }}
+      />
+    )
+
+    const label = screen.getByText('Task type')
+    const container = label.closest('.space-y-1')!
+    const trigger = container.querySelector('[data-slot="select-trigger"]')!
+    expect(trigger).toBeTruthy()
+
+    await user.click(trigger)
+
+    const listbox = screen.getByRole('listbox')
+    expect(within(listbox).getByText('Exercises')).toBeInTheDocument()
+    expect(within(listbox).getByText('Conversation')).toBeInTheDocument()
+    expect(within(listbox).queryByText('Vocabulary')).toBeNull()
+    expect(within(listbox).queryByText('Grammar')).toBeNull()
+    expect(within(listbox).queryByText('Reading')).toBeNull()
+    expect(within(listbox).queryByText('Homework')).toBeNull()
   })
 })

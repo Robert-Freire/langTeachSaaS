@@ -17,6 +17,8 @@ interface ContentBlockProps {
   onUpdate: (updated: ContentBlockDto) => void
   onDelete: (id: string) => void
   onRegenerate: () => void
+  learningTargets?: string[] | null
+  onUpdateLearningTargets?: (labels: string[]) => Promise<void>
 }
 
 type ViewMode = 'edit' | 'preview'
@@ -27,6 +29,8 @@ export function ContentBlock({
   onUpdate,
   onDelete,
   onRegenerate,
+  learningTargets,
+  onUpdateLearningTargets,
 }: ContentBlockProps) {
   const [value, setValue] = useState(block.editedContent ?? block.generatedContent)
   const [mode, setMode] = useState<ViewMode>('edit')
@@ -35,6 +39,10 @@ export function ContentBlock({
   const [deleting, setDeleting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const actionInProgress = useRef(false)
+  const [editingTargets, setEditingTargets] = useState(false)
+  const [savingTargets, setSavingTargets] = useState(false)
+  const [targetsDraft, setTargetsDraft] = useState<string[]>([])
+  const [newTagInput, setNewTagInput] = useState('')
 
   const storedValue = block.editedContent ?? block.generatedContent
   const isDirty = value !== storedValue
@@ -172,6 +180,97 @@ export function ContentBlock({
           ))}
         </div>
       </div>
+
+      {/* Learning targets row */}
+      {((learningTargets && learningTargets.length > 0) || onUpdateLearningTargets) && (
+        <div className="flex flex-wrap gap-1 items-center" data-testid="learning-targets">
+          {!editingTargets && learningTargets?.map((label) => (
+            <Badge
+              key={label}
+              variant="secondary"
+              className="text-xs bg-teal-50 text-teal-700 border border-teal-200"
+            >
+              {label}
+            </Badge>
+          ))}
+          {editingTargets && (
+            <>
+              {targetsDraft.map((label, i) => (
+                <Badge
+                  key={`${label}-${i}`}
+                  variant="secondary"
+                  className="text-xs bg-teal-50 text-teal-700 border border-teal-200 gap-1"
+                >
+                  {label}
+                  <button
+                    onClick={() => setTargetsDraft((prev) => prev.filter((_, j) => j !== i))}
+                    className="hover:text-red-600 ml-0.5"
+                    aria-label={`Remove ${label}`}
+                  >
+                    ×
+                  </button>
+                </Badge>
+              ))}
+              <input
+                value={newTagInput}
+                onChange={(e) => setNewTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newTagInput.trim()) {
+                    setTargetsDraft((prev) => [...prev, newTagInput.trim()])
+                    setNewTagInput('')
+                  }
+                }}
+                placeholder="Add label…"
+                className="text-xs border border-zinc-300 rounded px-1 py-0.5 w-28"
+                data-testid="new-tag-input"
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-5 px-1.5 text-xs"
+                data-testid="save-targets-btn"
+                disabled={savingTargets}
+                onClick={async () => {
+                  setSavingTargets(true)
+                  try {
+                    await onUpdateLearningTargets!(targetsDraft)
+                    setEditingTargets(false)
+                  } catch {
+                    setActionError('Failed to save learning targets. Please try again.')
+                  } finally {
+                    setSavingTargets(false)
+                  }
+                }}
+              >
+                {savingTargets ? 'Saving...' : 'Save'}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-5 px-1.5 text-xs text-zinc-400"
+                onClick={() => setEditingTargets(false)}
+              >
+                Cancel
+              </Button>
+            </>
+          )}
+          {!editingTargets && onUpdateLearningTargets && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-5 px-1.5 text-xs text-zinc-400"
+              aria-label="Edit learning targets"
+              data-testid="edit-targets-btn"
+              onClick={() => {
+                setTargetsDraft(learningTargets ?? [])
+                setEditingTargets(true)
+              }}
+            >
+              Edit targets
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Content area */}
       <ContentErrorBoundary blockType={block.blockType}>

@@ -1,7 +1,7 @@
 ---
 name: task-build-verify
 description: Pre-push build and test verification. Runs all 6 required checks (bicep, dotnet build, dotnet test, npm lint, npm build, npm test) against a worktree and returns a compact pass/fail report.
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 You are a build verification agent. Run all pre-push checks and return a compact report.

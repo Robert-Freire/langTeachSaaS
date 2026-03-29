@@ -1,5 +1,6 @@
 using FluentAssertions;
 using LangTeach.Api.AI;
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -19,6 +20,7 @@ internal sealed class FakePromptService : IPromptService
     public ClaudeRequest BuildConversationPrompt(GenerationContext ctx) => Dummy();
     public ClaudeRequest BuildReadingPrompt(GenerationContext ctx) => Dummy();
     public ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx) => Dummy();
+    public ClaudeRequest BuildFreeTextPrompt(GenerationContext ctx) => Dummy();
 
     public ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx)
     {
@@ -86,6 +88,16 @@ internal sealed class SequentialClaudeClient : IClaudeClient
     }
 }
 
+internal sealed class FakeCurriculumValidationService : ICurriculumValidationService
+{
+    public Task<List<CurriculumWarning>> ValidateAsync(
+        List<CurriculumEntry> entries,
+        string targetLevel,
+        IReadOnlyList<string> allowedGrammar,
+        CancellationToken ct = default) =>
+        Task.FromResult(new List<CurriculumWarning>());
+}
+
 internal sealed class FakeTemplateService : ICurriculumTemplateService
 {
     private readonly CurriculumTemplateData? _data;
@@ -141,6 +153,7 @@ public class CurriculumGenerationServiceTests
             prompts ?? new FakePromptService(),
             templateService,
             new SessionMappingService(),
+            new FakeCurriculumValidationService(),
             NullLogger<CurriculumGenerationService>.Instance);
 
     // -------------------------------------------------------------------------
@@ -160,7 +173,7 @@ public class CurriculumGenerationServiceTests
             StudentInterests: null, StudentGoals: null,
             TemplateLevel: "A1.1");
 
-        var entries = await sut.GenerateAsync(ctx);
+        var (entries, _) = await sut.GenerateAsync(ctx);
 
         entries.Should().HaveCount(template.Units.Count);
     }
@@ -178,7 +191,7 @@ public class CurriculumGenerationServiceTests
             StudentInterests: null, StudentGoals: null,
             TemplateLevel: "A1.1");
 
-        var entries = await sut.GenerateAsync(ctx);
+        var (entries, _) = await sut.GenerateAsync(ctx);
 
         entries[0].OrderIndex.Should().Be(1);
         entries[0].GrammarFocus.Should().Contain("El género");
@@ -200,7 +213,7 @@ public class CurriculumGenerationServiceTests
             StudentInterests: null, StudentGoals: null,
             TemplateLevel: "A1.1");
 
-        var entries = await sut.GenerateAsync(ctx);
+        var (entries, _) = await sut.GenerateAsync(ctx);
 
         entries[0].TemplateUnitRef.Should().Be("Nosotros");
         entries[0].CompetencyFocus.Should().Be("EO,CO,EE");
@@ -243,7 +256,7 @@ public class CurriculumGenerationServiceTests
             StudentInterests: ["football"], StudentGoals: null,
             TemplateLevel: "A1.1");
 
-        var entries = await sut.GenerateAsync(ctx);
+        var (entries, _) = await sut.GenerateAsync(ctx);
 
         claude.CompleteCallCount.Should().Be(1);
         entries[0].Topic.Should().Be("Marco meets his football team");
@@ -266,7 +279,7 @@ public class CurriculumGenerationServiceTests
             StudentInterests: null, StudentGoals: null,
             TemplateLevel: "A1.1");
 
-        var entries = await sut.GenerateAsync(ctx);
+        var (entries, _) = await sut.GenerateAsync(ctx);
 
         // Grammar must not be altered by personalization
         entries[0].GrammarFocus.Should().Contain("El género");
@@ -289,7 +302,7 @@ public class CurriculumGenerationServiceTests
             StudentInterests: null, StudentGoals: null,
             TemplateLevel: "A1.1");
 
-        var entries = await sut.GenerateAsync(ctx);
+        var (entries, _) = await sut.GenerateAsync(ctx);
 
         entries[0].Topic.Should().Be("Marco's personalized topic");
         // Entry 2 should keep original template topic (not crash)
@@ -320,7 +333,7 @@ public class CurriculumGenerationServiceTests
             StudentName: null, StudentNativeLanguage: null,
             StudentInterests: null, StudentGoals: null);
 
-        var entries = await sut.GenerateAsync(ctx);
+        var (entries, _) = await sut.GenerateAsync(ctx);
 
         entries.Should().HaveCount(2);
         entries[0].Topic.Should().Be("Greetings");
@@ -352,7 +365,7 @@ public class CurriculumGenerationServiceTests
             StudentInterests: ["football"], StudentGoals: null,
             TemplateLevel: "A1.1");
 
-        var entries = await sut.GenerateAsync(ctx);
+        var (entries, _) = await sut.GenerateAsync(ctx);
 
         entries[0].ContextDescription.Should().Be("Marco tells the clerk his name and phone number at a Barcelona registration office.");
         entries[0].PersonalizationNotes.Should().Contain("ser/estar");
@@ -382,7 +395,7 @@ public class CurriculumGenerationServiceTests
             TemplateUnits: null,
             StudentWeaknesses: ["ser/estar distinction"]);
 
-        var entries = await sut.GenerateAsync(ctx);
+        var (entries, _) = await sut.GenerateAsync(ctx);
 
         // Weakness emphasis should appear in PersonalizationNotes for BOTH entries
         entries[0].PersonalizationNotes.Should().Contain("ser/estar");
@@ -440,7 +453,7 @@ public class CurriculumGenerationServiceTests
             StudentName: "Marco", StudentNativeLanguage: null,
             StudentInterests: null, StudentGoals: null);
 
-        var entries = await sut.GenerateAsync(ctx);
+        var (entries, _) = await sut.GenerateAsync(ctx);
 
         entries[0].ContextDescription.Should().Be("Marco introduces himself to his football team in Barcelona.");
         entries[0].PersonalizationNotes.Should().Contain("Ser/estar");

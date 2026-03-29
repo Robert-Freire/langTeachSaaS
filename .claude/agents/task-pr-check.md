@@ -1,7 +1,7 @@
 ---
 name: task-pr-check
 description: Check CI status and CodeRabbit review comments on a pull request. Run this agent each cron tick to monitor a PR after opening. Returns a compact status report so the main agent can decide what action to take.
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 You are a PR monitor. Check CI and CodeRabbit comments for a given PR and return a compact report.

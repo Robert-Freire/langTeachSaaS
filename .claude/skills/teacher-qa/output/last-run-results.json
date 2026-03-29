@@ -1,7 +1,7 @@
 {
   "config": {
-    "configFile": "C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\worktrees\\fix-qa-stack-independence\\.claude\\skills\\teacher-qa\\playwright\\playwright.config.ts",
-    "rootDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/worktrees/fix-qa-stack-independence/.claude/skills/teacher-qa/playwright/tests",
+    "configFile": "C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\playwright\\playwright.config.ts",
+    "rootDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/playwright/tests",
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -16,7 +16,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/worktrees/fix-qa-stack-independence/.claude/skills/teacher-qa/output/test-artifacts",
+        "outputDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/output/test-artifacts",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -24,7 +24,7 @@
         },
         "id": "",
         "name": "",
-        "testDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/worktrees/fix-qa-stack-independence/.claude/skills/teacher-qa/playwright/tests",
+        "testDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/playwright/tests",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -60,13 +60,13 @@
   },
   "suites": [
     {
-      "title": "sprint-reviewer.spec.ts",
-      "file": "sprint-reviewer.spec.ts",
+      "title": "ana-exam-b2.spec.ts",
+      "file": "ana-exam-b2.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "Sprint Reviewer — integration test for current sprint features",
+          "title": "Ana Exam Prep B2 — create student, generate lesson, capture output",
           "ok": true,
           "tags": [],
           "tests": [
@@ -81,32 +81,25 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 70767,
+                  "duration": 49031,
                   "errors": [],
                   "stdout": [
                     {
-                      "text": "Sprint Reviewer run complete. Output: C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\worktrees\\fix-qa-stack-independence\\.claude\\skills\\teacher-qa\\output\\sprint-reviewer-2026-03-23T11-04-58\n"
+                      "text": "[teacher-qa] PDF export succeeded: lesson_teacher.pdf\n"
                     },
                     {
-                      "text": "Topic: \"Past tenses: contrasting preterito indefinido and imperfecto for narrating past events\"\n"
+                      "text": "Ana Exam Prep B2 run complete. Output: C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\output\\ana-exam-b2-2026-03-28T21-16-43\n"
                     },
                     {
-                      "text": "Sprint issues: 8 items\n"
+                      "text": "Generation took 32s. 5 blocks across 5 sections.\n"
                     },
                     {
-                      "text": "Generation took 30s. 5 blocks across 5 sections.\n"
-                    },
-                    {
-                      "text": "Artifacts: student-view=true, pdf=false\n"
+                      "text": "Artifacts: student-view=true, pdf=true\n"
                     }
                   ],
-                  "stderr": [
-                    {
-                      "text": "[teacher-qa] PDF export failed for lesson d6a8dd71-da53-4acb-b99b-7807d960bb48: TimeoutError: page.waitForEvent: Timeout 30000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================\n"
-                    }
-                  ],
+                  "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-03-23T11:04:58.527Z",
+                  "startTime": "2026-03-28T21:16:43.205Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -114,9 +107,9 @@
               "status": "expected"
             }
           ],
-          "id": "920727f3123f68d271de-3847e17a49d5bcd80219",
-          "file": "sprint-reviewer.spec.ts",
-          "line": 62,
+          "id": "e24dbad7aa4b0db5ccf8-5ddaa536ad787c6814e4",
+          "file": "ana-exam-b2.spec.ts",
+          "line": 52,
           "column": 5
         }
       ]
@@ -124,8 +117,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-03-23T11:04:57.705Z",
-    "duration": 71733.749,
+    "startTime": "2026-03-28T21:16:42.412Z",
+    "duration": 49941.872,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,

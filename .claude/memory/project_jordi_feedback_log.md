@@ -160,6 +160,16 @@ Source: Email reply to "problema detectado en la demo" thread. Attached example 
 Raw: `feedback/raw/2026-03-22-jordi-email-materials-variety.txt`
 PDF: `feedback/raw/2026-03-22-jordi-pdf-partes-del-dia.pdf`
 
+## Feedback Round 8 (2026-03-28, voice note via Robert)
+
+Source: WhatsApp voice note from Jordi, forwarded by Robert via email. ~23 seconds.
+
+| # | Feedback | Roadmap fit | Status |
+|---|----------|-------------|--------|
+| 40 | **Grammar explanation support**: Platform should help teachers explain specific grammar concepts (e.g., ser vs. estar). Level-aware pedagogical explanations the teacher can reference or present to students. "Que pudiera ayudar al profesor a explicar determinados conceptos gramaticales." | Phase 2A: Teacher Workflow. Could leverage existing CEFR level rules + AI to generate level-appropriate grammar explanations on demand. | **New, actionable** |
+
+Raw: `feedback/raw/2026-03-28-jordi-audio-grammar-explainer.txt`
+
 ## Open items (internal, do not chase Jordi)
 
 - ~~Awaiting: course programs for all levels~~ RECEIVED

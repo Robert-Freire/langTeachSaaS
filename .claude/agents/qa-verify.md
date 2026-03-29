@@ -1,7 +1,7 @@
 ---
 name: qa-verify
 description: Pre-PR verification that implementation covers all acceptance criteria from the linked GitHub issue. Run after pre-push checks pass, before the code review agent.
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 # QA Verification

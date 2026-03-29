@@ -14,6 +14,22 @@
   <ItemGroup>
     <EmbeddedResource Include="..\..\data\curricula\instituto_educativo\*.json"
                       Link="Curricula\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\data\section-profiles\*.json"
+                      Link="SectionProfiles\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\data\pedagogy\exercise-types.json"
+                      Link="Pedagogy\exercise-types.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\cefr-levels\*.json"
+                      Link="Pedagogy\CefrLevels\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\data\pedagogy\l1-influence.json"
+                      Link="Pedagogy\l1-influence.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\template-overrides.json"
+                      Link="Pedagogy\template-overrides.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\course-rules.json"
+                      Link="Pedagogy\course-rules.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\style-substitutions.json"
+                      Link="Pedagogy\style-substitutions.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\scope-constraints.json"
+                      Link="Pedagogy\scope-constraints.json" />
   </ItemGroup>
 
   <ItemGroup>

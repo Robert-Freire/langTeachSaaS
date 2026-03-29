@@ -11,6 +11,7 @@ public interface IPromptService
     ClaudeRequest BuildConversationPrompt(GenerationContext ctx);
     ClaudeRequest BuildReadingPrompt(GenerationContext ctx);
     ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx);
+    ClaudeRequest BuildFreeTextPrompt(GenerationContext ctx);
     ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx);
 }
 
@@ -29,7 +30,8 @@ public record CurriculumContext(
     DifficultyDto[]? StudentDifficulties = null,
     string? TemplateLevel = null,
     IReadOnlyList<TemplateUnitContext>? TemplateUnits = null,
-    string? TeacherNotes = null
+    string? TeacherNotes = null,
+    string CourseType = "general"
 );
 
 /// <summary>
@@ -61,5 +63,7 @@ public record GenerationContext(
     DifficultyDto[]? StudentDifficulties = null,
     IReadOnlyList<string>? GrammarConstraints = null,
     string? TemplateName = null,
-    string? CurriculumObjectives = null
+    string? CurriculumObjectives = null,
+    string? TeacherGrammarConstraints = null,
+    string? SectionType = null
 );

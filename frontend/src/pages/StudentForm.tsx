@@ -31,8 +31,10 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
+import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
 import { PageHeader } from '@/components/PageHeader'
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
@@ -344,6 +346,26 @@ export default function StudentForm() {
         subtitle={isEdit ? "Update this student's profile." : 'Create a new student profile.'}
         actions={
           <div className="flex items-center gap-3">
+            {isEdit && id && (() => {
+              const canCreateCourse = !!language && !!cefrLevel
+              return canCreateCourse ? (
+                <Button type="button" variant="outline" data-testid="create-course-btn" onClick={() => navigate(`/courses/new?studentId=${id}`)}>
+                  Create Course
+                </Button>
+              ) : (
+                <Tooltip>
+                  {/* render as span so pointer events fire even when the inner button is disabled */}
+                  <TooltipTrigger render={<span tabIndex={0} className="inline-flex" />}>
+                    <Button type="button" variant="outline" disabled data-testid="create-course-btn">
+                      Create Course
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Complete student profile (language and CEFR level required) to create a course.
+                  </TooltipContent>
+                </Tooltip>
+              )
+            })()}
             <Button type="button" variant="outline" onClick={() => navigate('/students')}>
               Cancel
             </Button>
@@ -621,6 +643,7 @@ export default function StudentForm() {
         </Card>
       </form>
 
+      {isEdit && id && <StudentCoursesCard studentId={id} />}
       {isEdit && id && <LessonHistoryCard studentId={id} />}
     </div>
   )

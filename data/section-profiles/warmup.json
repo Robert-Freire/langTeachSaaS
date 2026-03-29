@@ -1,0 +1,121 @@
+{
+  "sectionType": "warmup",
+  "levels": {
+    "A1": {
+      "contentTypes": ["conversation"],
+      "guidance": "yes/no or either/or questions using only known vocabulary. Accept single-word answers. Purpose: reduce anxiety. Example: Te gusta mas el cafe o el te? Keep to 1-2 teacher turns.",
+      "duration": { "min": 2, "max": 3 },
+      "scope": "brief",
+      "competencies": ["interaction"],
+      "scaffolding": "high",
+      "interactionPattern": "teacher-led",
+      "validExerciseTypes": ["EO-01", "EO-03", "PRAG-01", "LUD-06", "LUD-07"],
+      "forbiddenExerciseTypes": [
+        {"id": null, "pattern": "GR-*", "reason": "Grammar drills contradict the anxiety-reduction and conversational purpose of WarmUp"},
+        {"id": null, "pattern": "EE-*", "reason": "Written production is inappropriate for an oral warm-up stage"},
+        {"id": null, "pattern": "CO-*", "reason": "Listening comprehension tasks require audio resources not suited to WarmUp"}
+      ],
+      "levelSpecificNotes": [
+        {"exerciseTypeId": "EO-01", "note": "Keep to 1-2 scripted exchanges only; model the turn before asking student to respond"},
+        {"exerciseTypeId": "LUD-07", "note": "Use only yes/no question format (Quién es quién) to keep language minimal"}
+      ],
+      "minExerciseVariety": 1
+    },
+    "A2": {
+      "contentTypes": ["conversation"],
+      "guidance": "Open personal questions using present tense. Expect a 2-3 sentence response. Example: Que haces los fines de semana? Include 2-3 suggested follow-up questions. Note: Use preterite only if the student has already learned it.",
+      "duration": { "min": 2, "max": 4 },
+      "scope": "brief",
+      "competencies": ["interaction"],
+      "scaffolding": "medium",
+      "interactionPattern": "teacher-led",
+      "validExerciseTypes": ["EO-01", "EO-03", "EO-08", "PRAG-01", "PRAG-03", "LUD-05", "LUD-07"],
+      "forbiddenExerciseTypes": [
+        {"id": null, "pattern": "GR-*", "reason": "Grammar drills contradict the anxiety-reduction and conversational purpose of WarmUp"},
+        {"id": null, "pattern": "EE-*", "reason": "Written production is inappropriate for an oral warm-up stage"},
+        {"id": null, "pattern": "CO-*", "reason": "Listening comprehension tasks require audio resources not suited to WarmUp"}
+      ],
+      "levelSpecificNotes": [
+        {"exerciseTypeId": "EO-08", "note": "Limit to 2-3 teacher turns maximum; do not extend into full discussion"},
+        {"exerciseTypeId": "LUD-05", "note": "Use only simple concrete vocabulary categories (animals, food, objects)"}
+      ],
+      "minExerciseVariety": 1
+    },
+    "B1": {
+      "contentTypes": ["conversation"],
+      "guidance": "Opinion prompts with light justification. Que opinas de...? Por que? Tied to the lesson topic. 2-3 follow-up questions. No scaffolding phrases needed.",
+      "duration": { "min": 3, "max": 5 },
+      "scope": "brief",
+      "competencies": ["interaction"],
+      "scaffolding": "medium",
+      "interactionPattern": "student-led",
+      "validExerciseTypes": ["EO-08", "PRAG-01", "PRAG-03", "PRAG-04", "PRAG-05"],
+      "forbiddenExerciseTypes": [
+        {"id": null, "pattern": "GR-*", "reason": "Grammar drills contradict the anxiety-reduction and conversational purpose of WarmUp"},
+        {"id": null, "pattern": "EE-*", "reason": "Written production is inappropriate for an oral warm-up stage"},
+        {"id": null, "pattern": "CO-*", "reason": "Listening comprehension tasks require audio resources not suited to WarmUp"}
+      ],
+      "levelSpecificNotes": [
+        {"exerciseTypeId": "PRAG-05", "note": "Keep social simulations short (1-2 minutes); this is warm-up, not full practice"}
+      ],
+      "minExerciseVariety": 1
+    },
+    "B2": {
+      "contentTypes": ["conversation"],
+      "guidance": "News-related or cultural discussion starters. Expects 4-5 sentence connected discourse. agree/disagree or headline prediction format. 2-3 follow-up questions.",
+      "duration": { "min": 3, "max": 5 },
+      "scope": "brief",
+      "competencies": ["interaction"],
+      "scaffolding": "low",
+      "interactionPattern": "student-led",
+      "validExerciseTypes": ["EO-08", "PRAG-01", "PRAG-03", "PRAG-04", "PRAG-05"],
+      "forbiddenExerciseTypes": [
+        {"id": null, "pattern": "GR-*", "reason": "Grammar drills contradict the anxiety-reduction and conversational purpose of WarmUp"},
+        {"id": null, "pattern": "EE-*", "reason": "Written production is inappropriate for an oral warm-up stage"},
+        {"id": null, "pattern": "CO-*", "reason": "Listening comprehension tasks require audio resources not suited to WarmUp"}
+      ],
+      "levelSpecificNotes": [
+        {"exerciseTypeId": "PRAG-04", "note": "Intercultural comparisons work well as opinion hooks at B2; student leads the comparison"}
+      ],
+      "minExerciseVariety": 1
+    },
+    "C1": {
+      "contentTypes": ["conversation"],
+      "guidance": "Provocative statement, abstract prompt, or ethical dilemma. Expects nuanced argumentation. Single trigger, no follow-ups needed; teacher improvises. circumlocution or semantic mapping as alternatives.",
+      "duration": { "min": 3, "max": 5 },
+      "scope": "brief",
+      "competencies": ["interaction"],
+      "scaffolding": "none",
+      "interactionPattern": "student-led",
+      "validExerciseTypes": ["EO-07", "EO-08", "PRAG-01", "PRAG-04", "PRAG-05"],
+      "forbiddenExerciseTypes": [
+        {"id": null, "pattern": "GR-*", "reason": "Grammar drills contradict the anxiety-reduction and conversational purpose of WarmUp"},
+        {"id": null, "pattern": "EE-*", "reason": "Written production is inappropriate for an oral warm-up stage"},
+        {"id": null, "pattern": "CO-*", "reason": "Listening comprehension tasks require audio resources not suited to WarmUp"}
+      ],
+      "levelSpecificNotes": [
+        {"exerciseTypeId": "EO-07", "note": "Negotiation/problem-solving works as a warm-up only if the scenario is very brief (1-2 turns to establish positions)"}
+      ],
+      "minExerciseVariety": 1
+    },
+    "C2": {
+      "contentTypes": ["conversation"],
+      "guidance": "Devil advocate positions or mediation warm-ups (summarize a concept for a non-expert). Expects register-aware extended discourse. Same trigger types as C1.",
+      "duration": { "min": 3, "max": 5 },
+      "scope": "brief",
+      "competencies": ["interaction"],
+      "scaffolding": "none",
+      "interactionPattern": "student-led",
+      "validExerciseTypes": ["EO-08", "EO-09", "PRAG-01", "PRAG-04", "PRAG-05"],
+      "forbiddenExerciseTypes": [
+        {"id": null, "pattern": "GR-*", "reason": "Grammar drills contradict the anxiety-reduction and conversational purpose of WarmUp"},
+        {"id": null, "pattern": "EE-*", "reason": "Written production is inappropriate for an oral warm-up stage"},
+        {"id": null, "pattern": "CO-*", "reason": "Listening comprehension tasks require audio resources not suited to WarmUp"}
+      ],
+      "levelSpecificNotes": [
+        {"exerciseTypeId": "EO-09", "note": "Oral mediation as warm-up: ask student to explain a concept from last session in simple terms for a hypothetical non-expert audience"}
+      ],
+      "minExerciseVariety": 1
+    }
+  }
+}

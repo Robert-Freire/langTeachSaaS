@@ -20,11 +20,11 @@ import type { LessonSection } from '../../api/lessons'
 import type { ContentBlockType } from '../../types/contentTypes'
 
 const SECTION_TASK_MAP: Record<string, ContentBlockType> = {
-  WarmUp: 'vocabulary',
+  WarmUp: 'conversation',
   Presentation: 'grammar',
   Practice: 'exercises',
   Production: 'conversation',
-  WrapUp: 'homework',
+  WrapUp: 'conversation',
 }
 
 const SECTION_ORDER = ['WarmUp', 'Presentation', 'Practice', 'Production', 'WrapUp']
@@ -110,6 +110,7 @@ export function FullLessonGenerateButton({
             cefrLevel: lessonContext.cefrLevel,
             topic: lessonContext.topic,
             studentId: lessonContext.studentId,
+            sectionType,
           },
           token,
           controller.signal,
@@ -126,6 +127,7 @@ export function FullLessonGenerateButton({
             cefrLevel: lessonContext.cefrLevel,
             topic: lessonContext.topic,
             studentId: lessonContext.studentId,
+            sectionType,
           }),
         })
         if (controller.signal.aborted) return

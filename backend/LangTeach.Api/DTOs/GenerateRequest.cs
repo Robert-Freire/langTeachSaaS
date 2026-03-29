@@ -24,4 +24,10 @@ public class GenerateRequest
 
     [MaxLength(200)]
     public string? Direction { get; set; }
+
+    [MaxLength(500)]
+    public string? GrammarConstraints { get; set; }
+
+    [MaxLength(50)]
+    public string? SectionType { get; set; }
 }

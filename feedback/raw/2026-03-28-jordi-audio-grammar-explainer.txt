@@ -1,0 +1,22 @@
+Source: Voice note from Jordi Freire, forwarded by Robert via email
+Date: 2026-03-28
+File: PTT-20260328-WA0000.opus (WhatsApp voice note, ~23 seconds)
+Transcribed with: Whisper medium model, language=es
+
+---
+
+Transcription (Spanish):
+
+"Por cierto, otra cosa que he pensado, que tambien seria bien, tambien seria interesante, es que pudiera ayudar al profesor a explicar determinados conceptos gramaticales, porque aqui va a ser y no se estar, sabes? Es decir, que pudiera un poco tener este know-how, no se, de alguna forma, eh? I don't know."
+
+---
+
+Translation (English):
+
+"By the way, another thing I've been thinking, that would also be good, also interesting, is that [the platform] could help the teacher explain specific grammar concepts, because here it's going to be [the difference between] ser and estar, you know? That is, that it could have this know-how somehow, right? I don't know."
+
+---
+
+Summary:
+
+Feature idea: LangTeach should help teachers explain grammar concepts to students. Example given: ser vs. estar. The platform should have built-in pedagogical knowledge for grammar explanations, level-appropriate and ready for the teacher to reference or present.

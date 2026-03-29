@@ -1,7 +1,7 @@
 ---
 name: task-merged
 description: Post-merge cleanup after a PR is merged. Moves the issue to Ready-to-Test on the project board. After this agent returns, the main agent must call ExitWorktree to remove the worktree.
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 You are a post-merge cleanup agent. You move the closed issue to "Ready to Test" on the project board.
@@ -28,7 +28,15 @@ gh project item-list 2 --owner Robert-Freire --format json --limit 200 --jq '.it
 
 The result will look like `PVTI_lAHOAF1Pks4BSLsSzgXXXXXX`. Save this as ITEM_ID.
 
-## Step 2: Move to "Ready to Test"
+## Step 2: Close the issue
+
+Sprint-branch PRs do NOT auto-close issues (auto-close only works for PRs targeting `main`). Manually close it:
+
+```bash
+gh issue close <N> --repo Robert-Freire/langTeachSaaS --reason completed
+```
+
+## Step 3: Move to "Ready to Test"
 
 ```bash
 gh project item-edit \
@@ -40,7 +48,7 @@ gh project item-edit \
 
 If this fails, check that ITEM_ID starts with `PVTI_`. If you got a numeric ID instead, the jq filter did not work -- retry with `--jq '.items[] | select(.content.number == <N>)'` and inspect the full object to find the correct id field.
 
-## Step 3: Confirm and return
+## Step 4: Confirm and return
 
 Output ONLY:
 
@@ -52,6 +60,6 @@ Next: call ExitWorktree(action: "remove") to clean up the worktree.
 ## Rules
 
 - Never move issues to "Done" (user does that manually after sanity check)
-- Never close the issue (the merged PR auto-closes it)
+- Always close the issue manually (sprint-branch PRs do not auto-close)
 - Never modify source code
 - If the item is not found on the board, report it and stop -- do not guess

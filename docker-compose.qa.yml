@@ -42,11 +42,12 @@ services:
 
   api:
     build:
-      context: ./backend
-      dockerfile: LangTeach.Api/Dockerfile
+      context: .
+      dockerfile: backend/LangTeach.Api/Dockerfile
     environment:
       # Development environment uses real Auth0 JWT validation (not E2ETesting bypass)
       ASPNETCORE_ENVIRONMENT: Development
+      Serilog__MinimumLevel__Override__LangTeach.Api.AI: Debug
       ConnectionStrings__Default: "Server=sqlserver,1433;Database=LangTeachQA;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=true"
       Auth0__Domain: "${AUTH0_DOMAIN}"
       Auth0__Audience: "${AUTH0_AUDIENCE}"

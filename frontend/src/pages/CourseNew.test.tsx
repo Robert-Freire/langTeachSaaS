@@ -14,6 +14,7 @@ vi.mock('../api/courses', () => ({
 
 vi.mock('../api/students', () => ({
   getStudents: vi.fn(),
+  getStudent: vi.fn(),
 }))
 
 vi.mock('../api/curricula', () => ({
@@ -21,11 +22,11 @@ vi.mock('../api/curricula', () => ({
   getMappingPreview: vi.fn(),
 }))
 
-function wrapper(ui: React.ReactElement) {
+function wrapper(ui: React.ReactElement, initialEntry = '/courses/new') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>{ui}</MemoryRouter>
+      <MemoryRouter initialEntries={[initialEntry]}>{ui}</MemoryRouter>
     </QueryClientProvider>
   )
 }
@@ -51,6 +52,7 @@ describe('CourseNew wizard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(studentsApi.getStudents).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
+    vi.mocked(studentsApi.getStudent).mockResolvedValue(undefined as never)
     vi.mocked(curriculaApi.getCurriculumTemplates).mockResolvedValue(MOCK_TEMPLATES)
     vi.mocked(curriculaApi.getMappingPreview).mockResolvedValue(MOCK_MAPPING)
   })
@@ -83,6 +85,19 @@ describe('CourseNew wizard', () => {
     wrapper(<CourseNew />)
     fireEvent.click(screen.getByTestId('mode-exam-prep'))
     expect(screen.queryByTestId('use-template-checkbox')).not.toBeInTheDocument()
+  })
+
+  it('generate button is disabled in exam-prep mode when no exam is selected', async () => {
+    const user = userEvent.setup()
+    wrapper(<CourseNew />)
+
+    fireEvent.click(screen.getByTestId('mode-exam-prep'))
+    fireEvent.change(screen.getByTestId('course-name'), { target: { value: 'DELE Prep Course' } })
+    await user.click(screen.getByTestId('language-select'))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+
+    // No exam selected — button must remain disabled
+    expect(screen.getByTestId('generate-curriculum-btn')).toBeDisabled()
   })
 
   it('submitting without template omits templateLevel', async () => {
@@ -364,6 +379,57 @@ describe('CourseNew wizard', () => {
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({ sessionCount: 10 })
       )
+    })
+  })
+
+  describe('locked student via ?studentId param', () => {
+    const MARCO = {
+      id: 'student-1', name: 'Marco', cefrLevel: 'B1',
+      learningLanguage: 'Spanish', interests: [], notes: null,
+      nativeLanguage: null, learningGoals: [], weaknesses: [],
+      difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01',
+    }
+
+    it('shows student name as read-only text when ?studentId param is present', async () => {
+      vi.mocked(studentsApi.getStudent).mockResolvedValue(MARCO)
+      wrapper(<CourseNew />, '/courses/new?studentId=student-1')
+
+      const locked = await screen.findByTestId('student-locked')
+      expect(locked).toBeInTheDocument()
+      expect(locked).toHaveTextContent('Marco')
+      expect(screen.queryByTestId('student-select')).not.toBeInTheDocument()
+    })
+
+    it('shows skeleton while locked student is loading', async () => {
+      vi.mocked(studentsApi.getStudent).mockReturnValue(new Promise(() => {}))
+      wrapper(<CourseNew />, '/courses/new?studentId=student-1')
+
+      expect(screen.getByTestId('student-locked-loading')).toBeInTheDocument()
+      expect(screen.queryByTestId('student-select')).not.toBeInTheDocument()
+    })
+
+    it('auto-fills language and CEFR level from locked student', async () => {
+      vi.mocked(studentsApi.getStudent).mockResolvedValue(MARCO)
+      wrapper(<CourseNew />, '/courses/new?studentId=student-1')
+
+      await screen.findByTestId('student-locked')
+
+      const languageTrigger = screen.getByTestId('language-select')
+      expect(languageTrigger).toHaveTextContent('Spanish')
+
+      const cefrTrigger = screen.getByTestId('cefr-select')
+      expect(cefrTrigger).toHaveTextContent('B1')
+    })
+
+    it('student selector shows normal dropdown without ?studentId param', async () => {
+      vi.mocked(studentsApi.getStudents).mockResolvedValue({
+        items: [MARCO], totalCount: 1, page: 1, pageSize: 100,
+      })
+      wrapper(<CourseNew />)
+
+      const select = await screen.findByTestId('student-select')
+      expect(select).toBeInTheDocument()
+      expect(screen.queryByTestId('student-locked')).not.toBeInTheDocument()
     })
   })
 

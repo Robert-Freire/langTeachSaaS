@@ -191,7 +191,8 @@ describe('FullLessonGenerateButton', () => {
     await waitFor(() => expect(onBlockSaved).toHaveBeenCalledTimes(5), { timeout: 3000 })
 
     const blockTypes = onBlockSaved.mock.calls.map((c) => (c as [ContentBlockDto])[0].blockType)
-    expect(new Set(blockTypes)).toEqual(new Set(['vocabulary', 'grammar', 'exercises', 'conversation', 'homework']))
+    // WarmUp/Production/WrapUp use 'conversation'; Presentation uses 'grammar'; Practice uses 'exercises'
+    expect(new Set(blockTypes)).toEqual(new Set(['conversation', 'grammar', 'exercises']))
   })
 
   it('all sections show active status simultaneously during generation', async () => {
@@ -275,8 +276,6 @@ describe('FullLessonGenerateButton', () => {
     await waitFor(() => expect(screen.getByText('Lesson generated!')).toBeInTheDocument(), { timeout: 3000 })
     // Only 4 blocks saved (Production skipped)
     expect(onBlockSaved).toHaveBeenCalledTimes(4)
-    const blockTypes = onBlockSaved.mock.calls.map((c) => (c as [ContentBlockDto])[0].blockType)
-    expect(blockTypes).not.toContain('conversation')
   })
 
   it('progress counter reflects actual section count for partial lesson', async () => {
@@ -310,6 +309,31 @@ describe('FullLessonGenerateButton', () => {
 
     resolvers.forEach(r => r('{}'))
     await waitFor(() => expect(vi.mocked(generateApi.saveContentBlock)).toHaveBeenCalledTimes(4), { timeout: 3000 })
+  })
+
+  it('streamText receives correct sectionType for each section', async () => {
+    const user = userEvent.setup()
+    const streamMock = vi.mocked(streamText)
+
+    streamMock.mockResolvedValue('{}')
+    vi.mocked(generateApi.saveContentBlock).mockImplementation((_lessonId, req) =>
+      Promise.resolve(makeBlock(req.lessonSectionId!, req.blockType as string))
+    )
+
+    renderButton()
+    await user.click(screen.getByTestId('generate-full-lesson-btn'))
+    await user.click(screen.getByTestId('confirm-generate-full-lesson'))
+
+    await waitFor(() => expect(streamMock).toHaveBeenCalledTimes(5), { timeout: 3000 })
+
+    const calledSectionTypes = streamMock.mock.calls.map(
+      (c) => (c[1] as { sectionType?: string }).sectionType
+    )
+    expect(calledSectionTypes).toContain('WarmUp')
+    expect(calledSectionTypes).toContain('Presentation')
+    expect(calledSectionTypes).toContain('Practice')
+    expect(calledSectionTypes).toContain('Production')
+    expect(calledSectionTypes).toContain('WrapUp')
   })
 
   it('error in one section does not stop other sections from completing', async () => {

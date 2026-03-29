@@ -18,15 +18,18 @@ public class LessonContentBlocksController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IProfileService _profileService;
+    private readonly ILessonService _lessonService;
     private readonly ILogger<LessonContentBlocksController> _logger;
 
     public LessonContentBlocksController(
         AppDbContext db,
         IProfileService profileService,
+        ILessonService lessonService,
         ILogger<LessonContentBlocksController> logger)
     {
         _db = db;
         _profileService = profileService;
+        _lessonService = lessonService;
         _logger = logger;
     }
 
@@ -84,6 +87,8 @@ public class LessonContentBlocksController : ControllerBase
             if (section is null || section.LessonId != lessonId)
                 return NotFound("Section not found.");
         }
+
+        await _lessonService.EnsureLearningTargetsAsync(lesson, ct);
 
         var block = new LessonContentBlock
         {

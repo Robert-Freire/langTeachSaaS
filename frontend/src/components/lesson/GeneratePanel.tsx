@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import { usePartialJsonParse } from '../../hooks/usePartialJsonParse'
 import type { SectionType } from '../../api/lessons'
+import { getAllowedContentTypes, getContentTypeLabel } from '../../utils/sectionContentTypes'
+import { useSectionRules } from '../../hooks/useSectionRules'
 import {
   saveContentBlock,
   deleteContentBlock,
@@ -28,11 +30,11 @@ import {
 import { Input } from '@/components/ui/input'
 
 const SECTION_DEFAULT_TASK: Record<SectionType, ContentBlockType> = {
-  WarmUp: 'conversation',
+  WarmUp: 'free-text',
   Presentation: 'vocabulary',
   Practice: 'exercises',
-  Production: 'grammar',
-  WrapUp: 'homework',
+  Production: 'free-text',
+  WrapUp: 'free-text',
 }
 
 const TASK_TYPES: { value: ContentBlockType; label: string }[] = [
@@ -42,6 +44,7 @@ const TASK_TYPES: { value: ContentBlockType; label: string }[] = [
   { value: 'conversation', label: 'Conversation' },
   { value: 'reading', label: 'Reading' },
   { value: 'homework', label: 'Homework' },
+  { value: 'free-text', label: 'Free activity' },
 ]
 
 const DIRECTION_OPTIONS = [
@@ -101,9 +104,11 @@ export function GeneratePanel({
   )
   const [style, setStyle] = useState('Conversational')
   const [direction, setDirection] = useState<string | undefined>(undefined)
+  const [grammarConstraints, setGrammarConstraints] = useState<string | undefined>(undefined)
   const [inserting, setInserting] = useState(false)
   const [insertError, setInsertError] = useState<string | null>(null)
 
+  const { data: sectionRules } = useSectionRules()
   const { data: profile } = useProfile()
   const queryClient = useQueryClient()
   const { status, output, error, quotaExceeded, generate, abort } = useGenerate()
@@ -121,7 +126,9 @@ export function GeneratePanel({
     studentId: lessonContext.studentId ?? undefined,
     existingNotes: lessonContext.existingNotes ?? undefined,
     direction,
-  }), [lessonId, lessonContext, style, direction])
+    grammarConstraints,
+    sectionType,
+  }), [lessonId, lessonContext, style, direction, grammarConstraints, sectionType])
 
   const handleGenerate = () => {
     generate(taskType, request)
@@ -164,6 +171,23 @@ export function GeneratePanel({
     }
   }
 
+  const allowedTypes = useMemo(
+    () => getAllowedContentTypes(sectionRules, sectionType, lessonContext.cefrLevel),
+    [sectionRules, sectionType, lessonContext.cefrLevel]
+  )
+
+  const filteredTaskTypes = useMemo(
+    () => allowedTypes
+      .map(v => TASK_TYPES.find(t => t.value === v))
+      .filter(Boolean)
+      .map(t => ({ ...t!, label: getContentTypeLabel(sectionType, t!.value, t!.label) })),
+    [allowedTypes, sectionType]
+  )
+
+  useEffect(() => {
+    setTaskType(current => allowedTypes.includes(current) ? current : allowedTypes[0])
+  }, [allowedTypes])
+
   const isStreaming = status === 'streaming'
   const isDone = status === 'done'
   const isError = status === 'error'
@@ -194,20 +218,31 @@ export function GeneratePanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-xs">Task type</Label>
-          <Select value={taskType} onValueChange={(v) => v && setTaskType(v as ContentBlockType)} disabled={isStreaming}>
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue>
-                {(v: unknown) => TASK_TYPES.find(t => t.value === v)?.label ?? String(v)}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {TASK_TYPES.map((t) => (
-                <SelectItem key={t.value} value={t.value}>
-                  {t.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {filteredTaskTypes.length === 1 ? (
+            <div>
+              <div
+                className="h-8 flex items-center px-3 text-xs rounded-md border border-input bg-muted text-muted-foreground"
+                data-testid="task-type-readonly"
+                title="Only one content type is allowed for this section"
+              >
+                {filteredTaskTypes[0].label}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">Only type for this section</p>
+            </div>
+          ) : (
+            <Select value={taskType} onValueChange={(v) => v && setTaskType(v as ContentBlockType)} disabled={isStreaming}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredTaskTypes.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Style</Label>
@@ -219,6 +254,20 @@ export function GeneratePanel({
             placeholder="e.g. Conversational"
           />
         </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs">Grammar constraints (optional)</Label>
+        <Textarea
+          value={grammarConstraints ?? ''}
+          onChange={(e) => setGrammarConstraints(e.target.value || undefined)}
+          disabled={isStreaming}
+          rows={2}
+          maxLength={500}
+          className="resize-none text-xs"
+          placeholder="e.g. include subjunctive, only regular verbs, avoid passive voice"
+          data-testid="grammar-constraints-textarea"
+        />
       </div>
 
       {existingBlocks.length > 0 && (

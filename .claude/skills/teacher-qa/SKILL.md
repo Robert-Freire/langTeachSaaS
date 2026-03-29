@@ -152,6 +152,18 @@ Each test saves its output to `.claude/skills/teacher-qa/output/<persona>-<times
 - `lesson-editor.png` — screenshot of the lesson editor
 - `student-view.png` — screenshot of the student view (if available)
 
+### Step 3.5: Extract Prompt Logs
+
+After each Playwright run, extract the assembled prompt logs from the QA container and save them for use in the Diagnosis lines:
+```bash
+docker compose -f docker-compose.qa.yml --env-file .env.qa logs api 2>&1 \
+  | grep -E "PromptSystem|PromptUser" \
+  | tail -200 \
+  > .claude/skills/teacher-qa/output/<persona-dir>/prompt-logs.txt
+```
+
+Keep these logs available during report writing. For each finding, you will search the logs to determine whether the relevant constraint was present in the assembled prompt.
+
 ### Step 4: Locate Output
 
 After each run, find the most recent output directory:
@@ -159,7 +171,7 @@ After each run, find the most recent output directory:
 ls -t .claude/skills/teacher-qa/output/ | head -5
 ```
 
-Read `lesson-content.json` and `run-metadata.json` from the output directory.
+Read `lesson-content.json`, `run-metadata.json`, and `prompt-logs.txt` from the output directory.
 
 Also load the relevant curriculum JSON for CEFR alignment:
 - A1.1 persona: read `data/curricula/iberia/A1.1.json`
@@ -344,18 +356,30 @@ Write to `output/<persona-dir>/report.md`:
 
 #### Bugs (broken functionality)
 - [B1] [Section: WarmUp] Description of the bug
+  Diagnosis: constraint present | constraint missing | constraint ambiguous — [brief explanation]
 
 #### Content Quality Issues (pedagogically wrong)
 - [C1] [Section: Practice] Exercises reference "the image above" but no image exists
+  Diagnosis: constraint present — "All content must be text-only" constraint found in system prompt
 - [C2] [Section: Vocabulary] 3 items are C1 level in a B1 lesson: [list them]
+  Diagnosis: constraint missing — no vocabulary level ceiling found in user prompt for this block
 
 #### Gaps (something expected is missing)
 - [G1] No L1 interference notes despite student being Italian learning Spanish
+  Diagnosis: constraint present — L1 adjustment block for Italian found in system prompt; Claude ignored it
 - [G2] WrapUp section is empty
+  Diagnosis: constraint present — WrapUp section guidance found in lesson-plan user prompt
 
 #### Suggestions (not wrong, but could be better)
 - [S1] WarmUp could be more engaging — currently feels like a vocabulary preview
+  Diagnosis: constraint ambiguous — warmup guidance says "brief conversational activity" which could be interpreted as vocabulary preview
 - [S2] Production section could use a more realistic real-world scenario
+
+Diagnosis key:
+- **constraint present** — the relevant constraint text is found in `prompt-logs.txt` for this request
+- **constraint missing** — expected constraint is absent from the assembled prompt (prompt bug or coverage gap)
+- **constraint ambiguous** — constraint exists but wording is vague enough that the observed output is a valid misinterpretation
+- **N/A** — finding is about output quality or structure unrelated to a specific prompt constraint
 
 ### Curriculum Alignment Notes
 [Compare to Jordi's curriculum data for this level. Note any out-of-scope grammar or vocabulary.]

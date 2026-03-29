@@ -4,102 +4,67 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 ---
 
-### PR #238 (2026-03-22) — Fix vocabulary generation (#229)
+*Cleared 2026-03-28 during Student-Aware Curriculum sprint close (round 2). 9 entries processed: 4 batched into #347 (pedagogy data consistency), 2 into #349 (UX polish), 3 deleted (redundant tests nit, harmless prompt duplication, undocumented fallback comment).*
 
-| Severity | Finding |
-|----------|---------|
-| minor | `VocabularyPrompt_RequiresCefrLevelOnItems` test name overstates — only verifies "B1" literal, not arbitrary levels. Functionally correct, naming only. |
-| minor | Column-alignment whitespace in `VocabularyUserPrompt` (`var topic      =`) — cosmetic. |
+## PR #351 (2026-03-28) — #351 additive section guidance model
 
----
+| Severity | File | Note |
+|---|---|---|
+| Minor | `PromptService.cs` restrictions block | Restrictions render as negative constraints ("Do not use [LUD] exercises"). Future authoring pass should consider positive framing ("Use written tasks only. Exclude LUD exercises.") as restrictions list grows. |
+| Minor | `template-overrides.json:culture-society:practice` | "Avoid purely mechanical grammar drills" is soft negative bloat. Replace with positive task description on next authoring pass. |
+| Minor | `PromptServiceTests.cs` fragile assertions | Tests `LessonPlanPrompt_UserPrompt_PracticeGuidance_*` and `LessonPlanPrompt_UserPrompt_RequiresProductionInEveryLesson` assert against B1 profile prose substrings. Any future wording change to `practice.json`/`production.json` B1 will silently break these. |
+| Minor | `PromptService.cs:GetSectionFallbackGuidance` | Expression-body switch syntax; other private helpers in PromptService.cs use block-body. Style inconsistency only. |
 
-### PR (2026-03-21) — Dashboard loading skeletons (#111)
+## PR #346 (2026-03-28) — #346 fix Docker e2e build context
 
-| Severity | Finding |
-|----------|---------|
-| Minor | `frontend/src/pages/Dashboard.tsx:82-84`: Inline SVG icon for slow-connection warning banner. If project adopts an icon library (lucide-react), replace with library component for consistency. |
+| Severity | File | Note |
+|---|---|---|
+| Minor | `.dockerignore` | `scripts/` and `.github/` dirs not excluded — tiny size (~8KB), no functional impact. Could be added for completeness. |
 
----
+## PR #334 (2026-03-28) — #326 frontend section content types
 
-### PR #136 (2026-03-20) — Capitalize dropdown defaults
-
-| Severity | Finding |
-|----------|---------|
-| Important | `frontend/src/pages/Lessons.tsx:179,188,197`: filter render functions use `String(v)` for non-"all" values, returning raw value strings. Works today because values match display labels, but breaks if values ever differ from labels (e.g., i18n, status codes). Fragile pattern that needs a value-to-label lookup map. |
-
-### PR #148 (2026-03-21) — Material Upload
-
-| Severity | Finding |
-|----------|---------|
-| Important | `backend/LangTeach.Api/Services/MaterialService.cs:ListAsync`: sequential `GetDownloadUrlAsync` in loop for each material. For sections with many materials this could be slow. Consider parallel URL generation. |
-| Important | `backend/LangTeach.Api/Program.cs:114`: `BlobServiceClient` created with raw config string that could be null. If `AzureBlobStorage:ConnectionString` is missing, throws unclear `ArgumentNullException` at startup. Add null check or options validation. |
+| Severity | File | Note |
+|---|---|---|
+| Important | `frontend/src/components/lesson/GeneratePanel.tsx` | `useSectionRules` has no `isError` handling — if the fetch fails permanently, `sectionRules` stays `undefined` and ALL_CONTENT_TYPES is silently returned (content-type filtering disabled with no user feedback). Graceful degradation is intentional but should surface an inline error or toast. |
+| Minor | `backend/LangTeach.Api.Tests/Controllers/PedagogyControllerTests.cs` | The 3 tests all call the same endpoint; second/third tests are redundant round-trips. Could collapse assertions into a single test. |
 
 ---
 
-### PR (2026-03-21) — Structured difficulty management (#156)
+## PR #325 - 2026-03-28
 
-| Severity | Finding |
-|----------|---------|
-| Important | `backend/LangTeach.Api/Services/StudentService.cs`: `Deserialize<T>` silently swallows all exceptions and returns empty list. For `DifficultyDto`, a malformed JSON blob would silently drop all difficulties with no logging. Consider adding a log warning in the catch block. |
-| Minor | `frontend/src/pages/StudentForm.tsx` (submit handler): Incomplete difficulty rows (missing dropdown selection) are silently filtered out on submit with no user feedback. Could add a toast or inline warning when rows are dropped. |
-
-## PR #157 - 2026-03-21
-
-- **Minor** - `TargetedDifficulties.tsx:20`: Silent `catch {}` on JSON parse. Could add `console.warn` for debuggability.
-- **Minor** - `frontend/src/api/generate.ts`: `TargetedDifficulty` is intentionally a subset of backend `DifficultyDto` (omits `id`, `trend`). Not a bug but undocumented.
-- **Important** - `GenerateController.cs:300-312`: Manual field listing in `GenerationParams` serialization (non-streaming path). New request fields must be added here manually.
-
-### PR (2026-03-21) — Usage Limits (#105)
-
-| Severity | Finding |
-|----------|---------|
-| Important | `UsageLimitService.cs`: `GetUsageStatusAsync` and `CanGenerateAsync` both query Teacher + count GenerationUsages independently. When called together (as in GenerateController), this duplicates DB round-trips. Consider a combined method or caching within the request scope. |
-| Important | `GenerateController.cs`: TOCTOU race between `CanGenerateAsync` check and `RecordGenerationAsync`. Two concurrent requests could both pass the check and exceed the limit by 1. Acceptable for current scale but would need atomic decrement for strict enforcement. |
-
-### PR (2026-03-21) — Usage Limits (#105) — UI Review
-
-| Severity | Finding |
-|----------|---------|
-| Minor | `UsageIndicator.tsx`: progress bar at 0% is invisible (width: 0%). Consider a minimum visible width (e.g., 2%) for better affordance. |
-| Minor | `UsageIndicator.tsx`: progress bar track height `h-1.5` (6px) is very thin on high-DPI displays. Consider `h-2` (8px). |
-| Minor | `AppShell.tsx`: no visual separator between UsageIndicator and user avatar section in sidebar. A subtle border or extra padding would improve grouping. |
-| Minor | Lesson editor mobile header: action buttons crowd at 375px width. Could benefit from responsive collapse / "more" menu (pre-existing, not introduced by this PR). |
-
-| #213 | 2026-03-22 | Minor | Duplicated skip button footer JSX in OnboardingStep2.tsx and OnboardingStep3.tsx — consider a shared SkipLink or OnboardingStepFooter component if more steps are added |
-
-### PR #TBD (2026-03-22) — CI secret validation (#223)
-
-| Severity | Finding |
-|----------|---------|
-| Important | `.github/workflows/backend.yml`: `az rest` management-plane check confirms a secret resource *exists* but not that it is enabled or has a non-empty value. A disabled or empty secret passes CI but fails at app startup. Fixing this would require `az keyvault secret show` (data-plane), which needs a new Key Vault Secrets User role assignment for the CI service principal. Track as follow-up if false negatives become a problem. |
-| Minor | `validate-secrets` and `deploy` jobs both perform a separate OIDC Azure login on separate runners. Could be merged into a single job to save a runner and login round-trip if CI costs become a concern. |
-
-### PR (2026-03-25) — Curriculum walkthrough UI (#258)
-
-| Severity | Finding | Decision |
-|----------|---------|---------|
-| Reviewer flagged critical | Migration `AddCurriculumEntryVocabularyThemes.cs` uses `type: "nvarchar(max)"` — flagged as SQL Server-specific. | Declined: EF Core auto-generates this type for all SQL Server migrations; every other migration in the project uses the same pattern. Not a portability issue. |
-| Minor (arch) | `VocabBadge` and `CompetencyBadge` in `CourseDetail.tsx` use hand-rolled `<span>` instead of the shared `Badge` component already imported in the file. Pre-existing pattern (`CompetencyBadge` was there before). Convert to `<Badge variant="outline" className="...">` in a future polish pass. |
-
-### PR (2026-03-25) — Mandatory Production + Practice ordering (#268)
-
-| Severity | Finding |
-|----------|---------|
-| Minor | `GenerateController.cs`: section-count warning added in `Generate` method (non-streaming path) only. The `Stream` endpoint parses no JSON so cannot log the same warning. The gap is acceptable — streaming is the primary path but has no post-completion hook. If observability is needed for streaming, consider logging after the `[DONE]` sentinel. |
-| Minor | No unit test for the controller warning path (AC4). Mocking the full `GenerateController` dependency graph is large work for a logging check. Acceptable gap; monitor via application logs. |
-
-### PR TBD (2026-03-25) — Session-count-to-curriculum mapping (#262)
-
-| Severity | Finding |
-|----------|---------|
-| Minor | `SessionMappingPreview.tsx`: `sessionsByUnit` computed on every render regardless of strategy. Harmless at current scale; could be a `useMemo` candidate if component becomes hot. |
-| Minor | `SessionMappingService.cs:BuildCompress`: rationale string embeds the full excluded-units list in each session entry. Verbose when many units are excluded; `ExcludedUnits` on the result already surfaces this. |
+| Severity | Location | Finding |
+|----------|----------|---------|
+| Low | PromptService.cs | `CurriculumSystemPrompt` emits "You output ONLY valid JSON arrays..." and `CurriculumUserPrompt` ends with "Output ONLY the JSON array." — duplicate JSON-only instruction across system+user prompt pair. Remove from system prompt, keep in user prompt. |
 
 ---
 
-### PR (2026-03-22) — Fix Reading & Comprehension template (#227)
+## PR #323 - 2026-03-28
 
-| Severity | Finding |
-|----------|---------|
-| Minor | `GenerateController.cs`: template-lookup logic (4-line block) is duplicated in both `Stream` and `Generate` methods. Pre-existing duplication in the controller, slightly extended by this PR. Extract shared validation+context-build into a private helper when refactoring. |
-| Minor | `PromptService.cs`: template name matched by hardcoded string "Reading & Comprehension". If templates are renamed or new templates need custom prompt handling, consider a template slug or enum to avoid fragile string comparisons. |
+| Severity | Location | Finding |
+|----------|----------|---------|
+| Medium | l1-influence.json + consumer (#324) | `persian.family: null` — PedagogyConfigService must null-guard family lookup; `families[language.family]` without null check will throw |
+| Low | style-substitutions.json + consumer (#324) | `neverSubstituteWith: ["EE-*"]` uses glob-style wildcard; consumer must handle pattern matching, not plain `Array.includes()` |
+| Low | course-rules.json | Skill distribution maxes sum to 1.05 — these are per-competency ranges (not simultaneous), matches Isaac's spec. No change needed unless a validator enforces total=1. |
+
+---
+
+## PR #320 — CEFR level rules JSON (2026-03-28) — MEDIUM
+
+**Schema split: vocabularyPerLesson (A1-B2) vs vocabularyApproach (C1-C2)**
+A1-B2 use `vocabularyPerLesson: { productive: {min,max}, receptive: {min,max} }`. C1-C2 replace this with a string `vocabularyApproach`. This is intentional per Isaac's spec and Sophy's Layer 3 schema. When the consuming C# service (CefrRulesService) is implemented, it must handle both shapes -- either via a union type or by checking for key presence. Risk: null ref if loader reads `vocabularyPerLesson.productive.min` unconditionally on C1/C2 documents.
+
+---
+
+| PR | Date | Severity | Description |
+|----|------|----------|-------------|
+| #322 | 2026-03-28 | minor | `template-overrides.json` uses camelCase keys `warmUp`/`wrapUp` while `section-profiles/` uses lowercase `warmup`/`wrapup`. AC specifies camelCase; PedagogyConfigService (#324) must handle this mapping explicitly to avoid silent lookup failures. |
+
+## PR #312 (2026-03-28) — prompt-health-fixes
+
+| Severity | File | Note |
+|----------|------|------|
+| minor | `PromptService.cs:FreeTextUserPrompt` | Does not call `_profiles.GetGuidance(...)` unlike all other prompt builders. Intentional generic fallback but undocumented. Worth a comment explaining why section profile guidance is skipped. |
+
+| PR#338 | 2026-03-28 | low | PedagogyConfig.cs ExerciseTypeEntry: `bool Available = false` uses value-type default while other optional fields use nullable types. Functionally correct; minor style divergence. |
+
+| PR#360 | 2026-03-28 | low | PromptService.cs BuildRequest: StudentName and other PII are logged via named structured parameters ({SystemPrompt}, {UserPrompt}). Structured logging backends (Seq, App Insights) index these as searchable fields. Currently safe (Debug only in test/QA compose files), but worth switching to unstructured embedding or documenting as a known constraint to prevent accidental production enablement. |

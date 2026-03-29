@@ -103,12 +103,13 @@ public class CoursesController : ControllerBase
         }
 
         List<CurriculumEntry> entries;
+        List<CurriculumWarning> generationWarnings;
         int resolvedSessionCount;
 
         var ctx = BuildCurriculumContext(request, student, resolvedCefrLevel);
         try
         {
-            entries = await _curriculumService.GenerateAsync(ctx, ct);
+            (entries, generationWarnings) = await _curriculumService.GenerateAsync(ctx, ct);
         }
         catch (CurriculumGenerationException ex)
         {
@@ -141,6 +142,9 @@ public class CoursesController : ControllerBase
             SessionCount = resolvedSessionCount,
             CreatedAt = now,
             UpdatedAt = now,
+            GenerationWarnings = generationWarnings.Count > 0
+                ? JsonSerializer.Serialize(generationWarnings)
+                : null,
         };
 
         foreach (var entry in entries)
@@ -151,12 +155,13 @@ public class CoursesController : ControllerBase
         await _db.SaveChangesAsync(ct);
 
         _logger.LogInformation(
-            "POST /api/courses created. CourseId={CourseId} TeacherId={TeacherId} Entries={Entries}",
-            course.Id, teacherId, entries.Count);
+            "POST /api/courses created. CourseId={CourseId} TeacherId={TeacherId} Entries={Entries} Warnings={Warnings}",
+            course.Id, teacherId, entries.Count, generationWarnings.Count);
 
         course.Student = student;
         course.Entries = entries;
-        return CreatedAtAction(nameof(GetById), new { id = course.Id }, MapToDto(course));
+        return CreatedAtAction(nameof(GetById), new { id = course.Id },
+            MapToDto(course, generationWarnings.Count > 0 ? generationWarnings : null, null));
     }
 
     [HttpGet("{id:guid}")]
@@ -171,7 +176,34 @@ public class CoursesController : ControllerBase
             .FirstOrDefaultAsync(c => c.Id == id && c.TeacherId == teacherId && !c.IsDeleted, ct);
 
         if (course is null) return NotFound();
-        return Ok(MapToDto(course));
+
+        var warnings = TryDeserializeWarnings(course.GenerationWarnings);
+        var dismissedKeys = TryDeserializeStringList(course.DismissedWarnings);
+
+        return Ok(MapToDto(course, warnings, dismissedKeys));
+    }
+
+    [HttpPost("{id:guid}/warnings/dismiss")]
+    public async Task<IActionResult> DismissWarning(Guid id, [FromBody] DismissWarningRequest request, CancellationToken ct)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        var course = await _db.Courses
+            .FirstOrDefaultAsync(c => c.Id == id && c.TeacherId == teacherId && !c.IsDeleted, ct);
+
+        if (course is null) return NotFound();
+
+        var dismissed = TryDeserializeStringList(course.DismissedWarnings) ?? [];
+
+        if (!dismissed.Contains(request.WarningKey))
+        {
+            dismissed.Add(request.WarningKey);
+            course.DismissedWarnings = JsonSerializer.Serialize(dismissed);
+            await _db.SaveChangesAsync(ct);
+        }
+
+        return NoContent();
     }
 
     [HttpPut("{id:guid}")]
@@ -416,15 +448,31 @@ public class CoursesController : ControllerBase
     private static CurriculumEntryDto MapEntryToDto(CurriculumEntry e) =>
         new(e.Id, e.OrderIndex, e.Topic, e.GrammarFocus, e.Competencies, e.LessonType, e.LessonId, e.Status, e.TemplateUnitRef, e.CompetencyFocus, e.ContextDescription, e.PersonalizationNotes, e.VocabularyThemes);
 
-    private static CourseDto MapToDto(Course c) =>
+    private static CourseDto MapToDto(Course c, List<CurriculumWarning>? warnings = null, List<string>? dismissedKeys = null) =>
         new(
             c.Id, c.Name, c.Description, c.Language, c.Mode,
             c.TargetCefrLevel, c.TargetExam, c.ExamDate,
             c.SessionCount, c.StudentId, c.Student?.Name,
             LessonsCreated: c.Entries.Count(e => !e.IsDeleted && (e.Status == "created" || e.Status == "taught")),
             c.CreatedAt, c.UpdatedAt,
-            c.Entries.Where(e => !e.IsDeleted).OrderBy(e => e.OrderIndex).Select(MapEntryToDto).ToList()
+            c.Entries.Where(e => !e.IsDeleted).OrderBy(e => e.OrderIndex).Select(MapEntryToDto).ToList(),
+            warnings,
+            dismissedKeys
         );
+
+    private static List<CurriculumWarning>? TryDeserializeWarnings(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+        try { return JsonSerializer.Deserialize<List<CurriculumWarning>>(json, CaseInsensitiveOptions); }
+        catch (JsonException) { return null; }
+    }
+
+    private static List<string>? TryDeserializeStringList(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+        try { return JsonSerializer.Deserialize<List<string>>(json); }
+        catch (JsonException) { return null; }
+    }
 
     private static string[] TryDeserializeStringArray(string json)
     {

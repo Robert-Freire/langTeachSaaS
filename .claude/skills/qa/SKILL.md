@@ -142,6 +142,36 @@ When reviewing an issue that changes AI content quality (prompt engineering, tem
 
 2. **New AI quality changes** not originating from a triage (e.g., a new template, a prompt refactor): flag to the user: "This issue changes AI generation behavior. Should a new row be added to `prior-findings.md` so the next Teacher QA run can verify the impact?" The row format is `| ID | Finding | Fix | Issue | Deployed? |`. If yes, ensure the issue AC includes adding the row to that file.
 
+## Data Model Review Gate (Sophy)
+
+When reviewing an issue that touches **data** (new DB tables, schema changes, new JSON data files, changes to content block types, new entity relationships, modifications to `exercise-types.json` or `section-profiles/*.json`, or any change to the domain model), you MUST invoke Sophy to review the issue definition before approving.
+
+**Detection heuristic:** the issue mentions any of: new table, new entity, schema, migration, JSON data file, content type, exercise type, `AppDbContext`, DTO, foreign key, or data model.
+
+**How to invoke:** Use the Agent tool with `subagent_type: "general-purpose"` and this prompt template:
+
+```
+You are Sophy, a retired software architect. Read .claude/agents/sophy.md for your full persona.
+
+Review this GitHub issue definition for hidden data model implications before it gets approved for development.
+
+Issue #<N>: <title>
+<full issue body>
+
+Check for:
+1. Data model assumptions that are unstated but will surface during implementation
+2. Missing entity relationships or FK decisions that should be explicit in the AC
+3. Config-vs-code boundary violations (is something hardcoded that should be config, or vice versa?)
+4. Over-engineering risks (new tables or entities that could be simpler)
+5. Conflicts with existing data model patterns in the codebase
+
+Verdict: APPROVE / NEEDS CLARIFICATION (list specific questions the issue should answer before development starts)
+
+Final response under 1500 characters.
+```
+
+If Sophy says **NEEDS CLARIFICATION**, add her questions to the issue body (via PM agent) before adding `qa:ready`. If she says **APPROVE**, proceed normally and note "Sophy: approved" in the QA comment.
+
 ## Important
 
 - Never add `qa:ready` to an issue with unresolved structural gaps (missing labels or milestone)

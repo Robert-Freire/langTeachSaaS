@@ -37,6 +37,7 @@ export async function mockFullLessonStreams(page: Page): Promise<void> {
     conversation: CONVERSATION_FIXTURE,
     reading: READING_FIXTURE,
     homework: HOMEWORK_FIXTURE,
+    'free-text': FREE_TEXT_FIXTURE,
   }
   for (const [taskType, payload] of Object.entries(fixtures)) {
     await page.route(`**/api/generate/${taskType}/stream`, async (route) => {
@@ -105,6 +106,10 @@ export const HOMEWORK_FIXTURE = {
       examples: [],
     },
   ],
+}
+
+export const FREE_TEXT_FIXTURE = {
+  activity: 'Ask the student: "What did you do last weekend?" Listen and ask follow-up questions for 2-3 minutes.',
 }
 
 export const VOCABULARY_FIXTURE = {

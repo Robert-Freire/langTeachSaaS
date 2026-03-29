@@ -5,6 +5,7 @@ using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -22,6 +23,8 @@ public class GenerateController : ControllerBase
     private readonly IMaterialService _materialService;
     private readonly IUsageLimitService _usageLimitService;
     private readonly ICurriculumTemplateService _templateService;
+    private readonly ILessonService _lessonService;
+    private readonly ISectionProfileService _sectionProfiles;
     private readonly AppDbContext _db;
     private readonly ILogger<GenerateController> _logger;
 
@@ -33,6 +36,8 @@ public class GenerateController : ControllerBase
         IMaterialService materialService,
         IUsageLimitService usageLimitService,
         ICurriculumTemplateService templateService,
+        ILessonService lessonService,
+        ISectionProfileService sectionProfiles,
         AppDbContext db,
         ILogger<GenerateController> logger)
     {
@@ -43,6 +48,8 @@ public class GenerateController : ControllerBase
         _materialService = materialService;
         _usageLimitService = usageLimitService;
         _templateService = templateService;
+        _lessonService = lessonService;
+        _sectionProfiles = sectionProfiles;
         _db = db;
         _logger = logger;
     }
@@ -60,6 +67,7 @@ public class GenerateController : ControllerBase
             [ContentBlockType.Conversation] = (svc, ctx) => svc.BuildConversationPrompt(ctx),
             [ContentBlockType.Reading]      = (svc, ctx) => svc.BuildReadingPrompt(ctx),
             [ContentBlockType.Homework]     = (svc, ctx) => svc.BuildHomeworkPrompt(ctx),
+            [ContentBlockType.FreeText]     = (svc, ctx) => svc.BuildFreeTextPrompt(ctx),
         };
 
     [HttpPost("{taskType}/stream")]
@@ -75,6 +83,14 @@ public class GenerateController : ControllerBase
         if (Auth0Id is null)
         {
             Response.StatusCode = 401;
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(request.SectionType) &&
+            !_sectionProfiles.IsAllowed(request.SectionType, taskType, request.CefrLevel.Trim()))
+        {
+            Response.StatusCode = 400;
+            await Response.WriteAsync($"Content type '{taskType}' is not allowed for section '{request.SectionType}'.", CancellationToken.None);
             return;
         }
 
@@ -164,7 +180,9 @@ public class GenerateController : ControllerBase
             StudentDifficulties: TopDifficulties(student),
             GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
             TemplateName: templateName,
-            CurriculumObjectives: lesson.Objectives
+            CurriculumObjectives: lesson.Objectives,
+            TeacherGrammarConstraints: request.GrammarConstraints,
+            SectionType: request.SectionType
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -282,6 +300,12 @@ public class GenerateController : ControllerBase
         if (language.Length == 0 || cefrLevel.Length == 0 || topic.Length == 0)
             return BadRequest("Language, CefrLevel, and Topic must not be blank.");
 
+        if (!string.IsNullOrEmpty(request.SectionType) &&
+            !_sectionProfiles.IsAllowed(request.SectionType, blockType.ToKebabCase(), cefrLevel))
+        {
+            return BadRequest($"Content type '{blockType.ToKebabCase()}' is not allowed for section '{request.SectionType}'.");
+        }
+
         var materials = await _materialService.GetMaterialContentsAsync(teacherId, lesson.Id, ct);
         var materialFileNames = materials.Count > 0
             ? materials.Select(m => m.FileName).ToArray()
@@ -311,7 +335,8 @@ public class GenerateController : ControllerBase
             StudentDifficulties: TopDifficulties(student),
             GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
             TemplateName: templateName,
-            CurriculumObjectives: lesson.Objectives
+            CurriculumObjectives: lesson.Objectives,
+            TeacherGrammarConstraints: request.GrammarConstraints
         );
 
         var claudeRequest = buildPrompt(ctx);
@@ -361,6 +386,8 @@ public class GenerateController : ControllerBase
             }
         }
 
+        await _lessonService.EnsureLearningTargetsAsync(lesson, ct);
+
         var block = new LessonContentBlock
         {
             Id = Guid.NewGuid(),
@@ -377,6 +404,7 @@ public class GenerateController : ControllerBase
                 request.StudentId,
                 request.ExistingNotes,
                 request.Direction,
+                request.GrammarConstraints,
                 targetedDifficulties = ctx.StudentDifficulties
             }),
             CreatedAt = DateTime.UtcNow,

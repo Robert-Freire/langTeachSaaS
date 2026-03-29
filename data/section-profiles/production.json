@@ -1,0 +1,174 @@
+{
+  "sectionType": "production",
+  "levels": {
+    "A1": {
+      "contentTypes": ["conversation"],
+      "guidance": "Production MUST be a guided writing task with sentence frames provided. Ask the student to write 3-5 sentences using new vocabulary or structures from this lesson. Guided writing is appropriate and achievable even at A1. Alternatively, a guided dialogue (EO-01) with fully scripted turns and 2 pre-given response options per turn is appropriate when the session focus is oral production.",
+      "duration": { "min": 5, "max": 8 },
+      "competencies": ["writing", "speaking"],
+      "scaffolding": "high",
+      "interactionPattern": "independent",
+      "validExerciseTypes": ["EE-01", "EE-02", "EE-03", "EO-01"],
+      "forbiddenExerciseTypes": [
+        {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is controlled practice, not free production"},
+        {"id": "GR-02", "pattern": null, "reason": "Multiple choice is controlled practice, not free production"},
+        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation is controlled practice, not free production"},
+        {"id": "GR-04", "pattern": null, "reason": "Error correction is metalinguistic analysis, not production"},
+        {"id": "GR-05", "pattern": null, "reason": "Conjugation paradigms are drills, not production"},
+        {"id": "GR-06", "pattern": null, "reason": "Matching is controlled practice, not production"},
+        {"id": "GR-07", "pattern": null, "reason": "Word ordering is controlled practice, not production"},
+        {"id": "VOC-01", "pattern": null, "reason": "Vocabulary lists with translations are presentation, not production"},
+        {"id": "VOC-02", "pattern": null, "reason": "Vocabulary matching is presentation/practice, not production"},
+        {"id": "VOC-03", "pattern": null, "reason": "Semantic categorisation is presentation/practice, not production"},
+        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension is reception, not production"},
+        {"id": null, "pattern": "LUD-*", "reason": "Ludic activities are not production tasks"}
+      ],
+      "levelSpecificNotes": [
+        {"exerciseTypeId": "EE-01", "note": "Provide a full model sentence for each frame; student fills in only the target vocabulary or structure"},
+        {"exerciseTypeId": "EE-02", "note": "Sentence frames must supply the subject and verb; student completes the complement only"},
+        {"exerciseTypeId": "EO-01", "note": "Guided dialogue must be fully scripted at A1; student chooses from 2 pre-given responses per turn"}
+      ],
+      "minExerciseVariety": 1
+    },
+    "A2": {
+      "contentTypes": ["conversation"],
+      "guidance": "Guided writing with a model paragraph provided. Student writes 4-6 sentences using the target grammar and vocabulary. A short opinion sentence or simple description. Scaffolding phrase starters optional. A short guided dialogue (EO-01 or EO-08, 2-3 turns) is a valid alternative when the session focus is oral production.",
+      "duration": { "min": 5, "max": 8 },
+      "competencies": ["writing", "speaking"],
+      "scaffolding": "medium",
+      "interactionPattern": "independent",
+      "validExerciseTypes": ["EE-01", "EE-02", "EE-03", "EE-04", "EO-01", "EO-08"],
+      "forbiddenExerciseTypes": [
+        {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is controlled practice, not free production"},
+        {"id": "GR-02", "pattern": null, "reason": "Multiple choice is controlled practice, not free production"},
+        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation is controlled practice, not free production"},
+        {"id": "GR-04", "pattern": null, "reason": "Error correction is metalinguistic analysis, not production"},
+        {"id": "GR-05", "pattern": null, "reason": "Conjugation paradigms are drills, not production"},
+        {"id": "GR-06", "pattern": null, "reason": "Matching is controlled practice, not production"},
+        {"id": "GR-07", "pattern": null, "reason": "Word ordering is controlled practice, not production"},
+        {"id": "VOC-01", "pattern": null, "reason": "Vocabulary lists with translations are presentation, not production"},
+        {"id": "VOC-02", "pattern": null, "reason": "Vocabulary matching is presentation/practice, not production"},
+        {"id": "VOC-03", "pattern": null, "reason": "Semantic categorisation is presentation/practice, not production"},
+        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension is reception, not production"},
+        {"id": null, "pattern": "LUD-*", "reason": "Ludic activities are not production tasks"}
+      ],
+      "levelSpecificNotes": [
+        {"exerciseTypeId": "EE-04", "note": "Description tasks at A2 must provide an image or explicit topic prompt; 3-5 sentences maximum"},
+        {"exerciseTypeId": "EO-08", "note": "Free conversation at A2 is a short exchange on a familiar topic; 2-3 turns only"}
+      ],
+      "minExerciseVariety": 1
+    },
+    "B1": {
+      "contentTypes": ["conversation"],
+      "guidance": "Production must be a communicative task: an opinion paragraph, a short role-play scenario description, or a problem-solving task where the student uses new language in a meaningful context. 80-120 words.",
+      "duration": { "min": 8, "max": 12 },
+      "competencies": ["writing", "speaking"],
+      "scaffolding": "low",
+      "interactionPattern": "independent",
+      "validExerciseTypes": ["EE-05", "EE-06", "EE-07", "EO-02", "EO-05", "EO-06", "EO-07", "PRAG-01", "PRAG-05"],
+      "forbiddenExerciseTypes": [
+        {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is controlled practice, not free production"},
+        {"id": "GR-02", "pattern": null, "reason": "Multiple choice is controlled practice, not free production"},
+        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation is controlled practice, not free production"},
+        {"id": "GR-04", "pattern": null, "reason": "Error correction is metalinguistic analysis, not production"},
+        {"id": "GR-05", "pattern": null, "reason": "Conjugation paradigms are drills, not production"},
+        {"id": "GR-06", "pattern": null, "reason": "Matching is controlled practice, not production"},
+        {"id": "GR-07", "pattern": null, "reason": "Word ordering is controlled practice, not production"},
+        {"id": "VOC-01", "pattern": null, "reason": "Vocabulary lists with translations are presentation, not production"},
+        {"id": "VOC-02", "pattern": null, "reason": "Vocabulary matching is presentation/practice, not production"},
+        {"id": "VOC-03", "pattern": null, "reason": "Semantic categorisation is presentation/practice, not production"},
+        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension is reception, not production"},
+        {"id": null, "pattern": "LUD-*", "reason": "Ludic activities are not production tasks"}
+      ],
+      "levelSpecificNotes": [
+        {"exerciseTypeId": "EE-07", "note": "Opinion paragraph at B1: 80-120 words; student states a position and gives 2 reasons; no formal essay structure required"},
+        {"exerciseTypeId": "EO-02", "note": "Open role-play at B1 must have a clear communicative goal (buy a ticket, make a complaint) and a 3-4 turn minimum expectation"}
+      ],
+      "minExerciseVariety": 1
+    },
+    "B2": {
+      "contentTypes": ["conversation", "reading"],
+      "guidance": "Structured argument, formal email, or extended communicative task using the target register. 150-200 words. Authentic stimulus (text or question) may be used as springboard.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["writing", "speaking"],
+      "scaffolding": "low",
+      "interactionPattern": "independent",
+      "validExerciseTypes": ["EE-06", "EE-07", "EE-08", "EE-09", "EO-02", "EO-05", "EO-06", "EO-07", "EO-09", "PRAG-01", "PRAG-05"],
+      "forbiddenExerciseTypes": [
+        {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is controlled practice, not free production"},
+        {"id": "GR-02", "pattern": null, "reason": "Multiple choice is controlled practice, not free production"},
+        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation is controlled practice, not free production"},
+        {"id": "GR-04", "pattern": null, "reason": "Error correction is metalinguistic analysis, not production"},
+        {"id": "GR-05", "pattern": null, "reason": "Conjugation paradigms are drills, not production"},
+        {"id": "GR-06", "pattern": null, "reason": "Matching is controlled practice, not production"},
+        {"id": "GR-07", "pattern": null, "reason": "Word ordering is controlled practice, not production"},
+        {"id": "VOC-01", "pattern": null, "reason": "Vocabulary lists with translations are presentation, not production"},
+        {"id": "VOC-02", "pattern": null, "reason": "Vocabulary matching is presentation/practice, not production"},
+        {"id": "VOC-03", "pattern": null, "reason": "Semantic categorisation is presentation/practice, not production"},
+        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension is reception, not production"},
+        {"id": null, "pattern": "LUD-*", "reason": "Ludic activities are not production tasks"}
+      ],
+      "levelSpecificNotes": [
+        {"exerciseTypeId": "EE-06", "note": "Formal email at B2 must specify register constraints (formal vs semi-formal) and functional goal (complaint, request, enquiry)"},
+        {"exerciseTypeId": "EO-09", "note": "Oral mediation at B2: student summarises a 100-150 word text for a non-specialist; 3-4 minutes speaking time"}
+      ],
+      "minExerciseVariety": 1
+    },
+    "C1": {
+      "contentTypes": ["conversation", "reading"],
+      "guidance": "open-ended task requiring autonomous extended language use: a structured argument, a creative writing piece, or a task requiring register and pragmatic awareness. 200+ words.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["writing", "speaking"],
+      "scaffolding": "none",
+      "interactionPattern": "independent",
+      "validExerciseTypes": ["EE-07", "EE-08", "EE-09", "EE-10", "EE-11", "EO-05", "EO-06", "EO-07", "EO-09", "PRAG-01", "PRAG-05"],
+      "forbiddenExerciseTypes": [
+        {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is controlled practice, not free production"},
+        {"id": "GR-02", "pattern": null, "reason": "Multiple choice is controlled practice, not free production"},
+        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation is controlled practice, not free production"},
+        {"id": "GR-04", "pattern": null, "reason": "Error correction is metalinguistic analysis, not production"},
+        {"id": "GR-05", "pattern": null, "reason": "Conjugation paradigms are drills, not production"},
+        {"id": "GR-06", "pattern": null, "reason": "Matching is controlled practice, not production"},
+        {"id": "GR-07", "pattern": null, "reason": "Word ordering is controlled practice, not production"},
+        {"id": "VOC-01", "pattern": null, "reason": "Vocabulary lists with translations are presentation, not production"},
+        {"id": "VOC-02", "pattern": null, "reason": "Vocabulary matching is presentation/practice, not production"},
+        {"id": "VOC-03", "pattern": null, "reason": "Semantic categorisation is presentation/practice, not production"},
+        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension is reception, not production"},
+        {"id": null, "pattern": "LUD-*", "reason": "Ludic activities are not production tasks"}
+      ],
+      "levelSpecificNotes": [
+        {"exerciseTypeId": "EE-09", "note": "Register transformation at C1: student rewrites a formal text as informal and vice versa, maintaining full propositional content"},
+        {"exerciseTypeId": "EO-07", "note": "Negotiation at C1: open-ended scenario with conflicting interests; student must reach a compromise using pragmatic strategies"}
+      ],
+      "minExerciseVariety": 1
+    },
+    "C2": {
+      "contentTypes": ["conversation", "reading"],
+      "guidance": "Essay, debate position, mediation task, or creative writing requiring near-native register control. 200+ words. Student selects appropriate register and genre without prompting.",
+      "duration": { "min": 10, "max": 15 },
+      "competencies": ["writing", "speaking"],
+      "scaffolding": "none",
+      "interactionPattern": "independent",
+      "validExerciseTypes": ["EE-07", "EE-08", "EE-09", "EE-10", "EE-11", "EO-05", "EO-06", "EO-07", "EO-09", "PRAG-01", "PRAG-05"],
+      "forbiddenExerciseTypes": [
+        {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is controlled practice, not free production"},
+        {"id": "GR-02", "pattern": null, "reason": "Multiple choice is controlled practice, not free production"},
+        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation is controlled practice, not free production"},
+        {"id": "GR-04", "pattern": null, "reason": "Error correction is metalinguistic analysis, not production"},
+        {"id": "GR-05", "pattern": null, "reason": "Conjugation paradigms are drills, not production"},
+        {"id": "GR-06", "pattern": null, "reason": "Matching is controlled practice, not production"},
+        {"id": "GR-07", "pattern": null, "reason": "Word ordering is controlled practice, not production"},
+        {"id": "VOC-01", "pattern": null, "reason": "Vocabulary lists with translations are presentation, not production"},
+        {"id": "VOC-02", "pattern": null, "reason": "Vocabulary matching is presentation/practice, not production"},
+        {"id": "VOC-03", "pattern": null, "reason": "Semantic categorisation is presentation/practice, not production"},
+        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension is reception, not production"},
+        {"id": null, "pattern": "LUD-*", "reason": "Ludic activities are not production tasks"}
+      ],
+      "levelSpecificNotes": [
+        {"exerciseTypeId": "EE-11", "note": "Written mediation at C2: student adapts a specialised or literary text for a lay audience, selecting register and managing information density independently"},
+        {"exerciseTypeId": "EE-10", "note": "Creative writing at C2 may be unstructured; student chooses genre, register, and narrative voice autonomously"}
+      ],
+      "minExerciseVariety": 1
+    }
+  }
+}

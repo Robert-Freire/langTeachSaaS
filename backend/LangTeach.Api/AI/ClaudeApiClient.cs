@@ -73,12 +73,18 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
         var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
 
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/messages") { Content = content };
+
+        var sw = Stopwatch.StartNew();
         using var response    = await client.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, ct);
 
         await EnsureSuccessAsync(response, ct);
 
         using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var reader = new StreamReader(stream);
+
+        var usedModel    = modelId;
+        var inputTokens  = 0;
+        var outputTokens = 0;
 
         while (!reader.EndOfStream && !ct.IsCancellationRequested)
         {
@@ -98,11 +104,47 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
                 if (!eventRoot.TryGetProperty("type", out var typeProp)) continue;
                 var type = typeProp.GetString();
 
+                if (type == "message_start")
+                {
+                    if (eventRoot.TryGetProperty("message", out var msg))
+                    {
+                        if (msg.TryGetProperty("model", out var m))
+                            usedModel = m.GetString() ?? modelId;
+                        if (msg.TryGetProperty("usage", out var startUsage) &&
+                            startUsage.TryGetProperty("input_tokens", out var it))
+                            inputTokens = it.GetInt32();
+                    }
+                    continue;
+                }
+
+                if (type == "message_delta")
+                {
+                    if (eventRoot.TryGetProperty("usage", out var deltaUsage) &&
+                        deltaUsage.TryGetProperty("output_tokens", out var ot))
+                        outputTokens = ot.GetInt32();
+
+                    var stopReason = string.Empty;
+                    if (eventRoot.TryGetProperty("delta", out var deltaObj) &&
+                        deltaObj.TryGetProperty("stop_reason", out var sr))
+                        stopReason = sr.GetString() ?? string.Empty;
+
+                    if (stopReason == "max_tokens")
+                        logger.LogWarning(
+                            "Claude stream truncated: max_tokens ({MaxTokens}) reached. model={Model} input={Input} output={Output}",
+                            request.MaxTokens, usedModel, inputTokens, outputTokens);
+
+                    sw.Stop();
+                    logger.LogInformation(
+                        "Claude stream: model={Model} input={Input} output={Output} latency={Latency}ms stopReason={StopReason}",
+                        usedModel, inputTokens, outputTokens, sw.ElapsedMilliseconds, stopReason);
+                    continue;
+                }
+
                 if (type == "message_stop") break;
                 if (type != "content_block_delta") continue;
 
-                if (eventRoot.TryGetProperty("delta", out var delta) &&
-                    delta.TryGetProperty("text", out var textProp))
+                if (eventRoot.TryGetProperty("delta", out var textDelta) &&
+                    textDelta.TryGetProperty("text", out var textProp))
                 {
                     chunk = textProp.GetString();
                 }
@@ -114,6 +156,7 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
 
             if (chunk is not null) yield return chunk;
         }
+
     }
 
     private static object BuildRequestBody(ClaudeRequest request, string modelId, bool stream)
