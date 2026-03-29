@@ -110,6 +110,7 @@ export function FullLessonGenerateButton({
             cefrLevel: lessonContext.cefrLevel,
             topic: lessonContext.topic,
             studentId: lessonContext.studentId,
+            sectionType,
           },
           token,
           controller.signal,
@@ -126,6 +127,7 @@ export function FullLessonGenerateButton({
             cefrLevel: lessonContext.cefrLevel,
             topic: lessonContext.topic,
             studentId: lessonContext.studentId,
+            sectionType,
           }),
         })
         if (controller.signal.aborted) return
