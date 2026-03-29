@@ -1429,6 +1429,131 @@ public class PromptServiceTests
             because: "practice section has full scope; no scope constraint should be emitted");
     }
 
+    // --- Full section profile data in conversation prompts (task #371) ---
+
+    [Fact]
+    public void ConversationUserPrompt_WarmUp_B1_ScopeConstraintAppearsBeforeJsonSchema()
+    {
+        var ctx = BaseCtx() with { SectionType = "WarmUp" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        var constraintIdx = req.UserPrompt.IndexOf("exactly 1 scenario", StringComparison.Ordinal);
+        var schemaIdx     = req.UserPrompt.IndexOf("{\"scenarios\"", StringComparison.Ordinal);
+        constraintIdx.Should().BeGreaterThan(-1, because: "scope constraint must be present");
+        schemaIdx.Should().BeGreaterThan(-1, because: "JSON schema must be present");
+        constraintIdx.Should().BeLessThan(schemaIdx,
+            because: "scope constraint must appear before the JSON schema to act as a strong signal");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_WarmUp_B1_ContainsDuration()
+    {
+        var ctx = BaseCtx() with { SectionType = "WarmUp" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("3-5 minutes",
+            because: "WarmUp B1 duration is 3-5 minutes per warmup.json");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_WarmUp_B1_ContainsInteractionPattern()
+    {
+        var ctx = BaseCtx() with { SectionType = "WarmUp" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("student-led",
+            because: "WarmUp B1 interaction pattern is student-led per warmup.json");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_WarmUp_B1_ContainsForbiddenReasons()
+    {
+        var ctx = BaseCtx() with { SectionType = "WarmUp" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Grammar drills",
+            because: "WarmUp B1 has forbidden GR-* types; reason must appear as constraint");
+        req.UserPrompt.Should().Contain("Written production",
+            because: "WarmUp B1 has forbidden EE-* types; reason must appear as constraint");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_WrapUp_B1_ScopeConstraintAppearsBeforeJsonSchema()
+    {
+        var ctx = BaseCtx() with { SectionType = "WrapUp" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        var constraintIdx = req.UserPrompt.IndexOf("exactly 1 scenario", StringComparison.Ordinal);
+        var schemaIdx     = req.UserPrompt.IndexOf("{\"scenarios\"", StringComparison.Ordinal);
+        constraintIdx.Should().BeGreaterThan(-1, because: "scope constraint must be present");
+        schemaIdx.Should().BeGreaterThan(-1, because: "JSON schema must be present");
+        constraintIdx.Should().BeLessThan(schemaIdx,
+            because: "scope constraint must appear before the JSON schema");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_WrapUp_B1_ContainsNoNewMaterialConstraint()
+    {
+        var ctx = BaseCtx() with { SectionType = "WrapUp" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Do not introduce new vocabulary",
+            because: "WrapUp must explicitly forbid introducing new material");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_WrapUp_B1_ContainsDuration()
+    {
+        var ctx = BaseCtx() with { SectionType = "WrapUp" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("2-4 minutes",
+            because: "WrapUp B1 duration is 2-4 minutes per wrapup.json");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_WrapUp_B1_ContainsInteractionPattern()
+    {
+        var ctx = BaseCtx() with { SectionType = "WrapUp" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("student-led",
+            because: "WrapUp B1 interaction pattern is student-led per wrapup.json");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_WrapUp_B1_ContainsForbiddenReasons()
+    {
+        var ctx = BaseCtx() with { SectionType = "WrapUp" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Games introduce new activity type",
+            because: "WrapUp B1 has forbidden LUD-* types; reason must appear as constraint");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_GenericPath_UnchangedByRefactor()
+    {
+        // Verify the generic (non-WarmUp, non-WrapUp) path is not affected
+        var ctx = BaseCtx() with { SectionType = null };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("2-3 scenarios",
+            because: "generic conversation path must still request 2-3 scenarios");
+        req.UserPrompt.Should().NotContain("Duration:",
+            because: "generic path does not inject section profile data");
+    }
+
     [Fact]
     public void LessonPlanUserPrompt_WarmUp_HasScopeLabelInSectionHeader()
     {

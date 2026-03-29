@@ -459,4 +459,28 @@ public class SectionProfileServiceTests
     {
         _sut.GetScope("warmup", "Z9").Should().BeNull();
     }
+
+    // --- GetInteractionPattern ---
+
+    [Theory]
+    [InlineData("warmup",  "A1", "teacher-led")]
+    [InlineData("warmup",  "B1", "student-led")]
+    [InlineData("wrapup",  "A1", "teacher-led")]
+    [InlineData("wrapup",  "B1", "student-led")]
+    public void GetInteractionPattern_KnownSectionAndLevel_ReturnsExpectedPattern(string section, string level, string expected)
+    {
+        _sut.GetInteractionPattern(section, level).Should().Be(expected);
+    }
+
+    [Fact]
+    public void GetInteractionPattern_UnknownSection_ReturnsEmptyString()
+    {
+        _sut.GetInteractionPattern("nosuchsection", "B1").Should().BeEmpty();
+    }
+
+    [Fact]
+    public void GetInteractionPattern_UnknownLevel_ReturnsEmptyString()
+    {
+        _sut.GetInteractionPattern("warmup", "Z9").Should().BeEmpty();
+    }
 }

@@ -50,6 +50,12 @@ public interface ISectionProfileService
     string? GetScope(string sectionType, string cefrLevel);
 
     /// <summary>
+    /// Returns the interaction pattern for a section at the given CEFR level (e.g. "teacher-led", "student-led").
+    /// Returns an empty string if the section or level is not found.
+    /// </summary>
+    string GetInteractionPattern(string sectionType, string cefrLevel);
+
+    /// <summary>
     /// Returns all distinct non-null scope values found across all section profile levels.
     /// Used by PedagogyConfigService to validate scope values against scope-constraints.json.
     /// </summary>
