@@ -104,10 +104,10 @@ public class PedagogyControllerTests
 
         var production = json!["Production"];
         production["A1"].Should().BeEquivalentTo(["conversation"]);
-        production["B1"].Should().BeEquivalentTo(["conversation"]);
-        production["B2"].Should().Contain("reading");
-        production["C1"].Should().Contain("reading");
-        production["C2"].Should().Contain("reading");
+        production["B1"].Should().Contain("conversation").And.Contain("exercises");
+        production["B2"].Should().Contain("reading").And.Contain("exercises");
+        production["C1"].Should().Contain("reading").And.Contain("exercises");
+        production["C2"].Should().Contain("reading").And.Contain("exercises");
     }
 
 }

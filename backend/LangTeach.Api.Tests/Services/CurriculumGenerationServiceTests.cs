@@ -38,6 +38,7 @@ internal sealed class ConfigurableClaudeClient : IClaudeClient
 {
     private readonly string _content;
     public int CompleteCallCount { get; private set; }
+    public ClaudeRequest? LastRequest { get; private set; }
 
     public ConfigurableClaudeClient(string content)
     {
@@ -47,6 +48,7 @@ internal sealed class ConfigurableClaudeClient : IClaudeClient
     public Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default)
     {
         CompleteCallCount++;
+        LastRequest = request;
         return Task.FromResult(new ClaudeResponse(_content, "claude-haiku", 10, 20));
     }
 

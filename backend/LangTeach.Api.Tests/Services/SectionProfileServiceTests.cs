@@ -146,7 +146,6 @@ public class SectionProfileServiceTests
     [InlineData("WrapUp", "grammar", "B1")]
     [InlineData("WrapUp", "free-text", "B1")]
     [InlineData("Presentation", "exercises", "B1")]
-    [InlineData("Production", "exercises", "B1")]
     [InlineData("Production", "grammar", "B1")]
     [InlineData("Production", "vocabulary", "B1")]
     public void IsAllowed_ReturnsFalse_ForDisallowedCombinations(string sectionType, string contentType, string cefrLevel)
@@ -164,6 +163,8 @@ public class SectionProfileServiceTests
     [InlineData("Presentation", "reading", "B1")]
     [InlineData("Presentation", "conversation", "B1")]
     [InlineData("Production", "conversation", "B1")]
+    [InlineData("Production", "exercises", "B1")]
+    [InlineData("Production", "exercises", "B2")]
     [InlineData("Production", "reading", "B2")]
     public void IsAllowed_ReturnsTrue_ForAllowedCombinations(string sectionType, string contentType, string cefrLevel)
     {
