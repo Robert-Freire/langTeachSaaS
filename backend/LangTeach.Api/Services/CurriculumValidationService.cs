@@ -39,7 +39,7 @@ public class CurriculumValidationService : ICurriculumValidationService
 
         const string system = "You are a CEFR-level grammar expert. Evaluate whether grammar structures in a generated curriculum match the target level.";
         var jsonExample = """[ { "sessionIndex": <number>, "grammarFocus": "<exact string>", "flagReason": "<one sentence>", "suggestedLevel": "<CEFR level or null>" } ]""";
-        var user = $"Target level: {targetLevel}\n" +
+        var user = $"Target level: {Sanitize(targetLevel)}\n" +
                    $"Grammar structures expected at this level (or below):\n{grammarList}\n\n" +
                    $"Generated curriculum entries:\n{entriesList}\n\n" +
                    $"Respond ONLY with a raw JSON array (no markdown, no code fences). " +
@@ -75,6 +75,9 @@ public class CurriculumValidationService : ICurriculumValidationService
             return [];
         }
     }
+
+    private static string Sanitize(string? value) =>
+        value is null ? string.Empty : string.Concat(value.Where(c => c >= ' ' || c == '\t')).Trim();
 
     private record ValidationWarningDto(
         int SessionIndex,
