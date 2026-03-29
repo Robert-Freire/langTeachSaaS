@@ -59,7 +59,7 @@
       "minExerciseVariety": 1
     },
     "B1": {
-      "contentTypes": ["conversation"],
+      "contentTypes": ["conversation", "exercises"],
       "guidance": "Production must be a communicative task: an opinion paragraph, a short role-play scenario description, or a problem-solving task where the student uses new language in a meaningful context. 80-120 words.",
       "duration": { "min": 8, "max": 12 },
       "competencies": ["writing", "speaking"],
@@ -87,7 +87,7 @@
       "minExerciseVariety": 1
     },
     "B2": {
-      "contentTypes": ["conversation", "reading"],
+      "contentTypes": ["conversation", "reading", "exercises"],
       "guidance": "Structured argument, formal email, or extended communicative task using the target register. 150-200 words. Authentic stimulus (text or question) may be used as springboard.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["writing", "speaking"],
@@ -115,7 +115,7 @@
       "minExerciseVariety": 1
     },
     "C1": {
-      "contentTypes": ["conversation", "reading"],
+      "contentTypes": ["conversation", "reading", "exercises"],
       "guidance": "open-ended task requiring autonomous extended language use: a structured argument, a creative writing piece, or a task requiring register and pragmatic awareness. 200+ words.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["writing", "speaking"],
@@ -143,7 +143,7 @@
       "minExerciseVariety": 1
     },
     "C2": {
-      "contentTypes": ["conversation", "reading"],
+      "contentTypes": ["conversation", "reading", "exercises"],
       "guidance": "Essay, debate position, mediation task, or creative writing requiring near-native register control. 200+ words. Student selects appropriate register and genre without prompting.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["writing", "speaking"],

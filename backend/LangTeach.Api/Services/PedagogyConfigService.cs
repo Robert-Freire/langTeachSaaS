@@ -296,6 +296,21 @@ public class PedagogyConfigService : IPedagogyConfigService
         return null;
     }
 
+    public string? GetPreferredContentType(string section, string? templateName)
+    {
+        if (string.IsNullOrEmpty(templateName))
+            return null;
+
+        var tmplEntry = GetTemplateOverrideByName(templateName);
+        if (tmplEntry is null)
+            return null;
+
+        var normalSection = NormalizeSection(section);
+        return tmplEntry.Sections.TryGetValue(normalSection, out var secOverride)
+            ? secOverride.PreferredContentType
+            : null;
+    }
+
     // --- Private helpers ---
 
     private static T LoadJson<T>(Assembly assembly, string resourceName)
@@ -417,13 +432,36 @@ public class PedagogyConfigService : IPedagogyConfigService
                 errors.Add($"Section profile contains unknown scope value '{scopeValue}' (not in scope-constraints.json and not 'full')");
         }
 
-        // Validate template override scope values
+        // Validate template override scope values and preferredContentType
         foreach (var (tId, tmpl) in _templates)
         {
             foreach (var (secName, sec) in tmpl.Sections)
             {
                 if (sec.Scope is not null && sec.Scope != "full" && !knownScopes.Contains(sec.Scope))
                     errors.Add($"Template '{tId}' section '{secName}': unknown scope value '{sec.Scope}'");
+
+                if (sec.PreferredContentType is not null)
+                {
+                    // Must be a known content type
+                    if (!ContentBlockTypeExtensions.TryFromKebabCase(sec.PreferredContentType, out _))
+                        errors.Add($"Template '{tId}' section '{secName}': preferredContentType '{sec.PreferredContentType}' is not a known content type");
+                    else
+                    {
+                        // Must appear in section profile contentTypes for every applicable CEFR level.
+                        // Use the template's levelVariations keys as the applicable set when non-empty;
+                        // otherwise validate against all known levels.
+                        var applicableLevels = tmpl.LevelVariations.Count > 0
+                            ? tmpl.LevelVariations.Keys.ToArray()
+                            : new[] { "A1", "A2", "B1", "B2", "C1", "C2" };
+                        var normalSection = NormalizeSection(secName);
+                        foreach (var lvl in applicableLevels)
+                        {
+                            var allowed = _sectionProfileService.GetAllowedContentTypes(normalSection, lvl);
+                            if (allowed.Length > 0 && !allowed.Contains(sec.PreferredContentType, StringComparer.OrdinalIgnoreCase))
+                                errors.Add($"Template '{tId}' section '{secName}': preferredContentType '{sec.PreferredContentType}' not in section profile contentTypes for level {lvl} (allowed: {string.Join(", ", allowed)})");
+                        }
+                    }
+                }
             }
         }
 
