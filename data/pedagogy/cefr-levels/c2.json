@@ -93,5 +93,5 @@
   "instructionLanguage": "L2 exclusively",
   "metalanguageLevel": "Full academic, rhetorical, and stylistic metalanguage. C2 lessons are language seminars, not traditional classes.",
   "errorCorrection": "Self-correction with teacher recasting. Focus on register, style, and dialectal precision. Seminar-style feedback: two strengths and one improvement area.",
-  "scaffoldingDefault": "low"
+  "scaffoldingDefault": "none"
 }
