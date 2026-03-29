@@ -40,6 +40,7 @@ type: project
 | Label | Color | Hex | Meaning |
 |-------|-------|-----|---------|
 | `qa:ready` | Dark blue | #0052CC | Issue passed QA quality gate (Checkpoint 1): acceptance criteria are specific, testable, and complete. Agent can pick this up. |
+| `review:sophy` | Yellow | #E4E669 | PR for this issue requires Sophy (architecture) review — config-vs-code boundary check. Bot MUST call Sophy as Step 0 of review routing, regardless of diff content. Applied to any issue where implementation could add hardcoded rules (if/else on language/level/template/L1) that belong in `data/` config instead. |
 | `demo-sprint` | Gold | #FFCC00 | Part of the current demo sprint scope. |
 | `sprint:active` | Purple | #7057FF | **Deprecated.** Was used for sprint board filtering, but milestones work correctly for this purpose. Still exists on old issues but no longer added to new ones. |
 

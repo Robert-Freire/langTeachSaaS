@@ -9,7 +9,7 @@ type: project
 GitHub Issues is the single source of truth for task tracking (as of 2026-03-19).
 Use `gh issue list` to see current state. Key queries:
 
-- Current sprint: `gh issue list --milestone "Student-Aware Curriculum"`
+- Current sprint: `gh issue list --milestone "Pedagogical Quality"`
 - Must-haves: `gh issue list --label "P1:must"`
 - Ready to pick up: `gh issue list --label "qa:ready"`
 
@@ -64,15 +64,20 @@ Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Wor
   - #254 DONE — PR #264 merged (fix curriculum template attribution)
   - #257 DONE — closed (personalized context generation, completed as part of other work)
   - #206 DONE — epic closed (parent issue for the sprint)
-- Pedagogical Quality: ACTIVE — sprint/pedagogical-quality (#269, #270, #271, #272, #273, #274, #275, #276, #378, #379)
+- Pedagogical Quality: ACTIVE — sprint/pedagogical-quality (#269, #270, #271, #272, #273, #274, #275, #276, #378, #379, #317)
   - New exercise formats: sentence ordering (#269), error correction (#270), true/false (#271), transformation (#272)
   - New content types: guided writing (#273), noticing task (#274)
   - Practice scaffolding with stage field (#275)
   - L1 contrastive notes in grammar blocks (#276)
-  - #378 Exam Prep wrong subjunctive temporal correlation (P1, from 2026-03-29 QA run)
+  - #378 DONE — PR #384 merged (data-driven grammar constraints: TargetLanguageGrammarConstraint in l1-influence.json, GetGrammarConstraints on PedagogyConfigService, ExercisesUserPrompt injects mandatory constraints; 4 new tests; Teacher QA re-run needed to confirm)
+  - #358 DONE — PR #385 merged (content type constraints: preferredContentType field on SectionOverride, GetPreferredContentType on PedagogyConfigService + startup validation, PromptService emits validContentTypes + preferredContentType in LessonPlan section guidelines and block prompts; R&C presentation gets reading, Exam Prep practice/production get exercises; production B1-C2 gains exercises contentType; 14 new tests; Teacher QA re-run needed)
+  - #348 DONE — PR #387 merged (prompt injection: sanitize targetLevel + GrammarFocus via shared InputSanitizer; array bound: MaxCollectionCount(50) on LearningTargets; 5 new tests)
+  - #343 DONE — PR #388 merged (JSON schema definitions: 7 draft-07 schema files in data/content-schemas/, ContentSchemaService loads generically from embedded resources, PromptService.BuildRequest injects schema into all generation prompts; no hardcoded type names in C#; 536 backend tests pass)
+  - #317 DONE — PR #389 merged (4 new Teacher QA personas: Sophie A2 FR, Ricardo C1 PT, Nadia B2 AR, Hans A1 DE; full run now covers 9 personas; SKILL.md updated with persona descriptions, run commands, curriculum JSON pointers)
   - #379 B2 error correction explanations truncated (P2, from 2026-03-29 QA run)
 - Solo Whiteboard: AFTER PEDAGOGICAL QUALITY (5 sub-issues from #174)
-- Adaptive Replanning: AFTER WHITEBOARD (audio input, post-class reflections, auto-difficulty updates, course replanning, progress dashboard)
+- Post-Class Tracking: AFTER WHITEBOARD — milestone #12, epic #391. Text-only session log (planned/done/homework/observations), student history view, profile update from notes, Excel import. Audio deferred to next sprint. Informed by Jordi's actual Excel (35 students, `feedback/raw/2026-03-29-jordi-excel-alumnos-actuales.xlsx`).
+- Adaptive Replanning: AFTER POST-CLASS TRACKING (audio input, post-class reflections, auto-difficulty updates, course replanning, progress dashboard)
 - Group Classes: FUTURE (#146, #147)
 - Phase 2B: Production (caching, usage limits, CI pipeline)
 - Phase 3: Growth (student portal, evaluation, content library, payments)

@@ -170,6 +170,29 @@ Source: WhatsApp voice note from Jordi, forwarded by Robert via email. ~23 secon
 
 Raw: `feedback/raw/2026-03-28-jordi-audio-grammar-explainer.txt`
 
+## Feedback Round 9 (2026-03-29, voice note via Robert — answer to Isaac)
+
+Source: WhatsApp voice note from Jordi, forwarded by Robert via email. Response to Isaac's question about his typical work day (Tuesday). ~9.5 minutes.
+
+### Daily workflow revealed
+
+- Works 7 days/week. Online via Preply (27 students, 35-40 classes/week) + in-person at private academy (group classes, B1.1 + starting A2.1, 2h each, 6-8pm).
+- Morning routine (8-9am): check for cancellations, upload material to Preply, review Excel tracker for each student's next session.
+- During class: takes paper notes (errors, topics for future classes). Transfers to Excel after. "I'm disorganized and don't always do it."
+- Afternoon: siesta, then 4:30-6pm prep for 6pm group class. Structured prep: warm-up, activity 1, 2, 3. Prints everything. Sets whiteboard (date + activity list + interesting phrase/proverb).
+- Saturday morning (no classes): main planning day. Tries to prep all 4 group sessions (B1.1 x2, A2.1 x2). "Normally don't manage to finish."
+- Sunday: catch-up planning for anything not done Saturday.
+
+| # | Feedback | Roadmap fit | Status |
+|---|----------|-------------|--------|
+| 41 | **Excel replacement is a direct ask**: "The Excel is quite rough — I don't know if you can help me with that." 27 students, 35-40 classes/week. The Excel = per-student log of what was done, what to do next. | Core product value. Validates Round 5 #26 ("organization over AI"). LangTeach IS the replacement. | **Reinforced with direct request** |
+| 42 | **Post-class audio notes confirmed for 3rd time**: Paper notes during class → transfer to Excel is the pain. "Post-class follow-up is very, very, very important and I could use help there." Explicitly references sending audio like this note. | Phase 2A: Audio Reflections | **Strong reinforcement** |
+| 43 | **Warm-up is NOT lesson-content**: 5 min, open conversation, not related to what they're studying. Goal: get students speaking Spanish. Varies by group energy. Must start on time (6:05 sharp). | Already fixed in #226. Good confirmation the fix aligns with reality. | **Validation** |
+| 44 | **Error management per student, not per nationality**: Explicitly says errors differ within a nationality — some struggle with verbs, others with pronunciation. Wants: "from this error, how can the student improve." | Phase 2A: Enhanced Difficulty Tracking (#100) | **Reinforces with concrete framing** |
+| 45 | **Scale data**: 27 online students, 35-40 classes/week, 2 group classes (B1.1 + A2.1 starting). Saturday = sole planning window, often insufficient. | Confirms the prep-time pressure is extreme. Speed and reduced clicks matter enormously. | **Context** |
+
+Raw: `feedback/raw/2026-03-29-jordi-audio-daily-workflow.txt`
+
 ## Open items (internal, do not chase Jordi)
 
 - ~~Awaiting: course programs for all levels~~ RECEIVED
