@@ -8,7 +8,7 @@ Run the `review` and `architecture-reviewer` agents **in parallel** (always). Co
 |---|---|---|
 | `**/PromptService.cs` | Prompt Health | `prompt-health-reviewer` |
 | `**/Models/*.cs`, `**/Dtos/*.cs`, `**/*Dto.cs`, `**/Data/*.cs`, `**/Migrations/*.cs`, `data/**/*.json`, `**/contentTypes.ts`, or new entities/tables/FKs | Sophy | `sophy` |
-| Any diff that adds hardcoded conditional logic (if/else, switch) based on language, level, template, or student properties in `**/PromptService.cs`, prompt builders, or generation services — i.e. logic that belongs in config rather than code | Sophy | `sophy` |
+| Any diff that adds hardcoded conditional logic (if/else, switch) based on language, level, template, or student properties in `**/PromptService.cs`, prompt builders, generation services, or validation services — i.e. logic that belongs in config rather than code. Includes hardcoded regex patterns or rule lists for language-specific validation. | Sophy | `sophy` |
 | `data/pedagogy/*.json`, `data/section-profiles/*.json`, `data/pedagogy/cefr-level-rules/*.json` | Isaac | `pedagogy-reviewer` |
 
 ### Prompt Health prompt
