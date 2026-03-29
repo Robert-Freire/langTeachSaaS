@@ -140,6 +140,16 @@ public class SectionProfileService : ISectionProfileService
         return null;
     }
 
+    public string GetInteractionPattern(string sectionType, string cefrLevel)
+    {
+        var profile = GetProfile(sectionType);
+        if (profile is null) return string.Empty;
+        var level = NormalizeLevel(cefrLevel);
+        if (profile.Levels.TryGetValue(level, out var lp))
+            return lp.InteractionPattern ?? string.Empty;
+        return string.Empty;
+    }
+
     public string[] GetAllScopeValues() =>
         _profiles.Values
             .SelectMany(p => p.Levels.Values)

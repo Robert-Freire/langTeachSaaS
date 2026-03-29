@@ -385,43 +385,73 @@ public class PromptService : IPromptService
 
     private string ConversationUserPrompt(GenerationContext ctx)
     {
-        var topic = Sanitize(ctx.Topic);
-        var level = Sanitize(ctx.CefrLevel);
+        var topic   = Sanitize(ctx.Topic);
+        var level   = Sanitize(ctx.CefrLevel);
         var section = ctx.SectionType;
 
         if (string.Equals(section, "WarmUp", StringComparison.OrdinalIgnoreCase))
-        {
-            var guidance = _profiles.GetGuidance("warmup", level);
-            var constraint = _pedagogy.GetScopeConstraint("warmup", level, ctx.TemplateName, "conversation");
-            var prompt = $$"""
-            Generate a warm-up icebreaker conversation activity for a {{level}} level lesson on "{{topic}}". Return JSON:
-            {"scenarios":[{"setup":"","roleA":"Teacher","roleB":"Student","roleAPhrases":[""],"roleBPhrases":[""]}]}
-            {{guidance}}
-            """;
-            if (!string.IsNullOrEmpty(constraint))
-                prompt += "\n" + constraint;
-            return prompt;
-        }
+            return BuildSectionConversationPrompt(
+                sectionKey:      "warmup",
+                level:           level,
+                topic:           topic,
+                templateName:    ctx.TemplateName,
+                mainInstruction: $"Generate a warm-up icebreaker conversation activity for a {level} level lesson on \"{topic}\".",
+                extraConstraint: null);
 
         if (string.Equals(section, "WrapUp", StringComparison.OrdinalIgnoreCase))
-        {
-            var guidance = _profiles.GetGuidance("wrapup", level);
-            var constraint = _pedagogy.GetScopeConstraint("wrapup", level, ctx.TemplateName, "conversation");
-            var prompt = $$"""
-            Generate a wrap-up reflection conversation for a {{level}} level lesson on "{{topic}}". Return JSON:
-            {"scenarios":[{"setup":"","roleA":"Teacher","roleB":"Student","roleAPhrases":[""],"roleBPhrases":[""]}]}
-            {{guidance}}
-            """;
-            if (!string.IsNullOrEmpty(constraint))
-                prompt += "\n" + constraint;
-            return prompt;
-        }
+            return BuildSectionConversationPrompt(
+                sectionKey:      "wrapup",
+                level:           level,
+                topic:           topic,
+                templateName:    ctx.TemplateName,
+                mainInstruction: $"Generate a wrap-up reflection conversation for a {level} level lesson on \"{topic}\".",
+                extraConstraint: "IMPORTANT: Review only content from this lesson. Do not introduce new vocabulary, grammar structures, or situations.");
 
         return $$"""
         Generate conversation scenarios for the lesson on "{{topic}}". Return JSON:
         {"scenarios":[{"setup":"","roleA":"","roleB":"","roleAPhrases":[""],"roleBPhrases":[""]}]}
         Include 2-3 scenarios using {{level}}-appropriate language.
         """;
+    }
+
+    private string BuildSectionConversationPrompt(
+        string sectionKey, string level, string topic, string? templateName,
+        string mainInstruction, string? extraConstraint)
+    {
+        var constraint       = _pedagogy.GetScopeConstraint(sectionKey, level, templateName, "conversation");
+        var duration         = _profiles.GetDuration(sectionKey, level);
+        var interactionPattern = _profiles.GetInteractionPattern(sectionKey, level);
+        var forbiddenReasons = _profiles.GetRawForbiddenExerciseTypes(sectionKey, level)
+            .Select(f => f.Reason)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(5)
+            .ToArray();
+        var guidance = _profiles.GetGuidance(sectionKey, level);
+
+        var sb = new StringBuilder();
+
+        if (!string.IsNullOrEmpty(constraint))
+            sb.AppendLine(constraint);
+        if (!string.IsNullOrEmpty(extraConstraint))
+            sb.AppendLine(extraConstraint);
+        if (duration is not null)
+            sb.AppendLine($"Duration: {duration.Min}-{duration.Max} minutes.");
+        if (!string.IsNullOrEmpty(interactionPattern))
+            sb.AppendLine($"Interaction pattern: {interactionPattern}.");
+        if (forbiddenReasons.Length > 0)
+        {
+            sb.AppendLine("Do not generate activities that:");
+            foreach (var reason in forbiddenReasons)
+                sb.AppendLine($"- {reason}");
+        }
+
+        sb.AppendLine($"{mainInstruction} Return JSON:");
+        sb.AppendLine("{\"scenarios\":[{\"setup\":\"\",\"roleA\":\"Teacher\",\"roleB\":\"Student\",\"roleAPhrases\":[\"\"],\"roleBPhrases\":[\"\"]}]}");
+
+        if (!string.IsNullOrEmpty(guidance))
+            sb.Append(guidance);
+
+        return sb.ToString().TrimEnd();
     }
 
     private string ReadingUserPrompt(GenerationContext ctx)
