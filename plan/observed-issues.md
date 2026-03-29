@@ -4,6 +4,9 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 | Source issue | Date | Severity | Observation |
 |-------------|------|----------|-------------|
+| #380 | 2026-03-29 | minor | `MapToDto` in CreateAsync/UpdateAsync/DuplicateAsync paths does not `.Include(l => l.Template)` so TemplateName is null in those responses. Editor re-fetches via GetByIdAsync so no user impact, but inconsistent. Fix with other LessonService query hygiene. |
+| #380 | 2026-03-29 | minor | `EXAM_PREP_SECTION_TASK_MAP` in FullLessonGenerateButton hardcodes pedagogical content-type routing in TS code instead of deriving from backend config. Should be driven by template-overrides data once #334 (Expose section profiles API) lands. |
+| #380 | 2026-03-29 | minor | `BuildTemplateGuidanceBlock` is only injected in FreeTextUserPrompt and ExercisesUserPrompt. For consistency, it should also be applied to GrammarUserPrompt, VocabularyUserPrompt etc. so future templates that define overrides for those content types work automatically. |
 | #351 | 2026-03-28 | minor | Grammar-focus warmUp override says "not practice or discovery" — "or discovery" could be misread as ruling out discovery globally across templates. Consider rephrasing to "not practice" only on next authoring pass (Isaac, 2026-03-28). |
 | #351 | 2026-03-28 | minor | B1 presentation L1 interference note instruction is valuable. Consider propagating it as a section profile `levelSpecificNote` globally (not just via template overrides) so all B1 templates benefit, not just grammar-focus. |
 

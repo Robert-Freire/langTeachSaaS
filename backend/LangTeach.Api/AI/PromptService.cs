@@ -123,6 +123,35 @@ public class PromptService : IPromptService
 
     private static readonly string[] SectionOrder = ["warmUp", "presentation", "practice", "production", "wrapUp"];
 
+    // --- Template override guidance ---
+
+    /// Builds a guidance block from the template's section override for the given section and CEFR level.
+    /// Returns null when no template or no override exists for that section.
+    private string? BuildTemplateGuidanceBlock(string? templateName, string? sectionType, string cefrLevel)
+    {
+        if (string.IsNullOrEmpty(templateName) || string.IsNullOrEmpty(sectionType))
+            return null;
+        var templateEntry = _pedagogy.GetTemplateOverrideByName(templateName);
+        if (templateEntry is null) return null;
+
+        // Template section keys are camelCase ("warmUp"); sectionType arrives as PascalCase ("WarmUp")
+        var key = char.ToLowerInvariant(sectionType[0]) + sectionType[1..];
+        var sb = new StringBuilder();
+
+        if (templateEntry.Sections.TryGetValue(key, out var sec))
+        {
+            if (!string.IsNullOrWhiteSpace(sec.OverrideGuidance))
+                sb.AppendLine($"SECTION REQUIREMENT: {sec.OverrideGuidance}");
+            if (!string.IsNullOrWhiteSpace(sec.Notes))
+                sb.AppendLine($"IMPORTANT: {sec.Notes}");
+        }
+
+        if (templateEntry.LevelVariations.TryGetValue(cefrLevel, out var levelVar))
+            sb.AppendLine($"Level note ({cefrLevel}): {levelVar}");
+
+        return sb.Length > 0 ? sb.ToString().TrimEnd() : null;
+    }
+
     // --- Pedagogy block builders ---
 
     private string BuildGrammarScopeBlock(string level)
@@ -380,6 +409,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
+        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
+        if (!string.IsNullOrEmpty(templateGuidance))
+            prompt += "\n\n" + templateGuidance;
+
         return prompt;
     }
 
@@ -521,6 +554,10 @@ public class PromptService : IPromptService
         var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "free-text");
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
+
+        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
+        if (!string.IsNullOrEmpty(templateGuidance))
+            prompt += "\n\n" + templateGuidance;
 
         return prompt;
     }
