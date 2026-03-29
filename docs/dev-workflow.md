@@ -185,7 +185,7 @@ The Bash tool runs in Git Bash on Windows. Git Bash automatically translates Uni
 
 | Gate | Tool | Pass Condition |
 |------|------|----------------|
-| Issue readiness | `/qa` skill | `qa:ready` label applied |
+| Issue readiness | `general-purpose` agent (with qa skill instructions) | `qa:ready` label applied |
 | Plan validation | `review-plan` agent (invokes Sophy if plan touches data) | Plan approved |
 | Pre-push checks | Bash | bicep + dotnet + frontend all green |
 | Acceptance criteria | `qa-verify` agent | PASS verdict |

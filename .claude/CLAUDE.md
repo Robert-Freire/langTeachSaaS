@@ -67,7 +67,7 @@ For issue creation, editing, board management, and labels: see `.claude/procedur
 
 ## Review Tools: Always Use Agents
 
-All review steps must be invoked as **agents** (via Agent tool with appropriate `subagent_type`), never as skills. The `/qa` skill is the only exception (interactive issue review with user).
+All review steps must be invoked as **agents** (via Agent tool with appropriate `subagent_type`), never as skills.
 
 ## Task Completion Protocol
 

@@ -40,6 +40,7 @@
 - [Verify issues after creation](feedback_verify_issues_after_creation.md) — always verify correct milestone AND board visibility after creating issues
 - [Epic management policy](feedback_epic_management.md) — epics are temporary placeholders; close immediately when split
 - [Process changes go to agents/rules first](feedback_process_change_priority.md) — update agent definitions and CLAUDE.md before memory; memory doesn't change bot behavior
+- [Never defer without a GitHub issue](feedback_never_defer_without_issue.md) — every deferred finding must have a tracked issue; create immediately when user accepts deferral
 
 ## Reference
 - [Audio transcription method](reference_audio_transcription.md) — transcribe audio files locally using OpenAI Whisper + ffmpeg
