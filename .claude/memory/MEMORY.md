@@ -56,6 +56,9 @@
 - [Update sprint references on creation](feedback_sprint_creation_updates.md) — when creating/closing milestones, update sprint overviews, PM skill story pointer, and task status memory
 - [Verify issues after creation](feedback_verify_issues_after_creation.md) — always verify correct milestone AND board visibility after creating issues; never hardcode milestone numbers; issues in wrong milestone are invisible to bots
 - [Epic management policy](feedback_epic_management.md) — epics are temporary placeholders; close them immediately when split, never keep open as parent containers; all sprint work through flat independent issues
+- [Process changes go to agents/rules first](feedback_process_change_priority.md) — update agent definitions and CLAUDE.md before memory; memory doesn't change bot behavior
+- [Never defer without a GitHub issue](feedback_never_defer_without_issue.md) — every deferred finding must have a tracked issue; create immediately when user accepts deferral
+- [Never run frontend locally](feedback_no_local_frontend_dev.md) — frontend runs only in Docker; never start Vite/npm dev on the host
 
 ## Reference
 - [Audio transcription method](reference_audio_transcription.md) — transcribe audio files locally using OpenAI Whisper + ffmpeg
