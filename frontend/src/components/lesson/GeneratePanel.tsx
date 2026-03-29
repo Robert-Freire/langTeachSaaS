@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { AlertTriangle, X } from 'lucide-react'
 
 const SECTION_DEFAULT_TASK: Record<SectionType, ContentBlockType> = {
   WarmUp: 'free-text',
@@ -107,11 +108,12 @@ export function GeneratePanel({
   const [grammarConstraints, setGrammarConstraints] = useState<string | undefined>(undefined)
   const [inserting, setInserting] = useState(false)
   const [insertError, setInsertError] = useState<string | null>(null)
+  const [warningsDismissed, setWarningsDismissed] = useState(false)
 
   const { data: sectionRules } = useSectionRules()
   const { data: profile } = useProfile()
   const queryClient = useQueryClient()
-  const { status, output, error, quotaExceeded, generate, abort } = useGenerate()
+  const { status, output, error, quotaExceeded, warnings = [], generate, abort } = useGenerate()
 
   const quotaLimit = profile?.generationsMonthlyLimit ?? -1
   const quotaUsed = profile?.generationsUsedThisMonth ?? 0
@@ -131,6 +133,7 @@ export function GeneratePanel({
   }), [lessonId, lessonContext, style, direction, grammarConstraints, sectionType])
 
   const handleGenerate = () => {
+    setWarningsDismissed(false)
     generate(taskType, request)
   }
 
@@ -361,6 +364,32 @@ export function GeneratePanel({
           </div>
         )
       })()}
+
+      {isDone && warnings.length > 0 && !warningsDismissed && (
+        <div
+          className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+          data-testid="grammar-warnings-banner"
+          role="alert"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="flex-1 space-y-1">
+            <p className="font-medium text-xs">AI quality warnings ({warnings.length})</p>
+            <ul className="list-disc list-inside space-y-0.5">
+              {warnings.map((w, i) => (
+                <li key={i} className="text-xs">{w}</li>
+              ))}
+            </ul>
+          </div>
+          <button
+            type="button"
+            aria-label="Dismiss grammar warnings"
+            onClick={() => setWarningsDismissed(true)}
+            className="shrink-0 rounded text-amber-600 hover:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {isError && output && (
         <Textarea

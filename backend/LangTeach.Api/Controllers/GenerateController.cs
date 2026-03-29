@@ -25,6 +25,7 @@ public class GenerateController : ControllerBase
     private readonly ICurriculumTemplateService _templateService;
     private readonly ILessonService _lessonService;
     private readonly ISectionProfileService _sectionProfiles;
+    private readonly ISpanishGrammarValidationService _grammarValidator;
     private readonly AppDbContext _db;
     private readonly ILogger<GenerateController> _logger;
 
@@ -38,6 +39,7 @@ public class GenerateController : ControllerBase
         ICurriculumTemplateService templateService,
         ILessonService lessonService,
         ISectionProfileService sectionProfiles,
+        ISpanishGrammarValidationService grammarValidator,
         AppDbContext db,
         ILogger<GenerateController> logger)
     {
@@ -50,6 +52,7 @@ public class GenerateController : ControllerBase
         _templateService = templateService;
         _lessonService = lessonService;
         _sectionProfiles = sectionProfiles;
+        _grammarValidator = grammarValidator;
         _db = db;
         _logger = logger;
     }
@@ -194,11 +197,25 @@ public class GenerateController : ControllerBase
 
         try
         {
+            var accumulatedContent = new System.Text.StringBuilder();
             await foreach (var token in _claudeClient.StreamAsync(claudeRequest, ct))
             {
+                accumulatedContent.Append(token);
                 await Response.WriteAsync($"data: {JsonSerializer.Serialize(token)}\n\n", ct);
                 await Response.Body.FlushAsync(ct);
             }
+
+            if (string.Equals(request.Language.Trim(), "Spanish", StringComparison.OrdinalIgnoreCase))
+            {
+                var warnings = _grammarValidator.Validate(accumulatedContent.ToString(), request.Topic.Trim());
+                if (warnings.Count > 0)
+                {
+                    var warningsEvent = JsonSerializer.Serialize(new { type = "grammar_warnings", items = warnings });
+                    await Response.WriteAsync($"data: {warningsEvent}\n\n", CancellationToken.None);
+                    await Response.Body.FlushAsync(CancellationToken.None);
+                }
+            }
+
             await Response.WriteAsync("data: [DONE]\n\n", ct);
             await Response.Body.FlushAsync(ct);
             await _usageLimitService.RecordGenerationAsync(teacherId, blockTypeEnum, CancellationToken.None);
@@ -452,7 +469,15 @@ public class GenerateController : ControllerBase
             "Generate/{BlockType} succeeded. LessonId={LessonId} BlockId={BlockId} InputTokens={InputTokens} OutputTokens={OutputTokens}",
             blockType, lesson.Id, block.Id, response.InputTokens, response.OutputTokens);
 
-        return Ok(new GenerationResultDto(block.Id, block.BlockType, block.GeneratedContent));
+        IReadOnlyList<string>? warnings = null;
+        if (string.Equals(language, "Spanish", StringComparison.OrdinalIgnoreCase))
+        {
+            var validationWarnings = _grammarValidator.Validate(response.Content, topic);
+            if (validationWarnings.Count > 0)
+                warnings = validationWarnings;
+        }
+
+        return Ok(new GenerationResultDto(block.Id, block.BlockType, block.GeneratedContent, warnings));
     }
 
     private IReadOnlyList<string>? SpanishGrammarConstraints(string language, string cefrLevel)

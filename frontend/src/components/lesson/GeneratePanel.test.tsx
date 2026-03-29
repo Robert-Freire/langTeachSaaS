@@ -683,3 +683,90 @@ describe('GeneratePanel - section content type allowlist', () => {
     expect(within(listbox).queryByText('Homework')).toBeNull()
   })
 })
+
+describe('GeneratePanel - grammar warnings banner', () => {
+  it('shows warnings banner when generation is done and warnings are present', () => {
+    mockUseGenerate.mockReturnValue({
+      status: 'done',
+      output: '{"title":"test","explanation":"test","examples":[],"commonMistakes":[]}',
+      error: null,
+      quotaExceeded: false,
+      warnings: ['Ser/estar error: test warning 1', 'Gender error: test warning 2'],
+      generate: vi.fn(),
+      abort: vi.fn(),
+    })
+
+    renderWithQuery(
+      <GeneratePanel
+        {...defaultProps}
+        sectionType="Presentation"
+        lessonContext={{ language: 'Spanish', cefrLevel: 'B1', topic: 'ser vs estar' }}
+      />
+    )
+
+    const banner = screen.getByTestId('grammar-warnings-banner')
+    expect(banner).toBeTruthy()
+    expect(screen.getByText('AI quality warnings (2)')).toBeInTheDocument()
+    expect(screen.getByText('Ser/estar error: test warning 1')).toBeInTheDocument()
+    expect(screen.getByText('Gender error: test warning 2')).toBeInTheDocument()
+  })
+
+  it('does not show warnings banner when generation is done with no warnings', () => {
+    mockUseGenerate.mockReturnValue({
+      status: 'done',
+      output: '{"title":"test","explanation":"test","examples":[],"commonMistakes":[]}',
+      error: null,
+      quotaExceeded: false,
+      warnings: [],
+      generate: vi.fn(),
+      abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    expect(screen.queryByTestId('grammar-warnings-banner')).toBeNull()
+  })
+
+  it('dismisses warnings banner when close button is clicked', async () => {
+    const user = userEvent.setup()
+    mockUseGenerate.mockReturnValue({
+      status: 'done',
+      output: '{"title":"test","explanation":"test","examples":[],"commonMistakes":[]}',
+      error: null,
+      quotaExceeded: false,
+      warnings: ['Ser/estar error: test warning'],
+      generate: vi.fn(),
+      abort: vi.fn(),
+    })
+
+    renderWithQuery(
+      <GeneratePanel
+        {...defaultProps}
+        sectionType="Presentation"
+        lessonContext={{ language: 'Spanish', cefrLevel: 'B1', topic: 'ser vs estar' }}
+      />
+    )
+
+    expect(screen.getByTestId('grammar-warnings-banner')).toBeInTheDocument()
+
+    await user.click(screen.getByLabelText('Dismiss grammar warnings'))
+
+    expect(screen.queryByTestId('grammar-warnings-banner')).toBeNull()
+  })
+
+  it('does not show warnings banner when still streaming', () => {
+    mockUseGenerate.mockReturnValue({
+      status: 'streaming',
+      output: '',
+      error: null,
+      quotaExceeded: false,
+      warnings: ['Ser/estar error: test'],
+      generate: vi.fn(),
+      abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    expect(screen.queryByTestId('grammar-warnings-banner')).toBeNull()
+  })
+})

@@ -159,6 +159,62 @@ describe('useGenerate', () => {
     expect(result.current.error).toContain('Monthly generation limit reached.')
   })
 
+  it('extracts grammar_warnings from the SSE stream and exposes them', async () => {
+    server.use(
+      http.post(SSE_URL, () => {
+        const body = makeSseBody(
+          'data: "hello"\n\n',
+          'data: {"type":"grammar_warnings","items":["Ser/estar error: test warning"]}\n\n',
+          'data: [DONE]\n\n',
+        )
+        return new HttpResponse(body, {
+          headers: { 'Content-Type': 'text/event-stream' },
+        })
+      }),
+    )
+
+    const { result } = renderHook(() => useGenerate())
+
+    act(() => {
+      result.current.generate('vocabulary', validRequest)
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('done'), {
+      timeout: 3000,
+    })
+
+    expect(result.current.output).toBe('hello')
+    expect(result.current.warnings).toEqual(['Ser/estar error: test warning'])
+  })
+
+  it('starts with empty warnings and clears them on new generation', async () => {
+    server.use(
+      http.post(SSE_URL, () => {
+        const body = makeSseBody(
+          'data: "content"\n\n',
+          'data: [DONE]\n\n',
+        )
+        return new HttpResponse(body, {
+          headers: { 'Content-Type': 'text/event-stream' },
+        })
+      }),
+    )
+
+    const { result } = renderHook(() => useGenerate())
+
+    expect(result.current.warnings).toEqual([])
+
+    act(() => {
+      result.current.generate('vocabulary', validRequest)
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('done'), {
+      timeout: 3000,
+    })
+
+    expect(result.current.warnings).toEqual([])
+  })
+
   it('aborts the in-flight request when the hook unmounts during streaming', async () => {
     let requestAborted = false
 

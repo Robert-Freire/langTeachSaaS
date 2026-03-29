@@ -10,6 +10,7 @@ export function useGenerate() {
   const [output, setOutput] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [quotaExceeded, setQuotaExceeded] = useState(false)
+  const [warnings, setWarnings] = useState<string[]>([])
   const controllerRef = useRef<AbortController | null>(null)
 
   const abort = useCallback(() => {
@@ -33,6 +34,7 @@ export function useGenerate() {
       setOutput('')
       setError(null)
       setQuotaExceeded(false)
+      setWarnings([])
 
       try {
         const token = await getAccessTokenSilently()
@@ -101,12 +103,17 @@ export function useGenerate() {
             }
             try {
               const parsed = JSON.parse(data)
-              if (typeof parsed === 'object' && parsed !== null && parsed.error) {
-                setError(parsed.error as string)
-                setStatus('error')
-                return
-              }
-              if (typeof parsed === 'string') {
+              if (typeof parsed === 'object' && parsed !== null) {
+                const obj = parsed as Record<string, unknown>
+                if (obj.error) {
+                  setError(obj.error as string)
+                  setStatus('error')
+                  return
+                }
+                if (obj.type === 'grammar_warnings' && Array.isArray(obj.items)) {
+                  setWarnings(obj.items as string[])
+                }
+              } else if (typeof parsed === 'string') {
                 setOutput((prev) => prev + parsed)
               }
             } catch {
@@ -128,5 +135,5 @@ export function useGenerate() {
     [getAccessTokenSilently],
   )
 
-  return { status, output, error, quotaExceeded, generate, abort }
+  return { status, output, error, quotaExceeded, warnings, generate, abort }
 }

@@ -152,6 +152,7 @@ builder.Services.AddScoped<ICurriculumGenerationService, CurriculumGenerationSer
 builder.Services.AddScoped<ICurriculumValidationService, CurriculumValidationService>();
 builder.Services.AddSingleton<ICurriculumTemplateService, CurriculumTemplateService>();
 builder.Services.AddSingleton<ISessionMappingService, SessionMappingService>();
+builder.Services.AddSingleton<ISpanishGrammarValidationService, SpanishGrammarValidationService>();
 
 QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddScoped<IPdfExportService, PdfExportService>();

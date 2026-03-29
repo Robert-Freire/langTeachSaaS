@@ -9,6 +9,8 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #380 | 2026-03-29 | minor | `BuildTemplateGuidanceBlock` is only injected in FreeTextUserPrompt and ExercisesUserPrompt. For consistency, it should also be applied to GrammarUserPrompt, VocabularyUserPrompt etc. so future templates that define overrides for those content types work automatically. |
 | #351 | 2026-03-28 | minor | Grammar-focus warmUp override says "not practice or discovery" — "or discovery" could be misread as ruling out discovery globally across templates. Consider rephrasing to "not practice" only on next authoring pass (Isaac, 2026-03-28). |
 | #351 | 2026-03-28 | minor | B1 presentation L1 interference note instruction is valuable. Consider propagating it as a section profile `levelSpecificNote` globally (not just via template overrides) so all B1 templates benefit, not just grammar-focus. |
+| #353 | 2026-03-29 | minor | `FullLessonGenerateButton.tsx:110` matches template name via `toLowerCase() === 'exam prep'` — a DB name with different casing or trailing whitespace silently falls through to default map. Consider matching by template slug or ID. |
+| #353 | 2026-03-29 | minor | `LessonService.GetByIdAsync` now includes `.Include(l => l.Template)` but list/create/update/duplicate paths do not — TemplateName is null on those responses. Noted from task 380 merge; no user impact (editor re-fetches), but inconsistent. |
 
 *Cleared 2026-03-28 during Student-Aware Curriculum sprint close (round 2). 3 entries processed: 2 batched into #348 (input validation), 1 into #349 (UX polish). Docker e2e build context issue logged as #346 (P0).*
 
