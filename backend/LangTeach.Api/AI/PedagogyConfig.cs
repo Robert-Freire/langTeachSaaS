@@ -83,7 +83,8 @@ public record SectionOverride(
     string[] PriorityExerciseTypes,
     int? MinExerciseVarietyOverride,
     string? Notes,
-    string? Scope = null
+    string? Scope = null,
+    string? PreferredContentType = null
 );
 
 // Scope constraints config (scope-constraints.json)
