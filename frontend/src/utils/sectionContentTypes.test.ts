@@ -36,10 +36,10 @@ const MOCK_RULES: SectionRulesMap = {
   Production: {
     A1: ['conversation'],
     A2: ['conversation'],
-    B1: ['conversation'],
-    B2: ['conversation', 'reading'],
-    C1: ['conversation', 'reading'],
-    C2: ['conversation', 'reading'],
+    B1: ['conversation', 'exercises'],
+    B2: ['conversation', 'reading', 'exercises'],
+    C1: ['conversation', 'reading', 'exercises'],
+    C2: ['conversation', 'reading', 'exercises'],
   },
   WrapUp: {
     A1: ['conversation'],
@@ -148,25 +148,26 @@ describe('getAllowedContentTypes — Production section', () => {
     expect(getAllowedContentTypes(MOCK_RULES, 'Production', 'A1')).toEqual(['conversation'])
   })
 
-  it('returns only conversation for B1', () => {
-    expect(getAllowedContentTypes(MOCK_RULES, 'Production', 'B1')).toEqual(['conversation'])
+  it('returns conversation and exercises for B1', () => {
+    expect(getAllowedContentTypes(MOCK_RULES, 'Production', 'B1')).toEqual(['conversation', 'exercises'])
   })
 
-  it('returns conversation and reading for B2', () => {
-    expect(getAllowedContentTypes(MOCK_RULES, 'Production', 'B2')).toEqual(['conversation', 'reading'])
+  it('returns conversation, reading, and exercises for B2', () => {
+    expect(getAllowedContentTypes(MOCK_RULES, 'Production', 'B2')).toEqual(['conversation', 'reading', 'exercises'])
   })
 
-  it('returns conversation and reading for C1', () => {
-    expect(getAllowedContentTypes(MOCK_RULES, 'Production', 'C1')).toEqual(['conversation', 'reading'])
+  it('returns conversation, reading, and exercises for C1', () => {
+    expect(getAllowedContentTypes(MOCK_RULES, 'Production', 'C1')).toEqual(['conversation', 'reading', 'exercises'])
   })
 
-  it('excludes exercises from Production', () => {
-    const types = getAllowedContentTypes(MOCK_RULES, 'Production', 'B1')
-    expect(types).not.toContain('exercises')
+  it('includes exercises in Production from B1 upward', () => {
+    for (const level of ['B1', 'B2', 'C1', 'C2']) {
+      expect(getAllowedContentTypes(MOCK_RULES, 'Production', level)).toContain('exercises')
+    }
   })
 
   it('normalizes B2.1 to B2 before lookup', () => {
-    expect(getAllowedContentTypes(MOCK_RULES, 'Production', 'B2.1')).toEqual(['conversation', 'reading'])
+    expect(getAllowedContentTypes(MOCK_RULES, 'Production', 'B2.1')).toEqual(['conversation', 'reading', 'exercises'])
   })
 })
 
