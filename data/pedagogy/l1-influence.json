@@ -96,6 +96,20 @@
       "falseFriends": [],
       "positiveTransfer": [],
       "additionalNotes": "No grammatical gender, no articles, no conjugations in L1. Everything is new. Functional approach (for expressing wishes/doubts we use this special form) rather than rule-based."
+    },
+    "spanish": {
+      "family": null,
+      "falseFriends": [],
+      "positiveTransfer": [],
+      "additionalNotes": "Spanish is the target language being taught. Grammar constraints below enforce accuracy of generated exercises and must not be violated.",
+      "grammarConstraints": [
+        {
+          "topic": "subjunctive-temporal-correlation",
+          "rule": "present/future main clause -> present subjunctive (pueda, haga, sea); past/conditional main clause -> imperfect subjunctive (pudiera, hiciera, fuera). Example: 'No creo que [el sujeto] pueda...' NOT 'pudiera'.",
+          "enforcement": "mandatory",
+          "appliesTo": ["exercises", "grammar"]
+        }
+      ]
     }
   }
 }

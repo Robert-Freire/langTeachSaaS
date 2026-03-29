@@ -485,4 +485,26 @@ public class PedagogyConfigServiceTests
         // This test verifies the loaded config passes all cross-layer validation.
         _sut.Should().NotBeNull(because: "PedagogyConfigService must construct without validation errors for preferredContentType entries");
     }
+
+    // --- GetGrammarConstraints ---
+
+    [Fact]
+    public void GetGrammarConstraints_Spanish_ReturnsSubjunctiveTemporalCorrelationRule()
+    {
+        var result = _sut.GetGrammarConstraints("spanish");
+
+        result.Should().NotBeEmpty();
+        result.Should().Contain(c => c.Topic == "subjunctive-temporal-correlation",
+            because: "l1-influence.json must define the Spanish subjunctive temporal correlation rule");
+        result.Should().Contain(c => c.AppliesTo.Contains("exercises", StringComparer.OrdinalIgnoreCase),
+            because: "the constraint must apply to exercises");
+    }
+
+    [Fact]
+    public void GetGrammarConstraints_English_ReturnsEmpty()
+    {
+        var result = _sut.GetGrammarConstraints("english");
+
+        result.Should().BeEmpty(because: "no grammar constraints are defined for English in l1-influence.json");
+    }
 }

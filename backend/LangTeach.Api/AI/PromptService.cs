@@ -445,6 +445,16 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(contentTypeContext))
             prompt += "\n\n" + contentTypeContext;
 
+        var grammarConstraints = _pedagogy.GetGrammarConstraints(ctx.Language)
+            .Where(c => c.AppliesTo.Contains("exercises", StringComparer.OrdinalIgnoreCase))
+            .ToArray();
+        if (grammarConstraints.Length > 0)
+        {
+            prompt += "\n\nGRAMMAR ACCURACY CONSTRAINTS (mandatory — do not violate):";
+            foreach (var constraint in grammarConstraints)
+                prompt += $"\n- {constraint.Rule}";
+        }
+
         return prompt;
     }
 

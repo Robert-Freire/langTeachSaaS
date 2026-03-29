@@ -232,6 +232,15 @@ public class PedagogyConfigService : IPedagogyConfigService
         );
     }
 
+    public TargetLanguageGrammarConstraint[] GetGrammarConstraints(string targetLanguage)
+    {
+        var key = NormalizeLang(targetLanguage);
+        if (_l1.SpecificLanguages.TryGetValue(key, out var specific)
+            && specific.GrammarConstraints is { Length: > 0 } constraints)
+            return constraints;
+        return [];
+    }
+
     public TemplateOverrideEntry? GetTemplateOverride(string templateId) =>
         _templates.TryGetValue(templateId, out var t) ? t : null;
 
