@@ -11,6 +11,7 @@ public record LessonDto(
     string Status,
     Guid? StudentId,
     Guid? TemplateId,
+    string? TemplateName,
     List<LessonSectionDto> Sections,
     DateTime CreatedAt,
     DateTime UpdatedAt,

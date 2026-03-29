@@ -157,7 +157,7 @@ public class GenerateController : ControllerBase
             : null;
 
         string? templateName = null;
-        if (blockTypeEnum == ContentBlockType.LessonPlan && lesson.TemplateId.HasValue)
+        if (lesson.TemplateId.HasValue)
         {
             var template = await _db.LessonTemplates.FindAsync(new object[] { lesson.TemplateId.Value }, ct);
             templateName = template?.Name;
@@ -312,7 +312,7 @@ public class GenerateController : ControllerBase
             : null;
 
         string? templateName = null;
-        if (blockType == ContentBlockType.LessonPlan && lesson.TemplateId.HasValue)
+        if (lesson.TemplateId.HasValue)
         {
             var template = await _db.LessonTemplates.FindAsync(new object[] { lesson.TemplateId.Value }, ct);
             templateName = template?.Name;
