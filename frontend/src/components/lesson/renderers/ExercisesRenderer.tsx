@@ -52,6 +52,7 @@ function StageSectionHeader({ stage }: { stage: PracticeStage }) {
 function groupByStage<T extends { stage?: PracticeStage }>(
   items: T[]
 ): { stage: PracticeStage | 'unstaged'; items: T[] }[] {
+  // Order must match the pedagogical progression defined in practice-stages.json
   const order: (PracticeStage | 'unstaged')[] = ['unstaged', 'controlled', 'meaningful', 'guided_free']
   const map = new Map<PracticeStage | 'unstaged', T[]>()
   for (const item of items) {

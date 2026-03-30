@@ -106,6 +106,8 @@ public class PedagogyConfigService : IPedagogyConfigService
                 practiceStagesRaw.CefrStageRequirements,
                 StringComparer.OrdinalIgnoreCase)
         };
+        _log.LogInformation("PedagogyConfigService: loaded {StageCount} practice stages across {LevelCount} CEFR levels",
+            _practiceStages.Stages.Length, _practiceStages.CefrStageRequirements.Count);
 
         // Validate cross-layer references — fail fast on dangling IDs
         ValidateCrossLayerRefs();
