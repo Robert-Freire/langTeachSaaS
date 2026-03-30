@@ -25,6 +25,12 @@ public interface IPedagogyConfigService
     GrammarScope GetGrammarScope(string level);
 
     /// <summary>
+    /// Returns guided writing parameters (word counts, complexity, structure expectations) for the CEFR level.
+    /// Falls back to safe defaults when the level config does not define guidedWriting.
+    /// </summary>
+    GuidedWritingGuidance GetGuidedWritingGuidance(string level);
+
+    /// <summary>
     /// Returns vocabulary guidance for the level.
     /// Numeric (ProductiveMin/Max, ReceptiveMin/Max) for A1-B2.
     /// String approach (Approach) for C1-C2.

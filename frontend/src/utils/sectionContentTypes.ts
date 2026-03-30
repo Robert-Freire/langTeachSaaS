@@ -18,6 +18,7 @@ export const ALL_CONTENT_TYPES: ContentBlockType[] = [
   'conversation',
   'reading',
   'homework',
+  'guided-writing',
   'free-text',
 ]
 

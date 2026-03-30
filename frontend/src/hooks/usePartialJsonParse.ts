@@ -140,6 +140,20 @@ export function buildPartialContent(rawOutput: string, blockType: ContentBlockTy
       const tasks = extractItemsFromArray(json, 'tasks')
       return tasks.length > 0 ? { tasks } : null
     }
+    case 'guided-writing': {
+      const situation = extractScalarString(json, 'situation')
+      const modelAnswer = extractScalarString(json, 'modelAnswer')
+      const requiredStructures = extractItemsFromArray(json, 'requiredStructures')
+      const evaluationCriteria = extractItemsFromArray(json, 'evaluationCriteria')
+      if (!situation && requiredStructures.length === 0) return null
+      // wordCount is a nested object — omit during streaming so coerce fills safe defaults
+      return {
+        situation: situation ?? '',
+        requiredStructures,
+        evaluationCriteria,
+        modelAnswer: modelAnswer ?? '',
+      }
+    }
     default:
       return null
   }

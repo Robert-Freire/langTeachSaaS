@@ -202,6 +202,22 @@ public class PedagogyConfigService : IPedagogyConfigService
         return new GrammarScope(rule.GrammarInScope, rule.GrammarOutOfScope);
     }
 
+    public GuidedWritingGuidance GetGuidedWritingGuidance(string level)
+    {
+        var normalLevel = NormalizeLevel(level);
+        if (_cefrRules.TryGetValue(normalLevel, out var rule) && rule.GuidedWriting is { } gw)
+            return new GuidedWritingGuidance(
+                gw.WordCountMin, gw.WordCountMax,
+                gw.SentenceCountMin, gw.SentenceCountMax,
+                gw.Structures, gw.Complexity, gw.SituationGuidance);
+
+        // Safe defaults for levels without config
+        return new GuidedWritingGuidance(80, 130, 6, 10,
+            "compound and complex sentences",
+            "Clear, structured writing appropriate to the level.",
+            "Relevant, contextual topics");
+    }
+
     public VocabularyGuidance GetVocabularyGuidance(string level)
     {
         var normalLevel = NormalizeLevel(level);

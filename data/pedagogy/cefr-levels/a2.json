@@ -50,5 +50,14 @@
   "instructionLanguage": "Mostly in L2, with L1 clarifications when the task type is new",
   "metalanguageLevel": "Basic metalanguage in L2: pasado, presente, verbo, adjetivo",
   "errorCorrection": "Immediate for systemic errors at risk of fossilization. Deferred for performance errors. Begin encouraging self-correction: '?Estas seguro? Piensa otra vez.'",
-  "scaffoldingDefault": "high"
+  "scaffoldingDefault": "high",
+  "guidedWriting": {
+    "wordCountMin": 50,
+    "wordCountMax": 80,
+    "sentenceCountMin": 4,
+    "sentenceCountMax": 7,
+    "structures": "simple sentences, basic connectors (and, but, because)",
+    "complexity": "Concrete everyday situations, two or three tasks.",
+    "situationGuidance": "Personal topics (daily life, preferences, simple events)"
+  }
 }

@@ -79,6 +79,14 @@ public class PromptService : IPromptService
         return BuildRequest("free-text", section, ctx.CefrLevel, null, system, user, ClaudeModel.Haiku, 1024);
     }
 
+    public ClaudeRequest BuildGuidedWritingPrompt(GenerationContext ctx)
+    {
+        var system  = BuildSystemPrompt(ctx);
+        var user    = GuidedWritingUserPrompt(ctx);
+        var section = ctx.SectionType ?? "production";
+        return BuildRequest("guided-writing", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 2048);
+    }
+
     public ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx)
     {
         var system = CurriculumSystemPrompt(ctx);
@@ -619,6 +627,35 @@ public class PromptService : IPromptService
             prompt += "\n" + vocabBlock;
 
         var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "homework");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
+
+        return prompt;
+    }
+
+    private string GuidedWritingUserPrompt(GenerationContext ctx)
+    {
+        var topic  = InputSanitizer.Sanitize(ctx.Topic);
+        var level  = InputSanitizer.Sanitize(ctx.CefrLevel);
+
+        var gw = _pedagogy.GetGuidedWritingGuidance(level);
+
+        var prompt = $$"""
+        Generate a guided writing task for a {{level}} student on the topic "{{topic}}". Return JSON matching the schema.
+        WORD COUNT: The student response must be {{gw.WordCountMin}}-{{gw.WordCountMax}} words ({{gw.SentenceCountMin}}-{{gw.SentenceCountMax}} sentences).
+        STRUCTURES: The student must use: {{gw.Structures}}.
+        SITUATION GUIDANCE: {{gw.SituationGuidance}}.
+        COMPLEXITY: {{gw.Complexity}}
+        Required fields:
+        - situation: a clear, motivating writing prompt appropriate to {{level}}
+        - requiredStructures: 2-4 grammar structures or vocabulary items the student must include
+        - wordCount: {"min": {{gw.WordCountMin}}, "max": {{gw.WordCountMax}}}
+        - evaluationCriteria: 3-4 criteria the teacher uses to assess the response
+        - modelAnswer: a complete sample response at {{level}} level within the word count range
+        - tips: 2-3 practical hints to help the student start (optional but recommended)
+        """;
+
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "guided-writing");
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
