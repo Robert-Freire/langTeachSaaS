@@ -41,7 +41,7 @@ function StageSectionHeader({ stage }: { stage: PracticeStage }) {
       data-testid={`stage-header-${stage}`}
     >
       <span className={`text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${meta.color}`}>
-        {meta.label} — {meta.labelEs}
+        {meta.label} / {meta.labelEs}
       </span>
     </div>
   )

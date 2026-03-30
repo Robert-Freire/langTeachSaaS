@@ -98,8 +98,14 @@ public class PedagogyConfigService : IPedagogyConfigService
                 kv => new Dictionary<string, string>(kv.Value, StringComparer.OrdinalIgnoreCase),
                 StringComparer.OrdinalIgnoreCase);
 
-        // Load practice stages
-        _practiceStages = LoadJson<PracticeStagesFile>(assembly, "LangTeach.Api.Pedagogy.practice-stages.json");
+        // Load practice stages — rebuild CefrStageRequirements with case-insensitive comparer
+        var practiceStagesRaw = LoadJson<PracticeStagesFile>(assembly, "LangTeach.Api.Pedagogy.practice-stages.json");
+        _practiceStages = practiceStagesRaw with
+        {
+            CefrStageRequirements = new Dictionary<string, CefrStageRequirement>(
+                practiceStagesRaw.CefrStageRequirements,
+                StringComparer.OrdinalIgnoreCase)
+        };
 
         // Validate cross-layer references — fail fast on dangling IDs
         ValidateCrossLayerRefs();
@@ -489,7 +495,8 @@ public class PedagogyConfigService : IPedagogyConfigService
             }
         }
 
-        // Validate practice stages: stage IDs in cefrStageRequirements must exist in stages array
+        // Validate practice stages: stage IDs in cefrStageRequirements must exist in stages array,
+        // and every active stage must have an itemsPerStage entry
         var stageIds = _practiceStages.Stages.Select(s => s.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var (lvl, req) in _practiceStages.CefrStageRequirements)
         {
@@ -497,6 +504,11 @@ public class PedagogyConfigService : IPedagogyConfigService
             {
                 if (!stageIds.Contains(stageId))
                     errors.Add($"practice-stages.json cefrStageRequirements[{lvl}]: unknown stage id '{stageId}'");
+            }
+            foreach (var stageId in req.Stages)
+            {
+                if (!req.ItemsPerStage.ContainsKey(stageId))
+                    errors.Add($"practice-stages.json cefrStageRequirements[{lvl}]: active stage '{stageId}' has no itemsPerStage entry");
             }
         }
         // Validate stage allowedExerciseCategories reference catalog IDs
