@@ -75,7 +75,7 @@ public static class SeedData
             {
                 SectionType = ToTitleCase(key),
                 OrderIndex = idx,
-                NotesPlaceholder = sections[key].OverrideGuidance ?? key,
+                NotesPlaceholder = sections[key].OverrideGuidance ?? ToTitleCase(key),
             });
         return JsonSerializer.Serialize(dtos);
     }
