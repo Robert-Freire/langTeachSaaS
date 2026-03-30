@@ -173,7 +173,8 @@ using (var scope = app.Services.CreateScope())
         startupLogger.LogInformation("Applying pending EF migrations...");
         await db.Database.MigrateAsync();
         startupLogger.LogInformation("Migrations applied successfully.");
-        await SeedData.SeedAsync(db, startupLogger);
+        var pedagogyConfig = app.Services.GetRequiredService<IPedagogyConfigService>();
+        await SeedData.SeedAsync(db, pedagogyConfig, startupLogger);
     }
 
     var blobService = scope.ServiceProvider.GetService<BlobStorageService>();

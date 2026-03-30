@@ -311,6 +311,20 @@ public class PedagogyConfigService : IPedagogyConfigService
             : null;
     }
 
+    private static readonly string[] CanonicalSectionOrder =
+        ["warmUp", "presentation", "practice", "production", "wrapUp"];
+
+    public IReadOnlyList<string>? GetRequiredSectionNames(string templateName)
+    {
+        var tmplEntry = GetTemplateOverrideByName(templateName);
+        if (tmplEntry is null)
+            return null;
+
+        return CanonicalSectionOrder
+            .Where(s => tmplEntry.Sections.TryGetValue(s, out var sec) && sec.Required)
+            .ToList();
+    }
+
     // --- Private helpers ---
 
     private static T LoadJson<T>(Assembly assembly, string resourceName)
