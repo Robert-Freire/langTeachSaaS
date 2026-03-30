@@ -62,6 +62,7 @@ GitHub Issues is the single source of truth. Use the `task-pick` agent to find t
 - Issues must have `qa:ready` before implementation starts.
 - **If milestone doesn't match active sprint**: STOP and ask the user.
 - **Self-assign immediately** when picking: `gh issue edit <N> --add-assignee "@me"`
+- **At most one `area:frontend` task in flight at a time.** Docker frontend runs on a fixed port (5173); concurrent frontend worktrees conflict. If a frontend task is already assigned, pick a backend or config task instead.
 
 For issue creation, editing, board management, and labels: see `.claude/procedures/issue-management.md`.
 

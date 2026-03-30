@@ -211,6 +211,7 @@ The Bash tool runs in Git Bash on Windows. Git Bash automatically translates Uni
 - E2E happy path test required for every main functionality, planned at task start
 - Unit tests required for any modified frontend component or hook
 - Never run the frontend dev server locally (`npm run dev`, `npx vite`); frontend runs exclusively inside Docker
+- At most one `area:frontend` task in flight at a time (Docker frontend port 5173 is not isolated per worktree; parallel frontend work causes port conflicts)
 - Log out-of-scope observations to `plan/observed-issues.md`, never fix them (scope creep) or ignore them
 
 ## Backlogs
