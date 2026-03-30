@@ -15,6 +15,7 @@ const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none f
 const sectionHeadingClass = 'text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-2 mt-4 first:mt-0'
 
 // Stage display metadata
+// SYNC: label/labelEs mirror nameEs/nameLong in data/pedagogy/practice-stages.json — update both if stage names change
 const STAGE_LABELS: Record<PracticeStage, { label: string; labelEs: string; color: string }> = {
   controlled: { label: 'Controlled', labelEs: 'Controlada', color: 'text-indigo-600 border-indigo-200 bg-indigo-50' },
   meaningful: { label: 'Meaningful', labelEs: 'Significativa', color: 'text-amber-700 border-amber-200 bg-amber-50' },
@@ -52,7 +53,7 @@ function StageSectionHeader({ stage }: { stage: PracticeStage }) {
 function groupByStage<T extends { stage?: PracticeStage }>(
   items: T[]
 ): { stage: PracticeStage | 'unstaged'; items: T[] }[] {
-  // Order must match the pedagogical progression defined in practice-stages.json
+  // SYNC: order matches stages array position in data/pedagogy/practice-stages.json — update if stages are added/reordered
   const order: (PracticeStage | 'unstaged')[] = ['unstaged', 'controlled', 'meaningful', 'guided_free']
   const map = new Map<PracticeStage | 'unstaged', T[]>()
   for (const item of items) {
