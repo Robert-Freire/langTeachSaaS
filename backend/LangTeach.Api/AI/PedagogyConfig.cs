@@ -131,6 +131,26 @@ public record StyleSubstitution(
     string Rule
 );
 
+// Practice stages (practice-stages.json)
+public record PracticeStagesFile(
+    PracticeStageDefinition[] Stages,
+    Dictionary<string, CefrStageRequirement> CefrStageRequirements
+);
+
+public record PracticeStageDefinition(
+    string Id,
+    string NameEs,
+    string NameLong,
+    string Description,
+    string[] AllowedExerciseCategories
+);
+
+public record CefrStageRequirement(
+    string[] Stages,
+    Dictionary<string, int[]> ItemsPerStage,
+    string[]? OptionalStages = null
+);
+
 /// <summary>
 /// Canonical PPP section keys in lesson order.
 /// Single authoritative definition — referenced by PromptService, PedagogyConfigService, and SeedData.

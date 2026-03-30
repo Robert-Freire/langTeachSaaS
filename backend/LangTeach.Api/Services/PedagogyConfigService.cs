@@ -21,6 +21,7 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly StyleSubstitution[] _substitutions;
     // Outer key: scope value ("brief"); inner key: content type kebab ("conversation"); value: constraint text
     private readonly Dictionary<string, Dictionary<string, string>> _scopeConstraints;
+    private readonly PracticeStagesFile _practiceStages;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -96,6 +97,9 @@ public class PedagogyConfigService : IPedagogyConfigService
                 kv => kv.Key,
                 kv => new Dictionary<string, string>(kv.Value, StringComparer.OrdinalIgnoreCase),
                 StringComparer.OrdinalIgnoreCase);
+
+        // Load practice stages
+        _practiceStages = LoadJson<PracticeStagesFile>(assembly, "LangTeach.Api.Pedagogy.practice-stages.json");
 
         // Validate cross-layer references — fail fast on dangling IDs
         ValidateCrossLayerRefs();
@@ -322,6 +326,15 @@ public class PedagogyConfigService : IPedagogyConfigService
             .ToList();
     }
 
+    public CefrStageRequirement? GetPracticeStageRequirements(string level)
+    {
+        var normalLevel = NormalizeLevel(level);
+        return _practiceStages.CefrStageRequirements.TryGetValue(normalLevel, out var req) ? req : null;
+    }
+
+    public IReadOnlyList<PracticeStageDefinition> GetPracticeStageDefinitions()
+        => _practiceStages.Stages;
+
     // --- Private helpers ---
 
     private static T LoadJson<T>(Assembly assembly, string resourceName)
@@ -473,6 +486,26 @@ public class PedagogyConfigService : IPedagogyConfigService
                         }
                     }
                 }
+            }
+        }
+
+        // Validate practice stages: stage IDs in cefrStageRequirements must exist in stages array
+        var stageIds = _practiceStages.Stages.Select(s => s.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var (lvl, req) in _practiceStages.CefrStageRequirements)
+        {
+            foreach (var stageId in req.Stages.Concat(req.OptionalStages ?? []))
+            {
+                if (!stageIds.Contains(stageId))
+                    errors.Add($"practice-stages.json cefrStageRequirements[{lvl}]: unknown stage id '{stageId}'");
+            }
+        }
+        // Validate stage allowedExerciseCategories reference catalog IDs
+        foreach (var stage in _practiceStages.Stages)
+        {
+            foreach (var id in stage.AllowedExerciseCategories)
+            {
+                if (!_catalogIds.Contains(id))
+                    errors.Add($"practice-stages.json stage '{stage.Id}' allowedExerciseCategories: unknown ID '{id}'");
             }
         }
 

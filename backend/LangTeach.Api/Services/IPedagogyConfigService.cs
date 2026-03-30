@@ -105,4 +105,15 @@ public interface IPedagogyConfigService
     /// Returns null if the template name is not found.
     /// </summary>
     IReadOnlyList<string>? GetRequiredSectionNames(string templateName);
+
+    /// <summary>
+    /// Returns practice stage requirements for the CEFR level (active stages, item counts per stage).
+    /// Returns null if the level is not found in the config.
+    /// </summary>
+    CefrStageRequirement? GetPracticeStageRequirements(string level);
+
+    /// <summary>
+    /// Returns all practice stage definitions (id, names, descriptions, allowed exercise categories).
+    /// </summary>
+    IReadOnlyList<PracticeStageDefinition> GetPracticeStageDefinitions();
 }

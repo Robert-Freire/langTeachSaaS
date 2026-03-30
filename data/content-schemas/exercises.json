@@ -19,7 +19,8 @@
           "sentence": { "type": "string" },
           "answer": { "type": "string" },
           "hint": { "type": "string" },
-          "explanation": { "type": "string" }
+          "explanation": { "type": "string" },
+          "stage": { "type": "string", "enum": ["controlled", "meaningful", "guided_free"] }
         }
       }
     },
@@ -38,7 +39,8 @@
             "items": { "type": "string" }
           },
           "answer": { "type": "string" },
-          "explanation": { "type": "string" }
+          "explanation": { "type": "string" },
+          "stage": { "type": "string", "enum": ["controlled", "meaningful", "guided_free"] }
         }
       }
     },
@@ -52,7 +54,8 @@
         "properties": {
           "left": { "type": "string" },
           "right": { "type": "string" },
-          "explanation": { "type": "string" }
+          "explanation": { "type": "string" },
+          "stage": { "type": "string", "enum": ["controlled", "meaningful", "guided_free"] }
         }
       }
     }

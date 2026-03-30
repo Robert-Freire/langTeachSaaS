@@ -214,6 +214,42 @@ public class PromptService : IPromptService
     }
 
     /// <summary>
+    /// Builds a practice stage scaffolding block for the exercises prompt.
+    /// Reads stage definitions and CEFR requirements from config with no hardcoded level conditionals.
+    /// Returns empty string if no stage requirements are defined for the level.
+    /// </summary>
+    private string BuildPracticeStageBlock(string level)
+    {
+        var req = _pedagogy.GetPracticeStageRequirements(level);
+        if (req is null || req.Stages.Length == 0)
+            return string.Empty;
+
+        var defs = _pedagogy.GetPracticeStageDefinitions()
+            .ToDictionary(d => d.Id, d => d, StringComparer.OrdinalIgnoreCase);
+
+        var sb = new StringBuilder();
+        sb.AppendLine("PRACTICE SCAFFOLDING STAGES:");
+        sb.AppendLine("Assign a \"stage\" field to EVERY exercise item using one of these values:");
+
+        foreach (var stageId in req.Stages)
+        {
+            if (!defs.TryGetValue(stageId, out var def))
+                continue;
+
+            var range = req.ItemsPerStage.TryGetValue(stageId, out var bounds) && bounds.Length >= 2
+                ? $"{bounds[0]}-{bounds[1]}"
+                : "2-4";
+
+            sb.AppendLine($"- \"{stageId}\" ({def.NameLong} / {def.NameEs}): {def.Description} Items: {range}.");
+            if (def.AllowedExerciseCategories.Length > 0)
+                sb.AppendLine($"  Suitable types: {string.Join(", ", def.AllowedExerciseCategories)}");
+        }
+
+        sb.AppendLine("IMPORTANT: Each stage MUST use a different exercise format (fillInBlank / multipleChoice / matching). Do not repeat the same format across stages.");
+        return sb.ToString().TrimEnd();
+    }
+
+    /// <summary>
     /// Builds a reinforcement block that tells the AI which content types are valid for the section
     /// and which type the template prefers. Appended to individual block prompts so the AI has
     /// structural context about the section it is generating content for.
@@ -434,6 +470,10 @@ public class PromptService : IPromptService
         var exerciseGuidance = BuildExerciseGuidanceBlock("practice", level);
         if (!string.IsNullOrEmpty(exerciseGuidance))
             prompt += "\n" + exerciseGuidance;
+
+        var stageGuidance = BuildPracticeStageBlock(level);
+        if (!string.IsNullOrEmpty(stageGuidance))
+            prompt += "\n\n" + stageGuidance;
 
         var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "exercises");
         if (!string.IsNullOrEmpty(scopeConstraint))

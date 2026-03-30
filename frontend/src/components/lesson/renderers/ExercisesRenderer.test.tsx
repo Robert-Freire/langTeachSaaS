@@ -242,3 +242,27 @@ describe('ExercisesRenderer.Student', () => {
     expect(screen.queryByTestId('fib-explanation-0')).not.toBeInTheDocument()
   })
 })
+
+describe('ExercisesRenderer stage grouping', () => {
+  it('Preview shows stage headers when items have stage fields', () => {
+    const content = makeContent({
+      fillInBlank: [
+        { sentence: 'She ___ to the store.', answer: 'went', stage: 'controlled' },
+        { sentence: 'I ___ hungry.', answer: 'am', stage: 'meaningful' },
+      ],
+    })
+    render(<ExercisesRenderer.Preview rawContent={raw(content)} parsedContent={content} />)
+
+    expect(screen.getByTestId('stage-header-controlled')).toBeInTheDocument()
+    expect(screen.getByTestId('stage-header-meaningful')).toBeInTheDocument()
+  })
+
+  it('Preview renders without stage headers when no items have stage fields', () => {
+    const content = makeContent()
+    render(<ExercisesRenderer.Preview rawContent={raw(content)} parsedContent={content} />)
+
+    expect(screen.queryByTestId('stage-header-controlled')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('stage-header-meaningful')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('stage-header-guided_free')).not.toBeInTheDocument()
+  })
+})
