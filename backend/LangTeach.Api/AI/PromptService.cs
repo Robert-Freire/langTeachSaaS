@@ -268,7 +268,7 @@ public class PromptService : IPromptService
                 sb.AppendLine($"  Suitable types: {string.Join(", ", def.AllowedExerciseCategories)}");
         }
 
-        sb.AppendLine("IMPORTANT: Each stage MUST use a different exercise format (fillInBlank / multipleChoice / matching). Do not repeat the same format across stages.");
+        sb.AppendLine("IMPORTANT: Each stage MUST use a different exercise format (fillInBlank / multipleChoice / matching / trueFalse). Do not repeat the same format across stages.");
         return sb.ToString().TrimEnd();
     }
 
@@ -485,7 +485,7 @@ public class PromptService : IPromptService
 
         var prompt = $$"""
         Generate practice exercises for the lesson on "{{topic}}". Return JSON:
-        {"fillInBlank":[{"sentence":"","answer":"","hint":"","explanation":"","stage":""}],"multipleChoice":[{"question":"","options":[""],"answer":"","explanation":"","stage":""}],"matching":[{"left":"","right":"","explanation":"","stage":""}]}
+        {"fillInBlank":[{"sentence":"","answer":"","hint":"","explanation":"","stage":""}],"multipleChoice":[{"question":"","options":[""],"answer":"","explanation":"","stage":""}],"matching":[{"left":"","right":"","explanation":"","stage":""}],"trueFalse":[{"statement":"","isTrue":true,"justification":"","sourcePassage":"","stage":""}]}
         {{levelGuidance}}
         Include at least 3 items for each format you use. For each exercise, include a concise explanation (2-3 sentences) of why the correct answer is correct, considering the student's level and common L1 interference patterns.
         """;

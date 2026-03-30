@@ -12,7 +12,7 @@
       "nameEs": "Significativa",
       "nameLong": "Meaningful Practice",
       "description": "Limited choices, meaning matters alongside form. Student selects from constrained options.",
-      "allowedExerciseCategories": ["GR-04", "CE-03", "GR-02", "GR-07", "VOC-07", "CE-01", "CE-02"]
+      "allowedExerciseCategories": ["GR-04", "CE-03", "CE-10", "GR-02", "GR-07", "VOC-07", "CE-01", "CE-02"]
     },
     {
       "id": "guided_free",
