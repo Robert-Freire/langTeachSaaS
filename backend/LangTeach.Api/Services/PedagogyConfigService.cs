@@ -327,6 +327,17 @@ public class PedagogyConfigService : IPedagogyConfigService
             : null;
     }
 
+    public IReadOnlyList<string>? GetRequiredSectionNames(string templateName)
+    {
+        var tmplEntry = GetTemplateOverrideByName(templateName);
+        if (tmplEntry is null)
+            return null;
+
+        return SectionKeys.CanonicalOrder
+            .Where(s => tmplEntry.Sections.TryGetValue(s, out var sec) && sec.Required)
+            .ToList();
+    }
+
     // --- Private helpers ---
 
     private static T LoadJson<T>(Assembly assembly, string resourceName)

@@ -103,4 +103,12 @@ public interface IPedagogyConfigService
     /// <paramref name="templateName"/> is the display name (e.g. "Exam Prep"), resolved internally.
     /// </summary>
     string? GetPreferredContentType(string section, string? templateName);
+
+    /// <summary>
+    /// Returns section names (e.g. "warmUp", "production") that have required:true
+    /// for the template identified by display name (case-insensitive).
+    /// Order: warmUp, presentation, practice, production, wrapUp.
+    /// Returns null if the template name is not found.
+    /// </summary>
+    IReadOnlyList<string>? GetRequiredSectionNames(string templateName);
 }

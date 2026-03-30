@@ -25,6 +25,7 @@ public class GenerateController : ControllerBase
     private readonly ICurriculumTemplateService _templateService;
     private readonly ILessonService _lessonService;
     private readonly ISectionProfileService _sectionProfiles;
+    private readonly IPedagogyConfigService _pedagogyConfig;
     private readonly AppDbContext _db;
     private readonly ILogger<GenerateController> _logger;
 
@@ -38,6 +39,7 @@ public class GenerateController : ControllerBase
         ICurriculumTemplateService templateService,
         ILessonService lessonService,
         ISectionProfileService sectionProfiles,
+        IPedagogyConfigService pedagogyConfig,
         AppDbContext db,
         ILogger<GenerateController> logger)
     {
@@ -50,6 +52,7 @@ public class GenerateController : ControllerBase
         _templateService = templateService;
         _lessonService = lessonService;
         _sectionProfiles = sectionProfiles;
+        _pedagogyConfig = pedagogyConfig;
         _db = db;
         _logger = logger;
     }
@@ -371,10 +374,14 @@ public class GenerateController : ControllerBase
                     var populatedSections = sectionsEl.EnumerateObject()
                         .Count(p => p.Value.ValueKind == JsonValueKind.String &&
                                     !string.IsNullOrWhiteSpace(p.Value.GetString()));
-                    if (populatedSections < 5)
+                    var requiredSections = templateName is not null
+                        ? _pedagogyConfig.GetRequiredSectionNames(templateName)
+                        : null;
+                    var expectedCount = requiredSections?.Count ?? 5;
+                    if (populatedSections < expectedCount)
                         _logger.LogWarning(
-                            "LessonPlan generated with only {SectionCount}/5 sections. LessonId={LessonId}",
-                            populatedSections, lesson.Id);
+                            "LessonPlan generated with only {SectionCount}/{Expected} populated sections. LessonId={LessonId}",
+                            populatedSections, expectedCount, lesson.Id);
                 }
                 else
                 {
@@ -414,40 +421,6 @@ public class GenerateController : ControllerBase
         _db.LessonContentBlocks.Add(block);
         await _db.SaveChangesAsync(ct);
         await _usageLimitService.RecordGenerationAsync(teacherId, blockType, ct);
-
-        if (blockType == ContentBlockType.LessonPlan)
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(response.Content);
-                if (doc.RootElement.TryGetProperty("sections", out var sections))
-                {
-                    if (sections.ValueKind == JsonValueKind.Object)
-                    {
-                        var sectionCount = sections.EnumerateObject().Count();
-                        if (sectionCount < 5)
-                            _logger.LogWarning(
-                                "Generated lesson plan has only {Count} sections (expected >= 5). LessonId={LessonId}",
-                                sectionCount, lesson.Id);
-                    }
-                    else
-                    {
-                        _logger.LogWarning(
-                            "Generated lesson plan 'sections' is {Kind}, expected Object. LessonId={LessonId}",
-                            sections.ValueKind, lesson.Id);
-                    }
-                }
-                else
-                {
-                    _logger.LogWarning(
-                        "Generated lesson plan is missing 'sections' key. LessonId={LessonId}", lesson.Id);
-                }
-            }
-            catch (JsonException)
-            {
-                // Malformed JSON — content parsing handles this separately
-            }
-        }
 
         _logger.LogInformation(
             "Generate/{BlockType} succeeded. LessonId={LessonId} BlockId={BlockId} InputTokens={InputTokens} OutputTokens={OutputTokens}",

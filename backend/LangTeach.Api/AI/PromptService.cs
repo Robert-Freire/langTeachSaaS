@@ -136,7 +136,7 @@ public class PromptService : IPromptService
         "4. Wrap Up MUST refer to lesson content, not external topics.\n" +
         "5. Linguistic level must NOT increase between sections. If Presentation is A2, Practice cannot demand B1.";
 
-    private static readonly string[] SectionOrder = ["warmUp", "presentation", "practice", "production", "wrapUp"];
+    private static readonly string[] SectionOrder = SectionKeys.CanonicalOrder;
 
     // --- Template override guidance ---
 
