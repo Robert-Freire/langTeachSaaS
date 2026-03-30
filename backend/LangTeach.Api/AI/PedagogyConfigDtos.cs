@@ -20,6 +20,20 @@ public record VocabularyGuidance(
 );
 
 /// <summary>
+/// Output DTO for GetGuidedWritingGuidance — CEFR-specific writing parameters.
+/// Not a JSON deserialization model; constructed by PedagogyConfigService from CefrLevelRules data.
+/// </summary>
+public record GuidedWritingGuidance(
+    int WordCountMin,
+    int WordCountMax,
+    int SentenceCountMin,
+    int SentenceCountMax,
+    string Structures,
+    string Complexity,
+    string SituationGuidance
+);
+
+/// <summary>
 /// Output DTO for GetL1Adjustments — combines family-level adjustments and language-specific notes.
 /// Not a JSON deserialization model; composed from L1InfluenceFile data.
 /// </summary>

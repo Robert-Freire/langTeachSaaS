@@ -66,8 +66,9 @@ public class GenerateController : ControllerBase
             [ContentBlockType.Exercises]    = (svc, ctx) => svc.BuildExercisesPrompt(ctx),
             [ContentBlockType.Conversation] = (svc, ctx) => svc.BuildConversationPrompt(ctx),
             [ContentBlockType.Reading]      = (svc, ctx) => svc.BuildReadingPrompt(ctx),
-            [ContentBlockType.Homework]     = (svc, ctx) => svc.BuildHomeworkPrompt(ctx),
-            [ContentBlockType.FreeText]     = (svc, ctx) => svc.BuildFreeTextPrompt(ctx),
+            [ContentBlockType.Homework]       = (svc, ctx) => svc.BuildHomeworkPrompt(ctx),
+            [ContentBlockType.FreeText]       = (svc, ctx) => svc.BuildFreeTextPrompt(ctx),
+            [ContentBlockType.GuidedWriting]  = (svc, ctx) => svc.BuildGuidedWritingPrompt(ctx),
         };
 
     [HttpPost("{taskType}/stream")]

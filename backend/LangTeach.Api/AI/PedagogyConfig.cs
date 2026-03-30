@@ -19,7 +19,18 @@ public record CefrLevelRules(
     string InstructionLanguage,
     string MetalanguageLevel,
     string ErrorCorrection,
-    string ScaffoldingDefault
+    string ScaffoldingDefault,
+    GuidedWritingConfig? GuidedWriting = null
+);
+
+public record GuidedWritingConfig(
+    int WordCountMin,
+    int WordCountMax,
+    int SentenceCountMin,
+    int SentenceCountMax,
+    string Structures,
+    string Complexity,
+    string SituationGuidance
 );
 
 public record InappropriateExerciseEntry(string Id, string Reason);

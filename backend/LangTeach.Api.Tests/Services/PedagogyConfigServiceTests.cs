@@ -507,4 +507,46 @@ public class PedagogyConfigServiceTests
 
         result.Should().BeEmpty(because: "no grammar constraints are defined for English in l1-influence.json");
     }
+
+    // --- GetGuidedWritingGuidance ---
+
+    [Theory]
+    [InlineData("A1", 30, 50)]
+    [InlineData("B1", 80, 130)]
+    [InlineData("C1", 200, 300)]
+    public void GetGuidedWritingGuidance_ReturnsCorrectWordCountsForLevel(string level, int expectedMin, int expectedMax)
+    {
+        var result = _sut.GetGuidedWritingGuidance(level);
+
+        result.WordCountMin.Should().Be(expectedMin, because: $"CEFR {level} word count min is {expectedMin}");
+        result.WordCountMax.Should().Be(expectedMax, because: $"CEFR {level} word count max is {expectedMax}");
+    }
+
+    [Theory]
+    [InlineData("A1")]
+    [InlineData("A2")]
+    [InlineData("B1")]
+    [InlineData("B2")]
+    [InlineData("C1")]
+    [InlineData("C2")]
+    public void GetGuidedWritingGuidance_AllLevels_ReturnNonEmptyGuidanceFields(string level)
+    {
+        var result = _sut.GetGuidedWritingGuidance(level);
+
+        result.Structures.Should().NotBeNullOrWhiteSpace(because: $"CEFR {level} must specify required structures");
+        result.Complexity.Should().NotBeNullOrWhiteSpace(because: $"CEFR {level} must specify complexity guidance");
+        result.SituationGuidance.Should().NotBeNullOrWhiteSpace(because: $"CEFR {level} must specify situation guidance");
+        result.SentenceCountMin.Should().BeGreaterThan(0);
+        result.SentenceCountMax.Should().BeGreaterThanOrEqualTo(result.SentenceCountMin);
+    }
+
+    [Fact]
+    public void GetGuidedWritingGuidance_UnknownLevel_ReturnsSafeDefaults()
+    {
+        var result = _sut.GetGuidedWritingGuidance("X9");
+
+        result.WordCountMin.Should().BeGreaterThan(0, because: "defaults must be valid positive integers");
+        result.WordCountMax.Should().BeGreaterThanOrEqualTo(result.WordCountMin);
+        result.Structures.Should().NotBeNullOrWhiteSpace();
+    }
 }
