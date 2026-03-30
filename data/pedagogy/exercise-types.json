@@ -715,11 +715,12 @@
       ],
       "description": "Identify and correct grammatical errors in sentences or texts.",
       "cefrRange": [
-        "B1",
+        "A2",
         "C2"
       ],
       "specialResources": [],
-      "uiRenderer": "exercises",
+      "uiRenderer": "error-correction",
+      "categories": ["grammar", "vocabulary", "spelling", "verbForm", "agreement", "wordOrder"],
       "available": true
     },
     {

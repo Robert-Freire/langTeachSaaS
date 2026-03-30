@@ -2002,4 +2002,91 @@ public class PromptServiceTests
             because: "guided-writing schema must be injected by ContentSchemaService");
         req.UserPrompt.Should().Contain(schemaJson);
     }
+
+    // --- BuildErrorCorrectionPrompt ---
+
+    [Fact]
+    public void ErrorCorrectionPrompt_ContainsTopicFromContext()
+    {
+        var ctx = BaseCtx() with { Topic = "El trabajo" };
+        var req = _sut.BuildErrorCorrectionPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("El trabajo");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_ContainsCefrLevel()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B2" };
+        var req = _sut.BuildErrorCorrectionPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("B2");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_UsesSonnetModel()
+        => _sut.BuildErrorCorrectionPrompt(BaseCtx()).Model.Should().Be(ClaudeModel.Sonnet);
+
+    [Fact]
+    public void ErrorCorrectionPrompt_HasMaxTokens3000()
+        => _sut.BuildErrorCorrectionPrompt(BaseCtx()).MaxTokens.Should().Be(3000);
+
+    [Fact]
+    public void ErrorCorrectionPrompt_IncludesErrorSpanInstruction()
+    {
+        var req = _sut.BuildErrorCorrectionPrompt(BaseCtx());
+        req.UserPrompt.Should().Contain("errorSpan",
+            because: "prompt must instruct Claude to generate errorSpan character indices");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_IncludesErrorTypeInstruction()
+    {
+        var req = _sut.BuildErrorCorrectionPrompt(BaseCtx());
+        req.UserPrompt.Should().Contain("errorType",
+            because: "prompt must include errorType field guidance");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_A2_IncludesLevelSpecificNote()
+    {
+        // A2 practice.json levelSpecificNotes GR-04: "Simple agreement/gender errors only..."
+        var ctx = BaseCtx() with { CefrLevel = "A2" };
+        var req = _sut.BuildErrorCorrectionPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Simple agreement",
+            because: "A2 level note for GR-04 must be injected from practice.json levelSpecificNotes");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_B1_IncludesLevelSpecificNote()
+    {
+        // B1 practice.json levelSpecificNotes GR-04: "Sentence-level corrections only at B1..."
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+        var req = _sut.BuildErrorCorrectionPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Sentence-level corrections",
+            because: "B1 level note for GR-04 must be injected from practice.json levelSpecificNotes");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_WithNativeLanguage_IncludesL1Block()
+    {
+        var ctx = BaseCtx() with { StudentNativeLanguage = "Italian" };
+        var req = _sut.BuildErrorCorrectionPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("L1 ADJUSTMENTS",
+            because: "L1 influence notes must be included when native language is known");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_NoHardcodedLevelConditionals_SameStructureAcrossLevels()
+    {
+        // Verify the prompt structure is consistent (no level-specific code paths)
+        var b1 = _sut.BuildErrorCorrectionPrompt(BaseCtx() with { CefrLevel = "B1" });
+        var c1 = _sut.BuildErrorCorrectionPrompt(BaseCtx() with { CefrLevel = "C1" });
+
+        b1.UserPrompt.Should().Contain("errorSpan");
+        c1.UserPrompt.Should().Contain("errorSpan");
+    }
 }

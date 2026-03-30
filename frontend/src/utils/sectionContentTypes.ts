@@ -15,6 +15,7 @@ export const ALL_CONTENT_TYPES: ContentBlockType[] = [
   'vocabulary',
   'grammar',
   'exercises',
+  'error-correction',
   'conversation',
   'reading',
   'homework',
