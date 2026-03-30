@@ -158,6 +158,16 @@ public class SectionProfileService : ISectionProfileService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray()!;
 
+    public LevelSpecificNote[] GetLevelSpecificNotes(string sectionType, string cefrLevel)
+    {
+        var profile = GetProfile(sectionType);
+        if (profile is null) return [];
+        var level = NormalizeLevel(cefrLevel);
+        if (profile.Levels.TryGetValue(level, out var lp))
+            return lp.LevelSpecificNotes ?? [];
+        return [];
+    }
+
     private SectionProfile? GetProfile(string sectionType)
     {
         var key = sectionType.Replace(" ", "", StringComparison.Ordinal).ToLowerInvariant();

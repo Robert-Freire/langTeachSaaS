@@ -74,7 +74,7 @@
         {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"}
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "GR-04", "note": "Discourse-level error correction is appropriate at B2; include cohesion and register errors, not only morphosyntax"}
+        {"exerciseTypeId": "GR-04", "note": "Discourse-level error correction is appropriate at B2; include cohesion and register errors, not only morphosyntax. Keep each explanation to a maximum of 2 sentences: one identifying the error type, one stating the rule."}
       ],
       "minExerciseVariety": 2
     },
@@ -96,6 +96,7 @@
         {"id": null, "pattern": "LUD-*", "reason": "Ludic activities belong to warm-up or optional extension, not structured practice"}
       ],
       "levelSpecificNotes": [
+        {"exerciseTypeId": "GR-04", "note": "Error correction at C1 focuses on pragmatic and register violations. Keep each explanation to a maximum of 2 sentences: one identifying the error category, one explaining the pragmatic or register constraint."},
         {"exerciseTypeId": "EE-09", "note": "Register transformation at C1 should require precise control of register markers, not just lexical swaps"},
         {"exerciseTypeId": "CE-09", "note": "Critical reading in practice: student argues against the text's position to demonstrate analytical distance"}
       ],
@@ -120,7 +121,7 @@
       ],
       "levelSpecificNotes": [
         {"exerciseTypeId": "EE-11", "note": "Written mediation at C2: student rewrites a specialized text for a non-specialist audience, maintaining accuracy and adjusting register"},
-        {"exerciseTypeId": "GR-04", "note": "Error correction at C2 includes pragmatic inappropriateness and register violations, not only grammatical errors"}
+        {"exerciseTypeId": "GR-04", "note": "Error correction at C2 includes pragmatic inappropriateness and register violations, not only grammatical errors. Keep each explanation to a maximum of 2 sentences."}
       ],
       "minExerciseVariety": 2
     }
