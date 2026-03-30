@@ -1,0 +1,53 @@
+{
+  "stages": [
+    {
+      "id": "controlled",
+      "nameEs": "Controlada",
+      "nameLong": "Controlled Practice",
+      "description": "Mechanical, one correct answer, form-focused. Student has no productive choice.",
+      "allowedExerciseCategories": ["GR-01", "GR-02", "GR-06", "GR-07", "GR-09", "VOC-05", "LUD-06"]
+    },
+    {
+      "id": "meaningful",
+      "nameEs": "Significativa",
+      "nameLong": "Meaningful Practice",
+      "description": "Limited choices, meaning matters alongside form. Student selects from constrained options.",
+      "allowedExerciseCategories": ["GR-04", "CE-03", "GR-02", "GR-07", "VOC-07", "CE-01", "CE-02"]
+    },
+    {
+      "id": "guided_free",
+      "nameEs": "Libre guiada",
+      "nameLong": "Guided Free Practice",
+      "description": "Open-ended but scaffolded. Bridges toward Production. Student produces language with support.",
+      "allowedExerciseCategories": ["GR-03", "EE-01", "EE-03", "EE-09"]
+    }
+  ],
+  "cefrStageRequirements": {
+    "A1": {
+      "stages": ["controlled", "meaningful"],
+      "itemsPerStage": { "controlled": [3, 5], "meaningful": [2, 4] }
+    },
+    "A2": {
+      "stages": ["controlled", "meaningful"],
+      "itemsPerStage": { "controlled": [3, 5], "meaningful": [2, 4] }
+    },
+    "B1": {
+      "stages": ["controlled", "meaningful", "guided_free"],
+      "itemsPerStage": { "controlled": [3, 4], "meaningful": [3, 4], "guided_free": [2, 3] }
+    },
+    "B2": {
+      "stages": ["controlled", "meaningful", "guided_free"],
+      "itemsPerStage": { "controlled": [3, 4], "meaningful": [3, 4], "guided_free": [2, 3] }
+    },
+    "C1": {
+      "stages": ["meaningful", "guided_free"],
+      "itemsPerStage": { "meaningful": [3, 4], "guided_free": [3, 4] },
+      "optionalStages": ["controlled"]
+    },
+    "C2": {
+      "stages": ["meaningful", "guided_free"],
+      "itemsPerStage": { "meaningful": [3, 4], "guided_free": [3, 4] },
+      "optionalStages": ["controlled"]
+    }
+  }
+}

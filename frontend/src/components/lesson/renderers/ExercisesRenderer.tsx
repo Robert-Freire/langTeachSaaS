@@ -5,6 +5,7 @@ import type {
   ExercisesContent,
   ExercisesFillInBlank,
   ExercisesMatching,
+  PracticeStage,
 } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
 import { ContentParseError } from '../ContentParseError'
@@ -12,6 +13,58 @@ import { ContentEditorParseError } from '../ContentEditorParseError'
 
 const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded'
 const sectionHeadingClass = 'text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-2 mt-4 first:mt-0'
+
+// Stage display metadata
+// SYNC: label/labelEs mirror nameEs/nameLong in data/pedagogy/practice-stages.json — update both if stage names change
+const STAGE_LABELS: Record<PracticeStage, { label: string; labelEs: string; color: string }> = {
+  controlled: { label: 'Controlled', labelEs: 'Controlada', color: 'text-indigo-600 border-indigo-200 bg-indigo-50' },
+  meaningful: { label: 'Meaningful', labelEs: 'Significativa', color: 'text-amber-700 border-amber-200 bg-amber-50' },
+  guided_free: { label: 'Guided Free', labelEs: 'Libre guiada', color: 'text-emerald-700 border-emerald-200 bg-emerald-50' },
+}
+
+function StageLabel({ stage }: { stage: PracticeStage }) {
+  const meta = STAGE_LABELS[stage]
+  return (
+    <span
+      className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border ${meta.color}`}
+      title={meta.labelEs}
+    >
+      {meta.label}
+    </span>
+  )
+}
+
+function StageSectionHeader({ stage }: { stage: PracticeStage }) {
+  const meta = STAGE_LABELS[stage]
+  return (
+    <div
+      className="flex items-center gap-2 mt-5 mb-1 pt-3 border-t border-zinc-100"
+      data-testid={`stage-header-${stage}`}
+    >
+      <span className={`text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${meta.color}`}>
+        {meta.label} / {meta.labelEs}
+      </span>
+    </div>
+  )
+}
+
+// Group items by stage, preserving order within each stage group.
+// Items without a stage are returned under the key "unstaged".
+function groupByStage<T extends { stage?: PracticeStage }>(
+  items: T[]
+): { stage: PracticeStage | 'unstaged'; items: T[] }[] {
+  // SYNC: order matches stages array position in data/pedagogy/practice-stages.json — update if stages are added/reordered
+  const order: (PracticeStage | 'unstaged')[] = ['unstaged', 'controlled', 'meaningful', 'guided_free']
+  const map = new Map<PracticeStage | 'unstaged', T[]>()
+  for (const item of items) {
+    const key = item.stage ?? 'unstaged'
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(item)
+  }
+  return order
+    .filter(k => map.has(k))
+    .map(k => ({ stage: k, items: map.get(k)! }))
+}
 
 // ─── Editor ──────────────────────────────────────────────────────────────────
 
@@ -135,6 +188,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600 text-green-700">Answer</th>
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Hint</th>
               <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Explanation</th>
+              <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Stage</th>
               <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -152,6 +206,9 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
                 </td>
                 <td className="hidden sm:table-cell border border-zinc-200 p-1">
                   <span className="px-2 py-1 text-xs text-zinc-400 italic">{item.explanation ?? '—'}</span>
+                </td>
+                <td className="hidden sm:table-cell border border-zinc-200 p-1 text-center">
+                  {item.stage && <StageLabel stage={item.stage} />}
                 </td>
                 <td className="border border-zinc-200 p-1 text-center">
                   <button type="button" onClick={() => removeFib(i)} className="text-zinc-400 hover:text-red-500 transition-colors px-1" aria-label="Remove item">✕</button>
@@ -175,6 +232,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
                 placeholder="Question"
                 className={`${inputClass} border border-zinc-200 rounded flex-1`}
               />
+              {q.stage && <StageLabel stage={q.stage} />}
               <button type="button" onClick={() => removeMc(qi)} className="text-zinc-400 hover:text-red-500 transition-colors mt-1 shrink-0" aria-label="Remove question">✕</button>
             </div>
             <div className="space-y-1 pl-2">
@@ -216,6 +274,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Left</th>
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Right</th>
               <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Explanation</th>
+              <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Stage</th>
               <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -230,6 +289,9 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
                 </td>
                 <td className="hidden sm:table-cell border border-zinc-200 p-1">
                   <span className="px-2 py-1 text-xs text-zinc-400 italic">{pair.explanation ?? '—'}</span>
+                </td>
+                <td className="hidden sm:table-cell border border-zinc-200 p-1 text-center">
+                  {pair.stage && <StageLabel stage={pair.stage} />}
                 </td>
                 <td className="border border-zinc-200 p-1 text-center">
                   <button type="button" onClick={() => removeMatch(i)} className="text-zinc-400 hover:text-red-500 transition-colors px-1" aria-label="Remove pair">✕</button>
@@ -253,56 +315,75 @@ function Preview({ parsedContent }: PreviewProps) {
 
   const { fillInBlank, multipleChoice, matching } = parsedContent as ExercisesContent
 
+  const fibGroups = groupByStage(fillInBlank)
+  const mcGroups = groupByStage(multipleChoice)
+  const matchGroups = groupByStage(matching)
+
   return (
     <div className="space-y-4 text-sm" data-testid="exercises-preview">
       {fillInBlank.length > 0 && (
         <div>
           <p className={sectionHeadingClass}>Fill in the Blank</p>
-          <ol className="space-y-2 list-decimal list-inside">
-            {fillInBlank.map((item, i) => (
-              <li key={i} className="text-zinc-700">
-                {item.sentence.replace('___', '[      ]')}
-                {item.hint && <span className="text-xs text-zinc-400 ml-2">({item.hint})</span>}
-              </li>
-            ))}
-          </ol>
+          {fibGroups.map(({ stage, items }) => (
+            <div key={stage}>
+              {stage !== 'unstaged' && <StageSectionHeader stage={stage} />}
+              <ol className="space-y-2 list-decimal list-inside">
+                {items.map((item, i) => (
+                  <li key={i} className="text-zinc-700">
+                    {item.sentence.replace('___', '[      ]')}
+                    {item.hint && <span className="text-xs text-zinc-400 ml-2">({item.hint})</span>}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
         </div>
       )}
       {multipleChoice.length > 0 && (
         <div>
           <p className={sectionHeadingClass}>Multiple Choice</p>
-          <ol className="space-y-3 list-decimal list-inside">
-            {multipleChoice.map((q, qi) => (
-              <li key={qi} className="text-zinc-700">
-                <span>{q.question}</span>
-                <ul className="mt-1 ml-4 space-y-1">
-                  {q.options.map((opt, oi) => (
-                    <li key={oi} className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full border border-zinc-300 inline-block shrink-0" />
-                      <span>{opt}</span>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ol>
+          {mcGroups.map(({ stage, items }) => (
+            <div key={stage}>
+              {stage !== 'unstaged' && <StageSectionHeader stage={stage} />}
+              <ol className="space-y-3 list-decimal list-inside">
+                {items.map((q, qi) => (
+                  <li key={qi} className="text-zinc-700">
+                    <span>{q.question}</span>
+                    <ul className="mt-1 ml-4 space-y-1">
+                      {q.options.map((opt, oi) => (
+                        <li key={oi} className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full border border-zinc-300 inline-block shrink-0" />
+                          <span>{opt}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
         </div>
       )}
       {matching.length > 0 && (
         <div>
           <p className={sectionHeadingClass}>Matching</p>
-          <div className="overflow-x-auto">
-            <table className="text-sm border-collapse">
-              <tbody>
-                {matching.map((pair, i) => (
-                  <tr key={i}>
-                    <td className="border border-zinc-200 px-3 py-1.5 font-medium">{pair.left}</td>
-                    <td className="border border-zinc-200 px-3 py-1.5 text-zinc-400 w-24 text-center">___</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {matchGroups.map(({ stage, items }) => (
+            <div key={stage}>
+              {stage !== 'unstaged' && <StageSectionHeader stage={stage} />}
+              <div className="overflow-x-auto">
+                <table className="text-sm border-collapse">
+                  <tbody>
+                    {items.map((pair, i) => (
+                      <tr key={i}>
+                        <td className="border border-zinc-200 px-3 py-1.5 font-medium">{pair.left}</td>
+                        <td className="border border-zinc-200 px-3 py-1.5 text-zinc-400 w-24 text-center">___</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

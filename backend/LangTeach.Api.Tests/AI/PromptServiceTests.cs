@@ -1909,6 +1909,45 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain(schemaJson);
     }
 
+    // --- Practice stage scaffolding ---
+
+    [Fact]
+    public void ExercisesPrompt_B1_IncludesStageGuidanceBlock()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("PRACTICE SCAFFOLDING STAGES:");
+        req.UserPrompt.Should().Contain("controlled");
+        req.UserPrompt.Should().Contain("meaningful");
+        req.UserPrompt.Should().Contain("guided_free");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_A1_IncludesControlledAndMeaningful_NotGuidedFree()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("PRACTICE SCAFFOLDING STAGES:");
+        req.UserPrompt.Should().Contain("\"controlled\"");
+        req.UserPrompt.Should().Contain("\"meaningful\"");
+        req.UserPrompt.Should().NotContain("\"guided_free\"",
+            because: "guided_free is not a required stage at A1");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_B1_RequiresDifferentFormatPerStage()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Each stage MUST use a different exercise format");
+    }
+
     // --- BuildGuidedWritingPrompt ---
 
     [Fact]

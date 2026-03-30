@@ -242,3 +242,42 @@ describe('ExercisesRenderer.Student', () => {
     expect(screen.queryByTestId('fib-explanation-0')).not.toBeInTheDocument()
   })
 })
+
+describe('ExercisesRenderer stage grouping', () => {
+  it('Editor shows stage badges on items with stage fields', () => {
+    const content = makeContent({
+      fillInBlank: [
+        { sentence: 'She ___ to the store.', answer: 'went', stage: 'controlled' },
+      ],
+      multipleChoice: [
+        { question: 'Which word means happy?', options: ['sad', 'glad', 'angry'], answer: 'glad', stage: 'meaningful' },
+      ],
+    })
+    render(<ExercisesRenderer.Editor rawContent={raw(content)} parsedContent={content} onChange={vi.fn()} />)
+
+    expect(screen.getByTitle('Controlada')).toBeInTheDocument()
+    expect(screen.getByTitle('Significativa')).toBeInTheDocument()
+  })
+
+  it('Preview shows stage headers when items have stage fields', () => {
+    const content = makeContent({
+      fillInBlank: [
+        { sentence: 'She ___ to the store.', answer: 'went', stage: 'controlled' },
+        { sentence: 'I ___ hungry.', answer: 'am', stage: 'meaningful' },
+      ],
+    })
+    render(<ExercisesRenderer.Preview rawContent={raw(content)} parsedContent={content} />)
+
+    expect(screen.getByTestId('stage-header-controlled')).toBeInTheDocument()
+    expect(screen.getByTestId('stage-header-meaningful')).toBeInTheDocument()
+  })
+
+  it('Preview renders without stage headers when no items have stage fields', () => {
+    const content = makeContent()
+    render(<ExercisesRenderer.Preview rawContent={raw(content)} parsedContent={content} />)
+
+    expect(screen.queryByTestId('stage-header-controlled')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('stage-header-meaningful')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('stage-header-guided_free')).not.toBeInTheDocument()
+  })
+})

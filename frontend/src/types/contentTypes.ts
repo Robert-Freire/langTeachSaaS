@@ -31,11 +31,14 @@ export interface GrammarContent {
   commonMistakes: string[]
 }
 
+export type PracticeStage = 'controlled' | 'meaningful' | 'guided_free'
+
 export interface ExercisesFillInBlank {
   sentence: string
   answer: string
   hint?: string
   explanation?: string
+  stage?: PracticeStage
 }
 
 export interface ExercisesMultipleChoice {
@@ -43,12 +46,14 @@ export interface ExercisesMultipleChoice {
   options: string[]
   answer: string
   explanation?: string
+  stage?: PracticeStage
 }
 
 export interface ExercisesMatching {
   left: string
   right: string
   explanation?: string
+  stage?: PracticeStage
 }
 
 export interface ExercisesContent {

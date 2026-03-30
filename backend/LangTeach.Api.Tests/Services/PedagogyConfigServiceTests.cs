@@ -581,4 +581,51 @@ public class PedagogyConfigServiceTests
 
         result.Should().BeNull();
     }
+
+    // --- GetPracticeStageRequirements ---
+
+    [Fact]
+    public void GetPracticeStageRequirements_A1_ReturnsTwoStages()
+    {
+        var result = _sut.GetPracticeStageRequirements("A1");
+
+        result.Should().NotBeNull();
+        result!.Stages.Should().BeEquivalentTo(["controlled", "meaningful"]);
+    }
+
+    [Fact]
+    public void GetPracticeStageRequirements_B1_ReturnsThreeStages()
+    {
+        var result = _sut.GetPracticeStageRequirements("B1");
+
+        result.Should().NotBeNull();
+        result!.Stages.Should().BeEquivalentTo(["controlled", "meaningful", "guided_free"]);
+    }
+
+    [Fact]
+    public void GetPracticeStageRequirements_C1_HasOptionalControlled()
+    {
+        var result = _sut.GetPracticeStageRequirements("C1");
+
+        result.Should().NotBeNull();
+        result!.OptionalStages.Should().Contain("controlled");
+        result!.Stages.Should().NotContain("controlled", because: "controlled is optional at C1, not mandatory");
+    }
+
+    [Fact]
+    public void GetPracticeStageRequirements_UnknownLevel_ReturnsNull()
+    {
+        var result = _sut.GetPracticeStageRequirements("X9");
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetPracticeStageDefinitions_ReturnsAllThreeStages()
+    {
+        var result = _sut.GetPracticeStageDefinitions();
+
+        result.Should().HaveCount(3);
+        result.Select(s => s.Id).Should().BeEquivalentTo(["controlled", "meaningful", "guided_free"]);
+    }
 }
