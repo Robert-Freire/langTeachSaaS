@@ -461,7 +461,7 @@ function Preview({ parsedContent }: PreviewProps) {
                   <li key={i} className="text-zinc-700">
                     <span>{item.statement}</span>
                     <span className="ml-2 text-xs font-medium text-zinc-400">[V / F]</span>
-                    <div className="mt-0.5 ml-4 text-xs text-zinc-400 italic">Justificacion: ___________</div>
+                    <div className="mt-0.5 ml-4 text-xs text-zinc-400 italic">Justificación: ___________</div>
                   </li>
                 ))}
               </ol>
@@ -903,7 +903,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
                   />
                   {checked && item.justification && (
                     <div className="mt-1 p-2 bg-zinc-50 border border-zinc-200 rounded text-xs" data-testid={`tf-model-answer-${i}`}>
-                      <span className="font-medium text-zinc-600">Justificacion del modelo: </span>
+                      <span className="font-medium text-zinc-600">Justificación del modelo: </span>
                       <span className="text-zinc-700 italic">{item.justification}</span>
                     </div>
                   )}
