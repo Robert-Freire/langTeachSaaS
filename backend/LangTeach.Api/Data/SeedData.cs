@@ -8,9 +8,8 @@ namespace LangTeach.Api.Data;
 
 public static class SeedData
 {
-    // Canonical section order matches template-overrides.json keys.
-    private static readonly string[] SectionOrder =
-        ["warmUp", "presentation", "practice", "production", "wrapUp"];
+    // Use the single authoritative section order from SectionKeys.CanonicalOrder.
+    private static readonly string[] SectionOrder = SectionKeys.CanonicalOrder;
 
     // Template definitions: Name + Description are DB-level concerns.
     // Section structure is derived from pedagogy config at runtime.
