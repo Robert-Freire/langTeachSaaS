@@ -230,7 +230,7 @@ public class PromptService : IPromptService
             sb.AppendLine();
             sb.AppendLine("Exercise type notes:");
             foreach (var note in notes)
-                sb.Append($"- {note.ExerciseTypeId} ({_pedagogy.GetExerciseTypeName(note.ExerciseTypeId)}): {note.Note}");
+                sb.AppendLine($"- {note.ExerciseTypeId} ({_pedagogy.GetExerciseTypeName(note.ExerciseTypeId)}): {note.Note}");
         }
 
         return sb.ToString().TrimEnd();
