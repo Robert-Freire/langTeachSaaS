@@ -507,4 +507,36 @@ public class PedagogyConfigServiceTests
 
         result.Should().BeEmpty(because: "no grammar constraints are defined for English in l1-influence.json");
     }
+
+    // --- GetRequiredSectionNames ---
+
+    [Fact]
+    public void GetRequiredSectionNames_Conversation_ReturnsFourRequiredSections()
+    {
+        var result = _sut.GetRequiredSectionNames("Conversation");
+
+        result.Should().NotBeNull();
+        result.Should().BeEquivalentTo(["warmUp", "practice", "production", "wrapUp"],
+            because: "Conversation has presentation:required=false; other 4 sections are required");
+        result.Should().ContainInOrder(["warmUp", "practice", "production", "wrapUp"],
+            because: "sections must follow canonical order");
+    }
+
+    [Fact]
+    public void GetRequiredSectionNames_ReadingComprehension_ReturnsFiveRequiredSections()
+    {
+        var result = _sut.GetRequiredSectionNames("Reading & Comprehension");
+
+        result.Should().NotBeNull();
+        result.Should().BeEquivalentTo(["warmUp", "presentation", "practice", "production", "wrapUp"],
+            because: "all 5 sections are required in Reading & Comprehension");
+    }
+
+    [Fact]
+    public void GetRequiredSectionNames_UnknownTemplate_ReturnsNull()
+    {
+        var result = _sut.GetRequiredSectionNames("Non-Existent Template");
+
+        result.Should().BeNull();
+    }
 }

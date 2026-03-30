@@ -130,3 +130,13 @@ public record StyleSubstitution(
     string[] NeverSubstituteWith,
     string Rule
 );
+
+/// <summary>
+/// Canonical PPP section keys in lesson order.
+/// Single authoritative definition — referenced by PromptService, PedagogyConfigService, and SeedData.
+/// </summary>
+public static class SectionKeys
+{
+    public static readonly string[] CanonicalOrder =
+        ["warmUp", "presentation", "practice", "production", "wrapUp"];
+}
