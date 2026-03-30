@@ -7,6 +7,7 @@ export type ContentBlockType =
   | 'reading'
   | 'homework'
   | 'free-text'
+  | 'guided-writing'
 
 export interface VocabularyItem {
   word: string
@@ -97,6 +98,20 @@ export interface HomeworkContent {
   tasks: HomeworkTask[]
 }
 
+export interface GuidedWritingWordCount {
+  min: number
+  max: number
+}
+
+export interface GuidedWritingContent {
+  situation: string
+  requiredStructures: string[]
+  wordCount: GuidedWritingWordCount
+  evaluationCriteria: string[]
+  modelAnswer: string
+  tips?: string[]
+}
+
 export interface LessonPlanSections {
   warmUp: string
   presentation: string
@@ -137,6 +152,18 @@ export function isReadingContent(v: unknown): v is ReadingContent {
 
 export function isHomeworkContent(v: unknown): v is HomeworkContent {
   return typeof v === 'object' && v !== null && 'tasks' in v && Array.isArray((v as HomeworkContent).tasks)
+}
+
+export function isGuidedWritingContent(v: unknown): v is GuidedWritingContent {
+  if (typeof v !== 'object' || v === null) return false
+  const c = v as Record<string, unknown>
+  return (
+    typeof c.situation === 'string' &&
+    Array.isArray(c.requiredStructures) &&
+    typeof c.wordCount === 'object' && c.wordCount !== null &&
+    Array.isArray(c.evaluationCriteria) &&
+    typeof c.modelAnswer === 'string'
+  )
 }
 
 export function isLessonPlanContent(v: unknown): v is LessonPlanContent {
@@ -322,4 +349,36 @@ export function coerceHomeworkContent(v: unknown): HomeworkContent | null {
   }
 
   return null
+}
+
+export function coerceGuidedWritingContent(v: unknown): GuidedWritingContent | null {
+  if (isGuidedWritingContent(v)) return v
+  if (typeof v !== 'object' || v === null) return null
+  const obj = v as Record<string, unknown>
+
+  // Unwrap extra wrapper key
+  const unwrapped = unwrapWrapper(obj, isGuidedWritingContent)
+  if (unwrapped) return unwrapped
+
+  // Only attempt field normalisation if at least one recognized key is present
+  const hasRecognizedField =
+    obj.situation != null || obj.requiredStructures != null || obj.modelAnswer != null
+  if (!hasRecognizedField) return null
+
+  const rawWc = typeof obj.wordCount === 'object' && obj.wordCount !== null
+    ? obj.wordCount as Record<string, unknown>
+    : {}
+
+  const candidate: GuidedWritingContent = {
+    situation: typeof obj.situation === 'string' ? obj.situation : '',
+    requiredStructures: Array.isArray(obj.requiredStructures) ? obj.requiredStructures as string[] : [],
+    wordCount: {
+      min: typeof rawWc.min === 'number' ? rawWc.min : 50,
+      max: typeof rawWc.max === 'number' ? rawWc.max : 100,
+    },
+    evaluationCriteria: Array.isArray(obj.evaluationCriteria) ? obj.evaluationCriteria as string[] : [],
+    modelAnswer: typeof obj.modelAnswer === 'string' ? obj.modelAnswer : '',
+    tips: Array.isArray(obj.tips) ? obj.tips as string[] : undefined,
+  }
+  return isGuidedWritingContent(candidate) ? candidate : null
 }

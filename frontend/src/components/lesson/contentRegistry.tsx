@@ -3,6 +3,7 @@ import { ConversationRenderer } from './renderers/ConversationRenderer'
 import { ExercisesRenderer } from './renderers/ExercisesRenderer'
 import { FreeTextRenderer } from './renderers/FreeTextRenderer'
 import { GrammarRenderer } from './renderers/GrammarRenderer'
+import { GuidedWritingRenderer } from './renderers/GuidedWritingRenderer'
 import { HomeworkRenderer } from './renderers/HomeworkRenderer'
 import { ReadingRenderer } from './renderers/ReadingRenderer'
 import { VocabularyRenderer } from './renderers/VocabularyRenderer'
@@ -37,6 +38,7 @@ const registry: Partial<Record<ContentBlockType, ContentRenderer>> = {
   exercises: ExercisesRenderer,
   'free-text': FreeTextRenderer,
   grammar: GrammarRenderer,
+  'guided-writing': GuidedWritingRenderer,
   homework: HomeworkRenderer,
   reading: ReadingRenderer,
   vocabulary: VocabularyRenderer,

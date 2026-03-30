@@ -12,6 +12,7 @@ public interface IPromptService
     ClaudeRequest BuildReadingPrompt(GenerationContext ctx);
     ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx);
     ClaudeRequest BuildFreeTextPrompt(GenerationContext ctx);
+    ClaudeRequest BuildGuidedWritingPrompt(GenerationContext ctx);
     ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx);
 }
 

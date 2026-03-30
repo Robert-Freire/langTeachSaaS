@@ -1897,4 +1897,59 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("Generate JSON strictly matching this schema:");
         req.UserPrompt.Should().Contain(schemaJson);
     }
+
+    // --- BuildGuidedWritingPrompt ---
+
+    [Fact]
+    public void GuidedWritingPrompt_ContainsWordCountFromConfig_NotHardcoded()
+    {
+        // A1 config: wordCountMin=30, wordCountMax=50 (from data/pedagogy/cefr-levels/a1.json)
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+        var req = _sut.BuildGuidedWritingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("30", because: "A1 wordCountMin=30 must come from config");
+        req.UserPrompt.Should().Contain("50", because: "A1 wordCountMax=50 must come from config");
+    }
+
+    [Fact]
+    public void GuidedWritingPrompt_B2_ContainsDifferentWordCount()
+    {
+        // B2 config: wordCountMin=130, wordCountMax=200 (from data/pedagogy/cefr-levels/b2.json)
+        var ctx = BaseCtx() with { CefrLevel = "B2" };
+        var req = _sut.BuildGuidedWritingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("130", because: "B2 wordCountMin=130 must come from config");
+        req.UserPrompt.Should().Contain("200", because: "B2 wordCountMax=200 must come from config");
+    }
+
+    [Fact]
+    public void GuidedWritingPrompt_UsesSonnetModel()
+        => _sut.BuildGuidedWritingPrompt(BaseCtx()).Model.Should().Be(ClaudeModel.Sonnet);
+
+    [Fact]
+    public void GuidedWritingPrompt_HasMaxTokens2048()
+        => _sut.BuildGuidedWritingPrompt(BaseCtx()).MaxTokens.Should().Be(2048);
+
+    [Fact]
+    public void GuidedWritingPrompt_ContainsTopicFromContext()
+    {
+        var ctx = BaseCtx() with { Topic = "El medio ambiente" };
+        var req = _sut.BuildGuidedWritingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("El medio ambiente");
+    }
+
+    [Fact]
+    public void GuidedWritingPrompt_InjectsSchema()
+    {
+        var schemaJson = """{"type":"object"}""";
+        var sut = new PromptService(ProfileService, PedagogyService, NullLogger<PromptService>.Instance,
+            new StubContentSchemaService("guided-writing", schemaJson));
+
+        var req = sut.BuildGuidedWritingPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("Generate JSON strictly matching this schema:",
+            because: "guided-writing schema must be injected by ContentSchemaService");
+        req.UserPrompt.Should().Contain(schemaJson);
+    }
 }

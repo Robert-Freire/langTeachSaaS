@@ -57,5 +57,14 @@
   "instructionLanguage": "L1 for procedural instructions, L2 for linguistic content",
   "metalanguageLevel": "Minimal: verbo, nombre, adjetivo only. Avoid: conjugar, concordancia, paradigma.",
   "errorCorrection": "Immediate and explicit. Teacher provides correct form. Brief explanation. Student cannot self-correct because the system is not yet internalized. Example: 'Es soy, no estoy, porque hablamos de identidad, no de estado.'",
-  "scaffoldingDefault": "high"
+  "scaffoldingDefault": "high",
+  "guidedWriting": {
+    "wordCountMin": 30,
+    "wordCountMax": 50,
+    "sentenceCountMin": 3,
+    "sentenceCountMax": 5,
+    "structures": "simple sentences, basic connectors (y, pero)",
+    "complexity": "Very simple, concrete situations. One main task.",
+    "situationGuidance": "Familiar, everyday topics (family, school, routines)"
+  }
 }

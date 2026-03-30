@@ -93,5 +93,14 @@
   "instructionLanguage": "L2 exclusively",
   "metalanguageLevel": "Full academic, rhetorical, and stylistic metalanguage. C2 lessons are language seminars, not traditional classes.",
   "errorCorrection": "Self-correction with teacher recasting. Focus on register, style, and dialectal precision. Seminar-style feedback: two strengths and one improvement area.",
-  "scaffoldingDefault": "none"
+  "scaffoldingDefault": "none",
+  "guidedWriting": {
+    "wordCountMin": 250,
+    "wordCountMax": 350,
+    "sentenceCountMin": 14,
+    "sentenceCountMax": 22,
+    "structures": "full native-like range, stylistic variation",
+    "complexity": "Nuanced, sophisticated topics. Near-native stylistic control.",
+    "situationGuidance": "Any register; culturally situated texts"
+  }
 }
