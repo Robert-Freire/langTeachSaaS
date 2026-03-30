@@ -217,8 +217,23 @@ public class PromptService : IPromptService
             return string.Empty;
 
         var listed = valid.Take(15).Select(id => $"{id} ({_pedagogy.GetExerciseTypeName(id)})");
-        return $"EXERCISE GUIDANCE for {section} at {level}:\n" +
-               $"Allowed types: {string.Join(", ", listed)}";
+        var sb = new StringBuilder();
+        sb.AppendLine($"EXERCISE GUIDANCE for {section} at {level}:");
+        sb.Append($"Allowed types: {string.Join(", ", listed)}");
+
+        var validSet = new HashSet<string>(valid, StringComparer.OrdinalIgnoreCase);
+        var notes = _profiles.GetLevelSpecificNotes(section, level)
+            .Where(n => validSet.Contains(n.ExerciseTypeId))
+            .ToArray();
+        if (notes.Length > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Exercise type notes:");
+            foreach (var note in notes)
+                sb.Append($"- {note.ExerciseTypeId} ({_pedagogy.GetExerciseTypeName(note.ExerciseTypeId)}): {note.Note}");
+        }
+
+        return sb.ToString().TrimEnd();
     }
 
     /// <summary>

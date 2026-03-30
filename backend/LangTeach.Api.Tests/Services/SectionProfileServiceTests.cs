@@ -484,4 +484,27 @@ public class SectionProfileServiceTests
     {
         _sut.GetInteractionPattern("warmup", "Z9").Should().BeEmpty();
     }
+
+    // --- GetLevelSpecificNotes ---
+
+    [Fact]
+    public void GetLevelSpecificNotes_Practice_B2_ReturnsGR04NoteWithLengthConstraint()
+    {
+        var notes = _sut.GetLevelSpecificNotes("practice", "B2");
+        var gr04 = notes.FirstOrDefault(n => n.ExerciseTypeId == "GR-04");
+        gr04.Should().NotBeNull(because: "practice B2 should have a GR-04 note");
+        gr04!.Note.Should().Contain("2 sentences", because: "the note should constrain explanation length");
+    }
+
+    [Fact]
+    public void GetLevelSpecificNotes_UnknownSection_ReturnsEmpty()
+    {
+        _sut.GetLevelSpecificNotes("nosuchsection", "B2").Should().BeEmpty();
+    }
+
+    [Fact]
+    public void GetLevelSpecificNotes_UnknownLevel_ReturnsEmpty()
+    {
+        _sut.GetLevelSpecificNotes("practice", "Z9").Should().BeEmpty();
+    }
 }

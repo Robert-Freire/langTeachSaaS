@@ -60,4 +60,11 @@ public interface ISectionProfileService
     /// Used by PedagogyConfigService to validate scope values against scope-constraints.json.
     /// </summary>
     string[] GetAllScopeValues();
+
+    /// <summary>
+    /// Returns the level-specific notes for a section at the given CEFR level.
+    /// Each note is keyed to an exercise type ID and provides generation guidance for that type.
+    /// Returns an empty array if the section or level is not found.
+    /// </summary>
+    LevelSpecificNote[] GetLevelSpecificNotes(string sectionType, string cefrLevel);
 }

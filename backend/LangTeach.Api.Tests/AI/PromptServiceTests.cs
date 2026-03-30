@@ -1320,6 +1320,17 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("Allowed types:");
     }
 
+    [Fact]
+    public void ExercisesPrompt_B2_ContainsGR04LengthConstraintNote()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B2" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("GR-04", because: "B2 practice includes error correction");
+        req.UserPrompt.Should().Contain("2 sentences", because: "the level-specific note should constrain GR-04 explanation length at B2");
+    }
+
     // --- Snapshot: key blocks present for representative combinations ---
 
     [Fact]
