@@ -1,4 +1,5 @@
 import * as sql from 'mssql'
+import { spawnSync } from 'child_process'
 
 const config: sql.config = {
   server: process.env.DB_SERVER ?? '127.0.0.1',
@@ -99,6 +100,25 @@ export async function approveE2ETestTeacherWithoutOnboarding(): Promise<void> {
     }
   } finally {
     await pool.close()
+  }
+}
+
+const VISUAL_SEED_CONTAINER = process.env.VISUAL_SEED_CONTAINER ?? 'langteachsaas-e2e-api-1'
+const VISUAL_SEED_AUTH0_ID  = process.env.VISUAL_SEED_AUTH0_ID  ?? 'auth0|e2e-test-teacher'
+
+/**
+ * Re-runs the visual seed via docker exec.
+ * Call this in afterAll of any test that calls resetE2ETestTeacher(),
+ * because the cascade delete wipes all visual seed data.
+ */
+export function reseedVisualData(): void {
+  const result = spawnSync(
+    'docker',
+    ['exec', VISUAL_SEED_CONTAINER, 'dotnet', 'LangTeach.Api.dll', '--visual-seed', VISUAL_SEED_AUTH0_ID],
+    { env: { ...process.env, MSYS_NO_PATHCONV: '1' }, stdio: 'inherit' },
+  )
+  if (result.status !== 0) {
+    throw new Error(`reseedVisualData: docker exec exited with code ${result.status}`)
   }
 }
 

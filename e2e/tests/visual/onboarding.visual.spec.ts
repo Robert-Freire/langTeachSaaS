@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../../helpers/auth-helper'
-import { resetE2ETestTeacher, approveE2ETestTeacherWithoutOnboarding } from '../../helpers/db-helper'
+import { resetE2ETestTeacher, approveE2ETestTeacherWithoutOnboarding, reseedVisualData } from '../../helpers/db-helper'
 import { setupMockTeacher } from '../../helpers/mock-teacher-helper'
 import { NAV_TIMEOUT, UI_TIMEOUT } from '../../helpers/timeouts'
 import * as fs from 'fs'
@@ -17,11 +17,14 @@ test.describe.serial('@visual onboarding', () => {
   })
 
   test.afterAll(async ({ browser }) => {
+    // Re-register and approve the teacher
     const ctx = await createMockAuthContext(browser)
     const page = await ctx.newPage()
     await setupMockTeacher(page)
     await page.close()
     await ctx.close()
+    // Restore visual seed data wiped by the cascade delete from resetE2ETestTeacher
+    reseedVisualData()
   })
 
   test('@visual onboarding wizard', async ({ browser }) => {
@@ -39,7 +42,7 @@ test.describe.serial('@visual onboarding', () => {
     await page.goto('/')
     // App should redirect to /onboarding
     await expect(page).toHaveURL(/\/onboarding/, { timeout: NAV_TIMEOUT })
-    await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT }).catch(() => {})
+    await page.waitForLoadState('domcontentloaded', { timeout: UI_TIMEOUT })
     await page.screenshot({ path: 'screenshots/onboarding.png', fullPage: true })
 
     expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)

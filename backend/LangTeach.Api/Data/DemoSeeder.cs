@@ -119,7 +119,7 @@ public static class DemoSeeder
             return false;
         }
 
-        if (!teacher.IsApproved)
+        if (!teacher.IsApproved || !teacher.HasCompletedOnboarding)
         {
             teacher.IsApproved = true;
             teacher.HasCompletedOnboarding = true;

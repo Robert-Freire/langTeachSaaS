@@ -35,7 +35,7 @@ test('@visual course detail', async ({ browser }) => {
 
   await page.goto(`/courses/${courseId}`)
   await expect(page.locator('h1')).toBeVisible({ timeout: NAV_TIMEOUT })
-  await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT }).catch(() => {})
+  await page.waitForLoadState('domcontentloaded', { timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/course-detail.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)

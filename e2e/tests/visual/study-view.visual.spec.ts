@@ -36,7 +36,7 @@ test('@visual study view', async ({ browser }) => {
   page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
 
   await page.goto(`/lessons/${lessonId}/study`)
-  await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT }).catch(() => {})
+  await page.waitForLoadState('domcontentloaded', { timeout: UI_TIMEOUT })
   await expect(page.locator('[data-testid="study-title"]')).toBeVisible({ timeout: NAV_TIMEOUT })
   await page.screenshot({ path: 'screenshots/study-view.png', fullPage: true })
 

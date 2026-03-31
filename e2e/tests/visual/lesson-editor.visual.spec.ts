@@ -36,7 +36,7 @@ test('@visual lesson editor', async ({ browser }) => {
 
   await page.goto(`/lessons/${lessonId}`)
   await expect(page.locator('h1')).toBeVisible({ timeout: NAV_TIMEOUT })
-  await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT }).catch(() => {})
+  await page.waitForLoadState('domcontentloaded', { timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/lesson-editor.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)

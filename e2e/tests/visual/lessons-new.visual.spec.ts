@@ -22,7 +22,7 @@ test('@visual lessons new', async ({ browser }) => {
   await page.goto('/lessons/new')
   await expect(page.locator('h1')).toBeVisible({ timeout: NAV_TIMEOUT })
   // Wait for template grid to load
-  await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT }).catch(() => {})
+  await page.waitForLoadState('domcontentloaded', { timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/lessons-new.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
