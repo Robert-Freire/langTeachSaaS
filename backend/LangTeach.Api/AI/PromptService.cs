@@ -469,12 +469,18 @@ public class PromptService : IPromptService
         var topic = InputSanitizer.Sanitize(ctx.Topic);
         var level = InputSanitizer.Sanitize(ctx.CefrLevel);
 
-        const string grammarJsonTemplate =
-            """{"title":"","explanation":"","examples":[{"sentence":"","note":""}],"commonMistakes":[""],"l1ContrastiveNote":{"l1Example":"","targetExample":"","explanation":"","interferencePattern":""}}""";
+        // Compute contrastive block first so the JSON template can conditionally include the field
+        var contrastiveBlock = BuildL1ContrastiveBlock(ctx.StudentNativeLanguage, topic, level);
+        var hasContrastiveNote = !string.IsNullOrEmpty(contrastiveBlock);
+
+        var grammarJsonTemplate = hasContrastiveNote
+            ? """{"title":"","explanation":"","examples":[{"sentence":"","note":""}],"commonMistakes":[""],"l1ContrastiveNote":{"l1Example":"","targetExample":"","explanation":"","interferencePattern":""}}"""
+            : """{"title":"","explanation":"","examples":[{"sentence":"","note":""}],"commonMistakes":[""]}""";
+
         var prompt = $$"""
         Generate a grammar explanation for the lesson on "{{topic}}". Return JSON:
         {{grammarJsonTemplate}}
-        Include 3-5 examples and 2-3 common mistakes. Omit the "l1ContrastiveNote" field entirely if no L1 contrastive information is provided below.
+        Include 3-5 examples and 2-3 common mistakes.
         """;
 
         var grammarScope = BuildGrammarScopeBlock(level);
@@ -489,8 +495,7 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(contentTypeContext))
             prompt += "\n\n" + contentTypeContext;
 
-        var contrastiveBlock = BuildL1ContrastiveBlock(ctx.StudentNativeLanguage, topic, level);
-        if (!string.IsNullOrEmpty(contrastiveBlock))
+        if (hasContrastiveNote)
             prompt += "\n\n" + contrastiveBlock;
 
         return prompt;

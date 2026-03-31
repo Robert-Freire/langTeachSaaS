@@ -203,6 +203,13 @@ export function isVocabularyContent(v: unknown): v is VocabularyContent {
   return typeof v === 'object' && v !== null && 'items' in v && Array.isArray((v as VocabularyContent).items)
 }
 
+function isL1ContrastiveNote(v: unknown): v is L1ContrastiveNote {
+  if (typeof v !== 'object' || v === null) return false
+  const c = v as Record<string, unknown>
+  return typeof c.l1Example === 'string' && typeof c.targetExample === 'string' &&
+    typeof c.explanation === 'string' && typeof c.interferencePattern === 'string'
+}
+
 export function isGrammarContent(v: unknown): v is GrammarContent {
   if (typeof v !== 'object' || v === null) return false
   const c = v as Record<string, unknown>
@@ -366,7 +373,7 @@ export function coerceGrammarContent(v: unknown): GrammarContent | null {
       : Array.isArray(obj.mistakes) ? obj.mistakes
       : Array.isArray(obj.errors) ? obj.errors
       : [],
-    ...(obj.l1ContrastiveNote != null ? { l1ContrastiveNote: obj.l1ContrastiveNote } : {}),
+    ...(isL1ContrastiveNote(obj.l1ContrastiveNote) ? { l1ContrastiveNote: obj.l1ContrastiveNote } : {}),
   }
   if (isGrammarContent(candidate)) return candidate as GrammarContent
   return null

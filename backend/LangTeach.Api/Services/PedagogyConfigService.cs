@@ -273,32 +273,13 @@ public class PedagogyConfigService : IPedagogyConfigService
     {
         var key = NormalizeLang(nativeLang);
         var normalizedLevel = NormalizeLevel(level);
+        var (_, specific) = ResolveLang(key);
 
-        // Collect patterns: specific-language first (higher priority), then family-level
-        ContrastivePattern[]? specificPatterns = null;
-        ContrastivePattern[]? familyPatterns = null;
+        // Specific-language patterns take priority over family-level patterns
+        var specificPatterns = specific?.ContrastivePatterns ?? [];
+        var familyPatterns = ResolveFamilyContrastivePatterns(key, specific);
 
-        if (_l1.SpecificLanguages.TryGetValue(key, out var specific))
-        {
-            specificPatterns = specific.ContrastivePatterns;
-            if (specific.Family is not null && _l1.LanguageFamilies.TryGetValue(specific.Family, out var fam))
-                familyPatterns = fam.ContrastivePatterns;
-        }
-        else
-        {
-            foreach (var (_, family) in _l1.LanguageFamilies)
-            {
-                if (family.Languages.Contains(key, StringComparer.OrdinalIgnoreCase))
-                {
-                    familyPatterns = family.ContrastivePatterns;
-                    break;
-                }
-            }
-        }
-
-        // Try specific-language patterns first, then family patterns
-        var allPatterns = (specificPatterns ?? []).Concat(familyPatterns ?? []);
-        foreach (var p in allPatterns)
+        foreach (var p in specificPatterns.Concat(familyPatterns))
         {
             var topicMatch = grammarTopic.Contains(p.Pattern, StringComparison.OrdinalIgnoreCase);
             var levelMatch = p.CefrRelevance.Contains(normalizedLevel, StringComparer.OrdinalIgnoreCase);
@@ -307,6 +288,17 @@ public class PedagogyConfigService : IPedagogyConfigService
         }
 
         return null;
+    }
+
+    private ContrastivePattern[] ResolveFamilyContrastivePatterns(string lang, SpecificLanguage? specific)
+    {
+        LanguageFamily? fam = null;
+        if (specific?.Family is not null)
+            _l1.LanguageFamilies.TryGetValue(specific.Family, out fam);
+        else
+            foreach (var (_, f) in _l1.LanguageFamilies)
+                if (f.Languages.Contains(lang, StringComparer.OrdinalIgnoreCase)) { fam = f; break; }
+        return fam?.ContrastivePatterns ?? [];
     }
 
     public TemplateOverrideEntry? GetTemplateOverride(string templateId) =>
