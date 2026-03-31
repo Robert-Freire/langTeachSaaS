@@ -6,6 +6,15 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-03-28 during Student-Aware Curriculum sprint close (round 2). 9 entries processed: 4 batched into #347 (pedagogy data consistency), 2 into #349 (UX polish), 3 deleted (redundant tests nit, harmless prompt duplication, undocumented fallback comment).*
 
+## PR task-t274-noticing-task (2026-03-31) -- #274 noticing task content type
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `NoticingTaskRenderer.tsx` | Hardcoded English feedback strings ("You found all X targets!"). Same pattern as entire app (no i18n yet). Track with overall i18n effort. |
+| Minor | `NoticingTaskRenderer.tsx:1` | `eslint-disable react-refresh/only-export-components` suppresses lint for entire file. Same pattern as other renderers. |
+| Minor | `presentation.json` C2 | CE-09 (critical reading) absent from C2 `validExerciseTypes` but would support the implicature/inference targets declared in `c2.json noticingTask.targetCategories`. Consider adding in a future pedagogy config pass. |
+| Minor | `NoticingTaskRenderer.tsx` e2e spec | Missing `insert-btn` step (asserts on generation panel preview, not persisted block). Same pattern divergence as sentence-transformation spec. |
+
 ## PR task-t272-sentence-transformation (2026-03-31) — #272 sentence transformation format
 
 | Severity | File | Note |

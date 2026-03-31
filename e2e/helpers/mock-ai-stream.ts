@@ -103,6 +103,23 @@ export const SENTENCE_TRANSFORMATION_FIXTURE = {
   ],
 }
 
+export const NOTICING_TASK_FIXTURE = {
+  text: 'Ayer Maria fue al mercado y compro frutas frescas. Luego volvio a casa y cocino una sopa.',
+  instruction: 'Find all the verbs in the past tense (preterito indefinido).',
+  targets: [
+    { form: 'fue', position: [11, 14], grammar: 'GR-08' },
+    { form: 'compro', position: [28, 34], grammar: 'GR-08' },
+    { form: 'volvio', position: [57, 63], grammar: 'GR-08' },
+    { form: 'cocino', position: [73, 79], grammar: 'GR-08' },
+  ],
+  discoveryQuestions: [
+    'How many past tense verbs did you find?',
+    'What ending do these verbs share?',
+    'Can you guess the rule for forming this tense?',
+  ],
+  teacherNotes: 'Focus on preterito indefinido regular -ar, -er, -ir endings. Students should notice the accent mark pattern on the final syllable.',
+}
+
 export const CONVERSATION_FIXTURE = {
   scenarios: [
     {

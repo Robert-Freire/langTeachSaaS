@@ -94,6 +94,14 @@ public class PromptService : IPromptService
         return BuildRequest("error-correction", "practice", ctx.CefrLevel, null, system, user, ClaudeModel.Sonnet, 3000);
     }
 
+    public ClaudeRequest BuildNoticingTaskPrompt(GenerationContext ctx)
+    {
+        var system  = BuildSystemPrompt(ctx);
+        var user    = NoticingTaskUserPrompt(ctx);
+        var section = ctx.SectionType ?? "presentation";
+        return BuildRequest("noticing-task", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 3000);
+    }
+
     public ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx)
     {
         var system = CurriculumSystemPrompt(ctx);
@@ -725,6 +733,79 @@ public class PromptService : IPromptService
             prompt += "\n" + scopeConstraint;
 
         return prompt;
+    }
+
+    private string NoticingTaskUserPrompt(GenerationContext ctx)
+    {
+        var topic = InputSanitizer.Sanitize(ctx.Topic);
+        var level = InputSanitizer.Sanitize(ctx.CefrLevel);
+
+        var levelGuidance = _profiles.GetGuidance("presentation", level);
+        if (string.IsNullOrEmpty(levelGuidance))
+            levelGuidance = "Generate a noticing task appropriate to the stated CEFR level.";
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Generate a noticing task (actividad de descubrimiento) for a {level} student on the topic \"{topic}\".");
+        sb.AppendLine();
+        sb.AppendLine(levelGuidance);
+        sb.AppendLine();
+        sb.AppendLine("INSTRUCTIONS:");
+        sb.AppendLine("- text: A context-rich passage (appropriate length for the level) containing multiple instances of the target grammar structure. The text should read naturally and be thematically engaging.");
+        sb.AppendLine("- instruction: A clear, level-appropriate prompt telling the student what to look for (e.g. \"Underline all the verbs in the past tense\").");
+        sb.AppendLine("- targets: Each target is a word or phrase in the text. form is the exact substring. position is [startCharIndex, endCharIndex] (0-based, exclusive end). grammar references a grammar category from the level config or exercise type catalog.");
+        sb.AppendLine("- discoveryQuestions: Questions that guide the student to notice the pattern and formulate a rule. Questions should progress from observation to hypothesis.");
+        sb.AppendLine("- teacherNotes: A brief explanation of the grammar point, expected student discoveries, and teaching tips. Visible only to the teacher.");
+        sb.AppendLine();
+        sb.AppendLine("Verify every position by counting characters in text before generating. The substring at [start, end) must equal form exactly.");
+
+        var noticingGuidance = _pedagogy.GetNoticingTaskGuidance(level);
+        if (noticingGuidance is not null)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"DISCOVERY TASK PARAMETERS for {level}:");
+            sb.AppendLine($"Target categories: {string.Join(", ", noticingGuidance.TargetCategories)}");
+            sb.AppendLine($"Question complexity: {noticingGuidance.QuestionComplexity}");
+            sb.AppendLine($"Scaffolding: {noticingGuidance.Scaffolding}");
+            sb.AppendLine($"Level guidance: {noticingGuidance.Guidance}");
+        }
+
+        var grammarScope = BuildGrammarScopeBlock(level);
+        if (!string.IsNullOrEmpty(grammarScope))
+        {
+            sb.AppendLine();
+            sb.AppendLine(grammarScope);
+        }
+
+        var nativeLang = InputSanitizer.Sanitize(ctx.StudentNativeLanguage);
+        if (!string.IsNullOrEmpty(nativeLang))
+        {
+            var l1 = _pedagogy.GetL1Adjustments(nativeLang);
+            if (l1 is not null)
+            {
+                sb.AppendLine();
+                sb.AppendLine(BuildL1Block(l1, nativeLang));
+            }
+        }
+
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "noticing-task");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            sb.AppendLine(scopeConstraint);
+
+        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
+        if (!string.IsNullOrEmpty(templateGuidance))
+        {
+            sb.AppendLine();
+            sb.AppendLine(templateGuidance);
+        }
+
+        var contentTypeContext = BuildContentTypeContextBlock(ctx.SectionType, level, ctx.TemplateName);
+        if (!string.IsNullOrEmpty(contentTypeContext))
+        {
+            sb.AppendLine();
+            sb.AppendLine(contentTypeContext);
+        }
+
+        return sb.ToString().TrimEnd();
     }
 
     private string FreeTextUserPrompt(GenerationContext ctx)

@@ -119,6 +119,12 @@ public interface IPedagogyConfigService
     CefrStageRequirement? GetPracticeStageRequirements(string level);
 
     /// <summary>
+    /// Returns noticing task guidance for the CEFR level (target categories, question complexity, scaffolding).
+    /// Returns null if the level does not define a noticingTask section.
+    /// </summary>
+    NoticingTaskGuidance? GetNoticingTaskGuidance(string level);
+
+    /// <summary>
     /// Returns all practice stage definitions (id, names, descriptions, allowed exercise categories).
     /// </summary>
     IReadOnlyList<PracticeStageDefinition> GetPracticeStageDefinitions();

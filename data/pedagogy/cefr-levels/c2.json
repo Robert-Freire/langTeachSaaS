@@ -94,6 +94,12 @@
   "metalanguageLevel": "Full academic, rhetorical, and stylistic metalanguage. C2 lessons are language seminars, not traditional classes.",
   "errorCorrection": "Self-correction with teacher recasting. Focus on register, style, and dialectal precision. Seminar-style feedback: two strengths and one improvement area.",
   "scaffoldingDefault": "none",
+  "noticingTask": {
+    "targetCategories": ["sociolinguistic nuance", "dialectal variation", "rhetorical devices", "implicature and pragmatic inference"],
+    "questionComplexity": "seminar-style open analysis",
+    "scaffolding": "none",
+    "guidance": "Use ungraded authentic literary or journalistic texts. Student leads analysis. Discovery questions are seminar-level: what does the author achieve with this choice? Noticing tasks focus on pragmatic and sociolinguistic nuance, not morphosyntax."
+  },
   "guidedWriting": {
     "wordCountMin": 250,
     "wordCountMax": 350,

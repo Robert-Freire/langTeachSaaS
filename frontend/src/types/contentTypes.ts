@@ -9,6 +9,7 @@ export type ContentBlockType =
   | 'free-text'
   | 'guided-writing'
   | 'error-correction'
+  | 'noticing-task'
 
 export interface VocabularyItem {
   word: string
@@ -162,6 +163,20 @@ export interface ErrorCorrectionContent {
   items: ErrorCorrectionItem[]
 }
 
+export interface NoticingTaskTarget {
+  form: string
+  position: [number, number]
+  grammar: string
+}
+
+export interface NoticingTaskContent {
+  text: string
+  instruction: string
+  targets: NoticingTaskTarget[]
+  discoveryQuestions: string[]
+  teacherNotes?: string
+}
+
 export interface LessonPlanSections {
   warmUp: string
   presentation: string
@@ -236,6 +251,30 @@ export function isErrorCorrectionContent(v: unknown): v is ErrorCorrectionConten
         VALID_EC_ERROR_TYPES.has(it.errorType as string)
       )
     })
+  )
+}
+
+export function isNoticingTaskContent(v: unknown): v is NoticingTaskContent {
+  if (typeof v !== 'object' || v === null) return false
+  const c = v as Record<string, unknown>
+  return (
+    typeof c.text === 'string' &&
+    typeof c.instruction === 'string' &&
+    Array.isArray(c.targets) &&
+    c.targets.length > 0 &&
+    c.targets.every((t: unknown) => {
+      if (typeof t !== 'object' || t === null) return false
+      const tgt = t as Record<string, unknown>
+      return (
+        typeof tgt.form === 'string' &&
+        Array.isArray(tgt.position) && tgt.position.length === 2 &&
+        typeof tgt.position[0] === 'number' && typeof tgt.position[1] === 'number' &&
+        typeof tgt.grammar === 'string'
+      )
+    }) &&
+    Array.isArray(c.discoveryQuestions) &&
+    c.discoveryQuestions.length > 0 &&
+    c.discoveryQuestions.every((q: unknown) => typeof q === 'string')
   )
 }
 
@@ -516,4 +555,40 @@ export function coerceErrorCorrectionContent(v: unknown): ErrorCorrectionContent
 
   const candidate: ErrorCorrectionContent = { mode, items }
   return isErrorCorrectionContent(candidate) ? candidate : null
+}
+
+export function coerceNoticingTaskContent(v: unknown): NoticingTaskContent | null {
+  if (isNoticingTaskContent(v)) return v
+  if (typeof v !== 'object' || v === null) return null
+  const obj = v as Record<string, unknown>
+
+  const unwrapped = unwrapWrapper(obj, isNoticingTaskContent)
+  if (unwrapped) return unwrapped
+
+  if (typeof obj.text !== 'string' || typeof obj.instruction !== 'string') return null
+  if (!Array.isArray(obj.targets) || !Array.isArray(obj.discoveryQuestions)) return null
+
+  const targets = (obj.targets as unknown[])
+    .filter((t): t is Record<string, unknown> => typeof t === 'object' && t !== null)
+    .map((t) => ({
+      form: typeof t.form === 'string' ? t.form : '',
+      position: Array.isArray(t.position) && t.position.length >= 2
+        ? [Number(t.position[0]), Number(t.position[1])] as [number, number]
+        : [0, 0] as [number, number],
+      grammar: typeof t.grammar === 'string' ? t.grammar : '',
+    }))
+
+  const discoveryQuestions = (obj.discoveryQuestions as unknown[])
+    .filter((q): q is string => typeof q === 'string')
+
+  if (targets.length === 0 || discoveryQuestions.length === 0) return null
+
+  const candidate: NoticingTaskContent = {
+    text: obj.text as string,
+    instruction: obj.instruction as string,
+    targets,
+    discoveryQuestions,
+    teacherNotes: typeof obj.teacherNotes === 'string' ? obj.teacherNotes : undefined,
+  }
+  return isNoticingTaskContent(candidate) ? candidate : null
 }

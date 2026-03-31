@@ -359,6 +359,15 @@ public class PedagogyConfigService : IPedagogyConfigService
     public IReadOnlyList<PracticeStageDefinition> GetPracticeStageDefinitions()
         => _practiceStages.Stages;
 
+    public NoticingTaskGuidance? GetNoticingTaskGuidance(string level)
+    {
+        var normalLevel = NormalizeLevel(level);
+        if (!_cefrRules.TryGetValue(normalLevel, out var rule) || rule.NoticingTask is not { } nt)
+            return null;
+        return new NoticingTaskGuidance(
+            nt.TargetCategories, nt.QuestionComplexity, nt.Scaffolding, nt.Guidance);
+    }
+
     // --- Private helpers ---
 
     private static T LoadJson<T>(Assembly assembly, string resourceName)

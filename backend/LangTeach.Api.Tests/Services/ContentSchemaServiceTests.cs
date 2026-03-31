@@ -26,8 +26,8 @@ public class ContentSchemaServiceTests
     [Fact]
     public void LoadsAtLeastSevenSchemas()
     {
-        EmbeddedSchemaKeys_Data().Count.Should().BeGreaterThanOrEqualTo(9,
-            because: "vocabulary, grammar, exercises, conversation, reading, homework, lesson-plan, guided-writing, error-correction must all be present");
+        EmbeddedSchemaKeys_Data().Count.Should().BeGreaterThanOrEqualTo(10,
+            because: "vocabulary, grammar, exercises, conversation, reading, homework, lesson-plan, guided-writing, error-correction, noticing-task must all be present");
     }
 
     [Theory]
