@@ -103,11 +103,11 @@ public class PedagogyControllerTests
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         var production = json!["Production"];
-        production["A1"].Should().BeEquivalentTo(["conversation"]);
-        production["B1"].Should().BeEquivalentTo(["conversation"]);
-        production["B2"].Should().Contain("reading");
-        production["C1"].Should().Contain("reading");
-        production["C2"].Should().Contain("reading");
+        production["A1"].Should().Contain("conversation").And.Contain("guided-writing");
+        production["B1"].Should().Contain("conversation").And.Contain("exercises");
+        production["B2"].Should().Contain("reading").And.Contain("exercises");
+        production["C1"].Should().Contain("reading").And.Contain("exercises");
+        production["C2"].Should().Contain("reading").And.Contain("exercises");
     }
 
 }

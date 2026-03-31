@@ -434,6 +434,58 @@ public class PedagogyConfigServiceTests
         _sut.Should().NotBeNull(because: "PedagogyConfigService must construct without validation errors");
     }
 
+    // --- preferredContentType (#358) ---
+
+    [Fact]
+    public void GetPreferredContentType_ReadingComprehension_Presentation_ReturnsReading()
+    {
+        var result = _sut.GetPreferredContentType("presentation", "Reading & Comprehension");
+
+        result.Should().Be("reading", because: "R&C template declares preferredContentType: reading for presentation");
+    }
+
+    [Fact]
+    public void GetPreferredContentType_ExamPrep_Production_ReturnsExercises()
+    {
+        var result = _sut.GetPreferredContentType("production", "Exam Prep");
+
+        result.Should().Be("exercises", because: "Exam Prep template declares preferredContentType: exercises for production");
+    }
+
+    [Fact]
+    public void GetPreferredContentType_ExamPrep_Practice_ReturnsExercises()
+    {
+        var result = _sut.GetPreferredContentType("practice", "Exam Prep");
+
+        result.Should().Be("exercises", because: "Exam Prep template declares preferredContentType: exercises for practice");
+    }
+
+    [Fact]
+    public void GetPreferredContentType_NoTemplate_ReturnsNull()
+    {
+        var result = _sut.GetPreferredContentType("production", null);
+
+        result.Should().BeNull(because: "null template name should return null preferred type");
+    }
+
+    [Fact]
+    public void GetPreferredContentType_TemplateWithoutPreference_ReturnsNull()
+    {
+        // Conversation Skills template has no preferredContentType on any section
+        var result = _sut.GetPreferredContentType("warmUp", "Conversation Skills");
+
+        result.Should().BeNull(because: "templates without preferredContentType on a section should return null");
+    }
+
+    [Fact]
+    public void StartupValidation_PreferredContentTypes_AllValidAgainstSectionProfiles()
+    {
+        // Construction must succeed — ValidateCrossLayerRefs validates preferredContentType values
+        // against section profile contentTypes for applicable CEFR levels.
+        // This test verifies the loaded config passes all cross-layer validation.
+        _sut.Should().NotBeNull(because: "PedagogyConfigService must construct without validation errors for preferredContentType entries");
+    }
+
     // --- GetGrammarConstraints ---
 
     [Fact]
@@ -454,5 +506,126 @@ public class PedagogyConfigServiceTests
         var result = _sut.GetGrammarConstraints("english");
 
         result.Should().BeEmpty(because: "no grammar constraints are defined for English in l1-influence.json");
+    }
+
+    // --- GetGuidedWritingGuidance ---
+
+    [Theory]
+    [InlineData("A1", 30, 50)]
+    [InlineData("B1", 80, 130)]
+    [InlineData("C1", 200, 300)]
+    public void GetGuidedWritingGuidance_ReturnsCorrectWordCountsForLevel(string level, int expectedMin, int expectedMax)
+    {
+        var result = _sut.GetGuidedWritingGuidance(level);
+
+        result.WordCountMin.Should().Be(expectedMin, because: $"CEFR {level} word count min is {expectedMin}");
+        result.WordCountMax.Should().Be(expectedMax, because: $"CEFR {level} word count max is {expectedMax}");
+    }
+
+    [Theory]
+    [InlineData("A1")]
+    [InlineData("A2")]
+    [InlineData("B1")]
+    [InlineData("B2")]
+    [InlineData("C1")]
+    [InlineData("C2")]
+    public void GetGuidedWritingGuidance_AllLevels_ReturnNonEmptyGuidanceFields(string level)
+    {
+        var result = _sut.GetGuidedWritingGuidance(level);
+
+        result.Structures.Should().NotBeNullOrWhiteSpace(because: $"CEFR {level} must specify required structures");
+        result.Complexity.Should().NotBeNullOrWhiteSpace(because: $"CEFR {level} must specify complexity guidance");
+        result.SituationGuidance.Should().NotBeNullOrWhiteSpace(because: $"CEFR {level} must specify situation guidance");
+        result.SentenceCountMin.Should().BeGreaterThan(0);
+        result.SentenceCountMax.Should().BeGreaterThanOrEqualTo(result.SentenceCountMin);
+    }
+
+    [Fact]
+    public void GetGuidedWritingGuidance_UnknownLevel_ReturnsSafeDefaults()
+    {
+        var result = _sut.GetGuidedWritingGuidance("X9");
+
+        result.WordCountMin.Should().BeGreaterThan(0, because: "defaults must be valid positive integers");
+        result.WordCountMax.Should().BeGreaterThanOrEqualTo(result.WordCountMin);
+        result.Structures.Should().NotBeNullOrWhiteSpace();
+    }
+
+    // --- GetRequiredSectionNames ---
+
+    [Fact]
+    public void GetRequiredSectionNames_Conversation_ReturnsFourRequiredSections()
+    {
+        var result = _sut.GetRequiredSectionNames("Conversation");
+
+        result.Should().NotBeNull();
+        result.Should().BeEquivalentTo(["warmUp", "practice", "production", "wrapUp"],
+            because: "Conversation has presentation:required=false; other 4 sections are required");
+        result.Should().ContainInOrder(["warmUp", "practice", "production", "wrapUp"],
+            because: "sections must follow canonical order");
+    }
+
+    [Fact]
+    public void GetRequiredSectionNames_ReadingComprehension_ReturnsFiveRequiredSections()
+    {
+        var result = _sut.GetRequiredSectionNames("Reading & Comprehension");
+
+        result.Should().NotBeNull();
+        result.Should().BeEquivalentTo(["warmUp", "presentation", "practice", "production", "wrapUp"],
+            because: "all 5 sections are required in Reading & Comprehension");
+    }
+
+    [Fact]
+    public void GetRequiredSectionNames_UnknownTemplate_ReturnsNull()
+    {
+        var result = _sut.GetRequiredSectionNames("Non-Existent Template");
+
+        result.Should().BeNull();
+    }
+
+    // --- GetPracticeStageRequirements ---
+
+    [Fact]
+    public void GetPracticeStageRequirements_A1_ReturnsTwoStages()
+    {
+        var result = _sut.GetPracticeStageRequirements("A1");
+
+        result.Should().NotBeNull();
+        result!.Stages.Should().BeEquivalentTo(["controlled", "meaningful"]);
+    }
+
+    [Fact]
+    public void GetPracticeStageRequirements_B1_ReturnsThreeStages()
+    {
+        var result = _sut.GetPracticeStageRequirements("B1");
+
+        result.Should().NotBeNull();
+        result!.Stages.Should().BeEquivalentTo(["controlled", "meaningful", "guided_free"]);
+    }
+
+    [Fact]
+    public void GetPracticeStageRequirements_C1_HasOptionalControlled()
+    {
+        var result = _sut.GetPracticeStageRequirements("C1");
+
+        result.Should().NotBeNull();
+        result!.OptionalStages.Should().Contain("controlled");
+        result!.Stages.Should().NotContain("controlled", because: "controlled is optional at C1, not mandatory");
+    }
+
+    [Fact]
+    public void GetPracticeStageRequirements_UnknownLevel_ReturnsNull()
+    {
+        var result = _sut.GetPracticeStageRequirements("X9");
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetPracticeStageDefinitions_ReturnsAllThreeStages()
+    {
+        var result = _sut.GetPracticeStageDefinitions();
+
+        result.Should().HaveCount(3);
+        result.Select(s => s.Id).Should().BeEquivalentTo(["controlled", "meaningful", "guided_free"]);
     }
 }

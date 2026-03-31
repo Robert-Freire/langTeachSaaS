@@ -13,6 +13,8 @@ public enum ContentBlockType
     Reading,
     Homework,
     FreeText,
+    GuidedWriting,
+    ErrorCorrection,
 }
 
 public static class ContentBlockTypeExtensions
@@ -25,8 +27,10 @@ public static class ContentBlockTypeExtensions
         [ContentBlockType.Exercises]    = "exercises",
         [ContentBlockType.Conversation] = "conversation",
         [ContentBlockType.Reading]      = "reading",
-        [ContentBlockType.Homework]     = "homework",
-        [ContentBlockType.FreeText]     = "free-text",
+        [ContentBlockType.Homework]       = "homework",
+        [ContentBlockType.FreeText]         = "free-text",
+        [ContentBlockType.GuidedWriting]    = "guided-writing",
+        [ContentBlockType.ErrorCorrection]  = "error-correction",
     };
 
     private static readonly Dictionary<string, ContentBlockType> FromKebabMap =

@@ -19,7 +19,18 @@ public record CefrLevelRules(
     string InstructionLanguage,
     string MetalanguageLevel,
     string ErrorCorrection,
-    string ScaffoldingDefault
+    string ScaffoldingDefault,
+    GuidedWritingConfig? GuidedWriting = null
+);
+
+public record GuidedWritingConfig(
+    int WordCountMin,
+    int WordCountMax,
+    int SentenceCountMin,
+    int SentenceCountMax,
+    string Structures,
+    string Complexity,
+    string SituationGuidance
 );
 
 public record InappropriateExerciseEntry(string Id, string Reason);
@@ -83,7 +94,8 @@ public record SectionOverride(
     string[] PriorityExerciseTypes,
     int? MinExerciseVarietyOverride,
     string? Notes,
-    string? Scope = null
+    string? Scope = null,
+    string? PreferredContentType = null
 );
 
 // Scope constraints config (scope-constraints.json)
@@ -129,3 +141,33 @@ public record StyleSubstitution(
     string[] NeverSubstituteWith,
     string Rule
 );
+
+// Practice stages (practice-stages.json)
+public record PracticeStagesFile(
+    PracticeStageDefinition[] Stages,
+    Dictionary<string, CefrStageRequirement> CefrStageRequirements
+);
+
+public record PracticeStageDefinition(
+    string Id,
+    string NameEs,
+    string NameLong,
+    string Description,
+    string[] AllowedExerciseCategories
+);
+
+public record CefrStageRequirement(
+    string[] Stages,
+    Dictionary<string, int[]> ItemsPerStage,
+    string[]? OptionalStages = null
+);
+
+/// <summary>
+/// Canonical PPP section keys in lesson order.
+/// Single authoritative definition — referenced by PromptService, PedagogyConfigService, and SeedData.
+/// </summary>
+public static class SectionKeys
+{
+    public static readonly string[] CanonicalOrder =
+        ["warmUp", "presentation", "practice", "production", "wrapUp"];
+}

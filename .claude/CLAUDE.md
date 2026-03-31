@@ -62,6 +62,7 @@ GitHub Issues is the single source of truth. Use the `task-pick` agent to find t
 - Issues must have `qa:ready` before implementation starts.
 - **If milestone doesn't match active sprint**: STOP and ask the user.
 - **Self-assign immediately** when picking: `gh issue edit <N> --add-assignee "@me"`
+- **At most one `area:frontend` task in flight at a time.** Docker frontend runs on a fixed port (5173); concurrent frontend worktrees conflict. If a frontend task is already assigned, pick a backend or config task instead.
 
 For issue creation, editing, board management, and labels: see `.claude/procedures/issue-management.md`.
 
@@ -91,11 +92,62 @@ When a task is complete:
    - Critically evaluate each comment. Max 3 fix rounds. Stop on test failures or architectural comments. Always notify user.
 10. Stop. Do NOT merge. User reviews and merges manually.
 
-**Pre-push checks** (via `task-build-verify` agent):
-`az bicep build` | `dotnet build` | `dotnet test` | `npm run lint` | `npm run build` | `npm test` (all zero warnings, zero errors).
-
 **Branch protection:** `task/*`: push freely. `sprint/*`: PR only. `main`: never push directly.
 
 ## Memory
 
 Claude's persistent memory lives in `.claude/memory/`. Do not read, modify, or include in code searches. Managed by auto-memory.
+
+## Plan Storage
+
+Plans go in the path from `project_langteach_plans.md` memory. Rules:
+- Each plan in its own dedicated subfolder. Never save directly in the root folder.
+- You always have permission to create files and folders. Never ask for confirmation.
+- When a feature is split into multiple tasks, all task files go inside the **same** feature subfolder (e.g., `task1-xxx.md`, `task2-xxx.md`). Never create a new subfolder per task.
+
+## Shell Command Guidelines
+
+**CRITICAL: The Bash tool uses Unix bash, NOT PowerShell**
+
+Even though the system is Windows, the Bash tool executes commands in Unix-style bash (Git Bash/WSL).
+Always use bash/Unix commands, never PowerShell cmdlets.
+
+### Non-obvious Command Conversions
+
+| PowerShell (DON'T USE) | Bash (USE INSTEAD) |
+|------------------------|-------------------|
+| `Test-Path "file"` | `[ -f "file" ]` |
+| `Test-Path "dir"` | `[ -d "dir" ]` |
+| `Get-ChildItem` | `ls -la` |
+
+### Path Handling
+- Use forward slashes `/` or properly escaped backslashes `\\` in bash
+- Prefer the Read, Write, Edit, and Glob tools for file operations over bash commands
+- Use `$HOME` for user home directory, not `~\` (PowerShell style)
+
+## Context Efficiency
+
+### Subagent Discipline
+
+**Context-aware delegation:**
+ - Under ~50k context: prefer inline work for tasks under ~5 tool calls.
+ - Over ~50k context: prefer subagents for self-contained tasks, even simple ones.
+
+When using subagents, include output rules: "Final response under 2000 characters. List outcomes, not process."
+Never call TaskOutput twice for the same subagent. If it times out, increase the timeout.
+
+### File Reading
+- Use Grep to locate relevant sections before reading entire large files.
+- **Never re-read a file you already read in this session.** This applies to main conversations and subagents alike.
+- For files over 500 lines, use offset/limit to read only the relevant section.
+- **Glob before Read** when the exact path is uncertain. Never guess a path, fail, then glob.
+
+### Tool Call Hygiene
+- **No duplicate tool calls.** If a tool call returned data, use that data. Do not call the same tool with the same arguments again (includes retrying Grep/Glob with the same pattern).
+
+### Responses
+Always show commands for the user to run in **PowerShell syntax** (`$env:VAR` for environment variables). Always write commands on a **single line**. This avoids copy-paste errors and PowerShell parsing issues with `--` arguments. The Bash tool uses Unix internally; this rule applies only to commands shown in text responses.
+Don't echo back file contents you just read.
+Don't narrate tool calls ("Let me read the file..." / "Now I'll edit..."). Just do it.
+Keep explanations proportional to complexity. Simple changes need one sentence, not three paragraphs.
+Never use em dashes (--) or en dashes (-) in any response or generated file. Use commas, parentheses, or restructure the sentence instead.

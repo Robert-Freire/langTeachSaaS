@@ -24,68 +24,70 @@
       "minExerciseVariety": 1
     },
     "A2": {
-      "contentTypes": ["exercises", "conversation"],
+      "contentTypes": ["exercises", "conversation", "error-correction"],
       "guidance": "Fill-in-blank with optional word bank, multiple-choice with 4 options, true/false with justification required. Use simple contextual items rather than isolated drills.",
       "duration": { "min": 8, "max": 12 },
       "competencies": ["reading", "writing"],
       "scaffolding": "medium",
       "interactionPattern": "teacher-guided",
-      "validExerciseTypes": ["GR-01", "GR-02", "GR-06", "GR-07", "GR-09", "VOC-05", "VOC-06", "EO-01", "CE-01", "CE-02", "LUD-05", "LUD-06", "LUD-07"],
+      "validExerciseTypes": ["GR-01", "GR-02", "GR-04", "GR-06", "GR-07", "GR-09", "VOC-05", "VOC-06", "EO-01", "CE-01", "CE-02", "CE-10", "LUD-05", "LUD-06", "LUD-07"],
       "forbiddenExerciseTypes": [
         {"id": "GR-03", "pattern": null, "reason": "Sentence transformation requires prior command of the target form; not yet appropriate at A2"},
-        {"id": "GR-04", "pattern": null, "reason": "Error correction requires meta-awareness of the rule; too demanding at A2"},
         {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task, not a practice drill"},
         {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"}
       ],
       "levelSpecificNotes": [
         {"exerciseTypeId": "GR-02", "note": "Maximum 4 options per item at A2"},
-        {"exerciseTypeId": "GR-01", "note": "Word bank is optional at A2 but recommended for new structures"}
+        {"exerciseTypeId": "GR-01", "note": "Word bank is optional at A2 but recommended for new structures"},
+        {"exerciseTypeId": "GR-04", "note": "Simple agreement/gender errors only. Single-clause sentences."},
+        {"exerciseTypeId": "GR-07", "note": "Use 5-6 word single-clause sentences at A2; one step up from A1 (3-4 words) but still single-clause"}
       ],
       "minExerciseVariety": 1
     },
     "B1": {
-      "contentTypes": ["exercises", "conversation"],
+      "contentTypes": ["exercises", "conversation", "guided-writing", "error-correction"],
       "guidance": "Use at least 2 different exercise formats (e.g. fill-in-blank AND multiple-choice — do not rely on just one type). Include transformation and error correction items.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "low",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-05", "VOC-07", "CE-01", "CE-03", "CE-06", "EO-01", "LUD-05", "LUD-06", "LUD-07"],
+      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-07", "GR-09", "GR-10", "VOC-04", "VOC-05", "VOC-07", "CE-01", "CE-03", "CE-10", "CE-06", "EO-01", "LUD-05", "LUD-06", "LUD-07"],
       "forbiddenExerciseTypes": [
         {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task, not a practice drill"},
         {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"}
       ],
       "levelSpecificNotes": [
         {"exerciseTypeId": "GR-04", "note": "Sentence-level corrections only at B1; discourse-level error correction is B2+"},
+        {"exerciseTypeId": "GR-07", "note": "Use phrase-level ordering at B1: reorder clauses or multi-word chunks rather than individual words"},
         {"exerciseTypeId": "GR-10", "note": "Use a short (80-120 word) authentic-style source text from which student extracts and organises the target forms"}
       ],
       "minExerciseVariety": 2
     },
     "B2": {
-      "contentTypes": ["exercises", "conversation"],
+      "contentTypes": ["exercises", "conversation", "guided-writing", "error-correction"],
       "guidance": "Pragmatic appropriateness, register selection, discourse completion tasks. Multi-step activities with nuanced distractors. Error correction at discourse level.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "low",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-07", "VOC-10", "CE-01", "CE-02", "CE-03", "CE-04", "CE-06", "CE-07", "LUD-05"],
+      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-07", "VOC-10", "CE-01", "CE-02", "CE-03", "CE-10", "CE-04", "CE-06", "CE-07", "LUD-05"],
       "forbiddenExerciseTypes": [
         {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task, not a practice drill"},
         {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"}
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "GR-04", "note": "Discourse-level error correction is appropriate at B2; include cohesion and register errors, not only morphosyntax"}
+        {"exerciseTypeId": "GR-04", "note": "Register errors, subjunctive/indicative confusion, false cognates. Discourse-level corrections permitted. Include cohesion and register errors, not only morphosyntax. Keep each explanation to a maximum of 2 sentences: one identifying the error type, one stating the rule."}
       ],
       "minExerciseVariety": 2
     },
     "C1": {
-      "contentTypes": ["exercises", "conversation"],
+      "contentTypes": ["exercises", "conversation", "guided-writing", "error-correction"],
       "guidance": "Minimize purely mechanical items (basic fill-in-blank, simple matching) in favor of reformulation, paraphrase, register transfer, and pragmatic inference tasks.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "none",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-04", "GR-10", "VOC-04", "VOC-07", "VOC-10", "VOC-11", "CE-01", "CE-02", "CE-03", "CE-04", "CE-05", "CE-07", "CE-08", "CE-09", "EE-09"],
+      "validExerciseTypes": ["GR-04", "GR-10", "VOC-04", "VOC-07", "VOC-10", "VOC-11", "CE-01", "CE-02", "CE-03", "CE-10", "CE-04", "CE-05", "CE-07", "CE-08", "CE-09", "EE-09"],
       "forbiddenExerciseTypes": [
         {"id": "GR-01", "pattern": null, "reason": "Basic fill-in-blank is too mechanical for C1; use reformulation or transformation tasks instead"},
         {"id": "GR-02", "pattern": null, "reason": "Simple multiple choice is too mechanical for C1"},
@@ -96,19 +98,20 @@
         {"id": null, "pattern": "LUD-*", "reason": "Ludic activities belong to warm-up or optional extension, not structured practice"}
       ],
       "levelSpecificNotes": [
+        {"exerciseTypeId": "GR-04", "note": "Error correction at C1 focuses on pragmatic and register violations. Keep each explanation to a maximum of 2 sentences: one identifying the error category, one explaining the pragmatic or register constraint."},
         {"exerciseTypeId": "EE-09", "note": "Register transformation at C1 should require precise control of register markers, not just lexical swaps"},
         {"exerciseTypeId": "CE-09", "note": "Critical reading in practice: student argues against the text's position to demonstrate analytical distance"}
       ],
       "minExerciseVariety": 2
     },
     "C2": {
-      "contentTypes": ["exercises", "conversation"],
+      "contentTypes": ["exercises", "conversation", "guided-writing", "error-correction"],
       "guidance": "Reformulation, paraphrase, register transfer, pragmatic inference. No mechanical drills. Tasks require nuance and register awareness. Student evaluates alternative formulations.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "none",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-04", "GR-10", "VOC-07", "VOC-10", "VOC-11", "CE-01", "CE-02", "CE-03", "CE-04", "CE-05", "CE-07", "CE-08", "CE-09", "EE-09", "EE-11"],
+      "validExerciseTypes": ["GR-04", "GR-10", "VOC-07", "VOC-10", "VOC-11", "CE-01", "CE-02", "CE-03", "CE-10", "CE-04", "CE-05", "CE-07", "CE-08", "CE-09", "EE-09", "EE-11"],
       "forbiddenExerciseTypes": [
         {"id": "GR-01", "pattern": null, "reason": "Basic fill-in-blank is too mechanical for C2; use reformulation or transformation tasks instead"},
         {"id": "GR-02", "pattern": null, "reason": "Simple multiple choice is too mechanical for C2"},
@@ -120,7 +123,7 @@
       ],
       "levelSpecificNotes": [
         {"exerciseTypeId": "EE-11", "note": "Written mediation at C2: student rewrites a specialized text for a non-specialist audience, maintaining accuracy and adjusting register"},
-        {"exerciseTypeId": "GR-04", "note": "Error correction at C2 includes pragmatic inappropriateness and register violations, not only grammatical errors"}
+        {"exerciseTypeId": "GR-04", "note": "Error correction at C2 includes pragmatic inappropriateness and register violations, not only grammatical errors. Keep each explanation to a maximum of 2 sentences."}
       ],
       "minExerciseVariety": 2
     }

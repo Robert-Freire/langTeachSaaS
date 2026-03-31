@@ -7,6 +7,8 @@ export type ContentBlockType =
   | 'reading'
   | 'homework'
   | 'free-text'
+  | 'guided-writing'
+  | 'error-correction'
 
 export interface VocabularyItem {
   word: string
@@ -30,11 +32,14 @@ export interface GrammarContent {
   commonMistakes: string[]
 }
 
+export type PracticeStage = 'controlled' | 'meaningful' | 'guided_free'
+
 export interface ExercisesFillInBlank {
   sentence: string
   answer: string
   hint?: string
   explanation?: string
+  stage?: PracticeStage
 }
 
 export interface ExercisesMultipleChoice {
@@ -42,18 +47,48 @@ export interface ExercisesMultipleChoice {
   options: string[]
   answer: string
   explanation?: string
+  stage?: PracticeStage
 }
 
 export interface ExercisesMatching {
   left: string
   right: string
   explanation?: string
+  stage?: PracticeStage
+}
+
+export interface ExercisesTrueFalse {
+  statement: string
+  isTrue: boolean
+  justification: string
+  sourcePassage?: string
+  stage?: PracticeStage
+}
+
+export interface ExercisesSentenceOrdering {
+  fragments: string[]
+  correctOrder: number[]
+  hint?: string
+  explanation?: string
+  stage?: PracticeStage
+}
+
+export interface ExercisesSentenceTransformation {
+  prompt: string
+  original: string
+  expected: string
+  alternatives?: string[]
+  explanation?: string
+  stage?: PracticeStage
 }
 
 export interface ExercisesContent {
   fillInBlank: ExercisesFillInBlank[]
   multipleChoice: ExercisesMultipleChoice[]
   matching: ExercisesMatching[]
+  trueFalse?: ExercisesTrueFalse[]
+  sentenceOrdering?: ExercisesSentenceOrdering[]
+  sentenceTransformation?: ExercisesSentenceTransformation[]
 }
 
 export interface ConversationScenario {
@@ -97,6 +132,36 @@ export interface HomeworkContent {
   tasks: HomeworkTask[]
 }
 
+export interface GuidedWritingWordCount {
+  min: number
+  max: number
+}
+
+export interface GuidedWritingContent {
+  situation: string
+  requiredStructures: string[]
+  wordCount: GuidedWritingWordCount
+  evaluationCriteria: string[]
+  modelAnswer: string
+  tips?: string[]
+}
+
+export type ErrorCorrectionMode = 'identify-only' | 'identify-and-correct'
+export type ErrorCorrectionErrorType = 'grammar' | 'vocabulary' | 'spelling' | 'verbForm' | 'agreement' | 'wordOrder'
+
+export interface ErrorCorrectionItem {
+  sentence: string
+  errorSpan: [number, number]
+  correction: string
+  errorType: ErrorCorrectionErrorType
+  explanation?: string
+}
+
+export interface ErrorCorrectionContent {
+  mode: ErrorCorrectionMode
+  items: ErrorCorrectionItem[]
+}
+
 export interface LessonPlanSections {
   warmUp: string
   presentation: string
@@ -137,6 +202,41 @@ export function isReadingContent(v: unknown): v is ReadingContent {
 
 export function isHomeworkContent(v: unknown): v is HomeworkContent {
   return typeof v === 'object' && v !== null && 'tasks' in v && Array.isArray((v as HomeworkContent).tasks)
+}
+
+export function isGuidedWritingContent(v: unknown): v is GuidedWritingContent {
+  if (typeof v !== 'object' || v === null) return false
+  const c = v as Record<string, unknown>
+  return (
+    typeof c.situation === 'string' &&
+    Array.isArray(c.requiredStructures) &&
+    typeof c.wordCount === 'object' && c.wordCount !== null &&
+    Array.isArray(c.evaluationCriteria) &&
+    typeof c.modelAnswer === 'string'
+  )
+}
+
+const VALID_EC_ERROR_TYPES = new Set(['grammar', 'vocabulary', 'spelling', 'verbForm', 'agreement', 'wordOrder'])
+const VALID_EC_MODES = new Set(['identify-only', 'identify-and-correct'])
+
+export function isErrorCorrectionContent(v: unknown): v is ErrorCorrectionContent {
+  if (typeof v !== 'object' || v === null) return false
+  const c = v as Record<string, unknown>
+  return (
+    VALID_EC_MODES.has(c.mode as string) &&
+    Array.isArray(c.items) &&
+    c.items.every((item: unknown) => {
+      if (typeof item !== 'object' || item === null) return false
+      const it = item as Record<string, unknown>
+      return (
+        typeof it.sentence === 'string' &&
+        Array.isArray(it.errorSpan) && it.errorSpan.length === 2 &&
+        typeof it.errorSpan[0] === 'number' && typeof it.errorSpan[1] === 'number' &&
+        typeof it.correction === 'string' &&
+        VALID_EC_ERROR_TYPES.has(it.errorType as string)
+      )
+    })
+  )
 }
 
 export function isLessonPlanContent(v: unknown): v is LessonPlanContent {
@@ -237,8 +337,19 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
   const hasRecognizedField =
     Array.isArray(obj.fillInBlank) || Array.isArray(obj.fill_in_blank) ||
     Array.isArray(obj.multipleChoice) || Array.isArray(obj.multiple_choice) ||
-    Array.isArray(obj.matching)
+    Array.isArray(obj.matching) ||
+    Array.isArray(obj.trueFalse) || Array.isArray(obj.true_false) ||
+    Array.isArray(obj.sentenceOrdering) || Array.isArray(obj.sentence_ordering) ||
+    Array.isArray(obj.sentenceTransformation) || Array.isArray(obj.sentence_transformation)
   if (!hasRecognizedField) return null
+
+  const rawSo = Array.isArray(obj.sentenceOrdering) ? obj.sentenceOrdering
+    : Array.isArray(obj.sentence_ordering) ? obj.sentence_ordering
+    : undefined
+
+  const rawSt = Array.isArray(obj.sentenceTransformation) ? obj.sentenceTransformation
+    : Array.isArray(obj.sentence_transformation) ? obj.sentence_transformation
+    : undefined
 
   const candidate = {
     fillInBlank: Array.isArray(obj.fillInBlank) ? obj.fillInBlank
@@ -248,6 +359,25 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
       : Array.isArray(obj.multiple_choice) ? obj.multiple_choice
       : [],
     matching: Array.isArray(obj.matching) ? obj.matching : [],
+    trueFalse: Array.isArray(obj.trueFalse) ? obj.trueFalse
+      : Array.isArray(obj.true_false) ? obj.true_false
+      : [],
+    sentenceOrdering: rawSo
+      ? rawSo.filter((item: unknown): item is ExercisesSentenceOrdering => {
+          if (typeof item !== 'object' || item === null) return false
+          const it = item as Record<string, unknown>
+          return Array.isArray(it.fragments) && Array.isArray(it.correctOrder) &&
+            it.fragments.length === it.correctOrder.length
+        })
+      : undefined,
+    sentenceTransformation: rawSt
+      ? rawSt.filter((item: unknown): item is ExercisesSentenceTransformation => {
+          if (typeof item !== 'object' || item === null) return false
+          const it = item as Record<string, unknown>
+          return typeof it.prompt === 'string' && typeof it.original === 'string' &&
+            typeof it.expected === 'string'
+        })
+      : undefined,
   }
   if (isExercisesContent(candidate)) return candidate
   return null
@@ -322,4 +452,68 @@ export function coerceHomeworkContent(v: unknown): HomeworkContent | null {
   }
 
   return null
+}
+
+export function coerceGuidedWritingContent(v: unknown): GuidedWritingContent | null {
+  if (isGuidedWritingContent(v)) return v
+  if (typeof v !== 'object' || v === null) return null
+  const obj = v as Record<string, unknown>
+
+  // Unwrap extra wrapper key
+  const unwrapped = unwrapWrapper(obj, isGuidedWritingContent)
+  if (unwrapped) return unwrapped
+
+  // Only attempt field normalisation if at least one recognized key is present
+  const hasRecognizedField =
+    obj.situation != null || obj.requiredStructures != null || obj.modelAnswer != null
+  if (!hasRecognizedField) return null
+
+  const rawWc = typeof obj.wordCount === 'object' && obj.wordCount !== null
+    ? obj.wordCount as Record<string, unknown>
+    : {}
+
+  const candidate: GuidedWritingContent = {
+    situation: typeof obj.situation === 'string' ? obj.situation : '',
+    requiredStructures: Array.isArray(obj.requiredStructures) ? obj.requiredStructures as string[] : [],
+    wordCount: {
+      min: typeof rawWc.min === 'number' ? rawWc.min : 50,
+      max: typeof rawWc.max === 'number' ? rawWc.max : 100,
+    },
+    evaluationCriteria: Array.isArray(obj.evaluationCriteria) ? obj.evaluationCriteria as string[] : [],
+    modelAnswer: typeof obj.modelAnswer === 'string' ? obj.modelAnswer : '',
+    tips: Array.isArray(obj.tips) ? obj.tips as string[] : undefined,
+  }
+  return isGuidedWritingContent(candidate) ? candidate : null
+}
+
+export function coerceErrorCorrectionContent(v: unknown): ErrorCorrectionContent | null {
+  if (isErrorCorrectionContent(v)) return v
+  if (typeof v !== 'object' || v === null) return null
+  const obj = v as Record<string, unknown>
+
+  // Unwrap extra wrapper key
+  const unwrapped = unwrapWrapper(obj, isErrorCorrectionContent)
+  if (unwrapped) return unwrapped
+
+  // Only attempt normalization if recognized keys are present
+  if (!Array.isArray(obj.items) && !Array.isArray(obj.errors)) return null
+
+  const rawItems = Array.isArray(obj.items) ? obj.items : (obj.errors as unknown[])
+  const items = rawItems
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .map((item) => ({
+      sentence: typeof item.sentence === 'string' ? item.sentence : '',
+      errorSpan: Array.isArray(item.errorSpan) && item.errorSpan.length >= 2
+        ? [Number(item.errorSpan[0]), Number(item.errorSpan[1])] as [number, number]
+        : [0, 0] as [number, number],
+      correction: typeof item.correction === 'string' ? item.correction : '',
+      errorType: (VALID_EC_ERROR_TYPES.has(String(item.errorType)) ? item.errorType : 'grammar') as ErrorCorrectionErrorType,
+      explanation: typeof item.explanation === 'string' ? item.explanation : undefined,
+    }))
+
+  const rawMode = String(obj.mode ?? '')
+  const mode: ErrorCorrectionMode = VALID_EC_MODES.has(rawMode) ? (rawMode as ErrorCorrectionMode) : 'identify-and-correct'
+
+  const candidate: ErrorCorrectionContent = { mode, items }
+  return isErrorCorrectionContent(candidate) ? candidate : null
 }

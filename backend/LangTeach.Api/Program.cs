@@ -122,6 +122,7 @@ builder.Services.AddHttpClient("Claude", (sp, client) =>
 builder.Services.AddScoped<IClaudeClient, ClaudeApiClient>();
 builder.Services.AddSingleton<ISectionProfileService, SectionProfileService>();
 builder.Services.AddSingleton<IPedagogyConfigService, PedagogyConfigService>();
+builder.Services.AddSingleton<IContentSchemaService, ContentSchemaService>();
 builder.Services.AddScoped<IPromptService, PromptService>();
 
 builder.Services.AddOptions<GenerationLimitsOptions>()
@@ -172,7 +173,8 @@ using (var scope = app.Services.CreateScope())
         startupLogger.LogInformation("Applying pending EF migrations...");
         await db.Database.MigrateAsync();
         startupLogger.LogInformation("Migrations applied successfully.");
-        await SeedData.SeedAsync(db, startupLogger);
+        var pedagogyConfig = app.Services.GetRequiredService<IPedagogyConfigService>();
+        await SeedData.SeedAsync(db, pedagogyConfig, startupLogger);
     }
 
     var blobService = scope.ServiceProvider.GetService<BlobStorageService>();

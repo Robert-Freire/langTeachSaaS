@@ -6,6 +6,20 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-03-28 during Student-Aware Curriculum sprint close (round 2). 9 entries processed: 4 batched into #347 (pedagogy data consistency), 2 into #349 (UX polish), 3 deleted (redundant tests nit, harmless prompt duplication, undocumented fallback comment).*
 
+## PR task-t272-sentence-transformation (2026-03-31) — #272 sentence transformation format
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `e2e/tests/sentence-transformation-type.spec.ts` | Two of four e2e tests (correct answer, alternative answer) omit `score-summary` assertion, diverging from `sentence-ordering-type.spec.ts` pattern. Low risk. |
+| Major | `frontend/src/types/contentTypes.ts` coerceExercisesContent | Early return at line 328 (`if (isExercisesContent(v)) return v`) bypasses item filtering for `sentenceTransformation` (and `sentenceOrdering`) when base arrays are already valid. Malformed `alternatives` values could pass through un-sanitized. Pre-existing pattern, not introduced by this PR. Affects all optional sub-formats. Fix in a coercion hardening pass. |
+
+## PR task-t269-sentence-ordering (2026-03-31) — #269 sentence ordering format
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `frontend/src/types/contentTypes.ts` coerceExercisesContent | sentenceOrdering items are filtered with shape validation during coercion, but fillInBlank/multipleChoice/matching items are not. Convention inconsistency only; low risk since AI rarely produces malformed exercise items beyond the sentenceOrdering case. Align in a future coercion hardening pass. |
+| Minor | `frontend/src/components/lesson/renderers/ExercisesRenderer.tsx` Student | `available` filtering uses `chosen.includes(idx)` (O(n) per item). Fine for typical 4-8 fragment arrays; could use a Set for cleaner code if fragment counts grow. |
+
 ## PR #351 (2026-03-28) — #351 additive section guidance model
 
 | Severity | File | Note |

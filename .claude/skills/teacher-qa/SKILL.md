@@ -1,6 +1,6 @@
 ---
 name: teacher-qa
-description: "Run the Teacher QA agent against the sprint branch. Evaluates AI-generated lesson content for pedagogical quality using real Auth0 and real Claude API. Args: full | ana-a1 | marco-b1 | carmen | ana-exam | sprint"
+description: "Run the Teacher QA agent against the sprint branch. Evaluates AI-generated lesson content for pedagogical quality using real Auth0 and real Claude API. Args: full | ana-a1 | marco-b1 | carmen | ana-exam | sprint | sophie | ricardo | nadia | hans"
 model: claude-opus-4-6
 ---
 
@@ -53,12 +53,16 @@ Steps:
 
 ## Argument Parsing
 
-- **No args / `full`**: run all 5 personas (Ana A1.1, Marco B1.1, Carmen B2.1, Ana Exam Prep, Sprint Reviewer)
+- **No args / `full`**: run all 9 personas (Ana A1.1, Marco B1.1, Carmen B2.1, Ana Exam Prep, Sprint Reviewer, Sophie A2.2, Ricardo C1.1, Nadia B2.1, Hans A1.2)
 - **`ana-a1`**: run only the Ana A1.1 persona (Conversation, English L1)
 - **`marco-b1`**: run only the Marco persona (B1.1, Grammar, Italian L1)
 - **`carmen`**: run only the Carmen persona (B2.1, Reading, English L1)
 - **`ana-exam`**: run only the Ana Exam Prep persona (B2.1, Exam Prep, English L1, DELE focus)
 - **`sprint`**: run the Sprint Reviewer persona only (dynamic scenario from sprint issues)
+- **`sophie`**: run only the Sophie persona (A2.2, Conversation, French L1)
+- **`ricardo`**: run only the Ricardo persona (C1.1, Grammar, Portuguese L1)
+- **`nadia`**: run only the Nadia persona (B2.1, Conversation, Arabic L1)
+- **`hans`**: run only the Hans persona (A1.2, Grammar, German L1)
 
 ---
 
@@ -123,6 +127,26 @@ cd .claude/skills/teacher-qa/playwright && QA_BRANCH=$(git rev-parse --abbrev-re
 cd .claude/skills/teacher-qa/playwright && QA_BRANCH=$(git rev-parse --abbrev-ref HEAD) npx playwright test tests/ana-exam-b2.spec.ts --config playwright.config.ts
 ```
 
+**Sophie A2.2:**
+```bash
+cd .claude/skills/teacher-qa/playwright && QA_BRANCH=$(git rev-parse --abbrev-ref HEAD) npx playwright test tests/sophie-a2.spec.ts --config playwright.config.ts
+```
+
+**Ricardo C1.1:**
+```bash
+cd .claude/skills/teacher-qa/playwright && QA_BRANCH=$(git rev-parse --abbrev-ref HEAD) npx playwright test tests/ricardo-c1.spec.ts --config playwright.config.ts
+```
+
+**Nadia B2.1:**
+```bash
+cd .claude/skills/teacher-qa/playwright && QA_BRANCH=$(git rev-parse --abbrev-ref HEAD) npx playwright test tests/nadia-b2.spec.ts --config playwright.config.ts
+```
+
+**Hans A1.2:**
+```bash
+cd .claude/skills/teacher-qa/playwright && QA_BRANCH=$(git rev-parse --abbrev-ref HEAD) npx playwright test tests/hans-a1.spec.ts --config playwright.config.ts
+```
+
 **Sprint Reviewer (run this before other specs when arg is `sprint` or `full`):**
 
 First, fetch the sprint issues. Never hardcode the milestone name — query first:
@@ -174,9 +198,12 @@ ls -t .claude/skills/teacher-qa/output/ | head -5
 Read `lesson-content.json`, `run-metadata.json`, and `prompt-logs.txt` from the output directory.
 
 Also load the relevant curriculum JSON for CEFR alignment:
-- A1.1 persona: read `data/curricula/iberia/A1.1.json`
-- B1.1 persona: read `data/curricula/iberia/B1.1.json`
-- B2.1 persona (Carmen, Ana Exam): read `data/curricula/iberia/B2.1.json`
+- A1.1 persona (Ana): read `data/curricula/iberia/A1.1.json`
+- A1.2 persona (Hans): read `data/curricula/iberia/A1.2.json`
+- A2.2 persona (Sophie): read `data/curricula/iberia/A2.2.json`
+- B1.1 persona (Marco): read `data/curricula/iberia/B1.1.json`
+- B2.1 persona (Carmen, Ana Exam, Nadia): read `data/curricula/iberia/B2.1.json`
+- C1.1 persona (Ricardo): read `data/curricula/iberia/C1.1.json`
 - Sprint Reviewer: read the curriculum for the level used (B1.1 by default)
 
 ### Step 5: Evaluate Against Rubric
@@ -233,6 +260,38 @@ docker compose -f docker-compose.qa.yml --env-file .env.qa down -v
 - **Lesson**: Exam Prep template, topic "DELE B2 reading comprehension practice"
 - **Curriculum scope (B2.1)**: DELE B2 format — reading a 400-600 word text, answering multiple choice and short answer, time awareness. Note: the app uses granular B2.1, not flat "B2", so evaluate as B2.1 level.
 - **Expected**: exam-format exercises (multiple choice, true/false with justification), formal register throughout, timed practice awareness (mention of time limits), no "fun activities" — this is exam prep
+
+### Persona 6: Sophie (A2.2, Conversation, French L1)
+
+- **Teacher**: Sophie — teaches Spanish to French speakers
+- **Student**: [QA] Claire, A2.2, native French, interests: cooking, cinema
+- **Lesson**: Conversation template, topic "describing your neighborhood"
+- **Curriculum scope (A2)**: present and past tense (preterite/imperfect intro), spatial/descriptive vocabulary, open personal questions. French L1 key test: false cognates (querer/croire, mirar/regarder), gender interference from French article system.
+- **Expected**: A2-appropriate vocabulary, short natural dialogues, medium scaffolding, no B1+ structures
+
+### Persona 7: Ricardo (C1.1, Grammar, Portuguese L1)
+
+- **Teacher**: Ricardo — teaches Spanish to Portuguese speakers
+- **Student**: [QA] Paulo, C1.1, native Portuguese, interests: economics, travel, weakness: false cognates (exquisito, polvo, embarazada)
+- **Lesson**: Grammar Focus template, topic "subjunctive in concessive and conditional clauses"
+- **Curriculum scope (C1)**: complex subordination, collocations, pragmatic functions, no scaffolding, student-led. Portuguese L1 key test: verb form interference (pretender/asistir), near-identical vocabulary masking subtle differences.
+- **Expected**: advanced grammar explanation with varied examples, minimal scaffolding, C1-appropriate metalanguage, collocations and register notes
+
+### Persona 8: Nadia (B2.1, Conversation, Arabic L1)
+
+- **Teacher**: Nadia — teaches Spanish to Arabic speakers
+- **Student**: [QA] Youssef, B2.1, native Arabic, interests: architecture, history, weakness: article gender and written accent marks
+- **Lesson**: Conversation template, topic "debating urban development and heritage conservation"
+- **Curriculum scope (B2)**: complex discussion, opinion expression, formal register, subjunctive in subordinate clauses. Arabic L1 key test: largest phonological and morphological distance from Spanish, article system absent in Arabic.
+- **Expected**: debate-oriented tasks, B2-depth discussion prompts, formal register, gender/accent reminders where natural
+
+### Persona 9: Hans (A1.2, Grammar, German L1)
+
+- **Teacher**: Hans — teaches Spanish to German speakers
+- **Student**: [QA] Lena, A1.2, native German, interests: music, sports, weakness: article gender (der/die/das vs el/la)
+- **Lesson**: Grammar Focus template, topic "articles and gender in everyday nouns"
+- **Curriculum scope (A1)**: definite/indefinite articles, basic noun gender, everyday vocabulary. German L1 key test: three-gender system (der/die/das) vs two-gender Spanish system (el/la); word order interference (verb-second in German vs SVO in Spanish).
+- **Expected**: clear rule explanation contrasting German and Spanish gender systems, controlled exercises, A1 vocabulary only
 
 ### Persona 5: Sprint Reviewer (dynamic)
 

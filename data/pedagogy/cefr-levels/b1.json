@@ -104,5 +104,14 @@
   "instructionLanguage": "Entirely in L2. Grammatical metalanguage may be used freely in L2.",
   "metalanguageLevel": "Full grammatical metalanguage in L2: subjuntivo, condicional, oracion subordinada, pluscuamperfecto",
   "errorCorrection": "Preferably deferred. Note errors during production, correct at end. Encourage self-correction. Distinguish errors of competence (does not know the rule) from errors of performance (knows the rule but fails in spontaneous production).",
-  "scaffoldingDefault": "medium"
+  "scaffoldingDefault": "medium",
+  "guidedWriting": {
+    "wordCountMin": 80,
+    "wordCountMax": 130,
+    "sentenceCountMin": 6,
+    "sentenceCountMax": 10,
+    "structures": "compound and complex sentences, causal and temporal connectors",
+    "complexity": "Familiar topics with some detail. May require opinion.",
+    "situationGuidance": "Semi-formal contexts (letters, messages, brief descriptions)"
+  }
 }

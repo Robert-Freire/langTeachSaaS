@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["situation", "requiredStructures", "wordCount", "evaluationCriteria", "modelAnswer"],
+  "additionalProperties": false,
+  "properties": {
+    "situation": {
+      "type": "string",
+      "description": "The writing prompt or scenario the student must respond to"
+    },
+    "requiredStructures": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "Grammar structures or vocabulary items the student must use in their writing"
+    },
+    "wordCount": {
+      "type": "object",
+      "required": ["min", "max"],
+      "additionalProperties": false,
+      "properties": {
+        "min": { "type": "integer", "minimum": 1 },
+        "max": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "evaluationCriteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "Criteria the teacher uses to evaluate the student's writing"
+    },
+    "modelAnswer": {
+      "type": "string",
+      "description": "A sample response at the expected level that the teacher reveals after the student submits"
+    },
+    "tips": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional hints to help the student get started"
+    }
+  }
+}

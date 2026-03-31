@@ -21,6 +21,7 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly StyleSubstitution[] _substitutions;
     // Outer key: scope value ("brief"); inner key: content type kebab ("conversation"); value: constraint text
     private readonly Dictionary<string, Dictionary<string, string>> _scopeConstraints;
+    private readonly PracticeStagesFile _practiceStages;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -96,6 +97,17 @@ public class PedagogyConfigService : IPedagogyConfigService
                 kv => kv.Key,
                 kv => new Dictionary<string, string>(kv.Value, StringComparer.OrdinalIgnoreCase),
                 StringComparer.OrdinalIgnoreCase);
+
+        // Load practice stages — rebuild CefrStageRequirements with case-insensitive comparer
+        var practiceStagesRaw = LoadJson<PracticeStagesFile>(assembly, "LangTeach.Api.Pedagogy.practice-stages.json");
+        _practiceStages = practiceStagesRaw with
+        {
+            CefrStageRequirements = new Dictionary<string, CefrStageRequirement>(
+                practiceStagesRaw.CefrStageRequirements,
+                StringComparer.OrdinalIgnoreCase)
+        };
+        _log.LogInformation("PedagogyConfigService: loaded {StageCount} practice stages across {LevelCount} CEFR levels",
+            _practiceStages.Stages.Length, _practiceStages.CefrStageRequirements.Count);
 
         // Validate cross-layer references — fail fast on dangling IDs
         ValidateCrossLayerRefs();
@@ -188,6 +200,22 @@ public class PedagogyConfigService : IPedagogyConfigService
         if (!_cefrRules.TryGetValue(normalLevel, out var rule))
             return new GrammarScope([], []);
         return new GrammarScope(rule.GrammarInScope, rule.GrammarOutOfScope);
+    }
+
+    public GuidedWritingGuidance GetGuidedWritingGuidance(string level)
+    {
+        var normalLevel = NormalizeLevel(level);
+        if (_cefrRules.TryGetValue(normalLevel, out var rule) && rule.GuidedWriting is { } gw)
+            return new GuidedWritingGuidance(
+                gw.WordCountMin, gw.WordCountMax,
+                gw.SentenceCountMin, gw.SentenceCountMax,
+                gw.Structures, gw.Complexity, gw.SituationGuidance);
+
+        // Safe defaults for levels without config
+        return new GuidedWritingGuidance(80, 130, 6, 10,
+            "compound and complex sentences",
+            "Clear, structured writing appropriate to the level.",
+            "Relevant, contextual topics");
     }
 
     public VocabularyGuidance GetVocabularyGuidance(string level)
@@ -295,6 +323,41 @@ public class PedagogyConfigService : IPedagogyConfigService
         _log.LogDebug("PedagogyConfigService: no scope constraint for ({Scope}, {ContentType})", scope, contentType);
         return null;
     }
+
+    public string? GetPreferredContentType(string section, string? templateName)
+    {
+        if (string.IsNullOrEmpty(templateName))
+            return null;
+
+        var tmplEntry = GetTemplateOverrideByName(templateName);
+        if (tmplEntry is null)
+            return null;
+
+        var normalSection = NormalizeSection(section);
+        return tmplEntry.Sections.TryGetValue(normalSection, out var secOverride)
+            ? secOverride.PreferredContentType
+            : null;
+    }
+
+    public IReadOnlyList<string>? GetRequiredSectionNames(string templateName)
+    {
+        var tmplEntry = GetTemplateOverrideByName(templateName);
+        if (tmplEntry is null)
+            return null;
+
+        return SectionKeys.CanonicalOrder
+            .Where(s => tmplEntry.Sections.TryGetValue(s, out var sec) && sec.Required)
+            .ToList();
+    }
+
+    public CefrStageRequirement? GetPracticeStageRequirements(string level)
+    {
+        var normalLevel = NormalizeLevel(level);
+        return _practiceStages.CefrStageRequirements.TryGetValue(normalLevel, out var req) ? req : null;
+    }
+
+    public IReadOnlyList<PracticeStageDefinition> GetPracticeStageDefinitions()
+        => _practiceStages.Stages;
 
     // --- Private helpers ---
 
@@ -417,13 +480,62 @@ public class PedagogyConfigService : IPedagogyConfigService
                 errors.Add($"Section profile contains unknown scope value '{scopeValue}' (not in scope-constraints.json and not 'full')");
         }
 
-        // Validate template override scope values
+        // Validate template override scope values and preferredContentType
         foreach (var (tId, tmpl) in _templates)
         {
             foreach (var (secName, sec) in tmpl.Sections)
             {
                 if (sec.Scope is not null && sec.Scope != "full" && !knownScopes.Contains(sec.Scope))
                     errors.Add($"Template '{tId}' section '{secName}': unknown scope value '{sec.Scope}'");
+
+                if (sec.PreferredContentType is not null)
+                {
+                    // Must be a known content type
+                    if (!ContentBlockTypeExtensions.TryFromKebabCase(sec.PreferredContentType, out _))
+                        errors.Add($"Template '{tId}' section '{secName}': preferredContentType '{sec.PreferredContentType}' is not a known content type");
+                    else
+                    {
+                        // Must appear in section profile contentTypes for every applicable CEFR level.
+                        // Use the template's levelVariations keys as the applicable set when non-empty;
+                        // otherwise validate against all known levels.
+                        var applicableLevels = tmpl.LevelVariations.Count > 0
+                            ? tmpl.LevelVariations.Keys.ToArray()
+                            : new[] { "A1", "A2", "B1", "B2", "C1", "C2" };
+                        var normalSection = NormalizeSection(secName);
+                        foreach (var lvl in applicableLevels)
+                        {
+                            var allowed = _sectionProfileService.GetAllowedContentTypes(normalSection, lvl);
+                            if (allowed.Length > 0 && !allowed.Contains(sec.PreferredContentType, StringComparer.OrdinalIgnoreCase))
+                                errors.Add($"Template '{tId}' section '{secName}': preferredContentType '{sec.PreferredContentType}' not in section profile contentTypes for level {lvl} (allowed: {string.Join(", ", allowed)})");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Validate practice stages: stage IDs in cefrStageRequirements must exist in stages array,
+        // and every active stage must have an itemsPerStage entry
+        var stageIds = _practiceStages.Stages.Select(s => s.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var (lvl, req) in _practiceStages.CefrStageRequirements)
+        {
+            foreach (var stageId in req.Stages.Concat(req.OptionalStages ?? []))
+            {
+                if (!stageIds.Contains(stageId))
+                    errors.Add($"practice-stages.json cefrStageRequirements[{lvl}]: unknown stage id '{stageId}'");
+            }
+            foreach (var stageId in req.Stages)
+            {
+                if (!req.ItemsPerStage.ContainsKey(stageId))
+                    errors.Add($"practice-stages.json cefrStageRequirements[{lvl}]: active stage '{stageId}' has no itemsPerStage entry");
+            }
+        }
+        // Validate stage allowedExerciseCategories reference catalog IDs
+        foreach (var stage in _practiceStages.Stages)
+        {
+            foreach (var id in stage.AllowedExerciseCategories)
+            {
+                if (!_catalogIds.Contains(id))
+                    errors.Add($"practice-stages.json stage '{stage.Id}' allowedExerciseCategories: unknown ID '{id}'");
             }
         }
 

@@ -25,6 +25,12 @@ public interface IPedagogyConfigService
     GrammarScope GetGrammarScope(string level);
 
     /// <summary>
+    /// Returns guided writing parameters (word counts, complexity, structure expectations) for the CEFR level.
+    /// Falls back to safe defaults when the level config does not define guidedWriting.
+    /// </summary>
+    GuidedWritingGuidance GetGuidedWritingGuidance(string level);
+
+    /// <summary>
     /// Returns vocabulary guidance for the level.
     /// Numeric (ProductiveMin/Max, ReceptiveMin/Max) for A1-B2.
     /// String approach (Approach) for C1-C2.
@@ -91,4 +97,29 @@ public interface IPedagogyConfigService
     /// <paramref name="contentType"/> must be a kebab-case ContentBlockType value (e.g. "conversation", "free-text").
     /// </summary>
     string? GetScopeConstraint(string section, string level, string? templateName, string contentType);
+
+    /// <summary>
+    /// Returns the preferred content type for a template section, or null if not specified.
+    /// <paramref name="templateName"/> is the display name (e.g. "Exam Prep"), resolved internally.
+    /// </summary>
+    string? GetPreferredContentType(string section, string? templateName);
+
+    /// <summary>
+    /// Returns section names (e.g. "warmUp", "production") that have required:true
+    /// for the template identified by display name (case-insensitive).
+    /// Order: warmUp, presentation, practice, production, wrapUp.
+    /// Returns null if the template name is not found.
+    /// </summary>
+    IReadOnlyList<string>? GetRequiredSectionNames(string templateName);
+
+    /// <summary>
+    /// Returns practice stage requirements for the CEFR level (active stages, item counts per stage).
+    /// Returns null if the level is not found in the config.
+    /// </summary>
+    CefrStageRequirement? GetPracticeStageRequirements(string level);
+
+    /// <summary>
+    /// Returns all practice stage definitions (id, names, descriptions, allowed exercise categories).
+    /// </summary>
+    IReadOnlyList<PracticeStageDefinition> GetPracticeStageDefinitions();
 }

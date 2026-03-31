@@ -146,7 +146,6 @@ public class SectionProfileServiceTests
     [InlineData("WrapUp", "grammar", "B1")]
     [InlineData("WrapUp", "free-text", "B1")]
     [InlineData("Presentation", "exercises", "B1")]
-    [InlineData("Production", "exercises", "B1")]
     [InlineData("Production", "grammar", "B1")]
     [InlineData("Production", "vocabulary", "B1")]
     public void IsAllowed_ReturnsFalse_ForDisallowedCombinations(string sectionType, string contentType, string cefrLevel)
@@ -164,6 +163,8 @@ public class SectionProfileServiceTests
     [InlineData("Presentation", "reading", "B1")]
     [InlineData("Presentation", "conversation", "B1")]
     [InlineData("Production", "conversation", "B1")]
+    [InlineData("Production", "exercises", "B1")]
+    [InlineData("Production", "exercises", "B2")]
     [InlineData("Production", "reading", "B2")]
     public void IsAllowed_ReturnsTrue_ForAllowedCombinations(string sectionType, string contentType, string cefrLevel)
     {
@@ -482,5 +483,37 @@ public class SectionProfileServiceTests
     public void GetInteractionPattern_UnknownLevel_ReturnsEmptyString()
     {
         _sut.GetInteractionPattern("warmup", "Z9").Should().BeEmpty();
+    }
+
+    // --- GetLevelSpecificNotes ---
+
+    [Fact]
+    public void GetLevelSpecificNotes_Practice_B2_ReturnsGR04NoteWithLengthConstraint()
+    {
+        var notes = _sut.GetLevelSpecificNotes("practice", "B2");
+        var gr04 = notes.FirstOrDefault(n => n.ExerciseTypeId == "GR-04");
+        gr04.Should().NotBeNull(because: "practice B2 should have a GR-04 note");
+        gr04!.Note.Should().Contain("2 sentences", because: "the note should constrain explanation length");
+    }
+
+    [Fact]
+    public void GetLevelSpecificNotes_Practice_A1_ReturnsGR02MaxOptionsNote()
+    {
+        var notes = _sut.GetLevelSpecificNotes("practice", "A1");
+        var gr02 = notes.FirstOrDefault(n => n.ExerciseTypeId == "GR-02");
+        gr02.Should().NotBeNull(because: "practice A1 should have a GR-02 note constraining MC option count");
+        gr02!.Note.Should().Contain("3 options", because: "the note should enforce a maximum of 3 MC options at A1");
+    }
+
+    [Fact]
+    public void GetLevelSpecificNotes_UnknownSection_ReturnsEmpty()
+    {
+        _sut.GetLevelSpecificNotes("nosuchsection", "B2").Should().BeEmpty();
+    }
+
+    [Fact]
+    public void GetLevelSpecificNotes_UnknownLevel_ReturnsEmpty()
+    {
+        _sut.GetLevelSpecificNotes("practice", "Z9").Should().BeEmpty();
     }
 }

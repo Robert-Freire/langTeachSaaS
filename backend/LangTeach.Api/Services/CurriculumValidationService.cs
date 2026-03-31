@@ -33,13 +33,12 @@ public class CurriculumValidationService : ICurriculumValidationService
             return [];
 
         var grammarList = string.Join("\n", allowedGrammar.Select(g => $"- {g}"));
-        // Strip newlines from grammar focus values to prevent prompt injection via teacher-edited content.
         var entriesList = string.Join("\n", entriesWithGrammar.Select(e =>
-            $"Session {e.OrderIndex}: {e.GrammarFocus?.Replace("\r", "").Replace("\n", " ")}"));
+            $"Session {e.OrderIndex}: {InputSanitizer.Sanitize(e.GrammarFocus)}"));
 
         const string system = "You are a CEFR-level grammar expert. Evaluate whether grammar structures in a generated curriculum match the target level.";
         var jsonExample = """[ { "sessionIndex": <number>, "grammarFocus": "<exact string>", "flagReason": "<one sentence>", "suggestedLevel": "<CEFR level or null>" } ]""";
-        var user = $"Target level: {targetLevel}\n" +
+        var user = $"Target level: {InputSanitizer.Sanitize(targetLevel)}\n" +
                    $"Grammar structures expected at this level (or below):\n{grammarList}\n\n" +
                    $"Generated curriculum entries:\n{entriesList}\n\n" +
                    $"Respond ONLY with a raw JSON array (no markdown, no code fences). " +

@@ -2,7 +2,7 @@
   "sectionType": "production",
   "levels": {
     "A1": {
-      "contentTypes": ["conversation"],
+      "contentTypes": ["conversation", "guided-writing"],
       "guidance": "Production MUST be a guided writing task with sentence frames provided. Ask the student to write 3-5 sentences using new vocabulary or structures from this lesson. Guided writing is appropriate and achievable even at A1. Alternatively, a guided dialogue (EO-01) with fully scripted turns and 2 pre-given response options per turn is appropriate when the session focus is oral production.",
       "duration": { "min": 5, "max": 8 },
       "competencies": ["writing", "speaking"],
@@ -31,7 +31,7 @@
       "minExerciseVariety": 1
     },
     "A2": {
-      "contentTypes": ["conversation"],
+      "contentTypes": ["conversation", "guided-writing"],
       "guidance": "Guided writing with a model paragraph provided. Student writes 4-6 sentences using the target grammar and vocabulary. A short opinion sentence or simple description. Scaffolding phrase starters optional. A short guided dialogue (EO-01 or EO-08, 2-3 turns) is a valid alternative when the session focus is oral production.",
       "duration": { "min": 5, "max": 8 },
       "competencies": ["writing", "speaking"],
@@ -59,7 +59,7 @@
       "minExerciseVariety": 1
     },
     "B1": {
-      "contentTypes": ["conversation"],
+      "contentTypes": ["conversation", "exercises", "guided-writing"],
       "guidance": "Production must be a communicative task: an opinion paragraph, a short role-play scenario description, or a problem-solving task where the student uses new language in a meaningful context. 80-120 words.",
       "duration": { "min": 8, "max": 12 },
       "competencies": ["writing", "speaking"],
@@ -87,7 +87,7 @@
       "minExerciseVariety": 1
     },
     "B2": {
-      "contentTypes": ["conversation", "reading"],
+      "contentTypes": ["conversation", "reading", "exercises", "guided-writing"],
       "guidance": "Structured argument, formal email, or extended communicative task using the target register. 150-200 words. Authentic stimulus (text or question) may be used as springboard.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["writing", "speaking"],
@@ -115,7 +115,7 @@
       "minExerciseVariety": 1
     },
     "C1": {
-      "contentTypes": ["conversation", "reading"],
+      "contentTypes": ["conversation", "reading", "exercises", "guided-writing"],
       "guidance": "open-ended task requiring autonomous extended language use: a structured argument, a creative writing piece, or a task requiring register and pragmatic awareness. 200+ words.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["writing", "speaking"],
@@ -143,7 +143,7 @@
       "minExerciseVariety": 1
     },
     "C2": {
-      "contentTypes": ["conversation", "reading"],
+      "contentTypes": ["conversation", "reading", "exercises", "guided-writing"],
       "guidance": "Essay, debate position, mediation task, or creative writing requiring near-native register control. 200+ words. Student selects appropriate register and genre without prompting.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["writing", "speaking"],
