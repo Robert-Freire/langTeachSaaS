@@ -8,7 +8,7 @@ const validContent: NoticingTaskContent = {
   instruction: 'Find all verbs in the past tense.',
   targets: [
     { form: 'fue', position: [11, 14], grammar: 'GR-08' },
-    { form: 'compro', position: [27, 33], grammar: 'GR-08' },
+    { form: 'compro', position: [28, 34], grammar: 'GR-08' },
   ],
   discoveryQuestions: [
     'How many past tense verbs can you find?',

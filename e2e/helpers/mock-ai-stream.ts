@@ -108,8 +108,8 @@ export const NOTICING_TASK_FIXTURE = {
   instruction: 'Find all the verbs in the past tense (preterito indefinido).',
   targets: [
     { form: 'fue', position: [11, 14], grammar: 'GR-08' },
-    { form: 'compro', position: [27, 33], grammar: 'GR-08' },
-    { form: 'volvio', position: [56, 62], grammar: 'GR-08' },
+    { form: 'compro', position: [28, 34], grammar: 'GR-08' },
+    { form: 'volvio', position: [57, 63], grammar: 'GR-08' },
     { form: 'cocino', position: [73, 79], grammar: 'GR-08' },
   ],
   discoveryQuestions: [
