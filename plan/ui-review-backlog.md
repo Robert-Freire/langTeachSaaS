@@ -8,6 +8,16 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 
 *Previous clearing 2026-03-27: 20 entries deleted, 17 batched into issues #298, #299, #300, #303.*
 
+## PR task-t272-sentence-transformation (2026-03-31) — #272 sentence transformation
+
+| Severity | Finding |
+|----------|---------|
+| Important | [I1] Editor ST table: cell content truncated at ~15-18 chars. 6 columns with long content need text wrapping or column hiding. |
+| Important | [I2] Editor ST table: "Alternatives (comma-sep)" header wraps awkwardly. Shorten to "Alt. Answers" or "Alternatives". |
+| Minor | [M1] Editor ST table: inputs feel cramped; add min-width to cells. |
+| Minor | [M2] Student view: placeholder "Type your answer..." could be more specific ("Write the transformed sentence..."). |
+| Minor | [M4] Editor: no visual separator before ST section heading at bottom of exercises block. |
+
 ## PR task-t269-sentence-ordering (2026-03-31) — #269 sentence ordering
 
 | Severity | Finding |

@@ -73,12 +73,22 @@ export interface ExercisesSentenceOrdering {
   stage?: PracticeStage
 }
 
+export interface ExercisesSentenceTransformation {
+  prompt: string
+  original: string
+  expected: string
+  alternatives?: string[]
+  explanation?: string
+  stage?: PracticeStage
+}
+
 export interface ExercisesContent {
   fillInBlank: ExercisesFillInBlank[]
   multipleChoice: ExercisesMultipleChoice[]
   matching: ExercisesMatching[]
   trueFalse?: ExercisesTrueFalse[]
   sentenceOrdering?: ExercisesSentenceOrdering[]
+  sentenceTransformation?: ExercisesSentenceTransformation[]
 }
 
 export interface ConversationScenario {
@@ -329,11 +339,16 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
     Array.isArray(obj.multipleChoice) || Array.isArray(obj.multiple_choice) ||
     Array.isArray(obj.matching) ||
     Array.isArray(obj.trueFalse) || Array.isArray(obj.true_false) ||
-    Array.isArray(obj.sentenceOrdering) || Array.isArray(obj.sentence_ordering)
+    Array.isArray(obj.sentenceOrdering) || Array.isArray(obj.sentence_ordering) ||
+    Array.isArray(obj.sentenceTransformation) || Array.isArray(obj.sentence_transformation)
   if (!hasRecognizedField) return null
 
   const rawSo = Array.isArray(obj.sentenceOrdering) ? obj.sentenceOrdering
     : Array.isArray(obj.sentence_ordering) ? obj.sentence_ordering
+    : undefined
+
+  const rawSt = Array.isArray(obj.sentenceTransformation) ? obj.sentenceTransformation
+    : Array.isArray(obj.sentence_transformation) ? obj.sentence_transformation
     : undefined
 
   const candidate = {
@@ -353,6 +368,14 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
           const it = item as Record<string, unknown>
           return Array.isArray(it.fragments) && Array.isArray(it.correctOrder) &&
             it.fragments.length === it.correctOrder.length
+        })
+      : undefined,
+    sentenceTransformation: rawSt
+      ? rawSt.filter((item: unknown): item is ExercisesSentenceTransformation => {
+          if (typeof item !== 'object' || item === null) return false
+          const it = item as Record<string, unknown>
+          return typeof it.prompt === 'string' && typeof it.original === 'string' &&
+            typeof it.expected === 'string'
         })
       : undefined,
   }

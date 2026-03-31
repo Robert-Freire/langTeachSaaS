@@ -2015,6 +2015,45 @@ public class PromptServiceTests
             because: "A2 also uses sentence ordering for controlled practice");
     }
 
+    // --- Sentence transformation format ---
+
+    [Fact]
+    public void ExercisesPrompt_IncludesSentenceTransformationInJsonTemplate()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("sentenceTransformation",
+            because: "B1+ exercises should include sentence transformation format");
+        req.UserPrompt.Should().Contain("alternatives",
+            because: "the prompt must specify alternatives for multi-answer support");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_SentenceTransformationGuidanceMentionsB1Plus()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B2" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("B1+",
+            because: "guidance should specify B1+ as the target level range");
+        req.UserPrompt.Should().Contain("DELE",
+            because: "guidance should reference DELE exam relevance");
+    }
+
+    [Fact]
+    public void ExercisesStageGuidance_IncludesSentenceTransformationInFormatList()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("sentenceTransformation",
+            because: "the stage diversity instruction must list sentenceTransformation as a valid format");
+    }
+
     // --- BuildGuidedWritingPrompt ---
 
     [Fact]

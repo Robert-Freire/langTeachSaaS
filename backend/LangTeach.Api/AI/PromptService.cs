@@ -275,7 +275,7 @@ public class PromptService : IPromptService
                 sb.AppendLine($"  Suitable types: {string.Join(", ", def.AllowedExerciseCategories)}");
         }
 
-        sb.AppendLine("IMPORTANT: Each stage MUST use a different exercise format (fillInBlank / multipleChoice / matching / trueFalse / sentenceOrdering). Do not repeat the same format across stages.");
+        sb.AppendLine("IMPORTANT: Each stage MUST use a different exercise format (fillInBlank / multipleChoice / matching / trueFalse / sentenceOrdering / sentenceTransformation). Do not repeat the same format across stages.");
         return sb.ToString().TrimEnd();
     }
 
@@ -492,8 +492,9 @@ public class PromptService : IPromptService
 
         var prompt = $$"""
         Generate practice exercises for the lesson on "{{topic}}". Return JSON using one or more of these formats:
-        {"fillInBlank":[{"sentence":"","answer":"","hint":"","explanation":"","stage":""}],"multipleChoice":[{"question":"","options":[""],"answer":"","explanation":"","stage":""}],"matching":[{"left":"","right":"","explanation":"","stage":""}],"trueFalse":[{"statement":"","isTrue":true,"justification":"","sourcePassage":"","stage":""}],"sentenceOrdering":[{"fragments":[""],"correctOrder":[0],"hint":"","explanation":"","stage":""}]}
+        {"fillInBlank":[{"sentence":"","answer":"","hint":"","explanation":"","stage":""}],"multipleChoice":[{"question":"","options":[""],"answer":"","explanation":"","stage":""}],"matching":[{"left":"","right":"","explanation":"","stage":""}],"trueFalse":[{"statement":"","isTrue":true,"justification":"","sourcePassage":"","stage":""}],"sentenceOrdering":[{"fragments":[""],"correctOrder":[0],"hint":"","explanation":"","stage":""}],"sentenceTransformation":[{"prompt":"","original":"","expected":"","alternatives":[""],"explanation":"","stage":""}]}
         sentenceOrdering: fragments is an array of words or phrases; correctOrder is the array of fragment indices that form the correct sentence (e.g. fragments=["en","vivo","Barcelona","yo"], correctOrder=[3,1,0,2] gives "yo vivo en Barcelona"). Use sentenceOrdering for A1/A2/B1 levels where testing syntax awareness without requiring production is appropriate.
+        sentenceTransformation: prompt is the transformation instruction; original is the source sentence; expected is the primary correct answer; alternatives lists other acceptable answers. Use for B1+ levels for tense changes, voice transformations, reported speech, and register shifts. Maps to DELE "transformaciones gramaticales".
         {{levelGuidance}}
         Include at least 3 items for each format you use. For each exercise, include a concise explanation (2-3 sentences) of why the correct answer is correct, considering the student's level and common L1 interference patterns.
         """;
