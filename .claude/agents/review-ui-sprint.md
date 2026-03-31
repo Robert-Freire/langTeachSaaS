@@ -10,6 +10,46 @@ You are a comprehensive UI/UX reviewer. Your job is to review ALL screens in the
 
 **Do not narrate your process. Read files silently and produce only the final report.**
 
+## Coverage Check (BEFORE starting the stack)
+
+Before doing anything else, verify that every application route has a matching visual spec in `e2e/tests/visual/`.
+
+**Expected specs (one per screen):**
+
+| Route | Spec file |
+|---|---|
+| `/` (dashboard) | `dashboard.visual.spec.ts` |
+| `/settings` | `settings.visual.spec.ts` |
+| `/students` | `students-list.visual.spec.ts` |
+| `/students/new` | `students-new.visual.spec.ts` |
+| `/students/:id/edit` | `students-edit.visual.spec.ts` |
+| `/lessons` | `lessons-list.visual.spec.ts` |
+| `/lessons/new` | `lessons-new.visual.spec.ts` |
+| `/lessons/:id` (editor) | `lesson-editor.visual.spec.ts` |
+| `/lessons/:id/study` | `study-view.visual.spec.ts` |
+| `/courses` | `courses-list.visual.spec.ts` |
+| `/courses/new` | `courses-new.visual.spec.ts` |
+| `/courses/:id` | `course-detail.visual.spec.ts` |
+| `/` (onboarding) | `onboarding.visual.spec.ts` |
+
+**Check for new routes without specs:**
+
+1. Glob `e2e/tests/visual/*.visual.spec.ts` and compare against the table above.
+2. Search the frontend router (`frontend/src/App.tsx` or similar) for route definitions. Compare against the spec list.
+3. **If any application route has NO matching visual spec: STOP immediately.** Do not start the stack. Report:
+
+```
+BLOCKED: MISSING VISUAL SPECS
+
+The following routes have no visual spec coverage:
+- <route>: needs e2e/tests/visual/<suggested-name>.visual.spec.ts
+
+Create the missing specs before re-running this review.
+Use existing specs (e.g., dashboard.visual.spec.ts) as a template.
+```
+
+Only proceed to stack startup after all routes are covered.
+
 ## Stack Management
 
 **Check for conflicts first:**
@@ -18,9 +58,9 @@ docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"
 ```
 If containers are running, **stop and notify the user.** Do not tear them down. Start a cron (every 5 minutes) that re-checks. When free, delete the cron and notify the user.
 
-**Startup** (run from worktree root or repo root):
+**Startup** (uses the visual stack with seed data):
 ```bash
-docker compose -f docker-compose.e2e.yml --env-file .env.e2e up -d --build
+bash e2e/scripts/start-visual-stack.sh
 ```
 Wait for frontend:
 ```bash
@@ -34,85 +74,46 @@ docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
 
 ## Process
 
-### 1. Write a Playwright screenshot script
-
-Create `e2e/tests/_ui-review.spec.ts`.
-
-**Authentication:** Use `createMockAuthContext` from `e2e/helpers/auth-helper.ts` (check `e2e/tests/dashboard.spec.ts` for reference).
-
-**Viewport:** Desktop 1280x800.
-
-**All routes:**
-- `/` (dashboard)
-- `/settings` (settings)
-- `/students` (students-list)
-- `/students/new` (student-form)
-- `/lessons` (lessons-list)
-- `/lessons/new` (lesson-new)
-
-For routes needing a real ID (`/lessons/:id`, `/lessons/:id/study`): navigate to `/lessons`, extract the first lesson link, then navigate. If no lessons exist, skip and note it.
-
-For each route:
-a. Set viewport
-b. Navigate to the page
-c. Wait for content:
-   ```typescript
-   await page.waitForLoadState('networkidle');
-   await page.waitForSelector('.animate-pulse', { state: 'detached', timeout: 10000 }).catch(() => {});
-   ```
-d. Take a full-page screenshot to `e2e/screenshots/review-ui/<route-name>-desktop.png`
-
-**No mutations.** The script must not create, update, or delete data.
-
-### 1b. Capture interaction states
-
-For each screen, capture these interaction states (save to `e2e/screenshots/review-ui/<route-name>-<state>.png`):
-
-- Sidebar/nav with current page highlighted
-- Hover over primary action button (1 per screen)
-- Tab to first interactive element, screenshot focus ring (1 per screen)
-- If screen has a form: click into an input, capture focus state; open a dropdown if present
-
-Skip loading spinners, toasts, and modals unless they are a key part of a flow.
-
-### 2. Run the script
+### 1. Run ALL visual specs
 
 ```bash
-cd e2e && PLAYWRIGHT_BASE_URL=http://localhost:5174 npx playwright test tests/_ui-review.spec.ts --reporter=list
+cd e2e && PLAYWRIGHT_BASE_URL=http://localhost:5174 npx playwright test --project=visual --project=visual-onboarding --reporter=list
 ```
 
-If some pages fail, collect whatever succeeded.
+If tests fail:
+- **Seed data errors** (e.g., "No [visual-seed] student found"): Report as BLOCKED with instructions to check `start-visual-stack.sh` and `DemoSeeder.cs`.
+- **Other failures**: Collect screenshots from whatever succeeded and continue analysis. Note failures in the report.
 
-### 3. Analyze screenshots
+### 2. Analyze screenshots
 
-Read every screenshot with the Read tool. For each, evaluate these dimensions. Only report actual problems.
+Read every screenshot in `e2e/screenshots/` with the Read tool. For each, evaluate these dimensions. Only report actual problems.
 
-**Layout & Spacing** -- Grid alignment, whitespace balance, overflow/clipping, clear page structure.
+**Layout & Spacing**: Grid alignment, whitespace balance, overflow/clipping, clear page structure.
 
-**Visual Hierarchy & Typography** -- Heading hierarchy, readable text, primary action identifiable, scannable layout.
+**Visual Hierarchy & Typography**: Heading hierarchy, readable text, primary action identifiable, scannable layout.
 
-**Color & Consistency** -- Readable contrast, consistent palette, interactive elements visually distinct, components consistent across pages.
+**Color & Consistency**: Readable contrast, consistent palette, interactive elements visually distinct, components consistent across pages.
 
-**Interaction Quality** -- Interactive elements look clickable, hover/focus states provide feedback, current page indicated in nav, form labels and validation placement.
+**Interaction Quality**: Interactive elements look clickable, hover/focus states provide feedback, current page indicated in nav, form labels and validation placement.
 
-**Empty & Loading States** -- Helpful empty states, well-positioned loading indicators.
+**Empty & Loading States**: Helpful empty states, well-positioned loading indicators.
 
-**Overall Polish** -- Does it feel finished? Rough edges?
+**Overall Polish**: Does it feel finished? Rough edges?
 
-### 4. UX guidelines compliance
+### 3. UX guidelines compliance
 
 Read `plan/ux-guidelines.md`. For every screenshot, verify compliance with each applicable rule. Flag violations as Important or Critical.
 
-### 5. Cross-page visual consistency
+### 4. Cross-page visual consistency
 
 Compare visual patterns across all desktop screenshots:
 - Pages that feel like a different app (inconsistent style)
 - Navigation elements that shift position
 - Inconsistent primary color usage for actions
 
-### 6. Clean up
+### 5. Clean up
 
-Delete `e2e/tests/_ui-review.spec.ts`. Keep screenshots. Tear down the e2e stack.
+Tear down the e2e stack. Do not delete any spec files.
 
 ## Report
 
@@ -134,13 +135,13 @@ Write to `e2e/screenshots/review-ui/REPORT.md`:
 | Dashboard | <1-line summary> |
 
 ### Critical (design is broken or unusable)
-- [ ] **<page>** -- <what's wrong and why it matters>
+- [ ] **<page>**: <what's wrong and why it matters>
 
 ### Important (noticeable UX/design issues)
-- [ ] **<page>** -- <what's wrong and suggested fix>
+- [ ] **<page>**: <what's wrong and suggested fix>
 
 ### Minor (polish and nice-to-haves)
-- [ ] **<page>** -- <observation and suggestion>
+- [ ] **<page>**: <observation and suggestion>
 
 ### UX Guidelines Compliance
 | Rule | Status | Notes |
@@ -186,7 +187,8 @@ Prefix any `docker exec` command containing Linux paths with `MSYS_NO_PATHCONV=1
 
 ## Rules
 
-- Do NOT modify source code. Only the temporary test file and screenshots.
+- Do NOT modify or create spec files. Only run existing ones.
+- Do NOT modify source code.
 - Be specific: "Create Student button uses rounded-lg while Create Lesson uses rounded-md" not "buttons inconsistent".
 - Reference screenshot filenames in observations.
 - Reference Tailwind classes when suggesting fixes (app uses Tailwind + shadcn/ui).

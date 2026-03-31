@@ -2,8 +2,8 @@
 
 ## Creating and editing issues
 
-- Run `/qa` on every newly created issue before considering it done.
-- Before editing a `qa:ready` issue: check it's not assigned (stop if it is), remove `qa:ready`, make the edit, re-run `/qa`, restore the label only if QA passes.
+- Run `/sprint-qa` on every newly created issue before considering it done.
+- Before editing a `qa:ready` issue: check it's not assigned (stop if it is), remove `qa:ready`, make the edit, re-run `/sprint-qa`, restore the label only if QA passes.
 
 ## Adding issues to the project board
 
