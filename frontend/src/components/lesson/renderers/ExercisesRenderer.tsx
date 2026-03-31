@@ -5,6 +5,7 @@ import type {
   ExercisesContent,
   ExercisesFillInBlank,
   ExercisesMatching,
+  ExercisesTrueFalse,
   PracticeStage,
 } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
@@ -80,6 +81,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
   const fibIdsRef = useRef<number[]>([])
   const mcIdsRef = useRef<number[]>([])
   const matchIdsRef = useRef<number[]>([])
+  const tfIdsRef = useRef<number[]>([])
 
   const content = isExercisesContent(parsedContent) ? parsedContent as ExercisesContent : null
 
@@ -89,6 +91,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
   const fibIds = useMemo(() => syncIds(fibIdsRef.current, content?.fillInBlank.length ?? 0), [content?.fillInBlank.length])
   const mcIds = useMemo(() => syncIds(mcIdsRef.current, content?.multipleChoice.length ?? 0), [content?.multipleChoice.length])
   const matchIds = useMemo(() => syncIds(matchIdsRef.current, content?.matching.length ?? 0), [content?.matching.length])
+  const tfIds = useMemo(() => syncIds(tfIdsRef.current, content?.trueFalse?.length ?? 0), [content?.trueFalse?.length])
   /* eslint-enable react-hooks/refs */
 
   if (!content) {
@@ -103,6 +106,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
   }
 
   const { fillInBlank, multipleChoice, matching } = content
+  const trueFalse = content.trueFalse ?? []
 
   const emit = (next: ExercisesContent) => onChange(JSON.stringify(next))
 
@@ -174,6 +178,20 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
   const removeMatch = (i: number) => {
     matchIdsRef.current.splice(i, 1)
     emit({ ...content, matching: matching.filter((_, idx) => idx !== i) })
+  }
+
+  // True/False handlers
+  const updateTf = (i: number, field: keyof ExercisesTrueFalse, value: string | boolean) => {
+    const next = trueFalse.map((item, idx) => idx === i ? { ...item, [field]: value } : item)
+    emit({ ...content, trueFalse: next })
+  }
+  const addTf = () => {
+    tfIdsRef.current.push(uid())
+    emit({ ...content, trueFalse: [...trueFalse, { statement: '', isTrue: true, justification: '' }] })
+  }
+  const removeTf = (i: number) => {
+    tfIdsRef.current.splice(i, 1)
+    emit({ ...content, trueFalse: trueFalse.filter((_, idx) => idx !== i) })
   }
 
   return (
@@ -302,6 +320,52 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
         </table>
       </div>
       <button type="button" onClick={addMatch} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add pair</button>
+
+      {/* True/False with Justification */}
+      <p className={sectionHeadingClass}>True / False with Justification</p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-zinc-50">
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Statement</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600 w-28">Answer</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Justification (model)</th>
+              <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Stage</th>
+              <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {trueFalse.map((item, i) => (
+              <tr key={tfIds[i]} className="hover:bg-zinc-50">
+                <td className="border border-zinc-200 p-1">
+                  <input value={item.statement} onChange={(e) => updateTf(i, 'statement', e.target.value)} className={inputClass} />
+                </td>
+                <td className="border border-zinc-200 p-1">
+                  <select
+                    value={item.isTrue ? 'true' : 'false'}
+                    onChange={(e) => updateTf(i, 'isTrue', e.target.value === 'true')}
+                    className="w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded"
+                    data-testid={`tf-answer-${i}`}
+                  >
+                    <option value="true">Verdadero (V)</option>
+                    <option value="false">Falso (F)</option>
+                  </select>
+                </td>
+                <td className="border border-zinc-200 p-1">
+                  <input value={item.justification} onChange={(e) => updateTf(i, 'justification', e.target.value)} className={inputClass} placeholder="Text excerpt that proves the answer" />
+                </td>
+                <td className="hidden sm:table-cell border border-zinc-200 p-1 text-center">
+                  {item.stage && <StageLabel stage={item.stage} />}
+                </td>
+                <td className="border border-zinc-200 p-1 text-center">
+                  <button type="button" onClick={() => removeTf(i)} className="text-zinc-400 hover:text-red-500 transition-colors px-1" aria-label="Remove item">✕</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <button type="button" onClick={addTf} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add statement</button>
     </div>
   )
 }
@@ -314,10 +378,12 @@ function Preview({ parsedContent }: PreviewProps) {
   }
 
   const { fillInBlank, multipleChoice, matching } = parsedContent as ExercisesContent
+  const trueFalse = (parsedContent as ExercisesContent).trueFalse ?? []
 
   const fibGroups = groupByStage(fillInBlank)
   const mcGroups = groupByStage(multipleChoice)
   const matchGroups = groupByStage(matching)
+  const tfGroups = groupByStage(trueFalse)
 
   return (
     <div className="space-y-4 text-sm" data-testid="exercises-preview">
@@ -386,6 +452,25 @@ function Preview({ parsedContent }: PreviewProps) {
           ))}
         </div>
       )}
+      {trueFalse.length > 0 && (
+        <div>
+          <p className={sectionHeadingClass}>True / False with Justification</p>
+          {tfGroups.map(({ stage, items }) => (
+            <div key={stage}>
+              {stage !== 'unstaged' && <StageSectionHeader stage={stage} />}
+              <ol className="space-y-2 list-decimal list-inside">
+                {items.map((item, i) => (
+                  <li key={i} className="text-zinc-700">
+                    <span>{item.statement}</span>
+                    <span className="ml-2 text-xs font-medium text-zinc-400">[V / F]</span>
+                    <div className="mt-0.5 ml-4 text-xs text-zinc-400 italic">Justificación: ___________</div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -409,6 +494,9 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   const [matchAnswers, setMatchAnswers] = useState<(string | null)[]>([])
   // index of the left item currently selected (waiting for right pick)
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null)
+  // trueFalse answers: boolean selection (null = unanswered) + free-text justification
+  const [tfAnswers, setTfAnswers] = useState<(boolean | null)[]>([])
+  const [tfJustifications, setTfJustifications] = useState<string[]>([])
   const [checked, setChecked] = useState(false)
 
   // Reset all answers when the content block changes (sync with external content updates)
@@ -418,6 +506,8 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     setMcAnswers([])
     setMatchAnswers([])
     setSelectedLeft(null)
+    setTfAnswers([])
+    setTfJustifications([])
     setChecked(false)
   }, [rawContent])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -439,6 +529,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   }
 
   const { fillInBlank, multipleChoice, matching } = validContent
+  const trueFalse = validContent.trueFalse ?? []
 
   // Ensure answer arrays are sized (safe on first render)
   const fibs = fibAnswers.length === fillInBlank.length
@@ -450,24 +541,34 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   const matches: (string | null)[] = matchAnswers.length === matching.length
     ? matchAnswers
     : Array(matching.length).fill(null)
+  const tfs: (boolean | null)[] = tfAnswers.length === trueFalse.length
+    ? tfAnswers
+    : Array(trueFalse.length).fill(null)
+  const tfJusts: string[] = tfJustifications.length === trueFalse.length
+    ? tfJustifications
+    : Array(trueFalse.length).fill('')
 
   const fibCorrect = fillInBlank.map((item, i) =>
     (fibs[i] ?? '').trim().toLowerCase() === item.answer.trim().toLowerCase()
   )
   const mcCorrect = multipleChoice.map((q, i) => mcs[i] === q.answer)
   const matchCorrect = matching.map((pair, i) => matches[i] === pair.right)
+  const tfCorrect = trueFalse.map((item, i) => tfs[i] !== null && tfs[i] === item.isTrue)
 
-  const totalQuestions = fillInBlank.length + multipleChoice.length + matching.length
+  const totalQuestions = fillInBlank.length + multipleChoice.length + matching.length + trueFalse.length
   const totalCorrect = [
     ...fibCorrect,
     ...mcCorrect,
     ...matchCorrect,
+    ...tfCorrect,
   ].filter(Boolean).length
 
   const handleCheck = () => {
     if (fibs !== fibAnswers) setFibAnswers(fibs)
     if (mcs !== mcAnswers) setMcAnswers(mcs)
     if (matches !== matchAnswers) setMatchAnswers(matches)
+    if (tfs !== tfAnswers) setTfAnswers(tfs)
+    if (tfJusts !== tfJustifications) setTfJustifications(tfJusts)
     setChecked(true)
   }
 
@@ -476,6 +577,8 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     setMcAnswers(Array(multipleChoice.length).fill(null))
     setMatchAnswers(Array(matching.length).fill(null))
     setSelectedLeft(null)
+    setTfAnswers(Array(trueFalse.length).fill(null))
+    setTfJustifications(Array(trueFalse.length).fill(''))
     setChecked(false)
   }
 
@@ -719,6 +822,98 @@ function Student({ parsedContent, rawContent }: StudentProps) {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* True/False with Justification */}
+      {trueFalse.length > 0 && (
+        <div>
+          <p className={sectionHeadingClass}>True / False with Justification</p>
+          <p className="text-xs text-zinc-400 mb-3">Select Verdadero or Falso, then write the text excerpt that proves your answer.</p>
+          <ol className="space-y-4 list-decimal list-inside">
+            {trueFalse.map((item, i) => (
+              <li key={i} className="text-zinc-700">
+                <span>{item.statement}</span>
+                <div className="mt-2 ml-4 flex gap-3">
+                  <label className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-1.5 text-sm cursor-pointer transition-all select-none ${
+                    checked
+                      ? tfs[i] === true
+                        ? tfCorrect[i] ? 'border-green-400 bg-green-50 text-green-800' : 'border-red-400 bg-red-50 text-red-800'
+                        : !item.isTrue ? 'border-green-300 bg-green-50/50 text-green-700' : 'border-zinc-200 bg-white text-zinc-400'
+                      : tfs[i] === true ? 'border-indigo-400 bg-indigo-50 text-indigo-800' : 'border-zinc-200 bg-white text-zinc-700 hover:border-indigo-300'
+                  }`}>
+                    <input
+                      type="radio"
+                      name={`tf-student-${i}`}
+                      checked={tfs[i] === true}
+                      onChange={() => {
+                        const next = [...tfs] as (boolean | null)[]
+                        next[i] = true
+                        setTfAnswers(next)
+                      }}
+                      disabled={checked}
+                      className="accent-indigo-600"
+                      data-testid={`tf-option-true-${i}`}
+                    />
+                    Verdadero
+                  </label>
+                  <label className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-1.5 text-sm cursor-pointer transition-all select-none ${
+                    checked
+                      ? tfs[i] === false
+                        ? tfCorrect[i] ? 'border-green-400 bg-green-50 text-green-800' : 'border-red-400 bg-red-50 text-red-800'
+                        : item.isTrue ? 'border-green-300 bg-green-50/50 text-green-700' : 'border-zinc-200 bg-white text-zinc-400'
+                      : tfs[i] === false ? 'border-indigo-400 bg-indigo-50 text-indigo-800' : 'border-zinc-200 bg-white text-zinc-700 hover:border-indigo-300'
+                  }`}>
+                    <input
+                      type="radio"
+                      name={`tf-student-${i}`}
+                      checked={tfs[i] === false}
+                      onChange={() => {
+                        const next = [...tfs] as (boolean | null)[]
+                        next[i] = false
+                        setTfAnswers(next)
+                      }}
+                      disabled={checked}
+                      className="accent-indigo-600"
+                      data-testid={`tf-option-false-${i}`}
+                    />
+                    Falso
+                  </label>
+                </div>
+                {checked && (
+                  <div className="ml-4 mt-1">
+                    <span
+                      className={`text-xs font-medium ${tfCorrect[i] ? 'text-green-600' : 'text-red-600'}`}
+                      data-testid={`tf-result-${i}`}
+                    >
+                      {tfCorrect[i] ? '✓ Correct' : `✗ Answer: ${item.isTrue ? 'Verdadero' : 'Falso'}`}
+                    </span>
+                  </div>
+                )}
+                <div className="mt-2 ml-4">
+                  <textarea
+                    value={tfJusts[i] ?? ''}
+                    onChange={(e) => {
+                      const next = [...tfJusts]
+                      next[i] = e.target.value
+                      setTfJustifications(next)
+                    }}
+                    disabled={checked}
+                    placeholder="Cita el fragmento del texto que justifica tu respuesta..."
+                    rows={2}
+                    className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 resize-none"
+                    data-testid={`tf-justification-${i}`}
+                  />
+                  {checked && item.justification && (
+                    <div className="mt-1 p-2 bg-zinc-50 border border-zinc-200 rounded text-xs" data-testid={`tf-model-answer-${i}`}>
+                      <span className="font-medium text-zinc-600">Justificación del modelo: </span>
+                      <span className="text-zinc-700 italic">{item.justification}</span>
+                    </div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 

@@ -57,10 +57,19 @@ export interface ExercisesMatching {
   stage?: PracticeStage
 }
 
+export interface ExercisesTrueFalse {
+  statement: string
+  isTrue: boolean
+  justification: string
+  sourcePassage?: string
+  stage?: PracticeStage
+}
+
 export interface ExercisesContent {
   fillInBlank: ExercisesFillInBlank[]
   multipleChoice: ExercisesMultipleChoice[]
   matching: ExercisesMatching[]
+  trueFalse?: ExercisesTrueFalse[]
 }
 
 export interface ConversationScenario {
@@ -309,7 +318,8 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
   const hasRecognizedField =
     Array.isArray(obj.fillInBlank) || Array.isArray(obj.fill_in_blank) ||
     Array.isArray(obj.multipleChoice) || Array.isArray(obj.multiple_choice) ||
-    Array.isArray(obj.matching)
+    Array.isArray(obj.matching) ||
+    Array.isArray(obj.trueFalse) || Array.isArray(obj.true_false)
   if (!hasRecognizedField) return null
 
   const candidate = {
@@ -320,6 +330,9 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
       : Array.isArray(obj.multiple_choice) ? obj.multiple_choice
       : [],
     matching: Array.isArray(obj.matching) ? obj.matching : [],
+    trueFalse: Array.isArray(obj.trueFalse) ? obj.trueFalse
+      : Array.isArray(obj.true_false) ? obj.true_false
+      : [],
   }
   if (isExercisesContent(candidate)) return candidate
   return null

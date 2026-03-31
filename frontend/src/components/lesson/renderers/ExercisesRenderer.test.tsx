@@ -16,6 +16,7 @@ function makeContent(overrides?: Partial<ExercisesContent>): ExercisesContent {
       { left: 'hello', right: 'hola' },
       { left: 'goodbye', right: 'adios' },
     ],
+    trueFalse: [],
     ...overrides,
   }
 }
@@ -108,10 +109,11 @@ describe('ExercisesRenderer.Editor', () => {
 describe('ExercisesRenderer coerce', () => {
   it('coerces missing arrays to empty arrays', () => {
     const partial = { fillInBlank: [{ sentence: 'S', answer: 'A' }] }
-    const result = ExercisesRenderer.coerce(partial) as { fillInBlank: unknown[]; multipleChoice: unknown[]; matching: unknown[] }
+    const result = ExercisesRenderer.coerce(partial) as { fillInBlank: unknown[]; multipleChoice: unknown[]; matching: unknown[]; trueFalse: unknown[] }
     expect(result.fillInBlank).toHaveLength(1)
     expect(result.multipleChoice).toEqual([])
     expect(result.matching).toEqual([])
+    expect(result.trueFalse).toEqual([])
   })
 
   it('returns null for completely unrecognised input', () => {
@@ -279,5 +281,100 @@ describe('ExercisesRenderer stage grouping', () => {
     expect(screen.queryByTestId('stage-header-controlled')).not.toBeInTheDocument()
     expect(screen.queryByTestId('stage-header-meaningful')).not.toBeInTheDocument()
     expect(screen.queryByTestId('stage-header-guided_free')).not.toBeInTheDocument()
+  })
+})
+
+describe('ExercisesRenderer trueFalse', () => {
+  const tfContent = makeContent({
+    trueFalse: [
+      { statement: 'Maria works in an office.', isTrue: false, justification: 'El texto dice que trabaja desde casa.' },
+    ],
+  })
+
+  it('Preview renders trueFalse section with statement and V/F placeholder', () => {
+    render(<ExercisesRenderer.Preview rawContent={raw(tfContent)} parsedContent={tfContent} />)
+    expect(screen.getByText('Maria works in an office.')).toBeInTheDocument()
+    expect(screen.getByText(/V \/ F/)).toBeInTheDocument()
+  })
+
+  it('Editor renders trueFalse section with statement input and answer select', () => {
+    const onChange = vi.fn()
+    render(<ExercisesRenderer.Editor rawContent={raw(tfContent)} parsedContent={tfContent} onChange={onChange} />)
+    expect(screen.getByText('True / False with Justification')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Maria works in an office.')).toBeInTheDocument()
+    expect(screen.getByTestId('tf-answer-0')).toBeInTheDocument()
+  })
+
+  it('Editor calls onChange when trueFalse statement is edited', async () => {
+    const onChange = vi.fn()
+    render(<ExercisesRenderer.Editor rawContent={raw(tfContent)} parsedContent={tfContent} onChange={onChange} />)
+    await userEvent.type(screen.getByDisplayValue('Maria works in an office.'), 'X')
+    expect(onChange).toHaveBeenCalled()
+    const last = JSON.parse(onChange.mock.calls[onChange.mock.calls.length - 1][0])
+    expect(last.trueFalse[0].statement).toBe('Maria works in an office.X')
+  })
+
+  it('Editor calls onChange when a trueFalse item is added', async () => {
+    const onChange = vi.fn()
+    render(<ExercisesRenderer.Editor rawContent={raw(tfContent)} parsedContent={tfContent} onChange={onChange} />)
+    await userEvent.click(screen.getByText('+ Add statement'))
+    const last = JSON.parse(onChange.mock.calls[onChange.mock.calls.length - 1][0])
+    expect(last.trueFalse).toHaveLength(2)
+  })
+
+  it('Student renders trueFalse radio options and justification textarea', () => {
+    render(<ExercisesRenderer.Student rawContent={raw(tfContent)} parsedContent={tfContent} />)
+    expect(screen.getByText('Maria works in an office.')).toBeInTheDocument()
+    expect(screen.getByTestId('tf-option-true-0')).toBeInTheDocument()
+    expect(screen.getByTestId('tf-option-false-0')).toBeInTheDocument()
+    expect(screen.getByTestId('tf-justification-0')).toBeInTheDocument()
+  })
+
+  it('Student counts trueFalse T/F selection in score (correct answer = Falso)', async () => {
+    render(<ExercisesRenderer.Student rawContent={raw(tfContent)} parsedContent={tfContent} />)
+    await userEvent.click(screen.getByTestId('tf-option-false-0')) // correct: isTrue = false
+    await userEvent.click(screen.getByTestId('check-answers-btn'))
+    expect(screen.getByTestId('tf-result-0')).toHaveTextContent('✓')
+    // score: fib (1) + mc (1) + match (2) + tf (1) = 5 total, but only tf answered → 0 + tf correct
+    const summary = screen.getByTestId('score-summary')
+    expect(summary).toHaveTextContent('/ 5 correct')
+  })
+
+  it('Student shows wrong feedback when trueFalse T/F is incorrect', async () => {
+    render(<ExercisesRenderer.Student rawContent={raw(tfContent)} parsedContent={tfContent} />)
+    await userEvent.click(screen.getByTestId('tf-option-true-0')) // wrong: isTrue = false
+    await userEvent.click(screen.getByTestId('check-answers-btn'))
+    expect(screen.getByTestId('tf-result-0')).toHaveTextContent('✗')
+  })
+
+  it('Student shows model justification after Check regardless of correctness', async () => {
+    render(<ExercisesRenderer.Student rawContent={raw(tfContent)} parsedContent={tfContent} />)
+    await userEvent.click(screen.getByTestId('tf-option-true-0'))
+    await userEvent.click(screen.getByTestId('check-answers-btn'))
+    expect(screen.getByTestId('tf-model-answer-0')).toHaveTextContent('El texto dice que trabaja desde casa.')
+  })
+
+  it('Student justification textarea does not affect score', async () => {
+    render(<ExercisesRenderer.Student rawContent={raw(tfContent)} parsedContent={tfContent} />)
+    await userEvent.type(screen.getByTestId('tf-justification-0'), 'some text')
+    await userEvent.click(screen.getByTestId('tf-option-false-0'))
+    await userEvent.click(screen.getByTestId('check-answers-btn'))
+    // tf correct + no other answers = 1 correct out of 5
+    expect(screen.getByTestId('score-summary')).toHaveTextContent('You got 1 / 5 correct')
+  })
+})
+
+describe('ExercisesRenderer coerce trueFalse', () => {
+  it('coerces missing trueFalse to empty array', () => {
+    const partial = { fillInBlank: [{ sentence: 'S', answer: 'A' }] }
+    const result = ExercisesRenderer.coerce(partial) as ExercisesContent
+    expect(result.trueFalse ?? []).toEqual([])
+  })
+
+  it('coerces true_false snake_case key', () => {
+    const partial = { true_false: [{ statement: 'X', isTrue: true, justification: 'Y' }] }
+    const result = ExercisesRenderer.coerce(partial) as ExercisesContent
+    expect(result.trueFalse).toHaveLength(1)
+    expect(result.trueFalse![0].statement).toBe('X')
   })
 })
