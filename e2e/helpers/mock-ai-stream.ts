@@ -59,6 +59,27 @@ export const EXERCISES_FIXTURE = {
   ],
 }
 
+// fragments: ["en", "vivo", "Barcelona", "yo"]
+// correctOrder: [3,1,0,2] => "yo vivo en Barcelona"
+export const SENTENCE_ORDERING_FIXTURE = {
+  fillInBlank: [],
+  multipleChoice: [],
+  matching: [],
+  sentenceOrdering: [
+    {
+      fragments: ['en', 'vivo', 'Barcelona', 'yo'],
+      correctOrder: [3, 1, 0, 2],
+      hint: 'Subject + verb + location',
+      explanation: 'Spanish declarative sentences typically follow Subject-Verb-Object order.',
+    },
+    {
+      fragments: ['libros', 'Leo', 'los'],
+      correctOrder: [1, 2, 0],
+      hint: 'Subject + verb + object',
+    },
+  ],
+}
+
 export const CONVERSATION_FIXTURE = {
   scenarios: [
     {

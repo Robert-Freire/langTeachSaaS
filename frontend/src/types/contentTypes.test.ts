@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isGuidedWritingContent, coerceGuidedWritingContent, isErrorCorrectionContent, coerceErrorCorrectionContent } from './contentTypes'
+import { isGuidedWritingContent, coerceGuidedWritingContent, isErrorCorrectionContent, coerceErrorCorrectionContent, isExercisesContent, coerceExercisesContent } from './contentTypes'
 
 const valid = {
   situation: 'Write a short email.',
@@ -162,5 +162,51 @@ describe('coerceErrorCorrectionContent', () => {
 
   it('returns null for unrecognized shape', () => {
     expect(coerceErrorCorrectionContent({ foo: 'bar' })).toBeNull()
+  })
+})
+
+// ─── isExercisesContent (sentenceOrdering) ────────────────────────────────────
+
+const validExercises = {
+  fillInBlank: [{ sentence: 'S', answer: 'A' }],
+  multipleChoice: [{ question: 'Q', options: ['a', 'b'], answer: 'a' }],
+  matching: [{ left: 'L', right: 'R' }],
+}
+
+describe('isExercisesContent (sentenceOrdering)', () => {
+  it('accepts content without sentenceOrdering (backward compat)', () => {
+    expect(isExercisesContent(validExercises)).toBe(true)
+  })
+
+  it('accepts content with sentenceOrdering', () => {
+    const withSo = {
+      ...validExercises,
+      sentenceOrdering: [{ fragments: ['yo', 'soy'], correctOrder: [0, 1] }],
+    }
+    expect(isExercisesContent(withSo)).toBe(true)
+  })
+})
+
+describe('coerceExercisesContent (sentenceOrdering)', () => {
+  it('preserves sentenceOrdering when present', () => {
+    const input = { ...validExercises, sentenceOrdering: [{ fragments: ['yo', 'soy'], correctOrder: [0, 1] }] }
+    const result = coerceExercisesContent(input)
+    expect(result?.sentenceOrdering).toHaveLength(1)
+    expect(result?.sentenceOrdering?.[0].fragments).toEqual(['yo', 'soy'])
+  })
+
+  it('handles AI response with only sentenceOrdering (no other arrays)', () => {
+    const input = { sentenceOrdering: [{ fragments: ['yo', 'soy'], correctOrder: [0, 1] }] }
+    const result = coerceExercisesContent(input)
+    expect(result).not.toBeNull()
+    expect(result?.sentenceOrdering).toHaveLength(1)
+    expect(result?.fillInBlank).toEqual([])
+    expect(result?.multipleChoice).toEqual([])
+    expect(result?.matching).toEqual([])
+  })
+
+  it('sets sentenceOrdering to undefined when not present', () => {
+    const result = coerceExercisesContent(validExercises)
+    expect(result?.sentenceOrdering).toBeUndefined()
   })
 })
