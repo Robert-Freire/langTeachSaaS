@@ -497,6 +497,15 @@ public class SectionProfileServiceTests
     }
 
     [Fact]
+    public void GetLevelSpecificNotes_Practice_A1_ReturnsGR02MaxOptionsNote()
+    {
+        var notes = _sut.GetLevelSpecificNotes("practice", "A1");
+        var gr02 = notes.FirstOrDefault(n => n.ExerciseTypeId == "GR-02");
+        gr02.Should().NotBeNull(because: "practice A1 should have a GR-02 note constraining MC option count");
+        gr02!.Note.Should().Contain("3 options", because: "the note should enforce a maximum of 3 MC options at A1");
+    }
+
+    [Fact]
     public void GetLevelSpecificNotes_UnknownSection_ReturnsEmpty()
     {
         _sut.GetLevelSpecificNotes("nosuchsection", "B2").Should().BeEmpty();

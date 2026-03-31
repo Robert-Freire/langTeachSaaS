@@ -1331,6 +1331,26 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("2 sentences", because: "the level-specific note should constrain GR-04 explanation length at B2");
     }
 
+    [Fact]
+    public void ExercisesPrompt_A1_InjectsGR02MaxOptionsConstraint()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Maximum 3 options",
+            because: "the A1 GR-02 levelSpecificNotes entry must be injected into the exercises prompt");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_B1_DoesNotInjectGR02MaxOptionsConstraint()
+    {
+        var req = _sut.BuildExercisesPrompt(BaseCtx()); // B1
+
+        req.UserPrompt.Should().NotContain("Maximum 3 options",
+            because: "B1 has no GR-02 options constraint; only A1 is restricted to 3 MC options");
+    }
+
     // --- Snapshot: key blocks present for representative combinations ---
 
     [Fact]
