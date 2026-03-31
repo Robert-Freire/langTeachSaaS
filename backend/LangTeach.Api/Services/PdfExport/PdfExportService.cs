@@ -118,6 +118,9 @@ public class PdfExportService : IPdfExportService
                 case ContentBlockType.FreeText:
                     RenderFreeText(container, stripped);
                     break;
+                case ContentBlockType.NoticingTask:
+                    RenderFreeText(container, stripped);
+                    break;
             }
         }
         catch (JsonException)

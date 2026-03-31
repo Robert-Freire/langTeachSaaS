@@ -17,7 +17,7 @@
           "form": { "type": "string", "description": "The target word or phrase as it appears in the text" },
           "position": {
             "type": "array",
-            "items": { "type": "number" },
+            "items": { "type": "integer", "minimum": 0 },
             "minItems": 2,
             "maxItems": 2,
             "description": "[startCharIndex, endCharIndex] 0-based, exclusive end"

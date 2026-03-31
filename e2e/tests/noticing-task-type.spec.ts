@@ -58,15 +58,10 @@ test.describe('Noticing Task content type', () => {
     const { page, context } = await createLessonWithNoticingTask(browser)
 
     try {
-      // Wait for AI stream to complete
+      // Wait for AI stream to complete and verify instruction is displayed
       await expect(page.getByText('Find all the verbs in the past tense')).toBeVisible({
         timeout: FEEDBACK_TIMEOUT,
       })
-
-      // Verify the instruction text is displayed
-      await expect(
-        page.getByText('Find all the verbs in the past tense'),
-      ).toBeVisible()
 
       // Verify the passage text is present
       await expect(page.getByText('Ayer Maria fue al mercado')).toBeVisible()
