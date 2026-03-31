@@ -200,6 +200,24 @@ if (seedIndex >= 0)
     return seeded ? 0 : 1;
 }
 
+// Visual seed: dotnet run -- --visual-seed <auth0-user-id|email>
+var visualSeedIndex = Array.IndexOf(args, "--visual-seed");
+if (visualSeedIndex >= 0)
+{
+    var teacherLookup = (visualSeedIndex + 1 < args.Length ? args[visualSeedIndex + 1] : null)?.Trim();
+    if (string.IsNullOrWhiteSpace(teacherLookup))
+    {
+        Console.Error.WriteLine("Usage: --visual-seed <auth0-user-id|email>");
+        return 1;
+    }
+
+    using var visualSeedScope = app.Services.CreateScope();
+    var visualSeedDb     = visualSeedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var visualSeedLogger = visualSeedScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var seeded = await DemoSeeder.SeedVisualAsync(visualSeedDb, teacherLookup, visualSeedLogger);
+    return seeded ? 0 : 1;
+}
+
 app.UseSerilogRequestLogging(options =>
 {
     options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000}ms";

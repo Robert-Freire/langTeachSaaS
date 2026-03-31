@@ -37,9 +37,39 @@ TEST COVERAGE:
 - Gaps: <untested criteria, if any>
 ```
 
+## Visual spec and seed checks (area:frontend issues only)
+
+When the issue has the `area:frontend` label, perform these additional checks before finalizing the verdict:
+
+**Screen mapping:** Identify which screens (routes) are added or modified by the issue. This includes new routes and changes to existing screens.
+
+**Spec gap check:** For each identified screen, verify a `@visual` spec exists in `e2e/tests/visual/`:
+```bash
+ls e2e/tests/visual/
+```
+If a spec is missing for any screen touched by the issue, flag:
+```
+VISUAL SPEC GAP: no @visual spec for screen <screen-name> (<route>)
+```
+This makes the verdict PASS WITH GAPS (not FAIL) unless the issue itself is supposed to add the spec.
+
+**Data gap check:** For each screen that has a spec, verify the visual seed covers the required data. The seed provides:
+- Students tagged `[visual-seed]`: Ana Visual (B2), Marco Visual (A2)
+- Lessons tagged `topic = "[visual-seed]"` with vocabulary content block and plain lesson
+- Course tagged `description = "[visual-seed]"` with 3 entries
+
+If a screen's spec would fail without seed data that isn't in the list, flag:
+```
+VISUAL DATA GAP: screen <screen-name> requires <data> not in seed
+```
+This also makes the verdict PASS WITH GAPS.
+
+Include visual gaps in the report under a **VISUAL CHECKS** section, before the verdict.
+
 ## Rules
 
 - Every NOT MET criterion makes the verdict FAIL.
 - Every PARTIAL criterion makes the verdict at best PASS WITH GAPS.
 - If all criteria are MET but test coverage is missing for key behaviors, verdict is PASS WITH GAPS.
 - Be strict on acceptance criteria but pragmatic on coverage (not every edge case needs a test, but every main behavior does).
+- Visual spec/data gaps on `area:frontend` issues are PASS WITH GAPS findings (not failures), since they can be addressed at sprint planning time.
