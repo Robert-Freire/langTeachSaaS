@@ -745,19 +745,18 @@ public class PromptService : IPromptService
             levelGuidance = "Generate a noticing task appropriate to the stated CEFR level.";
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Generate a noticing task (actividad de descubrimiento) for a {level} student on the topic \"{topic}\". Return JSON:");
-        sb.AppendLine("{\"text\":\"\",\"instruction\":\"\",\"targets\":[{\"form\":\"\",\"position\":[0,0],\"grammar\":\"\"}],\"discoveryQuestions\":[\"\"],\"teacherNotes\":\"\"}");
+        sb.AppendLine($"Generate a noticing task (actividad de descubrimiento) for a {level} student on the topic \"{topic}\".");
         sb.AppendLine();
         sb.AppendLine(levelGuidance);
         sb.AppendLine();
         sb.AppendLine("INSTRUCTIONS:");
         sb.AppendLine("- text: A context-rich passage (appropriate length for the level) containing multiple instances of the target grammar structure. The text should read naturally and be thematically engaging.");
         sb.AppendLine("- instruction: A clear, level-appropriate prompt telling the student what to look for (e.g. \"Underline all the verbs in the past tense\").");
-        sb.AppendLine("- targets: Each target is a word or phrase in the text. form is the exact substring. position is [startCharIndex, endCharIndex] (0-based, exclusive end) matching the exact character positions in text. grammar references a grammar category from the level config or exercise type catalog.");
-        sb.AppendLine("- discoveryQuestions: 2-4 questions that guide the student to notice the pattern and formulate a rule WITHOUT stating the rule directly. Questions should progress from observation to hypothesis.");
+        sb.AppendLine("- targets: Each target is a word or phrase in the text. form is the exact substring. position is [startCharIndex, endCharIndex] (0-based, exclusive end). grammar references a grammar category from the level config or exercise type catalog.");
+        sb.AppendLine("- discoveryQuestions: Questions that guide the student to notice the pattern and formulate a rule. Questions should progress from observation to hypothesis.");
         sb.AppendLine("- teacherNotes: A brief explanation of the grammar point, expected student discoveries, and teaching tips. Visible only to the teacher.");
         sb.AppendLine();
-        sb.AppendLine("CRITICAL: The position [start, end] values MUST exactly match the character positions of 'form' in 'text'. Verify that text.substring(start, end-start) === form for every target.");
+        sb.AppendLine("Verify every position by counting characters in text before generating. The substring at [start, end) must equal form exactly.");
 
         var noticingGuidance = _pedagogy.GetNoticingTaskGuidance(level);
         if (noticingGuidance is not null)
