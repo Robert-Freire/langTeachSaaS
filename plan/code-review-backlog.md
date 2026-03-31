@@ -6,6 +6,12 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-03-28 during Student-Aware Curriculum sprint close (round 2). 9 entries processed: 4 batched into #347 (pedagogy data consistency), 2 into #349 (UX polish), 3 deleted (redundant tests nit, harmless prompt duplication, undocumented fallback comment).*
 
+## PR task-t272-sentence-transformation (2026-03-31) — #272 sentence transformation format
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `e2e/tests/sentence-transformation-type.spec.ts` | Two of four e2e tests (correct answer, alternative answer) omit `score-summary` assertion, diverging from `sentence-ordering-type.spec.ts` pattern. Low risk. |
+
 ## PR task-t269-sentence-ordering (2026-03-31) — #269 sentence ordering format
 
 | Severity | File | Note |
