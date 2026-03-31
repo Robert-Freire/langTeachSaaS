@@ -203,6 +203,7 @@ export function isErrorCorrectionContent(v: unknown): v is ErrorCorrectionConten
       return (
         typeof it.sentence === 'string' &&
         Array.isArray(it.errorSpan) && it.errorSpan.length === 2 &&
+        typeof it.errorSpan[0] === 'number' && typeof it.errorSpan[1] === 'number' &&
         typeof it.correction === 'string' &&
         VALID_EC_ERROR_TYPES.has(it.errorType as string)
       )

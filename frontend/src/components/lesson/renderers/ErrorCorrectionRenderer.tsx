@@ -210,7 +210,7 @@ function Preview({ parsedContent }: PreviewProps) {
     return <ContentParseError context="teacher" />
   }
 
-  const { mode, items } = parsedContent as ErrorCorrectionContent
+  const { mode, items } = parsedContent
 
   return (
     <div className="space-y-4 text-sm" data-testid="error-correction-preview">
@@ -245,6 +245,16 @@ function Preview({ parsedContent }: PreviewProps) {
  * Student view for error correction.
  * "identify-only": student clicks words to select the error span, then checks.
  * "identify-and-correct": student clicks to select span + types the correction.
+ *
+ * Selection is word-granular but supports multi-word ranges:
+ * - First click: selects that token.
+ * - Second click on same token: deselects.
+ * - Click on a different token: EXTENDS the selection to cover both tokens
+ *   (from min(start) to max(end)), allowing multi-word error spans to be covered.
+ *
+ * Correctness: the student's selected span must fully contain the error span
+ * (sel[0] <= errorSpan[0] && sel[1] >= errorSpan[1]) so that word-boundary
+ * selection can cover AI-generated character-level spans.
  */
 function Student({ parsedContent, rawContent }: StudentProps) {
   // selectedSpan[i] = [start, end] of the student's selected span for item i, or null
@@ -252,7 +262,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   const [corrections, setCorrections] = useState<string[]>([])
   const [checked, setChecked] = useState(false)
 
-  const validContent = isErrorCorrectionContent(parsedContent) ? (parsedContent as ErrorCorrectionContent) : null
+  const validContent = isErrorCorrectionContent(parsedContent) ? parsedContent : null
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -295,9 +305,12 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     if (checked) return
     const next = [...spans] as ([number, number] | null)[]
     const current = next[itemIdx]
-    // Toggle off if same span clicked again
     if (current && current[0] === start && current[1] === end) {
+      // Toggle off: clicking the same single token deselects it
       next[itemIdx] = null
+    } else if (current) {
+      // Extend selection to cover both the current span and the new token
+      next[itemIdx] = [Math.min(current[0], start), Math.max(current[1], end)]
     } else {
       next[itemIdx] = [start, end]
     }
@@ -321,7 +334,10 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     if (!sel) return false
     const [cs, ce] = sel
     const [es, ee] = items[i].errorSpan
-    return cs === es && ce === ee
+    // Correct if the student's selection fully contains the error span.
+    // Using containment rather than exact equality because selection is
+    // word-granular while AI errorSpan is character-granular.
+    return cs <= es && ce >= ee
   }
 
   const correctionCorrect = (i: number): boolean => {
