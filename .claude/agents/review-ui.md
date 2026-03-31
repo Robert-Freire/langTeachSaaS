@@ -16,7 +16,7 @@ Run the stack-up script from the worktree root:
 bash e2e/scripts/start-visual-stack.sh
 ```
 
-This script builds the frontend, starts all services, waits for health, and runs the visual seed. It is idempotent. If it fails, report the error and stop.
+This script uses `docker-compose.e2e.yml` + `docker-compose.visual.yml` (overlay that exposes api:5000 and sqlserver:1434 to the host). It builds the frontend, starts all services, waits for health via `docker inspect`, and runs the visual seed. It is idempotent. If it fails, report the error and stop.
 
 ## Step 2: Identify affected screens
 
