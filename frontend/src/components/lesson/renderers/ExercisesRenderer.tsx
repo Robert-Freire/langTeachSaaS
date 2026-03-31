@@ -91,7 +91,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
   const fibIds = useMemo(() => syncIds(fibIdsRef.current, content?.fillInBlank.length ?? 0), [content?.fillInBlank.length])
   const mcIds = useMemo(() => syncIds(mcIdsRef.current, content?.multipleChoice.length ?? 0), [content?.multipleChoice.length])
   const matchIds = useMemo(() => syncIds(matchIdsRef.current, content?.matching.length ?? 0), [content?.matching.length])
-  const tfIds = useMemo(() => syncIds(tfIdsRef.current, content?.trueFalse.length ?? 0), [content?.trueFalse.length])
+  const tfIds = useMemo(() => syncIds(tfIdsRef.current, content?.trueFalse?.length ?? 0), [content?.trueFalse?.length])
   /* eslint-enable react-hooks/refs */
 
   if (!content) {
@@ -105,7 +105,8 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
     )
   }
 
-  const { fillInBlank, multipleChoice, matching, trueFalse } = content
+  const { fillInBlank, multipleChoice, matching } = content
+  const trueFalse = content.trueFalse ?? []
 
   const emit = (next: ExercisesContent) => onChange(JSON.stringify(next))
 
@@ -376,7 +377,8 @@ function Preview({ parsedContent }: PreviewProps) {
     return <ContentParseError context="teacher" />
   }
 
-  const { fillInBlank, multipleChoice, matching, trueFalse } = parsedContent as ExercisesContent
+  const { fillInBlank, multipleChoice, matching } = parsedContent as ExercisesContent
+  const trueFalse = (parsedContent as ExercisesContent).trueFalse ?? []
 
   const fibGroups = groupByStage(fillInBlank)
   const mcGroups = groupByStage(multipleChoice)
@@ -526,7 +528,8 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     return <ContentParseError context="student" />
   }
 
-  const { fillInBlank, multipleChoice, matching, trueFalse } = validContent
+  const { fillInBlank, multipleChoice, matching } = validContent
+  const trueFalse = validContent.trueFalse ?? []
 
   // Ensure answer arrays are sized (safe on first render)
   const fibs = fibAnswers.length === fillInBlank.length

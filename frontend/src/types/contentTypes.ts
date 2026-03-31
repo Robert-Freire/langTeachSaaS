@@ -68,7 +68,7 @@ export interface ExercisesContent {
   fillInBlank: ExercisesFillInBlank[]
   multipleChoice: ExercisesMultipleChoice[]
   matching: ExercisesMatching[]
-  trueFalse: ExercisesTrueFalse[]
+  trueFalse?: ExercisesTrueFalse[]
 }
 
 export interface ConversationScenario {
@@ -153,7 +153,7 @@ export function isGrammarContent(v: unknown): v is GrammarContent {
 export function isExercisesContent(v: unknown): v is ExercisesContent {
   if (typeof v !== 'object' || v === null) return false
   const c = v as Record<string, unknown>
-  return Array.isArray(c.fillInBlank) && Array.isArray(c.multipleChoice) && Array.isArray(c.matching) && Array.isArray(c.trueFalse)
+  return Array.isArray(c.fillInBlank) && Array.isArray(c.multipleChoice) && Array.isArray(c.matching)
 }
 
 export function isConversationContent(v: unknown): v is ConversationContent {
