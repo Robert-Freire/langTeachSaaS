@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 import { ExercisesRenderer } from './ExercisesRenderer'
-import type { ExercisesContent } from '../../../types/contentTypes'
+import type { ExercisesContent, ExercisesSentenceOrdering } from '../../../types/contentTypes'
 
 function makeContent(overrides?: Partial<ExercisesContent>): ExercisesContent {
   return {
@@ -16,6 +16,16 @@ function makeContent(overrides?: Partial<ExercisesContent>): ExercisesContent {
       { left: 'hello', right: 'hola' },
       { left: 'goodbye', right: 'adios' },
     ],
+    ...overrides,
+  }
+}
+
+function makeSoItem(overrides?: Partial<ExercisesSentenceOrdering>): ExercisesSentenceOrdering {
+  // fragments: ["en", "vivo", "Barcelona", "yo"]
+  // correctOrder: [3, 1, 0, 2] = "yo vivo en Barcelona"
+  return {
+    fragments: ['en', 'vivo', 'Barcelona', 'yo'],
+    correctOrder: [3, 1, 0, 2],
     ...overrides,
   }
 }
@@ -240,6 +250,160 @@ describe('ExercisesRenderer.Student', () => {
 
     expect(screen.getByTestId('fib-result-0')).toHaveTextContent('✗ went')
     expect(screen.queryByTestId('fib-explanation-0')).not.toBeInTheDocument()
+  })
+})
+
+describe('ExercisesRenderer sentenceOrdering', () => {
+  describe('Preview', () => {
+    it('renders sentence ordering section when items are present', () => {
+      const content = makeContent({ sentenceOrdering: [makeSoItem()] })
+      render(<ExercisesRenderer.Preview rawContent={JSON.stringify(content)} parsedContent={content} />)
+
+      expect(screen.getByText('Sentence Ordering')).toBeInTheDocument()
+      expect(screen.getByText('yo')).toBeInTheDocument()
+      expect(screen.getByText('vivo')).toBeInTheDocument()
+    })
+
+    it('shows correct answer in preview', () => {
+      const content = makeContent({ sentenceOrdering: [makeSoItem()] })
+      render(<ExercisesRenderer.Preview rawContent={JSON.stringify(content)} parsedContent={content} />)
+
+      expect(screen.getByText(/Answer: yo vivo en Barcelona/)).toBeInTheDocument()
+    })
+
+    it('does not render sentence ordering section when no items present', () => {
+      const content = makeContent()
+      render(<ExercisesRenderer.Preview rawContent={JSON.stringify(content)} parsedContent={content} />)
+
+      expect(screen.queryByText('Sentence Ordering')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Editor', () => {
+    it('renders sentence ordering section heading', () => {
+      const content = makeContent({ sentenceOrdering: [makeSoItem()] })
+      render(<ExercisesRenderer.Editor rawContent={JSON.stringify(content)} parsedContent={content} onChange={vi.fn()} />)
+
+      expect(screen.getByText('Sentence Ordering')).toBeInTheDocument()
+    })
+
+    it('calls onChange when a sentence ordering item is added', async () => {
+      const content = makeContent({ sentenceOrdering: [] })
+      const onChange = vi.fn()
+      render(<ExercisesRenderer.Editor rawContent={JSON.stringify(content)} parsedContent={content} onChange={onChange} />)
+
+      // "Add item" buttons: first for FIB, second for SO
+      const addButtons = screen.getAllByText('+ Add item')
+      await userEvent.click(addButtons[addButtons.length - 1])
+      const last = JSON.parse(onChange.mock.calls[onChange.mock.calls.length - 1][0])
+      expect(last.sentenceOrdering).toHaveLength(1)
+    })
+
+    it('preserves sentenceOrdering when editing other sections', async () => {
+      const content = makeContent({ sentenceOrdering: [makeSoItem()] })
+      const onChange = vi.fn()
+      render(<ExercisesRenderer.Editor rawContent={JSON.stringify(content)} parsedContent={content} onChange={onChange} />)
+
+      await userEvent.type(screen.getByDisplayValue("She ___ to the store."), 'X')
+      const last = JSON.parse(onChange.mock.calls[onChange.mock.calls.length - 1][0])
+      expect(last.sentenceOrdering).toHaveLength(1)
+      expect(last.sentenceOrdering[0].fragments).toEqual(['en', 'vivo', 'Barcelona', 'yo'])
+    })
+  })
+
+  describe('Student', () => {
+    it('renders sentence ordering chips', () => {
+      const content = makeContent({ sentenceOrdering: [makeSoItem()] })
+      render(<ExercisesRenderer.Student rawContent={JSON.stringify(content)} parsedContent={content} />)
+
+      expect(screen.getByTestId('so-item-0')).toBeInTheDocument()
+    })
+
+    it('clicking a fragment chip appends it to the answer sequence', async () => {
+      const content = makeContent({ sentenceOrdering: [makeSoItem()] })
+      render(<ExercisesRenderer.Student rawContent={JSON.stringify(content)} parsedContent={content} />)
+
+      // The scrambled order (rotate by half of 4 = 2) puts indices [2,3,0,1] first
+      // fragment[2] = "Barcelona", fragment[3] = "yo", fragment[0] = "en", fragment[1] = "vivo"
+      // Click "yo" (fragIdx=3) which appears in the fragment pool
+      await userEvent.click(screen.getByTestId('so-fragment-0-3'))
+      expect(screen.getByTestId('so-chosen-0-0')).toHaveTextContent('yo')
+    })
+
+    it('clicking a placed chip removes it from the answer sequence', async () => {
+      const content = makeContent({ sentenceOrdering: [makeSoItem()] })
+      render(<ExercisesRenderer.Student rawContent={JSON.stringify(content)} parsedContent={content} />)
+
+      await userEvent.click(screen.getByTestId('so-fragment-0-3'))
+      expect(screen.getByTestId('so-chosen-0-0')).toBeInTheDocument()
+
+      await userEvent.click(screen.getByTestId('so-chosen-0-0'))
+      expect(screen.queryByTestId('so-chosen-0-0')).not.toBeInTheDocument()
+    })
+
+    it('validates correct answer and shows checkmark', async () => {
+      const content = makeContent({ sentenceOrdering: [makeSoItem()] })
+      render(<ExercisesRenderer.Student rawContent={JSON.stringify(content)} parsedContent={content} />)
+
+      // correctOrder = [3,1,0,2] → click fragments in that index order
+      await userEvent.click(screen.getByTestId('so-fragment-0-3')) // "yo"
+      await userEvent.click(screen.getByTestId('so-fragment-0-1')) // "vivo"
+      await userEvent.click(screen.getByTestId('so-fragment-0-0')) // "en"
+      await userEvent.click(screen.getByTestId('so-fragment-0-2')) // "Barcelona"
+
+      await userEvent.click(screen.getByTestId('check-answers-btn'))
+
+      expect(screen.getByTestId('so-result-0')).toHaveTextContent('✓')
+    })
+
+    it('counts sentence ordering in total score', async () => {
+      const content = makeContent({ sentenceOrdering: [makeSoItem()] })
+      render(<ExercisesRenderer.Student rawContent={JSON.stringify(content)} parsedContent={content} />)
+
+      // Answer only FIB correctly (3 other questions unanswered, so-item wrong = 0)
+      await userEvent.type(screen.getByTestId('fib-input-0'), 'went')
+      await userEvent.click(screen.getByTestId('check-answers-btn'))
+
+      // totalQuestions = FIB(1) + MC(1) + matching(2) + SO(1) = 5
+      expect(screen.getByTestId('score-summary')).toHaveTextContent('/ 5 correct')
+    })
+
+    it('shows correct answer when sentence ordering is wrong', async () => {
+      const content = makeContent({ sentenceOrdering: [makeSoItem({ explanation: 'Subject first.' })] })
+      render(<ExercisesRenderer.Student rawContent={JSON.stringify(content)} parsedContent={content} />)
+
+      // Click only one fragment (wrong order)
+      await userEvent.click(screen.getByTestId('so-fragment-0-0')) // "en" first — wrong
+      await userEvent.click(screen.getByTestId('check-answers-btn'))
+
+      expect(screen.getByTestId('so-result-0')).toHaveTextContent('✗')
+      expect(screen.getByTestId('so-result-0')).toHaveTextContent('yo vivo en Barcelona')
+      expect(screen.getByTestId('so-explanation-0')).toHaveTextContent('Subject first.')
+    })
+  })
+})
+
+describe('ExercisesRenderer coerce (sentenceOrdering)', () => {
+  it('preserves sentenceOrdering items during coercion', () => {
+    const input = {
+      fillInBlank: [],
+      multipleChoice: [],
+      matching: [],
+      sentenceOrdering: [{ fragments: ['yo', 'soy'], correctOrder: [0, 1] }],
+    }
+    const result = ExercisesRenderer.coerce(input)
+    expect(result?.sentenceOrdering).toHaveLength(1)
+    expect(result?.sentenceOrdering?.[0].fragments).toEqual(['yo', 'soy'])
+  })
+
+  it('handles AI response with only sentenceOrdering (no other arrays)', () => {
+    const input = { sentenceOrdering: [{ fragments: ['yo', 'soy'], correctOrder: [0, 1] }] }
+    const result = ExercisesRenderer.coerce(input)
+    expect(result).not.toBeNull()
+    expect(result?.sentenceOrdering).toHaveLength(1)
+    expect(result?.fillInBlank).toEqual([])
+    expect(result?.multipleChoice).toEqual([])
+    expect(result?.matching).toEqual([])
   })
 })
 

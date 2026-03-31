@@ -57,10 +57,19 @@ export interface ExercisesMatching {
   stage?: PracticeStage
 }
 
+export interface ExercisesSentenceOrdering {
+  fragments: string[]
+  correctOrder: number[]
+  hint?: string
+  explanation?: string
+  stage?: PracticeStage
+}
+
 export interface ExercisesContent {
   fillInBlank: ExercisesFillInBlank[]
   multipleChoice: ExercisesMultipleChoice[]
   matching: ExercisesMatching[]
+  sentenceOrdering?: ExercisesSentenceOrdering[]
 }
 
 export interface ConversationScenario {
@@ -309,8 +318,13 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
   const hasRecognizedField =
     Array.isArray(obj.fillInBlank) || Array.isArray(obj.fill_in_blank) ||
     Array.isArray(obj.multipleChoice) || Array.isArray(obj.multiple_choice) ||
-    Array.isArray(obj.matching)
+    Array.isArray(obj.matching) ||
+    Array.isArray(obj.sentenceOrdering) || Array.isArray(obj.sentence_ordering)
   if (!hasRecognizedField) return null
+
+  const rawSo = Array.isArray(obj.sentenceOrdering) ? obj.sentenceOrdering
+    : Array.isArray(obj.sentence_ordering) ? obj.sentence_ordering
+    : undefined
 
   const candidate = {
     fillInBlank: Array.isArray(obj.fillInBlank) ? obj.fillInBlank
@@ -320,6 +334,14 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
       : Array.isArray(obj.multiple_choice) ? obj.multiple_choice
       : [],
     matching: Array.isArray(obj.matching) ? obj.matching : [],
+    sentenceOrdering: rawSo
+      ? rawSo.filter((item: unknown): item is ExercisesSentenceOrdering => {
+          if (typeof item !== 'object' || item === null) return false
+          const it = item as Record<string, unknown>
+          return Array.isArray(it.fragments) && Array.isArray(it.correctOrder) &&
+            it.fragments.length === it.correctOrder.length
+        })
+      : undefined,
   }
   if (isExercisesContent(candidate)) return candidate
   return null

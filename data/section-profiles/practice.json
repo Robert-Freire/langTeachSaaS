@@ -39,7 +39,8 @@
       "levelSpecificNotes": [
         {"exerciseTypeId": "GR-02", "note": "Maximum 4 options per item at A2"},
         {"exerciseTypeId": "GR-01", "note": "Word bank is optional at A2 but recommended for new structures"},
-        {"exerciseTypeId": "GR-04", "note": "Simple agreement/gender errors only. Single-clause sentences."}
+        {"exerciseTypeId": "GR-04", "note": "Simple agreement/gender errors only. Single-clause sentences."},
+        {"exerciseTypeId": "GR-07", "note": "Use 5-6 word single-clause sentences at A2; one step up from A1 (3-4 words) but still single-clause"}
       ],
       "minExerciseVariety": 1
     },
@@ -50,13 +51,14 @@
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "low",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-05", "VOC-07", "CE-01", "CE-03", "CE-06", "EO-01", "LUD-05", "LUD-06", "LUD-07"],
+      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-07", "GR-09", "GR-10", "VOC-04", "VOC-05", "VOC-07", "CE-01", "CE-03", "CE-06", "EO-01", "LUD-05", "LUD-06", "LUD-07"],
       "forbiddenExerciseTypes": [
         {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task, not a practice drill"},
         {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"}
       ],
       "levelSpecificNotes": [
         {"exerciseTypeId": "GR-04", "note": "Sentence-level corrections only at B1; discourse-level error correction is B2+"},
+        {"exerciseTypeId": "GR-07", "note": "Use phrase-level ordering at B1: reorder clauses or multi-word chunks rather than individual words"},
         {"exerciseTypeId": "GR-10", "note": "Use a short (80-120 word) authentic-style source text from which student extracts and organises the target forms"}
       ],
       "minExerciseVariety": 2

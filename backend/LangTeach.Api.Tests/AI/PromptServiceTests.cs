@@ -1948,6 +1948,32 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("Each stage MUST use a different exercise format");
     }
 
+    // --- Sentence ordering format ---
+
+    [Fact]
+    public void ExercisesPrompt_A1_IncludesSentenceOrderingInJsonTemplate()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("sentenceOrdering",
+            because: "A1 is the primary use case for sentence ordering (word-level reordering)");
+        req.UserPrompt.Should().Contain("correctOrder",
+            because: "the prompt must specify how correctOrder encodes the correct sequence");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_A2_IncludesSentenceOrderingInJsonTemplate()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A2" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("sentenceOrdering",
+            because: "A2 also uses sentence ordering for controlled practice");
+    }
+
     // --- BuildGuidedWritingPrompt ---
 
     [Fact]

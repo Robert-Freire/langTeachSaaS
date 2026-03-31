@@ -5,7 +5,8 @@
   "anyOf": [
     { "required": ["fillInBlank"] },
     { "required": ["multipleChoice"] },
-    { "required": ["matching"] }
+    { "required": ["matching"] },
+    { "required": ["sentenceOrdering"] }
   ],
   "properties": {
     "fillInBlank": {
@@ -54,6 +55,30 @@
         "properties": {
           "left": { "type": "string" },
           "right": { "type": "string" },
+          "explanation": { "type": "string" },
+          "stage": { "type": "string", "enum": ["controlled", "meaningful", "guided_free"] }
+        }
+      }
+    },
+    "sentenceOrdering": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["fragments", "correctOrder"],
+        "additionalProperties": false,
+        "properties": {
+          "fragments": {
+            "type": "array",
+            "minItems": 2,
+            "items": { "type": "string" }
+          },
+          "correctOrder": {
+            "type": "array",
+            "minItems": 2,
+            "items": { "type": "integer", "minimum": 0 }
+          },
+          "hint": { "type": "string" },
           "explanation": { "type": "string" },
           "stage": { "type": "string", "enum": ["controlled", "meaningful", "guided_free"] }
         }

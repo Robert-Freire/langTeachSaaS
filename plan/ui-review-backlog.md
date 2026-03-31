@@ -8,6 +8,16 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 
 *Previous clearing 2026-03-27: 20 entries deleted, 17 batched into issues #298, #299, #300, #303.*
 
+## PR task-t269-sentence-ordering (2026-03-31) — #269 sentence ordering
+
+| Severity | Finding |
+|----------|---------|
+| Important | [I1] Editor (mobile 375px): Sentence Ordering table headers wrap badly; consistent with other tables but worth fixing in a mobile table polish pass. |
+| Important | [I2] Editor (desktop): Fragments and Hint columns truncate without scroll or tooltip for long values. |
+| Minor | [M1] Student (mobile): "Tap the words..." instruction is text-xs; bump to text-sm for mobile readability. |
+| Minor | [M2] Student (mobile): Fragment chip touch targets ~32px, below 44px guideline. |
+| Minor | [M4] Editor: Correct Order column shows raw 1-based indices; showing reconstructed sentence would help teachers verify. |
+
 ## Teacher QA Screenshot Review (2026-03-28)
 
 | Severity | Finding |
