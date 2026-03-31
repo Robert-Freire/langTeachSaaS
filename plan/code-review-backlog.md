@@ -6,6 +6,12 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-03-28 during Student-Aware Curriculum sprint close (round 2). 9 entries processed: 4 batched into #347 (pedagogy data consistency), 2 into #349 (UX polish), 3 deleted (redundant tests nit, harmless prompt duplication, undocumented fallback comment).*
 
+## PR task-t406-visual-test-infrastructure (2026-03-31) -- #406 visual test infrastructure
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `e2e/tests/visual/*.visual.spec.ts` | `fs.mkdirSync('screenshots', { recursive: true })` repeated in every test body (13 times) instead of a shared `beforeAll` or global setup. Benign but inconsistent with existing spec convention. Consolidate in a future cleanup pass. |
+
 ## PR task-t276-l1-contrastive-notes (2026-03-31) -- #276 L1 contrastive notes in grammar blocks
 
 | Severity | File | Note |
