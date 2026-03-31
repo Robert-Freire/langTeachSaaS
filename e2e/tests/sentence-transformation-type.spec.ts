@@ -125,6 +125,7 @@ test('wrong sentence transformation answer shows model answer', async ({ browser
     await student.getByTestId('st-input-0').fill('wrong answer')
     await student.getByTestId('check-answers-btn').click()
 
+    await expect(student.getByTestId('st-result-0')).toContainText('✗', { timeout: UI_TIMEOUT })
     await expect(student.getByTestId('st-result-0')).toContainText('Maria salio de casa a las ocho.', { timeout: UI_TIMEOUT })
     await expect(student.getByTestId('st-explanation-0')).toContainText('preterito', { timeout: UI_TIMEOUT })
   } finally {
