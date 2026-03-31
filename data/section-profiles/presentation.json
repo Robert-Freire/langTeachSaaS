@@ -27,7 +27,7 @@
         {"id": null, "pattern": "LUD-*", "reason": "Games are for practice consolidation, not language input/discovery"}
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "GR-08", "note": "Minimal metalanguage; elicit the rule with yes/no questions and pointing at the example"},
+        {"exerciseTypeId": "GR-08", "note": "Minimal metalanguage; elicit the rule with yes/no questions and pointing at the example. Noticing tasks only at A1.2; not appropriate at A1.1 where the grammar system is not yet sufficiently populated for inductive discovery"},
         {"exerciseTypeId": "VOC-01", "note": "Include L1 translations for all items; maximum 8-10 new words per lesson"}
       ],
       "minExerciseVariety": 1
