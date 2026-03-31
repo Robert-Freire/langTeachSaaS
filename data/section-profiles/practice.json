@@ -30,7 +30,7 @@
       "competencies": ["reading", "writing"],
       "scaffolding": "medium",
       "interactionPattern": "teacher-guided",
-      "validExerciseTypes": ["GR-01", "GR-02", "GR-06", "GR-07", "GR-09", "VOC-05", "VOC-06", "EO-01", "CE-01", "CE-02", "LUD-05", "LUD-06", "LUD-07"],
+      "validExerciseTypes": ["GR-01", "GR-02", "GR-06", "GR-07", "GR-09", "VOC-05", "VOC-06", "EO-01", "CE-01", "CE-02", "CE-10", "LUD-05", "LUD-06", "LUD-07"],
       "forbiddenExerciseTypes": [
         {"id": "GR-03", "pattern": null, "reason": "Sentence transformation requires prior command of the target form; not yet appropriate at A2"},
         {"id": "GR-04", "pattern": null, "reason": "Error correction requires meta-awareness of the rule; too demanding at A2"},
@@ -50,7 +50,7 @@
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "low",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-05", "VOC-07", "CE-01", "CE-03", "CE-06", "EO-01", "LUD-05", "LUD-06", "LUD-07"],
+      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-05", "VOC-07", "CE-01", "CE-03", "CE-10", "CE-06", "EO-01", "LUD-05", "LUD-06", "LUD-07"],
       "forbiddenExerciseTypes": [
         {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task, not a practice drill"},
         {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"}
@@ -68,7 +68,7 @@
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "low",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-07", "VOC-10", "CE-01", "CE-02", "CE-03", "CE-04", "CE-06", "CE-07", "LUD-05"],
+      "validExerciseTypes": ["GR-01", "GR-02", "GR-03", "GR-04", "GR-09", "GR-10", "VOC-04", "VOC-07", "VOC-10", "CE-01", "CE-02", "CE-03", "CE-10", "CE-04", "CE-06", "CE-07", "LUD-05"],
       "forbiddenExerciseTypes": [
         {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task, not a practice drill"},
         {"id": null, "pattern": "EE-*", "reason": "Extended writing is production, not controlled practice"}
@@ -85,7 +85,7 @@
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "none",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-04", "GR-10", "VOC-04", "VOC-07", "VOC-10", "VOC-11", "CE-01", "CE-02", "CE-03", "CE-04", "CE-05", "CE-07", "CE-08", "CE-09", "EE-09"],
+      "validExerciseTypes": ["GR-04", "GR-10", "VOC-04", "VOC-07", "VOC-10", "VOC-11", "CE-01", "CE-02", "CE-03", "CE-10", "CE-04", "CE-05", "CE-07", "CE-08", "CE-09", "EE-09"],
       "forbiddenExerciseTypes": [
         {"id": "GR-01", "pattern": null, "reason": "Basic fill-in-blank is too mechanical for C1; use reformulation or transformation tasks instead"},
         {"id": "GR-02", "pattern": null, "reason": "Simple multiple choice is too mechanical for C1"},
@@ -109,7 +109,7 @@
       "competencies": ["reading", "writing", "speaking"],
       "scaffolding": "none",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["GR-04", "GR-10", "VOC-07", "VOC-10", "VOC-11", "CE-01", "CE-02", "CE-03", "CE-04", "CE-05", "CE-07", "CE-08", "CE-09", "EE-09", "EE-11"],
+      "validExerciseTypes": ["GR-04", "GR-10", "VOC-07", "VOC-10", "VOC-11", "CE-01", "CE-02", "CE-03", "CE-10", "CE-04", "CE-05", "CE-07", "CE-08", "CE-09", "EE-09", "EE-11"],
       "forbiddenExerciseTypes": [
         {"id": "GR-01", "pattern": null, "reason": "Basic fill-in-blank is too mechanical for C2; use reformulation or transformation tasks instead"},
         {"id": "GR-02", "pattern": null, "reason": "Simple multiple choice is too mechanical for C2"},
