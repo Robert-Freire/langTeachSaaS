@@ -37,6 +37,17 @@ public record GuidedWritingGuidance(
 /// Output DTO for GetL1Adjustments — combines family-level adjustments and language-specific notes.
 /// Not a JSON deserialization model; composed from L1InfluenceFile data.
 /// </summary>
+/// <summary>
+/// Output DTO for GetNoticingTaskGuidance — CEFR-specific discovery task parameters.
+/// Not a JSON deserialization model; constructed by PedagogyConfigService from CefrLevelRules data.
+/// </summary>
+public record NoticingTaskGuidance(
+    string[] TargetCategories,
+    string QuestionComplexity,
+    string Scaffolding,
+    string Guidance
+);
+
 public record L1Adjustments(
     string[] AdditionalExerciseTypes,
     string[] IncreaseEmphasis,

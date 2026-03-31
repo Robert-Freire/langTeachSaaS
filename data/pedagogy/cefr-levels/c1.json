@@ -98,6 +98,12 @@
   "metalanguageLevel": "Metalanguage is a learning tool, not an obstacle. Full academic, rhetorical, and stylistic terminology.",
   "errorCorrection": "Mostly deferred. Student self-corrects with teacher cues. Recasting. Focus on register and style precision rather than grammatical accuracy alone.",
   "scaffoldingDefault": "low",
+  "noticingTask": {
+    "targetCategories": ["pragmatic features", "register shifts", "collocational restrictions", "sociolinguistic variation"],
+    "questionComplexity": "open analytical with metalinguistic reflection",
+    "scaffolding": "low",
+    "guidance": "Use ungraded authentic texts. Student analyses and categorises independently. Discovery questions require metalinguistic reflection. Focus on pragmatic and sociolinguistic nuance, not morphosyntax."
+  },
   "guidedWriting": {
     "wordCountMin": 200,
     "wordCountMax": 300,

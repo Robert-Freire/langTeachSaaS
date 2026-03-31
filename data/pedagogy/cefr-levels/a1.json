@@ -58,6 +58,12 @@
   "metalanguageLevel": "Minimal: verbo, nombre, adjetivo only. Avoid: conjugar, concordancia, paradigma.",
   "errorCorrection": "Immediate and explicit. Teacher provides correct form. Brief explanation. Student cannot self-correct because the system is not yet internalized. Example: 'Es soy, no estoy, porque hablamos de identidad, no de estado.'",
   "scaffoldingDefault": "high",
+  "noticingTask": {
+    "targetCategories": ["gender patterns", "basic verb endings (-ar, -er, -ir)", "article usage"],
+    "questionComplexity": "binary (yes/no) or point-and-choose",
+    "scaffolding": "high",
+    "guidance": "Only at end of A1.2 with heavy scaffolding. Present 2 clear examples with the target form highlighted. Discovery questions must be yes/no or simple either/or. Teacher models the first noticing step."
+  },
   "guidedWriting": {
     "wordCountMin": 30,
     "wordCountMax": 50,

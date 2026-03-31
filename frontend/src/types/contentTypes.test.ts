@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isGuidedWritingContent, coerceGuidedWritingContent, isErrorCorrectionContent, coerceErrorCorrectionContent, isExercisesContent, coerceExercisesContent } from './contentTypes'
+import { isGuidedWritingContent, coerceGuidedWritingContent, isErrorCorrectionContent, coerceErrorCorrectionContent, isExercisesContent, coerceExercisesContent, isNoticingTaskContent, coerceNoticingTaskContent } from './contentTypes'
 
 const valid = {
   situation: 'Write a short email.',
@@ -271,5 +271,80 @@ describe('coerceExercisesContent (sentenceTransformation)', () => {
   it('sets sentenceTransformation to undefined when not present', () => {
     const result = coerceExercisesContent(validExercises)
     expect(result?.sentenceTransformation).toBeUndefined()
+  })
+})
+
+// ─── Noticing Task ───────────────────────────────────────────────────────────
+
+const validNoticingTask = {
+  text: 'Ayer Maria fue al mercado.',
+  instruction: 'Find the past tense verbs.',
+  targets: [{ form: 'fue', position: [11, 14], grammar: 'GR-08' }],
+  discoveryQuestions: ['What tense is this?'],
+  teacherNotes: 'Preterito indefinido.',
+}
+
+describe('isNoticingTaskContent', () => {
+  it('returns true for valid content', () => {
+    expect(isNoticingTaskContent(validNoticingTask)).toBe(true)
+  })
+
+  it('returns true without teacherNotes', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { teacherNotes: _, ...rest } = validNoticingTask
+    expect(isNoticingTaskContent(rest)).toBe(true)
+  })
+
+  it('returns false for null', () => {
+    expect(isNoticingTaskContent(null)).toBe(false)
+  })
+
+  it('returns false when text is missing', () => {
+    expect(isNoticingTaskContent({ ...validNoticingTask, text: undefined })).toBe(false)
+  })
+
+  it('returns false when targets is empty', () => {
+    expect(isNoticingTaskContent({ ...validNoticingTask, targets: [] })).toBe(false)
+  })
+
+  it('returns false when discoveryQuestions is empty', () => {
+    expect(isNoticingTaskContent({ ...validNoticingTask, discoveryQuestions: [] })).toBe(false)
+  })
+
+  it('returns false when target has no position', () => {
+    expect(
+      isNoticingTaskContent({
+        ...validNoticingTask,
+        targets: [{ form: 'fue', grammar: 'GR-08' }],
+      }),
+    ).toBe(false)
+  })
+})
+
+describe('coerceNoticingTaskContent', () => {
+  it('returns valid content as-is', () => {
+    expect(coerceNoticingTaskContent(validNoticingTask)).toEqual(validNoticingTask)
+  })
+
+  it('returns null for null input', () => {
+    expect(coerceNoticingTaskContent(null)).toBeNull()
+  })
+
+  it('returns null when text is missing', () => {
+    expect(coerceNoticingTaskContent({ instruction: 'x', targets: [], discoveryQuestions: [] })).toBeNull()
+  })
+
+  it('unwraps nested wrapper', () => {
+    const wrapped = { noticingTask: validNoticingTask }
+    expect(coerceNoticingTaskContent(wrapped)).toEqual(validNoticingTask)
+  })
+
+  it('coerces position to numbers', () => {
+    const input = {
+      ...validNoticingTask,
+      targets: [{ form: 'fue', position: ['11', '14'], grammar: 'GR-08' }],
+    }
+    const result = coerceNoticingTaskContent(input)
+    expect(result?.targets[0].position).toEqual([11, 14])
   })
 })

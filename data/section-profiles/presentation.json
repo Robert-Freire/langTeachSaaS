@@ -2,7 +2,7 @@
   "sectionType": "presentation",
   "levels": {
     "A1": {
-      "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
+      "contentTypes": ["grammar", "vocabulary", "reading", "conversation", "noticing-task"],
       "guidance": "Isolated vocabulary with L1 translations. Clear grammar paradigms with minimal metalanguage. Max 8-10 new items. L1 support appropriate. Use simple, concrete examples the student can relate to.",
       "duration": { "min": 8, "max": 12 },
       "competencies": ["reading", "listening"],
@@ -33,7 +33,7 @@
       "minExerciseVariety": 1
     },
     "A2": {
-      "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
+      "contentTypes": ["grammar", "vocabulary", "reading", "conversation", "noticing-task"],
       "guidance": "Vocabulary in short contextual sentences. Grammar through noticing tasks: present examples, elicit the rule. Short authentic-style texts (50-80 words) as input.",
       "duration": { "min": 8, "max": 12 },
       "competencies": ["reading", "listening"],
@@ -64,7 +64,7 @@
       "minExerciseVariety": 1
     },
     "B1": {
-      "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
+      "contentTypes": ["grammar", "vocabulary", "reading", "conversation", "noticing-task"],
       "guidance": "Introduce new language through authentic-style excerpts (100-150 words). When the lesson includes a grammar point, use guided discovery: present data, ask the student to formulate the rule. Include typical L1 interference notes. When no grammar point is targeted, let the text or content carry the input.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["reading", "listening"],
@@ -95,7 +95,7 @@
       "minExerciseVariety": 1
     },
     "B2": {
-      "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
+      "contentTypes": ["grammar", "vocabulary", "reading", "conversation", "noticing-task"],
       "guidance": "Register-appropriate authentic texts as the primary input vehicle. When the lesson targets grammar, focus on nuance: indicative vs subjunctive, aspect, discourse markers. Student formulates rules from data. When grammar is not the focus, the text serves vocabulary expansion and comprehension.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["reading", "listening"],
@@ -126,7 +126,7 @@
       "minExerciseVariety": 1
     },
     "C1": {
-      "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
+      "contentTypes": ["grammar", "vocabulary", "reading", "conversation", "noticing-task"],
       "guidance": "Collocations, idioms, pragmatic functions, register shifts. Ungraded authentic texts. Grammar: pragmatic and sociolinguistic nuance. Student analyses and categorises independently.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["reading", "listening"],
@@ -157,7 +157,7 @@
       "minExerciseVariety": 1
     },
     "C2": {
-      "contentTypes": ["grammar", "vocabulary", "reading", "conversation"],
+      "contentTypes": ["grammar", "vocabulary", "reading", "conversation", "noticing-task"],
       "guidance": "Collocations, idioms, pragmatic functions at near-native level. Authentic texts without grading. Mediation, paraphrase, register transfer as input tasks. Student leads analysis.",
       "duration": { "min": 10, "max": 15 },
       "competencies": ["reading", "listening"],

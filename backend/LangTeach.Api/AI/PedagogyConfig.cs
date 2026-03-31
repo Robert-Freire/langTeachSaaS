@@ -20,7 +20,8 @@ public record CefrLevelRules(
     string MetalanguageLevel,
     string ErrorCorrection,
     string ScaffoldingDefault,
-    GuidedWritingConfig? GuidedWriting = null
+    GuidedWritingConfig? GuidedWriting = null,
+    NoticingTaskConfig? NoticingTask = null
 );
 
 public record GuidedWritingConfig(
@@ -31,6 +32,13 @@ public record GuidedWritingConfig(
     string Structures,
     string Complexity,
     string SituationGuidance
+);
+
+public record NoticingTaskConfig(
+    string[] TargetCategories,
+    string QuestionComplexity,
+    string Scaffolding,
+    string Guidance
 );
 
 public record InappropriateExerciseEntry(string Id, string Reason);

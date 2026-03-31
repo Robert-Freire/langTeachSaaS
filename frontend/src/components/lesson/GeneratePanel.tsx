@@ -44,6 +44,7 @@ const TASK_TYPES: { value: ContentBlockType; label: string }[] = [
   { value: 'conversation', label: 'Conversation' },
   { value: 'reading', label: 'Reading' },
   { value: 'homework', label: 'Homework' },
+  { value: 'noticing-task', label: 'Noticing Task' },
   { value: 'free-text', label: 'Free activity' },
 ]
 

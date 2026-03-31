@@ -94,6 +94,12 @@
   "metalanguageLevel": "Full: advanced grammatical metalanguage expected",
   "errorCorrection": "Mostly deferred. Student self-corrects with teacher cues. Recasting: teacher repeats the correct form without explicitly marking the error.",
   "scaffoldingDefault": "low",
+  "noticingTask": {
+    "targetCategories": ["indicative vs subjunctive contrasts", "discourse markers", "aspect nuances", "register differences"],
+    "questionComplexity": "open analytical questions",
+    "scaffolding": "low",
+    "guidance": "Use register-appropriate authentic texts. Student formulates rules from data. Discovery questions require analysis and categorization. Focus on nuance: when does usage change meaning?"
+  },
   "guidedWriting": {
     "wordCountMin": 130,
     "wordCountMax": 200,

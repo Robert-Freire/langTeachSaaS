@@ -628,4 +628,50 @@ public class PedagogyConfigServiceTests
         result.Should().HaveCount(3);
         result.Select(s => s.Id).Should().BeEquivalentTo(["controlled", "meaningful", "guided_free"]);
     }
+
+    // ─── Noticing Task Guidance ──────────────────────────────────────────
+
+    [Theory]
+    [InlineData("A1")]
+    [InlineData("A2")]
+    [InlineData("B1")]
+    [InlineData("B2")]
+    [InlineData("C1")]
+    [InlineData("C2")]
+    public void GetNoticingTaskGuidance_ReturnsForAllLevels(string level)
+    {
+        var result = _sut.GetNoticingTaskGuidance(level);
+
+        result.Should().NotBeNull();
+        result!.TargetCategories.Should().NotBeEmpty();
+        result.QuestionComplexity.Should().NotBeNullOrEmpty();
+        result.Scaffolding.Should().NotBeNullOrEmpty();
+        result.Guidance.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public void GetNoticingTaskGuidance_UnknownLevel_ReturnsNull()
+    {
+        var result = _sut.GetNoticingTaskGuidance("Z9");
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetNoticingTaskGuidance_A2_HasHighScaffolding()
+    {
+        var result = _sut.GetNoticingTaskGuidance("A2");
+
+        result.Should().NotBeNull();
+        result!.Scaffolding.Should().Be("high");
+    }
+
+    [Fact]
+    public void GetNoticingTaskGuidance_C1_HasLowScaffolding()
+    {
+        var result = _sut.GetNoticingTaskGuidance("C1");
+
+        result.Should().NotBeNull();
+        result!.Scaffolding.Should().Be("low");
+    }
 }

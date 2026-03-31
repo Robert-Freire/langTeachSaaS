@@ -15,6 +15,7 @@ public enum ContentBlockType
     FreeText,
     GuidedWriting,
     ErrorCorrection,
+    NoticingTask,
 }
 
 public static class ContentBlockTypeExtensions
@@ -31,6 +32,7 @@ public static class ContentBlockTypeExtensions
         [ContentBlockType.FreeText]         = "free-text",
         [ContentBlockType.GuidedWriting]    = "guided-writing",
         [ContentBlockType.ErrorCorrection]  = "error-correction",
+        [ContentBlockType.NoticingTask]      = "noticing-task",
     };
 
     private static readonly Dictionary<string, ContentBlockType> FromKebabMap =

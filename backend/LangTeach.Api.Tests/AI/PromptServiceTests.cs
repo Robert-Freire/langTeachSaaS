@@ -2195,4 +2195,74 @@ public class PromptServiceTests
         b1.UserPrompt.Should().Contain("errorSpan");
         c1.UserPrompt.Should().Contain("errorSpan");
     }
+
+    // ─── Noticing Task ──────────────────────────────────────────────────
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_IncludesDiscoveryInstructions()
+    {
+        var result = _sut.BuildNoticingTaskPrompt(BaseCtx() with { CefrLevel = "B1" });
+
+        result.UserPrompt.Should().Contain("noticing task");
+        result.UserPrompt.Should().Contain("discoveryQuestions");
+        result.UserPrompt.Should().Contain("targets");
+        result.UserPrompt.Should().Contain("teacherNotes");
+    }
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_IncludesCefrGuidance()
+    {
+        var result = _sut.BuildNoticingTaskPrompt(BaseCtx() with { CefrLevel = "B1" });
+
+        result.UserPrompt.Should().Contain("DISCOVERY TASK PARAMETERS");
+        result.UserPrompt.Should().Contain("tense contrasts");
+    }
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_IncludesGrammarScope()
+    {
+        var result = _sut.BuildNoticingTaskPrompt(BaseCtx() with { CefrLevel = "B1", Language = "Spanish" });
+
+        result.UserPrompt.Should().Contain("GRAMMAR SCOPE");
+    }
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_UsesSonnetModel()
+    {
+        var result = _sut.BuildNoticingTaskPrompt(BaseCtx());
+
+        result.Model.Should().Be(ClaudeModel.Sonnet);
+    }
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_DefaultsToPresentationSection()
+    {
+        var logger = new FakeLogger<PromptService>();
+        var sut = new PromptService(ProfileService, PedagogyService, logger, NoOpSchemas);
+
+        sut.BuildNoticingTaskPrompt(BaseCtx());
+
+        logger.Entries.Should().Contain(e => e.Message.Contains("section=presentation"));
+    }
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_NoLevelConditionals()
+    {
+        var a2 = _sut.BuildNoticingTaskPrompt(BaseCtx() with { CefrLevel = "A2" });
+        var c1 = _sut.BuildNoticingTaskPrompt(BaseCtx() with { CefrLevel = "C1" });
+
+        a2.UserPrompt.Should().Contain("discoveryQuestions");
+        c1.UserPrompt.Should().Contain("discoveryQuestions");
+    }
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_InjectsSchemaWhenAvailable()
+    {
+        var schemaService = new StubContentSchemaService("noticing-task", "{\"type\":\"object\"}");
+        var sut = new PromptService(ProfileService, PedagogyService, NullLogger<PromptService>.Instance, schemaService);
+
+        var result = sut.BuildNoticingTaskPrompt(BaseCtx());
+
+        result.UserPrompt.Should().Contain("Generate JSON strictly matching this schema");
+    }
 }

@@ -23,6 +23,7 @@ internal sealed class FakePromptService : IPromptService
     public ClaudeRequest BuildFreeTextPrompt(GenerationContext ctx) => Dummy();
     public ClaudeRequest BuildGuidedWritingPrompt(GenerationContext ctx) => Dummy();
     public ClaudeRequest BuildErrorCorrectionPrompt(GenerationContext ctx) => Dummy();
+    public ClaudeRequest BuildNoticingTaskPrompt(GenerationContext ctx) => Dummy();
 
     public ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx)
     {

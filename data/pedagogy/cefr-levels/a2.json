@@ -50,6 +50,12 @@
   "metalanguageLevel": "Basic metalanguage in L2: pasado, presente, verbo, adjetivo",
   "errorCorrection": "Immediate for systemic errors at risk of fossilization. Deferred for performance errors. Begin encouraging self-correction: '?Estas seguro? Piensa otra vez.'",
   "scaffoldingDefault": "high",
+  "noticingTask": {
+    "targetCategories": ["gender patterns", "verb endings (regular vs irregular)", "basic word order", "article agreement"],
+    "questionComplexity": "binary or simple choice",
+    "scaffolding": "high",
+    "guidance": "Present 2-3 clear examples. Discovery questions should be yes/no or simple choice. Ask 'Que notas?' before explaining the rule. Highlight target forms visually in the text."
+  },
   "guidedWriting": {
     "wordCountMin": 50,
     "wordCountMax": 80,

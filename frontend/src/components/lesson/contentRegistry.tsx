@@ -7,6 +7,7 @@ import { GrammarRenderer } from './renderers/GrammarRenderer'
 import { GuidedWritingRenderer } from './renderers/GuidedWritingRenderer'
 import { HomeworkRenderer } from './renderers/HomeworkRenderer'
 import { ReadingRenderer } from './renderers/ReadingRenderer'
+import { NoticingTaskRenderer } from './renderers/NoticingTaskRenderer'
 import { VocabularyRenderer } from './renderers/VocabularyRenderer'
 
 export interface EditorProps {
@@ -42,6 +43,7 @@ const registry: Partial<Record<ContentBlockType, ContentRenderer>> = {
   grammar: GrammarRenderer,
   'guided-writing': GuidedWritingRenderer,
   homework: HomeworkRenderer,
+  'noticing-task': NoticingTaskRenderer,
   reading: ReadingRenderer,
   vocabulary: VocabularyRenderer,
 }
