@@ -10,7 +10,27 @@
         "additionalExerciseTypes": [],
         "templatePreference": ["conversation", "reading-comprehension"],
         "notes": "Reduce grammar presentation time. Increase practice on false friends and subtle register differences."
-      }
+      },
+      "contrastivePatterns": [
+        {
+          "pattern": "ser-estar",
+          "l1Behavior": "Single copula (Italian: essere, French: être, Romanian: a fi) covers both identity and state. Note: does NOT apply to Portuguese, which has the same ser/estar distinction as Spanish.",
+          "targetContrast": "Spanish distinguishes ser (identity/permanent essence) from estar (state/condition/location)",
+          "cefrRelevance": ["A1", "A2", "B1", "B2"]
+        },
+        {
+          "pattern": "false-cognates",
+          "l1Behavior": "Romance cognates look identical but have diverged in meaning (e.g., Italian 'guardare', French 'assister')",
+          "targetContrast": "Many Spanish words share form with L1 cognates but differ in meaning or register",
+          "cefrRelevance": ["A2", "B1", "B2", "C1"]
+        },
+        {
+          "pattern": "subjunctive",
+          "l1Behavior": "Subjunctive exists and functions similarly in most Romance languages",
+          "targetContrast": "Spanish subjunctive is obligatory in subordinate clauses after expressions of doubt, emotion, and impersonal constructions; temporal correlation rules are strict (present vs. imperfect subjunctive)",
+          "cefrRelevance": ["B1", "B2", "C1", "C2"]
+        }
+      ]
     },
     "germanic": {
       "languages": ["english", "german", "dutch", "swedish", "norwegian", "danish"],
@@ -22,7 +42,33 @@
         "additionalExerciseTypes": [],
         "templatePreference": [],
         "notes": "Explicit explanation of concepts not in L1. Extra ser/estar practice at every level until B2."
-      }
+      },
+      "contrastivePatterns": [
+        {
+          "pattern": "ser-estar",
+          "l1Behavior": "Single copula (to be / sein / zijn) covers both identity and state",
+          "targetContrast": "Spanish distinguishes ser (identity/permanent essence) from estar (state/condition/location/temporary quality)",
+          "cefrRelevance": ["A1", "A2", "B1", "B2"]
+        },
+        {
+          "pattern": "subjunctive",
+          "l1Behavior": "Subjunctive is rare or absent in English/Scandinavian; German has subjunctive but used differently",
+          "targetContrast": "Spanish subjunctive is obligatory in subordinate clauses of doubt, volition, emotion, and impersonal constructions",
+          "cefrRelevance": ["B1", "B2", "C1", "C2"]
+        },
+        {
+          "pattern": "gender",
+          "l1Behavior": "English has no grammatical gender; German/Dutch gender does not always align with Spanish",
+          "targetContrast": "Spanish nouns have grammatical gender (masculine/feminine) that determines article and adjective agreement",
+          "cefrRelevance": ["A1", "A2", "B1"]
+        },
+        {
+          "pattern": "preposition",
+          "l1Behavior": "Prepositions in Germanic languages do not map directly to Spanish equivalents",
+          "targetContrast": "Spanish prepositions (por/para, en/a, de) require explicit memorization; transfer errors are frequent",
+          "cefrRelevance": ["A2", "B1", "B2"]
+        }
+      ]
     },
     "sinitic-japonic": {
       "languages": ["mandarin", "cantonese", "japanese"],
@@ -34,7 +80,33 @@
         "additionalExerciseTypes": ["CO-06"],
         "templatePreference": ["grammar-focus"],
         "notes": "Very gradual approach. Heavy repetition. Strong visual support. CO-06 in every lesson during A1-A2."
-      }
+      },
+      "contrastivePatterns": [
+        {
+          "pattern": "gender",
+          "l1Behavior": "No grammatical gender in Mandarin/Cantonese/Japanese",
+          "targetContrast": "Spanish nouns have grammatical gender that governs article and adjective agreement; must be memorized with each noun",
+          "cefrRelevance": ["A1", "A2", "B1"]
+        },
+        {
+          "pattern": "article",
+          "l1Behavior": "No articles (definite or indefinite) in Mandarin/Cantonese/Japanese",
+          "targetContrast": "Spanish uses el/la/los/las (definite) and un/una/unos/unas (indefinite) that agree in gender and number with the noun",
+          "cefrRelevance": ["A1", "A2"]
+        },
+        {
+          "pattern": "verb conjugation",
+          "l1Behavior": "Verbs do not conjugate for person, number, or tense in Mandarin/Cantonese; Japanese uses aspect markers and postpositional tense",
+          "targetContrast": "Spanish verbs conjugate for person, number, tense, and mood; each verb has a full paradigm that must be learned",
+          "cefrRelevance": ["A1", "A2", "B1"]
+        },
+        {
+          "pattern": "subjunctive",
+          "l1Behavior": "No equivalent mood system in Mandarin/Cantonese/Japanese; modality expressed lexically",
+          "targetContrast": "Spanish subjunctive is a mandatory grammatical mood triggered by specific syntactic environments (doubt, emotion, volition, impersonal constructions)",
+          "cefrRelevance": ["B1", "B2", "C1"]
+        }
+      ]
     },
     "slavic": {
       "languages": ["russian", "polish", "czech", "ukrainian", "serbian", "croatian"],
@@ -46,7 +118,27 @@
         "additionalExerciseTypes": [],
         "templatePreference": [],
         "notes": "Heavy emphasis on article use/omission. Preposition practice in every lesson."
-      }
+      },
+      "contrastivePatterns": [
+        {
+          "pattern": "article",
+          "l1Behavior": "No articles (definite or indefinite) in Russian/Polish/Czech/Ukrainian/Serbian/Croatian",
+          "targetContrast": "Spanish requires definite and indefinite articles that agree in gender and number with the noun; omission is a critical error",
+          "cefrRelevance": ["A1", "A2", "B1"]
+        },
+        {
+          "pattern": "preposition",
+          "l1Behavior": "Slavic prepositions govern grammatical cases; Spanish prepositions govern no case",
+          "targetContrast": "Spanish prepositions must be memorized as lexical items; there are no case endings to guide choice",
+          "cefrRelevance": ["A2", "B1", "B2"]
+        },
+        {
+          "pattern": "ser-estar",
+          "l1Behavior": "Single copula (быть/być/být) covers identity and state; often dropped in present tense in Russian",
+          "targetContrast": "Spanish distinguishes ser (identity/essence) from estar (state/condition); the copula is never dropped. Ser+adjective vs. estar+adjective distinctions remain challenging through B2.",
+          "cefrRelevance": ["A1", "A2", "B1", "B2"]
+        }
+      ]
     },
     "arabic": {
       "languages": ["arabic"],
@@ -58,7 +150,21 @@
         "additionalExerciseTypes": ["CO-06"],
         "templatePreference": [],
         "notes": "Intensive phonetic discrimination for vowels. Additional writing exercises."
-      }
+      },
+      "contrastivePatterns": [
+        {
+          "pattern": "ser-estar",
+          "l1Behavior": "Arabic copula (كان) is typically omitted in present tense nominal sentences; no ser/estar distinction",
+          "targetContrast": "Spanish requires explicit ser or estar in all tenses; choice depends on identity vs. state",
+          "cefrRelevance": ["A1", "A2", "B1"]
+        },
+        {
+          "pattern": "verb conjugation",
+          "l1Behavior": "Arabic verbal system is root-and-pattern morphology; conjugation marks person, number, and gender but not the same tense distinctions",
+          "targetContrast": "Spanish uses a separate paradigm per tense (present, preterite, imperfect, future, conditional, subjunctive) with person/number endings",
+          "cefrRelevance": ["A1", "A2", "B1"]
+        }
+      ]
     }
   },
   "specificLanguages": {
@@ -74,7 +180,40 @@
         "R/RR pronunciation similar",
         "Subjunctive exists and functions similarly"
       ],
-      "additionalNotes": "Critical interference on ser/estar (Italian essere covers both). Student will say '*Soy cansado'. Needs specific GR-02 and GR-04 for ser/estar from A1."
+      "additionalNotes": "Critical interference on ser/estar (Italian essere covers both). Student will say '*Soy cansado'. Needs specific GR-02 and GR-04 for ser/estar from A1.",
+      "contrastivePatterns": [
+        {
+          "pattern": "ser-estar",
+          "l1Behavior": "Italian 'essere' covers both ser and estar. 'Sono stanco' (I am tired) uses the same verb as 'Sono medico' (I am a doctor)",
+          "targetContrast": "In Spanish, 'Estoy cansado' (tiredness = temporary state, estar) vs. 'Soy médico' (profession = identity, ser). The choice is obligatory and systematic",
+          "cefrRelevance": ["A1", "A2", "B1", "B2"]
+        },
+        {
+          "pattern": "false-cognates",
+          "l1Behavior": "Italian 'firma' means signature; 'burro' means butter; 'largo' means wide/broad (not long — that is 'lungo')",
+          "targetContrast": "Spanish 'firma' also means signature (positive transfer), but 'burro' means donkey and 'largo' means long — partial false friends require explicit attention",
+          "cefrRelevance": ["A2", "B1", "B2"]
+        }
+      ]
+    },
+    "portuguese": {
+      "family": "romance",
+      "falseFriends": [],
+      "positiveTransfer": [
+        "Ser/estar distinction exists and functions similarly to Spanish",
+        "Subjunctive exists and functions similarly",
+        "Grammatical gender",
+        "Similar verb system"
+      ],
+      "additionalNotes": "Portuguese has the same ser/estar distinction as Spanish (positive transfer). Do not apply the romance family ser-estar contrastive note to Portuguese speakers.",
+      "contrastivePatterns": [
+        {
+          "pattern": "false-cognates",
+          "l1Behavior": "Portuguese false friends are rarer than Italian but present (e.g., 'borracha' = rubber, not drunk; 'polvo' = octopus or dust depending on variant)",
+          "targetContrast": "Spanish and Portuguese share extensive cognate base; false friends require specific attention rather than systematic contrast",
+          "cefrRelevance": ["A2", "B1", "B2"]
+        }
+      ]
     },
     "french": {
       "family": "romance",

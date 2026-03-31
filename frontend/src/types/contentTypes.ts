@@ -26,11 +26,19 @@ export interface GrammarExample {
   note?: string
 }
 
+export interface L1ContrastiveNote {
+  l1Example: string
+  targetExample: string
+  explanation: string
+  interferencePattern: string
+}
+
 export interface GrammarContent {
   title: string
   explanation: string
   examples: GrammarExample[]
   commonMistakes: string[]
+  l1ContrastiveNote?: L1ContrastiveNote
 }
 
 export type PracticeStage = 'controlled' | 'meaningful' | 'guided_free'
@@ -195,10 +203,21 @@ export function isVocabularyContent(v: unknown): v is VocabularyContent {
   return typeof v === 'object' && v !== null && 'items' in v && Array.isArray((v as VocabularyContent).items)
 }
 
+function isL1ContrastiveNote(v: unknown): v is L1ContrastiveNote {
+  if (typeof v !== 'object' || v === null) return false
+  const c = v as Record<string, unknown>
+  return typeof c.l1Example === 'string' && typeof c.targetExample === 'string' &&
+    typeof c.explanation === 'string' && typeof c.interferencePattern === 'string'
+}
+
 export function isGrammarContent(v: unknown): v is GrammarContent {
   if (typeof v !== 'object' || v === null) return false
   const c = v as Record<string, unknown>
-  return typeof c.title === 'string' && typeof c.explanation === 'string' && Array.isArray(c.examples) && Array.isArray(c.commonMistakes)
+  if (!(typeof c.title === 'string' && typeof c.explanation === 'string' && Array.isArray(c.examples) && Array.isArray(c.commonMistakes)))
+    return false
+  if (c.l1ContrastiveNote !== undefined && !isL1ContrastiveNote(c.l1ContrastiveNote))
+    return false
+  return true
 }
 
 export function isExercisesContent(v: unknown): v is ExercisesContent {
@@ -358,6 +377,7 @@ export function coerceGrammarContent(v: unknown): GrammarContent | null {
       : Array.isArray(obj.mistakes) ? obj.mistakes
       : Array.isArray(obj.errors) ? obj.errors
       : [],
+    ...(isL1ContrastiveNote(obj.l1ContrastiveNote) ? { l1ContrastiveNote: obj.l1ContrastiveNote } : {}),
   }
   if (isGrammarContent(candidate)) return candidate as GrammarContent
   return null

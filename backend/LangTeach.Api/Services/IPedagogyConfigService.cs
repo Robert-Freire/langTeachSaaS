@@ -128,4 +128,13 @@ public interface IPedagogyConfigService
     /// Returns all practice stage definitions (id, names, descriptions, allowed exercise categories).
     /// </summary>
     IReadOnlyList<PracticeStageDefinition> GetPracticeStageDefinitions();
+
+    /// <summary>
+    /// Returns a contrastive note result for the given native language, grammar topic, and CEFR level.
+    /// Looks up contrastive patterns for the native language (specific-language patterns take priority
+    /// over family-level patterns). Matches the first pattern whose Pattern value is a case-insensitive
+    /// substring of <paramref name="grammarTopic"/> and whose CefrRelevance includes <paramref name="level"/>.
+    /// Returns null if the L1 is unknown, no patterns are defined, or none match the topic and level.
+    /// </summary>
+    ContrastiveNoteResult? GetContrastivePattern(string nativeLang, string grammarTopic, string level);
 }

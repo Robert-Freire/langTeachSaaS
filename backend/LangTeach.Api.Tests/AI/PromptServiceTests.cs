@@ -2265,4 +2265,51 @@ public class PromptServiceTests
 
         result.UserPrompt.Should().Contain("Generate JSON strictly matching this schema");
     }
+
+    // --- BuildGrammarPrompt: L1 contrastive notes ---
+
+    [Fact]
+    public void BuildGrammarPrompt_WithItalianAndSerEstarTopic_IncludesContrastiveBlock()
+    {
+        var ctx = BaseCtx() with
+        {
+            StudentNativeLanguage = "italian",
+            Topic = "ser-estar distinction",
+            CefrLevel = "A2"
+        };
+
+        var req = _sut.BuildGrammarPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("L1 CONTRASTIVE NOTE",
+            because: "Italian + ser-estar topic + A2 level matches a contrastive pattern in l1-influence.json");
+        req.UserPrompt.Should().Contain("essere",
+            because: "the Italian-specific contrastive pattern references 'essere'");
+    }
+
+    [Fact]
+    public void BuildGrammarPrompt_WithNoNativeLanguage_OmitsContrastiveBlock()
+    {
+        var ctx = BaseCtx() with { StudentNativeLanguage = null, Topic = "ser-estar distinction" };
+
+        var req = _sut.BuildGrammarPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("L1 CONTRASTIVE NOTE",
+            because: "no native language means no contrastive note should be generated");
+    }
+
+    [Fact]
+    public void BuildGrammarPrompt_WithItalianButUnmatchedTopic_OmitsContrastiveBlock()
+    {
+        var ctx = BaseCtx() with
+        {
+            StudentNativeLanguage = "italian",
+            Topic = "preterite vs imperfect",
+            CefrLevel = "B1"
+        };
+
+        var req = _sut.BuildGrammarPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("L1 CONTRASTIVE NOTE",
+            because: "no contrastive pattern matches 'preterite vs imperfect' for Italian");
+    }
 }

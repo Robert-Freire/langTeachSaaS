@@ -53,11 +53,19 @@ public record L1InfluenceFile(
     Dictionary<string, SpecificLanguage> SpecificLanguages
 );
 
+public record ContrastivePattern(
+    string Pattern,
+    string L1Behavior,
+    string TargetContrast,
+    string[] CefrRelevance
+);
+
 public record LanguageFamily(
     string[] Languages,
     string[] Strengths,
     string[] Weaknesses,
-    LanguageFamilyAdjustments Adjustments
+    LanguageFamilyAdjustments Adjustments,
+    ContrastivePattern[]? ContrastivePatterns = null
 );
 
 public record LanguageFamilyAdjustments(
@@ -73,7 +81,8 @@ public record SpecificLanguage(
     string[] FalseFriends,
     string[] PositiveTransfer,
     string AdditionalNotes,
-    TargetLanguageGrammarConstraint[]? GrammarConstraints = null
+    TargetLanguageGrammarConstraint[]? GrammarConstraints = null,
+    ContrastivePattern[]? ContrastivePatterns = null
 );
 
 public record TargetLanguageGrammarConstraint(

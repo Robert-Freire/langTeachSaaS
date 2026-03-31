@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
+import { useState } from 'react'
 import { isGrammarContent, coerceGrammarContent } from '../../../types/contentTypes'
-import type { GrammarExample } from '../../../types/contentTypes'
+import type { GrammarExample, L1ContrastiveNote } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
 import { ContentParseError } from '../ContentParseError'
 import { ContentEditorParseError } from '../ContentEditorParseError'
@@ -9,6 +10,10 @@ const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none f
 const textareaClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded border border-zinc-200 resize-none'
 
 function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplete }: EditorProps) {
+  const [l1NoteExpanded, setL1NoteExpanded] = useState(
+    parsedContent != null && isGrammarContent(parsedContent) && parsedContent.l1ContrastiveNote != null
+  )
+
   if (!isGrammarContent(parsedContent)) {
     return (
       <ContentEditorParseError
@@ -48,6 +53,16 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
 
   const handleRemoveMistake = (index: number) => {
     emit({ ...parsedContent, commonMistakes: parsedContent.commonMistakes.filter((_, i) => i !== index) })
+  }
+
+  const handleL1NoteChange = (field: keyof L1ContrastiveNote, value: string) => {
+    const current = parsedContent.l1ContrastiveNote ?? { l1Example: '', targetExample: '', explanation: '', interferencePattern: '' }
+    emit({ ...parsedContent, l1ContrastiveNote: { ...current, [field]: value } })
+  }
+
+  const handleRemoveL1Note = () => {
+    emit({ title: parsedContent.title, explanation: parsedContent.explanation, examples: parsedContent.examples, commonMistakes: parsedContent.commonMistakes })
+    setL1NoteExpanded(false)
   }
 
   return (
@@ -149,6 +164,59 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
           + Add mistake
         </button>
       </div>
+
+      <div className="border border-blue-200 rounded-md">
+        <button
+          type="button"
+          onClick={() => setL1NoteExpanded(!l1NoteExpanded)}
+          className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+          data-testid="grammar-l1-note-toggle"
+        >
+          <span>L1 Comparison Note</span>
+          <span>{l1NoteExpanded ? '▲' : '▼'}</span>
+        </button>
+        {l1NoteExpanded && (
+          <div className="px-3 pb-3 space-y-2" data-testid="grammar-l1-note-editor">
+            <input
+              value={parsedContent.l1ContrastiveNote?.l1Example ?? ''}
+              onChange={(e) => handleL1NoteChange('l1Example', e.target.value)}
+              placeholder="L1 example (e.g. 'Sono stanco' in Italian)"
+              className={inputClass}
+              data-testid="grammar-l1-example-input"
+            />
+            <input
+              value={parsedContent.l1ContrastiveNote?.targetExample ?? ''}
+              onChange={(e) => handleL1NoteChange('targetExample', e.target.value)}
+              placeholder="Spanish equivalent (e.g. 'Estoy cansado')"
+              className={inputClass}
+              data-testid="grammar-l1-target-input"
+            />
+            <textarea
+              value={parsedContent.l1ContrastiveNote?.explanation ?? ''}
+              onChange={(e) => handleL1NoteChange('explanation', e.target.value)}
+              placeholder="Why they differ"
+              rows={2}
+              className={textareaClass}
+              data-testid="grammar-l1-explanation-input"
+            />
+            <input
+              value={parsedContent.l1ContrastiveNote?.interferencePattern ?? ''}
+              onChange={(e) => handleL1NoteChange('interferencePattern', e.target.value)}
+              placeholder="Interference pattern (e.g. 'ser-estar')"
+              className={inputClass}
+              data-testid="grammar-l1-pattern-input"
+            />
+            <button
+              type="button"
+              onClick={handleRemoveL1Note}
+              className="text-xs text-red-500 hover:text-red-700"
+              data-testid="grammar-l1-note-remove"
+            >
+              Remove L1 note
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -186,6 +254,17 @@ function Preview({ parsedContent }: PreviewProps) {
           </ul>
         </div>
       )}
+      {parsedContent.l1ContrastiveNote && (
+        <div className="rounded-md bg-blue-50 border border-blue-200 px-4 py-3" data-testid="grammar-preview-l1-note">
+          <p className="text-xs font-semibold text-blue-700 mb-2">L1 Comparison Note</p>
+          <div className="space-y-1 text-sm text-blue-900">
+            <p><span className="font-medium">L1:</span> {parsedContent.l1ContrastiveNote.l1Example}</p>
+            <p><span className="font-medium">Spanish:</span> {parsedContent.l1ContrastiveNote.targetExample}</p>
+            <p className="text-xs text-blue-700 mt-1">{parsedContent.l1ContrastiveNote.explanation}</p>
+            <p className="text-xs text-blue-500 italic">Pattern: {parsedContent.l1ContrastiveNote.interferencePattern}</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -221,6 +300,22 @@ function Student({ parsedContent }: StudentProps) {
               <li key={i} className="text-sm text-amber-800">{m}</li>
             ))}
           </ul>
+        </div>
+      )}
+      {parsedContent.l1ContrastiveNote && (
+        <div className="rounded-md bg-blue-50 border-l-4 border-blue-400 px-4 py-3" data-testid="grammar-student-l1-note">
+          <p className="text-sm font-semibold text-blue-800 mb-2">In your language vs. Spanish</p>
+          <div className="space-y-2 text-sm">
+            <div className="flex gap-2 items-start">
+              <span className="text-xs font-medium text-blue-600 w-16 shrink-0 pt-0.5">Your L1:</span>
+              <span className="text-blue-900 font-medium">{parsedContent.l1ContrastiveNote.l1Example}</span>
+            </div>
+            <div className="flex gap-2 items-start">
+              <span className="text-xs font-medium text-blue-600 w-16 shrink-0 pt-0.5">Spanish:</span>
+              <span className="text-blue-900 font-medium">{parsedContent.l1ContrastiveNote.targetExample}</span>
+            </div>
+            <p className="text-xs text-blue-700 mt-1">{parsedContent.l1ContrastiveNote.explanation}</p>
+          </div>
         </div>
       )}
     </div>

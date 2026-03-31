@@ -269,6 +269,51 @@ public class PedagogyConfigService : IPedagogyConfigService
         return [];
     }
 
+    public ContrastiveNoteResult? GetContrastivePattern(string nativeLang, string grammarTopic, string level)
+    {
+        if (string.IsNullOrWhiteSpace(nativeLang)
+            || string.IsNullOrWhiteSpace(grammarTopic)
+            || string.IsNullOrWhiteSpace(level))
+            return null;
+
+        var key = NormalizeLang(nativeLang);
+        var normalizedLevel = NormalizeLevel(level);
+        var (_, specific) = ResolveLang(key);
+
+        // If the specific language has explicitly defined ContrastivePatterns (even as an empty array),
+        // use only those and do NOT fall back to family patterns. This allows specific languages to
+        // opt out of family-level patterns (e.g., Portuguese has positive transfer on ser/estar).
+        // If ContrastivePatterns is null, fall back to family patterns.
+        // Pattern is a substring keyword (topic "ser-estar distinction" matches pattern "ser-estar").
+        ContrastivePattern[] patterns;
+        if (specific?.ContrastivePatterns is not null)
+            patterns = specific.ContrastivePatterns;
+        else
+            patterns = ResolveFamilyContrastivePatterns(key, specific);
+
+        foreach (var p in patterns)
+        {
+            var topicMatch = grammarTopic.Contains(p.Pattern, StringComparison.OrdinalIgnoreCase);
+            var levelMatch = p.CefrRelevance.Contains(normalizedLevel, StringComparer.OrdinalIgnoreCase);
+            if (topicMatch && levelMatch)
+                return new ContrastiveNoteResult(p.L1Behavior, p.TargetContrast, nativeLang);
+        }
+
+        return null;
+    }
+
+    private ContrastivePattern[] ResolveFamilyContrastivePatterns(string lang, SpecificLanguage? specific)
+    {
+        LanguageFamily? fam = null;
+        if (specific?.Family is not null)
+            _l1.LanguageFamilies.TryGetValue(specific.Family, out fam);
+        // If family lookup failed (typo/data drift) or no specific language, fall back to scanning
+        if (fam is null)
+            foreach (var (_, f) in _l1.LanguageFamilies)
+                if (f.Languages.Contains(lang, StringComparer.OrdinalIgnoreCase)) { fam = f; break; }
+        return fam?.ContrastivePatterns ?? [];
+    }
+
     public TemplateOverrideEntry? GetTemplateOverride(string templateId) =>
         _templates.TryGetValue(templateId, out var t) ? t : null;
 
