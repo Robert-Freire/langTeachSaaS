@@ -43,8 +43,10 @@
 - [Sophy reviews hardcoded rules](feedback_sophy_hardcoded_rules.md) — call Sophy on PRs with hardcoded if/switch on language/level/template in PromptService
 - [Never defer without a GitHub issue](feedback_never_defer_without_issue.md) — every deferral needs a GitHub issue immediately
 - [Never run frontend locally](feedback_no_local_frontend_dev.md) — frontend in Docker only; never start Vite on host
+- [No parallel background agents](feedback_background_agent_polling.md) — notifications unreliable; run all agents sequentially in foreground
 
 ## Reference
+- [Token usage tracking](reference_token_usage_tracking.md) — check ~/.claude/logs/usage-log.jsonl; snippets in ~/.claude/usage-guide.md
 - [Audio transcription method](reference_audio_transcription.md) — local transcription: Whisper + ffmpeg
 - [Gmail bot account access](reference_gmail_bot_access.md) — IMAP/SMTP for robert.freire.bot@gmail.com; use curl
 - [Agent transcript location](reference_agent_transcripts.md) — subagent JSONL logs location

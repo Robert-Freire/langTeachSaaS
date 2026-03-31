@@ -1,33 +1,33 @@
 # Review Routing
 
-Run the `review` and `architecture-reviewer` agents **in parallel** (always). Conditionally add more reviewers in the same parallel batch based on the diff **and the linked issue's labels**.
+Run all reviewers **sequentially** (never as parallel background agents; notifications are unreliable and cause lost results).
 
-## Step 0: Check the linked issue label FIRST
+## Step 1: Determine the full reviewer list
 
-Before looking at the diff, check whether the issue being closed by this PR has the `review:sophy` label:
+**Always run:** `review`, then `architecture-reviewer`.
+
+**Then check the issue labels and diff to add conditional reviewers:**
 
 ```bash
-gh issue view <N> --json labels --jq '.labels[].name' | grep "review:sophy"
+gh issue view <N> --json labels --jq '.labels[].name'
 ```
 
-If `review:sophy` is present: **always run Sophy**, regardless of what the diff looks like.
-
-## Conditional reviewers (diff-based)
-
-| Diff matches | Reviewer | `subagent_type` |
+| Trigger | Reviewer | `subagent_type` |
 |---|---|---|
-| `**/PromptService.cs` | Prompt Health | `prompt-health-reviewer` |
-| `**/Models/*.cs`, `**/Dtos/*.cs`, `**/*Dto.cs`, `**/Data/*.cs`, `**/Migrations/*.cs`, `data/**/*.json`, `**/contentTypes.ts`, or new entities/tables/FKs | Sophy | `sophy` |
-| Any diff that adds hardcoded conditional logic (if/else, switch) based on language, level, template, or student properties in `**/PromptService.cs`, prompt builders, generation services, or validation services — i.e. logic that belongs in config rather than code. Includes hardcoded regex patterns or rule lists for language-specific validation. | Sophy | `sophy` |
-| `data/pedagogy/*.json`, `data/section-profiles/*.json`, `data/pedagogy/cefr-level-rules/*.json` | Isaac | `pedagogy-reviewer` |
+| Issue has `review:sophy` label | Sophy | `sophy` |
+| Diff touches `**/Models/*.cs`, `**/Dtos/*.cs`, `**/Data/*.cs`, `**/Migrations/*.cs`, `data/**/*.json`, `**/contentTypes.ts`, or adds new entities/tables/FKs | Sophy | `sophy` |
+| Diff touches `**/PromptService.cs`, prompt builders, or generation services (including hardcoded conditionals on language/level/template) | Sophy | `sophy` |
+| Diff touches `data/pedagogy/*.json`, `data/section-profiles/*.json`, `data/pedagogy/cefr-level-rules/*.json` | Isaac | `pedagogy-reviewer` |
 
-### Prompt Health prompt
+**IMPORTANT: Sophy and Arch are different agents.** Do not confuse them.
+- **Sophy** (`subagent_type: "sophy"`): data model design, config vs code drift, prompt architecture
+- **Arch** (`subagent_type: "architecture-reviewer"`): pattern violations, duplicated logic, convention breaks
 
-> Review the prompt template changes in this PR. Diff: <paste PromptService.cs diff>. Check for redundant constraints, contradictions, negative bloat, stale patches, and duplication. Cross-reference against structural enforcement in the codebase.
+## Reviewer prompts
 
 ### Sophy prompt
 
-> Review this PR diff for data model soundness: <paste relevant diff>. Check for: unstated assumptions, missing entity relationships, config-vs-code violations, over-engineering, conflicts with existing patterns. Verdict: APPROVE / NEEDS CLARIFICATION. Final response under 1500 characters.
+> Review this PR diff for data model soundness and prompt architecture: <paste relevant diff>. Check for: unstated assumptions, missing entity relationships, config-vs-code violations, over-engineering, conflicts with existing patterns, redundant or contradictory prompt instructions, negative bloat. Verdict: APPROVE / NEEDS CLARIFICATION. Final response under 1500 characters.
 
 ### Isaac prompt
 
@@ -41,9 +41,6 @@ If `review:sophy` is present: **always run Sophy**, regardless of what the diff 
 | `review` | PASS WITH NOTES | Address important items. Log unfixed notes to `plan/code-review-backlog.md` (PR#, date, severity, description) |
 | `architecture-reviewer` | NEEDS REVISION | Fix violations, re-commit, re-run checks and architecture review |
 | `architecture-reviewer` | PASS WITH NOTES | Address where reasonable. Log minor notes to `plan/code-review-backlog.md` |
-| Prompt Health | URGENT / critical | Fix before pushing. Contradictory instructions must not ship |
-| Prompt Health | NEEDS CLEANUP (no critical) | Fix important items. Log rest to `plan/code-review-backlog.md` |
-| Prompt Health | CLEAN | Proceed |
 | Sophy | NEEDS CLARIFICATION | Address her questions before pushing |
 | Sophy | APPROVE | Proceed |
 | Isaac | RETHINK | Fix pedagogical issues before pushing |

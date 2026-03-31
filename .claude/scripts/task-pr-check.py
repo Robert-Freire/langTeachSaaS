@@ -44,24 +44,40 @@ def check_ci(pr_num: int) -> tuple[str, list[str]]:
     return "PASS", []
 
 
+def _is_coderabbit(login: str) -> bool:
+    return login in ("coderabbitai", "coderabbitai[bot]")
+
+
 def get_coderabbit_comments(pr_num: int) -> list[dict]:
     comments = []
 
-    # General PR comments
+    # General PR issue comments (gh CLI uses author.login, normalised without [bot])
     raw = gh("pr", "view", str(pr_num), "--repo", REPO, "--json", "comments")
     try:
         for c in json.loads(raw).get("comments", []):
-            if c.get("author", {}).get("login") == "coderabbitai":
+            if _is_coderabbit(c.get("author", {}).get("login", "")):
                 comments.append({"body": c.get("body", ""), "path": None, "line": None})
     except (json.JSONDecodeError, KeyError):
         pass
 
-    # Inline review comments
+    # Review bodies (CodeRabbit posts walkthrough/actionable summary here)
+    code, raw = gh_raw("api", f"repos/{REPO}/pulls/{pr_num}/reviews")
+    if code == 0:
+        try:
+            for r in json.loads(raw):
+                if _is_coderabbit(r.get("user", {}).get("login", "")):
+                    body = r.get("body", "")
+                    if body.strip():
+                        comments.append({"body": body, "path": None, "line": None})
+        except (json.JSONDecodeError, KeyError):
+            pass
+
+    # Inline review comments (REST API uses user.login, includes [bot] suffix)
     code, raw = gh_raw("api", f"repos/{REPO}/pulls/{pr_num}/comments")
     if code == 0:
         try:
             for c in json.loads(raw):
-                if c.get("user", {}).get("login") == "coderabbitai":
+                if _is_coderabbit(c.get("user", {}).get("login", "")):
                     comments.append({
                         "body": c.get("body", ""),
                         "path": c.get("path"),

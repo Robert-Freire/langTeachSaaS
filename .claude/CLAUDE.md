@@ -16,7 +16,7 @@ Before starting any task:
    - Escalate to user only after 2 failed rounds on architectural disagreements.
    - **Once approved, proceed to implementation. Do NOT ask the user for plan approval.**
 5. Implement, test, commit, push, open PR **targeting the sprint branch**
-6. After PR is merged, run the `task-merged` agent, then `ExitWorktree(action: "remove")`
+6. After PR is merged, run `python3 .claude/scripts/task-merged.py <N>`, then `ExitWorktree(action: "remove")`
 
 Never work directly in the main repo directory for task work.
 
@@ -58,7 +58,7 @@ git checkout sprint/<slug> && git merge main && git push origin sprint/<slug>
 
 ## Task Source: GitHub Issues
 
-GitHub Issues is the single source of truth. Use the `task-pick` agent to find the next task. Key rules:
+GitHub Issues is the single source of truth. Run `python3 .claude/scripts/task-pick.py` (from repo root) to find the next task. Key rules:
 - Issues must have `qa:ready` before implementation starts.
 - **If milestone doesn't match active sprint**: STOP and ask the user.
 - **Self-assign immediately** when picking: `gh issue edit <N> --add-assignee "@me"`
@@ -74,10 +74,10 @@ All review steps must be invoked as **agents** (via Agent tool with appropriate 
 
 When a task is complete:
 1. Stage and commit all changes (including `.claude/memory/` and `plan/` files) referencing the task.
-2. Run the `task-build-verify` agent. Fix failures. Never push with known failures or warnings.
+2. Run `python3 .claude/scripts/task-build-verify.py <worktree-path>`. Fix failures. Never push with known failures or warnings.
 3. Run `qa-verify` agent. FAIL or PASS WITH GAPS: fix, re-commit, re-run. PASS: proceed.
-4. Run code reviews in parallel. See `.claude/procedures/review-routing.md` for which reviewers to launch based on the diff and how to handle each verdict.
-5. **UI Review:** Required if issue has `area:frontend` OR `area:design`. Launch `review-ui` agent with specific routes/screens changed. NEEDS WORK: fix, re-run checks, re-review. GOOD/POLISHED: proceed. Log unfixed findings to `plan/ui-review-backlog.md`.
+4. Run code reviews **sequentially** (not as parallel background agents). **Before launching any reviewer**, check the issue labels (`gh issue view <N> --json labels`) and the diff to determine the full list of required reviewers per `.claude/procedures/review-routing.md`. Run all of them. Do not skip conditional reviewers.
+5. **UI Review (before pushing):** Required if issue has `area:frontend` OR `area:design`. Launch `review-ui` agent with specific routes/screens changed. The agent manages the e2e Docker stack itself (starts and stops it); works from worktrees. NEEDS WORK: fix, re-run checks, re-review. PASS: proceed. Log unfixed findings to `plan/ui-review-backlog.md`.
 6. **Log out-of-scope observations** to `plan/observed-issues.md`: `| #<issue> | <date> | <severity> | <one-line observation> |`
 7. **Check for conflicts:**
    ```bash
@@ -85,11 +85,7 @@ When a task is complete:
    ```
    If conflicts: resolve, re-run checks, re-commit.
 8. Push and open PR against the sprint branch. Post `@coderabbitai review` comment.
-9. Start a CodeRabbit monitoring cron (5 min) using `task-pr-check` agent:
-   - **WAITING_CI**: wait
-   - **READY**: delete cron, notify user
-   - **NEEDS_FIXES**: delete cron, fix, run `task-build-verify`, push, restart cron
-   - Critically evaluate each comment. Max 3 fix rounds. Stop on test failures or architectural comments. Always notify user.
+9. Run `python3 .claude/scripts/task-pr-check.py <PR_NUMBER>` once to confirm CI is not immediately failing. For any CodeRabbit findings you dismiss as out-of-scope or pre-existing, log them to `plan/observed-issues.md` (same format as step 6). Then stop.
 10. Stop. Do NOT merge. User reviews and merges manually.
 
 **Branch protection:** `task/*`: push freely. `sprint/*`: PR only. `main`: never push directly.
@@ -132,6 +128,8 @@ Always use bash/Unix commands, never PowerShell cmdlets.
 **Context-aware delegation:**
  - Under ~50k context: prefer inline work for tasks under ~5 tool calls.
  - Over ~50k context: prefer subagents for self-contained tasks, even simple ones.
+
+**No parallel background agents.** Background agent notifications are unreliable and cause lost results. Run all agents sequentially in the foreground. Never use `run_in_background: true` for review or task agents.
 
 When using subagents, include output rules: "Final response under 2000 characters. List outcomes, not process."
 Never call TaskOutput twice for the same subagent. If it times out, increase the timeout.

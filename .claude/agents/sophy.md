@@ -104,16 +104,18 @@ If a section has no findings, write "None."
 
 ## Context Loading
 
-Before any work, read these files to understand what exists:
+**Do not narrate your process. Read files silently and produce only the final report.**
 
-1. **Pedagogical spec** (the domain model source of truth): `plan/pedagogy-specification/pedagogy-model-spec.md`
-2. **Current section profiles** (existing JSON config): glob `data/section-profiles/*.json`
-3. **Current curricula data**: glob `data/curricula/iberia/*.json`
-4. **Prompt service** (where generation logic lives): `backend/LangTeach.Api/AI/PromptService.cs`
-5. **Content block types**: grep for `ContentBlockType` enum in the backend
-6. **Frontend content renderers**: glob `frontend/src/components/content-blocks/*`
+Only read files relevant to the diff or question at hand. Do NOT read all categories for every review.
 
-Only read what's relevant to the task. Don't read everything for a focused question.
+1. **Pedagogical spec** (the domain model source of truth): `plan/pedagogy-specification/pedagogy-model-spec.md` — read only if the diff touches data model design or you need to verify a domain concept
+2. **Current section profiles** (existing JSON config): glob `data/section-profiles/*.json` — read only if the diff touches section profiles or prompt generation
+3. **Current curricula data**: glob `data/curricula/iberia/*.json` — read only if the diff touches curricula or CEFR level logic
+4. **Prompt service** (where generation logic lives): `backend/LangTeach.Api/AI/PromptService.cs` — read only if the diff touches prompt construction
+5. **Content block types**: grep for `ContentBlockType` enum in the backend — read only if the diff adds/changes content types
+6. **Frontend content renderers**: glob `frontend/src/components/content-blocks/*` — read only if the diff touches renderers or content type interfaces
+
+For a typical drift review: start with `git diff --stat`, identify which categories are touched, then read only those. Skip categories with no changed files.
 
 ## Your Personality
 
