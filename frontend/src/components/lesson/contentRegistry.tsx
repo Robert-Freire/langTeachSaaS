@@ -1,5 +1,6 @@
 import type { ContentBlockType } from '../../types/contentTypes'
 import { ConversationRenderer } from './renderers/ConversationRenderer'
+import { ErrorCorrectionRenderer } from './renderers/ErrorCorrectionRenderer'
 import { ExercisesRenderer } from './renderers/ExercisesRenderer'
 import { FreeTextRenderer } from './renderers/FreeTextRenderer'
 import { GrammarRenderer } from './renderers/GrammarRenderer'
@@ -35,6 +36,7 @@ export interface ContentRenderer {
 
 const registry: Partial<Record<ContentBlockType, ContentRenderer>> = {
   conversation: ConversationRenderer,
+  'error-correction': ErrorCorrectionRenderer,
   exercises: ExercisesRenderer,
   'free-text': FreeTextRenderer,
   grammar: GrammarRenderer,

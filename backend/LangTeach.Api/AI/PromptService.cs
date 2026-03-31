@@ -87,6 +87,13 @@ public class PromptService : IPromptService
         return BuildRequest("guided-writing", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 2048);
     }
 
+    public ClaudeRequest BuildErrorCorrectionPrompt(GenerationContext ctx)
+    {
+        var system = BuildSystemPrompt(ctx);
+        var user   = ErrorCorrectionUserPrompt(ctx);
+        return BuildRequest("error-correction", "practice", ctx.CefrLevel, null, system, user, ClaudeModel.Sonnet, 3000);
+    }
+
     public ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx)
     {
         var system = CurriculumSystemPrompt(ctx);
@@ -671,6 +678,47 @@ public class PromptService : IPromptService
         """;
 
         var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "guided-writing");
+        if (!string.IsNullOrEmpty(scopeConstraint))
+            prompt += "\n" + scopeConstraint;
+
+        return prompt;
+    }
+
+    private string ErrorCorrectionUserPrompt(GenerationContext ctx)
+    {
+        var topic = InputSanitizer.Sanitize(ctx.Topic);
+        var level = InputSanitizer.Sanitize(ctx.CefrLevel);
+
+        var levelGuidance = _profiles.GetGuidance("practice", level);
+        if (string.IsNullOrEmpty(levelGuidance))
+            levelGuidance = "Generate error correction items appropriate to the stated CEFR level.";
+
+        // Get GR-04 level-specific note (drives per-level error complexity, no hardcoded level conditionals)
+        var gr04Note = _profiles.GetLevelSpecificNotes("practice", level)
+            .FirstOrDefault(n => string.Equals(n.ExerciseTypeId, "GR-04", StringComparison.OrdinalIgnoreCase));
+
+        var prompt = $$"""
+        Generate an error correction exercise for a {{level}} student on the topic "{{topic}}". Return JSON:
+        {"mode":"identify-and-correct","items":[{"sentence":"","errorSpan":[0,0],"correction":"","errorType":"grammar","explanation":""}]}
+        {{levelGuidance}}
+        Generate 4-6 sentences, each containing exactly one error. The errorSpan field is [startCharIndex, endCharIndex] of the erroneous substring (0-based character positions, exclusive end).
+        errorType must be one of: grammar, vocabulary, spelling, verbForm, agreement, wordOrder.
+        explanation: 1-2 sentences explaining what the error is and the correct rule. Keep explanations concise.
+        """;
+
+        if (gr04Note is not null)
+            prompt += $"\nLEVEL NOTE: {gr04Note.Note}";
+
+        // L1 targeted errors via existing pipeline (no hardcoded native language conditionals)
+        var nativeLang = InputSanitizer.Sanitize(ctx.StudentNativeLanguage);
+        if (!string.IsNullOrEmpty(nativeLang))
+        {
+            var l1 = _pedagogy.GetL1Adjustments(nativeLang);
+            if (l1 is not null)
+                prompt += "\n\n" + BuildL1Block(l1, nativeLang);
+        }
+
+        var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "error-correction");
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
