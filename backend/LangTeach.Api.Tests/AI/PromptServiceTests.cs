@@ -1392,6 +1392,27 @@ public class PromptServiceTests
         req.UserPrompt.Should().NotContain("LUD-01", because: "LUD-01 is unavailable (no UI renderer) and must not appear in the exercises prompt");
     }
 
+    [Fact]
+    public void BuildExercisesPrompt_ContainsTrueFalseInJsonTemplate()
+    {
+        // The exercises prompt JSON template must include the trueFalse format so the AI knows it is available.
+        var req = _sut.BuildExercisesPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("trueFalse", because: "trueFalse is a supported exercise format and must appear in the JSON template");
+        req.UserPrompt.Should().Contain("isTrue", because: "trueFalse items require the isTrue boolean field");
+        req.UserPrompt.Should().Contain("justification", because: "trueFalse items require the justification field");
+    }
+
+    [Fact]
+    public void BuildExercisesPrompt_StageGuidance_IncludesTrueFalseInFormatList()
+    {
+        // BuildPracticeStageBlock lists allowed formats; trueFalse must be included.
+        var ctx = BaseCtx() with { CefrLevel = "B1" }; // B1 has stage scaffolding
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("trueFalse", because: "trueFalse must be listed as an allowed stage format in the practice scaffolding block");
+    }
+
     // --- Scope constraint emission ---
 
     [Fact]

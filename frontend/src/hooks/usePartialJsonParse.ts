@@ -118,8 +118,9 @@ export function buildPartialContent(rawOutput: string, blockType: ContentBlockTy
       const fillInBlank = extractItemsFromArray(json, 'fillInBlank')
       const multipleChoice = extractItemsFromArray(json, 'multipleChoice')
       const matching = extractItemsFromArray(json, 'matching')
-      if (fillInBlank.length === 0 && multipleChoice.length === 0 && matching.length === 0) return null
-      return { fillInBlank, multipleChoice, matching }
+      const trueFalse = extractItemsFromArray(json, 'trueFalse')
+      if (fillInBlank.length === 0 && multipleChoice.length === 0 && matching.length === 0 && trueFalse.length === 0) return null
+      return { fillInBlank, multipleChoice, matching, trueFalse }
     }
     case 'conversation': {
       const scenarios = extractItemsFromArray(json, 'scenarios')

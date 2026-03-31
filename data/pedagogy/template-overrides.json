@@ -122,7 +122,7 @@
         "practice": {
           "required": true,
           "overrideGuidance": "Comprehension questions covering three types: (1) factual — explicitly stated in the text, (2) inferential — requiring reading between the lines, (3) vocabulary in context — meaning of a word or phrase as used in the passage. Include at least 2 questions of each type.",
-          "priorityExerciseTypes": ["CE-01", "CE-02", "CE-03", "CE-07", "VOC-04", "CE-06"],
+          "priorityExerciseTypes": ["CE-01", "CE-02", "CE-03", "CE-10", "CE-07", "VOC-04", "CE-06"],
           "minExerciseVarietyOverride": null,
           "notes": null
         },
@@ -143,8 +143,8 @@
       },
       "levelVariations": {
         "A1": "Very short passages (100-150 words). Factual questions only (CE-01, CE-02). Heavy vocabulary pre-teaching required.",
-        "A2": "Short passages (150-250 words). Add true/false questions (CE-03). Simple vocabulary in context.",
-        "B1": "300-500 word authentic-style passages. Include inferential questions (CE-07). Vocabulary in context (VOC-04).",
+        "A2": "Short passages (150-250 words). Add true/false questions (CE-03, CE-10). Simple vocabulary in context.",
+        "B1": "300-500 word authentic-style passages. Include T/F with text-based justification (CE-10), including statements that require inferential reading. Inferential questions (CE-07). Vocabulary in context (VOC-04).",
         "B2": "Authentic texts. Inference (CE-07), register identification (CE-08), ordering paragraphs (CE-05).",
         "C1": "Complex authentic texts. Emphasise critical reading (CE-09), inference (CE-07), and register analysis (CE-08).",
         "C2": "Ungraded authentic texts. Critical reading (CE-09), register (CE-08), and mediation-based responses."

@@ -57,6 +57,14 @@ export interface ExercisesMatching {
   stage?: PracticeStage
 }
 
+export interface ExercisesTrueFalse {
+  statement: string
+  isTrue: boolean
+  justification: string
+  sourcePassage?: string
+  stage?: PracticeStage
+}
+
 export interface ExercisesSentenceOrdering {
   fragments: string[]
   correctOrder: number[]
@@ -69,6 +77,7 @@ export interface ExercisesContent {
   fillInBlank: ExercisesFillInBlank[]
   multipleChoice: ExercisesMultipleChoice[]
   matching: ExercisesMatching[]
+  trueFalse?: ExercisesTrueFalse[]
   sentenceOrdering?: ExercisesSentenceOrdering[]
 }
 
@@ -319,6 +328,7 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
     Array.isArray(obj.fillInBlank) || Array.isArray(obj.fill_in_blank) ||
     Array.isArray(obj.multipleChoice) || Array.isArray(obj.multiple_choice) ||
     Array.isArray(obj.matching) ||
+    Array.isArray(obj.trueFalse) || Array.isArray(obj.true_false) ||
     Array.isArray(obj.sentenceOrdering) || Array.isArray(obj.sentence_ordering)
   if (!hasRecognizedField) return null
 
@@ -334,6 +344,9 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
       : Array.isArray(obj.multiple_choice) ? obj.multiple_choice
       : [],
     matching: Array.isArray(obj.matching) ? obj.matching : [],
+    trueFalse: Array.isArray(obj.trueFalse) ? obj.trueFalse
+      : Array.isArray(obj.true_false) ? obj.true_false
+      : [],
     sentenceOrdering: rawSo
       ? rawSo.filter((item: unknown): item is ExercisesSentenceOrdering => {
           if (typeof item !== 'object' || item === null) return false
