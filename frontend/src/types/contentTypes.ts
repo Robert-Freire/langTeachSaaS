@@ -213,7 +213,11 @@ function isL1ContrastiveNote(v: unknown): v is L1ContrastiveNote {
 export function isGrammarContent(v: unknown): v is GrammarContent {
   if (typeof v !== 'object' || v === null) return false
   const c = v as Record<string, unknown>
-  return typeof c.title === 'string' && typeof c.explanation === 'string' && Array.isArray(c.examples) && Array.isArray(c.commonMistakes)
+  if (!(typeof c.title === 'string' && typeof c.explanation === 'string' && Array.isArray(c.examples) && Array.isArray(c.commonMistakes)))
+    return false
+  if (c.l1ContrastiveNote !== undefined && !isL1ContrastiveNote(c.l1ContrastiveNote))
+    return false
+  return true
 }
 
 export function isExercisesContent(v: unknown): v is ExercisesContent {

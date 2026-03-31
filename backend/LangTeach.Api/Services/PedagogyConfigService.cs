@@ -271,6 +271,11 @@ public class PedagogyConfigService : IPedagogyConfigService
 
     public ContrastiveNoteResult? GetContrastivePattern(string nativeLang, string grammarTopic, string level)
     {
+        if (string.IsNullOrWhiteSpace(nativeLang)
+            || string.IsNullOrWhiteSpace(grammarTopic)
+            || string.IsNullOrWhiteSpace(level))
+            return null;
+
         var key = NormalizeLang(nativeLang);
         var normalizedLevel = NormalizeLevel(level);
         var (_, specific) = ResolveLang(key);
@@ -302,7 +307,8 @@ public class PedagogyConfigService : IPedagogyConfigService
         LanguageFamily? fam = null;
         if (specific?.Family is not null)
             _l1.LanguageFamilies.TryGetValue(specific.Family, out fam);
-        else
+        // If family lookup failed (typo/data drift) or no specific language, fall back to scanning
+        if (fam is null)
             foreach (var (_, f) in _l1.LanguageFamilies)
                 if (f.Languages.Contains(lang, StringComparer.OrdinalIgnoreCase)) { fam = f; break; }
         return fam?.ContrastivePatterns ?? [];

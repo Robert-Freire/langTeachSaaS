@@ -168,12 +168,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
       <div className="border border-blue-200 rounded-md">
         <button
           type="button"
-          onClick={() => {
-            if (!l1NoteExpanded && !parsedContent.l1ContrastiveNote) {
-              emit({ ...parsedContent, l1ContrastiveNote: { l1Example: '', targetExample: '', explanation: '', interferencePattern: '' } })
-            }
-            setL1NoteExpanded(!l1NoteExpanded)
-          }}
+          onClick={() => setL1NoteExpanded(!l1NoteExpanded)}
           className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
           data-testid="grammar-l1-note-toggle"
         >

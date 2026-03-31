@@ -190,7 +190,7 @@
         },
         {
           "pattern": "false-cognates",
-          "l1Behavior": "Italian 'firma' means signature; 'burro' means butter; 'largo' means long",
+          "l1Behavior": "Italian 'firma' means signature; 'burro' means butter; 'largo' means wide/broad (not long — that is 'lungo')",
           "targetContrast": "Spanish 'firma' also means signature (positive transfer), but 'burro' means donkey and 'largo' means long — partial false friends require explicit attention",
           "cefrRelevance": ["A2", "B1", "B2"]
         }
