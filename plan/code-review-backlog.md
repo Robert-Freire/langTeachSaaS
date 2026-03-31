@@ -11,6 +11,7 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | Severity | File | Note |
 |---|---|---|
 | Minor | `GrammarRenderer.tsx` Editor | `l1NoteExpanded` useState initialized from `parsedContent.l1ContrastiveNote != null` but no `key` prop — state leaks if parent swaps grammar blocks in place. Low risk since grammar blocks are always re-mounted by block ID in LessonNew, but worth aligning with other renderers. |
+| Minor | `PromptService.cs:523` | `BuildL1ContrastiveBlock` hardcodes "equivalent in Spanish" in the instruction text. Pre-existing system-wide design (whole app targets Spanish). Revisit if multi-target-language support is added. |
 
 ## PR task-t274-noticing-task (2026-03-31) -- #274 noticing task content type
 
