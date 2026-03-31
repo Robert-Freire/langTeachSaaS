@@ -54,3 +54,13 @@ public record L1Adjustments(
     string[] DecreaseEmphasis,
     string Notes
 );
+
+/// <summary>
+/// Output DTO for GetContrastivePattern — a resolved contrastive pattern for a given L1 and grammar topic.
+/// Not a JSON deserialization model; selected from ContrastivePattern entries in L1InfluenceFile.
+/// </summary>
+public record ContrastiveNoteResult(
+    string L1Behavior,
+    string TargetContrast,
+    string NativeLang
+);

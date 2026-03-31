@@ -22,6 +22,17 @@
     "commonMistakes": {
       "type": "array",
       "items": { "type": "string" }
+    },
+    "l1ContrastiveNote": {
+      "type": "object",
+      "required": ["l1Example", "targetExample", "explanation", "interferencePattern"],
+      "additionalProperties": false,
+      "properties": {
+        "l1Example": { "type": "string" },
+        "targetExample": { "type": "string" },
+        "explanation": { "type": "string" },
+        "interferencePattern": { "type": "string" }
+      }
     }
   }
 }

@@ -674,4 +674,71 @@ public class PedagogyConfigServiceTests
         result.Should().NotBeNull();
         result!.Scaffolding.Should().Be("low");
     }
+
+    // --- GetContrastivePattern ---
+
+    [Fact]
+    public void GetContrastivePattern_Italian_SerEstar_A2_ReturnsSpecificLanguagePattern()
+    {
+        var result = _sut.GetContrastivePattern("italian", "ser-estar distinction", "A2");
+
+        result.Should().NotBeNull(because: "italian has a specific ser-estar contrastive pattern in l1-influence.json");
+        result!.L1Behavior.Should().Contain("essere", because: "the Italian-specific pattern references essere");
+        result.NativeLang.Should().Be("italian");
+    }
+
+    [Fact]
+    public void GetContrastivePattern_Italian_SerEstar_C2_ReturnsNull()
+    {
+        var result = _sut.GetContrastivePattern("italian", "ser-estar distinction", "C2");
+
+        result.Should().BeNull(because: "the ser-estar pattern for Italian has cefrRelevance up to B2, not C2");
+    }
+
+    [Fact]
+    public void GetContrastivePattern_English_SerEstar_A1_ReturnsFamilyPattern()
+    {
+        // English is not in specificLanguages, so it falls back to the germanic family pattern
+        var result = _sut.GetContrastivePattern("english", "ser-estar usage", "A1");
+
+        result.Should().NotBeNull(because: "the germanic family has a ser-estar contrastive pattern");
+        result!.L1Behavior.Should().Contain("to be", because: "the germanic family pattern references the single English copula");
+    }
+
+    [Fact]
+    public void GetContrastivePattern_UnknownLanguage_ReturnsNull()
+    {
+        var result = _sut.GetContrastivePattern("klingon", "ser-estar", "B1");
+
+        result.Should().BeNull(because: "klingon is not defined in l1-influence.json");
+    }
+
+    [Fact]
+    public void GetContrastivePattern_TopicNoMatch_ReturnsNull()
+    {
+        var result = _sut.GetContrastivePattern("italian", "preterite vs imperfect", "B1");
+
+        result.Should().BeNull(because: "no contrastive pattern for Italian matches 'preterite vs imperfect'");
+    }
+
+    [Fact]
+    public void GetContrastivePattern_Italian_SubjectiveSerEstar_SpecificLanguageTakesPriorityOverFamily()
+    {
+        // Italian has a specific ser-estar pattern AND the romance family has a ser-estar pattern.
+        // The specific-language pattern should be returned first.
+        var result = _sut.GetContrastivePattern("italian", "ser-estar", "B1");
+
+        result.Should().NotBeNull();
+        result!.L1Behavior.Should().Contain("essere",
+            because: "Italian-specific pattern (references 'essere') should be returned, not the family-level pattern");
+    }
+
+    [Fact]
+    public void GetContrastivePattern_Mandarin_Gender_A1_ReturnsFamilyPattern()
+    {
+        var result = _sut.GetContrastivePattern("mandarin", "gender agreement", "A1");
+
+        result.Should().NotBeNull(because: "sinitic-japonic family has a gender contrastive pattern");
+        result!.NativeLang.Should().Be("mandarin");
+    }
 }

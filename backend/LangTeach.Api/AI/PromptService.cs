@@ -469,10 +469,12 @@ public class PromptService : IPromptService
         var topic = InputSanitizer.Sanitize(ctx.Topic);
         var level = InputSanitizer.Sanitize(ctx.CefrLevel);
 
+        const string grammarJsonTemplate =
+            """{"title":"","explanation":"","examples":[{"sentence":"","note":""}],"commonMistakes":[""],"l1ContrastiveNote":{"l1Example":"","targetExample":"","explanation":"","interferencePattern":""}}""";
         var prompt = $$"""
         Generate a grammar explanation for the lesson on "{{topic}}". Return JSON:
-        {"title":"","explanation":"","examples":[{"sentence":"","note":""}],"commonMistakes":[""]}
-        Include 3-5 examples and 2-3 common mistakes.
+        {{grammarJsonTemplate}}
+        Include 3-5 examples and 2-3 common mistakes. Omit the "l1ContrastiveNote" field entirely if no L1 contrastive information is provided below.
         """;
 
         var grammarScope = BuildGrammarScopeBlock(level);
@@ -487,7 +489,34 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(contentTypeContext))
             prompt += "\n\n" + contentTypeContext;
 
+        var contrastiveBlock = BuildL1ContrastiveBlock(ctx.StudentNativeLanguage, topic, level);
+        if (!string.IsNullOrEmpty(contrastiveBlock))
+            prompt += "\n\n" + contrastiveBlock;
+
         return prompt;
+    }
+
+    /// <summary>
+    /// Builds the L1 contrastive note instruction block for grammar prompts.
+    /// Returns empty string when native language is unknown or no matching contrastive pattern exists.
+    /// No hardcoded language conditionals — all data comes from PedagogyConfigService.
+    /// </summary>
+    private string BuildL1ContrastiveBlock(string? nativeLang, string topic, string level)
+    {
+        if (string.IsNullOrWhiteSpace(nativeLang))
+            return string.Empty;
+
+        var sanitizedLang = InputSanitizer.Sanitize(nativeLang);
+        var result = _pedagogy.GetContrastivePattern(sanitizedLang, topic, level);
+        if (result is null)
+            return string.Empty;
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"L1 CONTRASTIVE NOTE for {result.NativeLang} speakers:");
+        sb.AppendLine($"L1 behavior: {result.L1Behavior}");
+        sb.AppendLine($"Target contrast: {result.TargetContrast}");
+        sb.AppendLine("Include a populated \"l1ContrastiveNote\" field in your JSON with a concrete L1 example sentence (l1Example), the equivalent in Spanish (targetExample), a brief explanation of why they differ (explanation), and the interference pattern label (interferencePattern).");
+        return sb.ToString().TrimEnd();
     }
 
     private string ExercisesUserPrompt(GenerationContext ctx)

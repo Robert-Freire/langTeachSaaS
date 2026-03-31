@@ -269,6 +269,46 @@ public class PedagogyConfigService : IPedagogyConfigService
         return [];
     }
 
+    public ContrastiveNoteResult? GetContrastivePattern(string nativeLang, string grammarTopic, string level)
+    {
+        var key = NormalizeLang(nativeLang);
+        var normalizedLevel = NormalizeLevel(level);
+
+        // Collect patterns: specific-language first (higher priority), then family-level
+        ContrastivePattern[]? specificPatterns = null;
+        ContrastivePattern[]? familyPatterns = null;
+
+        if (_l1.SpecificLanguages.TryGetValue(key, out var specific))
+        {
+            specificPatterns = specific.ContrastivePatterns;
+            if (specific.Family is not null && _l1.LanguageFamilies.TryGetValue(specific.Family, out var fam))
+                familyPatterns = fam.ContrastivePatterns;
+        }
+        else
+        {
+            foreach (var (_, family) in _l1.LanguageFamilies)
+            {
+                if (family.Languages.Contains(key, StringComparer.OrdinalIgnoreCase))
+                {
+                    familyPatterns = family.ContrastivePatterns;
+                    break;
+                }
+            }
+        }
+
+        // Try specific-language patterns first, then family patterns
+        var allPatterns = (specificPatterns ?? []).Concat(familyPatterns ?? []);
+        foreach (var p in allPatterns)
+        {
+            var topicMatch = grammarTopic.Contains(p.Pattern, StringComparison.OrdinalIgnoreCase);
+            var levelMatch = p.CefrRelevance.Contains(normalizedLevel, StringComparer.OrdinalIgnoreCase);
+            if (topicMatch && levelMatch)
+                return new ContrastiveNoteResult(p.L1Behavior, p.TargetContrast, nativeLang);
+        }
+
+        return null;
+    }
+
     public TemplateOverrideEntry? GetTemplateOverride(string templateId) =>
         _templates.TryGetValue(templateId, out var t) ? t : null;
 

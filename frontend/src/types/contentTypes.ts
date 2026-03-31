@@ -26,11 +26,19 @@ export interface GrammarExample {
   note?: string
 }
 
+export interface L1ContrastiveNote {
+  l1Example: string
+  targetExample: string
+  explanation: string
+  interferencePattern: string
+}
+
 export interface GrammarContent {
   title: string
   explanation: string
   examples: GrammarExample[]
   commonMistakes: string[]
+  l1ContrastiveNote?: L1ContrastiveNote
 }
 
 export type PracticeStage = 'controlled' | 'meaningful' | 'guided_free'
@@ -358,6 +366,7 @@ export function coerceGrammarContent(v: unknown): GrammarContent | null {
       : Array.isArray(obj.mistakes) ? obj.mistakes
       : Array.isArray(obj.errors) ? obj.errors
       : [],
+    ...(obj.l1ContrastiveNote != null ? { l1ContrastiveNote: obj.l1ContrastiveNote } : {}),
   }
   if (isGrammarContent(candidate)) return candidate as GrammarContent
   return null

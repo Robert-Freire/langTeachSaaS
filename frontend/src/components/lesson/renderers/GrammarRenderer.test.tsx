@@ -134,4 +134,94 @@ describe('GrammarRenderer.Student', () => {
     render(<GrammarRenderer.Student rawContent="not json" parsedContent={null} />)
     expect(screen.getByText(/could not be loaded/)).toBeInTheDocument()
   })
+
+  it('shows L1 callout when l1ContrastiveNote is present', () => {
+    const content = makeContent({
+      l1ContrastiveNote: {
+        l1Example: 'Sono stanco',
+        targetExample: 'Estoy cansado',
+        explanation: 'Tiredness is a temporary state in Spanish, so estar is required.',
+        interferencePattern: 'ser-estar',
+      },
+    })
+    render(<GrammarRenderer.Student rawContent={raw(content)} parsedContent={content} />)
+
+    expect(screen.getByTestId('grammar-student-l1-note')).toBeInTheDocument()
+    expect(screen.getByText('Sono stanco')).toBeInTheDocument()
+    expect(screen.getByText('Estoy cansado')).toBeInTheDocument()
+    expect(screen.getByText('Tiredness is a temporary state in Spanish, so estar is required.')).toBeInTheDocument()
+  })
+
+  it('hides L1 callout when l1ContrastiveNote is absent', () => {
+    const content = makeContent()
+    render(<GrammarRenderer.Student rawContent={raw(content)} parsedContent={content} />)
+
+    expect(screen.queryByTestId('grammar-student-l1-note')).not.toBeInTheDocument()
+  })
+})
+
+describe('GrammarRenderer.Preview', () => {
+  it('shows L1 note callout when l1ContrastiveNote is present', () => {
+    const content = makeContent({
+      l1ContrastiveNote: {
+        l1Example: 'Sono stanco',
+        targetExample: 'Estoy cansado',
+        explanation: 'Tiredness is a temporary state.',
+        interferencePattern: 'ser-estar',
+      },
+    })
+    render(<GrammarRenderer.Preview rawContent={raw(content)} parsedContent={content} />)
+
+    expect(screen.getByTestId('grammar-preview-l1-note')).toBeInTheDocument()
+    expect(screen.getByText('Sono stanco')).toBeInTheDocument()
+  })
+
+  it('hides L1 note callout when l1ContrastiveNote is absent', () => {
+    const content = makeContent()
+    render(<GrammarRenderer.Preview rawContent={raw(content)} parsedContent={content} />)
+
+    expect(screen.queryByTestId('grammar-preview-l1-note')).not.toBeInTheDocument()
+  })
+})
+
+describe('GrammarRenderer.Editor — L1 note section', () => {
+  it('shows collapsed L1 note toggle button', () => {
+    const content = makeContent()
+    render(<GrammarRenderer.Editor rawContent={raw(content)} parsedContent={content} onChange={vi.fn()} />)
+
+    expect(screen.getByTestId('grammar-l1-note-toggle')).toBeInTheDocument()
+  })
+
+  it('expands L1 note editor when content has l1ContrastiveNote', () => {
+    const content = makeContent({
+      l1ContrastiveNote: {
+        l1Example: 'Sono stanco',
+        targetExample: 'Estoy cansado',
+        explanation: 'State vs identity.',
+        interferencePattern: 'ser-estar',
+      },
+    })
+    render(<GrammarRenderer.Editor rawContent={raw(content)} parsedContent={content} onChange={vi.fn()} />)
+
+    expect(screen.getByTestId('grammar-l1-note-editor')).toBeInTheDocument()
+    expect(screen.getByTestId('grammar-l1-example-input')).toHaveValue('Sono stanco')
+  })
+
+  it('calls onChange when l1Example is edited', async () => {
+    const content = makeContent({
+      l1ContrastiveNote: {
+        l1Example: 'Sono stanco',
+        targetExample: 'Estoy cansado',
+        explanation: 'State vs identity.',
+        interferencePattern: 'ser-estar',
+      },
+    })
+    const onChange = vi.fn()
+    render(<GrammarRenderer.Editor rawContent={raw(content)} parsedContent={content} onChange={onChange} />)
+
+    await userEvent.type(screen.getByTestId('grammar-l1-example-input'), 'X')
+    expect(onChange).toHaveBeenCalled()
+    const last = JSON.parse(onChange.mock.calls[onChange.mock.calls.length - 1][0])
+    expect(last.l1ContrastiveNote.l1Example).toBe('Sono stancoX')
+  })
 })
