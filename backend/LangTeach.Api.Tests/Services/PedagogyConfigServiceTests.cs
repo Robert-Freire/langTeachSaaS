@@ -741,4 +741,14 @@ public class PedagogyConfigServiceTests
         result.Should().NotBeNull(because: "sinitic-japonic family has a gender contrastive pattern");
         result!.NativeLang.Should().Be("mandarin");
     }
+
+    [Fact]
+    public void GetContrastivePattern_Portuguese_SerEstar_B1_ReturnsNull()
+    {
+        // Portuguese has ser/estar like Spanish (positive transfer).
+        // A specificLanguages entry with empty contrastivePatterns prevents the romance family pattern from firing.
+        var result = _sut.GetContrastivePattern("portuguese", "ser-estar distinction", "B1");
+
+        result.Should().BeNull(because: "Portuguese has positive transfer on ser/estar — the family ser-estar pattern must not fire");
+    }
 }

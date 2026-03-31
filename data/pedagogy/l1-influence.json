@@ -14,7 +14,7 @@
       "contrastivePatterns": [
         {
           "pattern": "ser-estar",
-          "l1Behavior": "Single copula (essere/être/ser) covers both identity and state",
+          "l1Behavior": "Single copula (Italian: essere, French: être, Romanian: a fi) covers both identity and state. Note: does NOT apply to Portuguese, which has the same ser/estar distinction as Spanish.",
           "targetContrast": "Spanish distinguishes ser (identity/permanent essence) from estar (state/condition/location)",
           "cefrRelevance": ["A1", "A2", "B1", "B2"]
         },
@@ -135,8 +135,8 @@
         {
           "pattern": "ser-estar",
           "l1Behavior": "Single copula (быть/być/být) covers identity and state; often dropped in present tense in Russian",
-          "targetContrast": "Spanish distinguishes ser (identity/essence) from estar (state/condition); the copula is never dropped",
-          "cefrRelevance": ["A1", "A2", "B1"]
+          "targetContrast": "Spanish distinguishes ser (identity/essence) from estar (state/condition); the copula is never dropped. Ser+adjective vs. estar+adjective distinctions remain challenging through B2.",
+          "cefrRelevance": ["A1", "A2", "B1", "B2"]
         }
       ]
     },
@@ -192,6 +192,25 @@
           "pattern": "false-cognates",
           "l1Behavior": "Italian 'firma' means signature; 'burro' means butter; 'largo' means long",
           "targetContrast": "Spanish 'firma' also means signature (positive transfer), but 'burro' means donkey and 'largo' means long — partial false friends require explicit attention",
+          "cefrRelevance": ["A2", "B1", "B2"]
+        }
+      ]
+    },
+    "portuguese": {
+      "family": "romance",
+      "falseFriends": [],
+      "positiveTransfer": [
+        "Ser/estar distinction exists and functions similarly to Spanish",
+        "Subjunctive exists and functions similarly",
+        "Grammatical gender",
+        "Similar verb system"
+      ],
+      "additionalNotes": "Portuguese has the same ser/estar distinction as Spanish (positive transfer). Do not apply the romance family ser-estar contrastive note to Portuguese speakers.",
+      "contrastivePatterns": [
+        {
+          "pattern": "false-cognates",
+          "l1Behavior": "Portuguese false friends are rarer than Italian but present (e.g., 'borracha' = rubber, not drunk; 'polvo' = octopus or dust depending on variant)",
+          "targetContrast": "Spanish and Portuguese share extensive cognate base; false friends require specific attention rather than systematic contrast",
           "cefrRelevance": ["A2", "B1", "B2"]
         }
       ]

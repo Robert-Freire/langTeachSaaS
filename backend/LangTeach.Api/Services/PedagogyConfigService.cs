@@ -275,11 +275,18 @@ public class PedagogyConfigService : IPedagogyConfigService
         var normalizedLevel = NormalizeLevel(level);
         var (_, specific) = ResolveLang(key);
 
-        // Specific-language patterns take priority over family-level patterns
-        var specificPatterns = specific?.ContrastivePatterns ?? [];
-        var familyPatterns = ResolveFamilyContrastivePatterns(key, specific);
+        // If the specific language has explicitly defined ContrastivePatterns (even as an empty array),
+        // use only those and do NOT fall back to family patterns. This allows specific languages to
+        // opt out of family-level patterns (e.g., Portuguese has positive transfer on ser/estar).
+        // If ContrastivePatterns is null, fall back to family patterns.
+        // Pattern is a substring keyword (topic "ser-estar distinction" matches pattern "ser-estar").
+        ContrastivePattern[] patterns;
+        if (specific?.ContrastivePatterns is not null)
+            patterns = specific.ContrastivePatterns;
+        else
+            patterns = ResolveFamilyContrastivePatterns(key, specific);
 
-        foreach (var p in specificPatterns.Concat(familyPatterns))
+        foreach (var p in patterns)
         {
             var topicMatch = grammarTopic.Contains(p.Pattern, StringComparison.OrdinalIgnoreCase);
             var levelMatch = p.CefrRelevance.Contains(normalizedLevel, StringComparer.OrdinalIgnoreCase);
