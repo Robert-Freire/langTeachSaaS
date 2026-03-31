@@ -11,6 +11,7 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | Severity | File | Note |
 |---|---|---|
 | Minor | `e2e/tests/sentence-transformation-type.spec.ts` | Two of four e2e tests (correct answer, alternative answer) omit `score-summary` assertion, diverging from `sentence-ordering-type.spec.ts` pattern. Low risk. |
+| Major | `frontend/src/types/contentTypes.ts` coerceExercisesContent | Early return at line 328 (`if (isExercisesContent(v)) return v`) bypasses item filtering for `sentenceTransformation` (and `sentenceOrdering`) when base arrays are already valid. Malformed `alternatives` values could pass through un-sanitized. Pre-existing pattern, not introduced by this PR. Affects all optional sub-formats. Fix in a coercion hardening pass. |
 
 ## PR task-t269-sentence-ordering (2026-03-31) — #269 sentence ordering format
 
