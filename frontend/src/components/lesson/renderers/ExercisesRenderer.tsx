@@ -7,6 +7,7 @@ import type {
   ExercisesMatching,
   ExercisesTrueFalse,
   ExercisesSentenceOrdering,
+  ExercisesSentenceTransformation,
   PracticeStage,
 } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
@@ -84,6 +85,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
   const matchIdsRef = useRef<number[]>([])
   const tfIdsRef = useRef<number[]>([])
   const soIdsRef = useRef<number[]>([])
+  const stIdsRef = useRef<number[]>([])
 
   const content = isExercisesContent(parsedContent) ? parsedContent as ExercisesContent : null
 
@@ -95,6 +97,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
   const matchIds = useMemo(() => syncIds(matchIdsRef.current, content?.matching.length ?? 0), [content?.matching.length])
   const tfIds = useMemo(() => syncIds(tfIdsRef.current, content?.trueFalse?.length ?? 0), [content?.trueFalse?.length])
   const soIds = useMemo(() => syncIds(soIdsRef.current, content?.sentenceOrdering?.length ?? 0), [content?.sentenceOrdering?.length])
+  const stIds = useMemo(() => syncIds(stIdsRef.current, content?.sentenceTransformation?.length ?? 0), [content?.sentenceTransformation?.length])
   /* eslint-enable react-hooks/refs */
 
   if (!content) {
@@ -111,6 +114,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
   const { fillInBlank, multipleChoice, matching } = content
   const trueFalse = content.trueFalse ?? []
   const sentenceOrdering = content.sentenceOrdering ?? []
+  const sentenceTransformation = content.sentenceTransformation ?? []
 
   const emit = (next: ExercisesContent) => onChange(JSON.stringify(next))
 
@@ -225,6 +229,21 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
   const removeSo = (i: number) => {
     soIdsRef.current.splice(i, 1)
     emit({ ...content, sentenceOrdering: sentenceOrdering.filter((_, idx) => idx !== i) })
+  }
+
+  // Sentence transformation handlers
+  const updateSt = (i: number, field: keyof ExercisesSentenceTransformation, value: string | string[]) => {
+    const next = sentenceTransformation.map((item, idx) => idx === i ? { ...item, [field]: value } : item)
+    emit({ ...content, sentenceTransformation: next })
+  }
+  const addSt = () => {
+    stIdsRef.current.push(uid())
+    const newItem: ExercisesSentenceTransformation = { prompt: '', original: '', expected: '' }
+    emit({ ...content, sentenceTransformation: [...sentenceTransformation, newItem] })
+  }
+  const removeSt = (i: number) => {
+    stIdsRef.current.splice(i, 1)
+    emit({ ...content, sentenceTransformation: sentenceTransformation.filter((_, idx) => idx !== i) })
   }
 
   return (
@@ -447,6 +466,68 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
         </table>
       </div>
       <button type="button" onClick={addSo} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add item</button>
+
+      {/* Sentence Transformation */}
+      <p className={sectionHeadingClass}>Sentence Transformation</p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-zinc-50">
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Prompt</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Original</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600 text-green-700">Expected</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Alternatives (comma-sep)</th>
+              <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Stage</th>
+              <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sentenceTransformation.map((item, i) => (
+              <tr key={stIds[i]} className="hover:bg-zinc-50">
+                <td className="border border-zinc-200 p-1">
+                  <input
+                    value={item.prompt}
+                    onChange={(e) => updateSt(i, 'prompt', e.target.value)}
+                    placeholder="Rewrite in the past tense"
+                    className={inputClass}
+                  />
+                </td>
+                <td className="border border-zinc-200 p-1">
+                  <input
+                    value={item.original}
+                    onChange={(e) => updateSt(i, 'original', e.target.value)}
+                    placeholder="Maria sale de casa."
+                    className={inputClass}
+                  />
+                </td>
+                <td className="border border-zinc-200 p-1">
+                  <input
+                    value={item.expected}
+                    onChange={(e) => updateSt(i, 'expected', e.target.value)}
+                    placeholder="Maria salio de casa."
+                    className={`${inputClass} text-green-700 font-medium`}
+                  />
+                </td>
+                <td className="border border-zinc-200 p-1">
+                  <input
+                    value={(item.alternatives ?? []).join(', ')}
+                    onChange={(e) => updateSt(i, 'alternatives', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                    placeholder="Maria salia de casa."
+                    className={inputClass}
+                  />
+                </td>
+                <td className="hidden sm:table-cell border border-zinc-200 p-1 text-center">
+                  {item.stage && <StageLabel stage={item.stage} />}
+                </td>
+                <td className="border border-zinc-200 p-1 text-center">
+                  <button type="button" onClick={() => removeSt(i)} className="text-zinc-400 hover:text-red-500 transition-colors px-1" aria-label="Remove item">✕</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <button type="button" onClick={addSt} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add item</button>
     </div>
   )
 }
@@ -461,12 +542,14 @@ function Preview({ parsedContent }: PreviewProps) {
   const { fillInBlank, multipleChoice, matching } = parsedContent as ExercisesContent
   const trueFalse = (parsedContent as ExercisesContent).trueFalse ?? []
   const sentenceOrdering = (parsedContent as ExercisesContent).sentenceOrdering ?? []
+  const sentenceTransformation = (parsedContent as ExercisesContent).sentenceTransformation ?? []
 
   const fibGroups = groupByStage(fillInBlank)
   const mcGroups = groupByStage(multipleChoice)
   const matchGroups = groupByStage(matching)
   const tfGroups = groupByStage(trueFalse)
   const soGroups = groupByStage(sentenceOrdering)
+  const stGroups = groupByStage(sentenceTransformation)
 
   return (
     <div className="space-y-4 text-sm" data-testid="exercises-preview">
@@ -581,6 +664,28 @@ function Preview({ parsedContent }: PreviewProps) {
           ))}
         </div>
       )}
+      {sentenceTransformation.length > 0 && (
+        <div>
+          <p className={sectionHeadingClass}>Sentence Transformation</p>
+          {stGroups.map(({ stage, items }) => (
+            <div key={stage}>
+              {stage !== 'unstaged' && <StageSectionHeader stage={stage} />}
+              <ol className="space-y-3 list-decimal list-inside">
+                {items.map((item, i) => (
+                  <li key={i} className="text-zinc-700">
+                    <span className="text-xs text-zinc-400 mr-1">{item.prompt}:</span>
+                    <span className="font-medium">{item.original}</span>
+                    <div className="text-xs text-green-700 mt-0.5">Answer: {item.expected}</div>
+                    {(item.alternatives?.length ?? 0) > 0 && (
+                      <div className="text-xs text-zinc-500">Also accepted: {item.alternatives!.join(', ')}</div>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -609,6 +714,8 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   const [tfJustifications, setTfJustifications] = useState<string[]>([])
   // soAnswers[i] = array of fragment indices chosen by student (in order they were clicked)
   const [soAnswers, setSoAnswers] = useState<number[][]>([])
+  // sentenceTransformation: free-text answers
+  const [stAnswers, setStAnswers] = useState<string[]>([])
   const [checked, setChecked] = useState(false)
 
   // Reset all answers when the content block changes (sync with external content updates)
@@ -621,6 +728,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     setTfAnswers([])
     setTfJustifications([])
     setSoAnswers([])
+    setStAnswers([])
     setChecked(false)
   }, [rawContent])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -654,6 +762,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   const { fillInBlank, multipleChoice, matching } = validContent
   const trueFalse = validContent.trueFalse ?? []
   const sentenceOrdering = validContent.sentenceOrdering ?? []
+  const sentenceTransformation = validContent.sentenceTransformation ?? []
 
   // Ensure answer arrays are sized (safe on first render)
   const fibs = fibAnswers.length === fillInBlank.length
@@ -675,6 +784,9 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   const soChosen: number[][] = soAnswers.length === sentenceOrdering.length
     ? soAnswers
     : sentenceOrdering.map(() => [])
+  const stTexts: string[] = stAnswers.length === sentenceTransformation.length
+    ? stAnswers
+    : Array(sentenceTransformation.length).fill('')
 
   const fibCorrect = fillInBlank.map((item, i) =>
     (fibs[i] ?? '').trim().toLowerCase() === item.answer.trim().toLowerCase()
@@ -687,14 +799,21 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     if (chosen.length !== item.correctOrder.length) return false
     return item.correctOrder.every((fragIdx, pos) => chosen[pos] === fragIdx)
   })
+  const stCorrect = sentenceTransformation.map((item, i) => {
+    const answer = (stTexts[i] ?? '').trim().toLowerCase()
+    if (!answer) return false
+    if (answer === item.expected.trim().toLowerCase()) return true
+    return (item.alternatives ?? []).some(alt => answer === alt.trim().toLowerCase())
+  })
 
-  const totalQuestions = fillInBlank.length + multipleChoice.length + matching.length + trueFalse.length + sentenceOrdering.length
+  const totalQuestions = fillInBlank.length + multipleChoice.length + matching.length + trueFalse.length + sentenceOrdering.length + sentenceTransformation.length
   const totalCorrect = [
     ...fibCorrect,
     ...mcCorrect,
     ...matchCorrect,
     ...tfCorrect,
     ...soCorrect,
+    ...stCorrect,
   ].filter(Boolean).length
 
   const handleCheck = () => {
@@ -704,6 +823,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     if (tfs !== tfAnswers) setTfAnswers(tfs)
     if (tfJusts !== tfJustifications) setTfJustifications(tfJusts)
     if (soChosen !== soAnswers) setSoAnswers(soChosen)
+    if (stTexts !== stAnswers) setStAnswers(stTexts)
     setChecked(true)
   }
 
@@ -715,6 +835,7 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     setTfAnswers(Array(trueFalse.length).fill(null))
     setTfJustifications(Array(trueFalse.length).fill(''))
     setSoAnswers(sentenceOrdering.map(() => []))
+    setStAnswers(Array(sentenceTransformation.length).fill(''))
     setChecked(false)
   }
 
@@ -1134,6 +1255,57 @@ function Student({ parsedContent, rawContent }: StudentProps) {
                       </span>
                       {!soCorrect[i] && item.explanation && (
                         <p className="text-xs text-zinc-500 mt-0.5" data-testid={`so-explanation-${i}`}>{item.explanation}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Sentence Transformation */}
+      {sentenceTransformation.length > 0 && (
+        <div>
+          <p className={sectionHeadingClass}>Sentence Transformation</p>
+          <p className="text-xs text-zinc-400 mb-3">Rewrite each sentence following the instruction.</p>
+          <div className="space-y-4">
+            {sentenceTransformation.map((item, i) => {
+              const answered = (stTexts[i] ?? '').trim().length > 0
+              const containerClass = checked
+                ? stCorrect[i]
+                  ? 'border-green-300 bg-green-50'
+                  : answered
+                    ? 'border-red-300 bg-red-50'
+                    : 'border-zinc-200 bg-white'
+                : 'border-zinc-200 bg-white'
+              return (
+                <div key={i} className={`rounded-lg border p-3 ${containerClass}`} data-testid={`st-item-${i}`}>
+                  <p className="text-xs font-medium text-indigo-600 mb-1">{item.prompt}</p>
+                  <p className="text-sm text-zinc-800 font-medium mb-2">{item.original}</p>
+                  <input
+                    type="text"
+                    value={stTexts[i] ?? ''}
+                    onChange={(e) => {
+                      const next = stTexts.map((v, idx) => idx === i ? e.target.value : v)
+                      setStAnswers(next)
+                    }}
+                    disabled={checked}
+                    placeholder="Type your answer..."
+                    className="w-full px-3 py-2 text-sm border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:bg-zinc-50 disabled:text-zinc-500"
+                    data-testid={`st-input-${i}`}
+                  />
+                  {checked && (
+                    <div className="mt-2">
+                      <span className={`text-xs font-medium ${stCorrect[i] ? 'text-green-600' : 'text-red-600'}`} data-testid={`st-result-${i}`}>
+                        {stCorrect[i] ? '✓ Correct' : `✗ Answer: ${item.expected}`}
+                      </span>
+                      {!stCorrect[i] && (item.alternatives?.length ?? 0) > 0 && (
+                        <p className="text-xs text-zinc-500 mt-0.5">Also accepted: {item.alternatives!.join(', ')}</p>
+                      )}
+                      {!stCorrect[i] && item.explanation && (
+                        <p className="text-xs text-zinc-500 mt-0.5" data-testid={`st-explanation-${i}`}>{item.explanation}</p>
                       )}
                     </div>
                   )}

@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 import { ExercisesRenderer } from './ExercisesRenderer'
-import type { ExercisesContent, ExercisesSentenceOrdering } from '../../../types/contentTypes'
+import type { ExercisesContent, ExercisesSentenceOrdering, ExercisesSentenceTransformation } from '../../../types/contentTypes'
 
 function makeContent(overrides?: Partial<ExercisesContent>): ExercisesContent {
   return {
@@ -294,9 +294,9 @@ describe('ExercisesRenderer sentenceOrdering', () => {
       const onChange = vi.fn()
       render(<ExercisesRenderer.Editor rawContent={JSON.stringify(content)} parsedContent={content} onChange={onChange} />)
 
-      // "Add item" buttons: first for FIB, second for SO
+      // "Add item" buttons: FIB, MC, Match, TF, SO, ST (sentence transformation is last)
       const addButtons = screen.getAllByText('+ Add item')
-      await userEvent.click(addButtons[addButtons.length - 1])
+      await userEvent.click(addButtons[addButtons.length - 2])
       const last = JSON.parse(onChange.mock.calls[onChange.mock.calls.length - 1][0])
       expect(last.sentenceOrdering).toHaveLength(1)
     })
@@ -540,5 +540,121 @@ describe('ExercisesRenderer coerce trueFalse', () => {
     const result = ExercisesRenderer.coerce(partial) as ExercisesContent
     expect(result.trueFalse).toHaveLength(1)
     expect(result.trueFalse![0].statement).toBe('X')
+  })
+})
+
+// ─── Sentence Transformation ──────────────────────────────────────────────────
+
+function makeStItem(overrides?: Partial<ExercisesSentenceTransformation>): ExercisesSentenceTransformation {
+  return {
+    prompt: 'Rewrite in the past tense',
+    original: 'Maria sale de casa.',
+    expected: 'Maria salio de casa.',
+    alternatives: ['Maria salia de casa.'],
+    explanation: 'Both preterito and imperfecto are valid.',
+    ...overrides,
+  }
+}
+
+describe('ExercisesRenderer sentenceTransformation', () => {
+  describe('Editor', () => {
+    it('renders sentence transformation section when items are present', () => {
+      const content = makeContent({ sentenceTransformation: [makeStItem()] })
+      render(<ExercisesRenderer.Editor rawContent={raw(content)} parsedContent={content} onChange={vi.fn()} />)
+      expect(screen.getByText('Sentence Transformation')).toBeInTheDocument()
+    })
+
+    it('calls onChange when a sentence transformation item is added', async () => {
+      const content = makeContent({ sentenceTransformation: [] })
+      const onChange = vi.fn()
+      render(<ExercisesRenderer.Editor rawContent={raw(content)} parsedContent={content} onChange={onChange} />)
+      const addBtns = screen.getAllByText('+ Add item')
+      await userEvent.click(addBtns[addBtns.length - 1])
+      const last = JSON.parse(onChange.mock.calls.at(-1)![0]) as ExercisesContent
+      expect(last.sentenceTransformation).toHaveLength(1)
+    })
+
+    it('preserves sentenceTransformation when editing other sections', async () => {
+      const content = makeContent({ sentenceTransformation: [makeStItem()] })
+      const onChange = vi.fn()
+      render(<ExercisesRenderer.Editor rawContent={raw(content)} parsedContent={content} onChange={onChange} />)
+      const addBtns = screen.getAllByText('+ Add item')
+      await userEvent.click(addBtns[0])
+      const last = JSON.parse(onChange.mock.calls.at(-1)![0]) as ExercisesContent
+      expect(last.sentenceTransformation).toHaveLength(1)
+      expect(last.sentenceTransformation![0].expected).toBe('Maria salio de casa.')
+    })
+  })
+
+  describe('Preview', () => {
+    it('renders sentence transformation section', () => {
+      const content = makeContent({ sentenceTransformation: [makeStItem()] })
+      render(<ExercisesRenderer.Preview rawContent={raw(content)} parsedContent={content} />)
+      expect(screen.getByText('Sentence Transformation')).toBeInTheDocument()
+      expect(screen.getByText(/Maria sale de casa/)).toBeInTheDocument()
+    })
+
+    it('shows alternatives in preview', () => {
+      const content = makeContent({ sentenceTransformation: [makeStItem()] })
+      render(<ExercisesRenderer.Preview rawContent={raw(content)} parsedContent={content} />)
+      expect(screen.getByText(/Also accepted/)).toBeInTheDocument()
+    })
+  })
+
+  describe('Student', () => {
+    it('renders input for transformation', () => {
+      const content = makeContent({ sentenceTransformation: [makeStItem()], fillInBlank: [], multipleChoice: [], matching: [] })
+      render(<ExercisesRenderer.Student rawContent={raw(content)} parsedContent={content} />)
+      expect(screen.getByTestId('st-input-0')).toBeInTheDocument()
+      expect(screen.getByText(/Rewrite in the past tense/)).toBeInTheDocument()
+    })
+
+    it('marks correct when answer matches expected', async () => {
+      const content = makeContent({ sentenceTransformation: [makeStItem()], fillInBlank: [], multipleChoice: [], matching: [] })
+      render(<ExercisesRenderer.Student rawContent={raw(content)} parsedContent={content} />)
+      await userEvent.type(screen.getByTestId('st-input-0'), 'Maria salio de casa.')
+      await userEvent.click(screen.getByTestId('check-answers-btn'))
+      expect(screen.getByTestId('st-result-0')).toHaveTextContent('Correct')
+      expect(screen.getByTestId('score-summary')).toHaveTextContent('1 / 1 correct')
+    })
+
+    it('marks correct when answer matches an alternative', async () => {
+      const content = makeContent({ sentenceTransformation: [makeStItem()], fillInBlank: [], multipleChoice: [], matching: [] })
+      render(<ExercisesRenderer.Student rawContent={raw(content)} parsedContent={content} />)
+      await userEvent.type(screen.getByTestId('st-input-0'), 'Maria salia de casa.')
+      await userEvent.click(screen.getByTestId('check-answers-btn'))
+      expect(screen.getByTestId('st-result-0')).toHaveTextContent('Correct')
+    })
+
+    it('shows model answer and explanation when wrong', async () => {
+      const content = makeContent({ sentenceTransformation: [makeStItem()], fillInBlank: [], multipleChoice: [], matching: [] })
+      render(<ExercisesRenderer.Student rawContent={raw(content)} parsedContent={content} />)
+      await userEvent.type(screen.getByTestId('st-input-0'), 'wrong answer')
+      await userEvent.click(screen.getByTestId('check-answers-btn'))
+      expect(screen.getByTestId('st-result-0')).toHaveTextContent('Maria salio de casa.')
+      expect(screen.getByTestId('st-explanation-0')).toHaveTextContent('preterito')
+    })
+
+    it('counts sentence transformation in total score', async () => {
+      const content = makeContent({ sentenceTransformation: [makeStItem()], fillInBlank: [], multipleChoice: [], matching: [] })
+      render(<ExercisesRenderer.Student rawContent={raw(content)} parsedContent={content} />)
+      await userEvent.click(screen.getByTestId('check-answers-btn'))
+      expect(screen.getByTestId('score-summary')).toHaveTextContent('0 / 1 correct')
+    })
+  })
+})
+
+describe('ExercisesRenderer coerce sentenceTransformation', () => {
+  it('coerces missing sentenceTransformation to undefined', () => {
+    const partial = { fillInBlank: [{ sentence: 'S', answer: 'A' }] }
+    const result = ExercisesRenderer.coerce(partial) as ExercisesContent
+    expect(result.sentenceTransformation).toBeUndefined()
+  })
+
+  it('coerces sentence_transformation snake_case key', () => {
+    const partial = { sentence_transformation: [{ prompt: 'P', original: 'O', expected: 'E' }] }
+    const result = ExercisesRenderer.coerce(partial) as ExercisesContent
+    expect(result.sentenceTransformation).toHaveLength(1)
+    expect(result.sentenceTransformation![0].prompt).toBe('P')
   })
 })

@@ -210,3 +210,66 @@ describe('coerceExercisesContent (sentenceOrdering)', () => {
     expect(result?.sentenceOrdering).toBeUndefined()
   })
 })
+
+// ─── isExercisesContent (sentenceTransformation) ─────────────────────────────
+
+describe('isExercisesContent (sentenceTransformation)', () => {
+  it('accepts content without sentenceTransformation (backward compat)', () => {
+    expect(isExercisesContent(validExercises)).toBe(true)
+  })
+
+  it('accepts content with sentenceTransformation', () => {
+    const withSt = {
+      ...validExercises,
+      sentenceTransformation: [{ prompt: 'Rewrite in past', original: 'Ella sale.', expected: 'Ella salio.' }],
+    }
+    expect(isExercisesContent(withSt)).toBe(true)
+  })
+})
+
+describe('coerceExercisesContent (sentenceTransformation)', () => {
+  it('preserves sentenceTransformation when present', () => {
+    const input = {
+      ...validExercises,
+      sentenceTransformation: [{ prompt: 'P', original: 'O', expected: 'E', alternatives: ['A1'] }],
+    }
+    const result = coerceExercisesContent(input)
+    expect(result?.sentenceTransformation).toHaveLength(1)
+    expect(result?.sentenceTransformation?.[0].expected).toBe('E')
+    expect(result?.sentenceTransformation?.[0].alternatives).toEqual(['A1'])
+  })
+
+  it('handles AI response with only sentenceTransformation (no other arrays)', () => {
+    const input = { sentenceTransformation: [{ prompt: 'P', original: 'O', expected: 'E' }] }
+    const result = coerceExercisesContent(input)
+    expect(result).not.toBeNull()
+    expect(result?.sentenceTransformation).toHaveLength(1)
+    expect(result?.fillInBlank).toEqual([])
+    expect(result?.multipleChoice).toEqual([])
+    expect(result?.matching).toEqual([])
+  })
+
+  it('handles snake_case sentence_transformation from AI', () => {
+    const input = { sentence_transformation: [{ prompt: 'P', original: 'O', expected: 'E' }] }
+    const result = coerceExercisesContent(input)
+    expect(result).not.toBeNull()
+    expect(result?.sentenceTransformation).toHaveLength(1)
+  })
+
+  it('filters out invalid items missing required fields', () => {
+    const input = {
+      sentenceTransformation: [
+        { prompt: 'P', original: 'O', expected: 'E' },
+        { prompt: 'P', original: 'O' },
+        { notAField: true },
+      ],
+    }
+    const result = coerceExercisesContent(input)
+    expect(result?.sentenceTransformation).toHaveLength(1)
+  })
+
+  it('sets sentenceTransformation to undefined when not present', () => {
+    const result = coerceExercisesContent(validExercises)
+    expect(result?.sentenceTransformation).toBeUndefined()
+  })
+})

@@ -80,6 +80,29 @@ export const SENTENCE_ORDERING_FIXTURE = {
   ],
 }
 
+export const SENTENCE_TRANSFORMATION_FIXTURE = {
+  fillInBlank: [],
+  multipleChoice: [],
+  matching: [],
+  sentenceTransformation: [
+    {
+      prompt: 'Rewrite in the past tense',
+      original: 'Maria sale de casa a las ocho.',
+      expected: 'Maria salio de casa a las ocho.',
+      alternatives: ['Maria salia de casa a las ocho.'],
+      explanation: 'Both preterito (completed action) and imperfecto (habitual) are valid depending on context.',
+      stage: 'guided_free',
+    },
+    {
+      prompt: 'Change to the negative form',
+      original: 'Juan tiene hambre.',
+      expected: 'Juan no tiene hambre.',
+      explanation: 'Place "no" before the conjugated verb to negate.',
+      stage: 'meaningful',
+    },
+  ],
+}
+
 export const CONVERSATION_FIXTURE = {
   scenarios: [
     {
