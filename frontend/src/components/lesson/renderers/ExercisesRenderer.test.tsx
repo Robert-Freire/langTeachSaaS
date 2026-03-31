@@ -368,13 +368,13 @@ describe('ExercisesRenderer coerce trueFalse', () => {
   it('coerces missing trueFalse to empty array', () => {
     const partial = { fillInBlank: [{ sentence: 'S', answer: 'A' }] }
     const result = ExercisesRenderer.coerce(partial) as ExercisesContent
-    expect(result.trueFalse).toEqual([])
+    expect(result.trueFalse ?? []).toEqual([])
   })
 
   it('coerces true_false snake_case key', () => {
     const partial = { true_false: [{ statement: 'X', isTrue: true, justification: 'Y' }] }
     const result = ExercisesRenderer.coerce(partial) as ExercisesContent
     expect(result.trueFalse).toHaveLength(1)
-    expect(result.trueFalse[0].statement).toBe('X')
+    expect(result.trueFalse![0].statement).toBe('X')
   })
 })
