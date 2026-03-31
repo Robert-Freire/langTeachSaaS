@@ -8,6 +8,16 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 
 *Previous clearing 2026-03-27: 20 entries deleted, 17 batched into issues #298, #299, #300, #303.*
 
+## PR task-t274-noticing-task (2026-03-31) -- #274 noticing task
+
+| Severity | Finding |
+|----------|---------|
+| Important | [I1] Editor: Position fields show raw character indices (11, 14, 28) meaningless to teachers, no labels once filled. |
+| Important | [I2] Student view: No visible focus ring on word tokens for keyboard navigation despite tabIndex/keyDown handlers. |
+| Minor | [M1] Editor: Grammar ref field is plain text input, could use autocomplete from grammar catalog. |
+| Minor | [M2] Preview: Target legend text-xs with grammar IDs may not be meaningful to teachers. |
+| Minor | [M3] Student view: Discovery Questions are read-only with no interactive affordance for student answers. |
+
 ## PR task-t272-sentence-transformation (2026-03-31) — #272 sentence transformation
 
 | Severity | Finding |
