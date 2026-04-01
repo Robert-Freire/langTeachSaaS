@@ -11,6 +11,7 @@ public record GrammarValidationRule(
     string Pattern,
     string Correction,
     string Severity,
+    string[]? Levels = null,
     GrammarValidationContextRelevance? ContextRelevance = null);
 
 public record GrammarValidationContextRelevance(string[] GrammarFocusPatterns);

@@ -61,7 +61,7 @@ public class GrammarValidationService : IGrammarValidationService
         _log.LogInformation("GrammarValidationService: loaded {Count} grammar validation rules", _rules.Length);
     }
 
-    public GrammarWarning[] Validate(string content, string targetLanguage, string? grammarFocus)
+    public GrammarWarning[] Validate(string content, string targetLanguage, string? cefrLevel, string? grammarFocus)
     {
         var normalizedLang = targetLanguage.Trim().ToLowerInvariant();
         var results = new List<GrammarWarning>();
@@ -70,6 +70,13 @@ public class GrammarValidationService : IGrammarValidationService
         {
             if (!string.Equals(rule.TargetLanguage, normalizedLang, StringComparison.OrdinalIgnoreCase))
                 continue;
+
+            // Skip if rule is scoped to specific CEFR levels and the lesson level is not in scope
+            if (rule.Levels is { Length: > 0 } levels && cefrLevel is not null)
+            {
+                if (!levels.Any(l => string.Equals(l, cefrLevel, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+            }
 
             MatchCollection matches;
             try

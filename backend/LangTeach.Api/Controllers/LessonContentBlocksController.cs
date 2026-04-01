@@ -62,7 +62,7 @@ public class LessonContentBlocksController : ControllerBase
     // With grammar warnings for GET and POST endpoints that have language context
     // Validate the displayed content (EditedContent takes priority over GeneratedContent)
     // so warnings reflect what the teacher and student will actually see.
-    private ContentBlockDto ToDtoWithWarnings(LessonContentBlock b, string language) => new(
+    private ContentBlockDto ToDtoWithWarnings(LessonContentBlock b, string language, string cefrLevel) => new(
         b.Id,
         b.LessonSectionId,
         b.BlockType,
@@ -72,11 +72,11 @@ public class LessonContentBlocksController : ControllerBase
         b.GenerationParams,
         TryParseContent(b.EditedContent ?? b.GeneratedContent),
         b.CreatedAt,
-        ToGrammarWarnings(b.EditedContent ?? b.GeneratedContent, language, JsonStorageHelper.ReadStringProperty(b.GenerationParams, "grammarConstraints")));
+        ToGrammarWarnings(b.EditedContent ?? b.GeneratedContent, language, cefrLevel, JsonStorageHelper.ReadStringProperty(b.GenerationParams, "grammarConstraints")));
 
-    private GrammarWarning[]? ToGrammarWarnings(string content, string language, string? grammarFocus)
+    private GrammarWarning[]? ToGrammarWarnings(string content, string language, string cefrLevel, string? grammarFocus)
     {
-        var warnings = _grammarValidation.Validate(content, language, grammarFocus);
+        var warnings = _grammarValidation.Validate(content, language, cefrLevel, grammarFocus);
         return warnings.Length > 0 ? warnings : null;
     }
 
@@ -133,7 +133,7 @@ public class LessonContentBlocksController : ControllerBase
             "POST content-block saved. LessonId={LessonId} BlockId={BlockId} BlockType={BlockType}",
             lessonId, block.Id, block.BlockType);
 
-        return CreatedAtAction(nameof(Get), new { lessonId }, ToDtoWithWarnings(block, lesson.Language));
+        return CreatedAtAction(nameof(Get), new { lessonId }, ToDtoWithWarnings(block, lesson.Language, lesson.CefrLevel));
     }
 
     [HttpGet]
@@ -151,7 +151,7 @@ public class LessonContentBlocksController : ControllerBase
             .OrderBy(b => b.CreatedAt)
             .ToListAsync(ct);
 
-        return Ok(blocks.Select(b => ToDtoWithWarnings(b, lesson.Language)));
+        return Ok(blocks.Select(b => ToDtoWithWarnings(b, lesson.Language, lesson.CefrLevel)));
     }
 
     [HttpPut("{blockId:guid}/edited-content")]
