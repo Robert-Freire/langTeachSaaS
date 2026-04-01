@@ -4,6 +4,7 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 | Source issue | Date | Severity | Observation |
 |-------------|------|----------|-------------|
+| #336 | 2026-04-01 | minor | `CourseService.CreateAsync` throws `ValidationException` with hardcoded English user-facing messages (pre-existing pattern from StudentService). Backend should return error codes; frontend should own display text. Consistent with rest of codebase but worth revisiting in an i18n pass. |
 | #380 | 2026-03-29 | minor | `MapToDto` in CreateAsync/UpdateAsync/DuplicateAsync paths does not `.Include(l => l.Template)` so TemplateName is null in those responses. Editor re-fetches via GetByIdAsync so no user impact, but inconsistent. Fix with other LessonService query hygiene. |
 | #380 | 2026-03-29 | minor | `EXAM_PREP_SECTION_TASK_MAP` in FullLessonGenerateButton hardcodes pedagogical content-type routing in TS code instead of deriving from backend config. Should be driven by template-overrides data once #334 (Expose section profiles API) lands. |
 | #380 | 2026-03-29 | minor | `BuildTemplateGuidanceBlock` is only injected in FreeTextUserPrompt and ExercisesUserPrompt. For consistency, it should also be applied to GrammarUserPrompt, VocabularyUserPrompt etc. so future templates that define overrides for those content types work automatically. |
