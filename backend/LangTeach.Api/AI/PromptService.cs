@@ -586,7 +586,7 @@ public class PromptService : IPromptService
                 topic:           topic,
                 templateName:    ctx.TemplateName,
                 mainInstruction: $"Generate a wrap-up reflection conversation for a {level} level lesson on \"{topic}\".",
-                extraConstraint: "IMPORTANT: Review only content from this lesson. Do not introduce new vocabulary, grammar structures, or situations.");
+                extraConstraint: _profiles.GetClosingConstraint("wrapup", level));
 
         return $$"""
         Generate conversation scenarios for the lesson on "{{topic}}". Return JSON:

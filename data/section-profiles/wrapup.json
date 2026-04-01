@@ -39,7 +39,8 @@
           "note": "Use a single fill-in sentence (1 sentence max) as a minimal written reflection, e.g. \"Today I learned ___.\" No extended writing."
         }
       ],
-      "minExerciseVariety": 1
+      "minExerciseVariety": 1,
+      "closingConstraint": "Do not introduce new vocabulary, grammar structures, or situations. Review only content from this lesson."
     },
     "A2": {
       "contentTypes": [
@@ -79,7 +80,8 @@
           "note": "Limit to 1 sentence of written reflection, e.g. \"The most useful word today was ___.\" Do not extend to multi-sentence writing tasks."
         }
       ],
-      "minExerciseVariety": 1
+      "minExerciseVariety": 1,
+      "closingConstraint": "Do not introduce new vocabulary, grammar structures, or situations. Review only content from this lesson."
     },
     "B1": {
       "contentTypes": [
@@ -115,7 +117,8 @@
           "note": "Intercultural comparison at B1 wrap-up: one brief observation connecting lesson content to student's own culture; not an extended discussion"
         }
       ],
-      "minExerciseVariety": 1
+      "minExerciseVariety": 1,
+      "closingConstraint": "Do not introduce new vocabulary, grammar structures, or situations. Review only content from this lesson."
     },
     "B2": {
       "contentTypes": [
@@ -151,7 +154,8 @@
           "note": "At B2, prompt student to articulate what was confirmed vs what was new; this metacognitive distinction aids long-term retention"
         }
       ],
-      "minExerciseVariety": 1
+      "minExerciseVariety": 1,
+      "closingConstraint": "Do not introduce new vocabulary, grammar structures, or situations. Review only content from this lesson."
     },
     "C1": {
       "contentTypes": [
@@ -188,7 +192,8 @@
           "note": "At C1, oral mediation as reflection: ask student to explain the lesson's key grammar or lexical concept to an imaginary non-native speaker; this reveals metalinguistic understanding"
         }
       ],
-      "minExerciseVariety": 1
+      "minExerciseVariety": 1,
+      "closingConstraint": "Do not introduce new vocabulary, grammar structures, or situations. Review only content from this lesson."
     },
     "C2": {
       "contentTypes": [
@@ -229,7 +234,8 @@
           "note": "Free reflection at C2: student identifies one register decision or pragmatic choice made during production and evaluates whether it was optimal"
         }
       ],
-      "minExerciseVariety": 1
+      "minExerciseVariety": 1,
+      "closingConstraint": "Do not introduce new vocabulary, grammar structures, or situations. Review only content from this lesson."
     }
   }
 }

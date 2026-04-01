@@ -157,6 +157,16 @@ public class SectionProfileService : ISectionProfileService
     public string? GetWeaknessTargetingGuidance(string sectionType) =>
         GetProfile(sectionType)?.WeaknessTargetingGuidance;
 
+    public string? GetClosingConstraint(string sectionType, string cefrLevel)
+    {
+        var profile = GetProfile(sectionType);
+        if (profile is null) return null;
+        var level = NormalizeLevel(cefrLevel);
+        if (profile.Levels.TryGetValue(level, out var lp))
+            return lp.ClosingConstraint;
+        return null;
+    }
+
     public string[] GetAllScopeValues() =>
         _profiles.Values
             .SelectMany(p => p.Levels.Values)
