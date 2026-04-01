@@ -1,5 +1,6 @@
 {
   "sectionType": "practice",
+  "weaknessTargetingGuidance": "include at least 1 exercise targeting: {weaknesses}. If no weakness data is available for this student, omit this instruction entirely.",
   "levels": {
     "A1": {
       "contentTypes": ["exercises", "conversation"],

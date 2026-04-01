@@ -1218,7 +1218,7 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("SECTION COHERENCE RULES");
         req.UserPrompt.Should().Contain("Practice MUST use EXCLUSIVELY content from Presentation");
         req.UserPrompt.Should().Contain("Production MUST be achievable");
-        req.UserPrompt.Should().Contain("Wrap Up MUST refer to lesson content");
+        req.UserPrompt.Should().Contain("competency targeted in Production must be producible");
     }
 
     [Fact]
@@ -1286,6 +1286,34 @@ public class PromptServiceTests
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
 
         req.UserPrompt.Should().NotContain("DECLARED WEAKNESSES");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_WeaknessBlock_ContainsSectionSpecificGuidanceFromConfig()
+    {
+        var ctx = BaseCtx() with { StudentWeaknesses = ["subjunctive"] };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        // Verify section-specific labels and guidance are assembled from config
+        req.UserPrompt.Should().Contain("Practice:", because: "practice has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().Contain("Production:", because: "production has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().Contain("WrapUp:", because: "wrapup has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().NotContain("WarmUp:", because: "warmup does not participate in weakness targeting");
+        req.UserPrompt.Should().NotContain("Presentation:", because: "presentation does not participate in weakness targeting");
+        req.UserPrompt.Should().Contain("subjunctive", because: "weakness text must be interpolated into the practice guidance");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_CoherenceRulesFromConfig_ContainsAllFiveRules()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        // Verify rules 1 and 5 text from course-rules.json is present
+        req.UserPrompt.Should().Contain("THEME of Warm Up must relate to the THEME of Presentation",
+            because: "rule 1 text must be sourced from config");
+        req.UserPrompt.Should().Contain("Linguistic level must NOT increase",
+            because: "rule 5 text must be sourced from config");
     }
 
     // --- Grammar prompt: grammar scope injection ---

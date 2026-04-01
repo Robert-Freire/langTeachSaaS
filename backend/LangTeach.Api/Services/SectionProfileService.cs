@@ -150,6 +150,9 @@ public class SectionProfileService : ISectionProfileService
         return string.Empty;
     }
 
+    public string? GetWeaknessTargetingGuidance(string sectionType) =>
+        GetProfile(sectionType)?.WeaknessTargetingGuidance;
+
     public string[] GetAllScopeValues() =>
         _profiles.Values
             .SelectMany(p => p.Levels.Values)

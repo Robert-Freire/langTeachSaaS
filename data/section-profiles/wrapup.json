@@ -1,5 +1,6 @@
 {
   "sectionType": "wrapup",
+  "weaknessTargetingGuidance": "ask the student to rate their confidence with each area (1-3 scale) and identify one specific difficulty that remains.",
   "levels": {
     "A1": {
       "contentTypes": ["conversation"],

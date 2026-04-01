@@ -1,4 +1,11 @@
 {
+  "sectionCoherenceRules": [
+    "The THEME of Warm Up must relate to the THEME of Presentation (same field, not identical).",
+    "Practice MUST use EXCLUSIVELY content from Presentation. No new grammar or vocabulary.",
+    "Production MUST be achievable with the language practiced in Practice.",
+    "The competency targeted in Production must be producible using the language presented in Presentation. Do not introduce a new macro-skill (CE/CO/EE/EO) that was not activated in Presentation.",
+    "Linguistic level must NOT increase between sections. If Presentation is A2, Practice cannot demand B1."
+  ],
   "varietyRules": {
     "practiceTypeCombination": {
       "noRepeatWithinSessions": 3,

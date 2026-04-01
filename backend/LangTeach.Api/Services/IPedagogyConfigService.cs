@@ -130,6 +130,20 @@ public interface IPedagogyConfigService
     IReadOnlyList<PracticeStageDefinition> GetPracticeStageDefinitions();
 
     /// <summary>
+    /// Returns the section coherence rules from course-rules.json.
+    /// These are the mandatory cross-section constraints injected into the lesson plan prompt.
+    /// Returns an empty array if the field is absent from config (should not happen in production).
+    /// </summary>
+    string[] GetSectionCoherenceRules();
+
+    /// <summary>
+    /// Returns the weakness targeting guidance template for the given section, or null if none defined.
+    /// The template may contain {weaknesses} as a placeholder for the student weakness list.
+    /// Sections practice, production, and wrapUp have guidance; warmUp and presentation do not.
+    /// </summary>
+    string? GetWeaknessTargetingGuidance(string sectionType);
+
+    /// <summary>
     /// Returns a contrastive note result for the given native language, grammar topic, and CEFR level.
     /// Looks up contrastive patterns for the native language (specific-language patterns take priority
     /// over family-level patterns). Matches the first pattern whose Pattern value is a case-insensitive
