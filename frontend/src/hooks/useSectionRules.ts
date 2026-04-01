@@ -7,5 +7,6 @@ export function useSectionRules() {
     queryFn: fetchSectionRules,
     staleTime: Infinity, // Rules are static at runtime
     refetchOnWindowFocus: false,
+    retry: 2,
   })
 }

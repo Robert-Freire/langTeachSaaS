@@ -3,7 +3,6 @@ import {
   getAllowedContentTypes,
   getContentTypeLabel,
   normalizeLevel,
-  ALL_CONTENT_TYPES,
   type SectionRulesMap,
 } from './sectionContentTypes'
 
@@ -66,12 +65,16 @@ describe('normalizeLevel', () => {
 })
 
 describe('getAllowedContentTypes — loading fallback', () => {
-  it('returns ALL_CONTENT_TYPES when rules is undefined', () => {
-    expect(getAllowedContentTypes(undefined, 'WarmUp', 'A1')).toEqual(ALL_CONTENT_TYPES)
+  it('returns [] when rules is undefined (loading)', () => {
+    expect(getAllowedContentTypes(undefined, 'WarmUp', 'A1')).toEqual([])
   })
 
-  it('returns ALL_CONTENT_TYPES when rules is undefined regardless of section', () => {
-    expect(getAllowedContentTypes(undefined, 'Practice', 'B2')).toEqual(ALL_CONTENT_TYPES)
+  it('returns [] when rules is undefined regardless of section', () => {
+    expect(getAllowedContentTypes(undefined, 'Practice', 'B2')).toEqual([])
+  })
+
+  it('does not include free-text for Presentation when rules are loading', () => {
+    expect(getAllowedContentTypes(undefined, 'Presentation', 'B1')).not.toContain('free-text')
   })
 })
 

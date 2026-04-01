@@ -51,6 +51,12 @@ export function ContentBlock({
     setValue(block.editedContent ?? block.generatedContent)
   }, [block.editedContent, block.generatedContent])
 
+  useEffect(() => {
+    setEditingTargets(false)
+    setTargetsDraft([])
+    setNewTagInput('')
+  }, [block.id, lessonId])
+
   const doSave = async (content: string) => {
     if (content === storedValue) return
     setSaving(true)

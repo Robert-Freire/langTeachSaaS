@@ -36,9 +36,10 @@ const MOCK_SECTION_RULES: SectionRulesMap = {
   },
 }
 
-// Mock useSectionRules — data is static config, always available in tests
+// Mock useSectionRules — controllable per-test via mockUseSectionRules
+const mockUseSectionRules = vi.fn()
 vi.mock('../../hooks/useSectionRules', () => ({
-  useSectionRules: () => ({ data: MOCK_SECTION_RULES, isLoading: false }),
+  useSectionRules: () => mockUseSectionRules(),
 }))
 
 // Mock Auth0
@@ -115,6 +116,9 @@ function renderWithQuery(ui: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks()
   mockUseProfile.mockReturnValue(defaultProfile)
+  mockUseSectionRules.mockReturnValue({ data: MOCK_SECTION_RULES, isLoading: false, isError: false, error: null })
+  // scrollIntoView is not implemented in jsdom
+  Element.prototype.scrollIntoView = vi.fn()
 })
 
 describe('GeneratePanel - streaming states', () => {
@@ -682,5 +686,74 @@ describe('GeneratePanel - section content type allowlist', () => {
     expect(within(listbox).queryByText('Grammar')).toBeNull()
     expect(within(listbox).queryByText('Reading')).toBeNull()
     expect(within(listbox).queryByText('Homework')).toBeNull()
+  })
+})
+
+describe('GeneratePanel - auto-scroll on mount', () => {
+  it('calls scrollIntoView when the panel mounts', () => {
+    mockUseGenerate.mockReturnValue({
+      status: 'idle', output: null, error: null, quotaExceeded: false, generate: vi.fn(), abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'nearest' })
+  })
+})
+
+describe('GeneratePanel - section rules error state', () => {
+  it('shows error banner when section rules fail to load', () => {
+    mockUseSectionRules.mockReturnValue({ data: undefined, isLoading: false, isError: true, error: new Error('Network error') })
+    mockUseGenerate.mockReturnValue({
+      status: 'idle', output: null, error: null, quotaExceeded: false, generate: vi.fn(), abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    expect(screen.getByTestId('section-rules-error')).toBeInTheDocument()
+    expect(screen.getByTestId('section-rules-error').textContent).toContain('could not be loaded')
+  })
+
+  it('disables generate button when section rules have not loaded', () => {
+    mockUseSectionRules.mockReturnValue({ data: undefined, isLoading: false, isError: true, error: new Error('fail') })
+    mockUseGenerate.mockReturnValue({
+      status: 'idle', output: null, error: null, quotaExceeded: false, generate: vi.fn(), abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    expect(screen.getByTestId('generate-btn')).toBeDisabled()
+  })
+
+  it('shows loading placeholder when section rules are loading', () => {
+    mockUseSectionRules.mockReturnValue({ data: undefined, isLoading: true, isError: false, error: null })
+    mockUseGenerate.mockReturnValue({
+      status: 'idle', output: null, error: null, quotaExceeded: false, generate: vi.fn(), abort: vi.fn(),
+    })
+
+    renderWithQuery(<GeneratePanel {...defaultProps} />)
+
+    expect(screen.getByTestId('task-type-loading')).toBeInTheDocument()
+    expect(screen.getByTestId('generate-btn')).toBeDisabled()
+  })
+})
+
+describe('GeneratePanel - task-type readonly accessibility', () => {
+  it('readonly task-type div has tabIndex=0 and role=status', () => {
+    mockUseGenerate.mockReturnValue({
+      status: 'idle', output: null, error: null, quotaExceeded: false, generate: vi.fn(), abort: vi.fn(),
+    })
+
+    renderWithQuery(
+      <GeneratePanel
+        {...defaultProps}
+        sectionType="WarmUp"
+        lessonContext={{ ...defaultProps.lessonContext, cefrLevel: 'A1' }}
+      />
+    )
+
+    const readonlyDiv = screen.getByTestId('task-type-readonly')
+    expect(readonlyDiv.getAttribute('tabindex')).toBe('0')
+    expect(readonlyDiv.getAttribute('role')).toBe('status')
   })
 })

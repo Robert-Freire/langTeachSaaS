@@ -6,6 +6,15 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-03-28 during Student-Aware Curriculum sprint close (round 2). 9 entries processed: 4 batched into #347 (pedagogy data consistency), 2 into #349 (UX polish), 3 deleted (redundant tests nit, harmless prompt duplication, undocumented fallback comment).*
 
+## PR task-t349-ux-polish (2026-04-01) -- #349 UX polish
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `GeneratePanel.tsx` | Hardcoded error/loading strings ("Content type rules could not be loaded...", "Loading types..."). No i18n yet across the app; track with overall i18n effort. |
+| Minor | `GeneratePanel.tsx` | `useRef`+`useEffect` for auto-scroll declared between other hooks rather than at the top with other refs. Cosmetic ordering issue. |
+| Minor | `sectionContentTypes.ts` | `ALL_CONTENT_TYPES` export is no longer used in production code (test import was also removed). Consider removing if no external consumers remain. |
+| Minor | `GeneratePanel.tsx` | Pre-existing inline SVG icons (replace indicator, check icon, spinner) diverge from lucide-react pattern in sibling components. The new error banner was fixed to use lucide-react; pre-existing ones remain. |
+
 ## PR task-t406-visual-test-infrastructure (2026-03-31) -- #406 visual test infrastructure
 
 | Severity | File | Note |
@@ -61,7 +70,7 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 | Severity | File | Note |
 |---|---|---|
-| Important | `frontend/src/components/lesson/GeneratePanel.tsx` | `useSectionRules` has no `isError` handling — if the fetch fails permanently, `sectionRules` stays `undefined` and ALL_CONTENT_TYPES is silently returned (content-type filtering disabled with no user feedback). Graceful degradation is intentional but should surface an inline error or toast. |
+| ~~Important~~ | `frontend/src/components/lesson/GeneratePanel.tsx` | ~~`useSectionRules` has no `isError` handling~~ — **Fixed in PR task-t349-ux-polish (#349)** |
 | Minor | `backend/LangTeach.Api.Tests/Controllers/PedagogyControllerTests.cs` | The 3 tests all call the same endpoint; second/third tests are redundant round-trips. Could collapse assertions into a single test. |
 
 ---
