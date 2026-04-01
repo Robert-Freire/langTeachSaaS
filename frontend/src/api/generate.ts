@@ -24,6 +24,13 @@ export interface TargetedDifficulty {
 
 export type GenerateStatus = 'idle' | 'streaming' | 'done' | 'error'
 
+export interface GrammarWarning {
+  ruleId: string
+  correction: string
+  severity: string
+  matchedText: string
+}
+
 export interface ContentBlockDto {
   id: string
   lessonSectionId: string | null
@@ -34,6 +41,7 @@ export interface ContentBlockDto {
   generationParams: string | null
   parsedContent: unknown | null
   createdAt: string
+  grammarWarnings?: GrammarWarning[] | null
 }
 
 export interface SaveContentBlockRequest {
