@@ -74,4 +74,10 @@ public interface ISectionProfileService
     /// for the student weakness list.
     /// </summary>
     string? GetWeaknessTargetingGuidance(string sectionType);
+
+    /// <summary>
+    /// Returns the closing constraint for a section at the given CEFR level, or null if none is set.
+    /// Used to inject section-specific closing instructions into the conversation prompt (e.g. "no new material").
+    /// </summary>
+    string? GetClosingConstraint(string sectionType, string cefrLevel);
 }

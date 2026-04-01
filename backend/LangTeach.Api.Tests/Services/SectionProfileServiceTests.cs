@@ -577,4 +577,34 @@ public class SectionProfileServiceTests
         note!.Note.Should().Contain("1 sentence",
             because: "the note must explicitly cap written output at one sentence");
     }
+
+    // --- GetClosingConstraint ---
+
+    [Theory]
+    [InlineData("A1")]
+    [InlineData("A2")]
+    [InlineData("B1")]
+    [InlineData("B2")]
+    [InlineData("C1")]
+    [InlineData("C2")]
+    public void GetClosingConstraint_Wrapup_AllLevels_ReturnsNoNewMaterialConstraint(string level)
+    {
+        var constraint = _sut.GetClosingConstraint("wrapup", level);
+        constraint.Should().NotBeNullOrEmpty(because: $"wrapup {level} must have a closing constraint");
+        constraint.Should().Contain("Do not introduce new vocabulary",
+            because: "the constraint must prohibit introducing new material");
+    }
+
+    [Fact]
+    public void GetClosingConstraint_Warmup_ReturnsNull()
+    {
+        _sut.GetClosingConstraint("warmup", "B1").Should().BeNull(
+            because: "only wrapup has a closing constraint; other sections return null");
+    }
+
+    [Fact]
+    public void GetClosingConstraint_UnknownSection_ReturnsNull()
+    {
+        _sut.GetClosingConstraint("unknown", "B1").Should().BeNull();
+    }
 }
