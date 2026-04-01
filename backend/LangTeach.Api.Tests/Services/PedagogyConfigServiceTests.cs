@@ -318,6 +318,30 @@ public class PedagogyConfigServiceTests
         result.Should().NotContain("PRAG-02", because: "PRAG-02 was merged into EE-09 and no longer exists in the catalog");
     }
 
+    // --- CE-* practice relaxation (#364) ---
+
+    [Fact]
+    public void GetValidExerciseTypes_Practice_A2_ContainsCE01AndCE02()
+    {
+        // CE-01 and CE-02 are in A2 validExerciseTypes and in A2 CEFR appropriate types.
+        // This test documents the pre-existing behavior and guards against regression.
+        var result = _sut.GetValidExerciseTypes("practice", "A2");
+
+        result.Should().Contain("CE-01", because: "CE-01 (global comprehension) is valid for A2 practice");
+        result.Should().Contain("CE-02", because: "CE-02 (detailed comprehension) is valid for A2 practice");
+    }
+
+    [Fact]
+    public void GetValidExerciseTypes_Practice_A1_ContainsCE01()
+    {
+        // CE-01 was added to A1 practice validExerciseTypes in task #364.
+        // CE-01 is in A1 CEFR appropriate types, so it passes the intersection.
+        var result = _sut.GetValidExerciseTypes("practice", "A1");
+
+        result.Should().Contain("CE-01", because: "CE-01 (gist reading) supports read-and-match vocabulary consolidation at A1");
+        result.Should().NotContain("CE-02", because: "CE-02 (detailed comprehension) is not in A1 practice validExerciseTypes");
+    }
+
     // --- GetResolvedScope ---
 
     [Theory]
