@@ -388,3 +388,42 @@ describe('ContentBlock - learning targets', () => {
     expect(screen.getByTestId('new-tag-input')).toBeInTheDocument() // still in edit mode
   })
 })
+
+describe('ContentBlock - learning-target editing state reset on navigation', () => {
+  it('resets editing state when block.id changes (lesson navigation)', async () => {
+    const user = userEvent.setup()
+    const block = makeBlock({ id: 'block-1' })
+    const onUpdate = vi.fn().mockResolvedValue(undefined)
+    const { rerender } = render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+        learningTargets={['grammar']}
+        onUpdateLearningTargets={onUpdate}
+      />
+    )
+
+    // Open editing mode
+    await user.click(screen.getByTestId('edit-targets-btn'))
+    expect(screen.getByTestId('new-tag-input')).toBeInTheDocument()
+
+    // Navigate to a different lesson/block — block.id changes
+    rerender(
+      <ContentBlock
+        block={makeBlock({ id: 'block-2', generatedContent: '{"scenarios":[{"setup":"new"}]}' })}
+        lessonId="lesson-2"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+        learningTargets={['vocabulary']}
+        onUpdateLearningTargets={onUpdate}
+      />
+    )
+
+    // Editing state should be reset — new-tag-input should not be visible
+    expect(screen.queryByTestId('new-tag-input')).toBeNull()
+  })
+})
