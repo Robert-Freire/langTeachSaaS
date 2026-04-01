@@ -1,0 +1,58 @@
+{
+  "version": "1.0",
+  "rules": [
+    {
+      "id": "ser-estar-de-acuerdo",
+      "targetLanguage": "spanish",
+      "category": "verb-choice",
+      "pattern": "\\b(soy|eres|es|somos|sois|son|era|eras|fue|fuiste|será|serás|sería|serías)\\s+de\\s+acuerdo\\b",
+      "correction": "Use 'estar' not 'ser' with 'de acuerdo'. Correct: estoy/estás/está de acuerdo.",
+      "severity": "high",
+      "contextRelevance": {
+        "grammarFocusPatterns": ["ser/estar", "ser.estar", "copulat"]
+      }
+    },
+    {
+      "id": "ser-estar-state-adjective",
+      "targetLanguage": "spanish",
+      "category": "verb-choice",
+      "pattern": "\\b(era|eras|era|éramos|erais|eran|fue|fuiste|fui)\\s+(deprimid[ao]|cansad[ao]|enferm[ao]|content[ao]|triste|nervios[ao]|aburrid[ao]|preocupad[ao])\\b",
+      "correction": "Use 'estar' not 'ser' with temporary state adjectives (deprimido/a, cansado/a, etc.). Correct: estaba deprimida.",
+      "severity": "high",
+      "contextRelevance": {
+        "grammarFocusPatterns": ["ser/estar", "ser.estar", "copulat", "state", "emotion"]
+      }
+    },
+    {
+      "id": "por-purpose-clause",
+      "targetLanguage": "spanish",
+      "category": "preposition-choice",
+      "pattern": "\\bpor\\s+(estudiar|trabajar|aprender|mejorar|practicar|hablar|escribir|leer|viajar|conseguir|obtener|lograr)\\b",
+      "correction": "Use 'para' (not 'por') to express purpose before an infinitive. Correct: para estudiar, para trabajar.",
+      "severity": "medium",
+      "contextRelevance": {
+        "grammarFocusPatterns": ["por/para", "por.para", "preposit", "purpose"]
+      }
+    },
+    {
+      "id": "false-cognate-embarazada",
+      "targetLanguage": "spanish",
+      "category": "false-cognate",
+      "pattern": "\\bembarazad[ao]\\s+(de|por|porque|ya|muy|bastante|un poco|felt|feels|feel|was|were|is|are|seems|looked)\\b|\\b(felt|feels|was|were|is|looks?)\\s+embarazad[ao]\\b|\\bembarazad[ao]\\s+about\\b",
+      "correction": "False cognate alert: 'embarazada/o' means 'pregnant', not 'embarrassed'. Use 'avergonzado/a' for embarrassed.",
+      "severity": "high",
+      "contextRelevance": null
+    },
+    {
+      "id": "ojalá-indicative",
+      "targetLanguage": "spanish",
+      "category": "mood-selection",
+      "pattern": "\\bojalá\\s+(que\\s+)?(él|ella|tú|yo|nosotros|vosotros|ellos|ellas|usted|ustedes)?\\s*(tiene|tienen|tengo|tienes|tenemos|tenéis|viene|vienen|vengo|vienes|venimos|puede|pueden|puedo|puedes|podemos|sabe|saben|sé|sabes|sabemos|es|son|soy|eres|somos|está|están|estoy|estás|estamos|va|van|voy|vas|vamos|hace|hacen|hago|haces|hacemos|habla|hablan|hablo|hablas|hablamos)\\b",
+      "correction": "After 'ojalá', use the subjunctive, not the indicative. Correct: ojalá (que) tenga/venga/pueda/sepa/esté/vaya/haga/hable.",
+      "severity": "medium",
+      "contextRelevance": {
+        "grammarFocusPatterns": ["subjunctive", "subjuntivo", "mood", "ojalá", "wishes", "hope"]
+      }
+    }
+  ]
+}

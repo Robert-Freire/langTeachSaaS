@@ -427,3 +427,75 @@ describe('ContentBlock - learning-target editing state reset on navigation', () 
     expect(screen.queryByTestId('new-tag-input')).toBeNull()
   })
 })
+
+describe('ContentBlock - grammar warnings', () => {
+  it('renders grammar warnings banner when warnings are present', () => {
+    const block = makeBlock({
+      grammarWarnings: [
+        { ruleId: 'ser-estar-de-acuerdo', correction: "Use 'estar' not 'ser' with 'de acuerdo'", severity: 'high', matchedText: 'eres de acuerdo' },
+      ],
+    })
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+      />
+    )
+    expect(screen.getByTestId('grammar-warnings')).toBeInTheDocument()
+    expect(screen.getByText(/eres de acuerdo/)).toBeInTheDocument()
+    expect(screen.getByText(/estar.*not.*ser.*de acuerdo/i)).toBeInTheDocument()
+  })
+
+  it('does not render warnings banner when grammarWarnings is null', () => {
+    const block = makeBlock({ grammarWarnings: null })
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+      />
+    )
+    expect(screen.queryByTestId('grammar-warnings')).not.toBeInTheDocument()
+  })
+
+  it('does not render warnings banner when grammarWarnings is empty array', () => {
+    const block = makeBlock({ grammarWarnings: [] })
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+      />
+    )
+    expect(screen.queryByTestId('grammar-warnings')).not.toBeInTheDocument()
+  })
+
+  it('shows correct severity badge for each warning', () => {
+    const block = makeBlock({
+      grammarWarnings: [
+        { ruleId: 'por-purpose-clause', correction: "Use 'para' for purpose", severity: 'medium', matchedText: 'por mejorar' },
+        { ruleId: 'ser-estar-de-acuerdo', correction: "Use estar", severity: 'high', matchedText: 'eres de acuerdo' },
+      ],
+    })
+    render(
+      <ContentBlock
+        block={block}
+        lessonId="lesson-1"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRegenerate={vi.fn()}
+      />
+    )
+    const badges = screen.getAllByTestId('grammar-warning-severity')
+    expect(badges).toHaveLength(2)
+    expect(badges[0].textContent).toBe('medium')
+    expect(badges[1].textContent).toBe('high')
+  })
+})

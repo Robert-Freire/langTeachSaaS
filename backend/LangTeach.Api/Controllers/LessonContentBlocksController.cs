@@ -19,17 +19,20 @@ public class LessonContentBlocksController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IProfileService _profileService;
     private readonly ILessonService _lessonService;
+    private readonly IGrammarValidationService _grammarValidation;
     private readonly ILogger<LessonContentBlocksController> _logger;
 
     public LessonContentBlocksController(
         AppDbContext db,
         IProfileService profileService,
         ILessonService lessonService,
+        IGrammarValidationService grammarValidation,
         ILogger<LessonContentBlocksController> logger)
     {
         _db = db;
         _profileService = profileService;
         _lessonService = lessonService;
+        _grammarValidation = grammarValidation;
         _logger = logger;
     }
 
@@ -44,6 +47,7 @@ public class LessonContentBlocksController : ControllerBase
         catch { return null; }
     }
 
+    // No-warnings overload for PUT/DELETE endpoints that don't have language context
     private static ContentBlockDto ToDto(LessonContentBlock b) => new(
         b.Id,
         b.LessonSectionId,
@@ -54,6 +58,39 @@ public class LessonContentBlocksController : ControllerBase
         b.GenerationParams,
         TryParseContent(b.EditedContent ?? b.GeneratedContent),
         b.CreatedAt);
+
+    // With grammar warnings for GET and POST endpoints that have language context
+    private ContentBlockDto ToDtoWithWarnings(LessonContentBlock b, string language) => new(
+        b.Id,
+        b.LessonSectionId,
+        b.BlockType,
+        b.GeneratedContent,
+        b.EditedContent,
+        b.EditedContent != null,
+        b.GenerationParams,
+        TryParseContent(b.EditedContent ?? b.GeneratedContent),
+        b.CreatedAt,
+        ToGrammarWarnings(b.GeneratedContent, language, ExtractGrammarFocus(b.GenerationParams)));
+
+    private AI.GrammarWarning[]? ToGrammarWarnings(string content, string language, string? grammarFocus)
+    {
+        var warnings = _grammarValidation.Validate(content, language, grammarFocus);
+        return warnings.Length > 0 ? warnings : null;
+    }
+
+    internal static string? ExtractGrammarFocus(string? generationParams)
+    {
+        if (generationParams is null) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(generationParams);
+            if (doc.RootElement.TryGetProperty("grammarConstraints", out var el) &&
+                el.ValueKind == JsonValueKind.String)
+                return el.GetString();
+        }
+        catch (JsonException) { }
+        return null;
+    }
 
     private async Task<(Guid teacherId, LessonContentBlock? block)> ResolveBlock(
         Guid lessonId, Guid blockId, CancellationToken ct)
@@ -108,7 +145,7 @@ public class LessonContentBlocksController : ControllerBase
             "POST content-block saved. LessonId={LessonId} BlockId={BlockId} BlockType={BlockType}",
             lessonId, block.Id, block.BlockType);
 
-        return CreatedAtAction(nameof(Get), new { lessonId }, ToDto(block));
+        return CreatedAtAction(nameof(Get), new { lessonId }, ToDtoWithWarnings(block, lesson.Language));
     }
 
     [HttpGet]
@@ -126,7 +163,7 @@ public class LessonContentBlocksController : ControllerBase
             .OrderBy(b => b.CreatedAt)
             .ToListAsync(ct);
 
-        return Ok(blocks.Select(ToDto));
+        return Ok(blocks.Select(b => ToDtoWithWarnings(b, lesson.Language)));
     }
 
     [HttpPut("{blockId:guid}/edited-content")]

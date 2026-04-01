@@ -1,3 +1,4 @@
+using LangTeach.Api.AI;
 using LangTeach.Api.Data.Models;
 
 namespace LangTeach.Api.DTOs;
@@ -11,4 +12,5 @@ public record ContentBlockDto(
     bool IsEdited,
     string? GenerationParams,
     object? ParsedContent,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    GrammarWarning[]? GrammarWarnings = null);

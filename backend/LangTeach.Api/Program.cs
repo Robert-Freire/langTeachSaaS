@@ -123,6 +123,7 @@ builder.Services.AddScoped<IClaudeClient, ClaudeApiClient>();
 builder.Services.AddSingleton<ISectionProfileService, SectionProfileService>();
 builder.Services.AddSingleton<IPedagogyConfigService, PedagogyConfigService>();
 builder.Services.AddSingleton<IContentSchemaService, ContentSchemaService>();
+builder.Services.AddSingleton<IGrammarValidationService, GrammarValidationService>();
 builder.Services.AddScoped<IPromptService, PromptService>();
 
 builder.Services.AddOptions<GenerationLimitsOptions>()
