@@ -11,8 +11,6 @@
       "interactionPattern": "teacher-led",
       "validExerciseTypes": ["EO-01", "EO-03", "PRAG-01", "LUD-06", "LUD-07"],
       "forbiddenExerciseTypes": [
-        {"id": null, "pattern": "GR-*", "reason": "Grammar drills contradict the anxiety-reduction and conversational purpose of WarmUp"},
-        {"id": null, "pattern": "EE-*", "reason": "Written production is inappropriate for an oral warm-up stage"},
         {"id": null, "pattern": "CO-*", "reason": "Listening comprehension tasks require audio resources not suited to WarmUp"}
       ],
       "levelSpecificNotes": [
@@ -31,8 +29,6 @@
       "interactionPattern": "teacher-led",
       "validExerciseTypes": ["EO-01", "EO-03", "EO-08", "PRAG-01", "PRAG-03", "LUD-05", "LUD-07"],
       "forbiddenExerciseTypes": [
-        {"id": null, "pattern": "GR-*", "reason": "Grammar drills contradict the anxiety-reduction and conversational purpose of WarmUp"},
-        {"id": null, "pattern": "EE-*", "reason": "Written production is inappropriate for an oral warm-up stage"},
         {"id": null, "pattern": "CO-*", "reason": "Listening comprehension tasks require audio resources not suited to WarmUp"}
       ],
       "levelSpecificNotes": [
@@ -51,8 +47,6 @@
       "interactionPattern": "student-led",
       "validExerciseTypes": ["EO-08", "PRAG-01", "PRAG-03", "PRAG-04", "PRAG-05"],
       "forbiddenExerciseTypes": [
-        {"id": null, "pattern": "GR-*", "reason": "Grammar drills contradict the anxiety-reduction and conversational purpose of WarmUp"},
-        {"id": null, "pattern": "EE-*", "reason": "Written production is inappropriate for an oral warm-up stage"},
         {"id": null, "pattern": "CO-*", "reason": "Listening comprehension tasks require audio resources not suited to WarmUp"}
       ],
       "levelSpecificNotes": [
@@ -70,8 +64,6 @@
       "interactionPattern": "student-led",
       "validExerciseTypes": ["EO-08", "PRAG-01", "PRAG-03", "PRAG-04", "PRAG-05"],
       "forbiddenExerciseTypes": [
-        {"id": null, "pattern": "GR-*", "reason": "Grammar drills contradict the anxiety-reduction and conversational purpose of WarmUp"},
-        {"id": null, "pattern": "EE-*", "reason": "Written production is inappropriate for an oral warm-up stage"},
         {"id": null, "pattern": "CO-*", "reason": "Listening comprehension tasks require audio resources not suited to WarmUp"}
       ],
       "levelSpecificNotes": [
@@ -89,8 +81,6 @@
       "interactionPattern": "student-led",
       "validExerciseTypes": ["EO-07", "EO-08", "PRAG-01", "PRAG-04", "PRAG-05"],
       "forbiddenExerciseTypes": [
-        {"id": null, "pattern": "GR-*", "reason": "Grammar drills contradict the anxiety-reduction and conversational purpose of WarmUp"},
-        {"id": null, "pattern": "EE-*", "reason": "Written production is inappropriate for an oral warm-up stage"},
         {"id": null, "pattern": "CO-*", "reason": "Listening comprehension tasks require audio resources not suited to WarmUp"}
       ],
       "levelSpecificNotes": [
@@ -108,8 +98,6 @@
       "interactionPattern": "student-led",
       "validExerciseTypes": ["EO-08", "EO-09", "PRAG-01", "PRAG-04", "PRAG-05"],
       "forbiddenExerciseTypes": [
-        {"id": null, "pattern": "GR-*", "reason": "Grammar drills contradict the anxiety-reduction and conversational purpose of WarmUp"},
-        {"id": null, "pattern": "EE-*", "reason": "Written production is inappropriate for an oral warm-up stage"},
         {"id": null, "pattern": "CO-*", "reason": "Listening comprehension tasks require audio resources not suited to WarmUp"}
       ],
       "levelSpecificNotes": [

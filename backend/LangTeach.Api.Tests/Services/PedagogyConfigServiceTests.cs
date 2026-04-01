@@ -87,28 +87,18 @@ public class PedagogyConfigServiceTests
     // --- GetForbiddenExerciseTypeIds ---
 
     [Fact]
-    public void GetForbiddenExerciseTypeIds_WarmUp_A1_ExpandsAllGRPattern()
+    public void GetForbiddenExerciseTypeIds_WarmUp_A1_ExpandsCOPattern()
     {
-        // WarmUp forbids GR-* pattern. Should expand to all GR-xx IDs in the catalog (10 types: GR-01 to GR-10).
+        // WarmUp retains only CO-* forbidden (guards against CO-06 via L1 AdditionalExerciseTypes).
+        // GR-* and EE-* were removed as fully redundant (not injectable via L1 additions).
         var result = _sut.GetForbiddenExerciseTypeIds("warmup", "A1");
 
-        for (var i = 1; i <= 10; i++)
-        {
-            var id = $"GR-{i:D2}";
-            result.Should().Contain(id, because: $"GR-* pattern should expand to include {id}");
-        }
-    }
-
-    [Fact]
-    public void GetForbiddenExerciseTypeIds_WarmUp_A1_AlsoExpandsEEAndCOPatterns()
-    {
-        var result = _sut.GetForbiddenExerciseTypeIds("warmup", "A1");
-
-        // EE-* and CO-* are also forbidden for WarmUp
-        result.Should().Contain(id => id.StartsWith("EE-", StringComparison.OrdinalIgnoreCase),
-            because: "WarmUp forbids EE-* pattern");
         result.Should().Contain(id => id.StartsWith("CO-", StringComparison.OrdinalIgnoreCase),
-            because: "WarmUp forbids CO-* pattern");
+            because: "WarmUp forbids CO-* pattern to guard against L1 injection of CO-06");
+        result.Should().NotContain(id => id.StartsWith("GR-", StringComparison.OrdinalIgnoreCase),
+            because: "GR-* was removed from warmup forbidden as fully redundant with the validExerciseTypes allowlist");
+        result.Should().NotContain(id => id.StartsWith("EE-", StringComparison.OrdinalIgnoreCase),
+            because: "EE-* was removed from warmup forbidden as fully redundant with the validExerciseTypes allowlist");
     }
 
     // --- GetGrammarScope ---
