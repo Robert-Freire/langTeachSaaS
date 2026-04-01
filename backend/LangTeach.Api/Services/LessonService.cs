@@ -454,9 +454,9 @@ public class LessonService : ILessonService
     {
         var lesson = await _db.Lessons
             .Include(l => l.Sections)
-            .FirstOrDefaultAsync(l => l.Id == lessonId && !l.IsDeleted, cancellationToken);
+            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
-        if (lesson is null || lesson.TeacherId != teacherId) return null;
+        if (lesson is null) return null;
 
         var blocksBySectionId = await LoadBlocksBySectionAsync(lessonId, cancellationToken);
 
@@ -493,9 +493,9 @@ public class LessonService : ILessonService
         var lesson = await _db.Lessons
             .Include(l => l.Sections)
             .Include(l => l.Student)
-            .FirstOrDefaultAsync(l => l.Id == lessonId && !l.IsDeleted, cancellationToken);
+            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
 
-        if (lesson is null || lesson.TeacherId != teacherId) return null;
+        if (lesson is null) return null;
 
         var blocksBySectionId = await LoadBlocksBySectionAsync(lessonId, cancellationToken);
 
