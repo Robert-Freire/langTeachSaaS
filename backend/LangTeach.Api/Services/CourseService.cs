@@ -126,10 +126,6 @@ public class CourseService : ICourseService
         _db.CurriculumEntries.AddRange(entries);
         await _db.SaveChangesAsync(ct);
 
-        _logger.LogInformation(
-            "Course created. CourseId={CourseId} TeacherId={TeacherId} Entries={Entries} Warnings={Warnings}",
-            course.Id, teacherId, entries.Count, generationWarnings.Count);
-
         course.Student = student;
         course.Entries = entries;
 

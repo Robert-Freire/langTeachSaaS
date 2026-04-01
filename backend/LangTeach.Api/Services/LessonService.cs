@@ -458,15 +458,7 @@ public class LessonService : ILessonService
 
         if (lesson is null || lesson.TeacherId != teacherId) return null;
 
-        var blocks = await _db.LessonContentBlocks
-            .Where(b => b.LessonId == lessonId)
-            .OrderBy(b => b.CreatedAt)
-            .ToListAsync(cancellationToken);
-
-        var blocksBySectionId = blocks
-            .Where(b => b.LessonSectionId.HasValue)
-            .GroupBy(b => b.LessonSectionId!.Value)
-            .ToDictionary(g => g.Key, g => g.ToList());
+        var blocksBySectionId = await LoadBlocksBySectionAsync(lessonId, cancellationToken);
 
         var sections = lesson.Sections
             .OrderBy(s => s.OrderIndex)
@@ -490,7 +482,7 @@ public class LessonService : ILessonService
         if (lesson.LearningTargets is not null)
         {
             try { learningTargets = JsonSerializer.Deserialize<string[]>(lesson.LearningTargets); }
-            catch { /* malformed JSON — treat as no targets */ }
+            catch (JsonException) { /* malformed JSON — treat as no targets */ }
         }
 
         return new StudyLessonDto(lesson.Id, lesson.Title, lesson.Language, lesson.CefrLevel, lesson.Topic, sections, learningTargets);
@@ -505,15 +497,7 @@ public class LessonService : ILessonService
 
         if (lesson is null || lesson.TeacherId != teacherId) return null;
 
-        var blocks = await _db.LessonContentBlocks
-            .Where(b => b.LessonId == lessonId)
-            .OrderBy(b => b.CreatedAt)
-            .ToListAsync(cancellationToken);
-
-        var blocksBySectionId = blocks
-            .Where(b => b.LessonSectionId.HasValue)
-            .GroupBy(b => b.LessonSectionId!.Value)
-            .ToDictionary(g => g.Key, g => g.ToList());
+        var blocksBySectionId = await LoadBlocksBySectionAsync(lessonId, cancellationToken);
 
         var pdfSections = lesson.Sections
             .OrderBy(s => s.OrderIndex)
@@ -540,12 +524,25 @@ public class LessonService : ILessonService
             pdfSections);
     }
 
+    private async Task<Dictionary<Guid, List<LessonContentBlock>>> LoadBlocksBySectionAsync(Guid lessonId, CancellationToken cancellationToken)
+    {
+        var blocks = await _db.LessonContentBlocks
+            .Where(b => b.LessonId == lessonId)
+            .OrderBy(b => b.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        return blocks
+            .Where(b => b.LessonSectionId.HasValue)
+            .GroupBy(b => b.LessonSectionId!.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
     private static object? TryParseBlockContent(string? content)
     {
         var stripped = ContentJsonHelper.StripFences(content);
         if (stripped is null) return null;
         try { return JsonSerializer.Deserialize<JsonElement>(stripped); }
-        catch { return null; }
+        catch (JsonException) { return null; }
     }
 
     private static List<TemplateSectionEntry> DeserializeTemplateSections(string json)

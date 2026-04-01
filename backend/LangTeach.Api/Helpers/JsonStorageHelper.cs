@@ -13,7 +13,7 @@ internal static class JsonStorageHelper
     {
         if (string.IsNullOrEmpty(json)) return [];
         try { return JsonSerializer.Deserialize<List<T>>(json, CaseInsensitive) ?? []; }
-        catch { return []; }
+        catch (JsonException) { return []; }
     }
 
     /// <summary>
@@ -23,7 +23,7 @@ internal static class JsonStorageHelper
     {
         if (string.IsNullOrEmpty(json)) return null;
         try { return JsonSerializer.Deserialize<List<T>>(json, CaseInsensitive); }
-        catch { return null; }
+        catch (JsonException) { return null; }
     }
 
     public static string Serialize<T>(List<T> list) => JsonSerializer.Serialize(list);
