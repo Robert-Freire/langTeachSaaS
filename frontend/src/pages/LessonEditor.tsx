@@ -37,6 +37,7 @@ import { ContentBlock } from '@/components/lesson/ContentBlock'
 import { ExportButton } from '@/components/lesson/ExportButton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { getCefrBadgeClasses, CEFR_LEVELS } from '@/lib/cefr-colors'
+import { LANGUAGES } from '@/lib/languages'
 import { CefrMismatchWarning } from '@/components/CefrMismatchWarning'
 import { FullLessonGenerateButton } from '@/components/lesson/FullLessonGenerateButton'
 import { LessonNotesCard } from '@/components/lesson/LessonNotesCard'
@@ -51,8 +52,6 @@ const SECTION_LABELS: Record<SectionType, string> = {
   Production: 'Production',
   WrapUp: 'Wrap Up',
 }
-const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
-
 const DURATIONS = [30, 45, 60, 90]
 
 function initSectionNotes(lesson: Lesson): Partial<Record<SectionType, string>> {

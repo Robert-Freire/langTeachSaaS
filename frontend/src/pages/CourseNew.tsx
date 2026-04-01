@@ -15,12 +15,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/PageHeader'
 import { cn } from '@/lib/utils'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
+import { LANGUAGES } from '@/lib/languages'
 import { CefrMismatchWarning } from '@/components/CefrMismatchWarning'
 import { CompetencyGapWarning } from '@/components/CompetencyGapWarning'
 import { StudentProfileSummary } from '@/components/StudentProfileSummary'
 import { SessionMappingPreview } from '@/components/SessionMappingPreview'
 
-const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
 const EXAMS = ['DELE', 'DALF', 'Cambridge B2 First', 'Cambridge C1 Advanced', 'TOEFL', 'IELTS']
 const SESSION_COUNTS = [5, 8, 10, 12, 15, 20]
 

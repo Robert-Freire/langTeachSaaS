@@ -11,10 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-
-const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
-const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
-const NATIVE_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Catalan', 'Other']
+import { CEFR_LEVELS } from '@/lib/cefr-colors'
+import { LANGUAGES, NATIVE_LANGUAGES } from '@/lib/languages'
 
 interface OnboardingStep2Props {
   onNext: (student: Student) => void
