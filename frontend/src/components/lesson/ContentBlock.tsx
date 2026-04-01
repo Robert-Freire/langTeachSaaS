@@ -55,7 +55,7 @@ export function ContentBlock({
     setEditingTargets(false)
     setTargetsDraft([])
     setNewTagInput('')
-  }, [block.id])
+  }, [block.id, lessonId])
 
   const doSave = async (content: string) => {
     if (content === storedValue) return
