@@ -22,7 +22,7 @@ public class ProfileController : ControllerBase
         _logger = logger;
     }
 
-    private string Auth0Id => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    private string? Auth0Id => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
     private async Task<Auth0UserInfo> ResolveUserInfoAsync()
     {
@@ -40,6 +40,7 @@ public class ProfileController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get()
     {
+        if (Auth0Id is null) return Unauthorized();
         var userInfo = await ResolveUserInfoAsync();
         await _profileService.UpsertTeacherAsync(Auth0Id, userInfo.Email, userInfo.Name);
         var profile = await _profileService.GetProfileAsync(Auth0Id);
@@ -50,6 +51,7 @@ public class ProfileController : ControllerBase
     [HttpPut]
     public async Task<IActionResult> Update([FromBody] UpdateProfileRequest request)
     {
+        if (Auth0Id is null) return Unauthorized();
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("PUT /api/profile — validation failed. Auth0Id={Auth0Id} Errors={Errors}",
@@ -68,6 +70,7 @@ public class ProfileController : ControllerBase
     [HttpPost("complete-onboarding")]
     public async Task<IActionResult> CompleteOnboarding()
     {
+        if (Auth0Id is null) return Unauthorized();
         await _profileService.CompleteOnboardingAsync(Auth0Id);
         _logger.LogInformation("POST /api/profile/complete-onboarding. Auth0Id={Auth0Id}", Auth0Id);
         return NoContent();

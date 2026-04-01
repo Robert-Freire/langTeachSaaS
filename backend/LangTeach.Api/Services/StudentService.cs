@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Services;
@@ -159,12 +159,12 @@ public class StudentService : IStudentService
         s.Name,
         s.LearningLanguage,
         s.CefrLevel,
-        Deserialize<string>(s.Interests),
+        JsonStorageHelper.DeserializeList<string>(s.Interests),
         s.Notes,
         s.NativeLanguage,
-        Deserialize<string>(s.LearningGoals),
-        Deserialize<string>(s.Weaknesses),
-        Deserialize<DifficultyDto>(s.Difficulties),
+        JsonStorageHelper.DeserializeList<string>(s.LearningGoals),
+        JsonStorageHelper.DeserializeList<string>(s.Weaknesses),
+        JsonStorageHelper.DeserializeList<DifficultyDto>(s.Difficulties),
         s.CreatedAt,
         s.UpdatedAt
     );
@@ -192,12 +192,6 @@ public class StudentService : IStudentService
         }
     }
 
-    private static List<T> Deserialize<T>(string json)
-    {
-        try { return JsonSerializer.Deserialize<List<T>>(json) ?? []; }
-        catch { return []; }
-    }
-
     private static string Serialize<T>(List<T> list) =>
-        JsonSerializer.Serialize(list);
+        JsonStorageHelper.Serialize(list);
 }

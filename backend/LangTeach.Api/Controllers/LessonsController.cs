@@ -1,14 +1,10 @@
-using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
-using LangTeach.Api.Helpers;
 using LangTeach.Api.Services;
 using LangTeach.Api.Services.PdfExport;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace LangTeach.Api.Controllers;
 
@@ -20,7 +16,6 @@ public class LessonsController : ControllerBase
     private readonly ILessonService _lessonService;
     private readonly IProfileService _profileService;
     private readonly IMaterialService _materialService;
-    private readonly AppDbContext _db;
     private readonly IPdfExportService _pdfExportService;
     private readonly ILogger<LessonsController> _logger;
 
@@ -28,14 +23,12 @@ public class LessonsController : ControllerBase
         ILessonService lessonService,
         IProfileService profileService,
         IMaterialService materialService,
-        AppDbContext db,
         IPdfExportService pdfExportService,
         ILogger<LessonsController> logger)
     {
         _lessonService = lessonService;
         _profileService = profileService;
         _materialService = materialService;
-        _db = db;
         _pdfExportService = pdfExportService;
         _logger = logger;
     }
@@ -190,51 +183,11 @@ public class LessonsController : ControllerBase
         if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email!);
 
-        var lesson = await _db.Lessons
-            .Include(l => l.Sections)
-            .FirstOrDefaultAsync(l => l.Id == lessonId && !l.IsDeleted, cancellationToken);
-
-        if (lesson is null || lesson.TeacherId != teacherId)
-            return NotFound();
-
-        var blocks = await _db.LessonContentBlocks
-            .Where(b => b.LessonId == lessonId)
-            .OrderBy(b => b.CreatedAt)
-            .ToListAsync(cancellationToken);
-
-        var blocksBySectionId = blocks
-            .Where(b => b.LessonSectionId.HasValue)
-            .GroupBy(b => b.LessonSectionId!.Value)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        var sections = lesson.Sections
-            .OrderBy(s => s.OrderIndex)
-            .Select(s =>
-            {
-                var sectionBlocks = blocksBySectionId.TryGetValue(s.Id, out var sb) ? sb : [];
-                return new StudySectionDto(
-                    s.Id,
-                    s.SectionType,
-                    s.OrderIndex,
-                    s.Notes,
-                    sectionBlocks.Select(b => new StudyBlockDto(
-                        b.Id,
-                        b.BlockType,
-                        LessonContentBlocksController.TryParseContent(b.EditedContent ?? b.GeneratedContent),
-                        b.EditedContent ?? b.GeneratedContent)).ToList());
-            })
-            .ToList();
+        var result = await _lessonService.GetStudyAsync(teacherId, lessonId, cancellationToken);
+        if (result is null) return NotFound();
 
         _logger.LogInformation("GET /api/lessons/{LessonId}/study. TeacherId={TeacherId}", lessonId, teacherId);
-
-        string[]? learningTargets = null;
-        if (lesson.LearningTargets is not null)
-        {
-            try { learningTargets = JsonSerializer.Deserialize<string[]>(lesson.LearningTargets); }
-            catch { /* malformed JSON — treat as no targets */ }
-        }
-
-        return Ok(new StudyLessonDto(lesson.Id, lesson.Title, lesson.Language, lesson.CefrLevel, lesson.Topic, sections, learningTargets));
+        return Ok(result);
     }
 
     [HttpPut("{lessonId:guid}/learning-targets")]
@@ -260,51 +213,12 @@ public class LessonsController : ControllerBase
             || !Enum.IsDefined(exportMode))
             return BadRequest("Invalid mode. Use 'teacher' or 'student'.");
 
-        var lesson = await _db.Lessons
-            .Include(l => l.Sections)
-            .Include(l => l.Student)
-            .FirstOrDefaultAsync(l => l.Id == lessonId && !l.IsDeleted, cancellationToken);
-
-        if (lesson is null || lesson.TeacherId != teacherId)
-            return NotFound();
-
-        var blocks = await _db.LessonContentBlocks
-            .Where(b => b.LessonId == lessonId)
-            .OrderBy(b => b.CreatedAt)
-            .ToListAsync(cancellationToken);
-
-        var blocksBySectionId = blocks
-            .Where(b => b.LessonSectionId.HasValue)
-            .GroupBy(b => b.LessonSectionId!.Value)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        var pdfSections = lesson.Sections
-            .OrderBy(s => s.OrderIndex)
-            .Select(s =>
-            {
-                var sectionBlocks = blocksBySectionId.TryGetValue(s.Id, out var sb) ? sb : [];
-                return new PdfSectionData(
-                    s.SectionType,
-                    s.OrderIndex,
-                    s.Notes,
-                    sectionBlocks.Select(b => new PdfBlockData(
-                        b.BlockType,
-                        b.EditedContent ?? b.GeneratedContent)).ToList());
-            })
-            .ToList();
-
-        var pdfData = new PdfLessonData(
-            lesson.Title,
-            lesson.Language,
-            lesson.CefrLevel,
-            lesson.Topic,
-            lesson.Student?.Name,
-            lesson.ScheduledAt ?? lesson.CreatedAt,
-            pdfSections);
+        var pdfData = await _lessonService.GetForExportAsync(teacherId, lessonId, cancellationToken);
+        if (pdfData is null) return NotFound();
 
         var pdfBytes = _pdfExportService.GeneratePdf(pdfData, exportMode);
         var modeLabel = exportMode == PdfExportMode.Teacher ? "Teacher" : "Student";
-        var safeTitle = string.Concat(lesson.Title.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+        var safeTitle = string.Concat(pdfData.Title.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
         var filename = $"{safeTitle.Replace(" ", "_")}_{modeLabel}.pdf";
 
         _logger.LogInformation(
