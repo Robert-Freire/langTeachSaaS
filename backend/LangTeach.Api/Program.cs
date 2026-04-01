@@ -164,6 +164,7 @@ var app = builder.Build();
 // Eagerly resolve singletons that load embedded resources so malformed JSON fails at startup.
 _ = app.Services.GetRequiredService<ISectionProfileService>();
 _ = app.Services.GetRequiredService<IPedagogyConfigService>();
+_ = app.Services.GetRequiredService<IGrammarValidationService>();
 
 // Apply pending migrations and seed reference data on startup
 using (var scope = app.Services.CreateScope())

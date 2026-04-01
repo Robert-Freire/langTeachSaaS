@@ -28,6 +28,8 @@ public class GrammarValidationService : IGrammarValidationService
 
         var file = JsonSerializer.Deserialize<GrammarValidationRulesFile>(stream, JsonOpts)
             ?? throw new InvalidOperationException("GrammarValidationService: grammar-validation-rules.json deserialized to null");
+        if (file.Rules is null)
+            throw new InvalidOperationException("GrammarValidationService: grammar-validation-rules.json is missing 'rules'");
 
         var compiled = new List<(GrammarValidationRule, Regex)>();
         for (var i = 0; i < file.Rules.Length; i++)
@@ -45,6 +47,9 @@ public class GrammarValidationService : IGrammarValidationService
                 throw new InvalidOperationException($"GrammarValidationService: rule '{rule.Id}' has missing or empty 'correction'");
             if (string.IsNullOrWhiteSpace(rule.Severity))
                 throw new InvalidOperationException($"GrammarValidationService: rule '{rule.Id}' has missing or empty 'severity'");
+            if (rule.ContextRelevance is not null &&
+                (rule.ContextRelevance.GrammarFocusPatterns is null || rule.ContextRelevance.GrammarFocusPatterns.Length == 0))
+                throw new InvalidOperationException($"GrammarValidationService: rule '{rule.Id}' has empty 'contextRelevance.grammarFocusPatterns'");
 
             try
             {

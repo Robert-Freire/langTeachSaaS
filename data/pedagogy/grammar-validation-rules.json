@@ -36,16 +36,6 @@
       "contextRelevance": null
     },
     {
-      "id": "false-cognate-embarazada",
-      "targetLanguage": "spanish",
-      "category": "false-cognate",
-      "pattern": "\\b(me siento|me sentí|me sentía|estoy|estaba|estuve|estuvo|quedé|quedó|quedarse)\\s+(muy\\s+)?embarazad[ao]\\b",
-      "correction": "False cognate alert: 'embarazada/o' means 'pregnant', not 'embarrassed'. Use 'avergonzado/a' for embarrassed.",
-      "severity": "high",
-      "levels": null,
-      "contextRelevance": null
-    },
-    {
       "id": "ojala-indicative",
       "targetLanguage": "spanish",
       "category": "mood-selection",
