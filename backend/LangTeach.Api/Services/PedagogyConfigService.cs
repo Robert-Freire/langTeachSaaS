@@ -319,6 +319,17 @@ public class PedagogyConfigService : IPedagogyConfigService
 
     public CourseRulesFile GetCourseRules() => _courseRules;
 
+    public string[] GetSectionCoherenceRules()
+    {
+        var rules = _courseRules.SectionCoherenceRules ?? [];
+        if (rules.Length == 0)
+            _log.LogWarning("PedagogyConfigService: sectionCoherenceRules is missing or empty in course-rules.json");
+        return rules;
+    }
+
+    public string? GetWeaknessTargetingGuidance(string sectionType) =>
+        _sectionProfileService.GetWeaknessTargetingGuidance(sectionType);
+
     public StyleSubstitution[] GetStyleSubstitutions(string[] rejectedTypes)
     {
         var rejectedSet = rejectedTypes.ToHashSet(StringComparer.OrdinalIgnoreCase);

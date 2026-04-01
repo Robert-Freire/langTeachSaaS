@@ -751,4 +751,56 @@ public class PedagogyConfigServiceTests
 
         result.Should().BeNull(because: "Portuguese has positive transfer on ser/estar — the family ser-estar pattern must not fire");
     }
+
+    // --- GetSectionCoherenceRules ---
+
+    [Fact]
+    public void GetSectionCoherenceRules_ReturnsNonEmptyArray()
+    {
+        var rules = _sut.GetSectionCoherenceRules();
+
+        rules.Should().NotBeEmpty(because: "course-rules.json must define sectionCoherenceRules");
+    }
+
+    [Fact]
+    public void GetSectionCoherenceRules_ContainsPracticeConstraint()
+    {
+        var rules = _sut.GetSectionCoherenceRules();
+
+        rules.Should().Contain(r => r.Contains("Practice", StringComparison.OrdinalIgnoreCase)
+            && r.Contains("Presentation", StringComparison.OrdinalIgnoreCase),
+            because: "the Practice coherence rule must reference Presentation content restriction");
+    }
+
+    // --- GetWeaknessTargetingGuidance ---
+
+    [Theory]
+    [InlineData("practice")]
+    [InlineData("production")]
+    [InlineData("wrapup")]
+    public void GetWeaknessTargetingGuidance_ReturnsNonNull_ForTargetedSections(string section)
+    {
+        var result = _sut.GetWeaknessTargetingGuidance(section);
+
+        result.Should().NotBeNullOrEmpty(because: $"{section} should define weaknessTargetingGuidance");
+    }
+
+    [Theory]
+    [InlineData("warmup")]
+    [InlineData("presentation")]
+    public void GetWeaknessTargetingGuidance_ReturnsNull_ForNonTargetedSections(string section)
+    {
+        var result = _sut.GetWeaknessTargetingGuidance(section);
+
+        result.Should().BeNull(because: $"{section} does not participate in weakness targeting");
+    }
+
+    [Fact]
+    public void GetWeaknessTargetingGuidance_Practice_ContainsWeaknessesPlaceholder()
+    {
+        var result = _sut.GetWeaknessTargetingGuidance("practice");
+
+        result.Should().Contain("{weaknesses}",
+            because: "practice guidance must contain {weaknesses} placeholder for interpolation");
+    }
 }

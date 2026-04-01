@@ -1,5 +1,6 @@
 {
   "sectionType": "wrapup",
+  "weaknessTargetingGuidance": "invite the student to reflect on progress with these topics.",
   "levels": {
     "A1": {
       "contentTypes": ["conversation"],

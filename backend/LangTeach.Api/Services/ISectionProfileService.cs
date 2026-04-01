@@ -67,4 +67,11 @@ public interface ISectionProfileService
     /// Returns an empty array if the section or level is not found.
     /// </summary>
     LevelSpecificNote[] GetLevelSpecificNotes(string sectionType, string cefrLevel);
+
+    /// <summary>
+    /// Returns the weakness targeting guidance template for the section, or null if the section
+    /// has no weakness targeting guidance. The template may contain {weaknesses} as a placeholder
+    /// for the student weakness list.
+    /// </summary>
+    string? GetWeaknessTargetingGuidance(string sectionType);
 }

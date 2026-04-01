@@ -1288,6 +1288,34 @@ public class PromptServiceTests
         req.UserPrompt.Should().NotContain("DECLARED WEAKNESSES");
     }
 
+    [Fact]
+    public void LessonPlanPrompt_WeaknessBlock_ContainsSectionSpecificGuidanceFromConfig()
+    {
+        var ctx = BaseCtx() with { StudentWeaknesses = ["subjunctive"] };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        // Verify section-specific labels and guidance are assembled from config
+        req.UserPrompt.Should().Contain("Practice:", because: "practice has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().Contain("Production:", because: "production has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().Contain("WrapUp:", because: "wrapup has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().NotContain("WarmUp:", because: "warmup does not participate in weakness targeting");
+        req.UserPrompt.Should().NotContain("Presentation:", because: "presentation does not participate in weakness targeting");
+        req.UserPrompt.Should().Contain("subjunctive", because: "weakness text must be interpolated into the practice guidance");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_CoherenceRulesFromConfig_ContainsAllFiveRules()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        // Verify all 5 numbered rules appear (text sourced from course-rules.json)
+        req.UserPrompt.Should().MatchRegex(@"1\.", because: "first coherence rule must be present");
+        req.UserPrompt.Should().MatchRegex(@"5\.", because: "fifth coherence rule must be present");
+        req.UserPrompt.Should().Contain("Linguistic level must NOT increase",
+            because: "rule 5 text must come from config");
+    }
+
     // --- Grammar prompt: grammar scope injection ---
 
     [Fact]

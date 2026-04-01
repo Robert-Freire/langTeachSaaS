@@ -1,5 +1,6 @@
 {
   "sectionType": "practice",
+  "weaknessTargetingGuidance": "include at least 1 exercise targeting: {weaknesses}",
   "levels": {
     "A1": {
       "contentTypes": ["exercises", "conversation"],

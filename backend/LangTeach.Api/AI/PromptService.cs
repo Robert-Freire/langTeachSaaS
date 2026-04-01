@@ -141,15 +141,7 @@ public class PromptService : IPromptService
         return new ClaudeRequest(systemPrompt, userPrompt, model, maxTokens);
     }
 
-    // --- Section coherence rules (static, never changes) ---
-
-    private const string SectionCoherenceRules =
-        "SECTION COHERENCE RULES (mandatory, never omit):\n" +
-        "1. The THEME of Warm Up must relate to the THEME of Presentation (same field, not identical).\n" +
-        "2. Practice MUST use EXCLUSIVELY content from Presentation. No new grammar or vocabulary.\n" +
-        "3. Production MUST be achievable with the language practiced in Practice.\n" +
-        "4. Wrap Up MUST refer to lesson content, not external topics.\n" +
-        "5. Linguistic level must NOT increase between sections. If Presentation is A2, Practice cannot demand B1.";
+    // Section coherence rules are loaded from data/pedagogy/course-rules.json via _pedagogy.GetSectionCoherenceRules()
 
     private static readonly string[] SectionOrder = SectionKeys.CanonicalOrder;
 
@@ -969,15 +961,26 @@ public class PromptService : IPromptService
         if (weaknesses.Length > 0)
         {
             var weaknessText = string.Join("; ", weaknesses);
-            baseInstruction +=
-                $"\n\nDECLARED WEAKNESSES (max 1-2 targeted exercises per lesson):\n" +
-                $"Practice: include at least 1 exercise targeting: {weaknessText}\n" +
-                $"Production: create a context where these areas arise naturally.\n" +
-                $"WrapUp: invite the student to reflect on progress with these topics.";
+            var sb = new StringBuilder("\n\nDECLARED WEAKNESSES (max 1-2 targeted exercises per lesson):\n");
+            foreach (var section in SectionOrder)
+            {
+                var guidance = _pedagogy.GetWeaknessTargetingGuidance(section);
+                if (!string.IsNullOrEmpty(guidance))
+                {
+                    var label = char.ToUpper(section[0]) + section[1..];
+                    sb.AppendLine($"{label}: {guidance.Replace("{weaknesses}", weaknessText, StringComparison.Ordinal)}");
+                }
+            }
+            baseInstruction += sb.ToString().TrimEnd();
         }
 
-        // Section coherence rules — always present
-        baseInstruction += "\n\n" + SectionCoherenceRules;
+        // Section coherence rules from config
+        var coherenceRules = _pedagogy.GetSectionCoherenceRules();
+        if (coherenceRules.Length > 0)
+        {
+            baseInstruction += "\n\nSECTION COHERENCE RULES (mandatory, never omit):\n" +
+                string.Join("\n", coherenceRules.Select((r, i) => $"{i + 1}. {r}"));
+        }
 
         // Curriculum objectives — kept last (most specific constraint)
         if (!string.IsNullOrWhiteSpace(ctx.CurriculumObjectives))

@@ -125,7 +125,8 @@ public record ScopeConstraintsFile(Dictionary<string, Dictionary<string, string>
 public record CourseRulesFile(
     CourseVarietyRules VarietyRules,
     Dictionary<string, Dictionary<string, SkillRange>> SkillDistribution,
-    GrammarProgression GrammarProgression
+    GrammarProgression GrammarProgression,
+    string[]? SectionCoherenceRules = null
 );
 
 public record CourseVarietyRules(

@@ -1,5 +1,6 @@
 {
   "sectionType": "production",
+  "weaknessTargetingGuidance": "create a context where these areas arise naturally.",
   "levels": {
     "A1": {
       "contentTypes": ["conversation", "guided-writing"],
