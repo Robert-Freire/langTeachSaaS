@@ -1,6 +1,6 @@
 ---
 name: teacher-qa
-description: "Run the Teacher QA agent against the sprint branch. Evaluates AI-generated lesson content for pedagogical quality using real Auth0 and real Claude API. Args: full | ana-a1 | marco-b1 | carmen | ana-exam | sprint | sophie | ricardo | nadia | hans"
+description: "Run the Teacher QA agent against the sprint branch. Evaluates AI-generated lesson content for pedagogical quality using real Auth0 and real Claude API. Args: full | ana-a1 | marco-b1 | carmen | ana-exam | sprint | sophie | ricardo | nadia | hans | isabel"
 model: claude-opus-4-6
 ---
 
@@ -53,7 +53,7 @@ Steps:
 
 ## Argument Parsing
 
-- **No args / `full`**: run all 9 personas (Ana A1.1, Marco B1.1, Carmen B2.1, Ana Exam Prep, Sprint Reviewer, Sophie A2.2, Ricardo C1.1, Nadia B2.1, Hans A1.2)
+- **No args / `full`**: run all 10 personas (Ana A1.1, Marco B1.1, Carmen B2.1, Ana Exam Prep, Sprint Reviewer, Sophie A2.2, Ricardo C1.1, Nadia B2.1, Hans A1.2, Isabel B1.1)
 - **`ana-a1`**: run only the Ana A1.1 persona (Conversation, English L1)
 - **`marco-b1`**: run only the Marco persona (B1.1, Grammar, Italian L1)
 - **`carmen`**: run only the Carmen persona (B2.1, Reading, English L1)
@@ -63,6 +63,7 @@ Steps:
 - **`ricardo`**: run only the Ricardo persona (C1.1, Grammar, Portuguese L1)
 - **`nadia`**: run only the Nadia persona (B2.1, Conversation, Arabic L1)
 - **`hans`**: run only the Hans persona (A1.2, Grammar, German L1)
+- **`isabel`**: run only the Isabel persona (B1.1, Writing Skills, English L1)
 
 ---
 
@@ -147,6 +148,11 @@ cd .claude/skills/teacher-qa/playwright && QA_BRANCH=$(git rev-parse --abbrev-re
 cd .claude/skills/teacher-qa/playwright && QA_BRANCH=$(git rev-parse --abbrev-ref HEAD) npx playwright test tests/hans-a1.spec.ts --config playwright.config.ts
 ```
 
+**Isabel B1.1:**
+```bash
+cd .claude/skills/teacher-qa/playwright && QA_BRANCH=$(git rev-parse --abbrev-ref HEAD) npx playwright test tests/isabel-b1.spec.ts --config playwright.config.ts
+```
+
 **Sprint Reviewer (run this before other specs when arg is `sprint` or `full`):**
 
 First, fetch the sprint issues. Never hardcode the milestone name — query first:
@@ -201,7 +207,7 @@ Also load the relevant curriculum JSON for CEFR alignment:
 - A1.1 persona (Ana): read `data/curricula/iberia/A1.1.json`
 - A1.2 persona (Hans): read `data/curricula/iberia/A1.2.json`
 - A2.2 persona (Sophie): read `data/curricula/iberia/A2.2.json`
-- B1.1 persona (Marco): read `data/curricula/iberia/B1.1.json`
+- B1.1 persona (Marco, Isabel): read `data/curricula/iberia/B1.1.json`
 - B2.1 persona (Carmen, Ana Exam, Nadia): read `data/curricula/iberia/B2.1.json`
 - C1.1 persona (Ricardo): read `data/curricula/iberia/C1.1.json`
 - Sprint Reviewer: read the curriculum for the level used (B1.1 by default)
@@ -292,6 +298,14 @@ docker compose -f docker-compose.qa.yml --env-file .env.qa down -v
 - **Lesson**: Grammar Focus template, topic "articles and gender in everyday nouns"
 - **Curriculum scope (A1)**: definite/indefinite articles, basic noun gender, everyday vocabulary. German L1 key test: three-gender system (der/die/das) vs two-gender Spanish system (el/la); word order interference (verb-second in German vs SVO in Spanish).
 - **Expected**: clear rule explanation contrasting German and Spanish gender systems, controlled exercises, A1 vocabulary only
+
+### Persona 10: Isabel (B1.1, Writing Skills, English L1)
+
+- **Teacher**: Isabel — teaches Spanish to English speakers
+- **Student**: [QA] Alex, B1.1, native English, interests: travel, food writing, weakness: direct tone interference from English in formal letters
+- **Lesson**: Writing Skills template, topic "writing a formal complaint letter"
+- **Curriculum scope (B1.1)**: formal register, past tense narration (preterite/imperfect), discourse connectors (sin embargo, por lo tanto, en primer lugar), polite request structures (me gustaría que..., le agradecería que...). English L1 key test: English complaints are typically more direct than Spanish formal letters; expect interference in tone and politeness markers.
+- **Expected**: model text analysis section, structured writing stages (analyse model -> plan -> draft -> review), B1-appropriate vocabulary and formal register throughout, guided writing scaffolding, no colloquial language
 
 ### Persona 5: Sprint Reviewer (dynamic)
 

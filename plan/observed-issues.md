@@ -14,3 +14,5 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 *Previous clearing 2026-03-27: 10 entries deleted, 3 batched into issues #302, #298.*
 | #273 | 2026-03-30 | minor | No e2e test for guided-writing AI generation path. Requires live AI API; covered by Teacher QA runs. Same gap exists for all other Pedagogical Quality content types. |
+| #318 | 2026-04-01 | minor | All 10 teacher-qa persona specs have `studentId: undefined` in saveRunOutput metadata. `upsertStudent` returns the ID but no spec captures it. Affects run traceability only; no functional impact. Pre-existing across all specs. |
+| #318 | 2026-04-01 | minor | All 10 teacher-qa persona specs have comment "allow up to 3 minutes" above triggerFullGeneration, but the actual timeout is 8 minutes. Stale comment. Pre-existing across all specs. |
