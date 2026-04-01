@@ -142,7 +142,7 @@
         "listening"
       ],
       "scaffolding": "low",
-      "interactionPattern": "student-led",
+      "interactionPattern": "teacher-guided",
       "validExerciseTypes": [
         "VOC-04",
         "VOC-07",

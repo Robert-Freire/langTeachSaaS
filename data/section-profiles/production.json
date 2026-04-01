@@ -1,6 +1,6 @@
 {
   "sectionType": "production",
-  "weaknessTargetingGuidance": "create a context where these areas arise naturally — only if the weakness area is compatible with this lesson's linguistic content; do not import unrelated structures.",
+  "weaknessTargetingGuidance": "create a context where these areas arise naturally \u00e2\u20ac\u201d only if the weakness area is compatible with this lesson's linguistic content; do not import unrelated structures.",
   "levels": {
     "A1": {
       "contentTypes": [
@@ -94,6 +94,7 @@
       "scaffolding": "low",
       "interactionPattern": "independent",
       "validExerciseTypes": [
+        "EE-03",
         "EE-05",
         "EE-06",
         "EE-07",

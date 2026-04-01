@@ -19,7 +19,8 @@
       "interactionPattern": "teacher-led",
       "validExerciseTypes": [
         "EO-08",
-        "PRAG-01"
+        "PRAG-01",
+        "EE-01"
       ],
       "forbiddenExerciseTypes": [
         {
@@ -32,6 +33,10 @@
         {
           "exerciseTypeId": "EO-08",
           "note": "At A1, constrain free conversation to 2-3 yes/no or either/or questions about lesson content; do not allow open-ended production"
+        },
+        {
+          "exerciseTypeId": "EE-01",
+          "note": "Use a single fill-in sentence (1 sentence max) as a minimal written reflection, e.g. \"Today I learned ___.\" No extended writing."
         }
       ],
       "minExerciseVariety": 1
@@ -54,7 +59,8 @@
       "validExerciseTypes": [
         "EO-08",
         "PRAG-01",
-        "PRAG-03"
+        "PRAG-03",
+        "EE-01"
       ],
       "forbiddenExerciseTypes": [
         {
@@ -67,6 +73,10 @@
         {
           "exerciseTypeId": "PRAG-03",
           "note": "Cultural content at A2 wrap-up should be a very brief (1-2 sentence) connection to the lesson topic, not a new extended cultural discussion"
+        },
+        {
+          "exerciseTypeId": "EE-01",
+          "note": "Limit to 1 sentence of written reflection, e.g. \"The most useful word today was ___.\" Do not extend to multi-sentence writing tasks."
         }
       ],
       "minExerciseVariety": 1
@@ -154,7 +164,8 @@
       },
       "scope": "brief",
       "competencies": [
-        "interaction"
+        "interaction",
+        "mediation"
       ],
       "scaffolding": "none",
       "interactionPattern": "student-led",
@@ -190,7 +201,8 @@
       },
       "scope": "brief",
       "competencies": [
-        "interaction"
+        "interaction",
+        "mediation"
       ],
       "scaffolding": "none",
       "interactionPattern": "student-led",
