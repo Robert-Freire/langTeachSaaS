@@ -36,9 +36,8 @@ import { cn } from '@/lib/utils'
 import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
 import { PageHeader } from '@/components/PageHeader'
-
-const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
-const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+import { CEFR_LEVELS } from '@/lib/cefr-colors'
+import { LANGUAGES } from '@/lib/languages'
 
 function MultiSelect({
   options,
