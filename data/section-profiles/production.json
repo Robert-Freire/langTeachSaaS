@@ -1,6 +1,6 @@
 {
   "sectionType": "production",
-  "weaknessTargetingGuidance": "create a context where these areas arise naturally.",
+  "weaknessTargetingGuidance": "create a context where these areas arise naturally — only if the weakness area is compatible with this lesson's linguistic content; do not import unrelated structures.",
   "levels": {
     "A1": {
       "contentTypes": ["conversation", "guided-writing"],

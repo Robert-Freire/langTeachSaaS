@@ -1218,7 +1218,7 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("SECTION COHERENCE RULES");
         req.UserPrompt.Should().Contain("Practice MUST use EXCLUSIVELY content from Presentation");
         req.UserPrompt.Should().Contain("Production MUST be achievable");
-        req.UserPrompt.Should().Contain("Wrap Up MUST refer to lesson content");
+        req.UserPrompt.Should().Contain("competency targeted in Production must be producible");
     }
 
     [Fact]
@@ -1309,11 +1309,11 @@ public class PromptServiceTests
     {
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
 
-        // Verify all 5 numbered rules appear (text sourced from course-rules.json)
-        req.UserPrompt.Should().MatchRegex(@"1\.", because: "first coherence rule must be present");
-        req.UserPrompt.Should().MatchRegex(@"5\.", because: "fifth coherence rule must be present");
+        // Verify rules 1 and 5 text from course-rules.json is present
+        req.UserPrompt.Should().Contain("THEME of Warm Up must relate to the THEME of Presentation",
+            because: "rule 1 text must be sourced from config");
         req.UserPrompt.Should().Contain("Linguistic level must NOT increase",
-            because: "rule 5 text must come from config");
+            because: "rule 5 text must be sourced from config");
     }
 
     // --- Grammar prompt: grammar scope injection ---

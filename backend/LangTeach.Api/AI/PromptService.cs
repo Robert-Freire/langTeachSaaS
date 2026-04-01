@@ -141,8 +141,6 @@ public class PromptService : IPromptService
         return new ClaudeRequest(systemPrompt, userPrompt, model, maxTokens);
     }
 
-    // Section coherence rules are loaded from data/pedagogy/course-rules.json via _pedagogy.GetSectionCoherenceRules()
-
     private static readonly string[] SectionOrder = SectionKeys.CanonicalOrder;
 
     // --- Template override guidance ---

@@ -85,6 +85,8 @@ public class PedagogyConfigService : IPedagogyConfigService
 
         // Load course rules
         _courseRules = LoadJson<CourseRulesFile>(assembly, "LangTeach.Api.Pedagogy.course-rules.json");
+        if (_courseRules.SectionCoherenceRules is not { Length: > 0 })
+            _log.LogWarning("PedagogyConfigService: sectionCoherenceRules is missing or empty in course-rules.json");
 
         // Load style substitutions
         var subsFile = LoadJson<StyleSubstitutionsFile>(assembly, "LangTeach.Api.Pedagogy.style-substitutions.json");
@@ -319,13 +321,7 @@ public class PedagogyConfigService : IPedagogyConfigService
 
     public CourseRulesFile GetCourseRules() => _courseRules;
 
-    public string[] GetSectionCoherenceRules()
-    {
-        var rules = _courseRules.SectionCoherenceRules ?? [];
-        if (rules.Length == 0)
-            _log.LogWarning("PedagogyConfigService: sectionCoherenceRules is missing or empty in course-rules.json");
-        return rules;
-    }
+    public string[] GetSectionCoherenceRules() => _courseRules.SectionCoherenceRules ?? [];
 
     public string? GetWeaknessTargetingGuidance(string sectionType) =>
         _sectionProfileService.GetWeaknessTargetingGuidance(sectionType);
