@@ -33,7 +33,6 @@ function statusBadgeClass(status: string) {
     : 'text-zinc-500 border-zinc-200'
 }
 
-
 export default function Lessons() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
