@@ -25,11 +25,16 @@
         "GR-07",
         "GR-09",
         "VOC-05",
+        "CE-01",
         "EO-01",
         "LUD-06",
         "LUD-07"
       ],
       "levelSpecificNotes": [
+        {
+          "exerciseTypeId": "CE-01",
+          "note": "At A1, use only very short texts (2-3 sentences). Tasks should be picture-supported matching or simple True/False (does the sentence match the picture/title?). No inferential or detail questions."
+        },
         {
           "exerciseTypeId": "GR-01",
           "note": "Always provide a word bank listing all answer options in the hint field"
