@@ -14,8 +14,3 @@ public record GrammarValidationRule(
     GrammarValidationContextRelevance? ContextRelevance = null);
 
 public record GrammarValidationContextRelevance(string[] GrammarFocusPatterns);
-
-/// <summary>
-/// Output DTO — computed at response time, not stored in DB.
-/// </summary>
-public record GrammarWarning(string RuleId, string Correction, string Severity, string MatchedText);

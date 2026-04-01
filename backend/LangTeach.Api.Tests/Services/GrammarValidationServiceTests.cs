@@ -1,4 +1,4 @@
-using LangTeach.Api.Controllers;
+using LangTeach.Api.Helpers;
 using LangTeach.Api.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -107,25 +107,25 @@ public class GrammarValidationServiceTests
     }
 
     [Fact]
-    public void ExtractGrammarFocus_ValidParams_ReturnsFocusString()
+    public void ReadStringProperty_ValidJson_ReturnsValue()
     {
         var json = """{"grammarConstraints":"ser/estar distinction","language":"Spanish"}""";
-        var result = LessonContentBlocksController.ExtractGrammarFocus(json);
+        var result = JsonStorageHelper.ReadStringProperty(json, "grammarConstraints");
         Assert.Equal("ser/estar distinction", result);
     }
 
     [Fact]
-    public void ExtractGrammarFocus_NullParams_ReturnsNull()
+    public void ReadStringProperty_NullJson_ReturnsNull()
     {
-        var result = LessonContentBlocksController.ExtractGrammarFocus(null);
+        var result = JsonStorageHelper.ReadStringProperty(null, "grammarConstraints");
         Assert.Null(result);
     }
 
     [Fact]
-    public void ExtractGrammarFocus_MissingKey_ReturnsNull()
+    public void ReadStringProperty_MissingKey_ReturnsNull()
     {
         var json = """{"language":"Spanish","cefrLevel":"B1"}""";
-        var result = LessonContentBlocksController.ExtractGrammarFocus(json);
+        var result = JsonStorageHelper.ReadStringProperty(json, "grammarConstraints");
         Assert.Null(result);
     }
 }

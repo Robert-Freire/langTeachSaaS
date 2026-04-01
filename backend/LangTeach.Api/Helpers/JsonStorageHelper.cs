@@ -27,4 +27,22 @@ internal static class JsonStorageHelper
     }
 
     public static string Serialize<T>(List<T> list) => JsonSerializer.Serialize(list);
+
+    /// <summary>
+    /// Reads a top-level string property from a JSON object.
+    /// Returns null on null/empty input, missing key, non-string value, or parse error.
+    /// </summary>
+    public static string? ReadStringProperty(string? json, string propertyName)
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty(propertyName, out var el) &&
+                el.ValueKind == JsonValueKind.String)
+                return el.GetString();
+        }
+        catch (JsonException) { }
+        return null;
+    }
 }

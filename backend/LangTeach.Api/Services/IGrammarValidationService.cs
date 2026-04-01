@@ -1,4 +1,4 @@
-using LangTeach.Api.AI;
+using LangTeach.Api.DTOs;
 
 namespace LangTeach.Api.Services;
 

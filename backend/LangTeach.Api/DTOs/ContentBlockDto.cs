@@ -1,4 +1,3 @@
-using LangTeach.Api.AI;
 using LangTeach.Api.Data.Models;
 
 namespace LangTeach.Api.DTOs;

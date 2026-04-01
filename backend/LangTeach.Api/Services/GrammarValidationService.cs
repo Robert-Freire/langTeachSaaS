@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using LangTeach.Api.AI;
+using LangTeach.Api.DTOs;
 
 namespace LangTeach.Api.Services;
 
@@ -98,7 +99,7 @@ public class GrammarValidationService : IGrammarValidationService
 
         var grammarFocusLower = grammarFocus.ToLowerInvariant();
         var isRelevant = contextRelevance.GrammarFocusPatterns.Any(
-            p => grammarFocusLower.Contains(p.ToLowerInvariant(), StringComparison.Ordinal));
+            p => grammarFocusLower.Contains(p.ToLowerInvariant()));
 
         if (!isRelevant)
             return baseSeverity;

@@ -60,6 +60,8 @@ public class LessonContentBlocksController : ControllerBase
         b.CreatedAt);
 
     // With grammar warnings for GET and POST endpoints that have language context
+    // Grammar warnings run only against GeneratedContent (the AI output), not EditedContent.
+    // If a teacher edits content, the warnings reflect the original AI generation, not the edit.
     private ContentBlockDto ToDtoWithWarnings(LessonContentBlock b, string language) => new(
         b.Id,
         b.LessonSectionId,
@@ -70,26 +72,12 @@ public class LessonContentBlocksController : ControllerBase
         b.GenerationParams,
         TryParseContent(b.EditedContent ?? b.GeneratedContent),
         b.CreatedAt,
-        ToGrammarWarnings(b.GeneratedContent, language, ExtractGrammarFocus(b.GenerationParams)));
+        ToGrammarWarnings(b.GeneratedContent, language, JsonStorageHelper.ReadStringProperty(b.GenerationParams, "grammarConstraints")));
 
-    private AI.GrammarWarning[]? ToGrammarWarnings(string content, string language, string? grammarFocus)
+    private GrammarWarning[]? ToGrammarWarnings(string content, string language, string? grammarFocus)
     {
         var warnings = _grammarValidation.Validate(content, language, grammarFocus);
         return warnings.Length > 0 ? warnings : null;
-    }
-
-    internal static string? ExtractGrammarFocus(string? generationParams)
-    {
-        if (generationParams is null) return null;
-        try
-        {
-            using var doc = JsonDocument.Parse(generationParams);
-            if (doc.RootElement.TryGetProperty("grammarConstraints", out var el) &&
-                el.ValueKind == JsonValueKind.String)
-                return el.GetString();
-        }
-        catch (JsonException) { }
-        return null;
     }
 
     private async Task<(Guid teacherId, LessonContentBlock? block)> ResolveBlock(
