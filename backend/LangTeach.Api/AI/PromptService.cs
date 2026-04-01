@@ -916,8 +916,6 @@ public class PromptService : IPromptService
 
         Section guidelines:
         {sbSections.ToString().TrimEnd()}
-
-        All five sections (warmUp, presentation, practice, production, wrapUp) are required in every lesson plan.
         """;
 
         // Level variation from template (if present)
@@ -925,10 +923,10 @@ public class PromptService : IPromptService
             && templateEntry.LevelVariations.TryGetValue(cefrLevel, out var levelVariation))
             baseInstruction += $"\n\n{templateEntry.Name.ToUpperInvariant()} level note for {cefrLevel}: {levelVariation}";
 
-        // Restrictions from template (enforced as explicit constraints)
+        // Restrictions from template (contextual rationale for exercise type filtering)
         if (templateEntry?.Restrictions is { Length: > 0 })
             baseInstruction += "\n\n" + string.Join("\n", templateEntry.Restrictions
-                .Select(r => $"Do not use [{r.Value}] exercises in this lesson."));
+                .Select(r => r.Reason));
 
         // Grammar scope from CEFR level rules
         var grammarScope = BuildGrammarScopeBlock(cefrLevel);
