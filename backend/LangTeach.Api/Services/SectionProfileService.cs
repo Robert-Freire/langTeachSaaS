@@ -5,6 +5,10 @@ using LangTeach.Api.AI;
 
 namespace LangTeach.Api.Services;
 
+// Section type naming convention:
+// - Canonical form: PascalCase (e.g. "WarmUp", "Presentation") — used in C# enums, API transport, and frontend TypeScript unions.
+// - Section profile JSON files use lowercase keys (e.g. "warmup") for file names and the "sectionType" field.
+// - GetProfile() normalizes any incoming value to lowercase before lookup, so both forms work at runtime.
 public class SectionProfileService : ISectionProfileService
 {
     // Key: lowercase section type (e.g. "warmup")

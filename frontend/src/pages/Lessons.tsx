@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { getCefrBadgeClasses, CEFR_LEVELS } from '@/lib/cefr-colors'
+import { formatDate } from '../utils/formatDate'
 import { LANGUAGES } from '@/lib/languages'
 import { cn } from '@/lib/utils'
 import {
@@ -30,10 +31,6 @@ function statusBadgeClass(status: string) {
   return status === 'Published'
     ? 'text-green-700 border-green-200 bg-green-50'
     : 'text-zinc-500 border-zinc-200'
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export default function Lessons() {
