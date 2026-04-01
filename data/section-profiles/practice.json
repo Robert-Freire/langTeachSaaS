@@ -7,7 +7,7 @@
         "exercises",
         "conversation"
       ],
-      "guidance": "Prefer matching and categorization tasks. For fill-in-blank items, always provide a word bank \u00e2\u20ac\u201d list the answer options in the hint field. Max 3 options for multiple-choice. Do not include sentence transformation or error correction tasks.",
+      "guidance": "Prefer matching and categorization tasks. For fill-in-blank items, always provide a word bank — list the answer options in the hint field. Max 3 options for multiple-choice. Do not include sentence transformation or error correction tasks.",
       "duration": {
         "min": 8,
         "max": 12
@@ -111,7 +111,7 @@
         "guided-writing",
         "error-correction"
       ],
-      "guidance": "Use at least 2 different exercise formats (e.g. fill-in-blank AND multiple-choice \u00e2\u20ac\u201d do not rely on just one type). Include transformation and error correction items.",
+      "guidance": "Use at least 2 different exercise formats (e.g. fill-in-blank AND multiple-choice — do not rely on just one type). Include transformation and error correction items.",
       "duration": {
         "min": 10,
         "max": 15
