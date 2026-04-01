@@ -1,5 +1,6 @@
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Services.PdfExport;
 
 namespace LangTeach.Api.Services;
 
@@ -14,4 +15,6 @@ public interface ILessonService
     Task<LessonDto?> DuplicateAsync(Guid teacherId, Guid lessonId, CancellationToken cancellationToken = default);
     Task<LessonDto?> UpdateLearningTargetsAsync(Guid teacherId, Guid lessonId, string[]? labels, CancellationToken cancellationToken = default);
     Task EnsureLearningTargetsAsync(Lesson lesson, CancellationToken cancellationToken = default);
+    Task<StudyLessonDto?> GetStudyAsync(Guid teacherId, Guid lessonId, CancellationToken cancellationToken = default);
+    Task<PdfLessonData?> GetForExportAsync(Guid teacherId, Guid lessonId, CancellationToken cancellationToken = default);
 }
