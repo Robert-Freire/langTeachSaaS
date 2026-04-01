@@ -71,10 +71,10 @@ public class GrammarValidationService : IGrammarValidationService
             if (!string.Equals(rule.TargetLanguage, normalizedLang, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            Match match;
+            MatchCollection matches;
             try
             {
-                match = regex.Match(content);
+                matches = regex.Matches(content);
             }
             catch (RegexMatchTimeoutException)
             {
@@ -82,11 +82,12 @@ public class GrammarValidationService : IGrammarValidationService
                 continue;
             }
 
-            if (!match.Success)
+            if (matches.Count == 0)
                 continue;
 
             var severity = ElevateSeverity(rule.Severity, rule.ContextRelevance, grammarFocus);
-            results.Add(new GrammarWarning(rule.Id, rule.Correction, severity, match.Value));
+            // Report one warning per rule; matchedText shows the first occurrence found
+            results.Add(new GrammarWarning(rule.Id, rule.Correction, severity, matches[0].Value));
         }
 
         return results.ToArray();

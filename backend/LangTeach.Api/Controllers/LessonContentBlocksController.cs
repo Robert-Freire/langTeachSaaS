@@ -60,8 +60,8 @@ public class LessonContentBlocksController : ControllerBase
         b.CreatedAt);
 
     // With grammar warnings for GET and POST endpoints that have language context
-    // Grammar warnings run only against GeneratedContent (the AI output), not EditedContent.
-    // If a teacher edits content, the warnings reflect the original AI generation, not the edit.
+    // Validate the displayed content (EditedContent takes priority over GeneratedContent)
+    // so warnings reflect what the teacher and student will actually see.
     private ContentBlockDto ToDtoWithWarnings(LessonContentBlock b, string language) => new(
         b.Id,
         b.LessonSectionId,
@@ -72,7 +72,7 @@ public class LessonContentBlocksController : ControllerBase
         b.GenerationParams,
         TryParseContent(b.EditedContent ?? b.GeneratedContent),
         b.CreatedAt,
-        ToGrammarWarnings(b.GeneratedContent, language, JsonStorageHelper.ReadStringProperty(b.GenerationParams, "grammarConstraints")));
+        ToGrammarWarnings(b.EditedContent ?? b.GeneratedContent, language, JsonStorageHelper.ReadStringProperty(b.GenerationParams, "grammarConstraints")));
 
     private GrammarWarning[]? ToGrammarWarnings(string content, string language, string? grammarFocus)
     {
