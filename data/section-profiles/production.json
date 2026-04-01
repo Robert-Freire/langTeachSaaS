@@ -94,6 +94,7 @@
       "scaffolding": "low",
       "interactionPattern": "independent",
       "validExerciseTypes": [
+        "EE-03",
         "EE-05",
         "EE-06",
         "EE-07",
