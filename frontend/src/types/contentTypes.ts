@@ -122,7 +122,7 @@ export interface ReadingVocabHighlight {
 export interface ReadingQuestion {
   question: string
   answer: string
-  type: string
+  type: 'factual' | 'inferential' | 'vocabulary'
 }
 
 export interface ReadingContent {

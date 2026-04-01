@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { Lesson } from '../../api/lessons'
+import { formatDateShort } from '../../utils/formatDate'
 
 interface NeedsPreparationProps {
   lessons: Lesson[]
@@ -45,7 +46,7 @@ export function NeedsPreparation({ lessons }: NeedsPreparationProps) {
                   <p className="text-xs text-zinc-500 truncate">{lesson.topic}</p>
                 </div>
                 <span className="text-xs text-zinc-400 shrink-0 ml-2">
-                  {new Date(lesson.scheduledAt!).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                  {formatDateShort(lesson.scheduledAt!)}
                 </span>
               </Link>
             ))}

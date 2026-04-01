@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { getLessonHistory } from '../../api/students'
+import { formatDate } from '../../utils/formatDate'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -62,11 +63,7 @@ export function LessonHistoryCard({ studentId }: LessonHistoryCardProps) {
                     <Badge variant="outline" className="text-xs">{entry.templateName}</Badge>
                   )}
                   <span className="text-xs text-zinc-400">
-                    {new Date(entry.lessonDate).toLocaleDateString(undefined, {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                    {formatDate(entry.lessonDate)}
                   </span>
                 </div>
                 <div className="space-y-1">

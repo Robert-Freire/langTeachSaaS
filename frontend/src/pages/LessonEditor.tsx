@@ -38,6 +38,7 @@ import { ExportButton } from '@/components/lesson/ExportButton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { getCefrBadgeClasses, CEFR_LEVELS } from '@/lib/cefr-colors'
 import { LANGUAGES } from '@/lib/languages'
+import { formatDateTime } from '../utils/formatDate'
 import { CefrMismatchWarning } from '@/components/CefrMismatchWarning'
 import { FullLessonGenerateButton } from '@/components/lesson/FullLessonGenerateButton'
 import { LessonNotesCard } from '@/components/lesson/LessonNotesCard'
@@ -577,7 +578,7 @@ export default function LessonEditor() {
             data-testid="quick-schedule-btn"
           >
             <CalendarPlus className="h-3.5 w-3.5" />
-            {new Date(lesson.scheduledAt).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            {formatDateTime(lesson.scheduledAt)}
           </button>
         ) : (
           <Button
