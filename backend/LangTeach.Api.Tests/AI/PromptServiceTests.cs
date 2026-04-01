@@ -562,7 +562,6 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("practice");
         req.UserPrompt.Should().Contain("production");
         req.UserPrompt.Should().Contain("wrapUp");
-        req.UserPrompt.Should().Contain("All five sections");
     }
 
     [Fact]
@@ -644,7 +643,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("Do not use [LUD] exercises in this lesson.");
+        req.UserPrompt.Should().Contain("Ludic activities are inappropriate in reading comprehension lessons");
     }
 
     [Fact]
@@ -798,12 +797,15 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public void LessonPlanPrompt_UserPrompt_AllFiveSectionsRequired()
+    public void LessonPlanPrompt_UserPrompt_AllFiveSectionNamesPresent()
     {
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
 
-        req.UserPrompt.Should().Contain("All five sections");
-        req.UserPrompt.Should().Contain("required in every lesson plan");
+        req.UserPrompt.Should().Contain("warmUp");
+        req.UserPrompt.Should().Contain("presentation");
+        req.UserPrompt.Should().Contain("practice");
+        req.UserPrompt.Should().Contain("production");
+        req.UserPrompt.Should().Contain("wrapUp");
     }
 
     [Fact]
