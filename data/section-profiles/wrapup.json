@@ -3,261 +3,219 @@
   "weaknessTargetingGuidance": "ask the student to rate their confidence with each area (1-3 scale) and identify one specific difficulty that remains.",
   "levels": {
     "A1": {
-      "contentTypes": ["conversation"],
+      "contentTypes": [
+        "conversation"
+      ],
       "guidance": "Teacher-led recap: ask the student to repeat 2-3 key words or phrases from the lesson. Ask: What did we learn today? Use yes/no or either/or questions. Preview homework with one simple sentence.",
-      "duration": { "min": 2, "max": 3 },
+      "duration": {
+        "min": 2,
+        "max": 3
+      },
       "scope": "brief",
-      "competencies": ["interaction"],
+      "competencies": [
+        "interaction"
+      ],
       "scaffolding": "high",
       "interactionPattern": "teacher-led",
-      "validExerciseTypes": ["EO-08", "PRAG-01"],
+      "validExerciseTypes": [
+        "EO-08",
+        "PRAG-01"
+      ],
       "forbiddenExerciseTypes": [
-        {"id": null, "pattern": "LUD-*", "reason": "Games introduce new activity type at the close of the lesson; wrap-up should consolidate, not stimulate"},
-        {"id": null, "pattern": "CO-*", "reason": "Listening tasks introduce new content; wrap-up should not introduce new material"},
-        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension introduces new text content; inappropriate for consolidation close"},
-        {"id": "GR-01", "pattern": null, "reason": "Mechanical drills are practice tasks; wrap-up is reflection, not drilling"},
-        {"id": "GR-02", "pattern": null, "reason": "Mechanical drills are practice tasks; wrap-up is reflection, not drilling"},
-        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation is a practice task, not appropriate for lesson close"},
-        {"id": "GR-04", "pattern": null, "reason": "Error correction is a practice task, not appropriate for lesson close"},
-        {"id": "GR-05", "pattern": null, "reason": "Conjugation paradigms are drills, not appropriate for lesson close"},
-        {"id": "GR-06", "pattern": null, "reason": "Matching exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "GR-07", "pattern": null, "reason": "Word ordering is a practice task, not appropriate for lesson close"},
-        {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task; no new grammar at close"},
-        {"id": "GR-09", "pattern": null, "reason": "Classification exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "EE-04", "pattern": null, "reason": "Extended description requires significant writing time; not appropriate for a short close"},
-        {"id": "EE-05", "pattern": null, "reason": "Narration is a production task requiring extended time; not appropriate for wrap-up"},
-        {"id": "EE-06", "pattern": null, "reason": "Letter/email writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-07", "pattern": null, "reason": "Opinion essay requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-08", "pattern": null, "reason": "Summary writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-09", "pattern": null, "reason": "Register transformation requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-10", "pattern": null, "reason": "Creative writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-11", "pattern": null, "reason": "Written mediation requires extended time; not appropriate for wrap-up"},
-        {"id": "VOC-01", "pattern": null, "reason": "Vocabulary lists are presentation tasks; no new vocabulary at close"},
-        {"id": "VOC-02", "pattern": null, "reason": "Vocabulary matching is a practice task, not appropriate for lesson close"},
-        {"id": "VOC-03", "pattern": null, "reason": "Semantic categorisation is a practice task, not appropriate for lesson close"},
-        {"id": "VOC-04", "pattern": null, "reason": "Vocabulary in context tasks involve new texts; not appropriate for wrap-up"},
-        {"id": "VOC-05", "pattern": null, "reason": "Completing sentences with vocabulary is a practice drill, not a reflection task"},
-        {"id": "VOC-06", "pattern": null, "reason": "Synonyms/antonyms exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "VOC-07", "pattern": null, "reason": "Collocations practice is not appropriate for lesson close"}
+        {
+          "id": null,
+          "pattern": "CO-*",
+          "reason": "Listening tasks introduce new content; wrap-up should not introduce new material"
+        }
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "EO-08", "note": "At A1, constrain free conversation to 2-3 yes/no or either/or questions about lesson content; do not allow open-ended production"}
+        {
+          "exerciseTypeId": "EO-08",
+          "note": "At A1, constrain free conversation to 2-3 yes/no or either/or questions about lesson content; do not allow open-ended production"
+        }
       ],
       "minExerciseVariety": 1
     },
     "A2": {
-      "contentTypes": ["conversation"],
+      "contentTypes": [
+        "conversation"
+      ],
       "guidance": "Student names 3-4 things they learned or practiced. Teacher prompts if needed: Que aprendiste hoy? Brief homework preview. Keep to 2-3 teacher turns.",
-      "duration": { "min": 2, "max": 4 },
+      "duration": {
+        "min": 2,
+        "max": 4
+      },
       "scope": "brief",
-      "competencies": ["interaction"],
+      "competencies": [
+        "interaction"
+      ],
       "scaffolding": "medium",
       "interactionPattern": "teacher-guided",
-      "validExerciseTypes": ["EO-08", "PRAG-01", "PRAG-03"],
+      "validExerciseTypes": [
+        "EO-08",
+        "PRAG-01",
+        "PRAG-03"
+      ],
       "forbiddenExerciseTypes": [
-        {"id": null, "pattern": "LUD-*", "reason": "Games introduce new activity type at the close of the lesson; wrap-up should consolidate, not stimulate"},
-        {"id": null, "pattern": "CO-*", "reason": "Listening tasks introduce new content; wrap-up should not introduce new material"},
-        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension introduces new text content; inappropriate for consolidation close"},
-        {"id": "GR-01", "pattern": null, "reason": "Mechanical drills are practice tasks; wrap-up is reflection, not drilling"},
-        {"id": "GR-02", "pattern": null, "reason": "Mechanical drills are practice tasks; wrap-up is reflection, not drilling"},
-        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation is a practice task, not appropriate for lesson close"},
-        {"id": "GR-04", "pattern": null, "reason": "Error correction is a practice task, not appropriate for lesson close"},
-        {"id": "GR-05", "pattern": null, "reason": "Conjugation paradigms are drills, not appropriate for lesson close"},
-        {"id": "GR-06", "pattern": null, "reason": "Matching exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "GR-07", "pattern": null, "reason": "Word ordering is a practice task, not appropriate for lesson close"},
-        {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task; no new grammar at close"},
-        {"id": "GR-09", "pattern": null, "reason": "Classification exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "EE-04", "pattern": null, "reason": "Extended description requires significant writing time; not appropriate for a short close"},
-        {"id": "EE-05", "pattern": null, "reason": "Narration is a production task requiring extended time; not appropriate for wrap-up"},
-        {"id": "EE-06", "pattern": null, "reason": "Letter/email writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-07", "pattern": null, "reason": "Opinion essay requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-08", "pattern": null, "reason": "Summary writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-09", "pattern": null, "reason": "Register transformation requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-10", "pattern": null, "reason": "Creative writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-11", "pattern": null, "reason": "Written mediation requires extended time; not appropriate for wrap-up"},
-        {"id": "VOC-01", "pattern": null, "reason": "Vocabulary lists are presentation tasks; no new vocabulary at close"},
-        {"id": "VOC-02", "pattern": null, "reason": "Vocabulary matching is a practice task, not appropriate for lesson close"},
-        {"id": "VOC-03", "pattern": null, "reason": "Semantic categorisation is a practice task, not appropriate for lesson close"},
-        {"id": "VOC-04", "pattern": null, "reason": "Vocabulary in context tasks involve new texts; not appropriate for wrap-up"},
-        {"id": "VOC-05", "pattern": null, "reason": "Completing sentences with vocabulary is a practice drill, not a reflection task"},
-        {"id": "VOC-06", "pattern": null, "reason": "Synonyms/antonyms exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "VOC-07", "pattern": null, "reason": "Collocations practice is not appropriate for lesson close"}
+        {
+          "id": null,
+          "pattern": "CO-*",
+          "reason": "Listening tasks introduce new content; wrap-up should not introduce new material"
+        }
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "PRAG-03", "note": "Cultural content at A2 wrap-up should be a very brief (1-2 sentence) connection to the lesson topic, not a new extended cultural discussion"}
+        {
+          "exerciseTypeId": "PRAG-03",
+          "note": "Cultural content at A2 wrap-up should be a very brief (1-2 sentence) connection to the lesson topic, not a new extended cultural discussion"
+        }
       ],
       "minExerciseVariety": 1
     },
     "B1": {
-      "contentTypes": ["conversation"],
+      "contentTypes": [
+        "conversation"
+      ],
       "guidance": "Student summarises the lesson in 3-4 sentences. Teacher corrects and adds. Ask: What felt easy? What do you want to practise more? Brief homework or next session preview.",
-      "duration": { "min": 2, "max": 4 },
+      "duration": {
+        "min": 2,
+        "max": 4
+      },
       "scope": "brief",
-      "competencies": ["interaction"],
+      "competencies": [
+        "interaction"
+      ],
       "scaffolding": "low",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["EO-08", "PRAG-01", "PRAG-03", "PRAG-04"],
+      "validExerciseTypes": [
+        "EO-08",
+        "PRAG-01",
+        "PRAG-03",
+        "PRAG-04"
+      ],
       "forbiddenExerciseTypes": [
-        {"id": null, "pattern": "LUD-*", "reason": "Games introduce new activity type at the close of the lesson; wrap-up should consolidate, not stimulate"},
-        {"id": null, "pattern": "CO-*", "reason": "Listening tasks introduce new content; wrap-up should not introduce new material"},
-        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension introduces new text content; inappropriate for consolidation close"},
-        {"id": "GR-01", "pattern": null, "reason": "Mechanical drills are practice tasks; wrap-up is reflection, not drilling"},
-        {"id": "GR-02", "pattern": null, "reason": "Mechanical drills are practice tasks; wrap-up is reflection, not drilling"},
-        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation is a practice task, not appropriate for lesson close"},
-        {"id": "GR-04", "pattern": null, "reason": "Error correction is a practice task, not appropriate for lesson close"},
-        {"id": "GR-05", "pattern": null, "reason": "Conjugation paradigms are drills, not appropriate for lesson close"},
-        {"id": "GR-06", "pattern": null, "reason": "Matching exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "GR-07", "pattern": null, "reason": "Word ordering is a practice task, not appropriate for lesson close"},
-        {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task; no new grammar at close"},
-        {"id": "GR-09", "pattern": null, "reason": "Classification exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "EE-04", "pattern": null, "reason": "Extended description requires significant writing time; not appropriate for a short close"},
-        {"id": "EE-05", "pattern": null, "reason": "Narration is a production task requiring extended time; not appropriate for wrap-up"},
-        {"id": "EE-06", "pattern": null, "reason": "Letter/email writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-07", "pattern": null, "reason": "Opinion essay requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-08", "pattern": null, "reason": "Summary writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-09", "pattern": null, "reason": "Register transformation requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-10", "pattern": null, "reason": "Creative writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-11", "pattern": null, "reason": "Written mediation requires extended time; not appropriate for wrap-up"},
-        {"id": "VOC-01", "pattern": null, "reason": "Vocabulary lists are presentation tasks; no new vocabulary at close"},
-        {"id": "VOC-02", "pattern": null, "reason": "Vocabulary matching is a practice task, not appropriate for lesson close"},
-        {"id": "VOC-03", "pattern": null, "reason": "Semantic categorisation is a practice task, not appropriate for lesson close"},
-        {"id": "VOC-04", "pattern": null, "reason": "Vocabulary in context tasks involve new texts; not appropriate for wrap-up"},
-        {"id": "VOC-05", "pattern": null, "reason": "Completing sentences with vocabulary is a practice drill, not a reflection task"},
-        {"id": "VOC-06", "pattern": null, "reason": "Synonyms/antonyms exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "VOC-07", "pattern": null, "reason": "Collocations practice is not appropriate for lesson close"}
+        {
+          "id": null,
+          "pattern": "CO-*",
+          "reason": "Listening tasks introduce new content; wrap-up should not introduce new material"
+        }
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "PRAG-04", "note": "Intercultural comparison at B1 wrap-up: one brief observation connecting lesson content to student's own culture; not an extended discussion"}
+        {
+          "exerciseTypeId": "PRAG-04",
+          "note": "Intercultural comparison at B1 wrap-up: one brief observation connecting lesson content to student's own culture; not an extended discussion"
+        }
       ],
       "minExerciseVariety": 1
     },
     "B2": {
-      "contentTypes": ["conversation"],
+      "contentTypes": [
+        "conversation"
+      ],
       "guidance": "Student summarises and evaluates: what was new, what was confirmed, what needs more practice. Teacher adds nuance. Optional: identify one item to research independently before next session.",
-      "duration": { "min": 2, "max": 5 },
+      "duration": {
+        "min": 2,
+        "max": 5
+      },
       "scope": "brief",
-      "competencies": ["interaction"],
+      "competencies": [
+        "interaction"
+      ],
       "scaffolding": "low",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["EO-08", "PRAG-01", "PRAG-03", "PRAG-04"],
+      "validExerciseTypes": [
+        "EO-08",
+        "PRAG-01",
+        "PRAG-03",
+        "PRAG-04"
+      ],
       "forbiddenExerciseTypes": [
-        {"id": null, "pattern": "LUD-*", "reason": "Games introduce new activity type at the close of the lesson; wrap-up should consolidate, not stimulate"},
-        {"id": null, "pattern": "CO-*", "reason": "Listening tasks introduce new content; wrap-up should not introduce new material"},
-        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension introduces new text content; inappropriate for consolidation close"},
-        {"id": "GR-01", "pattern": null, "reason": "Mechanical drills are practice tasks; wrap-up is reflection, not drilling"},
-        {"id": "GR-02", "pattern": null, "reason": "Mechanical drills are practice tasks; wrap-up is reflection, not drilling"},
-        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation is a practice task, not appropriate for lesson close"},
-        {"id": "GR-04", "pattern": null, "reason": "Error correction is a practice task, not appropriate for lesson close"},
-        {"id": "GR-05", "pattern": null, "reason": "Conjugation paradigms are drills, not appropriate for lesson close"},
-        {"id": "GR-06", "pattern": null, "reason": "Matching exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "GR-07", "pattern": null, "reason": "Word ordering is a practice task, not appropriate for lesson close"},
-        {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task; no new grammar at close"},
-        {"id": "GR-09", "pattern": null, "reason": "Classification exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "EE-04", "pattern": null, "reason": "Extended description requires significant writing time; not appropriate for a short close"},
-        {"id": "EE-05", "pattern": null, "reason": "Narration is a production task requiring extended time; not appropriate for wrap-up"},
-        {"id": "EE-06", "pattern": null, "reason": "Letter/email writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-07", "pattern": null, "reason": "Opinion essay requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-08", "pattern": null, "reason": "Summary writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-09", "pattern": null, "reason": "Register transformation requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-10", "pattern": null, "reason": "Creative writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-11", "pattern": null, "reason": "Written mediation requires extended time; not appropriate for wrap-up"},
-        {"id": "VOC-01", "pattern": null, "reason": "Vocabulary lists are presentation tasks; no new vocabulary at close"},
-        {"id": "VOC-02", "pattern": null, "reason": "Vocabulary matching is a practice task, not appropriate for lesson close"},
-        {"id": "VOC-03", "pattern": null, "reason": "Semantic categorisation is a practice task, not appropriate for lesson close"},
-        {"id": "VOC-04", "pattern": null, "reason": "Vocabulary in context tasks involve new texts; not appropriate for wrap-up"},
-        {"id": "VOC-05", "pattern": null, "reason": "Completing sentences with vocabulary is a practice drill, not a reflection task"},
-        {"id": "VOC-06", "pattern": null, "reason": "Synonyms/antonyms exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "VOC-07", "pattern": null, "reason": "Collocations practice is not appropriate for lesson close"}
+        {
+          "id": null,
+          "pattern": "CO-*",
+          "reason": "Listening tasks introduce new content; wrap-up should not introduce new material"
+        }
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "EO-08", "note": "At B2, prompt student to articulate what was confirmed vs what was new; this metacognitive distinction aids long-term retention"}
+        {
+          "exerciseTypeId": "EO-08",
+          "note": "At B2, prompt student to articulate what was confirmed vs what was new; this metacognitive distinction aids long-term retention"
+        }
       ],
       "minExerciseVariety": 1
     },
     "C1": {
-      "contentTypes": ["conversation"],
+      "contentTypes": [
+        "conversation"
+      ],
       "guidance": "Student reflects on difficulty and explains why: what was cognitively demanding, what register choices were made, what gaps remain. Teacher listens, adds metalinguistic comment if relevant.",
-      "duration": { "min": 3, "max": 5 },
+      "duration": {
+        "min": 3,
+        "max": 5
+      },
       "scope": "brief",
-      "competencies": ["interaction"],
+      "competencies": [
+        "interaction"
+      ],
       "scaffolding": "none",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["EO-08", "EO-09", "PRAG-01", "PRAG-04"],
+      "validExerciseTypes": [
+        "EO-08",
+        "EO-09",
+        "PRAG-01",
+        "PRAG-04"
+      ],
       "forbiddenExerciseTypes": [
-        {"id": null, "pattern": "LUD-*", "reason": "Games introduce new activity type at the close of the lesson; wrap-up should consolidate, not stimulate"},
-        {"id": null, "pattern": "CO-*", "reason": "Listening tasks introduce new content; wrap-up should not introduce new material"},
-        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension introduces new text content; inappropriate for consolidation close"},
-        {"id": "GR-01", "pattern": null, "reason": "Mechanical drills are practice tasks; wrap-up is reflection, not drilling"},
-        {"id": "GR-02", "pattern": null, "reason": "Mechanical drills are practice tasks; wrap-up is reflection, not drilling"},
-        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation is a practice task, not appropriate for lesson close"},
-        {"id": "GR-04", "pattern": null, "reason": "Error correction is a practice task, not appropriate for lesson close"},
-        {"id": "GR-05", "pattern": null, "reason": "Conjugation paradigms are drills, not appropriate for lesson close"},
-        {"id": "GR-06", "pattern": null, "reason": "Matching exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "GR-07", "pattern": null, "reason": "Word ordering is a practice task, not appropriate for lesson close"},
-        {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task; no new grammar at close"},
-        {"id": "GR-09", "pattern": null, "reason": "Classification exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "EE-04", "pattern": null, "reason": "Extended description requires significant writing time; not appropriate for a short close"},
-        {"id": "EE-05", "pattern": null, "reason": "Narration is a production task requiring extended time; not appropriate for wrap-up"},
-        {"id": "EE-06", "pattern": null, "reason": "Letter/email writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-07", "pattern": null, "reason": "Opinion essay requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-08", "pattern": null, "reason": "Summary writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-09", "pattern": null, "reason": "Register transformation requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-10", "pattern": null, "reason": "Creative writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-11", "pattern": null, "reason": "Written mediation requires extended time; not appropriate for wrap-up"},
-        {"id": "VOC-01", "pattern": null, "reason": "Vocabulary lists are presentation tasks; no new vocabulary at close"},
-        {"id": "VOC-02", "pattern": null, "reason": "Vocabulary matching is a practice task, not appropriate for lesson close"},
-        {"id": "VOC-03", "pattern": null, "reason": "Semantic categorisation is a practice task, not appropriate for lesson close"},
-        {"id": "VOC-04", "pattern": null, "reason": "Vocabulary in context tasks involve new texts; not appropriate for wrap-up"},
-        {"id": "VOC-05", "pattern": null, "reason": "Completing sentences with vocabulary is a practice drill, not a reflection task"},
-        {"id": "VOC-06", "pattern": null, "reason": "Synonyms/antonyms exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "VOC-07", "pattern": null, "reason": "Collocations practice is not appropriate for lesson close"}
+        {
+          "id": null,
+          "pattern": "CO-*",
+          "reason": "Listening tasks introduce new content; wrap-up should not introduce new material"
+        }
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "EO-09", "note": "At C1, oral mediation as reflection: ask student to explain the lesson's key grammar or lexical concept to an imaginary non-native speaker; this reveals metalinguistic understanding"}
+        {
+          "exerciseTypeId": "EO-09",
+          "note": "At C1, oral mediation as reflection: ask student to explain the lesson's key grammar or lexical concept to an imaginary non-native speaker; this reveals metalinguistic understanding"
+        }
       ],
       "minExerciseVariety": 1
     },
     "C2": {
-      "contentTypes": ["conversation"],
+      "contentTypes": [
+        "conversation"
+      ],
       "guidance": "Student reflects on difficulty, metalinguistic awareness, and register decisions. Identifies one self-directed learning goal for the week. Teacher confirms or refines.",
-      "duration": { "min": 3, "max": 5 },
+      "duration": {
+        "min": 3,
+        "max": 5
+      },
       "scope": "brief",
-      "competencies": ["interaction"],
+      "competencies": [
+        "interaction"
+      ],
       "scaffolding": "none",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["EO-08", "EO-09", "PRAG-01", "PRAG-04"],
+      "validExerciseTypes": [
+        "EO-08",
+        "EO-09",
+        "PRAG-01",
+        "PRAG-04"
+      ],
       "forbiddenExerciseTypes": [
-        {"id": null, "pattern": "LUD-*", "reason": "Games introduce new activity type at the close of the lesson; wrap-up should consolidate, not stimulate"},
-        {"id": null, "pattern": "CO-*", "reason": "Listening tasks introduce new content; wrap-up should not introduce new material"},
-        {"id": null, "pattern": "CE-*", "reason": "Reading comprehension introduces new text content; inappropriate for consolidation close"},
-        {"id": "GR-01", "pattern": null, "reason": "Mechanical drills are practice tasks; wrap-up is reflection, not drilling"},
-        {"id": "GR-02", "pattern": null, "reason": "Mechanical drills are practice tasks; wrap-up is reflection, not drilling"},
-        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation is a practice task, not appropriate for lesson close"},
-        {"id": "GR-04", "pattern": null, "reason": "Error correction is a practice task, not appropriate for lesson close"},
-        {"id": "GR-05", "pattern": null, "reason": "Conjugation paradigms are drills, not appropriate for lesson close"},
-        {"id": "GR-06", "pattern": null, "reason": "Matching exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "GR-07", "pattern": null, "reason": "Word ordering is a practice task, not appropriate for lesson close"},
-        {"id": "GR-08", "pattern": null, "reason": "Inductive discovery is a presentation task; no new grammar at close"},
-        {"id": "GR-09", "pattern": null, "reason": "Classification exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "EE-04", "pattern": null, "reason": "Extended description requires significant writing time; not appropriate for a short close"},
-        {"id": "EE-05", "pattern": null, "reason": "Narration is a production task requiring extended time; not appropriate for wrap-up"},
-        {"id": "EE-06", "pattern": null, "reason": "Letter/email writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-07", "pattern": null, "reason": "Opinion essay requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-08", "pattern": null, "reason": "Summary writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-09", "pattern": null, "reason": "Register transformation requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-10", "pattern": null, "reason": "Creative writing requires extended time; not appropriate for wrap-up"},
-        {"id": "EE-11", "pattern": null, "reason": "Written mediation requires extended time; not appropriate for wrap-up"},
-        {"id": "VOC-01", "pattern": null, "reason": "Vocabulary lists are presentation tasks; no new vocabulary at close"},
-        {"id": "VOC-02", "pattern": null, "reason": "Vocabulary matching is a practice task, not appropriate for lesson close"},
-        {"id": "VOC-03", "pattern": null, "reason": "Semantic categorisation is a practice task, not appropriate for lesson close"},
-        {"id": "VOC-04", "pattern": null, "reason": "Vocabulary in context tasks involve new texts; not appropriate for wrap-up"},
-        {"id": "VOC-05", "pattern": null, "reason": "Completing sentences with vocabulary is a practice drill, not a reflection task"},
-        {"id": "VOC-06", "pattern": null, "reason": "Synonyms/antonyms exercises are practice tasks, not appropriate for lesson close"},
-        {"id": "VOC-07", "pattern": null, "reason": "Collocations practice is not appropriate for lesson close"}
+        {
+          "id": null,
+          "pattern": "CO-*",
+          "reason": "Listening tasks introduce new content; wrap-up should not introduce new material"
+        }
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "EO-09", "note": "At C2, oral mediation as reflection may be extended: student selects a concept from the lesson and explains its usage constraints to an imaginary learner at a lower level"},
-        {"exerciseTypeId": "EO-08", "note": "Free reflection at C2: student identifies one register decision or pragmatic choice made during production and evaluates whether it was optimal"}
+        {
+          "exerciseTypeId": "EO-09",
+          "note": "At C2, oral mediation as reflection may be extended: student selects a concept from the lesson and explains its usage constraints to an imaginary learner at a lower level"
+        },
+        {
+          "exerciseTypeId": "EO-08",
+          "note": "Free reflection at C2: student identifies one register decision or pragmatic choice made during production and evaluates whether it was optimal"
+        }
       ],
       "minExerciseVariety": 1
     }

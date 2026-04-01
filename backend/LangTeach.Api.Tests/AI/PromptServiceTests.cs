@@ -1563,14 +1563,14 @@ public class PromptServiceTests
     [Fact]
     public void ConversationUserPrompt_WarmUp_B1_ContainsForbiddenReasons()
     {
+        // After cleanup: only CO-* is retained (guards against CO-06 via L1 AdditionalExerciseTypes).
+        // GR-* and EE-* were removed as fully redundant with the validExerciseTypes allowlist.
         var ctx = BaseCtx() with { SectionType = "WarmUp" };
 
         var req = _sut.BuildConversationPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("Grammar drills",
-            because: "WarmUp B1 has forbidden GR-* types; reason must appear as constraint");
-        req.UserPrompt.Should().Contain("Written production",
-            because: "WarmUp B1 has forbidden EE-* types; reason must appear as constraint");
+        req.UserPrompt.Should().Contain("Listening comprehension tasks require audio resources",
+            because: "WarmUp B1 retains only CO-* forbidden; its reason must appear as constraint");
     }
 
     [Fact]
@@ -1624,12 +1624,14 @@ public class PromptServiceTests
     [Fact]
     public void ConversationUserPrompt_WrapUp_B1_ContainsForbiddenReasons()
     {
+        // After cleanup: only CO-* is retained (guards against CO-06 via L1 AdditionalExerciseTypes).
+        // LUD-*, GR-*, EE-*, VOC-* were removed as fully redundant with the validExerciseTypes allowlist.
         var ctx = BaseCtx() with { SectionType = "WrapUp" };
 
         var req = _sut.BuildConversationPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("Games introduce new activity type",
-            because: "WrapUp B1 has forbidden LUD-* types; reason must appear as constraint");
+        req.UserPrompt.Should().Contain("Listening tasks introduce new content",
+            because: "WrapUp B1 retains only CO-* forbidden; its reason must appear as constraint");
     }
 
     [Fact]

@@ -2,188 +2,265 @@
   "sectionType": "presentation",
   "levels": {
     "A1": {
-      "contentTypes": ["grammar", "vocabulary", "reading", "conversation", "noticing-task"],
+      "contentTypes": [
+        "grammar",
+        "vocabulary",
+        "reading",
+        "conversation",
+        "noticing-task"
+      ],
       "guidance": "Isolated vocabulary with L1 translations. Clear grammar paradigms with minimal metalanguage. Max 8-10 new items. L1 support appropriate. Use simple, concrete examples the student can relate to.",
-      "duration": { "min": 8, "max": 12 },
-      "competencies": ["reading", "listening"],
+      "duration": {
+        "min": 8,
+        "max": 12
+      },
+      "competencies": [
+        "reading",
+        "listening"
+      ],
       "scaffolding": "high",
       "interactionPattern": "teacher-led",
-      "validExerciseTypes": ["VOC-01", "VOC-02", "GR-08", "GR-09", "CE-01", "CE-02"],
-      "forbiddenExerciseTypes": [
-        {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is a practice drill, not an input/discovery task"},
-        {"id": "GR-02", "pattern": null, "reason": "Multiple choice tests knowledge, not suitable for first exposure"},
-        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation requires prior command of the form"},
-        {"id": "EO-02", "pattern": null, "reason": "Open role-play is a production task; presentation is input stage"},
-        {"id": "EO-05", "pattern": null, "reason": "Sustained monologue is a production task"},
-        {"id": "EO-06", "pattern": null, "reason": "Debate is a production task"},
-        {"id": "EE-04", "pattern": null, "reason": "Extended description is a production task"},
-        {"id": "EE-05", "pattern": null, "reason": "Narration is a production task"},
-        {"id": "EE-06", "pattern": null, "reason": "Letter/email writing is a production task"},
-        {"id": "EE-07", "pattern": null, "reason": "Opinion essay is a production task"},
-        {"id": "EE-08", "pattern": null, "reason": "Summary requires prior reading comprehension, not for input stage"},
-        {"id": "EE-09", "pattern": null, "reason": "Register transformation requires command of both registers"},
-        {"id": "EE-10", "pattern": null, "reason": "Creative writing is a production task"},
-        {"id": "EE-11", "pattern": null, "reason": "Written mediation is a production task"},
-        {"id": null, "pattern": "LUD-*", "reason": "Games are for practice consolidation, not language input/discovery"}
+      "validExerciseTypes": [
+        "VOC-01",
+        "VOC-02",
+        "GR-08",
+        "GR-09",
+        "CE-01",
+        "CE-02"
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "GR-08", "note": "Minimal metalanguage; elicit the rule with yes/no questions and pointing at the example. Noticing tasks only at A1.2; not appropriate at A1.1 where the grammar system is not yet sufficiently populated for inductive discovery"},
-        {"exerciseTypeId": "VOC-01", "note": "Include L1 translations for all items; maximum 8-10 new words per lesson"}
+        {
+          "exerciseTypeId": "GR-08",
+          "note": "Minimal metalanguage; elicit the rule with yes/no questions and pointing at the example. Noticing tasks only at A1.2; not appropriate at A1.1 where the grammar system is not yet sufficiently populated for inductive discovery"
+        },
+        {
+          "exerciseTypeId": "VOC-01",
+          "note": "Include L1 translations for all items; maximum 8-10 new words per lesson"
+        }
       ],
       "minExerciseVariety": 1
     },
     "A2": {
-      "contentTypes": ["grammar", "vocabulary", "reading", "conversation", "noticing-task"],
+      "contentTypes": [
+        "grammar",
+        "vocabulary",
+        "reading",
+        "conversation",
+        "noticing-task"
+      ],
       "guidance": "Vocabulary in short contextual sentences. Grammar through noticing tasks: present examples, elicit the rule. Short authentic-style texts (50-80 words) as input.",
-      "duration": { "min": 8, "max": 12 },
-      "competencies": ["reading", "listening"],
+      "duration": {
+        "min": 8,
+        "max": 12
+      },
+      "competencies": [
+        "reading",
+        "listening"
+      ],
       "scaffolding": "medium",
       "interactionPattern": "teacher-led",
-      "validExerciseTypes": ["VOC-01", "VOC-02", "VOC-04", "GR-08", "GR-09", "CE-01", "CE-02", "CE-06"],
-      "forbiddenExerciseTypes": [
-        {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is a practice drill, not an input/discovery task"},
-        {"id": "GR-02", "pattern": null, "reason": "Multiple choice tests knowledge, not suitable for first exposure"},
-        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation requires prior command of the form"},
-        {"id": "EO-02", "pattern": null, "reason": "Open role-play is a production task; presentation is input stage"},
-        {"id": "EO-05", "pattern": null, "reason": "Sustained monologue is a production task"},
-        {"id": "EO-06", "pattern": null, "reason": "Debate is a production task"},
-        {"id": "EE-04", "pattern": null, "reason": "Extended description is a production task"},
-        {"id": "EE-05", "pattern": null, "reason": "Narration is a production task"},
-        {"id": "EE-06", "pattern": null, "reason": "Letter/email writing is a production task"},
-        {"id": "EE-07", "pattern": null, "reason": "Opinion essay is a production task"},
-        {"id": "EE-08", "pattern": null, "reason": "Summary requires prior reading comprehension, not for input stage"},
-        {"id": "EE-09", "pattern": null, "reason": "Register transformation requires command of both registers"},
-        {"id": "EE-10", "pattern": null, "reason": "Creative writing is a production task"},
-        {"id": "EE-11", "pattern": null, "reason": "Written mediation is a production task"},
-        {"id": null, "pattern": "LUD-*", "reason": "Games are for practice consolidation, not language input/discovery"}
+      "validExerciseTypes": [
+        "VOC-01",
+        "VOC-02",
+        "VOC-04",
+        "GR-08",
+        "GR-09",
+        "CE-01",
+        "CE-02",
+        "CE-06"
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "GR-08", "note": "Present 2-3 clear examples; ask 'Que notas?' before explaining the rule"},
-        {"exerciseTypeId": "CE-06", "note": "Use gap-fill cloze only with a word bank at A2; gapless cloze is B1+"}
+        {
+          "exerciseTypeId": "GR-08",
+          "note": "Present 2-3 clear examples; ask 'Que notas?' before explaining the rule"
+        },
+        {
+          "exerciseTypeId": "CE-06",
+          "note": "Use gap-fill cloze only with a word bank at A2; gapless cloze is B1+"
+        }
       ],
       "minExerciseVariety": 1
     },
     "B1": {
-      "contentTypes": ["grammar", "vocabulary", "reading", "conversation", "noticing-task"],
+      "contentTypes": [
+        "grammar",
+        "vocabulary",
+        "reading",
+        "conversation",
+        "noticing-task"
+      ],
       "guidance": "Introduce new language through authentic-style excerpts (100-150 words). When the lesson includes a grammar point, use guided discovery: present data, ask the student to formulate the rule. Include typical L1 interference notes. When no grammar point is targeted, let the text or content carry the input.",
-      "duration": { "min": 10, "max": 15 },
-      "competencies": ["reading", "listening"],
+      "duration": {
+        "min": 10,
+        "max": 15
+      },
+      "competencies": [
+        "reading",
+        "listening"
+      ],
       "scaffolding": "medium",
       "interactionPattern": "teacher-guided",
-      "validExerciseTypes": ["VOC-04", "VOC-07", "GR-08", "GR-09", "GR-10", "CE-01", "CE-02", "CE-03", "CE-04", "CE-06"],
-      "forbiddenExerciseTypes": [
-        {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is a practice drill, not an input/discovery task"},
-        {"id": "GR-02", "pattern": null, "reason": "Multiple choice tests knowledge, not suitable for first exposure"},
-        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation requires prior command of the form"},
-        {"id": "EO-02", "pattern": null, "reason": "Open role-play is a production task; presentation is input stage"},
-        {"id": "EO-05", "pattern": null, "reason": "Sustained monologue is a production task"},
-        {"id": "EO-06", "pattern": null, "reason": "Debate is a production task"},
-        {"id": "EE-04", "pattern": null, "reason": "Extended description is a production task"},
-        {"id": "EE-05", "pattern": null, "reason": "Narration is a production task"},
-        {"id": "EE-06", "pattern": null, "reason": "Letter/email writing is a production task"},
-        {"id": "EE-07", "pattern": null, "reason": "Opinion essay is a production task"},
-        {"id": "EE-08", "pattern": null, "reason": "Summary requires prior reading comprehension, not for input stage"},
-        {"id": "EE-09", "pattern": null, "reason": "Register transformation requires command of both registers"},
-        {"id": "EE-10", "pattern": null, "reason": "Creative writing is a production task"},
-        {"id": "EE-11", "pattern": null, "reason": "Written mediation is a production task"},
-        {"id": null, "pattern": "LUD-*", "reason": "Games are for practice consolidation, not language input/discovery"}
+      "validExerciseTypes": [
+        "VOC-04",
+        "VOC-07",
+        "GR-08",
+        "GR-09",
+        "GR-10",
+        "CE-01",
+        "CE-02",
+        "CE-03",
+        "CE-04",
+        "CE-06"
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "GR-10", "note": "Highlight or underline the target forms in the source text before asking student to extract and organise them"},
-        {"exerciseTypeId": "GR-08", "note": "Ask student to formulate the rule in their own words before confirming; include L1 interference notes"}
+        {
+          "exerciseTypeId": "GR-10",
+          "note": "Highlight or underline the target forms in the source text before asking student to extract and organise them"
+        },
+        {
+          "exerciseTypeId": "GR-08",
+          "note": "Ask student to formulate the rule in their own words before confirming; include L1 interference notes"
+        }
       ],
       "minExerciseVariety": 1
     },
     "B2": {
-      "contentTypes": ["grammar", "vocabulary", "reading", "conversation", "noticing-task"],
+      "contentTypes": [
+        "grammar",
+        "vocabulary",
+        "reading",
+        "conversation",
+        "noticing-task"
+      ],
       "guidance": "Register-appropriate authentic texts as the primary input vehicle. When the lesson targets grammar, focus on nuance: indicative vs subjunctive, aspect, discourse markers. Student formulates rules from data. When grammar is not the focus, the text serves vocabulary expansion and comprehension.",
-      "duration": { "min": 10, "max": 15 },
-      "competencies": ["reading", "listening"],
+      "duration": {
+        "min": 10,
+        "max": 15
+      },
+      "competencies": [
+        "reading",
+        "listening"
+      ],
       "scaffolding": "low",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["VOC-04", "VOC-07", "VOC-10", "GR-08", "GR-10", "CE-01", "CE-02", "CE-03", "CE-04", "CE-05", "CE-06", "CE-07", "CE-08"],
-      "forbiddenExerciseTypes": [
-        {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is a practice drill, not an input/discovery task"},
-        {"id": "GR-02", "pattern": null, "reason": "Multiple choice tests knowledge, not suitable for first exposure"},
-        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation requires prior command of the form"},
-        {"id": "EO-02", "pattern": null, "reason": "Open role-play is a production task; presentation is input stage"},
-        {"id": "EO-05", "pattern": null, "reason": "Sustained monologue is a production task"},
-        {"id": "EO-06", "pattern": null, "reason": "Debate is a production task"},
-        {"id": "EE-04", "pattern": null, "reason": "Extended description is a production task"},
-        {"id": "EE-05", "pattern": null, "reason": "Narration is a production task"},
-        {"id": "EE-06", "pattern": null, "reason": "Letter/email writing is a production task"},
-        {"id": "EE-07", "pattern": null, "reason": "Opinion essay is a production task"},
-        {"id": "EE-08", "pattern": null, "reason": "Summary requires prior reading comprehension, not for input stage"},
-        {"id": "EE-09", "pattern": null, "reason": "Register transformation requires command of both registers"},
-        {"id": "EE-10", "pattern": null, "reason": "Creative writing is a production task"},
-        {"id": "EE-11", "pattern": null, "reason": "Written mediation is a production task"},
-        {"id": null, "pattern": "LUD-*", "reason": "Games are for practice consolidation, not language input/discovery"}
+      "validExerciseTypes": [
+        "VOC-04",
+        "VOC-07",
+        "VOC-10",
+        "GR-08",
+        "GR-10",
+        "CE-01",
+        "CE-02",
+        "CE-03",
+        "CE-04",
+        "CE-05",
+        "CE-06",
+        "CE-07",
+        "CE-08"
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "CE-08", "note": "Use register/intent identification to feed discussion of pragmatic nuance; connect to grammar point"},
-        {"exerciseTypeId": "VOC-10", "note": "Present idioms in authentic context only; explain cultural connotation, not just meaning"}
+        {
+          "exerciseTypeId": "CE-08",
+          "note": "Use register/intent identification to feed discussion of pragmatic nuance; connect to grammar point"
+        },
+        {
+          "exerciseTypeId": "VOC-10",
+          "note": "Present idioms in authentic context only; explain cultural connotation, not just meaning"
+        }
       ],
       "minExerciseVariety": 1
     },
     "C1": {
-      "contentTypes": ["grammar", "vocabulary", "reading", "conversation", "noticing-task"],
+      "contentTypes": [
+        "grammar",
+        "vocabulary",
+        "reading",
+        "conversation",
+        "noticing-task"
+      ],
       "guidance": "Collocations, idioms, pragmatic functions, register shifts. Ungraded authentic texts. Grammar: pragmatic and sociolinguistic nuance. Student analyses and categorises independently.",
-      "duration": { "min": 10, "max": 15 },
-      "competencies": ["reading", "listening"],
+      "duration": {
+        "min": 10,
+        "max": 15
+      },
+      "competencies": [
+        "reading",
+        "listening"
+      ],
       "scaffolding": "none",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["VOC-07", "VOC-10", "VOC-11", "GR-08", "GR-10", "CE-01", "CE-02", "CE-03", "CE-04", "CE-05", "CE-06", "CE-07", "CE-08", "CE-09"],
-      "forbiddenExerciseTypes": [
-        {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is a practice drill, not an input/discovery task"},
-        {"id": "GR-02", "pattern": null, "reason": "Multiple choice tests knowledge, not suitable for first exposure"},
-        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation requires prior command of the form"},
-        {"id": "EO-02", "pattern": null, "reason": "Open role-play is a production task; presentation is input stage"},
-        {"id": "EO-05", "pattern": null, "reason": "Sustained monologue is a production task"},
-        {"id": "EO-06", "pattern": null, "reason": "Debate is a production task"},
-        {"id": "EE-04", "pattern": null, "reason": "Extended description is a production task"},
-        {"id": "EE-05", "pattern": null, "reason": "Narration is a production task"},
-        {"id": "EE-06", "pattern": null, "reason": "Letter/email writing is a production task"},
-        {"id": "EE-07", "pattern": null, "reason": "Opinion essay is a production task"},
-        {"id": "EE-08", "pattern": null, "reason": "Summary requires prior reading comprehension, not for input stage"},
-        {"id": "EE-09", "pattern": null, "reason": "Register transformation requires command of both registers"},
-        {"id": "EE-10", "pattern": null, "reason": "Creative writing is a production task"},
-        {"id": "EE-11", "pattern": null, "reason": "Written mediation is a production task"},
-        {"id": null, "pattern": "LUD-*", "reason": "Games are for practice consolidation, not language input/discovery"}
+      "validExerciseTypes": [
+        "VOC-07",
+        "VOC-10",
+        "VOC-11",
+        "GR-08",
+        "GR-10",
+        "CE-01",
+        "CE-02",
+        "CE-03",
+        "CE-04",
+        "CE-05",
+        "CE-06",
+        "CE-07",
+        "CE-08",
+        "CE-09"
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "CE-09", "note": "Critical reading feeds metalinguistic analysis; ask student to evaluate the author's argumentation strategy"},
-        {"exerciseTypeId": "VOC-11", "note": "Word formation at C1 includes derivation chains and productivity rules, not just memorised pairs"}
+        {
+          "exerciseTypeId": "CE-09",
+          "note": "Critical reading feeds metalinguistic analysis; ask student to evaluate the author's argumentation strategy"
+        },
+        {
+          "exerciseTypeId": "VOC-11",
+          "note": "Word formation at C1 includes derivation chains and productivity rules, not just memorised pairs"
+        }
       ],
       "minExerciseVariety": 1
     },
     "C2": {
-      "contentTypes": ["grammar", "vocabulary", "reading", "conversation", "noticing-task"],
+      "contentTypes": [
+        "grammar",
+        "vocabulary",
+        "reading",
+        "conversation",
+        "noticing-task"
+      ],
       "guidance": "Collocations, idioms, pragmatic functions at near-native level. Authentic texts without grading. Mediation, paraphrase, register transfer as input tasks. Student leads analysis.",
-      "duration": { "min": 10, "max": 15 },
-      "competencies": ["reading", "listening"],
+      "duration": {
+        "min": 10,
+        "max": 15
+      },
+      "competencies": [
+        "reading",
+        "listening"
+      ],
       "scaffolding": "none",
       "interactionPattern": "student-led",
-      "validExerciseTypes": ["VOC-07", "VOC-10", "VOC-11", "GR-08", "GR-10", "CE-01", "CE-02", "CE-03", "CE-04", "CE-05", "CE-06", "CE-07", "CE-08", "CE-09"],
-      "forbiddenExerciseTypes": [
-        {"id": "GR-01", "pattern": null, "reason": "Fill-in-blank is a practice drill, not an input/discovery task"},
-        {"id": "GR-02", "pattern": null, "reason": "Multiple choice tests knowledge, not suitable for first exposure"},
-        {"id": "GR-03", "pattern": null, "reason": "Sentence transformation requires prior command of the form"},
-        {"id": "EO-02", "pattern": null, "reason": "Open role-play is a production task; presentation is input stage"},
-        {"id": "EO-05", "pattern": null, "reason": "Sustained monologue is a production task"},
-        {"id": "EO-06", "pattern": null, "reason": "Debate is a production task"},
-        {"id": "EE-04", "pattern": null, "reason": "Extended description is a production task"},
-        {"id": "EE-05", "pattern": null, "reason": "Narration is a production task"},
-        {"id": "EE-06", "pattern": null, "reason": "Letter/email writing is a production task"},
-        {"id": "EE-07", "pattern": null, "reason": "Opinion essay is a production task"},
-        {"id": "EE-08", "pattern": null, "reason": "Summary requires prior reading comprehension, not for input stage"},
-        {"id": "EE-09", "pattern": null, "reason": "Register transformation requires command of both registers"},
-        {"id": "EE-10", "pattern": null, "reason": "Creative writing is a production task"},
-        {"id": "EE-11", "pattern": null, "reason": "Written mediation is a production task"},
-        {"id": null, "pattern": "LUD-*", "reason": "Games are for practice consolidation, not language input/discovery"}
+      "validExerciseTypes": [
+        "VOC-07",
+        "VOC-10",
+        "VOC-11",
+        "GR-08",
+        "GR-10",
+        "CE-01",
+        "CE-02",
+        "CE-03",
+        "CE-04",
+        "CE-05",
+        "CE-06",
+        "CE-07",
+        "CE-08",
+        "CE-09"
       ],
       "levelSpecificNotes": [
-        {"exerciseTypeId": "CE-05", "note": "Ordering paragraphs at C2 should use ungraded authentic fragments; student justifies coherence decisions"},
-        {"exerciseTypeId": "GR-08", "note": "At C2, noticing tasks focus on pragmatic and sociolinguistic nuance (register shifts, implicature); not morphosyntax"}
+        {
+          "exerciseTypeId": "CE-05",
+          "note": "Ordering paragraphs at C2 should use ungraded authentic fragments; student justifies coherence decisions"
+        },
+        {
+          "exerciseTypeId": "GR-08",
+          "note": "At C2, noticing tasks focus on pragmatic and sociolinguistic nuance (register shifts, implicature); not morphosyntax"
+        }
       ],
       "minExerciseVariety": 1
     }
