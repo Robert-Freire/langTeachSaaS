@@ -230,6 +230,20 @@ export function isConversationContent(v: unknown): v is ConversationContent {
   return typeof v === 'object' && v !== null && 'scenarios' in v && Array.isArray((v as ConversationContent).scenarios)
 }
 
+const VALID_READING_QUESTION_TYPES = new Set<ReadingQuestion['type']>(['factual', 'inferential', 'vocabulary'])
+
+function coerceReadingQuestion(q: unknown): ReadingQuestion {
+  const obj = (typeof q === 'object' && q !== null ? q : {}) as Record<string, unknown>
+  const rawType = String(obj.type ?? '')
+  return {
+    question: String(obj.question ?? ''),
+    answer: String(obj.answer ?? ''),
+    type: VALID_READING_QUESTION_TYPES.has(rawType as ReadingQuestion['type'])
+      ? (rawType as ReadingQuestion['type'])
+      : 'factual',
+  }
+}
+
 export function isReadingContent(v: unknown): v is ReadingContent {
   return typeof v === 'object' && v !== null && 'passage' in v
 }
@@ -474,7 +488,7 @@ export function coerceReadingContent(v: unknown): ReadingContent | null {
     // Fill missing arrays
     return {
       passage: String(obj.passage ?? ''),
-      comprehensionQuestions: Array.isArray(obj.comprehensionQuestions) ? obj.comprehensionQuestions as ReadingQuestion[] : [],
+      comprehensionQuestions: Array.isArray(obj.comprehensionQuestions) ? obj.comprehensionQuestions.map(coerceReadingQuestion) : [],
       vocabularyHighlights: Array.isArray(obj.vocabularyHighlights) ? obj.vocabularyHighlights as ReadingVocabHighlight[] : [],
     }
   }
@@ -487,7 +501,7 @@ export function coerceReadingContent(v: unknown): ReadingContent | null {
   if (typeof obj.passage === 'string') {
     return {
       passage: obj.passage,
-      comprehensionQuestions: Array.isArray(obj.comprehensionQuestions) ? obj.comprehensionQuestions as ReadingQuestion[] : [],
+      comprehensionQuestions: Array.isArray(obj.comprehensionQuestions) ? obj.comprehensionQuestions.map(coerceReadingQuestion) : [],
       vocabularyHighlights: Array.isArray(obj.vocabularyHighlights) ? obj.vocabularyHighlights as ReadingVocabHighlight[] : [],
     }
   }
