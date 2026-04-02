@@ -63,6 +63,7 @@ GitHub Issues is the single source of truth. Run `python3 .claude/scripts/task-p
 - **If milestone doesn't match active sprint**: STOP and ask the user.
 - **Self-assign immediately** when picking: `gh issue edit <N> --add-assignee "@me"`
 - **At most one `area:frontend` task in flight at a time.** Docker frontend runs on a fixed port (5173); concurrent frontend worktrees conflict. If a frontend task is already assigned, pick a backend or config task instead.
+- **Chrome extension for UI work:** When implementing frontend UI, launch Claude Code with `claude --chrome` to get live visual feedback via the Claude in Chrome extension. This improves first-pass output quality. It does NOT replace Playwright e2e tests or the `review-ui` agent (which runs before every push regardless). See `docs/dev-workflow.md` for setup steps.
 
 For issue creation, editing, board management, and labels: see `.claude/procedures/issue-management.md`.
 
