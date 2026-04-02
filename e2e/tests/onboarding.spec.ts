@@ -176,10 +176,11 @@ test.describe.serial('Onboarding wizard', () => {
     await page.getByRole('option', { name: 'Catalan' }).click()
     await page.getByTestId('onboarding-next').click()
 
-    // Should not show a validation error
+    // Step 2 should complete successfully — verify step 3 is shown
+    await expect(page.getByTestId('onboarding-step-3')).toBeVisible({ timeout: UI_TIMEOUT })
     await expect(page.getByTestId('step2-error')).not.toBeVisible()
 
-    // Should advance to step 3 or dashboard (skip step 3)
+    // Skip step 3 and land on dashboard
     await page.getByTestId('onboarding-skip').click()
     await page.waitForURL('**/', { timeout: NAV_TIMEOUT })
     await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: UI_TIMEOUT })
