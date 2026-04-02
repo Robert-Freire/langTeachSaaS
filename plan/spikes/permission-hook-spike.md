@@ -209,6 +209,64 @@ that involves a Bash or file write tool. Then check `~/.claude/logs/permission-r
 
 ---
 
+## 6. Telegram Setup (Recommended Path)
+
+Telegram via Claude Code's native Channels feature is the easiest phone-based approval
+path. No relay server, no ngrok, no Twilio account -- config only.
+
+### One-time setup (2 minutes)
+
+**Step 1: Create a Telegram bot**
+
+1. Open Telegram, search for `@BotFather`
+2. Send `/newbot` and follow the prompts (pick a name and username)
+3. BotFather returns a bot token like `7123456789:AAF...` -- save it
+4. Start a chat with your new bot (tap "Start") so it can message you
+5. Message `@userinfobot` to get your personal chat ID (a number like `123456789`)
+
+**Step 2: Add to `~/.claude/settings.json`**
+
+```json
+{
+  "mcpServers": {
+    "claude-channels": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/claude-channels"],
+      "env": {
+        "CLAUDE_CHANNELS_TELEGRAM_BOT_TOKEN": "your-bot-token",
+        "CLAUDE_CHANNELS_TELEGRAM_CHAT_ID": "your-chat-id"
+      }
+    }
+  }
+}
+```
+
+That's it. Restart Claude Code for the MCP server to load.
+
+### How approval works at runtime
+
+When Claude hits a permission prompt, your phone receives a Telegram message:
+
+```
+Claude wants to run Bash:
+git push --force origin main
+
+Reply: yes a1b2c / no a1b2c
+```
+
+Reply `yes a1b2c` to allow or `no a1b2c` to deny. Request IDs are 5 lowercase letters
+(no `l` to avoid phone OCR errors). Only your registered chat ID can approve -- sender
+gating is built in.
+
+### Notes
+- Channels is a first-class MCP server maintained by Anthropic (`@anthropic-ai/claude-channels`)
+- iMessage works the same way on Mac (different env keys); not available on Windows
+- Discord is also supported if you prefer it over Telegram
+- For our workflow: scope the matcher to destructive ops only (force push, reset --hard)
+  so routine Bash calls don't spam your phone
+
+---
+
 ## References
 - Official hooks docs: `https://docs.anthropic.com/en/docs/claude-code/hooks`
 - Channels reference: `https://docs.anthropic.com/en/docs/claude-code/channels`
