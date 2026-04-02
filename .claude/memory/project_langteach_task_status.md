@@ -80,7 +80,7 @@ Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Wor
   - #317 DONE — PR #389 merged (4 new Teacher QA personas: Sophie A2 FR, Ricardo C1 PT, Nadia B2 AR, Hans A1 DE; full run now covers 9 personas; SKILL.md updated with persona descriptions, run commands, curriculum JSON pointers)
   - #273 DONE — PR #396 merged (guided-writing content type: JSON schema, guidedWriting block in all 6 CEFR level files, GuidedWriting enum + kebab-case, GetGuidedWritingGuidance on PedagogyConfigService, BuildGuidedWritingPrompt with no hardcoded level conditions, section profiles updated, GuidedWritingRenderer with live word count + hidden model answer, streaming parser, 18 backend + 15 frontend tests)
   - #379 B2 error correction explanations truncated (P2, from 2026-03-29 QA run)
-- Solo Whiteboard: AFTER PEDAGOGICAL QUALITY (5 sub-issues from #174)
+- Solo Whiteboard: AFTER LISTENING COMPREHENSION (5 sub-issues from #174, milestone #7)
 - Post-Class Tracking: AFTER WHITEBOARD — milestone #12, epic #391. Text-only session log (planned/done/homework/observations), student history view, profile update from notes, Excel import. Audio deferred to next sprint. Informed by Jordi's actual Excel (35 students, `feedback/raw/2026-03-29-jordi-excel-alumnos-actuales.xlsx`).
 - Adaptive Replanning: AFTER POST-CLASS TRACKING (audio input, post-class reflections, auto-difficulty updates, course replanning, progress dashboard)
 - Group Classes: FUTURE (#146, #147)
