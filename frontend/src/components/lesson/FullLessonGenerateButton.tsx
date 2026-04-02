@@ -19,6 +19,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { LessonSection } from '../../api/lessons'
 import type { ContentBlockType } from '../../types/contentTypes'
 
+// NOTE: These per-template task maps are intentionally maintained here as frontend-only config.
+// The backend template-overrides.json captures `preferredContentType` for selected sections,
+// but the full-lesson generation flow is a UI concern: this component drives which content
+// type to stream per section. Deriving these from the backend config would require an API
+// change to expose template section defaults. Until then, keep this in sync with
+// data/pedagogy/template-overrides.json (see `preferredContentType` fields per section).
 const SECTION_TASK_MAP: Record<string, ContentBlockType> = {
   WarmUp: 'conversation',
   Presentation: 'grammar',
@@ -27,13 +33,42 @@ const SECTION_TASK_MAP: Record<string, ContentBlockType> = {
   WrapUp: 'conversation',
 }
 
-// Exam prep uses written tasks for WarmUp (briefing) and Production (written exam task)
+// Exam Prep: WarmUp/WrapUp are briefing/self-assessment conversations; Production is a written exam task
+// (template-overrides.json: practice.preferredContentType="exercises", production.preferredContentType="exercises")
 const EXAM_PREP_SECTION_TASK_MAP: Record<string, ContentBlockType> = {
-  WarmUp: 'free-text',
+  WarmUp: 'conversation',
   Presentation: 'grammar',
   Practice: 'exercises',
-  Production: 'free-text',
-  WrapUp: 'free-text',
+  Production: 'exercises',
+  WrapUp: 'conversation',
+}
+
+// Reading & Comprehension: Presentation must contain the reading passage
+// (template-overrides.json: presentation.preferredContentType="reading")
+const READING_COMPREHENSION_SECTION_TASK_MAP: Record<string, ContentBlockType> = {
+  WarmUp: 'conversation',
+  Presentation: 'reading',
+  Practice: 'exercises',
+  Production: 'conversation',
+  WrapUp: 'conversation',
+}
+
+// Writing Skills: Production must be an independent writing task
+// (guided-writing; template-overrides.json production section has EE- writing exercise priority types)
+const WRITING_SKILLS_SECTION_TASK_MAP: Record<string, ContentBlockType> = {
+  WarmUp: 'conversation',
+  Presentation: 'grammar',
+  Practice: 'exercises',
+  Production: 'guided-writing',
+  WrapUp: 'conversation',
+}
+
+// Map from lowercase template name to its section task map.
+// Keys must match the `name` field in data/pedagogy/template-overrides.json (lowercased).
+const TEMPLATE_TASK_MAPS: Record<string, Record<string, ContentBlockType>> = {
+  'exam prep': EXAM_PREP_SECTION_TASK_MAP,
+  'reading & comprehension': READING_COMPREHENSION_SECTION_TASK_MAP,
+  'writing skills': WRITING_SKILLS_SECTION_TASK_MAP,
 }
 
 const SECTION_ORDER = ['WarmUp', 'Presentation', 'Practice', 'Production', 'WrapUp']
@@ -107,9 +142,12 @@ export function FullLessonGenerateButton({
 
     const errors: string[] = []
 
-    const taskMap = lessonContext.templateName?.toLowerCase() === 'exam prep'
-      ? EXAM_PREP_SECTION_TASK_MAP
-      : SECTION_TASK_MAP
+    const tName = lessonContext.templateName?.toLowerCase() ?? ''
+    const resolvedMap = tName ? TEMPLATE_TASK_MAPS[tName] : undefined
+    if (tName && !resolvedMap) {
+      console.warn(`FullLessonGenerateButton: unknown template "${lessonContext.templateName}", using default task map`)
+    }
+    const taskMap = resolvedMap ?? SECTION_TASK_MAP
 
     await Promise.allSettled(activeSections.map(async (sectionType) => {
       const section = sections.find(s => s.sectionType === sectionType)!

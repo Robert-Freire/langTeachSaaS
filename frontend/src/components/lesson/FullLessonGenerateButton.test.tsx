@@ -195,7 +195,7 @@ describe('FullLessonGenerateButton', () => {
     expect(new Set(blockTypes)).toEqual(new Set(['conversation', 'grammar', 'exercises']))
   })
 
-  it('exam-prep template uses free-text for WarmUp, Production, WrapUp', async () => {
+  it('exam-prep template uses conversation for WarmUp/WrapUp and exercises for Production', async () => {
     const user = userEvent.setup()
     const onBlockSaved = vi.fn()
     const streamMock = vi.mocked(streamText)
@@ -225,11 +225,11 @@ describe('FullLessonGenerateButton', () => {
       return { section: block.lessonSectionId, type: block.blockType }
     })
     const bySection = Object.fromEntries(calls.map(c => [c.section, c.type]))
-    expect(bySection['s1']).toBe('free-text')   // WarmUp
+    expect(bySection['s1']).toBe('conversation') // WarmUp: briefing conversation
     expect(bySection['s2']).toBe('grammar')      // Presentation
     expect(bySection['s3']).toBe('exercises')    // Practice
-    expect(bySection['s4']).toBe('free-text')    // Production
-    expect(bySection['s5']).toBe('free-text')    // WrapUp
+    expect(bySection['s4']).toBe('exercises')    // Production: written exam task
+    expect(bySection['s5']).toBe('conversation') // WrapUp: self-assessment conversation
   })
 
   it('all sections show active status simultaneously during generation', async () => {
@@ -371,6 +371,94 @@ describe('FullLessonGenerateButton', () => {
     expect(calledSectionTypes).toContain('Practice')
     expect(calledSectionTypes).toContain('Production')
     expect(calledSectionTypes).toContain('WrapUp')
+  })
+
+  it('Reading & Comprehension template: Presentation uses reading, Practice uses exercises', async () => {
+    const user = userEvent.setup()
+    const streamMock = vi.mocked(streamText)
+    streamMock.mockResolvedValue('{}')
+    vi.mocked(generateApi.saveContentBlock).mockImplementation((_lessonId, req) =>
+      Promise.resolve(makeBlock(req.lessonSectionId!, req.blockType as string))
+    )
+
+    renderWithQuery(
+      <FullLessonGenerateButton
+        lessonId="lesson-1"
+        sections={SECTIONS}
+        lessonContext={{ ...LESSON_CONTEXT, templateName: 'Reading & Comprehension' }}
+        onBlockSaved={vi.fn()}
+      />
+    )
+    await user.click(screen.getByTestId('generate-full-lesson-btn'))
+    await user.click(screen.getByTestId('confirm-generate-full-lesson'))
+    await waitFor(() => expect(streamMock).toHaveBeenCalledTimes(5), { timeout: 3000 })
+
+    const callMap = Object.fromEntries(
+      streamMock.mock.calls.map((c) => [(c[1] as { sectionType?: string }).sectionType, c[0]])
+    )
+    expect(callMap['Presentation']).toBe('reading')
+    expect(callMap['Practice']).toBe('exercises')
+    expect(callMap['WarmUp']).toBe('conversation')
+    expect(callMap['Production']).toBe('conversation')
+    expect(callMap['WrapUp']).toBe('conversation')
+  })
+
+  it('Writing Skills template: Production uses guided-writing', async () => {
+    const user = userEvent.setup()
+    const streamMock = vi.mocked(streamText)
+    streamMock.mockResolvedValue('{}')
+    vi.mocked(generateApi.saveContentBlock).mockImplementation((_lessonId, req) =>
+      Promise.resolve(makeBlock(req.lessonSectionId!, req.blockType as string))
+    )
+
+    renderWithQuery(
+      <FullLessonGenerateButton
+        lessonId="lesson-1"
+        sections={SECTIONS}
+        lessonContext={{ ...LESSON_CONTEXT, templateName: 'Writing Skills' }}
+        onBlockSaved={vi.fn()}
+      />
+    )
+    await user.click(screen.getByTestId('generate-full-lesson-btn'))
+    await user.click(screen.getByTestId('confirm-generate-full-lesson'))
+    await waitFor(() => expect(streamMock).toHaveBeenCalledTimes(5), { timeout: 3000 })
+
+    const callMap = Object.fromEntries(
+      streamMock.mock.calls.map((c) => [(c[1] as { sectionType?: string }).sectionType, c[0]])
+    )
+    expect(callMap['Production']).toBe('guided-writing')
+    expect(callMap['Practice']).toBe('exercises')
+    expect(callMap['WarmUp']).toBe('conversation')
+    expect(callMap['WrapUp']).toBe('conversation')
+  })
+
+  it('Exam Prep template: WarmUp/WrapUp use conversation, Production uses exercises', async () => {
+    const user = userEvent.setup()
+    const streamMock = vi.mocked(streamText)
+    streamMock.mockResolvedValue('{}')
+    vi.mocked(generateApi.saveContentBlock).mockImplementation((_lessonId, req) =>
+      Promise.resolve(makeBlock(req.lessonSectionId!, req.blockType as string))
+    )
+
+    renderWithQuery(
+      <FullLessonGenerateButton
+        lessonId="lesson-1"
+        sections={SECTIONS}
+        lessonContext={{ ...LESSON_CONTEXT, templateName: 'Exam Prep' }}
+        onBlockSaved={vi.fn()}
+      />
+    )
+    await user.click(screen.getByTestId('generate-full-lesson-btn'))
+    await user.click(screen.getByTestId('confirm-generate-full-lesson'))
+    await waitFor(() => expect(streamMock).toHaveBeenCalledTimes(5), { timeout: 3000 })
+
+    const callMap = Object.fromEntries(
+      streamMock.mock.calls.map((c) => [(c[1] as { sectionType?: string }).sectionType, c[0]])
+    )
+    expect(callMap['WarmUp']).toBe('conversation')
+    expect(callMap['WrapUp']).toBe('conversation')
+    expect(callMap['Production']).toBe('exercises')
+    expect(callMap['Practice']).toBe('exercises')
   })
 
   it('error in one section does not stop other sections from completing', async () => {

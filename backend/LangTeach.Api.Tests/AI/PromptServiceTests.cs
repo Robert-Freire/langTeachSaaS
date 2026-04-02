@@ -2366,4 +2366,94 @@ public class PromptServiceTests
         req.UserPrompt.Should().NotContain("L1 CONTRASTIVE NOTE",
             because: "no contrastive pattern matches 'preterite vs imperfect' for Italian");
     }
+
+    // --- Template name propagation to debug logs ---
+
+    [Theory]
+    [InlineData("Reading & Comprehension")]
+    [InlineData("Writing Skills")]
+    [InlineData("Exam Prep")]
+    public void BuildVocabularyPrompt_LogsTemplateName(string templateName)
+    {
+        var log = new FakeLogger<PromptService>();
+        var sut = new PromptService(ProfileService, PedagogyService, log, NoOpSchemas);
+        var ctx = BaseCtx() with { TemplateName = templateName };
+
+        sut.BuildVocabularyPrompt(ctx);
+
+        log.Entries.Should().Contain(e =>
+            e.Message.Contains($"template={templateName}"),
+            because: "BuildVocabularyPrompt must log the template name");
+    }
+
+    [Theory]
+    [InlineData("Reading & Comprehension")]
+    [InlineData("Writing Skills")]
+    [InlineData("Exam Prep")]
+    public void BuildExercisesPrompt_LogsTemplateName(string templateName)
+    {
+        var log = new FakeLogger<PromptService>();
+        var sut = new PromptService(ProfileService, PedagogyService, log, NoOpSchemas);
+        var ctx = BaseCtx() with { TemplateName = templateName, SectionType = "practice" };
+
+        sut.BuildExercisesPrompt(ctx);
+
+        log.Entries.Should().Contain(e =>
+            e.Message.Contains($"template={templateName}"),
+            because: "BuildExercisesPrompt must log the template name");
+    }
+
+    [Theory]
+    [InlineData("Reading & Comprehension")]
+    public void BuildReadingPrompt_LogsTemplateName(string templateName)
+    {
+        var log = new FakeLogger<PromptService>();
+        var sut = new PromptService(ProfileService, PedagogyService, log, NoOpSchemas);
+        var ctx = BaseCtx() with { TemplateName = templateName, SectionType = "presentation" };
+
+        sut.BuildReadingPrompt(ctx);
+
+        log.Entries.Should().Contain(e =>
+            e.Message.Contains($"template={templateName}"),
+            because: "BuildReadingPrompt must log the template name");
+    }
+
+    // --- Writing Skills template: guided-writing prompt structure ---
+
+    [Fact]
+    public void BuildGuidedWritingPrompt_WritingSkillsTemplate_LogsTemplateName()
+    {
+        var log = new FakeLogger<PromptService>();
+        var sut = new PromptService(ProfileService, PedagogyService, log, NoOpSchemas);
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Writing Skills",
+            SectionType = "production",
+            CefrLevel = "B1"
+        };
+
+        sut.BuildGuidedWritingPrompt(ctx);
+
+        log.Entries.Should().Contain(e =>
+            e.Message.Contains("template=Writing Skills"),
+            because: "BuildGuidedWritingPrompt must log the active template name for debugging");
+    }
+
+    [Fact]
+    public void BuildGuidedWritingPrompt_WritingSkillsTemplate_ProducesWritingTaskStructure()
+    {
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Writing Skills",
+            SectionType = "production",
+            CefrLevel = "B1"
+        };
+
+        var req = _sut.BuildGuidedWritingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("WORD COUNT",
+            because: "Guided writing prompt must specify the expected word count range");
+        req.UserPrompt.Should().Contain("tips",
+            because: "Guided writing prompt must include practical hints to help the student start");
+    }
 }
