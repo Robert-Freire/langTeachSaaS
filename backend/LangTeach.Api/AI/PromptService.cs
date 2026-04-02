@@ -32,21 +32,21 @@ public class PromptService : IPromptService
     {
         var system = BuildSystemPrompt(ctx);
         var user   = VocabularyUserPrompt(ctx);
-        return BuildRequest("vocabulary", "vocabulary", ctx.CefrLevel, null, system, user, ClaudeModel.Haiku, 2048);
+        return BuildRequest("vocabulary", "vocabulary", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Haiku, 2048);
     }
 
     public ClaudeRequest BuildGrammarPrompt(GenerationContext ctx)
     {
         var system = BuildSystemPrompt(ctx);
         var user   = GrammarUserPrompt(ctx);
-        return BuildRequest("grammar", "grammar", ctx.CefrLevel, null, system, user, ClaudeModel.Sonnet, 3000);
+        return BuildRequest("grammar", "grammar", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 3000);
     }
 
     public ClaudeRequest BuildExercisesPrompt(GenerationContext ctx)
     {
         var system = BuildSystemPrompt(ctx);
         var user   = ExercisesUserPrompt(ctx);
-        return BuildRequest("exercises", "practice", ctx.CefrLevel, null, system, user, ClaudeModel.Haiku, 4096);
+        return BuildRequest("exercises", "practice", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Haiku, 4096);
     }
 
     public ClaudeRequest BuildConversationPrompt(GenerationContext ctx)
@@ -54,21 +54,21 @@ public class PromptService : IPromptService
         var system  = BuildSystemPrompt(ctx);
         var user    = ConversationUserPrompt(ctx);
         var section = ctx.SectionType ?? "conversation";
-        return BuildRequest("conversation", section, ctx.CefrLevel, null, system, user, ClaudeModel.Haiku, 3000);
+        return BuildRequest("conversation", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Haiku, 3000);
     }
 
     public ClaudeRequest BuildReadingPrompt(GenerationContext ctx)
     {
         var system = BuildSystemPrompt(ctx);
         var user   = ReadingUserPrompt(ctx);
-        return BuildRequest("reading", "reading", ctx.CefrLevel, null, system, user, ClaudeModel.Sonnet, 4096);
+        return BuildRequest("reading", "reading", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 4096);
     }
 
     public ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx)
     {
         var system = BuildSystemPrompt(ctx);
         var user   = HomeworkUserPrompt(ctx);
-        return BuildRequest("homework", "homework", ctx.CefrLevel, null, system, user, ClaudeModel.Sonnet, 1024);
+        return BuildRequest("homework", "homework", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 1024);
     }
 
     public ClaudeRequest BuildFreeTextPrompt(GenerationContext ctx)
@@ -76,7 +76,7 @@ public class PromptService : IPromptService
         var system  = BuildSystemPrompt(ctx);
         var user    = FreeTextUserPrompt(ctx);
         var section = ctx.SectionType ?? "free-text";
-        return BuildRequest("free-text", section, ctx.CefrLevel, null, system, user, ClaudeModel.Haiku, 1024);
+        return BuildRequest("free-text", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Haiku, 1024);
     }
 
     public ClaudeRequest BuildGuidedWritingPrompt(GenerationContext ctx)
@@ -91,7 +91,7 @@ public class PromptService : IPromptService
     {
         var system = BuildSystemPrompt(ctx);
         var user   = ErrorCorrectionUserPrompt(ctx);
-        return BuildRequest("error-correction", "practice", ctx.CefrLevel, null, system, user, ClaudeModel.Sonnet, 3000);
+        return BuildRequest("error-correction", "practice", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 3000);
     }
 
     public ClaudeRequest BuildNoticingTaskPrompt(GenerationContext ctx)

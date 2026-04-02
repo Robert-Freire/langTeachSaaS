@@ -113,3 +113,10 @@ A1-B2 use `vocabularyPerLesson: { productive: {min,max}, receptive: {min,max} }`
 | PR#338 | 2026-03-28 | low | PedagogyConfig.cs ExerciseTypeEntry: `bool Available = false` uses value-type default while other optional fields use nullable types. Functionally correct; minor style divergence. |
 
 | PR#360 | 2026-03-28 | low | PromptService.cs BuildRequest: StudentName and other PII are logged via named structured parameters ({SystemPrompt}, {UserPrompt}). Structured logging backends (Seq, App Insights) index these as searchable fields. Currently safe (Debug only in test/QA compose files), but worth switching to unstructured embedding or documenting as a known constraint to prevent accidental production enablement. |
+
+## PR task-t429-template-propagation (2026-04-02) -- #429 template propagation bug
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `FullLessonGenerateButton.tsx` | The four `*_SECTION_TASK_MAP` objects share identical WarmUp/WrapUp/Practice entries; only Presentation and Production vary. Minor duplication across 4 maps. Could be refactored as a base + per-template overrides if maps grow. |
+| Minor | `PromptServiceTests.cs` | `BuildReadingPrompt_LogsTemplateName` Theory only covers "Reading & Comprehension" but not "Writing Skills"/"Exam Prep". Asymmetric compared to the other Theory tests. Low risk since reading is R&C-specific. |
