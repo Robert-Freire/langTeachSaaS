@@ -2047,6 +2047,28 @@ public class PromptServiceTests
             because: "A2 also uses sentence ordering for controlled practice");
     }
 
+    [Fact]
+    public void ExercisesPrompt_SentenceOrdering_ContainsGrammaticalCorrectnessConstraint()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("grammatically correct",
+            because: "the prompt must explicitly require that assembled fragments form a grammatically correct sentence");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_IncludesGrammarScopeForCefrLevelOverreachPrevention()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("GRAMMAR SCOPE",
+            because: "exercises must include the CEFR grammar scope block to prevent level overreach (e.g. imperfect subjunctive at B1.1)");
+    }
+
     // --- Sentence transformation format ---
 
     [Fact]
