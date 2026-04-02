@@ -2,6 +2,7 @@
 name: review-plan
 description: Validate a task plan against the actual codebase before implementation
 model: sonnet
+disallowedTools: Write, Edit, NotebookEdit
 ---
 
 # Pre-Implementation Plan Review
