@@ -1,127 +1,99 @@
 {
-  "config": {
-    "configFile": "C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\playwright\\playwright.config.ts",
-    "rootDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/playwright/tests",
-    "forbidOnly": false,
-    "fullyParallel": false,
-    "globalSetup": null,
-    "globalTeardown": null,
-    "globalTimeout": 0,
-    "grep": {},
-    "grepInvert": null,
-    "maxFailures": 0,
-    "metadata": {
-      "actualWorkers": 1
+  "runDate": "2026-04-02",
+  "branch": "sprint/pedagogical-quality",
+  "overallVerdict": "ISSUES FOUND",
+  "personas": {
+    "sprint-reviewer": {
+      "verdict": "ISSUES FOUND",
+      "dir": "sprint-reviewer-2026-04-02T13-23-11",
+      "generationMs": 31160,
+      "bugs": 0,
+      "contentIssues": 1,
+      "gaps": 0,
+      "sprintRating": "COHERENT"
     },
-    "preserveOutput": "always",
-    "projects": [
-      {
-        "outputDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/output/test-artifacts",
-        "repeatEach": 1,
-        "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
-        "id": "",
-        "name": "",
-        "testDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/playwright/tests",
-        "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
-        "timeout": 600000
-      }
-    ],
-    "quiet": false,
-    "reporter": [
-      [
-        "list",
-        null
-      ],
-      [
-        "json",
-        {
-          "outputFile": "../output/last-run-results.json"
-        }
-      ]
-    ],
-    "reportSlowTests": {
-      "max": 5,
-      "threshold": 300000
+    "ana-a1": {
+      "verdict": "ISSUES FOUND",
+      "dir": "ana-a1-2026-04-02T13-24-41",
+      "generationMs": 34851,
+      "bugs": 1,
+      "contentIssues": 1,
+      "gaps": 1
     },
-    "runAgents": "none",
-    "shard": null,
-    "tags": [],
-    "updateSnapshots": "missing",
-    "updateSourceMethod": "patch",
-    "version": "1.58.2",
-    "workers": 1,
-    "webServer": null
-  },
-  "suites": [
-    {
-      "title": "ana-exam-b2.spec.ts",
-      "file": "ana-exam-b2.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "Ana Exam Prep B2 — create student, generate lesson, capture output",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 600000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 49031,
-                  "errors": [],
-                  "stdout": [
-                    {
-                      "text": "[teacher-qa] PDF export succeeded: lesson_teacher.pdf\n"
-                    },
-                    {
-                      "text": "Ana Exam Prep B2 run complete. Output: C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\output\\ana-exam-b2-2026-03-28T21-16-43\n"
-                    },
-                    {
-                      "text": "Generation took 32s. 5 blocks across 5 sections.\n"
-                    },
-                    {
-                      "text": "Artifacts: student-view=true, pdf=true\n"
-                    }
-                  ],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-03-28T21:16:43.205Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "e24dbad7aa4b0db5ccf8-5ddaa536ad787c6814e4",
-          "file": "ana-exam-b2.spec.ts",
-          "line": 52,
-          "column": 5
-        }
-      ]
+    "marco-b1": {
+      "verdict": "PASS",
+      "dir": "marco-b1-2026-04-02T13-25-47",
+      "generationMs": 37000,
+      "bugs": 0,
+      "contentIssues": 1,
+      "gaps": 1
+    },
+    "carmen-b2": {
+      "verdict": "ISSUES FOUND",
+      "dir": "carmen-b2-2026-04-02T13-26-55",
+      "generationMs": 37000,
+      "bugs": 2,
+      "contentIssues": 1,
+      "gaps": 1
+    },
+    "ana-exam": {
+      "verdict": "ISSUES FOUND",
+      "dir": "ana-exam-b2-2026-04-02T06-34-07",
+      "note": "Playwright timeout due to 400 errors. Report from partial content.",
+      "bugs": 1,
+      "contentIssues": 2,
+      "gaps": 3
+    },
+    "sophie-a2": {
+      "verdict": "ISSUES FOUND",
+      "dir": "sophie-a2-2026-04-02T13-43-21",
+      "generationMs": 41000,
+      "bugs": 0,
+      "contentIssues": 2,
+      "gaps": 0
+    },
+    "ricardo-c1": {
+      "verdict": "ISSUES FOUND",
+      "dir": "ricardo-c1-2026-04-02T13-44-31",
+      "generationMs": 40000,
+      "bugs": 1,
+      "contentIssues": 2,
+      "gaps": 1
+    },
+    "nadia-b2": {
+      "verdict": "ISSUES FOUND",
+      "dir": "nadia-b2-2026-04-02T13-45-44",
+      "generationMs": null,
+      "bugs": 1,
+      "contentIssues": 1,
+      "gaps": 1
+    },
+    "hans-a1": {
+      "verdict": "PASS",
+      "dir": "hans-a1-2026-04-02T13-47-06",
+      "generationMs": 26000,
+      "bugs": 0,
+      "contentIssues": 1,
+      "gaps": 0
+    },
+    "isabel-b1": {
+      "verdict": "ISSUES FOUND",
+      "dir": "isabel-b1-2026-04-02T13-48-04",
+      "generationMs": 37000,
+      "bugs": 1,
+      "contentIssues": 3,
+      "gaps": 2
     }
-  ],
-  "errors": [],
-  "stats": {
-    "startTime": "2026-03-28T21:16:42.412Z",
-    "duration": 49941.872,
-    "expected": 1,
-    "skipped": 0,
-    "unexpected": 0,
-    "flaky": 0
-  }
+  },
+  "systemicFindings": [
+    "BUG: Exercise JSON truncation affects 5/9 personas (Ana A1, Carmen B2, Ricardo C1, Nadia B2, Isabel B1) -- output length exceeds safe limit",
+    "BUG: Exam Prep template WarmUp/WrapUp/Production fail with HTTP 400 (free-text blocked by section profile validContentTypes)",
+    "BUG: Reading & Comprehension template generates grammar block instead of reading passage -- no reading-passage block type in system",
+    "BUG: Writing Skills Production generates conversation instead of guided-writing",
+    "GAP: L1 contrastive notes absent for Portuguese (Ricardo C1) and Arabic (Nadia B2) -- pattern: distant L1s get no notes",
+    "PASS: Practice stage field populated (#275 working for Marco B1, Sophie A2, Hans A1, Sprint Reviewer)",
+    "PASS: L1 contrastive notes working for English, Italian, French, German (#276 partially working)",
+    "PASS: Sentence ordering exercises grammatically correct (#430 fix verified in Sprint Reviewer)",
+    "PASS: Exercise type variety good -- sentenceTransformation present at B1+ levels"
+  ]
 }
