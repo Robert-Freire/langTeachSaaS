@@ -177,6 +177,27 @@ When an agent enters a worktree via `EnterWorktree`, a post-creation hook (`.cla
 
 If builds fail in a worktree despite the hook, verify dependencies manually.
 
+## Chrome Extension for Frontend Development
+
+The [Claude in Chrome extension](https://chromewebstore.google.com/detail/bjfgambnhccakkhmkepdoekmckoijdlc) gives Claude Code a live browser connection during active UI work. Instead of generating code blindly, Claude can take screenshots, observe the rendered UI, and self-correct visual issues before handing back to the developer.
+
+**Setup (one-time, on the developer's machine):**
+1. Install the extension from the Chrome Web Store (works on Chrome and Edge, not Brave).
+2. Launch a Claude Code session with `claude --chrome`.
+3. Open `localhost:5173` (Docker frontend must be running) and confirm Claude can take a screenshot.
+
+**When to use:**
+- During active frontend task implementation, when writing or iterating on UI components.
+- The extension shares the browser's existing login session, so Auth0-authenticated pages are accessible without extra setup.
+
+**What it does NOT replace:**
+- Playwright e2e tests: those verify correctness in CI and run regardless.
+- The `review-ui` agent: that runs as a structured quality gate before every push, whether or not the Chrome extension was used during development.
+
+**Scope:** This is a local dev machine tool only. Agents running in CI or on remote machines do not have access to the Chrome session.
+
+**Serialization note:** At most one `area:frontend` task may be in flight at a time (Docker frontend port 5173 is fixed; parallel frontend worktrees conflict). The Chrome extension is only useful when the Docker frontend is running for the current task.
+
 ## Windows / Git Bash Notes
 
 The Bash tool runs in Git Bash on Windows. Git Bash automatically translates Unix absolute paths to Windows paths (e.g., `/opt/bin/tool` becomes `C:/Program Files/Git/opt/bin/tool`). This breaks `docker exec` commands with paths meant for inside containers. Fix: prefix with `MSYS_NO_PATHCONV=1`.
