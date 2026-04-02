@@ -9,12 +9,11 @@ namespace LangTeach.Api.Services;
 
 public class StudentService : IStudentService
 {
-    // Must stay in sync with the LANGUAGES constant in frontend/src/pages/StudentForm.tsx
-    // and the NativeLanguage comment in CreateStudentRequest / UpdateStudentRequest.
+    // Must stay in sync with NATIVE_LANGUAGES in frontend/src/lib/languages.ts.
     private static readonly HashSet<string> AllowedNativeLanguages =
     [
         "English", "Spanish", "French", "German", "Italian",
-        "Portuguese", "Mandarin", "Japanese", "Arabic", "Other"
+        "Portuguese", "Mandarin", "Japanese", "Arabic", "Catalan", "Other"
     ];
 
     private static readonly HashSet<string> AllowedDifficultyCategories =

@@ -18,8 +18,8 @@ public class UpdateStudentRequest
     [MaxStringLengthEach(100)]
     public List<string> Interests { get; set; } = [];
 
-    // Validated server-side against the allowed language list in StudentService.AllowedNativeLanguages.
-    // Must stay in sync with the LANGUAGES constant in frontend/src/pages/StudentForm.tsx.
+    // Validated server-side against StudentService.AllowedNativeLanguages.
+    // Must stay in sync with NATIVE_LANGUAGES in frontend/src/lib/languages.ts.
     public string? NativeLanguage { get; set; }
 
     [MaxCollectionCount(20)]
