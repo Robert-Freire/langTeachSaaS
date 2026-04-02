@@ -2,6 +2,7 @@
 name: prompt-health-reviewer
 description: Reviews AI generation prompt templates for redundancy, contradictions, negative bloat, stale patches, and duplication. Cross-references prompt instructions against structural enforcement (content type allowlists, schema constraints, code guards) to identify instructions that are dead weight or actively harmful.
 model: sonnet
+disallowedTools: Write, Edit, NotebookEdit
 ---
 
 # Prompt Health Reviewer

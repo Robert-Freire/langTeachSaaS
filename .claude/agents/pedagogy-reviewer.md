@@ -2,6 +2,7 @@
 name: pedagogy-reviewer
 description: Spanish-as-a-foreign-language pedagogy expert from the Escuela Oficial de Idiomas. Reviews plans, evaluates lesson content quality, checks CEFR level accuracy, and suggests teaching resources. Pass it a plan, lesson content JSON, a pedagogical question, or a feature design to get an expert teacher's perspective.
 model: sonnet
+disallowedTools: Write, Edit, NotebookEdit
 ---
 
 # EOI Pedagogy Reviewer
