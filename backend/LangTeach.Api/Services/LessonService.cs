@@ -2,6 +2,8 @@ using System.Text.Json;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
+using LangTeach.Api.Services.PdfExport;
 using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Services;
@@ -447,6 +449,101 @@ public class LessonService : ILessonService
     );
 
     private record TemplateSectionEntry(string SectionType, int OrderIndex, string NotesPlaceholder);
+
+    public async Task<StudyLessonDto?> GetStudyAsync(Guid teacherId, Guid lessonId, CancellationToken cancellationToken = default)
+    {
+        var lesson = await _db.Lessons
+            .Include(l => l.Sections)
+            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
+
+        if (lesson is null) return null;
+
+        var blocksBySectionId = await LoadBlocksBySectionAsync(lessonId, cancellationToken);
+
+        var sections = lesson.Sections
+            .OrderBy(s => s.OrderIndex)
+            .Select(s =>
+            {
+                var sectionBlocks = blocksBySectionId.TryGetValue(s.Id, out var sb) ? sb : [];
+                return new StudySectionDto(
+                    s.Id,
+                    s.SectionType,
+                    s.OrderIndex,
+                    s.Notes,
+                    sectionBlocks.Select(b => new StudyBlockDto(
+                        b.Id,
+                        b.BlockType,
+                        TryParseBlockContent(b.EditedContent ?? b.GeneratedContent),
+                        b.EditedContent ?? b.GeneratedContent)).ToList());
+            })
+            .ToList();
+
+        string[]? learningTargets = null;
+        if (lesson.LearningTargets is not null)
+        {
+            try { learningTargets = JsonSerializer.Deserialize<string[]>(lesson.LearningTargets); }
+            catch (JsonException) { /* malformed JSON — treat as no targets */ }
+        }
+
+        return new StudyLessonDto(lesson.Id, lesson.Title, lesson.Language, lesson.CefrLevel, lesson.Topic, sections, learningTargets);
+    }
+
+    public async Task<PdfLessonData?> GetForExportAsync(Guid teacherId, Guid lessonId, CancellationToken cancellationToken = default)
+    {
+        var lesson = await _db.Lessons
+            .Include(l => l.Sections)
+            .Include(l => l.Student)
+            .FirstOrDefaultAsync(l => l.Id == lessonId && l.TeacherId == teacherId && !l.IsDeleted, cancellationToken);
+
+        if (lesson is null) return null;
+
+        var blocksBySectionId = await LoadBlocksBySectionAsync(lessonId, cancellationToken);
+
+        var pdfSections = lesson.Sections
+            .OrderBy(s => s.OrderIndex)
+            .Select(s =>
+            {
+                var sectionBlocks = blocksBySectionId.TryGetValue(s.Id, out var sb) ? sb : [];
+                return new PdfSectionData(
+                    s.SectionType,
+                    s.OrderIndex,
+                    s.Notes,
+                    sectionBlocks.Select(b => new PdfBlockData(
+                        b.BlockType,
+                        b.EditedContent ?? b.GeneratedContent)).ToList());
+            })
+            .ToList();
+
+        return new PdfLessonData(
+            lesson.Title,
+            lesson.Language,
+            lesson.CefrLevel,
+            lesson.Topic,
+            lesson.Student?.Name,
+            lesson.ScheduledAt ?? lesson.CreatedAt,
+            pdfSections);
+    }
+
+    private async Task<Dictionary<Guid, List<LessonContentBlock>>> LoadBlocksBySectionAsync(Guid lessonId, CancellationToken cancellationToken)
+    {
+        var blocks = await _db.LessonContentBlocks
+            .Where(b => b.LessonId == lessonId)
+            .OrderBy(b => b.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        return blocks
+            .Where(b => b.LessonSectionId.HasValue)
+            .GroupBy(b => b.LessonSectionId!.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
+    private static object? TryParseBlockContent(string? content)
+    {
+        var stripped = ContentJsonHelper.StripFences(content);
+        if (stripped is null) return null;
+        try { return JsonSerializer.Deserialize<JsonElement>(stripped); }
+        catch (JsonException) { return null; }
+    }
 
     private static List<TemplateSectionEntry> DeserializeTemplateSections(string json)
     {

@@ -1,0 +1,23 @@
+# Compose overlay for host-side visual Playwright specs.
+# Adds port mappings so that host-side Playwright can reach the API and SQL Server directly.
+#
+# Usage (via start-visual-stack.sh):
+#   docker compose -f docker-compose.e2e.yml -f docker-compose.visual.yml --env-file .env.e2e up -d ...
+#
+# Exposed ports (in addition to frontend:5174):
+#   localhost:5000 -> api:5000  (for VITE_API_BASE_URL and visual-seed health check)
+#   localhost:1434 -> sqlserver:1433  (for db-helper.ts SQL connections)
+
+services:
+  api:
+    ports:
+      - "5000:5000"
+  sqlserver:
+    ports:
+      - "1434:1433"
+  frontend:
+    environment:
+      # Override the e2e compose value (http://api:5000) so the host browser
+      # can resolve the API directly via the exposed port.
+      VITE_API_URL: "http://localhost:5000"
+      VITE_API_PROXY_TARGET: "http://api:5000"

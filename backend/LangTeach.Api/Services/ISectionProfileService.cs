@@ -60,4 +60,24 @@ public interface ISectionProfileService
     /// Used by PedagogyConfigService to validate scope values against scope-constraints.json.
     /// </summary>
     string[] GetAllScopeValues();
+
+    /// <summary>
+    /// Returns the level-specific notes for a section at the given CEFR level.
+    /// Each note is keyed to an exercise type ID and provides generation guidance for that type.
+    /// Returns an empty array if the section or level is not found.
+    /// </summary>
+    LevelSpecificNote[] GetLevelSpecificNotes(string sectionType, string cefrLevel);
+
+    /// <summary>
+    /// Returns the weakness targeting guidance template for the section, or null if the section
+    /// has no weakness targeting guidance. The template may contain {weaknesses} as a placeholder
+    /// for the student weakness list.
+    /// </summary>
+    string? GetWeaknessTargetingGuidance(string sectionType);
+
+    /// <summary>
+    /// Returns the closing constraint for a section at the given CEFR level, or null if none is set.
+    /// Used to inject section-specific closing instructions into the conversation prompt (e.g. "no new material").
+    /// </summary>
+    string? GetClosingConstraint(string sectionType, string cefrLevel);
 }

@@ -1,0 +1,51 @@
+{
+  "version": "1.1",
+  "rules": [
+    {
+      "id": "ser-estar-de-acuerdo",
+      "targetLanguage": "spanish",
+      "category": "verb-choice",
+      "pattern": "\\b(soy|eres|es|somos|sois|son|era|eras|fue|fuiste|será|serás|sería|serías)\\s+de\\s+acuerdo\\b",
+      "correction": "Use 'estar' not 'ser' with 'de acuerdo'. Correct: estoy/estás/está de acuerdo.",
+      "severity": "high",
+      "levels": ["A2", "B1", "B2", "C1", "C2"],
+      "contextRelevance": {
+        "grammarFocusPatterns": ["ser/estar", "ser.estar", "copulat"]
+      }
+    },
+    {
+      "id": "ser-estar-state-adjective",
+      "targetLanguage": "spanish",
+      "category": "verb-choice",
+      "pattern": "\\b(soy|eres|es|somos|sois|son|era|eras|éramos|erais|eran|fue|fuiste|fui)\\s+(deprimid[ao]|cansad[ao]|enferm[ao]|content[ao]|triste|nervios[ao]|aburrid[ao]|preocupad[ao])\\b",
+      "correction": "Use 'estar' not 'ser' with temporary state adjectives (deprimido/a, cansado/a, etc.). Correct: estaba deprimida, estoy cansado.",
+      "severity": "high",
+      "levels": ["A2", "B1", "B2", "C1", "C2"],
+      "contextRelevance": {
+        "grammarFocusPatterns": ["ser/estar", "ser.estar", "copulat", "state", "emotion"]
+      }
+    },
+    {
+      "id": "haber-impersonal-plural",
+      "targetLanguage": "spanish",
+      "category": "agreement",
+      "pattern": "\\b(habían|hubieron)\\s+(muchos|muchas|varios|varias|algunos|algunas|bastantes|demasiados|demasiadas|pocos|pocas)\\b",
+      "correction": "Impersonal 'haber' is always singular. Correct: había muchas personas, hubo varios problemas.",
+      "severity": "high",
+      "levels": ["A2", "B1", "B2", "C1", "C2"],
+      "contextRelevance": null
+    },
+    {
+      "id": "ojala-indicative",
+      "targetLanguage": "spanish",
+      "category": "mood-selection",
+      "pattern": "\\bojalá\\s+(que\\s+)?(él|ella|tú|yo|nosotros|vosotros|ellos|ellas|usted|ustedes)?\\s*(tiene|tienen|tengo|tienes|tenemos|tenéis|viene|vienen|vengo|vienes|venimos|puede|pueden|puedo|puedes|podemos|sabe|saben|sé|sabes|sabemos|es|son|soy|eres|somos|está|están|estoy|estás|estamos|va|van|voy|vas|vamos|hace|hacen|hago|haces|hacemos|habla|hablan|hablo|hablas|hablamos)\\b",
+      "correction": "After 'ojalá', use the subjunctive, not the indicative. Correct: ojalá (que) tenga/venga/pueda/sepa/esté/vaya/haga/hable.",
+      "severity": "high",
+      "levels": ["B1", "B2", "C1", "C2"],
+      "contextRelevance": {
+        "grammarFocusPatterns": ["subjunctive", "subjuntivo", "mood", "ojalá", "wishes", "hope"]
+      }
+    }
+  ]
+}

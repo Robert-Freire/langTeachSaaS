@@ -150,6 +150,24 @@
       "available": true
     },
     {
+      "id": "CE-10",
+      "name": "True/False with justification",
+      "nameEs": "Verdadero/Falso con justificación",
+      "category": "CE",
+      "secondaryCompetencies": [
+        "GR",
+        "EE"
+      ],
+      "description": "Evaluate statements about a text as true or false, quoting the text excerpt that justifies the answer.",
+      "cefrRange": [
+        "A2",
+        "C2"
+      ],
+      "specialResources": [],
+      "uiRenderer": "exercises",
+      "available": true
+    },
+    {
       "id": "CO-01",
       "name": "Global listening",
       "nameEs": "Escucha global",
@@ -715,11 +733,12 @@
       ],
       "description": "Identify and correct grammatical errors in sentences or texts.",
       "cefrRange": [
-        "B1",
+        "A2",
         "C2"
       ],
       "specialResources": [],
-      "uiRenderer": "exercises",
+      "uiRenderer": "error-correction",
+      "categories": ["grammar", "vocabulary", "spelling", "verbForm", "agreement", "wordOrder"],
       "available": true
     },
     {

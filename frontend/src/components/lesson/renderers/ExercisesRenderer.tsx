@@ -5,6 +5,10 @@ import type {
   ExercisesContent,
   ExercisesFillInBlank,
   ExercisesMatching,
+  ExercisesTrueFalse,
+  ExercisesSentenceOrdering,
+  ExercisesSentenceTransformation,
+  PracticeStage,
 } from '../../../types/contentTypes'
 import type { EditorProps, PreviewProps, StudentProps } from '../contentRegistry'
 import { ContentParseError } from '../ContentParseError'
@@ -12,6 +16,58 @@ import { ContentEditorParseError } from '../ContentEditorParseError'
 
 const inputClass = 'w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded'
 const sectionHeadingClass = 'text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-2 mt-4 first:mt-0'
+
+// Stage display metadata
+// SYNC: label/labelEs mirror nameEs/nameLong in data/pedagogy/practice-stages.json — update both if stage names change
+const STAGE_LABELS: Record<PracticeStage, { label: string; labelEs: string; color: string }> = {
+  controlled: { label: 'Controlled', labelEs: 'Controlada', color: 'text-indigo-600 border-indigo-200 bg-indigo-50' },
+  meaningful: { label: 'Meaningful', labelEs: 'Significativa', color: 'text-amber-700 border-amber-200 bg-amber-50' },
+  guided_free: { label: 'Guided Free', labelEs: 'Libre guiada', color: 'text-emerald-700 border-emerald-200 bg-emerald-50' },
+}
+
+function StageLabel({ stage }: { stage: PracticeStage }) {
+  const meta = STAGE_LABELS[stage]
+  return (
+    <span
+      className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border ${meta.color}`}
+      title={meta.labelEs}
+    >
+      {meta.label}
+    </span>
+  )
+}
+
+function StageSectionHeader({ stage }: { stage: PracticeStage }) {
+  const meta = STAGE_LABELS[stage]
+  return (
+    <div
+      className="flex items-center gap-2 mt-5 mb-1 pt-3 border-t border-zinc-100"
+      data-testid={`stage-header-${stage}`}
+    >
+      <span className={`text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${meta.color}`}>
+        {meta.label} / {meta.labelEs}
+      </span>
+    </div>
+  )
+}
+
+// Group items by stage, preserving order within each stage group.
+// Items without a stage are returned under the key "unstaged".
+function groupByStage<T extends { stage?: PracticeStage }>(
+  items: T[]
+): { stage: PracticeStage | 'unstaged'; items: T[] }[] {
+  // SYNC: order matches stages array position in data/pedagogy/practice-stages.json — update if stages are added/reordered
+  const order: (PracticeStage | 'unstaged')[] = ['unstaged', 'controlled', 'meaningful', 'guided_free']
+  const map = new Map<PracticeStage | 'unstaged', T[]>()
+  for (const item of items) {
+    const key = item.stage ?? 'unstaged'
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(item)
+  }
+  return order
+    .filter(k => map.has(k))
+    .map(k => ({ stage: k, items: map.get(k)! }))
+}
 
 // ─── Editor ──────────────────────────────────────────────────────────────────
 
@@ -27,6 +83,9 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
   const fibIdsRef = useRef<number[]>([])
   const mcIdsRef = useRef<number[]>([])
   const matchIdsRef = useRef<number[]>([])
+  const tfIdsRef = useRef<number[]>([])
+  const soIdsRef = useRef<number[]>([])
+  const stIdsRef = useRef<number[]>([])
 
   const content = isExercisesContent(parsedContent) ? parsedContent as ExercisesContent : null
 
@@ -36,6 +95,9 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
   const fibIds = useMemo(() => syncIds(fibIdsRef.current, content?.fillInBlank.length ?? 0), [content?.fillInBlank.length])
   const mcIds = useMemo(() => syncIds(mcIdsRef.current, content?.multipleChoice.length ?? 0), [content?.multipleChoice.length])
   const matchIds = useMemo(() => syncIds(matchIdsRef.current, content?.matching.length ?? 0), [content?.matching.length])
+  const tfIds = useMemo(() => syncIds(tfIdsRef.current, content?.trueFalse?.length ?? 0), [content?.trueFalse?.length])
+  const soIds = useMemo(() => syncIds(soIdsRef.current, content?.sentenceOrdering?.length ?? 0), [content?.sentenceOrdering?.length])
+  const stIds = useMemo(() => syncIds(stIdsRef.current, content?.sentenceTransformation?.length ?? 0), [content?.sentenceTransformation?.length])
   /* eslint-enable react-hooks/refs */
 
   if (!content) {
@@ -50,6 +112,9 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
   }
 
   const { fillInBlank, multipleChoice, matching } = content
+  const trueFalse = content.trueFalse ?? []
+  const sentenceOrdering = content.sentenceOrdering ?? []
+  const sentenceTransformation = content.sentenceTransformation ?? []
 
   const emit = (next: ExercisesContent) => onChange(JSON.stringify(next))
 
@@ -123,6 +188,64 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
     emit({ ...content, matching: matching.filter((_, idx) => idx !== i) })
   }
 
+  // True/False handlers
+  const updateTf = (i: number, field: keyof ExercisesTrueFalse, value: string | boolean) => {
+    const next = trueFalse.map((item, idx) => idx === i ? { ...item, [field]: value } : item)
+    emit({ ...content, trueFalse: next })
+  }
+  const addTf = () => {
+    tfIdsRef.current.push(uid())
+    emit({ ...content, trueFalse: [...trueFalse, { statement: '', isTrue: true, justification: '' }] })
+  }
+  const removeTf = (i: number) => {
+    tfIdsRef.current.splice(i, 1)
+    emit({ ...content, trueFalse: trueFalse.filter((_, idx) => idx !== i) })
+  }
+
+  // Sentence ordering handlers
+  const updateSoFragments = (i: number, value: string) => {
+    const fragments = value.split(',').map(s => s.trim())
+    const prev = sentenceOrdering[i]
+    const correctOrder = fragments.length === prev.correctOrder.length
+      ? prev.correctOrder
+      : fragments.map((_, idx) => idx)
+    const next = sentenceOrdering.map((item, idx) => idx === i ? { ...item, fragments, correctOrder } : item)
+    emit({ ...content, sentenceOrdering: next })
+  }
+  const updateSoCorrectOrder = (i: number, value: string) => {
+    const parsed = value.split(',').map(s => parseInt(s.trim(), 10) - 1).filter(n => !isNaN(n))
+    const next = sentenceOrdering.map((item, idx) => idx === i ? { ...item, correctOrder: parsed } : item)
+    emit({ ...content, sentenceOrdering: next })
+  }
+  const updateSoHint = (i: number, value: string) => {
+    const next = sentenceOrdering.map((item, idx) => idx === i ? { ...item, hint: value } : item)
+    emit({ ...content, sentenceOrdering: next })
+  }
+  const addSo = () => {
+    soIdsRef.current.push(uid())
+    const newItem: ExercisesSentenceOrdering = { fragments: ['', ''], correctOrder: [0, 1] }
+    emit({ ...content, sentenceOrdering: [...sentenceOrdering, newItem] })
+  }
+  const removeSo = (i: number) => {
+    soIdsRef.current.splice(i, 1)
+    emit({ ...content, sentenceOrdering: sentenceOrdering.filter((_, idx) => idx !== i) })
+  }
+
+  // Sentence transformation handlers
+  const updateSt = (i: number, field: keyof ExercisesSentenceTransformation, value: string | string[]) => {
+    const next = sentenceTransformation.map((item, idx) => idx === i ? { ...item, [field]: value } : item)
+    emit({ ...content, sentenceTransformation: next })
+  }
+  const addSt = () => {
+    stIdsRef.current.push(uid())
+    const newItem: ExercisesSentenceTransformation = { prompt: '', original: '', expected: '' }
+    emit({ ...content, sentenceTransformation: [...sentenceTransformation, newItem] })
+  }
+  const removeSt = (i: number) => {
+    stIdsRef.current.splice(i, 1)
+    emit({ ...content, sentenceTransformation: sentenceTransformation.filter((_, idx) => idx !== i) })
+  }
+
   return (
     <div data-testid="exercises-editor">
       {/* Fill-in-blank */}
@@ -135,6 +258,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600 text-green-700">Answer</th>
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Hint</th>
               <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Explanation</th>
+              <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Stage</th>
               <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -152,6 +276,9 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
                 </td>
                 <td className="hidden sm:table-cell border border-zinc-200 p-1">
                   <span className="px-2 py-1 text-xs text-zinc-400 italic">{item.explanation ?? '—'}</span>
+                </td>
+                <td className="hidden sm:table-cell border border-zinc-200 p-1 text-center">
+                  {item.stage && <StageLabel stage={item.stage} />}
                 </td>
                 <td className="border border-zinc-200 p-1 text-center">
                   <button type="button" onClick={() => removeFib(i)} className="text-zinc-400 hover:text-red-500 transition-colors px-1" aria-label="Remove item">✕</button>
@@ -175,6 +302,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
                 placeholder="Question"
                 className={`${inputClass} border border-zinc-200 rounded flex-1`}
               />
+              {q.stage && <StageLabel stage={q.stage} />}
               <button type="button" onClick={() => removeMc(qi)} className="text-zinc-400 hover:text-red-500 transition-colors mt-1 shrink-0" aria-label="Remove question">✕</button>
             </div>
             <div className="space-y-1 pl-2">
@@ -216,6 +344,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Left</th>
               <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Right</th>
               <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Explanation</th>
+              <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Stage</th>
               <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -231,6 +360,9 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
                 <td className="hidden sm:table-cell border border-zinc-200 p-1">
                   <span className="px-2 py-1 text-xs text-zinc-400 italic">{pair.explanation ?? '—'}</span>
                 </td>
+                <td className="hidden sm:table-cell border border-zinc-200 p-1 text-center">
+                  {pair.stage && <StageLabel stage={pair.stage} />}
+                </td>
                 <td className="border border-zinc-200 p-1 text-center">
                   <button type="button" onClick={() => removeMatch(i)} className="text-zinc-400 hover:text-red-500 transition-colors px-1" aria-label="Remove pair">✕</button>
                 </td>
@@ -240,6 +372,162 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
         </table>
       </div>
       <button type="button" onClick={addMatch} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add pair</button>
+
+      {/* True/False with Justification */}
+      <p className={sectionHeadingClass}>True / False with Justification</p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-zinc-50">
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Statement</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600 w-28">Answer</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Justification (model)</th>
+              <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Stage</th>
+              <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {trueFalse.map((item, i) => (
+              <tr key={tfIds[i]} className="hover:bg-zinc-50">
+                <td className="border border-zinc-200 p-1">
+                  <input value={item.statement} onChange={(e) => updateTf(i, 'statement', e.target.value)} className={inputClass} />
+                </td>
+                <td className="border border-zinc-200 p-1">
+                  <select
+                    value={item.isTrue ? 'true' : 'false'}
+                    onChange={(e) => updateTf(i, 'isTrue', e.target.value === 'true')}
+                    className="w-full bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded"
+                    data-testid={`tf-answer-${i}`}
+                  >
+                    <option value="true">Verdadero (V)</option>
+                    <option value="false">Falso (F)</option>
+                  </select>
+                </td>
+                <td className="border border-zinc-200 p-1">
+                  <input value={item.justification} onChange={(e) => updateTf(i, 'justification', e.target.value)} className={inputClass} placeholder="Text excerpt that proves the answer" />
+                </td>
+                <td className="hidden sm:table-cell border border-zinc-200 p-1 text-center">
+                  {item.stage && <StageLabel stage={item.stage} />}
+                </td>
+                <td className="border border-zinc-200 p-1 text-center">
+                  <button type="button" onClick={() => removeTf(i)} className="text-zinc-400 hover:text-red-500 transition-colors px-1" aria-label="Remove item">✕</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <button type="button" onClick={addTf} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add statement</button>
+
+      {/* Sentence Ordering */}
+      <p className={sectionHeadingClass}>Sentence Ordering</p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-zinc-50">
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Fragments (comma-separated)</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600 text-green-700">Correct Order (1-based)</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Hint</th>
+              <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Stage</th>
+              <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sentenceOrdering.map((item, i) => (
+              <tr key={soIds[i]} className="hover:bg-zinc-50">
+                <td className="border border-zinc-200 p-1">
+                  <input
+                    value={item.fragments.join(', ')}
+                    onChange={(e) => updateSoFragments(i, e.target.value)}
+                    placeholder="yo, vivo, en, Barcelona"
+                    className={inputClass}
+                  />
+                </td>
+                <td className="border border-zinc-200 p-1">
+                  <input
+                    value={item.correctOrder.map(n => n + 1).join(', ')}
+                    onChange={(e) => updateSoCorrectOrder(i, e.target.value)}
+                    placeholder="4, 1, 2, 3"
+                    className={`${inputClass} text-green-700 font-medium`}
+                  />
+                </td>
+                <td className="border border-zinc-200 p-1">
+                  <input value={item.hint ?? ''} onChange={(e) => updateSoHint(i, e.target.value)} className={inputClass} />
+                </td>
+                <td className="hidden sm:table-cell border border-zinc-200 p-1 text-center">
+                  {item.stage && <StageLabel stage={item.stage} />}
+                </td>
+                <td className="border border-zinc-200 p-1 text-center">
+                  <button type="button" onClick={() => removeSo(i)} className="text-zinc-400 hover:text-red-500 transition-colors px-1" aria-label="Remove item">✕</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <button type="button" onClick={addSo} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add item</button>
+
+      {/* Sentence Transformation */}
+      <p className={sectionHeadingClass}>Sentence Transformation</p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-zinc-50">
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Prompt</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Original</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600 text-green-700">Expected</th>
+              <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-600">Alternatives (comma-sep)</th>
+              <th className="hidden sm:table-cell border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-400">Stage</th>
+              <th className="border border-zinc-200 px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sentenceTransformation.map((item, i) => (
+              <tr key={stIds[i]} className="hover:bg-zinc-50">
+                <td className="border border-zinc-200 p-1">
+                  <input
+                    value={item.prompt}
+                    onChange={(e) => updateSt(i, 'prompt', e.target.value)}
+                    placeholder="Rewrite in the past tense"
+                    className={inputClass}
+                  />
+                </td>
+                <td className="border border-zinc-200 p-1">
+                  <input
+                    value={item.original}
+                    onChange={(e) => updateSt(i, 'original', e.target.value)}
+                    placeholder="Maria sale de casa."
+                    className={inputClass}
+                  />
+                </td>
+                <td className="border border-zinc-200 p-1">
+                  <input
+                    value={item.expected}
+                    onChange={(e) => updateSt(i, 'expected', e.target.value)}
+                    placeholder="Maria salio de casa."
+                    className={`${inputClass} text-green-700 font-medium`}
+                  />
+                </td>
+                <td className="border border-zinc-200 p-1">
+                  <input
+                    value={(item.alternatives ?? []).join(', ')}
+                    onChange={(e) => updateSt(i, 'alternatives', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                    placeholder="Maria salia de casa."
+                    className={inputClass}
+                  />
+                </td>
+                <td className="hidden sm:table-cell border border-zinc-200 p-1 text-center">
+                  {item.stage && <StageLabel stage={item.stage} />}
+                </td>
+                <td className="border border-zinc-200 p-1 text-center">
+                  <button type="button" onClick={() => removeSt(i)} className="text-zinc-400 hover:text-red-500 transition-colors px-1" aria-label="Remove item">✕</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <button type="button" onClick={addSt} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add item</button>
     </div>
   )
 }
@@ -252,57 +540,150 @@ function Preview({ parsedContent }: PreviewProps) {
   }
 
   const { fillInBlank, multipleChoice, matching } = parsedContent as ExercisesContent
+  const trueFalse = (parsedContent as ExercisesContent).trueFalse ?? []
+  const sentenceOrdering = (parsedContent as ExercisesContent).sentenceOrdering ?? []
+  const sentenceTransformation = (parsedContent as ExercisesContent).sentenceTransformation ?? []
+
+  const fibGroups = groupByStage(fillInBlank)
+  const mcGroups = groupByStage(multipleChoice)
+  const matchGroups = groupByStage(matching)
+  const tfGroups = groupByStage(trueFalse)
+  const soGroups = groupByStage(sentenceOrdering)
+  const stGroups = groupByStage(sentenceTransformation)
 
   return (
     <div className="space-y-4 text-sm" data-testid="exercises-preview">
       {fillInBlank.length > 0 && (
         <div>
           <p className={sectionHeadingClass}>Fill in the Blank</p>
-          <ol className="space-y-2 list-decimal list-inside">
-            {fillInBlank.map((item, i) => (
-              <li key={i} className="text-zinc-700">
-                {item.sentence.replace('___', '[      ]')}
-                {item.hint && <span className="text-xs text-zinc-400 ml-2">({item.hint})</span>}
-              </li>
-            ))}
-          </ol>
+          {fibGroups.map(({ stage, items }) => (
+            <div key={stage}>
+              {stage !== 'unstaged' && <StageSectionHeader stage={stage} />}
+              <ol className="space-y-2 list-decimal list-inside">
+                {items.map((item, i) => (
+                  <li key={i} className="text-zinc-700">
+                    {item.sentence.replace('___', '[      ]')}
+                    {item.hint && <span className="text-xs text-zinc-400 ml-2">({item.hint})</span>}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
         </div>
       )}
       {multipleChoice.length > 0 && (
         <div>
           <p className={sectionHeadingClass}>Multiple Choice</p>
-          <ol className="space-y-3 list-decimal list-inside">
-            {multipleChoice.map((q, qi) => (
-              <li key={qi} className="text-zinc-700">
-                <span>{q.question}</span>
-                <ul className="mt-1 ml-4 space-y-1">
-                  {q.options.map((opt, oi) => (
-                    <li key={oi} className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full border border-zinc-300 inline-block shrink-0" />
-                      <span>{opt}</span>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ol>
+          {mcGroups.map(({ stage, items }) => (
+            <div key={stage}>
+              {stage !== 'unstaged' && <StageSectionHeader stage={stage} />}
+              <ol className="space-y-3 list-decimal list-inside">
+                {items.map((q, qi) => (
+                  <li key={qi} className="text-zinc-700">
+                    <span>{q.question}</span>
+                    <ul className="mt-1 ml-4 space-y-1">
+                      {q.options.map((opt, oi) => (
+                        <li key={oi} className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full border border-zinc-300 inline-block shrink-0" />
+                          <span>{opt}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
         </div>
       )}
       {matching.length > 0 && (
         <div>
           <p className={sectionHeadingClass}>Matching</p>
-          <div className="overflow-x-auto">
-            <table className="text-sm border-collapse">
-              <tbody>
-                {matching.map((pair, i) => (
-                  <tr key={i}>
-                    <td className="border border-zinc-200 px-3 py-1.5 font-medium">{pair.left}</td>
-                    <td className="border border-zinc-200 px-3 py-1.5 text-zinc-400 w-24 text-center">___</td>
-                  </tr>
+          {matchGroups.map(({ stage, items }) => (
+            <div key={stage}>
+              {stage !== 'unstaged' && <StageSectionHeader stage={stage} />}
+              <div className="overflow-x-auto">
+                <table className="text-sm border-collapse">
+                  <tbody>
+                    {items.map((pair, i) => (
+                      <tr key={i}>
+                        <td className="border border-zinc-200 px-3 py-1.5 font-medium">{pair.left}</td>
+                        <td className="border border-zinc-200 px-3 py-1.5 text-zinc-400 w-24 text-center">___</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {trueFalse.length > 0 && (
+        <div>
+          <p className={sectionHeadingClass}>True / False with Justification</p>
+          {tfGroups.map(({ stage, items }) => (
+            <div key={stage}>
+              {stage !== 'unstaged' && <StageSectionHeader stage={stage} />}
+              <ol className="space-y-2 list-decimal list-inside">
+                {items.map((item, i) => (
+                  <li key={i} className="text-zinc-700">
+                    <span>{item.statement}</span>
+                    <span className="ml-2 text-xs font-medium text-zinc-400">[V / F]</span>
+                    <div className="mt-0.5 ml-4 text-xs text-zinc-400 italic">Justificación: ___________</div>
+                  </li>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </ol>
+            </div>
+          ))}
+        </div>
+      )}
+      {sentenceOrdering.length > 0 && (
+        <div>
+          <p className={sectionHeadingClass}>Sentence Ordering</p>
+          {soGroups.map(({ stage, items }) => (
+            <div key={stage}>
+              {stage !== 'unstaged' && <StageSectionHeader stage={stage} />}
+              <ol className="space-y-3 list-decimal list-inside">
+                {items.map((item, i) => {
+                  const correct = item.correctOrder.map(idx => item.fragments[idx]).join(' ')
+                  return (
+                    <li key={i} className="text-zinc-700">
+                      <span className="text-xs text-zinc-400 mr-2">Arrange:</span>
+                      <span className="flex flex-wrap gap-1 mt-1">
+                        {item.fragments.map((f, fi) => (
+                          <span key={fi} className="px-2 py-0.5 bg-zinc-100 border border-zinc-300 rounded text-xs font-mono">{f}</span>
+                        ))}
+                      </span>
+                      {item.hint && <span className="text-xs text-zinc-400 ml-2">({item.hint})</span>}
+                      <div className="text-xs text-green-700 mt-1">Answer: {correct}</div>
+                    </li>
+                  )
+                })}
+              </ol>
+            </div>
+          ))}
+        </div>
+      )}
+      {sentenceTransformation.length > 0 && (
+        <div>
+          <p className={sectionHeadingClass}>Sentence Transformation</p>
+          {stGroups.map(({ stage, items }) => (
+            <div key={stage}>
+              {stage !== 'unstaged' && <StageSectionHeader stage={stage} />}
+              <ol className="space-y-3 list-decimal list-inside">
+                {items.map((item, i) => (
+                  <li key={i} className="text-zinc-700">
+                    <span className="text-xs text-zinc-400 mr-1">{item.prompt}:</span>
+                    <span className="font-medium">{item.original}</span>
+                    <div className="text-xs text-green-700 mt-0.5">Answer: {item.expected}</div>
+                    {(item.alternatives?.length ?? 0) > 0 && (
+                      <div className="text-xs text-zinc-500">Also accepted: {item.alternatives!.join(', ')}</div>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -328,6 +709,13 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   const [matchAnswers, setMatchAnswers] = useState<(string | null)[]>([])
   // index of the left item currently selected (waiting for right pick)
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null)
+  // trueFalse answers: boolean selection (null = unanswered) + free-text justification
+  const [tfAnswers, setTfAnswers] = useState<(boolean | null)[]>([])
+  const [tfJustifications, setTfJustifications] = useState<string[]>([])
+  // soAnswers[i] = array of fragment indices chosen by student (in order they were clicked)
+  const [soAnswers, setSoAnswers] = useState<number[][]>([])
+  // sentenceTransformation: free-text answers
+  const [stAnswers, setStAnswers] = useState<string[]>([])
   const [checked, setChecked] = useState(false)
 
   // Reset all answers when the content block changes (sync with external content updates)
@@ -337,6 +725,10 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     setMcAnswers([])
     setMatchAnswers([])
     setSelectedLeft(null)
+    setTfAnswers([])
+    setTfJustifications([])
+    setSoAnswers([])
+    setStAnswers([])
     setChecked(false)
   }, [rawContent])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -353,11 +745,24 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     return [...items.slice(mid), ...items.slice(0, mid)]
   }, [validContent])
 
+  // Scrambled fragment indices per sentence ordering item (deterministic: rotate by half)
+  const scrambledFragments = useMemo(() => {
+    if (!validContent) return []
+    return (validContent.sentenceOrdering ?? []).map(item => {
+      const indices = item.fragments.map((_, i) => i)
+      const mid = Math.ceil(indices.length / 2)
+      return [...indices.slice(mid), ...indices.slice(0, mid)]
+    })
+  }, [validContent])
+
   if (!validContent) {
     return <ContentParseError context="student" />
   }
 
   const { fillInBlank, multipleChoice, matching } = validContent
+  const trueFalse = validContent.trueFalse ?? []
+  const sentenceOrdering = validContent.sentenceOrdering ?? []
+  const sentenceTransformation = validContent.sentenceTransformation ?? []
 
   // Ensure answer arrays are sized (safe on first render)
   const fibs = fibAnswers.length === fillInBlank.length
@@ -369,24 +774,56 @@ function Student({ parsedContent, rawContent }: StudentProps) {
   const matches: (string | null)[] = matchAnswers.length === matching.length
     ? matchAnswers
     : Array(matching.length).fill(null)
+  const tfs: (boolean | null)[] = tfAnswers.length === trueFalse.length
+    ? tfAnswers
+    : Array(trueFalse.length).fill(null)
+  const tfJusts: string[] = tfJustifications.length === trueFalse.length
+    ? tfJustifications
+    : Array(trueFalse.length).fill('')
+  // soChosen[i] = chosen fragment indices for item i
+  const soChosen: number[][] = soAnswers.length === sentenceOrdering.length
+    ? soAnswers
+    : sentenceOrdering.map(() => [])
+  const stTexts: string[] = stAnswers.length === sentenceTransformation.length
+    ? stAnswers
+    : Array(sentenceTransformation.length).fill('')
 
   const fibCorrect = fillInBlank.map((item, i) =>
     (fibs[i] ?? '').trim().toLowerCase() === item.answer.trim().toLowerCase()
   )
   const mcCorrect = multipleChoice.map((q, i) => mcs[i] === q.answer)
   const matchCorrect = matching.map((pair, i) => matches[i] === pair.right)
+  const tfCorrect = trueFalse.map((item, i) => tfs[i] !== null && tfs[i] === item.isTrue)
+  const soCorrect = sentenceOrdering.map((item, i) => {
+    const chosen = soChosen[i]
+    if (chosen.length !== item.correctOrder.length) return false
+    return item.correctOrder.every((fragIdx, pos) => chosen[pos] === fragIdx)
+  })
+  const stCorrect = sentenceTransformation.map((item, i) => {
+    const answer = (stTexts[i] ?? '').trim().toLowerCase()
+    if (!answer) return false
+    if (answer === item.expected.trim().toLowerCase()) return true
+    return (item.alternatives ?? []).some(alt => answer === alt.trim().toLowerCase())
+  })
 
-  const totalQuestions = fillInBlank.length + multipleChoice.length + matching.length
+  const totalQuestions = fillInBlank.length + multipleChoice.length + matching.length + trueFalse.length + sentenceOrdering.length + sentenceTransformation.length
   const totalCorrect = [
     ...fibCorrect,
     ...mcCorrect,
     ...matchCorrect,
+    ...tfCorrect,
+    ...soCorrect,
+    ...stCorrect,
   ].filter(Boolean).length
 
   const handleCheck = () => {
     if (fibs !== fibAnswers) setFibAnswers(fibs)
     if (mcs !== mcAnswers) setMcAnswers(mcs)
     if (matches !== matchAnswers) setMatchAnswers(matches)
+    if (tfs !== tfAnswers) setTfAnswers(tfs)
+    if (tfJusts !== tfJustifications) setTfJustifications(tfJusts)
+    if (soChosen !== soAnswers) setSoAnswers(soChosen)
+    if (stTexts !== stAnswers) setStAnswers(stTexts)
     setChecked(true)
   }
 
@@ -395,6 +832,10 @@ function Student({ parsedContent, rawContent }: StudentProps) {
     setMcAnswers(Array(multipleChoice.length).fill(null))
     setMatchAnswers(Array(matching.length).fill(null))
     setSelectedLeft(null)
+    setTfAnswers(Array(trueFalse.length).fill(null))
+    setTfJustifications(Array(trueFalse.length).fill(''))
+    setSoAnswers(sentenceOrdering.map(() => []))
+    setStAnswers(Array(sentenceTransformation.length).fill(''))
     setChecked(false)
   }
 
@@ -638,6 +1079,240 @@ function Student({ parsedContent, rawContent }: StudentProps) {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* True/False with Justification */}
+      {trueFalse.length > 0 && (
+        <div>
+          <p className={sectionHeadingClass}>True / False with Justification</p>
+          <p className="text-xs text-zinc-400 mb-3">Select Verdadero or Falso, then write the text excerpt that proves your answer.</p>
+          <ol className="space-y-4 list-decimal list-inside">
+            {trueFalse.map((item, i) => (
+              <li key={i} className="text-zinc-700">
+                <span>{item.statement}</span>
+                <div className="mt-2 ml-4 flex gap-3">
+                  <label className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-1.5 text-sm cursor-pointer transition-all select-none ${
+                    checked
+                      ? tfs[i] === true
+                        ? tfCorrect[i] ? 'border-green-400 bg-green-50 text-green-800' : 'border-red-400 bg-red-50 text-red-800'
+                        : !item.isTrue ? 'border-green-300 bg-green-50/50 text-green-700' : 'border-zinc-200 bg-white text-zinc-400'
+                      : tfs[i] === true ? 'border-indigo-400 bg-indigo-50 text-indigo-800' : 'border-zinc-200 bg-white text-zinc-700 hover:border-indigo-300'
+                  }`}>
+                    <input
+                      type="radio"
+                      name={`tf-student-${i}`}
+                      checked={tfs[i] === true}
+                      onChange={() => {
+                        const next = [...tfs] as (boolean | null)[]
+                        next[i] = true
+                        setTfAnswers(next)
+                      }}
+                      disabled={checked}
+                      className="accent-indigo-600"
+                      data-testid={`tf-option-true-${i}`}
+                    />
+                    Verdadero
+                  </label>
+                  <label className={`flex items-center gap-1.5 rounded-lg border-2 px-3 py-1.5 text-sm cursor-pointer transition-all select-none ${
+                    checked
+                      ? tfs[i] === false
+                        ? tfCorrect[i] ? 'border-green-400 bg-green-50 text-green-800' : 'border-red-400 bg-red-50 text-red-800'
+                        : item.isTrue ? 'border-green-300 bg-green-50/50 text-green-700' : 'border-zinc-200 bg-white text-zinc-400'
+                      : tfs[i] === false ? 'border-indigo-400 bg-indigo-50 text-indigo-800' : 'border-zinc-200 bg-white text-zinc-700 hover:border-indigo-300'
+                  }`}>
+                    <input
+                      type="radio"
+                      name={`tf-student-${i}`}
+                      checked={tfs[i] === false}
+                      onChange={() => {
+                        const next = [...tfs] as (boolean | null)[]
+                        next[i] = false
+                        setTfAnswers(next)
+                      }}
+                      disabled={checked}
+                      className="accent-indigo-600"
+                      data-testid={`tf-option-false-${i}`}
+                    />
+                    Falso
+                  </label>
+                </div>
+                {checked && (
+                  <div className="ml-4 mt-1">
+                    <span
+                      className={`text-xs font-medium ${tfCorrect[i] ? 'text-green-600' : 'text-red-600'}`}
+                      data-testid={`tf-result-${i}`}
+                    >
+                      {tfCorrect[i] ? '✓ Correct' : `✗ Answer: ${item.isTrue ? 'Verdadero' : 'Falso'}`}
+                    </span>
+                  </div>
+                )}
+                <div className="mt-2 ml-4">
+                  <textarea
+                    value={tfJusts[i] ?? ''}
+                    onChange={(e) => {
+                      const next = [...tfJusts]
+                      next[i] = e.target.value
+                      setTfJustifications(next)
+                    }}
+                    disabled={checked}
+                    placeholder="Cita el fragmento del texto que justifica tu respuesta..."
+                    rows={2}
+                    className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 resize-none"
+                    data-testid={`tf-justification-${i}`}
+                  />
+                  {checked && item.justification && (
+                    <div className="mt-1 p-2 bg-zinc-50 border border-zinc-200 rounded text-xs" data-testid={`tf-model-answer-${i}`}>
+                      <span className="font-medium text-zinc-600">Justificación del modelo: </span>
+                      <span className="text-zinc-700 italic">{item.justification}</span>
+                    </div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {/* Sentence Ordering */}
+      {sentenceOrdering.length > 0 && (
+        <div>
+          <p className={sectionHeadingClass}>Sentence Ordering</p>
+          <p className="text-xs text-zinc-400 mb-3">Tap the words in the correct order to form the sentence.</p>
+          <div className="space-y-5">
+            {sentenceOrdering.map((item, i) => {
+              const chosen = soChosen[i]
+              const attempted = chosen.length > 0
+              const available = scrambledFragments[i].filter(idx => !chosen.includes(idx))
+              const correct = item.correctOrder.map(idx => item.fragments[idx]).join(' ')
+              const containerClass = checked
+                ? soCorrect[i]
+                  ? 'border-green-300 bg-green-50'
+                  : attempted
+                    ? 'border-red-300 bg-red-50'
+                    : 'border-zinc-200 bg-white'
+                : 'border-zinc-200 bg-white'
+              const chosenChipClass = checked
+                ? soCorrect[i]
+                  ? 'bg-green-100 border-green-400 text-green-800 cursor-default'
+                  : attempted
+                    ? 'bg-red-100 border-red-400 text-red-800 cursor-default'
+                    : 'bg-indigo-100 border-indigo-300 text-indigo-800 cursor-default'
+                : 'bg-indigo-100 border-indigo-300 text-indigo-800 hover:bg-indigo-200'
+              return (
+                <div key={i} className={`rounded-lg border p-3 ${containerClass}`} data-testid={`so-item-${i}`}>
+                  {/* Answer sequence area */}
+                  <div className="min-h-[36px] flex flex-wrap gap-1.5 mb-2 p-2 bg-zinc-50 rounded border border-zinc-200">
+                    {chosen.length === 0 && (
+                      <span className="text-xs text-zinc-400 italic self-center">Tap words below to build your sentence...</span>
+                    )}
+                    {chosen.map((fragIdx, pos) => (
+                      <button
+                        key={pos}
+                        type="button"
+                        onClick={() => {
+                          if (checked) return
+                          const next = soChosen.map((arr, idx) =>
+                            idx === i ? arr.filter((_, p) => p !== pos) : arr
+                          )
+                          setSoAnswers(next)
+                        }}
+                        disabled={checked}
+                        className={`px-2.5 py-1 border rounded text-sm font-medium transition-colors disabled:cursor-default ${chosenChipClass}`}
+                        data-testid={`so-chosen-${i}-${pos}`}
+                        title={checked ? undefined : 'Click to remove'}
+                      >
+                        {item.fragments[fragIdx]}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Available fragments */}
+                  {!checked && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {available.map((fragIdx) => (
+                        <button
+                          key={fragIdx}
+                          type="button"
+                          onClick={() => {
+                            const next = soChosen.map((arr, idx) =>
+                              idx === i ? [...arr, fragIdx] : arr
+                            )
+                            setSoAnswers(next)
+                          }}
+                          className="px-2.5 py-1 bg-white border border-zinc-300 rounded text-sm text-zinc-700 hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
+                          data-testid={`so-fragment-${i}-${fragIdx}`}
+                        >
+                          {item.fragments[fragIdx]}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {item.hint && <p className="text-xs text-zinc-400 mt-1">({item.hint})</p>}
+                  {checked && (
+                    <div className="mt-2">
+                      <span className={`text-xs font-medium ${soCorrect[i] ? 'text-green-600' : 'text-red-600'}`} data-testid={`so-result-${i}`}>
+                        {soCorrect[i] ? '✓ Correct' : `✗ Answer: ${correct}`}
+                      </span>
+                      {!soCorrect[i] && item.explanation && (
+                        <p className="text-xs text-zinc-500 mt-0.5" data-testid={`so-explanation-${i}`}>{item.explanation}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Sentence Transformation */}
+      {sentenceTransformation.length > 0 && (
+        <div>
+          <p className={sectionHeadingClass}>Sentence Transformation</p>
+          <p className="text-xs text-zinc-400 mb-3">Rewrite each sentence following the instruction.</p>
+          <div className="space-y-4">
+            {sentenceTransformation.map((item, i) => {
+              const answered = (stTexts[i] ?? '').trim().length > 0
+              const containerClass = checked
+                ? stCorrect[i]
+                  ? 'border-green-300 bg-green-50'
+                  : answered
+                    ? 'border-red-300 bg-red-50'
+                    : 'border-zinc-200 bg-white'
+                : 'border-zinc-200 bg-white'
+              return (
+                <div key={i} className={`rounded-lg border p-3 ${containerClass}`} data-testid={`st-item-${i}`}>
+                  <p className="text-xs font-medium text-indigo-600 mb-1">{item.prompt}</p>
+                  <p className="text-sm text-zinc-800 font-medium mb-2">{item.original}</p>
+                  <input
+                    type="text"
+                    value={stTexts[i] ?? ''}
+                    onChange={(e) => {
+                      const next = stTexts.map((v, idx) => idx === i ? e.target.value : v)
+                      setStAnswers(next)
+                    }}
+                    disabled={checked}
+                    placeholder="Type your answer..."
+                    className="w-full px-3 py-2 text-sm border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:bg-zinc-50 disabled:text-zinc-500"
+                    data-testid={`st-input-${i}`}
+                  />
+                  {checked && (
+                    <div className="mt-2">
+                      <span className={`text-xs font-medium ${stCorrect[i] ? 'text-green-600' : 'text-red-600'}`} data-testid={`st-result-${i}`}>
+                        {stCorrect[i] ? '✓ Correct' : `✗ Answer: ${item.expected}`}
+                      </span>
+                      {!stCorrect[i] && (item.alternatives?.length ?? 0) > 0 && (
+                        <p className="text-xs text-zinc-500 mt-0.5">Also accepted: {item.alternatives!.join(', ')}</p>
+                      )}
+                      {!stCorrect[i] && item.explanation && (
+                        <p className="text-xs text-zinc-500 mt-0.5" data-testid={`st-explanation-${i}`}>{item.explanation}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

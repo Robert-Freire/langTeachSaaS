@@ -5,6 +5,10 @@ using LangTeach.Api.AI;
 
 namespace LangTeach.Api.Services;
 
+// Section type naming convention:
+// - Canonical form: PascalCase (e.g. "WarmUp", "Presentation") — used in C# enums, API transport, and frontend TypeScript unions.
+// - Section profile JSON files use lowercase keys (e.g. "warmup") for file names and the "sectionType" field.
+// - GetProfile() normalizes any incoming value to lowercase before lookup, so both forms work at runtime.
 public class SectionProfileService : ISectionProfileService
 {
     // Key: lowercase section type (e.g. "warmup")
@@ -150,6 +154,19 @@ public class SectionProfileService : ISectionProfileService
         return string.Empty;
     }
 
+    public string? GetWeaknessTargetingGuidance(string sectionType) =>
+        GetProfile(sectionType)?.WeaknessTargetingGuidance;
+
+    public string? GetClosingConstraint(string sectionType, string cefrLevel)
+    {
+        var profile = GetProfile(sectionType);
+        if (profile is null) return null;
+        var level = NormalizeLevel(cefrLevel);
+        if (profile.Levels.TryGetValue(level, out var lp))
+            return lp.ClosingConstraint;
+        return null;
+    }
+
     public string[] GetAllScopeValues() =>
         _profiles.Values
             .SelectMany(p => p.Levels.Values)
@@ -157,6 +174,16 @@ public class SectionProfileService : ISectionProfileService
             .Where(s => s is not null)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray()!;
+
+    public LevelSpecificNote[] GetLevelSpecificNotes(string sectionType, string cefrLevel)
+    {
+        var profile = GetProfile(sectionType);
+        if (profile is null) return [];
+        var level = NormalizeLevel(cefrLevel);
+        if (profile.Levels.TryGetValue(level, out var lp))
+            return lp.LevelSpecificNotes ?? [];
+        return [];
+    }
 
     private SectionProfile? GetProfile(string sectionType)
     {

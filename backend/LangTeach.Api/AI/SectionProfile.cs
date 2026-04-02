@@ -2,7 +2,8 @@ namespace LangTeach.Api.AI;
 
 public record SectionProfile(
     string SectionType,
-    Dictionary<string, SectionLevelProfile> Levels
+    Dictionary<string, SectionLevelProfile> Levels,
+    string? WeaknessTargetingGuidance = null
 );
 
 public record SectionLevelProfile(
@@ -16,7 +17,8 @@ public record SectionLevelProfile(
     ForbiddenExerciseType[]? ForbiddenExerciseTypes = null,
     LevelSpecificNote[]? LevelSpecificNotes = null,
     int? MinExerciseVariety = null,
-    string? Scope = null
+    string? Scope = null,
+    string? ClosingConstraint = null
 );
 
 public record DurationRange(int Min, int Max);

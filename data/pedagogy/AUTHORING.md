@@ -135,4 +135,5 @@ The rules exist to make the common case clean. They are not a cage.
 | Add a structural content requirement unique to a template | Template override `overrideGuidance` (with `notes` explaining why) |
 | Make a section optional for a template | Template override `required: false` |
 | Leave a section unchanged for a template | Template override `overrideGuidance: null` |
+| Prevent new content at section close | Section profile `closingConstraint` field |
 | Change section behaviour permanently across all templates | Section profile (discuss first) |

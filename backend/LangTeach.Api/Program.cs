@@ -122,6 +122,8 @@ builder.Services.AddHttpClient("Claude", (sp, client) =>
 builder.Services.AddScoped<IClaudeClient, ClaudeApiClient>();
 builder.Services.AddSingleton<ISectionProfileService, SectionProfileService>();
 builder.Services.AddSingleton<IPedagogyConfigService, PedagogyConfigService>();
+builder.Services.AddSingleton<IContentSchemaService, ContentSchemaService>();
+builder.Services.AddSingleton<IGrammarValidationService, GrammarValidationService>();
 builder.Services.AddScoped<IPromptService, PromptService>();
 
 builder.Services.AddOptions<GenerationLimitsOptions>()
@@ -133,6 +135,7 @@ builder.Services.AddScoped<IUsageLimitService, UsageLimitService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddSingleton(_ =>
 {
     // Belt-and-suspenders guard: the startup validator covers this in production,
@@ -161,6 +164,7 @@ var app = builder.Build();
 // Eagerly resolve singletons that load embedded resources so malformed JSON fails at startup.
 _ = app.Services.GetRequiredService<ISectionProfileService>();
 _ = app.Services.GetRequiredService<IPedagogyConfigService>();
+_ = app.Services.GetRequiredService<IGrammarValidationService>();
 
 // Apply pending migrations and seed reference data on startup
 using (var scope = app.Services.CreateScope())
@@ -172,7 +176,8 @@ using (var scope = app.Services.CreateScope())
         startupLogger.LogInformation("Applying pending EF migrations...");
         await db.Database.MigrateAsync();
         startupLogger.LogInformation("Migrations applied successfully.");
-        await SeedData.SeedAsync(db, startupLogger);
+        var pedagogyConfig = app.Services.GetRequiredService<IPedagogyConfigService>();
+        await SeedData.SeedAsync(db, pedagogyConfig, startupLogger);
     }
 
     var blobService = scope.ServiceProvider.GetService<BlobStorageService>();
@@ -195,6 +200,24 @@ if (seedIndex >= 0)
     var seedDb     = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
     var seedLogger = seedScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var seeded = await DemoSeeder.SeedAsync(seedDb, teacherLookup, seedLogger);
+    return seeded ? 0 : 1;
+}
+
+// Visual seed: dotnet run -- --visual-seed <auth0-user-id|email>
+var visualSeedIndex = Array.IndexOf(args, "--visual-seed");
+if (visualSeedIndex >= 0)
+{
+    var teacherLookup = (visualSeedIndex + 1 < args.Length ? args[visualSeedIndex + 1] : null)?.Trim();
+    if (string.IsNullOrWhiteSpace(teacherLookup))
+    {
+        Console.Error.WriteLine("Usage: --visual-seed <auth0-user-id|email>");
+        return 1;
+    }
+
+    using var visualSeedScope = app.Services.CreateScope();
+    var visualSeedDb     = visualSeedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var visualSeedLogger = visualSeedScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var seeded = await DemoSeeder.SeedVisualAsync(visualSeedDb, teacherLookup, visualSeedLogger);
     return seeded ? 0 : 1;
 }
 

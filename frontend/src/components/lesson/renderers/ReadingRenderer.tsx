@@ -45,7 +45,7 @@ function Editor({ parsedContent: raw, rawContent, onChange, onRegenerate, isInco
   const handleAddQuestion = () => {
     emit({
       ...parsedContent,
-      comprehensionQuestions: [...parsedContent.comprehensionQuestions, { question: '', answer: '', type: 'detail' }],
+      comprehensionQuestions: [...parsedContent.comprehensionQuestions, { question: '', answer: '', type: 'factual' as const }],
     })
   }
 

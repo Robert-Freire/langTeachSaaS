@@ -20,6 +20,31 @@ public record VocabularyGuidance(
 );
 
 /// <summary>
+/// Output DTO for GetGuidedWritingGuidance — CEFR-specific writing parameters.
+/// Not a JSON deserialization model; constructed by PedagogyConfigService from CefrLevelRules data.
+/// </summary>
+public record GuidedWritingGuidance(
+    int WordCountMin,
+    int WordCountMax,
+    int SentenceCountMin,
+    int SentenceCountMax,
+    string Structures,
+    string Complexity,
+    string SituationGuidance
+);
+
+/// <summary>
+/// Output DTO for GetNoticingTaskGuidance — CEFR-specific discovery task parameters.
+/// Not a JSON deserialization model; constructed by PedagogyConfigService from CefrLevelRules data.
+/// </summary>
+public record NoticingTaskGuidance(
+    string[] TargetCategories,
+    string QuestionComplexity,
+    string Scaffolding,
+    string Guidance
+);
+
+/// <summary>
 /// Output DTO for GetL1Adjustments — combines family-level adjustments and language-specific notes.
 /// Not a JSON deserialization model; composed from L1InfluenceFile data.
 /// </summary>
@@ -28,4 +53,14 @@ public record L1Adjustments(
     string[] IncreaseEmphasis,
     string[] DecreaseEmphasis,
     string Notes
+);
+
+/// <summary>
+/// Output DTO for GetContrastivePattern — a resolved contrastive pattern for a given L1 and grammar topic.
+/// Not a JSON deserialization model; selected from ContrastivePattern entries in L1InfluenceFile.
+/// </summary>
+public record ContrastiveNoteResult(
+    string L1Behavior,
+    string TargetContrast,
+    string NativeLang
 );

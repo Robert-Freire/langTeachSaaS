@@ -26,7 +26,19 @@ public class PromptServiceTests
     private static readonly IPedagogyConfigService PedagogyService =
         new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, ProfileService);
 
-    private readonly PromptService _sut = new(ProfileService, PedagogyService, NullLogger<PromptService>.Instance);
+    private static readonly IContentSchemaService NoOpSchemas = new NullContentSchemaService();
+
+    private readonly PromptService _sut = new(ProfileService, PedagogyService, NullLogger<PromptService>.Instance, NoOpSchemas);
+
+    private sealed class NullContentSchemaService : IContentSchemaService
+    {
+        public string? GetSchema(string contentType) => null;
+    }
+
+    private sealed class StubContentSchemaService(string contentType, string schema) : IContentSchemaService
+    {
+        public string? GetSchema(string ct) => ct == contentType ? schema : null;
+    }
 
     private static GenerationContext BaseCtx(string? studentName = null) => new(
         Language: "English",
@@ -550,7 +562,6 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("practice");
         req.UserPrompt.Should().Contain("production");
         req.UserPrompt.Should().Contain("wrapUp");
-        req.UserPrompt.Should().Contain("All five sections");
     }
 
     [Fact]
@@ -632,7 +643,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("Do not use [LUD] exercises in this lesson.");
+        req.UserPrompt.Should().Contain("Ludic activities are inappropriate in reading comprehension lessons");
     }
 
     [Fact]
@@ -786,12 +797,15 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public void LessonPlanPrompt_UserPrompt_AllFiveSectionsRequired()
+    public void LessonPlanPrompt_UserPrompt_AllFiveSectionNamesPresent()
     {
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
 
-        req.UserPrompt.Should().Contain("All five sections");
-        req.UserPrompt.Should().Contain("required in every lesson plan");
+        req.UserPrompt.Should().Contain("warmUp");
+        req.UserPrompt.Should().Contain("presentation");
+        req.UserPrompt.Should().Contain("practice");
+        req.UserPrompt.Should().Contain("production");
+        req.UserPrompt.Should().Contain("wrapUp");
     }
 
     [Fact]
@@ -1206,7 +1220,7 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("SECTION COHERENCE RULES");
         req.UserPrompt.Should().Contain("Practice MUST use EXCLUSIVELY content from Presentation");
         req.UserPrompt.Should().Contain("Production MUST be achievable");
-        req.UserPrompt.Should().Contain("Wrap Up MUST refer to lesson content");
+        req.UserPrompt.Should().Contain("competency targeted in Production must be producible");
     }
 
     [Fact]
@@ -1276,6 +1290,34 @@ public class PromptServiceTests
         req.UserPrompt.Should().NotContain("DECLARED WEAKNESSES");
     }
 
+    [Fact]
+    public void LessonPlanPrompt_WeaknessBlock_ContainsSectionSpecificGuidanceFromConfig()
+    {
+        var ctx = BaseCtx() with { StudentWeaknesses = ["subjunctive"] };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        // Verify section-specific labels and guidance are assembled from config
+        req.UserPrompt.Should().Contain("Practice:", because: "practice has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().Contain("Production:", because: "production has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().Contain("WrapUp:", because: "wrapup has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().NotContain("WarmUp:", because: "warmup does not participate in weakness targeting");
+        req.UserPrompt.Should().NotContain("Presentation:", because: "presentation does not participate in weakness targeting");
+        req.UserPrompt.Should().Contain("subjunctive", because: "weakness text must be interpolated into the practice guidance");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_CoherenceRulesFromConfig_ContainsAllFiveRules()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        // Verify rules 1 and 5 text from course-rules.json is present
+        req.UserPrompt.Should().Contain("THEME of Warm Up must relate to the THEME of Presentation",
+            because: "rule 1 text must be sourced from config");
+        req.UserPrompt.Should().Contain("Linguistic level must NOT increase",
+            because: "rule 5 text must be sourced from config");
+    }
+
     // --- Grammar prompt: grammar scope injection ---
 
     [Fact]
@@ -1306,6 +1348,37 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().Contain("EXERCISE GUIDANCE for practice at B1");
         req.UserPrompt.Should().Contain("Allowed types:");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_B2_ContainsGR04LengthConstraintNote()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B2" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("GR-04", because: "B2 practice includes error correction");
+        req.UserPrompt.Should().Contain("2 sentences", because: "the level-specific note should constrain GR-04 explanation length at B2");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_A1_InjectsGR02MaxOptionsConstraint()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Maximum 3 options",
+            because: "the A1 GR-02 levelSpecificNotes entry must be injected into the exercises prompt");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_B1_DoesNotInjectGR02MaxOptionsConstraint()
+    {
+        var req = _sut.BuildExercisesPrompt(BaseCtx()); // B1
+
+        req.UserPrompt.Should().NotContain("Maximum 3 options",
+            because: "B1 has no GR-02 options constraint; only A1 is restricted to 3 MC options");
     }
 
     // --- Snapshot: key blocks present for representative combinations ---
@@ -1367,6 +1440,27 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().NotContain("CO-01", because: "CO-01 is unavailable (no UI renderer) and must not appear in the exercises prompt");
         req.UserPrompt.Should().NotContain("LUD-01", because: "LUD-01 is unavailable (no UI renderer) and must not appear in the exercises prompt");
+    }
+
+    [Fact]
+    public void BuildExercisesPrompt_ContainsTrueFalseInJsonTemplate()
+    {
+        // The exercises prompt JSON template must include the trueFalse format so the AI knows it is available.
+        var req = _sut.BuildExercisesPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("trueFalse", because: "trueFalse is a supported exercise format and must appear in the JSON template");
+        req.UserPrompt.Should().Contain("isTrue", because: "trueFalse items require the isTrue boolean field");
+        req.UserPrompt.Should().Contain("justification", because: "trueFalse items require the justification field");
+    }
+
+    [Fact]
+    public void BuildExercisesPrompt_StageGuidance_IncludesTrueFalseInFormatList()
+    {
+        // BuildPracticeStageBlock lists allowed formats; trueFalse must be included.
+        var ctx = BaseCtx() with { CefrLevel = "B1" }; // B1 has stage scaffolding
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("trueFalse", because: "trueFalse must be listed as an allowed stage format in the practice scaffolding block");
     }
 
     // --- Scope constraint emission ---
@@ -1471,14 +1565,14 @@ public class PromptServiceTests
     [Fact]
     public void ConversationUserPrompt_WarmUp_B1_ContainsForbiddenReasons()
     {
+        // After cleanup: only CO-* is retained (guards against CO-06 via L1 AdditionalExerciseTypes).
+        // GR-* and EE-* were removed as fully redundant with the validExerciseTypes allowlist.
         var ctx = BaseCtx() with { SectionType = "WarmUp" };
 
         var req = _sut.BuildConversationPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("Grammar drills",
-            because: "WarmUp B1 has forbidden GR-* types; reason must appear as constraint");
-        req.UserPrompt.Should().Contain("Written production",
-            because: "WarmUp B1 has forbidden EE-* types; reason must appear as constraint");
+        req.UserPrompt.Should().Contain("Listening comprehension tasks require audio resources",
+            because: "WarmUp B1 retains only CO-* forbidden; its reason must appear as constraint");
     }
 
     [Fact]
@@ -1532,12 +1626,14 @@ public class PromptServiceTests
     [Fact]
     public void ConversationUserPrompt_WrapUp_B1_ContainsForbiddenReasons()
     {
+        // After cleanup: only CO-* is retained (guards against CO-06 via L1 AdditionalExerciseTypes).
+        // LUD-*, GR-*, EE-*, VOC-* were removed as fully redundant with the validExerciseTypes allowlist.
         var ctx = BaseCtx() with { SectionType = "WrapUp" };
 
         var req = _sut.BuildConversationPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("Games introduce new activity type",
-            because: "WrapUp B1 has forbidden LUD-* types; reason must appear as constraint");
+        req.UserPrompt.Should().Contain("Listening tasks introduce new content",
+            because: "WrapUp B1 retains only CO-* forbidden; its reason must appear as constraint");
     }
 
     [Fact]
@@ -1591,7 +1687,7 @@ public class PromptServiceTests
     public void BuildLessonPlanPrompt_LogsSystemAndUserPromptAtDebug()
     {
         var fakeLogger = new FakeLogger<PromptService>();
-        var sut = new PromptService(ProfileService, PedagogyService, fakeLogger);
+        var sut = new PromptService(ProfileService, PedagogyService, fakeLogger, NoOpSchemas);
 
         sut.BuildLessonPlanPrompt(BaseCtx());
 
@@ -1682,6 +1778,112 @@ public class PromptServiceTests
         req.UserPrompt.Should().NotContain("SECTION REQUIREMENT");
     }
 
+    // --- Content type constraints in prompts (#358) ---
+
+    [Fact]
+    public void LessonPlanUserPrompt_EmitsValidContentTypes_ForEachSection()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("Valid content types:", because: "section guidelines must include valid content types from section profiles");
+    }
+
+    [Fact]
+    public void LessonPlanUserPrompt_ReadingComprehension_Presentation_EmitsPreferredContentTypeReading()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Reading & Comprehension" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Preferred content type: reading",
+            because: "R&C template presentation must signal reading as the preferred content type");
+    }
+
+    [Fact]
+    public void LessonPlanUserPrompt_ExamPrep_Production_EmitsPreferredContentTypeExercises()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Exam Prep", CefrLevel = "B2" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Preferred content type: exercises",
+            because: "Exam Prep production must signal exercises as the preferred content type");
+    }
+
+    [Fact]
+    public void LessonPlanUserPrompt_ExamPrep_Practice_EmitsPreferredContentTypeExercises()
+    {
+        var ctx = BaseCtx() with { TemplateName = "Exam Prep", CefrLevel = "B2" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        // Practice section line contains exercises preferred type
+        var lines = req.UserPrompt.Split('\n');
+        var hasPracticePreferred = lines
+            .SkipWhile(l => !l.Contains("- practice"))
+            .TakeWhile((l, i) => i == 0 || l.StartsWith("  "))
+            .Any(l => l.Contains("Preferred content type: exercises"));
+
+        hasPracticePreferred.Should().BeTrue(because: "Exam Prep practice must signal exercises as preferred content type");
+    }
+
+    [Fact]
+    public void LessonPlanUserPrompt_NoTemplate_DoesNotEmitPreferredContentType()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().NotContain("Preferred content type:",
+            because: "without a template, no preferred content type should be emitted");
+    }
+
+    [Fact]
+    public void BuildExercisesPrompt_ExamPrep_Production_IncludesContentTypeContext()
+    {
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Exam Prep",
+            SectionType = "Production",
+            CefrLevel = "B2",
+        };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION CONTENT TYPE CONTEXT",
+            because: "individual block prompts must include content type reinforcement context");
+        req.UserPrompt.Should().Contain("Preferred type: exercises",
+            because: "Exam Prep production reinforcement must confirm exercises is the preferred type");
+    }
+
+    [Fact]
+    public void BuildReadingPrompt_ReadingComprehension_Presentation_IncludesContentTypeContext()
+    {
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Reading & Comprehension",
+            SectionType = "Presentation",
+            CefrLevel = "B1",
+        };
+
+        var req = _sut.BuildReadingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION CONTENT TYPE CONTEXT",
+            because: "reading block prompt must include content type context");
+        req.UserPrompt.Should().Contain("Preferred type: reading",
+            because: "R&C presentation reinforcement must confirm reading is the preferred type");
+    }
+
+    [Fact]
+    public void BuildGrammarPrompt_NoTemplate_DoesNotIncludeContentTypeContext_ForSectionWithSingleType()
+    {
+        // warmUp has contentTypes: ["conversation"] — still emits context but no preferred type
+        var ctx = BaseCtx() with { SectionType = "WarmUp" };
+
+        var req = _sut.BuildGrammarPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("Preferred type:",
+            because: "without a template, no preferred content type should be emitted in block prompts");
+    }
+
     // --- Grammar constraints from pedagogy config ---
 
     [Fact]
@@ -1702,5 +1904,556 @@ public class PromptServiceTests
         var req = _sut.BuildExercisesPrompt(BaseCtx()); // Language: "English"
 
         req.UserPrompt.Should().NotContain("GRAMMAR ACCURACY CONSTRAINTS");
+    }
+
+    // --- Content schema injection ---
+
+    [Fact]
+    public void BuildVocabularyPrompt_IncludesSchema_WhenSchemaServiceReturnsSchema()
+    {
+        const string schemaJson = """{"type":"object","required":["items"]}""";
+        var sut = new PromptService(ProfileService, PedagogyService, NullLogger<PromptService>.Instance,
+            new StubContentSchemaService("vocabulary", schemaJson));
+
+        var req = sut.BuildVocabularyPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("Generate JSON strictly matching this schema:");
+        req.UserPrompt.Should().Contain(schemaJson);
+    }
+
+    [Fact]
+    public void BuildVocabularyPrompt_OmitsSchemaSection_WhenSchemaServiceReturnsNull()
+    {
+        var req = _sut.BuildVocabularyPrompt(BaseCtx());
+
+        req.UserPrompt.Should().NotContain("Generate JSON strictly matching this schema:");
+    }
+
+    [Fact]
+    public void BuildGrammarPrompt_IncludesSchema_WhenSchemaServiceReturnsSchema()
+    {
+        const string schemaJson = """{"type":"object","required":["title"]}""";
+        var sut = new PromptService(ProfileService, PedagogyService, NullLogger<PromptService>.Instance,
+            new StubContentSchemaService("grammar", schemaJson));
+
+        var req = sut.BuildGrammarPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain(schemaJson);
+    }
+
+    [Fact]
+    public void BuildFreeTextPrompt_NeverIncludesSchema_EvenWhenSchemaServiceHasEntry()
+    {
+        const string schemaJson = """{"type":"object"}""";
+        var sut = new PromptService(ProfileService, PedagogyService, NullLogger<PromptService>.Instance,
+            new StubContentSchemaService("free-text", schemaJson));
+
+        var req = sut.BuildFreeTextPrompt(BaseCtx());
+
+        // free-text is prose only; schema service returns content but blockType is "free-text"
+        // This test documents the behavior: if someone adds a free-text.json schema file,
+        // it WILL be injected. The absence of a free-text.json schema file is what prevents it.
+        req.UserPrompt.Should().Contain(schemaJson);
+    }
+
+    [Theory]
+    [InlineData("exercises")]
+    [InlineData("conversation")]
+    [InlineData("reading")]
+    [InlineData("homework")]
+    [InlineData("lesson-plan")]
+    public void Build_AllRemainingPrompts_IncludeSchema_WhenSchemaServiceReturnsSchema(string contentType)
+    {
+        const string schemaJson = """{"type":"object","required":["items"]}""";
+        var sut = new PromptService(ProfileService, PedagogyService, NullLogger<PromptService>.Instance,
+            new StubContentSchemaService(contentType, schemaJson));
+
+        var req = contentType switch
+        {
+            "exercises"    => sut.BuildExercisesPrompt(BaseCtx()),
+            "conversation" => sut.BuildConversationPrompt(BaseCtx()),
+            "reading"      => sut.BuildReadingPrompt(BaseCtx()),
+            "homework"     => sut.BuildHomeworkPrompt(BaseCtx()),
+            "lesson-plan"  => sut.BuildLessonPlanPrompt(BaseCtx()),
+            _              => throw new ArgumentOutOfRangeException(nameof(contentType))
+        };
+
+        req.UserPrompt.Should().Contain("Generate JSON strictly matching this schema:");
+        req.UserPrompt.Should().Contain(schemaJson);
+    }
+
+    // --- Practice stage scaffolding ---
+
+    [Fact]
+    public void ExercisesPrompt_B1_IncludesStageGuidanceBlock()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("PRACTICE SCAFFOLDING STAGES:");
+        req.UserPrompt.Should().Contain("controlled");
+        req.UserPrompt.Should().Contain("meaningful");
+        req.UserPrompt.Should().Contain("guided_free");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_A1_IncludesControlledAndMeaningful_NotGuidedFree()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("PRACTICE SCAFFOLDING STAGES:");
+        req.UserPrompt.Should().Contain("\"controlled\"");
+        req.UserPrompt.Should().Contain("\"meaningful\"");
+        req.UserPrompt.Should().NotContain("\"guided_free\"",
+            because: "guided_free is not a required stage at A1");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_B1_RequiresDifferentFormatPerStage()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Each stage MUST use a different exercise format");
+    }
+
+    // --- Sentence ordering format ---
+
+    [Fact]
+    public void ExercisesPrompt_A1_IncludesSentenceOrderingInJsonTemplate()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("sentenceOrdering",
+            because: "A1 is the primary use case for sentence ordering (word-level reordering)");
+        req.UserPrompt.Should().Contain("correctOrder",
+            because: "the prompt must specify how correctOrder encodes the correct sequence");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_A2_IncludesSentenceOrderingInJsonTemplate()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A2" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("sentenceOrdering",
+            because: "A2 also uses sentence ordering for controlled practice");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_SentenceOrdering_ContainsGrammaticalCorrectnessConstraint()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("grammatically correct",
+            because: "the prompt must explicitly require that assembled fragments form a grammatically correct sentence");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_IncludesGrammarScopeForCefrLevelOverreachPrevention()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("GRAMMAR SCOPE",
+            because: "exercises must include the CEFR grammar scope block to prevent level overreach (e.g. imperfect subjunctive at B1.1)");
+    }
+
+    // --- Sentence transformation format ---
+
+    [Fact]
+    public void ExercisesPrompt_IncludesSentenceTransformationInJsonTemplate()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("sentenceTransformation",
+            because: "B1+ exercises should include sentence transformation format");
+        req.UserPrompt.Should().Contain("alternatives",
+            because: "the prompt must specify alternatives for multi-answer support");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_SentenceTransformationGuidanceMentionsB1Plus()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B2" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("B1+",
+            because: "guidance should specify B1+ as the target level range");
+        req.UserPrompt.Should().Contain("DELE",
+            because: "guidance should reference DELE exam relevance");
+    }
+
+    [Fact]
+    public void ExercisesStageGuidance_IncludesSentenceTransformationInFormatList()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("sentenceTransformation",
+            because: "the stage diversity instruction must list sentenceTransformation as a valid format");
+    }
+
+    // --- BuildGuidedWritingPrompt ---
+
+    [Fact]
+    public void GuidedWritingPrompt_ContainsWordCountFromConfig_NotHardcoded()
+    {
+        // A1 config: wordCountMin=30, wordCountMax=50 (from data/pedagogy/cefr-levels/a1.json)
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+        var req = _sut.BuildGuidedWritingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("30", because: "A1 wordCountMin=30 must come from config");
+        req.UserPrompt.Should().Contain("50", because: "A1 wordCountMax=50 must come from config");
+    }
+
+    [Fact]
+    public void GuidedWritingPrompt_B2_ContainsDifferentWordCount()
+    {
+        // B2 config: wordCountMin=130, wordCountMax=200 (from data/pedagogy/cefr-levels/b2.json)
+        var ctx = BaseCtx() with { CefrLevel = "B2" };
+        var req = _sut.BuildGuidedWritingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("130", because: "B2 wordCountMin=130 must come from config");
+        req.UserPrompt.Should().Contain("200", because: "B2 wordCountMax=200 must come from config");
+    }
+
+    [Fact]
+    public void GuidedWritingPrompt_UsesSonnetModel()
+        => _sut.BuildGuidedWritingPrompt(BaseCtx()).Model.Should().Be(ClaudeModel.Sonnet);
+
+    [Fact]
+    public void GuidedWritingPrompt_HasMaxTokens2048()
+        => _sut.BuildGuidedWritingPrompt(BaseCtx()).MaxTokens.Should().Be(2048);
+
+    [Fact]
+    public void GuidedWritingPrompt_ContainsTopicFromContext()
+    {
+        var ctx = BaseCtx() with { Topic = "El medio ambiente" };
+        var req = _sut.BuildGuidedWritingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("El medio ambiente");
+    }
+
+    [Fact]
+    public void GuidedWritingPrompt_InjectsSchema()
+    {
+        var schemaJson = """{"type":"object"}""";
+        var sut = new PromptService(ProfileService, PedagogyService, NullLogger<PromptService>.Instance,
+            new StubContentSchemaService("guided-writing", schemaJson));
+
+        var req = sut.BuildGuidedWritingPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("Generate JSON strictly matching this schema:",
+            because: "guided-writing schema must be injected by ContentSchemaService");
+        req.UserPrompt.Should().Contain(schemaJson);
+    }
+
+    // --- BuildErrorCorrectionPrompt ---
+
+    [Fact]
+    public void ErrorCorrectionPrompt_ContainsTopicFromContext()
+    {
+        var ctx = BaseCtx() with { Topic = "El trabajo" };
+        var req = _sut.BuildErrorCorrectionPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("El trabajo");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_ContainsCefrLevel()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "B2" };
+        var req = _sut.BuildErrorCorrectionPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("B2");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_UsesSonnetModel()
+        => _sut.BuildErrorCorrectionPrompt(BaseCtx()).Model.Should().Be(ClaudeModel.Sonnet);
+
+    [Fact]
+    public void ErrorCorrectionPrompt_HasMaxTokens3000()
+        => _sut.BuildErrorCorrectionPrompt(BaseCtx()).MaxTokens.Should().Be(3000);
+
+    [Fact]
+    public void ErrorCorrectionPrompt_IncludesErrorSpanInstruction()
+    {
+        var req = _sut.BuildErrorCorrectionPrompt(BaseCtx());
+        req.UserPrompt.Should().Contain("errorSpan",
+            because: "prompt must instruct Claude to generate errorSpan character indices");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_IncludesErrorTypeInstruction()
+    {
+        var req = _sut.BuildErrorCorrectionPrompt(BaseCtx());
+        req.UserPrompt.Should().Contain("errorType",
+            because: "prompt must include errorType field guidance");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_A2_IncludesLevelSpecificNote()
+    {
+        // A2 practice.json levelSpecificNotes GR-04: "Simple agreement/gender errors only..."
+        var ctx = BaseCtx() with { CefrLevel = "A2" };
+        var req = _sut.BuildErrorCorrectionPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Simple agreement",
+            because: "A2 level note for GR-04 must be injected from practice.json levelSpecificNotes");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_B1_IncludesLevelSpecificNote()
+    {
+        // B1 practice.json levelSpecificNotes GR-04: "Sentence-level corrections only at B1..."
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+        var req = _sut.BuildErrorCorrectionPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Sentence-level corrections",
+            because: "B1 level note for GR-04 must be injected from practice.json levelSpecificNotes");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_WithNativeLanguage_IncludesL1Block()
+    {
+        var ctx = BaseCtx() with { StudentNativeLanguage = "Italian" };
+        var req = _sut.BuildErrorCorrectionPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("L1 ADJUSTMENTS",
+            because: "L1 influence notes must be included when native language is known");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_NoHardcodedLevelConditionals_SameStructureAcrossLevels()
+    {
+        // Verify the prompt structure is consistent (no level-specific code paths)
+        var b1 = _sut.BuildErrorCorrectionPrompt(BaseCtx() with { CefrLevel = "B1" });
+        var c1 = _sut.BuildErrorCorrectionPrompt(BaseCtx() with { CefrLevel = "C1" });
+
+        b1.UserPrompt.Should().Contain("errorSpan");
+        c1.UserPrompt.Should().Contain("errorSpan");
+    }
+
+    // ─── Noticing Task ──────────────────────────────────────────────────
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_IncludesDiscoveryInstructions()
+    {
+        var result = _sut.BuildNoticingTaskPrompt(BaseCtx() with { CefrLevel = "B1" });
+
+        result.UserPrompt.Should().Contain("noticing task");
+        result.UserPrompt.Should().Contain("discoveryQuestions");
+        result.UserPrompt.Should().Contain("targets");
+        result.UserPrompt.Should().Contain("teacherNotes");
+    }
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_IncludesCefrGuidance()
+    {
+        var result = _sut.BuildNoticingTaskPrompt(BaseCtx() with { CefrLevel = "B1" });
+
+        result.UserPrompt.Should().Contain("DISCOVERY TASK PARAMETERS");
+        result.UserPrompt.Should().Contain("tense contrasts");
+    }
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_IncludesGrammarScope()
+    {
+        var result = _sut.BuildNoticingTaskPrompt(BaseCtx() with { CefrLevel = "B1", Language = "Spanish" });
+
+        result.UserPrompt.Should().Contain("GRAMMAR SCOPE");
+    }
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_UsesSonnetModel()
+    {
+        var result = _sut.BuildNoticingTaskPrompt(BaseCtx());
+
+        result.Model.Should().Be(ClaudeModel.Sonnet);
+    }
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_DefaultsToPresentationSection()
+    {
+        var logger = new FakeLogger<PromptService>();
+        var sut = new PromptService(ProfileService, PedagogyService, logger, NoOpSchemas);
+
+        sut.BuildNoticingTaskPrompt(BaseCtx());
+
+        logger.Entries.Should().Contain(e => e.Message.Contains("section=presentation"));
+    }
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_NoLevelConditionals()
+    {
+        var a2 = _sut.BuildNoticingTaskPrompt(BaseCtx() with { CefrLevel = "A2" });
+        var c1 = _sut.BuildNoticingTaskPrompt(BaseCtx() with { CefrLevel = "C1" });
+
+        a2.UserPrompt.Should().Contain("discoveryQuestions");
+        c1.UserPrompt.Should().Contain("discoveryQuestions");
+    }
+
+    [Fact]
+    public void BuildNoticingTaskPrompt_InjectsSchemaWhenAvailable()
+    {
+        var schemaService = new StubContentSchemaService("noticing-task", "{\"type\":\"object\"}");
+        var sut = new PromptService(ProfileService, PedagogyService, NullLogger<PromptService>.Instance, schemaService);
+
+        var result = sut.BuildNoticingTaskPrompt(BaseCtx());
+
+        result.UserPrompt.Should().Contain("Generate JSON strictly matching this schema");
+    }
+
+    // --- BuildGrammarPrompt: L1 contrastive notes ---
+
+    [Fact]
+    public void BuildGrammarPrompt_WithItalianAndSerEstarTopic_IncludesContrastiveBlock()
+    {
+        var ctx = BaseCtx() with
+        {
+            StudentNativeLanguage = "italian",
+            Topic = "ser-estar distinction",
+            CefrLevel = "A2"
+        };
+
+        var req = _sut.BuildGrammarPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("L1 CONTRASTIVE NOTE",
+            because: "Italian + ser-estar topic + A2 level matches a contrastive pattern in l1-influence.json");
+        req.UserPrompt.Should().Contain("essere",
+            because: "the Italian-specific contrastive pattern references 'essere'");
+    }
+
+    [Fact]
+    public void BuildGrammarPrompt_WithNoNativeLanguage_OmitsContrastiveBlock()
+    {
+        var ctx = BaseCtx() with { StudentNativeLanguage = null, Topic = "ser-estar distinction" };
+
+        var req = _sut.BuildGrammarPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("L1 CONTRASTIVE NOTE",
+            because: "no native language means no contrastive note should be generated");
+    }
+
+    [Fact]
+    public void BuildGrammarPrompt_WithItalianButUnmatchedTopic_OmitsContrastiveBlock()
+    {
+        var ctx = BaseCtx() with
+        {
+            StudentNativeLanguage = "italian",
+            Topic = "preterite vs imperfect",
+            CefrLevel = "B1"
+        };
+
+        var req = _sut.BuildGrammarPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("L1 CONTRASTIVE NOTE",
+            because: "no contrastive pattern matches 'preterite vs imperfect' for Italian");
+    }
+
+    // --- Template name propagation to debug logs ---
+
+    [Theory]
+    [InlineData("Reading & Comprehension")]
+    [InlineData("Writing Skills")]
+    [InlineData("Exam Prep")]
+    public void BuildVocabularyPrompt_LogsTemplateName(string templateName)
+    {
+        var log = new FakeLogger<PromptService>();
+        var sut = new PromptService(ProfileService, PedagogyService, log, NoOpSchemas);
+        var ctx = BaseCtx() with { TemplateName = templateName };
+
+        sut.BuildVocabularyPrompt(ctx);
+
+        log.Entries.Should().Contain(e =>
+            e.Message.Contains($"template={templateName}"),
+            because: "BuildVocabularyPrompt must log the template name");
+    }
+
+    [Theory]
+    [InlineData("Reading & Comprehension")]
+    [InlineData("Writing Skills")]
+    [InlineData("Exam Prep")]
+    public void BuildExercisesPrompt_LogsTemplateName(string templateName)
+    {
+        var log = new FakeLogger<PromptService>();
+        var sut = new PromptService(ProfileService, PedagogyService, log, NoOpSchemas);
+        var ctx = BaseCtx() with { TemplateName = templateName, SectionType = "practice" };
+
+        sut.BuildExercisesPrompt(ctx);
+
+        log.Entries.Should().Contain(e =>
+            e.Message.Contains($"template={templateName}"),
+            because: "BuildExercisesPrompt must log the template name");
+    }
+
+    [Theory]
+    [InlineData("Reading & Comprehension")]
+    public void BuildReadingPrompt_LogsTemplateName(string templateName)
+    {
+        var log = new FakeLogger<PromptService>();
+        var sut = new PromptService(ProfileService, PedagogyService, log, NoOpSchemas);
+        var ctx = BaseCtx() with { TemplateName = templateName, SectionType = "presentation" };
+
+        sut.BuildReadingPrompt(ctx);
+
+        log.Entries.Should().Contain(e =>
+            e.Message.Contains($"template={templateName}"),
+            because: "BuildReadingPrompt must log the template name");
+    }
+
+    // --- Writing Skills template: guided-writing prompt structure ---
+
+    [Fact]
+    public void BuildGuidedWritingPrompt_WritingSkillsTemplate_LogsTemplateName()
+    {
+        var log = new FakeLogger<PromptService>();
+        var sut = new PromptService(ProfileService, PedagogyService, log, NoOpSchemas);
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Writing Skills",
+            SectionType = "production",
+            CefrLevel = "B1"
+        };
+
+        sut.BuildGuidedWritingPrompt(ctx);
+
+        log.Entries.Should().Contain(e =>
+            e.Message.Contains("template=Writing Skills"),
+            because: "BuildGuidedWritingPrompt must log the active template name for debugging");
+    }
+
+    [Fact]
+    public void BuildGuidedWritingPrompt_WritingSkillsTemplate_ProducesWritingTaskStructure()
+    {
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Writing Skills",
+            SectionType = "production",
+            CefrLevel = "B1"
+        };
+
+        var req = _sut.BuildGuidedWritingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("WORD COUNT",
+            because: "Guided writing prompt must specify the expected word count range");
+        req.UserPrompt.Should().Contain("tips",
+            because: "Guided writing prompt must include practical hints to help the student start");
     }
 }

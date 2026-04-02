@@ -146,7 +146,6 @@ public class SectionProfileServiceTests
     [InlineData("WrapUp", "grammar", "B1")]
     [InlineData("WrapUp", "free-text", "B1")]
     [InlineData("Presentation", "exercises", "B1")]
-    [InlineData("Production", "exercises", "B1")]
     [InlineData("Production", "grammar", "B1")]
     [InlineData("Production", "vocabulary", "B1")]
     public void IsAllowed_ReturnsFalse_ForDisallowedCombinations(string sectionType, string contentType, string cefrLevel)
@@ -164,6 +163,8 @@ public class SectionProfileServiceTests
     [InlineData("Presentation", "reading", "B1")]
     [InlineData("Presentation", "conversation", "B1")]
     [InlineData("Production", "conversation", "B1")]
+    [InlineData("Production", "exercises", "B1")]
+    [InlineData("Production", "exercises", "B2")]
     [InlineData("Production", "reading", "B2")]
     public void IsAllowed_ReturnsTrue_ForAllowedCombinations(string sectionType, string contentType, string cefrLevel)
     {
@@ -482,5 +483,128 @@ public class SectionProfileServiceTests
     public void GetInteractionPattern_UnknownLevel_ReturnsEmptyString()
     {
         _sut.GetInteractionPattern("warmup", "Z9").Should().BeEmpty();
+    }
+
+    // --- GetLevelSpecificNotes ---
+
+    [Fact]
+    public void GetLevelSpecificNotes_Practice_B2_ReturnsGR04NoteWithLengthConstraint()
+    {
+        var notes = _sut.GetLevelSpecificNotes("practice", "B2");
+        var gr04 = notes.FirstOrDefault(n => n.ExerciseTypeId == "GR-04");
+        gr04.Should().NotBeNull(because: "practice B2 should have a GR-04 note");
+        gr04!.Note.Should().Contain("2 sentences", because: "the note should constrain explanation length");
+    }
+
+    [Fact]
+    public void GetLevelSpecificNotes_Practice_A1_ReturnsGR02MaxOptionsNote()
+    {
+        var notes = _sut.GetLevelSpecificNotes("practice", "A1");
+        var gr02 = notes.FirstOrDefault(n => n.ExerciseTypeId == "GR-02");
+        gr02.Should().NotBeNull(because: "practice A1 should have a GR-02 note constraining MC option count");
+        gr02!.Note.Should().Contain("3 options", because: "the note should enforce a maximum of 3 MC options at A1");
+    }
+
+    [Fact]
+    public void GetLevelSpecificNotes_UnknownSection_ReturnsEmpty()
+    {
+        _sut.GetLevelSpecificNotes("nosuchsection", "B2").Should().BeEmpty();
+    }
+
+    [Fact]
+    public void GetLevelSpecificNotes_UnknownLevel_ReturnsEmpty()
+    {
+        _sut.GetLevelSpecificNotes("practice", "Z9").Should().BeEmpty();
+    }
+
+    // --- Issue #368: P2 pedagogy adjustments ---
+
+    [Fact]
+    public void GetInteractionPattern_Presentation_B2_IsTeacherGuided()
+    {
+        _sut.GetInteractionPattern("presentation", "B2").Should().Be("teacher-guided",
+            because: "B2 Presentation is an input stage; teacher selects texts and designs noticing tasks (PPP)");
+    }
+
+    [Fact]
+    public void GetInteractionPattern_Practice_B1_IsTeacherGuided()
+    {
+        _sut.GetInteractionPattern("practice", "B1").Should().Be("teacher-guided",
+            because: "B1 controlled practice benefits from teacher monitoring and correction per PPP; student-led starts at B2");
+    }
+
+    [Fact]
+    public void GetRawValidExerciseTypes_Production_B1_ContainsEE03()
+    {
+        var types = _sut.GetRawValidExerciseTypes("production", "B1");
+        types.Should().NotBeNull();
+        types.Should().Contain("EE-03",
+            because: "B1 Production needs EE-03 (guided paragraph) as scaffolding between A2 sentence-level and B1 opinion paragraph");
+    }
+
+    [Theory]
+    [InlineData("warmup", "C1")]
+    [InlineData("warmup", "C2")]
+    [InlineData("wrapup", "C1")]
+    [InlineData("wrapup", "C2")]
+    public void Competencies_C1C2_WarmupWrapup_ContainMediation(string section, string level)
+    {
+        var (_, _, data) = LoadAllLevelProfiles()
+            .Single(p => p.Section == section && p.Level == level);
+        data.Competencies.Should().Contain("mediation",
+            because: $"CEFR Companion Volume 2020 added mediation as a distinct competency; {section} {level} has mediation tasks");
+    }
+
+    [Theory]
+    [InlineData("A1")]
+    [InlineData("A2")]
+    public void GetRawValidExerciseTypes_Wrapup_A1A2_ContainsEE01(string level)
+    {
+        var types = _sut.GetRawValidExerciseTypes("wrapup", level);
+        types.Should().NotBeNull();
+        types.Should().Contain("EE-01",
+            because: $"Wrapup {level} should allow a minimal 1-sentence written reflection via EE-01 fill-in sentence");
+    }
+
+    [Theory]
+    [InlineData("A1")]
+    [InlineData("A2")]
+    public void GetLevelSpecificNotes_Wrapup_A1A2_HasEE01NoteConstrainingToOneSentence(string level)
+    {
+        var notes = _sut.GetLevelSpecificNotes("wrapup", level);
+        var note = notes.FirstOrDefault(n => n.ExerciseTypeId == "EE-01");
+        note.Should().NotBeNull(because: $"wrapup {level} EE-01 must have a note limiting writing to 1 sentence");
+        note!.Note.Should().Contain("1 sentence",
+            because: "the note must explicitly cap written output at one sentence");
+    }
+
+    // --- GetClosingConstraint ---
+
+    [Theory]
+    [InlineData("A1")]
+    [InlineData("A2")]
+    [InlineData("B1")]
+    [InlineData("B2")]
+    [InlineData("C1")]
+    [InlineData("C2")]
+    public void GetClosingConstraint_Wrapup_AllLevels_ReturnsNoNewMaterialConstraint(string level)
+    {
+        var constraint = _sut.GetClosingConstraint("wrapup", level);
+        constraint.Should().NotBeNullOrEmpty(because: $"wrapup {level} must have a closing constraint");
+        constraint.Should().Contain("Do not introduce new vocabulary",
+            because: "the constraint must prohibit introducing new material");
+    }
+
+    [Fact]
+    public void GetClosingConstraint_Warmup_ReturnsNull()
+    {
+        _sut.GetClosingConstraint("warmup", "B1").Should().BeNull(
+            because: "only wrapup has a closing constraint; other sections return null");
+    }
+
+    [Fact]
+    public void GetClosingConstraint_UnknownSection_ReturnsNull()
+    {
+        _sut.GetClosingConstraint("unknown", "B1").Should().BeNull();
     }
 }

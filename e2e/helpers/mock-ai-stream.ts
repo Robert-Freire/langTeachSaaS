@@ -59,6 +59,67 @@ export const EXERCISES_FIXTURE = {
   ],
 }
 
+// fragments: ["en", "vivo", "Barcelona", "yo"]
+// correctOrder: [3,1,0,2] => "yo vivo en Barcelona"
+export const SENTENCE_ORDERING_FIXTURE = {
+  fillInBlank: [],
+  multipleChoice: [],
+  matching: [],
+  sentenceOrdering: [
+    {
+      fragments: ['en', 'vivo', 'Barcelona', 'yo'],
+      correctOrder: [3, 1, 0, 2],
+      hint: 'Subject + verb + location',
+      explanation: 'Spanish declarative sentences typically follow Subject-Verb-Object order.',
+    },
+    {
+      fragments: ['libros', 'Leo', 'los'],
+      correctOrder: [1, 2, 0],
+      hint: 'Subject + verb + object',
+    },
+  ],
+}
+
+export const SENTENCE_TRANSFORMATION_FIXTURE = {
+  fillInBlank: [],
+  multipleChoice: [],
+  matching: [],
+  sentenceTransformation: [
+    {
+      prompt: 'Rewrite in the past tense',
+      original: 'Maria sale de casa a las ocho.',
+      expected: 'Maria salio de casa a las ocho.',
+      alternatives: ['Maria salia de casa a las ocho.'],
+      explanation: 'Both preterito (completed action) and imperfecto (habitual) are valid depending on context.',
+      stage: 'guided_free',
+    },
+    {
+      prompt: 'Change to the negative form',
+      original: 'Juan tiene hambre.',
+      expected: 'Juan no tiene hambre.',
+      explanation: 'Place "no" before the conjugated verb to negate.',
+      stage: 'meaningful',
+    },
+  ],
+}
+
+export const NOTICING_TASK_FIXTURE = {
+  text: 'Ayer Maria fue al mercado y compro frutas frescas. Luego volvio a casa y cocino una sopa.',
+  instruction: 'Find all the verbs in the past tense (preterito indefinido).',
+  targets: [
+    { form: 'fue', position: [11, 14], grammar: 'GR-08' },
+    { form: 'compro', position: [28, 34], grammar: 'GR-08' },
+    { form: 'volvio', position: [57, 63], grammar: 'GR-08' },
+    { form: 'cocino', position: [73, 79], grammar: 'GR-08' },
+  ],
+  discoveryQuestions: [
+    'How many past tense verbs did you find?',
+    'What ending do these verbs share?',
+    'Can you guess the rule for forming this tense?',
+  ],
+  teacherNotes: 'Focus on preterito indefinido regular -ar, -er, -ir endings. Students should notice the accent mark pattern on the final syllable.',
+}
+
 export const CONVERSATION_FIXTURE = {
   scenarios: [
     {

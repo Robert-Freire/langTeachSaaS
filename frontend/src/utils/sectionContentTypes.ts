@@ -15,9 +15,12 @@ export const ALL_CONTENT_TYPES: ContentBlockType[] = [
   'vocabulary',
   'grammar',
   'exercises',
+  'error-correction',
   'conversation',
   'reading',
   'homework',
+  'guided-writing',
+  'noticing-task',
   'free-text',
 ]
 
@@ -32,7 +35,8 @@ export function normalizeLevel(cefrLevel: string): string {
  * Returns the allowed content types for a section at the given CEFR level,
  * driven by backend section profile data.
  *
- * - When rules is undefined (loading): returns ALL_CONTENT_TYPES as a safe fallback.
+ * - When rules is undefined (loading or error): returns [] so the Generate panel
+ *   is disabled until rules are known, preventing pedagogically incorrect fallbacks.
  * - When rules is loaded but the section/level is not found: returns [].
  */
 export function getAllowedContentTypes(
@@ -40,7 +44,7 @@ export function getAllowedContentTypes(
   sectionType: SectionType,
   cefrLevel: string
 ): ContentBlockType[] {
-  if (rules === undefined) return ALL_CONTENT_TYPES
+  if (rules === undefined) return []
   return rules[sectionType]?.[normalizeLevel(cefrLevel)] ?? []
 }
 

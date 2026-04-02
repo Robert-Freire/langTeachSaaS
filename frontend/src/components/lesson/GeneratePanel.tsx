@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { usePartialJsonParse } from '../../hooks/usePartialJsonParse'
 import type { SectionType } from '../../api/lessons'
 import { getAllowedContentTypes, getContentTypeLabel } from '../../utils/sectionContentTypes'
@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { AlertTriangle } from 'lucide-react'
 
 const SECTION_DEFAULT_TASK: Record<SectionType, ContentBlockType> = {
   WarmUp: 'free-text',
@@ -44,6 +45,7 @@ const TASK_TYPES: { value: ContentBlockType; label: string }[] = [
   { value: 'conversation', label: 'Conversation' },
   { value: 'reading', label: 'Reading' },
   { value: 'homework', label: 'Homework' },
+  { value: 'noticing-task', label: 'Noticing Task' },
   { value: 'free-text', label: 'Free activity' },
 ]
 
@@ -108,7 +110,7 @@ export function GeneratePanel({
   const [inserting, setInserting] = useState(false)
   const [insertError, setInsertError] = useState<string | null>(null)
 
-  const { data: sectionRules } = useSectionRules()
+  const { data: sectionRules, isLoading: rulesLoading, isError: rulesError } = useSectionRules()
   const { data: profile } = useProfile()
   const queryClient = useQueryClient()
   const { status, output, error, quotaExceeded, generate, abort } = useGenerate()
@@ -185,6 +187,7 @@ export function GeneratePanel({
   )
 
   useEffect(() => {
+    if (allowedTypes.length === 0) return
     setTaskType(current => allowedTypes.includes(current) ? current : allowedTypes[0])
   }, [allowedTypes])
 
@@ -199,8 +202,14 @@ export function GeneratePanel({
     onStreamingChange?.(isStreaming)
   }, [isStreaming, onStreamingChange])
 
+  const panelRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [])
+
   return (
     <div
+      ref={panelRef}
       className="border border-indigo-200 rounded-lg p-4 bg-indigo-50 space-y-3"
       data-testid="generate-panel"
     >
@@ -208,22 +217,41 @@ export function GeneratePanel({
         <span className="text-xs font-medium text-indigo-700">Generate with AI</span>
         <button
           onClick={onClose}
-          className="text-xs text-zinc-400 hover:text-zinc-600"
+          className="text-xs text-zinc-600 hover:text-zinc-800"
           aria-label="Close generate panel"
         >
           Close
         </button>
       </div>
 
+      {rulesError && (
+        <div className="flex items-center gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2" data-testid="section-rules-error">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+          <span className="text-xs text-amber-700">Content type rules could not be loaded. Generation is unavailable until the page is refreshed.</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <Label className="text-xs">Task type</Label>
-          {filteredTaskTypes.length === 1 ? (
+          <Label className="text-xs" id="task-type-label">Task type</Label>
+          {rulesLoading ? (
+            <div
+              className="h-8 flex items-center px-3 text-xs rounded-md border border-input bg-muted text-muted-foreground"
+              aria-labelledby="task-type-label"
+              aria-busy="true"
+              data-testid="task-type-loading"
+            >
+              Loading types...
+            </div>
+          ) : filteredTaskTypes.length === 1 ? (
             <div>
               <div
                 className="h-8 flex items-center px-3 text-xs rounded-md border border-input bg-muted text-muted-foreground"
                 data-testid="task-type-readonly"
                 title="Only one content type is allowed for this section"
+                tabIndex={0}
+                role="status"
+                aria-label={`Task type: ${filteredTaskTypes[0].label}. Only type for this section.`}
               >
                 {filteredTaskTypes[0].label}
               </div>
@@ -387,7 +415,7 @@ export function GeneratePanel({
           <Button
             size="sm"
             onClick={handleGenerate}
-            disabled={isQuotaExhausted || quotaExceeded}
+            disabled={isQuotaExhausted || quotaExceeded || allowedTypes.length === 0}
             className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
             data-testid="generate-btn"
           >

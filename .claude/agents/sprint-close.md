@@ -30,7 +30,15 @@ You run the mechanical close process for the active sprint. **Backlog triage has
 
 4. **Report findings.** If there are open issues with no merged PR, include them prominently.
 
-## Phase 2: Teacher QA
+## Phase 2: Sprint UI/UX Review
+
+Run the comprehensive UI review to catch visual regressions, cross-page inconsistencies, and UX guideline violations across the full app.
+
+Invoke the `review-ui-sprint` agent (use the Agent tool with `subagent_type: "review-ui-sprint"`). No arguments needed; it reviews all routes.
+
+If verdict is NEEDS WORK with Critical findings, include them as blocking items in the pre-merge summary. Important and Minor findings should be logged to `plan/ui-review-backlog.md` for the next sprint.
+
+## Phase 3: Teacher QA
 
 Run the Teacher QA skill against the sprint branch to validate AI generation quality:
 
@@ -40,7 +48,7 @@ This runs all personas (Ana A1, Marco B1, Carmen B2, Ana Exam) against the live 
 
 **Save the full Teacher QA output.** You will pass it to the pedagogy reviewer in Phase 3.
 
-## Phase 2b: Prompt Health Review
+## Phase 3b: Prompt Health Review
 
 After Teacher QA completes (and before the pedagogy review), invoke the `prompt-health-reviewer` agent (use the Agent tool with `subagent_type: "prompt-health-reviewer"`). Pass it:
 
@@ -56,7 +64,7 @@ Review both:
 
 Log findings in `plan/sprints/prompt-health-review-<sprint-slug>.md`. If any findings are severity critical, include them in the pre-merge summary as blocking items.
 
-## Phase 3: Pedagogy Review
+## Phase 4: Pedagogy Review
 
 After the prompt health review completes, invoke the `pedagogy-reviewer` agent (use the Agent tool with `subagent_type: "pedagogy-reviewer"`). Pass it both the Teacher QA output AND a request to evaluate the section profiles directly:
 
@@ -76,7 +84,7 @@ B. Section profile pedagogy: Is the CEFR progression correct across levels (A1 t
 This is a sprint-level review. We want to know: is the AI generation quality good enough to ship to a real teacher?
 ```
 
-## Phase 4: Pre-Merge Summary
+## Phase 5: Pre-Merge Summary
 
 Present the final summary:
 
@@ -87,12 +95,18 @@ Present the final summary:
 - Total: N closed, N open (with disposition)
 - Board: clean / N items fixed
 
+### UI/UX Review (Phase 2)
+- Pages reviewed: N
+- Verdict: POLISHED / GOOD / NEEDS WORK
+- Critical items: [list or "none"]
+- Report: e2e/screenshots/review-ui/REPORT.md
+
 ### Teacher QA
 - Personas run: [list]
 - Overall quality: [summary]
 - Key findings: [list]
 
-### Prompt Health (Phase 2b)
+### Prompt Health (Phase 3b)
 - Files reviewed: PromptService.cs + N section profile JSONs
 - Findings: N redundant, N contradictory, N negative bloat, N stale, N duplication
 - Critical items: [list or "none"]
@@ -116,6 +130,7 @@ Return this summary to the main conversation. The main agent will present it to 
 
 - Never merge to main yourself. The user triggers the GitHub Action.
 - Never delete issues. Report open issues with no PR; the user decides.
-- Prompt health review (Phase 2b) must run BEFORE pedagogy review (Phase 3). Clean the noise first, then the pedagogy expert reviews clean templates.
-- The pedagogy reviewer must see BOTH Teacher QA results AND section profile guidance strings. Never skip Phase 3.
+- UI review (Phase 2) runs first since it needs the e2e stack. Tear it down before proceeding.
+- Prompt health review (Phase 3b) must run BEFORE pedagogy review (Phase 4). Clean the noise first, then the pedagogy expert reviews clean templates.
+- The pedagogy reviewer must see BOTH Teacher QA results AND section profile guidance strings. Never skip Phase 4.
 - Keep your final response under 3000 characters. Summary, not process narration.

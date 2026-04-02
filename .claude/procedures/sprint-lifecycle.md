@@ -16,7 +16,7 @@ Three stages:
 
 **Stage 1 (PM, main conversation):** Read `plan/code-review-backlog.md`, `plan/ui-review-backlog.md`, `plan/observed-issues.md`. Triage each entry as FIX NOW / NEXT SPRINT / DELETE. Present to user. Implement FIX NOW items via normal worktree flow. Batch NEXT SPRINT items into themed GitHub issues. Clear triaged entries.
 
-**Stage 2 (agent):** After user approves backlogs, run the `sprint-close` agent (`subagent_type: "sprint-close"`). It verifies board/issues, runs Teacher QA, prompt health review, and pedagogy review. Returns READY / NOT READY.
+**Stage 2 (agent):** After user approves backlogs, run the `sprint-close` agent (`subagent_type: "sprint-close"`). It verifies board/issues, runs the comprehensive UI/UX sprint review (`review-ui-sprint`), Teacher QA, prompt health review, and pedagogy review. Returns READY / NOT READY.
 
 **Stage 3 (cleanup, after user triggers merge action):** Close the milestone, delete the sprint branch, update memory (task status, sprint overviews), clear remaining backlog entries.
 

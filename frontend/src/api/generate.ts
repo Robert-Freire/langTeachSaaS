@@ -24,6 +24,13 @@ export interface TargetedDifficulty {
 
 export type GenerateStatus = 'idle' | 'streaming' | 'done' | 'error'
 
+export interface GrammarWarning {
+  ruleId: string
+  correction: string
+  severity: string
+  matchedText: string
+}
+
 export interface ContentBlockDto {
   id: string
   lessonSectionId: string | null
@@ -34,6 +41,7 @@ export interface ContentBlockDto {
   generationParams: string | null
   parsedContent: unknown | null
   createdAt: string
+  grammarWarnings?: GrammarWarning[] | null
 }
 
 export interface SaveContentBlockRequest {
@@ -43,26 +51,31 @@ export interface SaveContentBlockRequest {
   generationParams: string | null
 }
 
-export function getContentBlocks(lessonId: string): Promise<ContentBlockDto[]> {
-  return apiClient.get<ContentBlockDto[]>(`/api/lessons/${lessonId}/content-blocks`).then(r => r.data)
+export async function getContentBlocks(lessonId: string): Promise<ContentBlockDto[]> {
+  const res = await apiClient.get<ContentBlockDto[]>(`/api/lessons/${lessonId}/content-blocks`)
+  return res.data
 }
 
-export function saveContentBlock(lessonId: string, req: SaveContentBlockRequest): Promise<ContentBlockDto> {
-  return apiClient.post<ContentBlockDto>(`/api/lessons/${lessonId}/content-blocks`, req).then(r => r.data)
+export async function saveContentBlock(lessonId: string, req: SaveContentBlockRequest): Promise<ContentBlockDto> {
+  const res = await apiClient.post<ContentBlockDto>(`/api/lessons/${lessonId}/content-blocks`, req)
+  return res.data
 }
 
-export function updateEditedContent(lessonId: string, blockId: string, content: string): Promise<ContentBlockDto> {
-  return apiClient
-    .put<ContentBlockDto>(`/api/lessons/${lessonId}/content-blocks/${blockId}/edited-content`, { editedContent: content })
-    .then(r => r.data)
+export async function updateEditedContent(lessonId: string, blockId: string, content: string): Promise<ContentBlockDto> {
+  const res = await apiClient.put<ContentBlockDto>(
+    `/api/lessons/${lessonId}/content-blocks/${blockId}/edited-content`,
+    { editedContent: content }
+  )
+  return res.data
 }
 
-export function deleteContentBlock(lessonId: string, blockId: string): Promise<void> {
-  return apiClient.delete(`/api/lessons/${lessonId}/content-blocks/${blockId}`).then(() => undefined)
+export async function deleteContentBlock(lessonId: string, blockId: string): Promise<void> {
+  await apiClient.delete(`/api/lessons/${lessonId}/content-blocks/${blockId}`)
 }
 
-export function resetEditedContent(lessonId: string, blockId: string): Promise<ContentBlockDto> {
-  return apiClient
-    .delete<ContentBlockDto>(`/api/lessons/${lessonId}/content-blocks/${blockId}/edited-content`)
-    .then(r => r.data)
+export async function resetEditedContent(lessonId: string, blockId: string): Promise<ContentBlockDto> {
+  const res = await apiClient.delete<ContentBlockDto>(
+    `/api/lessons/${lessonId}/content-blocks/${blockId}/edited-content`
+  )
+  return res.data
 }

@@ -6,6 +6,7 @@ namespace LangTeach.Api.Data;
 public static class DemoSeeder
 {
     private const string DemoTag = "[demo]";
+    private const string VisualTag = "[visual-seed]";
 
     public static async Task<bool> SeedAsync(AppDbContext db, string teacherLookup, ILogger logger)
     {
@@ -96,6 +97,131 @@ public static class DemoSeeder
         var sectionCount = lessons.Sum(l => l.Sections.Count);
         logger.LogInformation("Demo data seeded: {Students} students, {Lessons} lessons, {Sections} sections.",
             students.Count, lessons.Count, sectionCount);
+        return true;
+    }
+
+    public static async Task<bool> SeedVisualAsync(AppDbContext db, string teacherLookup, ILogger logger)
+    {
+        if (string.IsNullOrWhiteSpace(teacherLookup))
+        {
+            logger.LogError("Seed target is required. Pass an Auth0 user ID or email.");
+            return false;
+        }
+        teacherLookup = teacherLookup.Trim();
+
+        var teacher = teacherLookup.StartsWith("auth0|", StringComparison.OrdinalIgnoreCase)
+            ? await db.Teachers.FirstOrDefaultAsync(t => t.Auth0UserId == teacherLookup)
+            : await db.Teachers.FirstOrDefaultAsync(t => t.Email == teacherLookup);
+
+        if (teacher is null)
+        {
+            logger.LogError("No teacher found for '{Lookup}'. Log in at least once before seeding.", teacherLookup);
+            return false;
+        }
+
+        if (!teacher.IsApproved || !teacher.HasCompletedOnboarding)
+        {
+            teacher.IsApproved = true;
+            teacher.HasCompletedOnboarding = true;
+            logger.LogInformation("Approved teacher {Email}.", teacher.Email);
+        }
+
+        var studentsSeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.Notes == VisualTag);
+        var coursesSeeded  = await db.Courses.AnyAsync(c => c.TeacherId == teacher.Id && c.Description == VisualTag);
+
+        if (studentsSeeded && coursesSeeded)
+        {
+            logger.LogInformation("Visual seed data already exists for teacher {Email}, skipping.", teacher.Email);
+            return true;
+        }
+
+        // Remove any partial seed state before re-seeding
+        if (studentsSeeded || coursesSeeded)
+        {
+            logger.LogInformation("Partial visual seed detected for teacher {Email}, cleaning up.", teacher.Email);
+            var partialStudents = await db.Students.Where(s => s.TeacherId == teacher.Id && s.Notes == VisualTag).ToListAsync();
+            db.Students.RemoveRange(partialStudents);
+            var partialCourses = await db.Courses.Where(c => c.TeacherId == teacher.Id && c.Description == VisualTag).ToListAsync();
+            db.Courses.RemoveRange(partialCourses);
+            var partialLessons = await db.Lessons.Where(l => l.TeacherId == teacher.Id && l.Topic == VisualTag).ToListAsync();
+            db.Lessons.RemoveRange(partialLessons);
+            await db.SaveChangesAsync();
+        }
+
+        logger.LogInformation("Seeding visual data for teacher {Email}...", teacher.Email);
+
+        var now = DateTime.UtcNow;
+
+        var students = new List<Student>
+        {
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", Notes = VisualTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Visual", LearningLanguage = "English", CefrLevel = "A2", Notes = VisualTag, CreatedAt = now, UpdatedAt = now },
+        };
+        db.Students.AddRange(students);
+
+        // Lesson with generated content (for StudyView /lessons/:id/study)
+        var lessonWithContent = CreateLesson(teacher.Id, students[0].Id,
+            "Travel Vocabulary", "English", "B2", VisualTag, 45, "Draft", now,
+            ("WarmUp",       0, "Discuss a memorable trip."),
+            ("Presentation", 1, "Pre-teach travel vocabulary."),
+            ("Practice",     2, "Gap-fill with target words."),
+            ("Production",   3, "Student describes a trip using new vocabulary."),
+            ("WrapUp",       4, "Review and self-correction."));
+
+        // Plain lesson without content (for lesson editor /lessons/:id)
+        var plainLesson = CreateLesson(teacher.Id, students[1].Id,
+            "Daily Routines", "English", "A2", VisualTag, 40, "Draft", now,
+            ("WarmUp",       0, "Describe your morning routine."),
+            ("Presentation", 1, "Present simple for habits."),
+            ("Practice",     2, "Fill-in exercises."),
+            ("WrapUp",       3, "Review."));
+
+        db.Lessons.AddRange(lessonWithContent, plainLesson);
+
+        // Vocabulary content block for StudyView
+        const string vocabularyJson = """{"items":[{"word":"travel","definition":"to go from one place to another","exampleSentence":"I love to travel."},{"word":"passport","definition":"an official document for international travel","exampleSentence":"Don't forget your passport."},{"word":"luggage","definition":"bags and cases used when travelling","exampleSentence":"She packed her luggage the night before."}]}""";
+        var contentBlock = new LessonContentBlock
+        {
+            Id               = Guid.NewGuid(),
+            LessonId         = lessonWithContent.Id,
+            LessonSectionId  = null,
+            BlockType        = ContentBlockType.Vocabulary,
+            GeneratedContent = vocabularyJson,
+            CreatedAt        = now,
+            UpdatedAt        = now,
+        };
+        db.LessonContentBlocks.Add(contentBlock);
+
+        // Course with curriculum entries
+        var course = new Course
+        {
+            Id               = Guid.NewGuid(),
+            TeacherId        = teacher.Id,
+            StudentId        = students[0].Id,
+            Name             = "B2 English General Course",
+            Description      = VisualTag,
+            Language         = "English",
+            Mode             = "general",
+            TargetCefrLevel  = "B2",
+            SessionCount     = 3,
+            IsDeleted        = false,
+            CreatedAt        = now,
+            UpdatedAt        = now,
+        };
+        db.Courses.Add(course);
+
+        var entries = new List<CurriculumEntry>
+        {
+            new() { Id = Guid.NewGuid(), CourseId = course.Id, OrderIndex = 1, Topic = "Travel Vocabulary",  GrammarFocus = "Past simple",    Competencies = "speaking,listening", LessonType = "Communicative", LessonId = lessonWithContent.Id, Status = "created",  IsDeleted = false },
+            new() { Id = Guid.NewGuid(), CourseId = course.Id, OrderIndex = 2, Topic = "Daily Routines",     GrammarFocus = "Present simple", Competencies = "reading,writing",    LessonType = "Grammar-focused", LessonId = null,                  Status = "planned", IsDeleted = false },
+            new() { Id = Guid.NewGuid(), CourseId = course.Id, OrderIndex = 3, Topic = "Future Plans",       GrammarFocus = "Going to / will", Competencies = "writing",           LessonType = "Mixed",           LessonId = null,                  Status = "planned", IsDeleted = false },
+        };
+        db.CurriculumEntries.AddRange(entries);
+
+        await db.SaveChangesAsync();
+
+        logger.LogInformation("Visual seed complete: {Students} students, 2 lessons, 1 content block, 1 course, {Entries} entries.",
+            students.Count, entries.Count);
         return true;
     }
 

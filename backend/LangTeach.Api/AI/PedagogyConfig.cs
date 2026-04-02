@@ -19,7 +19,26 @@ public record CefrLevelRules(
     string InstructionLanguage,
     string MetalanguageLevel,
     string ErrorCorrection,
-    string ScaffoldingDefault
+    string ScaffoldingDefault,
+    GuidedWritingConfig? GuidedWriting = null,
+    NoticingTaskConfig? NoticingTask = null
+);
+
+public record GuidedWritingConfig(
+    int WordCountMin,
+    int WordCountMax,
+    int SentenceCountMin,
+    int SentenceCountMax,
+    string Structures,
+    string Complexity,
+    string SituationGuidance
+);
+
+public record NoticingTaskConfig(
+    string[] TargetCategories,
+    string QuestionComplexity,
+    string Scaffolding,
+    string Guidance
 );
 
 public record InappropriateExerciseEntry(string Id, string Reason);
@@ -34,11 +53,19 @@ public record L1InfluenceFile(
     Dictionary<string, SpecificLanguage> SpecificLanguages
 );
 
+public record ContrastivePattern(
+    string Pattern,
+    string L1Behavior,
+    string TargetContrast,
+    string[] CefrRelevance
+);
+
 public record LanguageFamily(
     string[] Languages,
     string[] Strengths,
     string[] Weaknesses,
-    LanguageFamilyAdjustments Adjustments
+    LanguageFamilyAdjustments Adjustments,
+    ContrastivePattern[]? ContrastivePatterns = null
 );
 
 public record LanguageFamilyAdjustments(
@@ -54,7 +81,8 @@ public record SpecificLanguage(
     string[] FalseFriends,
     string[] PositiveTransfer,
     string AdditionalNotes,
-    TargetLanguageGrammarConstraint[]? GrammarConstraints = null
+    TargetLanguageGrammarConstraint[]? GrammarConstraints = null,
+    ContrastivePattern[]? ContrastivePatterns = null
 );
 
 public record TargetLanguageGrammarConstraint(
@@ -83,7 +111,8 @@ public record SectionOverride(
     string[] PriorityExerciseTypes,
     int? MinExerciseVarietyOverride,
     string? Notes,
-    string? Scope = null
+    string? Scope = null,
+    string? PreferredContentType = null
 );
 
 // Scope constraints config (scope-constraints.json)
@@ -96,7 +125,8 @@ public record ScopeConstraintsFile(Dictionary<string, Dictionary<string, string>
 public record CourseRulesFile(
     CourseVarietyRules VarietyRules,
     Dictionary<string, Dictionary<string, SkillRange>> SkillDistribution,
-    GrammarProgression GrammarProgression
+    GrammarProgression GrammarProgression,
+    string[]? SectionCoherenceRules = null
 );
 
 public record CourseVarietyRules(
@@ -129,3 +159,33 @@ public record StyleSubstitution(
     string[] NeverSubstituteWith,
     string Rule
 );
+
+// Practice stages (practice-stages.json)
+public record PracticeStagesFile(
+    PracticeStageDefinition[] Stages,
+    Dictionary<string, CefrStageRequirement> CefrStageRequirements
+);
+
+public record PracticeStageDefinition(
+    string Id,
+    string NameEs,
+    string NameLong,
+    string Description,
+    string[] AllowedExerciseCategories
+);
+
+public record CefrStageRequirement(
+    string[] Stages,
+    Dictionary<string, int[]> ItemsPerStage,
+    string[]? OptionalStages = null
+);
+
+/// <summary>
+/// Canonical PPP section keys in lesson order.
+/// Single authoritative definition — referenced by PromptService, PedagogyConfigService, and SeedData.
+/// </summary>
+public static class SectionKeys
+{
+    public static readonly string[] CanonicalOrder =
+        ["warmUp", "presentation", "practice", "production", "wrapUp"];
+}

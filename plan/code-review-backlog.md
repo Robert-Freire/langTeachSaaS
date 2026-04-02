@@ -6,6 +6,51 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-03-28 during Student-Aware Curriculum sprint close (round 2). 9 entries processed: 4 batched into #347 (pedagogy data consistency), 2 into #349 (UX polish), 3 deleted (redundant tests nit, harmless prompt duplication, undocumented fallback comment).*
 
+## PR task-t349-ux-polish (2026-04-01) -- #349 UX polish
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `GeneratePanel.tsx` | Hardcoded error/loading strings ("Content type rules could not be loaded...", "Loading types..."). No i18n yet across the app; track with overall i18n effort. |
+| Minor | `GeneratePanel.tsx` | `useRef`+`useEffect` for auto-scroll declared between other hooks rather than at the top with other refs. Cosmetic ordering issue. |
+| Minor | `sectionContentTypes.ts` | `ALL_CONTENT_TYPES` export is no longer used in production code (test import was also removed). Consider removing if no external consumers remain. |
+| Minor | `GeneratePanel.tsx` | Pre-existing inline SVG icons (replace indicator, check icon, spinner) diverge from lucide-react pattern in sibling components. The new error banner was fixed to use lucide-react; pre-existing ones remain. |
+
+## PR task-t406-visual-test-infrastructure (2026-03-31) -- #406 visual test infrastructure
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `e2e/tests/visual/*.visual.spec.ts` | `fs.mkdirSync('screenshots', { recursive: true })` repeated in every test body (13 times) instead of a shared `beforeAll` or global setup. Benign but inconsistent with existing spec convention. Consolidate in a future cleanup pass. |
+
+## PR task-t276-l1-contrastive-notes (2026-03-31) -- #276 L1 contrastive notes in grammar blocks
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `GrammarRenderer.tsx` Editor | `l1NoteExpanded` useState initialized from `parsedContent.l1ContrastiveNote != null` but no `key` prop — state leaks if parent swaps grammar blocks in place. Low risk since grammar blocks are always re-mounted by block ID in LessonNew, but worth aligning with other renderers. |
+| Minor | `PromptService.cs:523` | `BuildL1ContrastiveBlock` hardcodes "equivalent in Spanish" in the instruction text. Pre-existing system-wide design (whole app targets Spanish). Revisit if multi-target-language support is added. |
+
+## PR task-t274-noticing-task (2026-03-31) -- #274 noticing task content type
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `NoticingTaskRenderer.tsx` | Hardcoded English feedback strings ("You found all X targets!"). Same pattern as entire app (no i18n yet). Track with overall i18n effort. |
+| Minor | `NoticingTaskRenderer.tsx:1` | `eslint-disable react-refresh/only-export-components` suppresses lint for entire file. Same pattern as other renderers. |
+| Minor | `presentation.json` C2 | CE-09 (critical reading) absent from C2 `validExerciseTypes` but would support the implicature/inference targets declared in `c2.json noticingTask.targetCategories`. Consider adding in a future pedagogy config pass. |
+| Minor | `NoticingTaskRenderer.tsx` e2e spec | Missing `insert-btn` step (asserts on generation panel preview, not persisted block). Same pattern divergence as sentence-transformation spec. |
+
+## PR task-t272-sentence-transformation (2026-03-31) — #272 sentence transformation format
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `e2e/tests/sentence-transformation-type.spec.ts` | Two of four e2e tests (correct answer, alternative answer) omit `score-summary` assertion, diverging from `sentence-ordering-type.spec.ts` pattern. Low risk. |
+| Major | `frontend/src/types/contentTypes.ts` coerceExercisesContent | Early return at line 328 (`if (isExercisesContent(v)) return v`) bypasses item filtering for `sentenceTransformation` (and `sentenceOrdering`) when base arrays are already valid. Malformed `alternatives` values could pass through un-sanitized. Pre-existing pattern, not introduced by this PR. Affects all optional sub-formats. Fix in a coercion hardening pass. |
+
+## PR task-t269-sentence-ordering (2026-03-31) — #269 sentence ordering format
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `frontend/src/types/contentTypes.ts` coerceExercisesContent | sentenceOrdering items are filtered with shape validation during coercion, but fillInBlank/multipleChoice/matching items are not. Convention inconsistency only; low risk since AI rarely produces malformed exercise items beyond the sentenceOrdering case. Align in a future coercion hardening pass. |
+| Minor | `frontend/src/components/lesson/renderers/ExercisesRenderer.tsx` Student | `available` filtering uses `chosen.includes(idx)` (O(n) per item). Fine for typical 4-8 fragment arrays; could use a Set for cleaner code if fragment counts grow. |
+
 ## PR #351 (2026-03-28) — #351 additive section guidance model
 
 | Severity | File | Note |
@@ -25,7 +70,7 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 | Severity | File | Note |
 |---|---|---|
-| Important | `frontend/src/components/lesson/GeneratePanel.tsx` | `useSectionRules` has no `isError` handling — if the fetch fails permanently, `sectionRules` stays `undefined` and ALL_CONTENT_TYPES is silently returned (content-type filtering disabled with no user feedback). Graceful degradation is intentional but should surface an inline error or toast. |
+| ~~Important~~ | `frontend/src/components/lesson/GeneratePanel.tsx` | ~~`useSectionRules` has no `isError` handling~~ — **Fixed in PR task-t349-ux-polish (#349)** |
 | Minor | `backend/LangTeach.Api.Tests/Controllers/PedagogyControllerTests.cs` | The 3 tests all call the same endpoint; second/third tests are redundant round-trips. Could collapse assertions into a single test. |
 
 ---
@@ -68,3 +113,10 @@ A1-B2 use `vocabularyPerLesson: { productive: {min,max}, receptive: {min,max} }`
 | PR#338 | 2026-03-28 | low | PedagogyConfig.cs ExerciseTypeEntry: `bool Available = false` uses value-type default while other optional fields use nullable types. Functionally correct; minor style divergence. |
 
 | PR#360 | 2026-03-28 | low | PromptService.cs BuildRequest: StudentName and other PII are logged via named structured parameters ({SystemPrompt}, {UserPrompt}). Structured logging backends (Seq, App Insights) index these as searchable fields. Currently safe (Debug only in test/QA compose files), but worth switching to unstructured embedding or documenting as a known constraint to prevent accidental production enablement. |
+
+## PR task-t429-template-propagation (2026-04-02) -- #429 template propagation bug
+
+| Severity | File | Note |
+|---|---|---|
+| Minor | `FullLessonGenerateButton.tsx` | The four `*_SECTION_TASK_MAP` objects share identical WarmUp/WrapUp/Practice entries; only Presentation and Production vary. Minor duplication across 4 maps. Could be refactored as a base + per-template overrides if maps grow. |
+| Minor | `PromptServiceTests.cs` | `BuildReadingPrompt_LogsTemplateName` Theory only covers "Reading & Comprehension" but not "Writing Skills"/"Exam Prep". Asymmetric compared to the other Theory tests. Low risk since reading is R&C-specific. |

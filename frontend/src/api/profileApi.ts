@@ -1,11 +1,16 @@
 import { apiClient } from '../lib/apiClient'
 import type { ProfileDto, UpdateProfileRequest } from '../types/profile'
 
-export const getProfile = (): Promise<ProfileDto> =>
-  apiClient.get('/api/profile').then(r => r.data)
+export async function getProfile(): Promise<ProfileDto> {
+  const res = await apiClient.get<ProfileDto>('/api/profile')
+  return res.data
+}
 
-export const updateProfile = (req: UpdateProfileRequest): Promise<ProfileDto> =>
-  apiClient.put('/api/profile', req).then(r => r.data)
+export async function updateProfile(req: UpdateProfileRequest): Promise<ProfileDto> {
+  const res = await apiClient.put<ProfileDto>('/api/profile', req)
+  return res.data
+}
 
-export const completeOnboarding = (): Promise<void> =>
-  apiClient.post('/api/profile/complete-onboarding').then(() => undefined)
+export async function completeOnboarding(): Promise<void> {
+  await apiClient.post('/api/profile/complete-onboarding')
+}

@@ -8,7 +8,7 @@ function makeContent(overrides?: Partial<ReadingContent>): ReadingContent {
   return {
     passage: 'Smartphones have changed the way we communicate.',
     comprehensionQuestions: [
-      { question: 'How have smartphones changed communication?', answer: 'They allow instant messaging.', type: 'detail' },
+      { question: 'How have smartphones changed communication?', answer: 'They allow instant messaging.', type: 'factual' },
     ],
     vocabularyHighlights: [
       { word: 'ubiquitous', definition: 'Found everywhere; very common.' },

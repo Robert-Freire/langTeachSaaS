@@ -87,28 +87,18 @@ public class PedagogyConfigServiceTests
     // --- GetForbiddenExerciseTypeIds ---
 
     [Fact]
-    public void GetForbiddenExerciseTypeIds_WarmUp_A1_ExpandsAllGRPattern()
+    public void GetForbiddenExerciseTypeIds_WarmUp_A1_ExpandsCOPattern()
     {
-        // WarmUp forbids GR-* pattern. Should expand to all GR-xx IDs in the catalog (10 types: GR-01 to GR-10).
+        // WarmUp retains only CO-* forbidden (guards against CO-06 via L1 AdditionalExerciseTypes).
+        // GR-* and EE-* were removed as fully redundant (not injectable via L1 additions).
         var result = _sut.GetForbiddenExerciseTypeIds("warmup", "A1");
 
-        for (var i = 1; i <= 10; i++)
-        {
-            var id = $"GR-{i:D2}";
-            result.Should().Contain(id, because: $"GR-* pattern should expand to include {id}");
-        }
-    }
-
-    [Fact]
-    public void GetForbiddenExerciseTypeIds_WarmUp_A1_AlsoExpandsEEAndCOPatterns()
-    {
-        var result = _sut.GetForbiddenExerciseTypeIds("warmup", "A1");
-
-        // EE-* and CO-* are also forbidden for WarmUp
-        result.Should().Contain(id => id.StartsWith("EE-", StringComparison.OrdinalIgnoreCase),
-            because: "WarmUp forbids EE-* pattern");
         result.Should().Contain(id => id.StartsWith("CO-", StringComparison.OrdinalIgnoreCase),
-            because: "WarmUp forbids CO-* pattern");
+            because: "WarmUp forbids CO-* pattern to guard against L1 injection of CO-06");
+        result.Should().NotContain(id => id.StartsWith("GR-", StringComparison.OrdinalIgnoreCase),
+            because: "GR-* was removed from warmup forbidden as fully redundant with the validExerciseTypes allowlist");
+        result.Should().NotContain(id => id.StartsWith("EE-", StringComparison.OrdinalIgnoreCase),
+            because: "EE-* was removed from warmup forbidden as fully redundant with the validExerciseTypes allowlist");
     }
 
     // --- GetGrammarScope ---
@@ -328,6 +318,30 @@ public class PedagogyConfigServiceTests
         result.Should().NotContain("PRAG-02", because: "PRAG-02 was merged into EE-09 and no longer exists in the catalog");
     }
 
+    // --- CE-* practice relaxation (#364) ---
+
+    [Fact]
+    public void GetValidExerciseTypes_Practice_A2_ContainsCE01AndCE02()
+    {
+        // CE-01 and CE-02 are in A2 validExerciseTypes and in A2 CEFR appropriate types.
+        // This test documents the pre-existing behavior and guards against regression.
+        var result = _sut.GetValidExerciseTypes("practice", "A2");
+
+        result.Should().Contain("CE-01", because: "CE-01 (global comprehension) is valid for A2 practice");
+        result.Should().Contain("CE-02", because: "CE-02 (detailed comprehension) is valid for A2 practice");
+    }
+
+    [Fact]
+    public void GetValidExerciseTypes_Practice_A1_ContainsCE01()
+    {
+        // CE-01 was added to A1 practice validExerciseTypes in task #364.
+        // CE-01 is in A1 CEFR appropriate types, so it passes the intersection.
+        var result = _sut.GetValidExerciseTypes("practice", "A1");
+
+        result.Should().Contain("CE-01", because: "CE-01 (gist reading) supports read-and-match vocabulary consolidation at A1");
+        result.Should().NotContain("CE-02", because: "CE-02 (detailed comprehension) is not in A1 practice validExerciseTypes");
+    }
+
     // --- GetResolvedScope ---
 
     [Theory]
@@ -434,6 +448,58 @@ public class PedagogyConfigServiceTests
         _sut.Should().NotBeNull(because: "PedagogyConfigService must construct without validation errors");
     }
 
+    // --- preferredContentType (#358) ---
+
+    [Fact]
+    public void GetPreferredContentType_ReadingComprehension_Presentation_ReturnsReading()
+    {
+        var result = _sut.GetPreferredContentType("presentation", "Reading & Comprehension");
+
+        result.Should().Be("reading", because: "R&C template declares preferredContentType: reading for presentation");
+    }
+
+    [Fact]
+    public void GetPreferredContentType_ExamPrep_Production_ReturnsExercises()
+    {
+        var result = _sut.GetPreferredContentType("production", "Exam Prep");
+
+        result.Should().Be("exercises", because: "Exam Prep template declares preferredContentType: exercises for production");
+    }
+
+    [Fact]
+    public void GetPreferredContentType_ExamPrep_Practice_ReturnsExercises()
+    {
+        var result = _sut.GetPreferredContentType("practice", "Exam Prep");
+
+        result.Should().Be("exercises", because: "Exam Prep template declares preferredContentType: exercises for practice");
+    }
+
+    [Fact]
+    public void GetPreferredContentType_NoTemplate_ReturnsNull()
+    {
+        var result = _sut.GetPreferredContentType("production", null);
+
+        result.Should().BeNull(because: "null template name should return null preferred type");
+    }
+
+    [Fact]
+    public void GetPreferredContentType_TemplateWithoutPreference_ReturnsNull()
+    {
+        // Conversation Skills template has no preferredContentType on any section
+        var result = _sut.GetPreferredContentType("warmUp", "Conversation Skills");
+
+        result.Should().BeNull(because: "templates without preferredContentType on a section should return null");
+    }
+
+    [Fact]
+    public void StartupValidation_PreferredContentTypes_AllValidAgainstSectionProfiles()
+    {
+        // Construction must succeed — ValidateCrossLayerRefs validates preferredContentType values
+        // against section profile contentTypes for applicable CEFR levels.
+        // This test verifies the loaded config passes all cross-layer validation.
+        _sut.Should().NotBeNull(because: "PedagogyConfigService must construct without validation errors for preferredContentType entries");
+    }
+
     // --- GetGrammarConstraints ---
 
     [Fact]
@@ -454,5 +520,301 @@ public class PedagogyConfigServiceTests
         var result = _sut.GetGrammarConstraints("english");
 
         result.Should().BeEmpty(because: "no grammar constraints are defined for English in l1-influence.json");
+    }
+
+    // --- GetGuidedWritingGuidance ---
+
+    [Theory]
+    [InlineData("A1", 30, 50)]
+    [InlineData("B1", 80, 130)]
+    [InlineData("C1", 200, 300)]
+    public void GetGuidedWritingGuidance_ReturnsCorrectWordCountsForLevel(string level, int expectedMin, int expectedMax)
+    {
+        var result = _sut.GetGuidedWritingGuidance(level);
+
+        result.WordCountMin.Should().Be(expectedMin, because: $"CEFR {level} word count min is {expectedMin}");
+        result.WordCountMax.Should().Be(expectedMax, because: $"CEFR {level} word count max is {expectedMax}");
+    }
+
+    [Theory]
+    [InlineData("A1")]
+    [InlineData("A2")]
+    [InlineData("B1")]
+    [InlineData("B2")]
+    [InlineData("C1")]
+    [InlineData("C2")]
+    public void GetGuidedWritingGuidance_AllLevels_ReturnNonEmptyGuidanceFields(string level)
+    {
+        var result = _sut.GetGuidedWritingGuidance(level);
+
+        result.Structures.Should().NotBeNullOrWhiteSpace(because: $"CEFR {level} must specify required structures");
+        result.Complexity.Should().NotBeNullOrWhiteSpace(because: $"CEFR {level} must specify complexity guidance");
+        result.SituationGuidance.Should().NotBeNullOrWhiteSpace(because: $"CEFR {level} must specify situation guidance");
+        result.SentenceCountMin.Should().BeGreaterThan(0);
+        result.SentenceCountMax.Should().BeGreaterThanOrEqualTo(result.SentenceCountMin);
+    }
+
+    [Fact]
+    public void GetGuidedWritingGuidance_UnknownLevel_ReturnsSafeDefaults()
+    {
+        var result = _sut.GetGuidedWritingGuidance("X9");
+
+        result.WordCountMin.Should().BeGreaterThan(0, because: "defaults must be valid positive integers");
+        result.WordCountMax.Should().BeGreaterThanOrEqualTo(result.WordCountMin);
+        result.Structures.Should().NotBeNullOrWhiteSpace();
+    }
+
+    // --- GetRequiredSectionNames ---
+
+    [Fact]
+    public void GetRequiredSectionNames_Conversation_ReturnsFourRequiredSections()
+    {
+        var result = _sut.GetRequiredSectionNames("Conversation");
+
+        result.Should().NotBeNull();
+        result.Should().BeEquivalentTo(["warmUp", "practice", "production", "wrapUp"],
+            because: "Conversation has presentation:required=false; other 4 sections are required");
+        result.Should().ContainInOrder(["warmUp", "practice", "production", "wrapUp"],
+            because: "sections must follow canonical order");
+    }
+
+    [Fact]
+    public void GetRequiredSectionNames_ReadingComprehension_ReturnsFiveRequiredSections()
+    {
+        var result = _sut.GetRequiredSectionNames("Reading & Comprehension");
+
+        result.Should().NotBeNull();
+        result.Should().BeEquivalentTo(["warmUp", "presentation", "practice", "production", "wrapUp"],
+            because: "all 5 sections are required in Reading & Comprehension");
+    }
+
+    [Fact]
+    public void GetRequiredSectionNames_UnknownTemplate_ReturnsNull()
+    {
+        var result = _sut.GetRequiredSectionNames("Non-Existent Template");
+
+        result.Should().BeNull();
+    }
+
+    // --- GetPracticeStageRequirements ---
+
+    [Fact]
+    public void GetPracticeStageRequirements_A1_ReturnsTwoStages()
+    {
+        var result = _sut.GetPracticeStageRequirements("A1");
+
+        result.Should().NotBeNull();
+        result!.Stages.Should().BeEquivalentTo(["controlled", "meaningful"]);
+    }
+
+    [Fact]
+    public void GetPracticeStageRequirements_B1_ReturnsThreeStages()
+    {
+        var result = _sut.GetPracticeStageRequirements("B1");
+
+        result.Should().NotBeNull();
+        result!.Stages.Should().BeEquivalentTo(["controlled", "meaningful", "guided_free"]);
+    }
+
+    [Fact]
+    public void GetPracticeStageRequirements_C1_HasOptionalControlled()
+    {
+        var result = _sut.GetPracticeStageRequirements("C1");
+
+        result.Should().NotBeNull();
+        result!.OptionalStages.Should().Contain("controlled");
+        result!.Stages.Should().NotContain("controlled", because: "controlled is optional at C1, not mandatory");
+    }
+
+    [Fact]
+    public void GetPracticeStageRequirements_UnknownLevel_ReturnsNull()
+    {
+        var result = _sut.GetPracticeStageRequirements("X9");
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetPracticeStageDefinitions_ReturnsAllThreeStages()
+    {
+        var result = _sut.GetPracticeStageDefinitions();
+
+        result.Should().HaveCount(3);
+        result.Select(s => s.Id).Should().BeEquivalentTo(["controlled", "meaningful", "guided_free"]);
+    }
+
+    // ─── Noticing Task Guidance ──────────────────────────────────────────
+
+    [Theory]
+    [InlineData("A1")]
+    [InlineData("A2")]
+    [InlineData("B1")]
+    [InlineData("B2")]
+    [InlineData("C1")]
+    [InlineData("C2")]
+    public void GetNoticingTaskGuidance_ReturnsForAllLevels(string level)
+    {
+        var result = _sut.GetNoticingTaskGuidance(level);
+
+        result.Should().NotBeNull();
+        result!.TargetCategories.Should().NotBeEmpty();
+        result.QuestionComplexity.Should().NotBeNullOrEmpty();
+        result.Scaffolding.Should().NotBeNullOrEmpty();
+        result.Guidance.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public void GetNoticingTaskGuidance_UnknownLevel_ReturnsNull()
+    {
+        var result = _sut.GetNoticingTaskGuidance("Z9");
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetNoticingTaskGuidance_A2_HasHighScaffolding()
+    {
+        var result = _sut.GetNoticingTaskGuidance("A2");
+
+        result.Should().NotBeNull();
+        result!.Scaffolding.Should().Be("high");
+    }
+
+    [Fact]
+    public void GetNoticingTaskGuidance_C1_HasLowScaffolding()
+    {
+        var result = _sut.GetNoticingTaskGuidance("C1");
+
+        result.Should().NotBeNull();
+        result!.Scaffolding.Should().Be("low");
+    }
+
+    // --- GetContrastivePattern ---
+
+    [Fact]
+    public void GetContrastivePattern_Italian_SerEstar_A2_ReturnsSpecificLanguagePattern()
+    {
+        var result = _sut.GetContrastivePattern("italian", "ser-estar distinction", "A2");
+
+        result.Should().NotBeNull(because: "italian has a specific ser-estar contrastive pattern in l1-influence.json");
+        result!.L1Behavior.Should().Contain("essere", because: "the Italian-specific pattern references essere");
+        result.NativeLang.Should().Be("italian");
+    }
+
+    [Fact]
+    public void GetContrastivePattern_Italian_SerEstar_C2_ReturnsNull()
+    {
+        var result = _sut.GetContrastivePattern("italian", "ser-estar distinction", "C2");
+
+        result.Should().BeNull(because: "the ser-estar pattern for Italian has cefrRelevance up to B2, not C2");
+    }
+
+    [Fact]
+    public void GetContrastivePattern_English_SerEstar_A1_ReturnsFamilyPattern()
+    {
+        // English is not in specificLanguages, so it falls back to the germanic family pattern
+        var result = _sut.GetContrastivePattern("english", "ser-estar usage", "A1");
+
+        result.Should().NotBeNull(because: "the germanic family has a ser-estar contrastive pattern");
+        result!.L1Behavior.Should().Contain("to be", because: "the germanic family pattern references the single English copula");
+    }
+
+    [Fact]
+    public void GetContrastivePattern_UnknownLanguage_ReturnsNull()
+    {
+        var result = _sut.GetContrastivePattern("klingon", "ser-estar", "B1");
+
+        result.Should().BeNull(because: "klingon is not defined in l1-influence.json");
+    }
+
+    [Fact]
+    public void GetContrastivePattern_TopicNoMatch_ReturnsNull()
+    {
+        var result = _sut.GetContrastivePattern("italian", "preterite vs imperfect", "B1");
+
+        result.Should().BeNull(because: "no contrastive pattern for Italian matches 'preterite vs imperfect'");
+    }
+
+    [Fact]
+    public void GetContrastivePattern_Italian_SubjectiveSerEstar_SpecificLanguageTakesPriorityOverFamily()
+    {
+        // Italian has a specific ser-estar pattern AND the romance family has a ser-estar pattern.
+        // The specific-language pattern should be returned first.
+        var result = _sut.GetContrastivePattern("italian", "ser-estar", "B1");
+
+        result.Should().NotBeNull();
+        result!.L1Behavior.Should().Contain("essere",
+            because: "Italian-specific pattern (references 'essere') should be returned, not the family-level pattern");
+    }
+
+    [Fact]
+    public void GetContrastivePattern_Mandarin_Gender_A1_ReturnsFamilyPattern()
+    {
+        var result = _sut.GetContrastivePattern("mandarin", "gender agreement", "A1");
+
+        result.Should().NotBeNull(because: "sinitic-japonic family has a gender contrastive pattern");
+        result!.NativeLang.Should().Be("mandarin");
+    }
+
+    [Fact]
+    public void GetContrastivePattern_Portuguese_SerEstar_B1_ReturnsNull()
+    {
+        // Portuguese has ser/estar like Spanish (positive transfer).
+        // A specificLanguages entry with empty contrastivePatterns prevents the romance family pattern from firing.
+        var result = _sut.GetContrastivePattern("portuguese", "ser-estar distinction", "B1");
+
+        result.Should().BeNull(because: "Portuguese has positive transfer on ser/estar — the family ser-estar pattern must not fire");
+    }
+
+    // --- GetSectionCoherenceRules ---
+
+    [Fact]
+    public void GetSectionCoherenceRules_ReturnsNonEmptyArray()
+    {
+        var rules = _sut.GetSectionCoherenceRules();
+
+        rules.Should().NotBeEmpty(because: "course-rules.json must define sectionCoherenceRules");
+    }
+
+    [Fact]
+    public void GetSectionCoherenceRules_ContainsPracticeConstraint()
+    {
+        var rules = _sut.GetSectionCoherenceRules();
+
+        rules.Should().Contain(r => r.Contains("Practice", StringComparison.OrdinalIgnoreCase)
+            && r.Contains("Presentation", StringComparison.OrdinalIgnoreCase),
+            because: "the Practice coherence rule must reference Presentation content restriction");
+    }
+
+    // --- GetWeaknessTargetingGuidance ---
+
+    [Theory]
+    [InlineData("practice")]
+    [InlineData("production")]
+    [InlineData("wrapup")]
+    public void GetWeaknessTargetingGuidance_ReturnsNonNull_ForTargetedSections(string section)
+    {
+        var result = _sut.GetWeaknessTargetingGuidance(section);
+
+        result.Should().NotBeNullOrEmpty(because: $"{section} should define weaknessTargetingGuidance");
+    }
+
+    [Theory]
+    [InlineData("warmup")]
+    [InlineData("presentation")]
+    public void GetWeaknessTargetingGuidance_ReturnsNull_ForNonTargetedSections(string section)
+    {
+        var result = _sut.GetWeaknessTargetingGuidance(section);
+
+        result.Should().BeNull(because: $"{section} does not participate in weakness targeting");
+    }
+
+    [Fact]
+    public void GetWeaknessTargetingGuidance_Practice_ContainsWeaknessesPlaceholder()
+    {
+        var result = _sut.GetWeaknessTargetingGuidance("practice");
+
+        result.Should().Contain("{weaknesses}",
+            because: "practice guidance must contain {weaknesses} placeholder for interpolation");
     }
 }

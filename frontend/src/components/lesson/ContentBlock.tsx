@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { getRenderer } from './contentRegistry'
 import { ContentErrorBoundary } from './ContentErrorBoundary'
 import { TargetedDifficulties } from './TargetedDifficulties'
+import { AlertTriangle } from 'lucide-react'
 
 interface ContentBlockProps {
   block: ContentBlockDto
@@ -50,6 +51,12 @@ export function ContentBlock({
   useEffect(() => {
     setValue(block.editedContent ?? block.generatedContent)
   }, [block.editedContent, block.generatedContent])
+
+  useEffect(() => {
+    setEditingTargets(false)
+    setTargetsDraft([])
+    setNewTagInput('')
+  }, [block.id, lessonId])
 
   const doSave = async (content: string) => {
     if (content === storedValue) return
@@ -354,6 +361,36 @@ export function ContentBlock({
 
       {actionError && (
         <p className="text-xs text-red-600">{actionError}</p>
+      )}
+
+      {block.grammarWarnings && block.grammarWarnings.length > 0 && (
+        <div
+          data-testid="grammar-warnings"
+          className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 space-y-1.5"
+        >
+          <div className="flex items-center gap-1.5 text-xs font-medium text-amber-800">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            Grammar quality issues detected — please review before sharing with students
+          </div>
+          {block.grammarWarnings.map((w) => (
+            <div key={w.ruleId} className="flex items-start gap-2 text-xs text-amber-700">
+              <Badge
+                variant="outline"
+                className={`shrink-0 text-xs border capitalize ${
+                  w.severity === 'high'
+                    ? 'border-red-300 bg-red-50 text-red-700'
+                    : 'border-amber-300 bg-amber-100 text-amber-700'
+                }`}
+                data-testid="grammar-warning-severity"
+              >
+                {w.severity}
+              </Badge>
+              <span>
+                Found: <code className="font-mono font-medium">{w.matchedText}</code> — {w.correction}
+              </span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )

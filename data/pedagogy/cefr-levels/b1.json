@@ -104,5 +104,20 @@
   "instructionLanguage": "Entirely in L2. Grammatical metalanguage may be used freely in L2.",
   "metalanguageLevel": "Full grammatical metalanguage in L2: subjuntivo, condicional, oracion subordinada, pluscuamperfecto",
   "errorCorrection": "Preferably deferred. Note errors during production, correct at end. Encourage self-correction. Distinguish errors of competence (does not know the rule) from errors of performance (knows the rule but fails in spontaneous production).",
-  "scaffoldingDefault": "medium"
+  "scaffoldingDefault": "medium",
+  "noticingTask": {
+    "targetCategories": ["tense contrasts (indefinido vs imperfecto)", "subjunctive triggers", "connectors", "perifrasis verbales"],
+    "questionComplexity": "guided open questions",
+    "scaffolding": "medium",
+    "guidance": "Present data in an authentic-style text (100-150 words). Ask the student to formulate the rule in their own words before confirming. Include L1 interference notes for the teacher. Discovery questions can be open-ended but focused."
+  },
+  "guidedWriting": {
+    "wordCountMin": 80,
+    "wordCountMax": 130,
+    "sentenceCountMin": 6,
+    "sentenceCountMax": 10,
+    "structures": "compound and complex sentences, causal and temporal connectors",
+    "complexity": "Familiar topics with some detail. May require opinion.",
+    "situationGuidance": "Semi-formal contexts (letters, messages, brief descriptions)"
+  }
 }

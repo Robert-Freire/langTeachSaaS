@@ -15,9 +15,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/PageHeader'
+import { CEFR_LEVELS } from '@/lib/cefr-colors'
+import { LANGUAGES } from '@/lib/languages'
 
-const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other']
-const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 const DURATIONS = [30, 45, 60, 90]
 
 const TEMPLATE_ICONS: Record<string, React.ReactNode> = {

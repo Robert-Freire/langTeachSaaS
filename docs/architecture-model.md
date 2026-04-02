@@ -292,13 +292,14 @@ These rules must always hold. A PR that violates an invariant is a bug, not a de
 4. No C# or TypeScript changes needed (unless it needs a new renderer)
 
 ### New content block type
-1. Add to `ContentBlockType` enum (C#) + kebab map
-2. Add TypeScript union member + content interface
-3. Create renderer triplet (Editor/Preview/Student)
-4. Register in `contentRegistry.tsx`
-5. Add prompt builder in PromptService
-6. Update section profiles with new content type where allowed
-7. This is a code change because it involves new rendering logic
+1. **Create `data/content-schemas/<content-type-key>.json`** (JSON Schema draft-07) and add `EmbeddedResource` entry in `LangTeach.Api.csproj`. `ContentSchemaService` loads it automatically at startup; no other C# changes required for the schema itself.
+2. Add to `ContentBlockType` enum (C#) + kebab map
+3. Add TypeScript union member + content interface
+4. Create renderer triplet (Editor/Preview/Student)
+5. Register in `contentRegistry.tsx`
+6. Add prompt builder in PromptService
+7. Update section profiles with new content type where allowed
+8. This is a code change because it involves new rendering logic
 
 ### New CEFR level rule
 1. Edit `data/pedagogy/cefr-levels/<level>.json`
