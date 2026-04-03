@@ -1,88 +1,52 @@
-import { createContext, useContext, useState } from 'react'
+import { Tabs as TabsPrimitive } from '@base-ui/react/tabs'
 import { cn } from '@/lib/utils'
 
-interface TabsContextValue {
-  active: string
-  setActive: (v: string) => void
+function Tabs({ ...props }: TabsPrimitive.Root.Props) {
+  return <TabsPrimitive.Root data-slot="tabs" {...props} />
 }
 
-const TabsContext = createContext<TabsContextValue | null>(null)
-
-function useTabs() {
-  const ctx = useContext(TabsContext)
-  if (!ctx) throw new Error('useTabs must be used inside Tabs')
-  return ctx
-}
-
-export function Tabs({
-  defaultValue,
-  children,
+function TabsList({
   className,
-}: {
-  defaultValue: string
-  children: React.ReactNode
-  className?: string
-}) {
-  const [active, setActive] = useState(defaultValue)
+  ...props
+}: TabsPrimitive.List.Props) {
   return (
-    <TabsContext.Provider value={{ active, setActive }}>
-      <div className={className}>{children}</div>
-    </TabsContext.Provider>
+    <TabsPrimitive.List
+      data-slot="tabs-list"
+      className={cn('flex border-b border-zinc-200', className)}
+      {...props}
+    />
   )
 }
 
-export function TabsList({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div
-      role="tablist"
-      className={cn('flex border-b border-zinc-200 gap-0', className)}
-    >
-      {children}
-    </div>
-  )
-}
-
-export function TabsTrigger({
-  value,
-  children,
+function TabsTrigger({
   className,
-  ...rest
-}: {
-  value: string
-  children: React.ReactNode
-  className?: string
-} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const { active, setActive } = useTabs()
-  const isActive = active === value
+  ...props
+}: TabsPrimitive.Tab.Props) {
   return (
-    <button
-      role="tab"
-      aria-selected={isActive}
-      onClick={() => setActive(value)}
+    <TabsPrimitive.Tab
+      data-slot="tabs-trigger"
       className={cn(
-        'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
-        isActive
-          ? 'border-indigo-600 text-indigo-600'
-          : 'border-transparent text-zinc-500 hover:text-zinc-800',
+        'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors cursor-pointer',
+        'border-transparent text-zinc-500 hover:text-zinc-800',
+        'data-selected:border-indigo-600 data-selected:text-indigo-600',
         className,
       )}
-      {...rest}
-    >
-      {children}
-    </button>
+      {...props}
+    />
   )
 }
 
-export function TabsContent({
-  value,
-  children,
+function TabsContent({
   className,
-}: {
-  value: string
-  children: React.ReactNode
-  className?: string
-}) {
-  const { active } = useTabs()
-  if (active !== value) return null
-  return <div className={className}>{children}</div>
+  ...props
+}: TabsPrimitive.Panel.Props) {
+  return (
+    <TabsPrimitive.Panel
+      data-slot="tabs-content"
+      className={cn(className)}
+      {...props}
+    />
+  )
 }
+
+export { Tabs, TabsList, TabsTrigger, TabsContent }

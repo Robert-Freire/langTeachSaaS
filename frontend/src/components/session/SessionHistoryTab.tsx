@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Trash2, ExternalLink, FileText } from 'lucide-r
 import { logger } from '../../lib/logger'
 import { Link } from 'react-router-dom'
 import { listSessions, deleteSession, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
+import { formatDate } from '../../utils/formatDate'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -38,14 +39,6 @@ function relativeTime(dateStr: string): string {
   }
   const months = Math.floor(diffDays / 30)
   return `${months} month${months > 1 ? 's' : ''} ago`
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
 }
 
 const HOMEWORK_STATUS_STYLES: Record<string, string> = {
