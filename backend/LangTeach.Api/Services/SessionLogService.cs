@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
@@ -9,6 +10,12 @@ public class SessionLogService : ISessionLogService
 {
     private readonly AppDbContext _db;
     private readonly ILogger<SessionLogService> _logger;
+
+    private static readonly HashSet<string> ValidSkills = new(StringComparer.OrdinalIgnoreCase)
+        { "Speaking", "Writing", "Reading", "Listening" };
+
+    private static readonly HashSet<string> ValidCefrSubLevels = new(StringComparer.OrdinalIgnoreCase)
+        { "A1.1", "A1.2", "A2.1", "A2.2", "B1.1", "B1.2", "B2.1", "B2.2", "C1.1", "C1.2", "C2.1", "C2.2" };
 
     public SessionLogService(AppDbContext db, ILogger<SessionLogService> logger)
     {
@@ -26,7 +33,7 @@ public class SessionLogService : ISessionLogService
             throw new KeyNotFoundException($"Student {studentId} not found.");
 
         var sessions = await _db.SessionLogs
-            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId)
+            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
             .OrderByDescending(sl => sl.SessionDate)
             .Select(sl => ToDto(sl))
             .ToListAsync(cancellationToken);
@@ -37,7 +44,7 @@ public class SessionLogService : ISessionLogService
     public async Task<SessionLogDto?> GetByIdAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default)
     {
         var session = await _db.SessionLogs
-            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId)
+            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken);
 
         return session is null ? null : ToDto(session);
@@ -48,6 +55,8 @@ public class SessionLogService : ISessionLogService
         if (!Enum.IsDefined(request.PreviousHomeworkStatus))
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
+
+        ValidateReassessment(request.LevelReassessmentSkill, request.LevelReassessmentLevel);
 
         var student = await _db.Students
             .Where(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted)
@@ -82,11 +91,16 @@ public class SessionLogService : ISessionLogService
             LevelReassessmentSkill = request.LevelReassessmentSkill,
             LevelReassessmentLevel = request.LevelReassessmentLevel,
             LinkedLessonId = request.LinkedLessonId,
+            TopicTags = request.TopicTags ?? "[]",
             CreatedAt = now,
             UpdatedAt = now
         };
 
         _db.SessionLogs.Add(entity);
+
+        if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
+            PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel);
+
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Created SessionLog {SessionLogId} for Student {StudentId}", entity.Id, studentId);
@@ -99,8 +113,10 @@ public class SessionLogService : ISessionLogService
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
 
+        ValidateReassessment(request.LevelReassessmentSkill, request.LevelReassessmentLevel);
+
         var entity = await _db.SessionLogs
-            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId)
+            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (entity is null)
@@ -126,12 +142,67 @@ public class SessionLogService : ISessionLogService
         entity.LevelReassessmentSkill = request.LevelReassessmentSkill;
         entity.LevelReassessmentLevel = request.LevelReassessmentLevel;
         entity.LinkedLessonId = request.LinkedLessonId;
+        entity.TopicTags = request.TopicTags ?? "[]";
         entity.UpdatedAt = DateTime.UtcNow;
+
+        if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
+        {
+            var student = await _db.Students
+                .Where(s => s.Id == studentId && s.TeacherId == teacherId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (student is not null)
+                PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel);
+        }
 
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Updated SessionLog {SessionLogId}", sessionId);
         return ToDto(entity);
+    }
+
+    public async Task<bool> SoftDeleteAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default)
+    {
+        var entity = await _db.SessionLogs
+            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (entity is null)
+            return false;
+
+        entity.IsDeleted = true;
+        entity.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Soft-deleted SessionLog {SessionLogId}", sessionId);
+        return true;
+    }
+
+    private static void ValidateReassessment(string? skill, string? level)
+    {
+        if (skill is not null && !ValidSkills.Contains(skill))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid LevelReassessmentSkill '{skill}'. Valid values: {string.Join(", ", ValidSkills)}");
+
+        if (level is not null && !ValidCefrSubLevels.Contains(level))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid LevelReassessmentLevel '{level}'. Valid values: {string.Join(", ", ValidCefrSubLevels)}");
+    }
+
+    private static void PropagateReassessment(Student student, string skill, string level)
+    {
+        var overrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            var existing = JsonSerializer.Deserialize<Dictionary<string, string>>(student.SkillLevelOverrides);
+            if (existing is not null)
+                foreach (var kv in existing)
+                    overrides[kv.Key] = kv.Value;
+        }
+        catch (JsonException) { }
+
+        overrides[skill.ToLowerInvariant()] = level;
+        student.SkillLevelOverrides = JsonSerializer.Serialize(overrides);
     }
 
     private static SessionLogDto ToDto(SessionLog sl) => new(
@@ -149,6 +220,7 @@ public class SessionLogService : ISessionLogService
         sl.LevelReassessmentLevel,
         sl.LinkedLessonId,
         sl.CreatedAt,
-        sl.UpdatedAt
+        sl.UpdatedAt,
+        sl.TopicTags
     );
 }

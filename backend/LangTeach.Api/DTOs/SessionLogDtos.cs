@@ -19,7 +19,8 @@ public record SessionLogDto(
     string? LevelReassessmentLevel,
     Guid? LinkedLessonId,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    string TopicTags
 );
 
 public class CreateSessionLogRequest
@@ -39,6 +40,7 @@ public class CreateSessionLogRequest
     public string? LevelReassessmentSkill { get; set; }
     public string? LevelReassessmentLevel { get; set; }
     public Guid? LinkedLessonId { get; set; }
+    public string? TopicTags { get; set; }
 }
 
 public class UpdateSessionLogRequest
@@ -58,4 +60,5 @@ public class UpdateSessionLogRequest
     public string? LevelReassessmentSkill { get; set; }
     public string? LevelReassessmentLevel { get; set; }
     public Guid? LinkedLessonId { get; set; }
+    public string? TopicTags { get; set; }
 }

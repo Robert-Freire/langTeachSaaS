@@ -278,4 +278,204 @@ public class SessionLogServiceTests : IDisposable
         var result = await _sut.UpdateAsync(_teacherId, _studentId, Guid.NewGuid(), request);
         result.Should().BeNull();
     }
+
+    // --- Soft Delete ---
+
+    [Fact]
+    public async Task SoftDeleteAsync_ExistingSession_ReturnsTrueAndExcludesFromList()
+    {
+        var sessionId = Guid.NewGuid();
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = sessionId, StudentId = _studentId, TeacherId = _teacherId,
+            SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        await _db.SaveChangesAsync();
+
+        var deleted = await _sut.SoftDeleteAsync(_teacherId, _studentId, sessionId);
+
+        deleted.Should().BeTrue();
+        var list = await _sut.ListAsync(_teacherId, _studentId);
+        list.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SoftDeleteAsync_NotFound_ReturnsFalse()
+    {
+        var result = await _sut.SoftDeleteAsync(_teacherId, _studentId, Guid.NewGuid());
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_SoftDeleted_ReturnsNull()
+    {
+        var sessionId = Guid.NewGuid();
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = sessionId, StudentId = _studentId, TeacherId = _teacherId,
+            SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            IsDeleted = true,
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.GetByIdAsync(_teacherId, _studentId, sessionId);
+        result.Should().BeNull();
+    }
+
+    // --- Topic Tags ---
+
+    [Fact]
+    public async Task CreateAsync_WithTopicTags_RoundTrips()
+    {
+        var tags = """[{"tag":"preterito indefinido","category":"grammar"}]""";
+        var request = BaseRequest();
+        request.TopicTags = tags;
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+
+        result.TopicTags.Should().Be(tags);
+    }
+
+    [Fact]
+    public async Task CreateAsync_NullTopicTags_DefaultsToEmptyArray()
+    {
+        var result = await _sut.CreateAsync(_teacherId, _studentId, BaseRequest());
+        result.TopicTags.Should().Be("[]");
+    }
+
+    // --- Reassessment Validation ---
+
+    [Fact]
+    public async Task CreateAsync_InvalidReassessmentSkill_ThrowsValidation()
+    {
+        var request = BaseRequest();
+        request.LevelReassessmentSkill = "Pronunciation";
+        request.LevelReassessmentLevel = "B1.1";
+
+        var act = () => _sut.CreateAsync(_teacherId, _studentId, request);
+        await act.Should().ThrowAsync<System.ComponentModel.DataAnnotations.ValidationException>()
+            .WithMessage("*LevelReassessmentSkill*");
+    }
+
+    [Fact]
+    public async Task CreateAsync_InvalidReassessmentLevel_ThrowsValidation()
+    {
+        var request = BaseRequest();
+        request.LevelReassessmentSkill = "Speaking";
+        request.LevelReassessmentLevel = "A1+";
+
+        var act = () => _sut.CreateAsync(_teacherId, _studentId, request);
+        await act.Should().ThrowAsync<System.ComponentModel.DataAnnotations.ValidationException>()
+            .WithMessage("*LevelReassessmentLevel*");
+    }
+
+    [Fact]
+    public async Task CreateAsync_ReassessmentSkillCaseInsensitive_Accepted()
+    {
+        var request = BaseRequest();
+        request.LevelReassessmentSkill = "speaking";
+        request.LevelReassessmentLevel = "a1.2";
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.LevelReassessmentSkill.Should().Be("speaking");
+    }
+
+    // --- Reassessment Propagation ---
+
+    [Fact]
+    public async Task CreateAsync_WithReassessment_PropagatesSkillOverrideToStudent()
+    {
+        var request = BaseRequest();
+        request.LevelReassessmentSkill = "Speaking";
+        request.LevelReassessmentLevel = "A1.2";
+
+        await _sut.CreateAsync(_teacherId, _studentId, request);
+
+        var student = await _db.Students.FindAsync(_studentId);
+        student!.SkillLevelOverrides.Should().Contain("\"speaking\"");
+        student.SkillLevelOverrides.Should().Contain("\"A1.2\"");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithReassessment_OverwritesPreviousOverride()
+    {
+        var sessionId = Guid.NewGuid();
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = sessionId, StudentId = _studentId, TeacherId = _teacherId,
+            SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            LevelReassessmentSkill = "Speaking", LevelReassessmentLevel = "A1.2",
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        var student = await _db.Students.FindAsync(_studentId);
+        student!.SkillLevelOverrides = """{"speaking":"A1.2"}""";
+        await _db.SaveChangesAsync();
+
+        var request = new UpdateSessionLogRequest
+        {
+            SessionDate = DateTime.UtcNow,
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            LevelReassessmentSkill = "Speaking",
+            LevelReassessmentLevel = "A2.1",
+        };
+
+        await _sut.UpdateAsync(_teacherId, _studentId, sessionId, request);
+
+        var updatedStudent = await _db.Students.FindAsync(_studentId);
+        updatedStudent!.SkillLevelOverrides.Should().Contain("\"A2.1\"");
+        updatedStudent.SkillLevelOverrides.Should().NotContain("\"A1.2\"");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ClearingReassessment_DoesNotRevertStudentOverride()
+    {
+        var sessionId = Guid.NewGuid();
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = sessionId, StudentId = _studentId, TeacherId = _teacherId,
+            SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        var student = await _db.Students.FindAsync(_studentId);
+        student!.SkillLevelOverrides = """{"speaking":"A1.2"}""";
+        await _db.SaveChangesAsync();
+
+        var request = new UpdateSessionLogRequest
+        {
+            SessionDate = DateTime.UtcNow,
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            LevelReassessmentSkill = null,
+            LevelReassessmentLevel = null,
+        };
+
+        await _sut.UpdateAsync(_teacherId, _studentId, sessionId, request);
+
+        var updatedStudent = await _db.Students.FindAsync(_studentId);
+        updatedStudent!.SkillLevelOverrides.Should().Contain("\"speaking\"");
+        updatedStudent.SkillLevelOverrides.Should().Contain("\"A1.2\"");
+    }
+
+    [Fact]
+    public async Task SoftDeleteAsync_DoesNotRevertStudentSkillOverrides()
+    {
+        var sessionId = Guid.NewGuid();
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = sessionId, StudentId = _studentId, TeacherId = _teacherId,
+            SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            LevelReassessmentSkill = "Writing", LevelReassessmentLevel = "B1.2",
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        var student = await _db.Students.FindAsync(_studentId);
+        student!.SkillLevelOverrides = """{"writing":"B1.2"}""";
+        await _db.SaveChangesAsync();
+
+        await _sut.SoftDeleteAsync(_teacherId, _studentId, sessionId);
+
+        var updatedStudent = await _db.Students.FindAsync(_studentId);
+        updatedStudent!.SkillLevelOverrides.Should().Contain("\"writing\"");
+        updatedStudent.SkillLevelOverrides.Should().Contain("\"B1.2\"");
+    }
 }
