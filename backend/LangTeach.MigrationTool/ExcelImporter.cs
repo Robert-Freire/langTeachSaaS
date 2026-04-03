@@ -10,7 +10,7 @@ internal sealed class ImportResult
 {
     public int SheetsProcessed { get; set; }
     public int SheetsMatched { get; set; }
-    public int SheetsUnmatched { get; set; }
+    public int StudentsCreated { get; set; }
     public int SessionsImported { get; set; }
     public int SessionsSkipped { get; set; }
     public int StudentsNotesUpdated { get; set; }
@@ -47,9 +47,9 @@ internal sealed class ExcelImporter
             var student = StudentMatcher.FindStudent(sheetName, students);
             if (student is null)
             {
-                Console.WriteLine($"WARNING: Sheet \"{sheetName}\" -> no matching student found");
-                result.SheetsUnmatched++;
-                continue;
+                student = await CreateStudentAsync(sheetName);
+                students = [..students, student]; // keep in-memory list up to date
+                result.StudentsCreated++;
             }
 
             Console.WriteLine($"Processing sheet: {sheetName} -> student: {student.Name}");
@@ -241,6 +241,39 @@ internal sealed class ExcelImporter
         }
 
         return false;
+    }
+
+    private async Task<Student> CreateStudentAsync(string sheetName)
+    {
+        var (name, level) = StudentMatcher.ParseSheetName(sheetName);
+        var now = DateTime.UtcNow;
+
+        Console.WriteLine($"  CREATE student: \"{name}\" (level: {level ?? "unknown"}) from sheet \"{sheetName}\"");
+
+        var student = new Student
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = _teacherId,
+            Name = name,
+            LearningLanguage = "Spanish",
+            CefrLevel = level ?? "A1",
+            Interests = "[]",
+            LearningGoals = "[]",
+            Weaknesses = "[]",
+            Difficulties = "[]",
+            SkillLevelOverrides = "{}",
+            IsDeleted = false,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+
+        if (!_dryRun)
+        {
+            _db.Students.Add(student);
+            await _db.SaveChangesAsync();
+        }
+
+        return student;
     }
 
     private static string? NullIfEmpty(string value) =>

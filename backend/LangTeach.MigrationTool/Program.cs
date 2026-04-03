@@ -103,7 +103,7 @@ Console.WriteLine();
 Console.WriteLine("=== Summary ===");
 Console.WriteLine($"Sheets processed : {result.SheetsProcessed}");
 Console.WriteLine($"Sheets matched   : {result.SheetsMatched}");
-Console.WriteLine($"Sheets unmatched : {result.SheetsUnmatched}");
+Console.WriteLine($"Students created : {result.StudentsCreated}");
 Console.WriteLine($"Sessions imported: {result.SessionsImported}");
 Console.WriteLine($"Sessions skipped : {result.SessionsSkipped} (duplicates)");
 Console.WriteLine($"Student notes    : {result.StudentsNotesUpdated} updated");
