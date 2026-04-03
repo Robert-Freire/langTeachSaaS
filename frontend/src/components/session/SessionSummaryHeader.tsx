@@ -2,26 +2,8 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, ChevronDown, ChevronUp, ListChecks } from 'lucide-react'
 import { getSessionSummary } from '../../api/sessionLogs'
-import { formatDate } from '../../utils/formatDate'
+import { formatDate, relativeTime } from '../../utils/formatDate'
 import { Skeleton } from '@/components/ui/skeleton'
-
-function relativeTime(dateStr: string): string {
-  const date = new Date(dateStr)
-  if (Number.isNaN(date.getTime())) return ''
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  if (diffMs < 0) return 'today'
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  if (diffDays === 0) return 'today'
-  if (diffDays === 1) return 'yesterday'
-  if (diffDays < 7) return `${diffDays} days ago`
-  if (diffDays < 30) {
-    const weeks = Math.floor(diffDays / 7)
-    return `${weeks} week${weeks > 1 ? 's' : ''} ago`
-  }
-  const months = Math.floor(diffDays / 30)
-  return `${months} month${months > 1 ? 's' : ''} ago`
-}
 
 function titleCase(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1)
@@ -35,7 +17,7 @@ export function SessionSummaryHeader({ studentId }: SessionSummaryHeaderProps) {
   const [actionItemsOpen, setActionItemsOpen] = useState(false)
   const [reassessmentOpen, setReassessmentOpen] = useState(false)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['session-summary', studentId],
     queryFn: () => getSessionSummary(studentId),
   })
@@ -48,6 +30,8 @@ export function SessionSummaryHeader({ studentId }: SessionSummaryHeaderProps) {
       </div>
     )
   }
+
+  if (isError) return null
 
   if (!data) return null
 

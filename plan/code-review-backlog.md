@@ -15,3 +15,10 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | Minor | Create/Update request DTOs are identical, could share a base class | code-review |
 | Minor | SessionLogDto omits TeacherId (inconsistent with Student/Lesson DTOs that include it) | sophy |
 | Minor | Update is full-replace; partial sends null out nullable fields silently | sophy |
+
+## PR #445 (Session summary header, 2026-04-03)
+
+| Severity | Finding | Source |
+|----------|---------|--------|
+| Minor | `Email` prop on base controller uses `?? ""` when claim missing; could silently create teacher with blank email (pre-existing pattern) | code-review |
+| Minor | Backend ValidationException messages embed user-facing text; frontend should own display copy (pre-existing pattern) | code-review |

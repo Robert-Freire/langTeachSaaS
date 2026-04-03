@@ -5,7 +5,7 @@ import { SessionSummaryHeader } from './SessionSummaryHeader'
 import { logger } from '../../lib/logger'
 import { Link } from 'react-router-dom'
 import { listSessions, deleteSession, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
-import { formatDate } from '../../utils/formatDate'
+import { formatDate, relativeTime } from '../../utils/formatDate'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -23,25 +23,6 @@ import {
 
 interface SessionHistoryTabProps {
   studentId: string
-}
-
-function relativeTime(dateStr: string): string {
-  const date = new Date(dateStr)
-  if (Number.isNaN(date.getTime())) return ''
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  if (diffMs < 0) return 'today'
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) return 'today'
-  if (diffDays === 1) return 'yesterday'
-  if (diffDays < 7) return `${diffDays} days ago`
-  if (diffDays < 30) {
-    const weeks = Math.floor(diffDays / 7)
-    return `${weeks} week${weeks > 1 ? 's' : ''} ago`
-  }
-  const months = Math.floor(diffDays / 30)
-  return `${months} month${months > 1 ? 's' : ''} ago`
 }
 
 const HOMEWORK_STATUS_STYLES: Record<string, string> = {
