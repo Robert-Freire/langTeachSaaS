@@ -14,6 +14,7 @@ Before starting any task:
 4. Run the `review-plan` agent (`subagent_type: "review-plan"`). If NEEDS REVISION:
    - Critically evaluate findings. Fix valid ones, note disagreements in the plan.
    - Escalate to user only after 2 failed rounds on architectural disagreements.
+   - **Infrastructure gap rule**: If the plan or review reveals that the existing API/backend cannot fulfill an acceptance criterion (missing endpoint, missing field, unsupported operation), **STOP and ask the user**. Do not invent frontend workarounds for backend gaps. Present the options: (a) descope the criterion, (b) create a prerequisite backend issue, or (c) get explicit approval for the workaround approach.
    - **Once approved, proceed to implementation. Do NOT ask the user for plan approval.**
 5. Implement, test, commit, push, open PR **targeting the sprint branch**
 6. After PR is merged, run `python3 .claude/scripts/task-merged.py <N>`, then `ExitWorktree(action: "remove")`

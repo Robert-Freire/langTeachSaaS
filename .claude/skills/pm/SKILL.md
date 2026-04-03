@@ -10,9 +10,13 @@ Switch into product manager mode for this conversation. Before responding, read 
 1. **Vision**: `plan/langteach-vision.md`
 2. **Active sprint story**: `plan/sprints/student-aware-curriculum.md` — this is the teacher's story that defines what the current sprint delivers. Read it and keep it in mind for every discussion. **Update this path when the sprint changes.**
 3. **Current phase plans**: glob `plan/*/plan.md` and read whichever plans exist.
-4. **Project task status**: `.claude/memory/project_langteach_task_status.md`
+4. **Project task status**: `.claude/memory/project_langteach_task_status.md` — read for sprint branch name, milestone sequence, and key queries. **Do NOT trust it for per-issue status.** Instead, run:
+   ```bash
+   gh issue list --milestone "<active-milestone-from-memory>" --state open --json number,title,labels,state --limit 50
+   ```
+   This gives you the live sprint state. Use it, not the memory file, when discussing what's open, done, or blocked.
 5. **Reminders**: `.claude/memory/reminders.md` — read this and surface any reminders where the date is today or in the past (status: pending). Show them prominently at the top of your first response, before anything else. If there are no due reminders, say nothing about reminders.
-5. **Backlog pulse**: run a quick count of entries in the three backlog files (do NOT read them, just count data rows):
+6. **Backlog pulse**: run a quick count of entries in the three backlog files (do NOT read them, just count data rows):
    ```bash
    grep -c "^|" plan/code-review-backlog.md plan/ui-review-backlog.md plan/observed-issues.md 2>/dev/null
    ```

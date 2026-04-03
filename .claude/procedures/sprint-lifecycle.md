@@ -18,6 +18,8 @@ Three stages:
 
 **Stage 2 (agent):** After user approves backlogs, run the `sprint-close` agent (`subagent_type: "sprint-close"`). It verifies board/issues, runs the comprehensive UI/UX sprint review (`review-ui-sprint`), Teacher QA, prompt health review, and pedagogy review. Returns READY / NOT READY.
 
+**Stage 2b (issue filing, mandatory):** After Stage 2 completes, review all findings from every reviewer (Isaac pedagogy review, prompt health review, Teacher QA triage, UI/UX review). Every finding with severity >= minor that is not fixed in the current sprint **must** be filed as a GitHub issue (batch related findings into one issue) and assigned to the next sprint milestone. Findings without a GitHub issue are considered lost. The sprint cannot move to Stage 3 until all findings are filed.
+
 **Stage 3 (cleanup, after user triggers merge action):** Close the milestone, delete the sprint branch, update memory (task status, sprint overviews), clear remaining backlog entries.
 
 ## Next sprint

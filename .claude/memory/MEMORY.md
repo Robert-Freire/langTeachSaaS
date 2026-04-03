@@ -44,6 +44,9 @@
 - [Never defer without a GitHub issue](feedback_never_defer_without_issue.md) — every deferral needs a GitHub issue immediately
 - [Never run frontend locally](feedback_no_local_frontend_dev.md) — frontend in Docker only; never start Vite on host
 - [No parallel background agents](feedback_background_agent_polling.md) — notifications unreliable; run all agents sequentially in foreground
+- [Stop on infrastructure gaps](feedback_stop_on_infra_gaps.md) — if backend can't fulfill an AC, stop and ask; don't invent frontend workarounds
+- [Review findings must become issues](feedback_review_findings_must_be_issues.md) — file GitHub issues for all sprint-close findings before closing
+- [Task status format is script-parsed](feedback_task_status_format_stability.md) — don't change memory format without updating scripts that parse it
 
 ## Reference
 - [Token usage tracking](reference_token_usage_tracking.md) — check ~/.claude/logs/usage-log.jsonl; snippets in ~/.claude/usage-guide.md

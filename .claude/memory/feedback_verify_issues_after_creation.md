@@ -1,41 +1,22 @@
 ---
-name: Verify issues after creation
-description: After creating GitHub issues, always verify correct milestone and board visibility before moving on
+name: Always add issues to the project board when setting a milestone
+description: Every issue assigned to a milestone MUST be added to the LangTeach Roadmap board in the same step. Never set milestone without board.
 type: feedback
 ---
 
-## The Problem
+## The Rule
 
-Issues have been created multiple times with the wrong milestone (e.g., milestone number 5 "Curriculum & Personalization" instead of milestone 10 "Student-Aware Curriculum"), causing them to be invisible in the sprint board view. The `add-to-board.sh` script also silently succeeds even when the item doesn't appear on the board.
+**Milestone and board are a single atomic operation.** Every time you create an issue with a milestone, move an issue to a milestone, or update an issue's milestone, you MUST also add it to the LangTeach Roadmap board. No exceptions. Do both in the same set of tool calls.
 
-## Required Checklist After Creating Any Issue
+Board project ID: `PVT_kwHOAF1Pks4BSLsS`
 
-After creating one or more issues, always perform these two checks before reporting done:
+Steps:
+1. Set the milestone (via `mcp__github__issue_write` or `gh issue edit`)
+2. Get the issue node ID: `gh api graphql -f query='{ repository(owner:"Robert-Freire", name:"langTeachSaaS") { issue(number:N) { id } } }'`
+3. Add to board: `gh api graphql -f query='mutation { addProjectV2ItemById(input: {projectId: "PVT_kwHOAF1Pks4BSLsS", contentId: "NODE_ID"}) { item { id } } }'`
 
-### 1. Verify milestone
-```bash
-gh issue view <number> --json milestone --jq '.milestone.title'
-```
-Must match the active sprint name from `.claude/memory/project_langteach_task_status.md`. If wrong, fix immediately:
-```
-mcp__github__issue_write method=update milestone=<correct_number>
-```
+## Why
 
-### 2. Verify board visibility
-Use the MCP tool to confirm the item is on the board:
-```
-mcp__github__projects_list method=list_project_items owner=Robert-Freire project_number=2 query="is:issue #<number>"
-```
-If it returns empty, re-run `add-to-board.sh` and check again.
+This has been flagged multiple times (2026-03-27, 2026-04-03). Issues with a milestone but not on the board are invisible in the sprint view. Bots and humans both use the board to find work. An issue not on the board is effectively lost.
 
-## Never Use Hardcoded Milestone Numbers
-
-Always look up the active milestone number at creation time:
-```bash
-gh milestone list --state open --json number,title
-```
-Never guess or reuse a number from a previous sprint. Milestone numbers are not sequential in a predictable way.
-
-## Why This Matters
-
-Bots pick tasks from the board filtered by the current sprint milestone. Issues in the wrong milestone are invisible to them, causing the team to think there's no work available when there is.
+**How to apply:** Treat "set milestone" and "add to board" as inseparable. If you're writing code that sets a milestone, the next line adds to board. Never report an issue as "moved to milestone X" without confirming it's on the board.
