@@ -20,4 +20,5 @@ public class Student
     public Teacher Teacher { get; set; } = null!;
     public ICollection<Lesson> Lessons { get; set; } = [];
     public ICollection<Course> Courses { get; set; } = [];
+    public ICollection<SessionLog> SessionLogs { get; set; } = [];
 }

@@ -5,3 +5,13 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 ---
 
 *Cleared 2026-04-02 during Pedagogical Quality sprint close. All entries triaged: 7 batched into #421 (coercion hardening), #422 (prompt consistency), #423 (pedagogy config bugs), #426 (PII logging), #427 (fragile test assertions). Remaining entries deleted (i18n strings, cosmetic ordering, eslint suppression, .dockerignore, style inconsistencies, intentional fallbacks, redundant test round-trips).*
+
+## PR #440 (SessionLog entity, 2026-04-03)
+
+| Severity | Finding | Source |
+|----------|---------|--------|
+| Minor | String fields (PlannedContent, ActualContent, etc.) lack MaxLength on DTOs, allowing unbounded nvarchar(max) | code-review |
+| Minor | LevelReassessmentSkill/Level are free-text with no allowlist validation against CEFR skills | code-review, sophy |
+| Minor | Create/Update request DTOs are identical, could share a base class | code-review |
+| Minor | SessionLogDto omits TeacherId (inconsistent with Student/Lesson DTOs that include it) | sophy |
+| Minor | Update is full-replace; partial sends null out nullable fields silently | sophy |
