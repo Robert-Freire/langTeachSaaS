@@ -716,6 +716,17 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void ExercisesPrompt_C1_IncludesOptionalControlledStageNote()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "C1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("optional");
+        req.UserPrompt.Should().Contain("controlled");
+    }
+
+    [Fact]
     public void LessonPlanPrompt_A1_MentionsWordBankInPractice()
     {
         var ctx = BaseCtx() with { CefrLevel = "A1" };
@@ -2070,6 +2081,17 @@ public class PromptServiceTests
             because: "exercises must include the CEFR grammar scope block to prevent level overreach (e.g. imperfect subjunctive at B1.1)");
     }
 
+    [Fact]
+    public void GrammarPrompt_A1_GustarConstrainedToSingular()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildGrammarPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("singular",
+            because: "A1.1 grammar scope must constrain gustar to singular form only per PCIC A1.1 p.38");
+    }
+
     // --- Sentence transformation format ---
 
     [Fact]
@@ -2639,5 +2661,52 @@ public class PromptServiceTests
         var req = _sut.BuildVocabularyPrompt(ctx);
 
         req.SystemPrompt.Should().NotContain("Teacher-assessed skill level overrides:");
+    }
+
+    // --- True/False coherence constraints (#431) ---
+
+    [Fact]
+    public void ExercisesPrompt_TrueFalse_RequiresNonEmptySourcePassage()
+    {
+        // Issue #431: True/False items without source text are invalid. The prompt must mandate non-empty sourcePassage.
+        var req = _sut.BuildExercisesPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("sourcePassage field MUST be non-empty",
+            because: "trueFalse items without an anchoring sourcePassage are pedagogically invalid (#431)");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_TrueFalse_MustNotContradictPresentation()
+    {
+        // Issue #431: True/False items must not state rules as absolute if the Presentation introduced nuanced exceptions.
+        var req = _sut.BuildExercisesPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("trueFalse statements must be consistent with the grammar rules",
+            because: "trueFalse items contradicting the Presentation section are a coherence error (#431)");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_GrammarScope_IncludesNoIntroductionConstraint()
+    {
+        // Issue #431: Practice must not introduce grammar structures beyond the Grammar Scope block.
+        // Use A2 which has a non-empty grammar scope in the config.
+        var ctx = BaseCtx() with { CefrLevel = "A2" };
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("GRAMMAR SCOPE",
+            because: "A2 has a grammar scope and the block must be present");
+        req.UserPrompt.Should().Contain("MUST only use the grammar structures listed in the GRAMMAR SCOPE",
+            because: "the non-introduction constraint must follow the grammar scope block (#431)");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_WarmUp_RolePhrasesCEFRConstraint()
+    {
+        // Issue #431: WarmUp model phrases used structures above B1 (habría dicho). The prompt must enforce level-appropriate grammar.
+        var ctx = BaseCtx() with { SectionType = "WarmUp", CefrLevel = "B1" };
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("roleAPhrases and roleBPhrases must use only B1-appropriate grammar",
+            because: "WarmUp role phrases must not exceed the stated CEFR level (#431)");
     }
 }

@@ -109,3 +109,16 @@ These are structural issues for the **Pedagogical Quality** sprint to address:
 | L1 awareness is strong in Marco (Italian) | Marco B1 |
 | Student personalization (interests, weaknesses) is good | All 5 personas |
 | CEFR level boundaries respected (no C1 in B1/B2 lessons) | All 5 personas |
+
+---
+
+## From: triage-2026-04-02.md
+
+### Fixed (verify these)
+
+| ID | Finding | Fix | Issue | Deployed? |
+|----|---------|-----|-------|-----------|
+| CQ-NB2 | Nadia B2 AR: True/False item 1 is meta-reasoning with no source text; sourcePassage was empty | Added mandatory sourcePassage instruction to exercises prompt | #431 | Yes, merged this sprint |
+| CQ-RC1 | Ricardo C1 PT: True/False item 3 states rule as absolute, contradicting Presentation nuance on indicativo | Added coherence constraint requiring trueFalse items to match Presentation nuance | #431 | Yes, merged this sprint |
+| CQ-SA2 | Sophie A2.2 FR: Full irregular indefinido paradigm, perfecto/indefinido distinction, and imperfect continuous introduced in Practice with no Presentation coverage | Added grammar scope non-introduction constraint to exercises prompt | #431 | Yes, merged this sprint |
+| CQ-WB1 | Sprint Reviewer B1: WarmUp roleB model phrase contains B2-level conditional perfect (habría dicho) | Added CEFR level constraint to WarmUp conversation prompt for all role phrases | #431 | Yes, merged this sprint |

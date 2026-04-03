@@ -97,6 +97,15 @@ public class GrammarValidationServiceTests
     }
 
     [Fact]
+    public void Validate_OjalaPresentPerfectIndicative_TriggersRule()
+    {
+        var svc = CreateService();
+        // "ojalá ha llegado" uses indicative present perfect — rule should catch it at B1+
+        var warnings = svc.Validate("Ojalá ha llegado a tiempo.", "Spanish", "B1", null);
+        Assert.Contains(warnings, w => w.RuleId == "ojala-indicative");
+    }
+
+    [Fact]
     public void Validate_LanguageCaseInsensitive_SpanishEquals()
     {
         var svc = CreateService();
