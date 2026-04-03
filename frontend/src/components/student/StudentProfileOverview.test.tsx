@@ -69,6 +69,19 @@ describe('parseNotes', () => {
     expect(labels).toContain('Background')
   })
 
+  it('parses subsections when Student info appears before Preply test', () => {
+    const raw = 'Student info: Works as an engineer. Preply test: B1 level.'
+    const result = parseNotes(raw)
+    expect(result).not.toBeNull()
+    const labels = result!.sections.map(s => s.label)
+    expect(labels).toContain('Assessment notes')
+    expect(labels).toContain('Background')
+    const assessment = result!.sections.find(s => s.label === 'Assessment notes')!
+    expect(assessment.text).toContain('B1 level')
+    const background = result!.sections.find(s => s.label === 'Background')!
+    expect(background.text).toContain('Works as an engineer')
+  })
+
   it('returns plain notes without subsection labels for normal text', () => {
     const result = parseNotes('This is a plain note.')
     expect(result).not.toBeNull()
