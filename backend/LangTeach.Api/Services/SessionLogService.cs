@@ -59,7 +59,7 @@ public class SessionLogService : ISessionLogService
         if (request.LinkedLessonId.HasValue)
         {
             var lessonExists = await _db.Lessons.AnyAsync(
-                l => l.Id == request.LinkedLessonId.Value && l.TeacherId == teacherId,
+                l => l.Id == request.LinkedLessonId.Value && l.TeacherId == teacherId && !l.IsDeleted,
                 cancellationToken);
 
             if (!lessonExists)
@@ -109,7 +109,7 @@ public class SessionLogService : ISessionLogService
         if (request.LinkedLessonId.HasValue)
         {
             var lessonExists = await _db.Lessons.AnyAsync(
-                l => l.Id == request.LinkedLessonId.Value && l.TeacherId == teacherId,
+                l => l.Id == request.LinkedLessonId.Value && l.TeacherId == teacherId && !l.IsDeleted,
                 cancellationToken);
 
             if (!lessonExists)
