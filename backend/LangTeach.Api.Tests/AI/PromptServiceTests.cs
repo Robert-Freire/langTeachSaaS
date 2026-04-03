@@ -1,5 +1,6 @@
 using FluentAssertions;
 using LangTeach.Api.AI;
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.Extensions.Logging;
@@ -2455,5 +2456,188 @@ public class PromptServiceTests
             because: "Guided writing prompt must specify the expected word count range");
         req.UserPrompt.Should().Contain("tips",
             because: "Guided writing prompt must include practical hints to help the student start");
+    }
+
+    // --- Session history block ---
+
+    private static SessionHistoryContext MakeSessionHistory(
+        int daysSince = 5,
+        string? openItems = null,
+        string? homework = null,
+        HomeworkStatus? hwStatus = null,
+        IReadOnlyList<CoveredTopicEntry>? topics = null,
+        IReadOnlyDictionary<string, string>? overrides = null)
+        => new(
+            RecentSessions:
+            [
+                new(new DateTime(2026, 3, 28, 10, 0, 0, DateTimeKind.Utc), "Past tense", "Irregular verbs")
+            ],
+            DaysSinceLastSession: daysSince,
+            OpenActionItems: openItems,
+            PendingHomework: homework,
+            LastHomeworkStatus: hwStatus,
+            CoveredTopics: topics ?? [],
+            SkillLevelOverrides: overrides ?? new Dictionary<string, string>()
+        );
+
+    [Fact]
+    public void SessionHistory_Absent_NoSessionHistoryBlock()
+    {
+        var ctx = BaseCtx();
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("SESSION HISTORY");
+    }
+
+    [Fact]
+    public void SessionHistory_Present_SessionHistoryBlockIncluded()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory() };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("SESSION HISTORY:");
+        req.SystemPrompt.Should().Contain("days.");
+    }
+
+    [Fact]
+    public void SessionHistory_Gap1To2Days_CorrectInstruction()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 1) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Build directly on previous session.");
+    }
+
+    [Fact]
+    public void SessionHistory_Gap3To7Days_CorrectInstruction()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 5) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("brief warm-up");
+    }
+
+    [Fact]
+    public void SessionHistory_Gap8To14Days_CorrectInstruction()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 10) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("dedicated review activity");
+    }
+
+    [Fact]
+    public void SessionHistory_Gap15PlusDays_CorrectInstruction()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 20) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("diagnostic mini-activity");
+    }
+
+    [Fact]
+    public void SessionHistory_Gap0Days_TreatedAsBand1()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 0) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Build directly on previous session.");
+    }
+
+    [Fact]
+    public void SessionHistory_OpenActionItems_IncludedInPrompt()
+    {
+        var ctx = BaseCtx() with
+        {
+            SessionHistory = MakeSessionHistory(openItems: "Work on para/por distinction")
+        };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Work on para/por distinction");
+    }
+
+    [Fact]
+    public void SessionHistory_NoPendingHomework_HomeworkBlockAbsent()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(homework: null) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Pending homework:");
+    }
+
+    [Fact]
+    public void SessionHistory_PendingHomework_IncludedInPrompt()
+    {
+        var ctx = BaseCtx() with
+        {
+            SessionHistory = MakeSessionHistory(
+                homework: "Write 10 sentences", hwStatus: HomeworkStatus.NotDone)
+        };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Write 10 sentences");
+        req.SystemPrompt.Should().Contain("NotDone");
+    }
+
+    [Fact]
+    public void SessionHistory_CoveredTopics_ListedByCategory()
+    {
+        var topics = new List<CoveredTopicEntry>
+        {
+            new("preterito indefinido", "grammar"),
+            new("viajes", "vocabulary")
+        };
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(topics: topics) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Covered topics:");
+        req.SystemPrompt.Should().Contain("preterito indefinido");
+        req.SystemPrompt.Should().Contain("viajes");
+    }
+
+    [Fact]
+    public void SessionHistory_NoCoveredTopics_TopicsBlockAbsent()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(topics: []) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Covered topics:");
+    }
+
+    [Fact]
+    public void SessionHistory_SkillLevelOverrides_IncludedInPrompt()
+    {
+        var overrides = new Dictionary<string, string> { ["speaking"] = "A1.2", ["writing"] = "B1.2" };
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(overrides: overrides) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("speaking A1.2");
+        req.SystemPrompt.Should().Contain("writing B1.2");
+    }
+
+    [Fact]
+    public void SessionHistory_NoSkillOverrides_OverridesBlockAbsent()
+    {
+        var ctx = BaseCtx() with
+        {
+            SessionHistory = MakeSessionHistory(overrides: new Dictionary<string, string>())
+        };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Teacher-assessed skill level overrides:");
     }
 }

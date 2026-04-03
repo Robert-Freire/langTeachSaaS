@@ -152,6 +152,7 @@ builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<ILessonNoteService, LessonNoteService>();
 builder.Services.AddScoped<ISessionLogService, SessionLogService>();
+builder.Services.AddScoped<ISessionHistoryService, SessionHistoryService>();
 builder.Services.AddScoped<ICurriculumGenerationService, CurriculumGenerationService>();
 builder.Services.AddScoped<ICurriculumValidationService, CurriculumValidationService>();
 builder.Services.AddSingleton<ICurriculumTemplateService, CurriculumTemplateService>();

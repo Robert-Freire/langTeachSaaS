@@ -389,6 +389,82 @@ public class PromptService : IPromptService
             }
         }
 
+        if (ctx.SessionHistory is { } sh)
+        {
+            sb.AppendLine();
+            sb.AppendLine("SESSION HISTORY:");
+
+            var gapInstruction = sh.DaysSinceLastSession <= 2
+                ? "Build directly on previous session. Minimal recap needed."
+                : sh.DaysSinceLastSession <= 7
+                    ? "Include a brief warm-up reviewing key points from last session."
+                    : sh.DaysSinceLastSession <= 14
+                        ? "Include a dedicated review activity before introducing new content."
+                        : "Include a diagnostic mini-activity to assess retention. Do not assume previous content is retained.";
+
+            sb.AppendLine($"Time since last session: {sh.DaysSinceLastSession} days. {gapInstruction}");
+
+            if (sh.RecentSessions.Count > 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine("Last sessions:");
+                foreach (var entry in sh.RecentSessions)
+                {
+                    var planned = InputSanitizer.Sanitize(entry.PlannedContent);
+                    var actual  = InputSanitizer.Sanitize(entry.ActualContent);
+                    var line    = entry.SessionDate.ToString("yyyy-MM-dd");
+                    if (!string.IsNullOrEmpty(planned)) line += $": planned {planned}";
+                    if (!string.IsNullOrEmpty(actual))  line += $", covered {actual}";
+                    sb.AppendLine($"- {line}");
+                }
+            }
+
+            var openItems = InputSanitizer.Sanitize(sh.OpenActionItems);
+            if (!string.IsNullOrEmpty(openItems))
+            {
+                sb.AppendLine();
+                sb.AppendLine($"Open action items: {openItems}");
+            }
+
+            var homework = InputSanitizer.Sanitize(sh.PendingHomework);
+            if (!string.IsNullOrEmpty(homework))
+            {
+                var statusName = sh.LastHomeworkStatus?.ToString() ?? "Unknown";
+                sb.AppendLine();
+                sb.AppendLine($"Pending homework: {homework} (status: {statusName})");
+            }
+
+            if (sh.CoveredTopics.Count > 0)
+            {
+                sb.AppendLine();
+                var byCategory = sh.CoveredTopics
+                    .GroupBy(
+                        t =>
+                        {
+                            var cat = InputSanitizer.Sanitize(t.Category);
+                            return string.IsNullOrWhiteSpace(cat) ? "other" : cat;
+                        },
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(g =>
+                    {
+                        var tags = g.Select(t => InputSanitizer.Sanitize(t.Tag))
+                            .Where(t => t.Length > 0)
+                            .ToArray();
+                        return tags.Length == 0 ? null : $"{g.Key}: {string.Join(", ", tags)}";
+                    })
+                    .OfType<string>();
+                sb.AppendLine($"Covered topics: {string.Join("; ", byCategory)}");
+            }
+
+            if (sh.SkillLevelOverrides.Count > 0)
+            {
+                sb.AppendLine();
+                var overrideText = string.Join(", ", sh.SkillLevelOverrides
+                    .Select(kv => $"{InputSanitizer.Sanitize(kv.Key)} {InputSanitizer.Sanitize(kv.Value)}"));
+                sb.AppendLine($"Teacher-assessed skill level overrides: {overrideText}");
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(existingNotes))
         {
             sb.AppendLine();
