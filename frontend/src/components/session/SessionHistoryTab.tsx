@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronUp, Trash2, ExternalLink, FileText } from 'lucide-react'
+import { ChevronDown, ChevronUp, Trash2, ExternalLink, FileText, BookOpen } from 'lucide-react'
 import { logger } from '../../lib/logger'
 import { Link } from 'react-router-dom'
 import { listSessions, deleteSession, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
@@ -55,18 +55,19 @@ const HOMEWORK_STATUS_LABELS: Record<string, string> = {
   NotApplicable: 'HW: N/A',
 }
 
-const TAG_CATEGORY_STYLES: Record<string, string> = {
-  grammar: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  vocabulary: 'bg-green-50 text-green-700 border-green-200',
-  competency: 'bg-amber-50 text-amber-700 border-amber-200',
-  communicativeFunction: 'bg-purple-50 text-purple-700 border-purple-200',
-}
-
 const TAG_CATEGORY_LABELS: Record<string, string> = {
   grammar: 'Grammar',
   vocabulary: 'Vocabulary',
   competency: 'Competency',
   communicativeFunction: 'Comm. function',
+}
+
+function tagCategoryClass(category?: string): string {
+  if (category === 'grammar') return 'bg-indigo-50 text-indigo-700 border-indigo-200'
+  if (category === 'vocabulary') return 'bg-green-50 text-green-700 border-green-200'
+  if (category === 'competency') return 'bg-amber-50 text-amber-700 border-amber-200'
+  if (category === 'communicativeFunction') return 'bg-purple-50 text-purple-700 border-purple-200'
+  return 'bg-zinc-100 text-zinc-600 border-zinc-200'
 }
 
 function notesCount(session: SessionLog): number {
@@ -211,9 +212,7 @@ function SessionEntry({ session, studentId }: { session: SessionLog; studentId: 
               <p className="text-xs font-medium text-zinc-500 mb-1">Topic tags</p>
               <div className="flex flex-wrap gap-1.5" data-testid="topic-tags">
                 {topicTags.map((tag, i) => {
-                  const catClass = tag.category
-                    ? (TAG_CATEGORY_STYLES[tag.category] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200')
-                    : 'bg-zinc-100 text-zinc-600 border-zinc-200'
+                  const catClass = tagCategoryClass(tag.category)
                   const catLabel = tag.category
                     ? (TAG_CATEGORY_LABELS[tag.category] ?? tag.category)
                     : null
@@ -342,10 +341,11 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
   if (!sessions || sessions.length === 0) {
     return (
       <div
-        className="flex flex-col items-center justify-center py-16 gap-2"
+        className="flex flex-col items-center justify-center py-16 gap-3"
         data-testid="session-history-empty"
       >
-        <p className="text-sm text-zinc-500">
+        <BookOpen className="h-8 w-8 text-zinc-300" />
+        <p className="text-sm text-zinc-500 text-center">
           No sessions logged yet. Use &lsquo;Log session&rsquo; to record your first class.
         </p>
       </div>
