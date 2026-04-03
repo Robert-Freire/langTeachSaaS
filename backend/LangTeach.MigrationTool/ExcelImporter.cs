@@ -99,11 +99,14 @@ internal sealed class ExcelImporter
         int skipped = 0;
         var now = DateTime.UtcNow;
 
-        // Load existing non-deleted dates for this student once to avoid per-row queries
-        var existingDates = await _db.SessionLogs
+        // Load existing non-deleted dates for this student once to avoid per-row queries.
+        // Normalize to .Date so API-created entries with non-midnight times still match.
+        var existingDates = (await _db.SessionLogs
             .Where(sl => sl.StudentId == student.Id && !sl.IsDeleted)
             .Select(sl => sl.SessionDate)
-            .ToHashSetAsync();
+            .ToListAsync())
+            .Select(d => d.Date)
+            .ToHashSet();
 
         foreach (var row in worksheet.RowsUsed())
         {
@@ -121,19 +124,21 @@ internal sealed class ExcelImporter
             if (planned.Length == 0 && actual.Length == 0 && homework.Length == 0 && notes.Length == 0)
                 continue;
 
+            var sessionDay = sessionDate.Value.Date;
+
             // Idempotency: check in-memory set (populated from DB before loop)
-            if (existingDates.Contains(sessionDate.Value))
+            if (existingDates.Contains(sessionDay))
             {
-                Console.WriteLine($"  SKIP (duplicate): {sessionDate:yyyy-MM-dd}");
+                Console.WriteLine($"  SKIP (duplicate): {sessionDay:yyyy-MM-dd}");
                 skipped++;
                 continue;
             }
 
             // Track in memory immediately so repeated dates in same sheet are also skipped
             // (applies in both live and dry-run mode)
-            existingDates.Add(sessionDate.Value);
+            existingDates.Add(sessionDay);
 
-            Console.WriteLine($"  + Session {sessionDate:yyyy-MM-dd}: planned={TruncateLog(planned)}, actual={TruncateLog(actual)}");
+            Console.WriteLine($"  + Session {sessionDay:yyyy-MM-dd}: planned={TruncateLog(planned)}, actual={TruncateLog(actual)}");
 
             if (!_dryRun)
             {
@@ -142,7 +147,7 @@ internal sealed class ExcelImporter
                     Id = Guid.NewGuid(),
                     StudentId = student.Id,
                     TeacherId = _teacherId,
-                    SessionDate = sessionDate.Value,
+                    SessionDate = sessionDay,
                     PlannedContent = NullIfEmpty(planned),
                     ActualContent = NullIfEmpty(actual),
                     HomeworkAssigned = NullIfEmpty(homework),
