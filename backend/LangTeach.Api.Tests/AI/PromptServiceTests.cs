@@ -716,6 +716,17 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void ExercisesPrompt_C1_IncludesOptionalControlledStageNote()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "C1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("optional");
+        req.UserPrompt.Should().Contain("controlled");
+    }
+
+    [Fact]
     public void LessonPlanPrompt_A1_MentionsWordBankInPractice()
     {
         var ctx = BaseCtx() with { CefrLevel = "A1" };
@@ -2068,6 +2079,17 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().Contain("GRAMMAR SCOPE",
             because: "exercises must include the CEFR grammar scope block to prevent level overreach (e.g. imperfect subjunctive at B1.1)");
+    }
+
+    [Fact]
+    public void GrammarPrompt_A1_GustarConstrainedToSingular()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildGrammarPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("singular",
+            because: "A1.1 grammar scope must constrain gustar to singular form only per PCIC A1.1 p.38");
     }
 
     // --- Sentence transformation format ---

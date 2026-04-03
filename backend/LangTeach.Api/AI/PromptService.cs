@@ -273,6 +273,20 @@ public class PromptService : IPromptService
                 sb.AppendLine($"  Suitable types: {string.Join(", ", def.AllowedExerciseCategories)}");
         }
 
+        if (req.OptionalStages is { Length: > 0 })
+        {
+            sb.AppendLine("Optional stage(s) — include only when additional mechanical consolidation is needed; omit entirely if not needed:");
+            foreach (var stageId in req.OptionalStages)
+            {
+                if (!defs.TryGetValue(stageId, out var def))
+                    continue;
+                var optRange = req.ItemsPerStage.TryGetValue(stageId, out var optBounds) && optBounds.Length >= 2
+                    ? $"{optBounds[0]}-{optBounds[1]}"
+                    : "0-2";
+                sb.AppendLine($"- \"{stageId}\" ({def.NameLong} / {def.NameEs}): {def.Description} Items: {optRange} (optional).");
+            }
+        }
+
         sb.AppendLine("IMPORTANT: Each stage MUST use a different exercise format (fillInBlank / multipleChoice / matching / trueFalse / sentenceOrdering / sentenceTransformation). Do not repeat the same format across stages.");
         return sb.ToString().TrimEnd();
     }

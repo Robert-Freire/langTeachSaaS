@@ -39,8 +39,8 @@
       "id": "ojala-indicative",
       "targetLanguage": "spanish",
       "category": "mood-selection",
-      "pattern": "\\bojalá\\s+(que\\s+)?(él|ella|tú|yo|nosotros|vosotros|ellos|ellas|usted|ustedes)?\\s*(tiene|tienen|tengo|tienes|tenemos|tenéis|viene|vienen|vengo|vienes|venimos|puede|pueden|puedo|puedes|podemos|sabe|saben|sé|sabes|sabemos|es|son|soy|eres|somos|está|están|estoy|estás|estamos|va|van|voy|vas|vamos|hace|hacen|hago|haces|hacemos|habla|hablan|hablo|hablas|hablamos)\\b",
-      "correction": "After 'ojalá', use the subjunctive, not the indicative. Correct: ojalá (que) tenga/venga/pueda/sepa/esté/vaya/haga/hable.",
+      "pattern": "\\bojalá\\s+(que\\s+)?(él|ella|tú|yo|nosotros|vosotros|ellos|ellas|usted|ustedes)?\\s*(tiene|tienen|tengo|tienes|tenemos|tenéis|viene|vienen|vengo|vienes|venimos|puede|pueden|puedo|puedes|podemos|sabe|saben|sé|sabes|sabemos|es|son|soy|eres|somos|está|están|estoy|estás|estamos|va|van|voy|vas|vamos|hace|hacen|hago|haces|hacemos|habla|hablan|hablo|hablas|hablamos|ha|has|han|hemos|habéis|he)\\b",
+      "correction": "After 'ojalá', use the subjunctive, not the indicative. Correct: ojalá (que) tenga/venga/pueda/sepa/esté/vaya/haga/hable. For present perfect: ojalá haya llegado (not 'ha llegado').",
       "severity": "high",
       "levels": ["B1", "B2", "C1", "C2"],
       "contextRelevance": {
