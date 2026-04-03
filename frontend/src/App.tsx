@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuth0 } from '@auth0/auth0-react'
 import { setupAuthInterceptor } from './lib/apiClient'
@@ -18,6 +18,7 @@ import StudyView from './pages/StudyView'
 import Courses from './pages/Courses'
 import CourseNew from './pages/CourseNew'
 import CourseDetail from './pages/CourseDetail'
+import StudentDetail from './pages/StudentDetail'
 import Onboarding from './pages/Onboarding'
 
 const queryClient = new QueryClient()
@@ -50,7 +51,7 @@ export default function App() {
                   <Route path="/students" element={<Students />} />
                   <Route path="/students/new" element={<StudentForm />} />
                   <Route path="/students/:id/edit" element={<StudentForm />} />
-                  <Route path="/students/:id" element={<Navigate to="/students" replace />} />
+                  <Route path="/students/:id" element={<StudentDetail />} />
                   <Route path="/lessons" element={<Lessons />} />
                   <Route path="/lessons/new" element={<LessonNew />} />
                   <Route path="/lessons/:id" element={<LessonEditor />} />
