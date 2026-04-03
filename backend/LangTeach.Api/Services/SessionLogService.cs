@@ -209,6 +209,67 @@ public class SessionLogService : ISessionLogService
         student.SkillLevelOverrides = JsonSerializer.Serialize(overrides);
     }
 
+    public async Task<StudentSessionSummaryDto> GetSummaryAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken = default)
+    {
+        var student = await _db.Students
+            .Where(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (student is null)
+            throw new KeyNotFoundException($"Student {studentId} not found.");
+
+        var totalSessions = await _db.SessionLogs
+            .CountAsync(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted, cancellationToken);
+
+        var mostRecent = await _db.SessionLogs
+            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
+            .OrderByDescending(sl => sl.SessionDate)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        string? lastSessionDate = null;
+        int? daysSinceLastSession = null;
+        var openActionItems = new List<string>();
+
+        if (mostRecent is not null)
+        {
+            lastSessionDate = mostRecent.SessionDate.ToString("yyyy-MM-dd");
+            daysSinceLastSession = (int)(DateTime.UtcNow.Date - mostRecent.SessionDate.Date).TotalDays;
+            if (!string.IsNullOrWhiteSpace(mostRecent.NextSessionTopics))
+            {
+                openActionItems = mostRecent.NextSessionTopics
+                    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(l => l.Trim())
+                    .Where(l => l.Length > 0)
+                    .ToList();
+            }
+        }
+
+        var skillOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(student.SkillLevelOverrides);
+            if (parsed is not null)
+                foreach (var kv in parsed)
+                    skillOverrides[kv.Key] = kv.Value;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "Student {StudentId} has corrupt SkillLevelOverrides", studentId);
+        }
+
+        var levelReassessmentPending = skillOverrides.Any(kv =>
+            !string.Equals(kv.Value, student.CefrLevel, StringComparison.OrdinalIgnoreCase));
+
+        return new StudentSessionSummaryDto(
+            totalSessions,
+            lastSessionDate,
+            daysSinceLastSession,
+            openActionItems,
+            levelReassessmentPending,
+            skillOverrides
+        );
+    }
+
     private static SessionLogDto ToDto(SessionLog sl) => new(
         sl.Id,
         sl.StudentId,

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronUp, Trash2, ExternalLink, FileText, BookOpen } from 'lucide-react'
+import { SessionSummaryHeader } from './SessionSummaryHeader'
 import { logger } from '../../lib/logger'
 import { Link } from 'react-router-dom'
 import { listSessions, deleteSession, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
@@ -342,14 +343,17 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
 
   if (!sessions || sessions.length === 0) {
     return (
-      <div
-        className="flex flex-col items-center justify-center py-16 gap-3"
-        data-testid="session-history-empty"
-      >
-        <BookOpen className="h-8 w-8 text-zinc-300" />
-        <p className="text-sm text-zinc-500 text-center">
-          No sessions logged yet. Use &lsquo;Log session&rsquo; to record your first class.
-        </p>
+      <div className="space-y-4 pt-4">
+        <SessionSummaryHeader studentId={studentId} />
+        <div
+          className="flex flex-col items-center justify-center py-16 gap-3"
+          data-testid="session-history-empty"
+        >
+          <BookOpen className="h-8 w-8 text-zinc-300" />
+          <p className="text-sm text-zinc-500 text-center">
+            No sessions logged yet. Use &lsquo;Log session&rsquo; to record your first class.
+          </p>
+        </div>
       </div>
     )
   }
@@ -359,10 +363,13 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
   )
 
   return (
-    <div className="space-y-3 pt-4" data-testid="session-history-list">
-      {sortedSessions.map((session) => (
-        <SessionEntry key={session.id} session={session} studentId={studentId} />
-      ))}
+    <div className="space-y-4 pt-4">
+      <SessionSummaryHeader studentId={studentId} />
+      <div className="space-y-3" data-testid="session-history-list">
+        {sortedSessions.map((session) => (
+          <SessionEntry key={session.id} session={session} studentId={studentId} />
+        ))}
+      </div>
     </div>
   )
 }

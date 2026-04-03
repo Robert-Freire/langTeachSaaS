@@ -478,4 +478,117 @@ public class SessionLogServiceTests : IDisposable
         updatedStudent!.SkillLevelOverrides.Should().Contain("\"writing\"");
         updatedStudent.SkillLevelOverrides.Should().Contain("\"B1.2\"");
     }
+
+    // ---- GetSummaryAsync tests ----
+
+    [Fact]
+    public async Task GetSummary_ZeroSessions_ReturnsEmptyState()
+    {
+        var result = await _sut.GetSummaryAsync(_teacherId, _studentId);
+
+        result.TotalSessions.Should().Be(0);
+        result.LastSessionDate.Should().BeNull();
+        result.DaysSinceLastSession.Should().BeNull();
+        result.OpenActionItems.Should().BeEmpty();
+        result.LevelReassessmentPending.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetSummary_WithSessions_ReturnsTotalsAndLastDate()
+    {
+        var date = new DateTime(2026, 3, 30, 0, 0, 0, DateTimeKind.Utc);
+        _db.SessionLogs.AddRange(
+            new SessionLog { Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId, SessionDate = date.AddDays(-5), PreviousHomeworkStatus = HomeworkStatus.NotApplicable, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+            new SessionLog { Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId, SessionDate = date, PreviousHomeworkStatus = HomeworkStatus.NotApplicable, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
+        );
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.GetSummaryAsync(_teacherId, _studentId);
+
+        result.TotalSessions.Should().Be(2);
+        result.LastSessionDate.Should().Be("2026-03-30");
+    }
+
+    [Fact]
+    public async Task GetSummary_OpenActionItems_SplitsNewlines()
+    {
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId,
+            SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            NextSessionTopics = "Work on para/por\nMore listening practice",
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.GetSummaryAsync(_teacherId, _studentId);
+
+        result.OpenActionItems.Should().BeEquivalentTo(new[] { "Work on para/por", "More listening practice" });
+    }
+
+    [Fact]
+    public async Task GetSummary_OpenActionItems_NullTopics_ReturnsEmpty()
+    {
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId,
+            SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            NextSessionTopics = null,
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.GetSummaryAsync(_teacherId, _studentId);
+
+        result.OpenActionItems.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetSummary_LevelReassessmentPending_WhenOverrideDiffersFromNominal()
+    {
+        var student = await _db.Students.FindAsync(_studentId);
+        student!.CefrLevel = "B1";
+        student.SkillLevelOverrides = """{"speaking":"A1.2"}""";
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.GetSummaryAsync(_teacherId, _studentId);
+
+        result.LevelReassessmentPending.Should().BeTrue();
+        result.SkillLevelOverrides.Should().ContainKey("speaking").WhoseValue.Should().Be("A1.2");
+    }
+
+    [Fact]
+    public async Task GetSummary_LevelReassessmentPending_False_WhenNoOverrides()
+    {
+        var result = await _sut.GetSummaryAsync(_teacherId, _studentId);
+
+        result.LevelReassessmentPending.Should().BeFalse();
+        result.SkillLevelOverrides.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetSummary_StudentNotFound_ThrowsKeyNotFoundException()
+    {
+        var act = () => _sut.GetSummaryAsync(_teacherId, Guid.NewGuid());
+
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    [Fact]
+    public async Task GetSummary_IgnoresSoftDeletedSessions()
+    {
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId,
+            SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            NextSessionTopics = "Some topic", IsDeleted = true,
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.GetSummaryAsync(_teacherId, _studentId);
+
+        result.TotalSessions.Should().Be(0);
+        result.OpenActionItems.Should().BeEmpty();
+    }
 }
