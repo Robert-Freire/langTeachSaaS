@@ -43,6 +43,15 @@ public class CreateSessionLogRequest
     public string? TopicTags { get; set; }
 }
 
+public record StudentSessionSummaryDto(
+    int TotalSessions,
+    string? LastSessionDate,
+    int? DaysSinceLastSession,
+    List<string> OpenActionItems,
+    bool LevelReassessmentPending,
+    Dictionary<string, string> SkillLevelOverrides
+);
+
 public class UpdateSessionLogRequest
 {
     [Required]

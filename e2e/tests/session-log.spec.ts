@@ -109,3 +109,49 @@ test('log session dialog prev homework status shows when prev session has homewo
 
   await context.close()
 })
+
+test('summary header appears on history tab after logging a session', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Summary Header Test ${Date.now()}`
+  const createRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: studentName,
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+    },
+  })
+  const student = await createRes.json() as { id: string }
+
+  await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      sessionDate: new Date().toISOString().split('T')[0],
+      actualContent: 'Preterito indefinido',
+      previousHomeworkStatus: 'NotApplicable',
+      nextSessionTopics: 'Work on para/por\nMore listening practice',
+    },
+  })
+
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+
+  // Navigate to History tab
+  await page.getByRole('tab', { name: /history/i }).click()
+
+  await expect(page.getByTestId('session-summary-header')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-summary-action-items-toggle')).toBeVisible()
+
+  // Expand action items
+  await page.getByTestId('session-summary-action-items-toggle').click()
+  await expect(page.getByTestId('session-summary-action-items-list')).toBeVisible()
+  await expect(page.getByTestId('session-summary-action-items-list')).toContainText('Work on para/por')
+
+  await context.close()
+})

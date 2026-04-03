@@ -29,6 +29,26 @@ public class SessionLogsController : ControllerBase
     private string? Auth0Id => User.FindFirstValue(ClaimTypes.NameIdentifier);
     private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
+    [HttpGet("summary")]
+    public async Task<IActionResult> GetSummary(Guid studentId, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        try
+        {
+            var summary = await _sessionLogService.GetSummaryAsync(teacherId, studentId, cancellationToken);
+            _logger.LogInformation(
+                "GET /api/students/{StudentId}/sessions/summary. TeacherId={TeacherId} TotalSessions={TotalSessions}",
+                studentId, teacherId, summary.TotalSessions);
+            return Ok(summary);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
     [HttpGet]
     public async Task<IActionResult> List(Guid studentId, CancellationToken cancellationToken)
     {

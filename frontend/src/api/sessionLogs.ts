@@ -38,6 +38,20 @@ export interface CreateSessionLogRequest {
   topicTags?: string | null
 }
 
+export interface StudentSessionSummary {
+  totalSessions: number
+  lastSessionDate: string | null
+  daysSinceLastSession: number | null
+  openActionItems: string[]
+  levelReassessmentPending: boolean
+  skillLevelOverrides: Record<string, string>
+}
+
+export async function getSessionSummary(studentId: string): Promise<StudentSessionSummary> {
+  const res = await apiClient.get<StudentSessionSummary>(`/api/students/${studentId}/sessions/summary`)
+  return res.data
+}
+
 export function parseTopicTags(raw: string): TopicTag[] {
   try {
     return JSON.parse(raw) as TopicTag[]
