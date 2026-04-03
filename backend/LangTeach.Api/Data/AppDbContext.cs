@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<CurriculumEntry> CurriculumEntries => Set<CurriculumEntry>();
     public DbSet<Material> Materials => Set<Material>();
     public DbSet<GenerationUsage> GenerationUsages => Set<GenerationUsage>();
+    public DbSet<SessionLog> SessionLogs => Set<SessionLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -175,6 +176,28 @@ public class AppDbContext : DbContext
              .HasConversion(
                  v => v.ToKebabCase(),
                  v => ContentBlockTypeExtensions.FromKebabCase(v));
+        });
+
+        // SessionLog — no-action from Student, Teacher, and Lesson (SQL Server multi-path constraint)
+        modelBuilder.Entity<SessionLog>(e =>
+        {
+            e.HasKey(sl => sl.Id);
+            e.HasIndex(sl => new { sl.StudentId, sl.SessionDate });
+            e.HasOne(sl => sl.Student)
+             .WithMany(s => s.SessionLogs)
+             .HasForeignKey(sl => sl.StudentId)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(sl => sl.Teacher)
+             .WithMany()
+             .HasForeignKey(sl => sl.TeacherId)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(sl => sl.LinkedLesson)
+             .WithMany()
+             .HasForeignKey(sl => sl.LinkedLessonId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.Property(sl => sl.PreviousHomeworkStatus)
+             .HasDefaultValue(HomeworkStatus.NotApplicable);
         });
 
         // LessonContentBlock — cascade delete from Lesson, no-action from LessonSection (nullable)
