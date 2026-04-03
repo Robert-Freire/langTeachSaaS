@@ -1,3 +1,4 @@
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 
 namespace LangTeach.Api.AI;
@@ -48,6 +49,24 @@ public record TemplateUnitContext(
     IReadOnlyList<string> CompetencyFocus
 );
 
+public record SessionSummaryEntry(
+    DateTime SessionDate,
+    string? PlannedContent,
+    string? ActualContent
+);
+
+public record CoveredTopicEntry(string Tag, string? Category);
+
+public record SessionHistoryContext(
+    IReadOnlyList<SessionSummaryEntry> RecentSessions,
+    int DaysSinceLastSession,
+    string? OpenActionItems,
+    string? PendingHomework,
+    HomeworkStatus? LastHomeworkStatus,
+    IReadOnlyList<CoveredTopicEntry> CoveredTopics,
+    IReadOnlyDictionary<string, string> SkillLevelOverrides
+);
+
 public record GenerationContext(
     string Language,
     string CefrLevel,
@@ -68,5 +87,6 @@ public record GenerationContext(
     string? TemplateName = null,
     string? CurriculumObjectives = null,
     string? TeacherGrammarConstraints = null,
-    string? SectionType = null
+    string? SectionType = null,
+    SessionHistoryContext? SessionHistory = null
 );

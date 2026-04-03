@@ -26,6 +26,7 @@ public class GenerateController : ControllerBase
     private readonly ILessonService _lessonService;
     private readonly ISectionProfileService _sectionProfiles;
     private readonly IPedagogyConfigService _pedagogyConfig;
+    private readonly ISessionHistoryService _sessionHistory;
     private readonly AppDbContext _db;
     private readonly ILogger<GenerateController> _logger;
 
@@ -40,6 +41,7 @@ public class GenerateController : ControllerBase
         ILessonService lessonService,
         ISectionProfileService sectionProfiles,
         IPedagogyConfigService pedagogyConfig,
+        ISessionHistoryService sessionHistory,
         AppDbContext db,
         ILogger<GenerateController> logger)
     {
@@ -53,6 +55,7 @@ public class GenerateController : ControllerBase
         _lessonService = lessonService;
         _sectionProfiles = sectionProfiles;
         _pedagogyConfig = pedagogyConfig;
+        _sessionHistory = sessionHistory;
         _db = db;
         _logger = logger;
     }
@@ -169,6 +172,10 @@ public class GenerateController : ControllerBase
             templateName = template?.Name;
         }
 
+        var sessionHistory = student is not null
+            ? await _sessionHistory.BuildContextAsync(teacherId, student.Id, DateTime.UtcNow, ct)
+            : null;
+
         var ctx = new GenerationContext(
             Language: language,
             CefrLevel: cefrLevel,
@@ -188,7 +195,8 @@ public class GenerateController : ControllerBase
             TemplateName: templateName,
             CurriculumObjectives: lesson.Objectives,
             TeacherGrammarConstraints: request.GrammarConstraints,
-            SectionType: request.SectionType
+            SectionType: request.SectionType,
+            SessionHistory: sessionHistory
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -324,6 +332,10 @@ public class GenerateController : ControllerBase
             templateName = template?.Name;
         }
 
+        var sessionHistory = student is not null
+            ? await _sessionHistory.BuildContextAsync(teacherId, student.Id, DateTime.UtcNow, ct)
+            : null;
+
         var ctx = new GenerationContext(
             Language: language,
             CefrLevel: cefrLevel,
@@ -342,7 +354,8 @@ public class GenerateController : ControllerBase
             GrammarConstraints: SpanishGrammarConstraints(language, cefrLevel),
             TemplateName: templateName,
             CurriculumObjectives: lesson.Objectives,
-            TeacherGrammarConstraints: request.GrammarConstraints
+            TeacherGrammarConstraints: request.GrammarConstraints,
+            SessionHistory: sessionHistory
         );
 
         var claudeRequest = buildPrompt(ctx);
