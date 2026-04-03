@@ -13,6 +13,7 @@ public class Student
     public string Weaknesses { get; set; } = "[]";
     public string Difficulties { get; set; } = "[]";
     public string? Notes { get; set; }
+    public string SkillLevelOverrides { get; set; } = "{}";
     public bool IsDeleted { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

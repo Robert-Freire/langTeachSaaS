@@ -121,4 +121,23 @@ public class SessionLogsController : ControllerBase
             return ValidationProblem(ex.Message);
         }
     }
+
+    [HttpDelete("{sessionId:guid}")]
+    public async Task<IActionResult> SoftDelete(Guid studentId, Guid sessionId, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        var deleted = await _sessionLogService.SoftDeleteAsync(teacherId, studentId, sessionId, cancellationToken);
+
+        if (!deleted)
+        {
+            _logger.LogWarning(
+                "DELETE /api/students/{StudentId}/sessions/{SessionId} not found. TeacherId={TeacherId}",
+                studentId, sessionId, teacherId);
+            return NotFound();
+        }
+
+        return NoContent();
+    }
 }

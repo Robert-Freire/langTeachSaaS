@@ -54,6 +54,7 @@ public class AppDbContext : DbContext
              .HasForeignKey(s => s.TeacherId)
              .OnDelete(DeleteBehavior.Cascade);
             e.Property(s => s.IsDeleted).HasDefaultValue(false);
+            e.Property(s => s.SkillLevelOverrides).HasDefaultValue("{}");
         });
 
         // LessonTemplate — seeded, read-only
@@ -183,6 +184,7 @@ public class AppDbContext : DbContext
         {
             e.HasKey(sl => sl.Id);
             e.HasIndex(sl => new { sl.StudentId, sl.SessionDate });
+            e.HasIndex(sl => new { sl.TeacherId, sl.IsDeleted });
             e.HasOne(sl => sl.Student)
              .WithMany(s => s.SessionLogs)
              .HasForeignKey(sl => sl.StudentId)
@@ -198,6 +200,8 @@ public class AppDbContext : DbContext
              .OnDelete(DeleteBehavior.NoAction);
             e.Property(sl => sl.PreviousHomeworkStatus)
              .HasDefaultValue(HomeworkStatus.NotApplicable);
+            e.Property(sl => sl.IsDeleted).HasDefaultValue(false);
+            e.Property(sl => sl.TopicTags).HasDefaultValue("[]");
         });
 
         // LessonContentBlock — cascade delete from Lesson, no-action from LessonSection (nullable)

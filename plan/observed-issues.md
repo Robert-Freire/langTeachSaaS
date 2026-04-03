@@ -4,5 +4,7 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 | Source issue | Date | Severity | Observation |
 |-------------|------|----------|-------------|
+| #450 | 2026-04-03 | low | SessionLogDtos TopicTags string has no [MaxLength]; consistent with other JSON fields (nvarchar(max)) but unbounded client input. Consider adding MaxLength validation in a future pass. |
+| #450 | 2026-04-03 | low | LevelReassessment validation messages are English-hardcoded and returned directly to frontend. Consistent with existing HomeworkStatus pattern but diverges from i18n best practice. |
 
 *Cleared 2026-04-02 during Pedagogical Quality sprint close. 14 entries triaged: #420 (Catalan bug), #424 (Isaac pedagogy pass), #422 (prompt consistency) received new findings. Remaining entries deleted (dismissed CodeRabbit notes, no-user-impact inconsistencies, i18n patterns, stale QA spec comments, e2e AI coverage gap covered by Teacher QA).*
