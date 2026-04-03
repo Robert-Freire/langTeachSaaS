@@ -22,3 +22,4 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 |----------|---------|--------|
 | Minor | `Email` prop on base controller uses `?? ""` when claim missing; could silently create teacher with blank email (pre-existing pattern) | code-review |
 | Minor | Backend ValidationException messages embed user-facing text; frontend should own display copy (pre-existing pattern) | code-review |
+| Minor | `levelReassessmentPending` logic (compare override vs CefrLevel) duplicated in SessionLogService.GetSummaryAsync and SessionHistoryService.LoadSkillLevelOverridesAsync; extract shared predicate | sophy |

@@ -18,6 +18,9 @@ public class SessionLogService : ISessionLogService
     private static readonly HashSet<string> ValidCefrSubLevels = new(StringComparer.OrdinalIgnoreCase)
         { "A1.1", "A1.2", "A2.1", "A2.2", "B1.1", "B1.2", "B2.1", "B2.2", "C1.1", "C1.2", "C2.1", "C2.2" };
 
+    private static readonly JsonSerializerOptions JsonOptions =
+        new() { PropertyNameCaseInsensitive = true };
+
     public SessionLogService(AppDbContext db, ILogger<SessionLogService> logger)
     {
         _db = db;
@@ -195,7 +198,7 @@ public class SessionLogService : ISessionLogService
         var overrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            var existing = JsonSerializer.Deserialize<Dictionary<string, string>>(student.SkillLevelOverrides);
+            var existing = JsonSerializer.Deserialize<Dictionary<string, string>>(student.SkillLevelOverrides, JsonOptions);
             if (existing is not null)
                 foreach (var kv in existing)
                     overrides[kv.Key] = kv.Value;
@@ -247,7 +250,7 @@ public class SessionLogService : ISessionLogService
         var skillOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(student.SkillLevelOverrides);
+            var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(student.SkillLevelOverrides, JsonOptions);
             if (parsed is not null)
                 foreach (var kv in parsed)
                     skillOverrides[kv.Key] = kv.Value;

@@ -38,6 +38,9 @@ public class SessionLogsController : ControllerBase
         try
         {
             var summary = await _sessionLogService.GetSummaryAsync(teacherId, studentId, cancellationToken);
+            _logger.LogInformation(
+                "GET /api/students/{StudentId}/sessions/summary. TeacherId={TeacherId} TotalSessions={TotalSessions}",
+                studentId, teacherId, summary.TotalSessions);
             return Ok(summary);
         }
         catch (KeyNotFoundException)
