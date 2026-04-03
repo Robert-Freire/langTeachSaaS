@@ -32,3 +32,11 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | Minor | `Email` prop on base controller uses `?? ""` when claim missing; could silently create teacher with blank email (pre-existing pattern) | code-review |
 | Minor | Backend ValidationException messages embed user-facing text; frontend should own display copy (pre-existing pattern) | code-review |
 | Minor | `levelReassessmentPending` logic (compare override vs CefrLevel) duplicated in SessionLogService.GetSummaryAsync and SessionHistoryService.LoadSkillLevelOverridesAsync; extract shared predicate | sophy |
+
+## PR #431 (exercise coherence prompt fixes, 2026-04-03)
+
+| Severity | Finding | Source |
+|----------|---------|--------|
+| Minor | sourcePassage CRITICAL instruction duplicates what the JSON schema already declares; a backend validator rejecting empty sourcePassage values would be stronger | sophy |
+| Minor | grammar scope CRITICAL instruction ("MUST only use...") is tautological with the GRAMMAR SCOPE block already in the prompt; consider removing | sophy |
+| Minor | CEFR level constraint on roleAPhrases/roleBPhrases is the third place "stay at level" is stated; prompt weight inflation trend to watch | sophy |
