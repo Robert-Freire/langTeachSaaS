@@ -156,4 +156,28 @@ describe('SessionHistoryTab', () => {
     await screen.findByTestId('session-entry')
     expect(screen.getByText(/2 notes/)).toBeInTheDocument()
   })
+
+  it('shows relative time label: "today" for same-day session', async () => {
+    const today = new Date().toISOString().split('T')[0] + 'T00:00:00Z'
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, sessionDate: today }])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByText('today')).toBeInTheDocument()
+  })
+
+  it('shows relative time label: "N days ago" for recent session', async () => {
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, sessionDate: threeDaysAgo }])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByText('3 days ago')).toBeInTheDocument()
+  })
+
+  it('shows relative time label: "N weeks ago" for a session 2 weeks ago', async () => {
+    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, sessionDate: twoWeeksAgo }])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByText('2 weeks ago')).toBeInTheDocument()
+  })
 })
