@@ -268,12 +268,12 @@ function SessionEntry({ session, studentId }: { session: SessionLog; studentId: 
                     className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
                     disabled={isDeleting}
                     data-testid="delete-session-button"
-                  />
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    Delete
+                  </Button>
                 }
-              >
-                <Trash2 className="h-3.5 w-3.5 mr-1" />
-                Delete
-              </AlertDialogTrigger>
+              />
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete session log?</AlertDialogTitle>
