@@ -1,20 +1,19 @@
 ---
-name: Project memory discipline — always write status after each task
-description: After completing any task, save task status, what was built, and next steps to memory
+name: Project memory discipline — update stable references, not issue status
+description: After sprints/milestones, update milestone sequence and sprint branch. Do NOT log per-issue status (it goes stale).
 type: feedback
 ---
 
 ## Rule
-At the end of every session where a task is completed (commit, PR opened, or significant progress made), update `project_langteach_task_status.md` with:
-- Which task was just completed and what it built (one sentence), marked DONE with PR number
-- What the next task is and its scope (update the "Next task" pointer)
-- Any new sub-tasks that were added during the task (e.g., T19.1 spawned from T19)
-- Any open questions or blockers
+After completing a sprint or milestone change, update `project_langteach_task_status.md` with:
+- New sprint branch name
+- Milestone status change (ACTIVE/CLOSED)
+- Any new upcoming milestones
 
-**Critical:** The memory task table must stay in sync with the beta plan. If the plan file adds new tasks or changes the "Next task" pointer, the memory must reflect that too. The memory is what future sessions read first, so stale pointers cause wrong task prioritization.
+**Do NOT log per-issue status** (e.g., "#269 DONE, PR #401 merged"). This duplicates GitHub and goes stale by next session. GitHub is the source of truth for issue state.
 
 ## Why
-Without this, the next session opens with no project context and wastes tool calls re-reading requirements, plans, and git history to reconstruct state that should already be in memory.
+The old rule was "log every completed task with PR number." This produced a 200-line file of issue snapshots that was wrong by next session. On 2026-04-03, stale per-issue entries caused the PM to present closed issues as open loose ends.
 
 ## Also applies to plan creation
 When a plan is written and saved, add an entry to `project_langteach_plans.md` immediately so the location is indexed.
