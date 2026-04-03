@@ -45,7 +45,7 @@ describe('SessionLogDialog', () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
       {
         id: 's1', studentId: STUDENT_ID, sessionDate: '2026-03-30', plannedContent: null,
-        actualContent: 'Some content', homeworkAssigned: null, previousHomeworkStatus: 'NotApplicable',
+        actualContent: 'Some content', homeworkAssigned: null, previousHomeworkStatus: 3,
         previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null, generalNotes: null,
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
@@ -65,7 +65,7 @@ describe('SessionLogDialog', () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
       {
         id: 's1', studentId: STUDENT_ID, sessionDate: '2026-03-30', plannedContent: null,
-        actualContent: 'Some content', homeworkAssigned: 'Read chapter 3', previousHomeworkStatus: 'NotApplicable',
+        actualContent: 'Some content', homeworkAssigned: 'Read chapter 3', previousHomeworkStatus: 3,
         previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null, generalNotes: null,
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',

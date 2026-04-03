@@ -36,7 +36,11 @@ const CEFR_SUBLEVELS = new Set([
 ])
 
 function todayIso(): string {
-  return new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 export interface SessionLogDialogProps {
@@ -170,10 +174,17 @@ export function SessionLogDialog({
     if (!plannedContent && !actualContent) {
       errs.content = 'At least one of "What was planned" or "What was actually done" is required.'
     }
-    if (reassessmentEnabled && reassessmentLevel) {
-      const normalized = reassessmentLevel.trim().toUpperCase()
-      if (!CEFR_SUBLEVELS.has(normalized)) {
-        errs.reassessmentLevel = 'Must be a valid CEFR sub-level (e.g. A1.1, B2.2).'
+    if (reassessmentEnabled) {
+      if (!reassessmentSkill) {
+        errs.reassessmentSkill = 'Skill is required when reassessment is enabled.'
+      }
+      if (!reassessmentLevel) {
+        errs.reassessmentLevel = 'Level is required when reassessment is enabled.'
+      } else {
+        const normalized = reassessmentLevel.trim().toUpperCase()
+        if (!CEFR_SUBLEVELS.has(normalized)) {
+          errs.reassessmentLevel = 'Must be a valid CEFR sub-level (e.g. A1.1, B2.2).'
+        }
       }
     }
     setErrors(errs)
@@ -374,6 +385,9 @@ export function SessionLogDialog({
                         ))}
                       </SelectContent>
                     </Select>
+                    {errors.reassessmentSkill && (
+                      <p className="text-xs text-red-600">{errors.reassessmentSkill}</p>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="reassessment-level" className="text-xs text-zinc-600">

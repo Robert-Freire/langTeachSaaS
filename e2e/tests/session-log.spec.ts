@@ -55,6 +55,8 @@ test('log session from student detail page', async ({ browser }) => {
 
   // Success confirmation
   await expect(page.getByTestId('session-log-success')).toBeVisible({ timeout: 10000 })
+  // Dialog should close automatically after success
+  await expect(page.getByTestId('session-log-dialog')).toBeHidden({ timeout: 3000 })
 
   await context.close()
 })

@@ -12,7 +12,7 @@ export interface SessionLog {
   plannedContent: string | null
   actualContent: string | null
   homeworkAssigned: string | null
-  previousHomeworkStatus: string
+  previousHomeworkStatus: number
   previousHomeworkStatusName: string
   nextSessionTopics: string | null
   generalNotes: string | null
