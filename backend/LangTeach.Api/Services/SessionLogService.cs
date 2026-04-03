@@ -14,6 +14,7 @@ public class SessionLogService : ISessionLogService
     private static readonly HashSet<string> ValidSkills = new(StringComparer.OrdinalIgnoreCase)
         { "Speaking", "Writing", "Reading", "Listening" };
 
+    // TODO: source CEFR sub-levels from config if the set ever changes
     private static readonly HashSet<string> ValidCefrSubLevels = new(StringComparer.OrdinalIgnoreCase)
         { "A1.1", "A1.2", "A2.1", "A2.2", "B1.1", "B1.2", "B2.1", "B2.2", "C1.1", "C1.2", "C2.1", "C2.2" };
 
@@ -99,7 +100,7 @@ public class SessionLogService : ISessionLogService
         _db.SessionLogs.Add(entity);
 
         if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
-            PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel);
+            PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);
 
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -152,7 +153,7 @@ public class SessionLogService : ISessionLogService
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (student is not null)
-                PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel);
+                PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);
         }
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -189,7 +190,7 @@ public class SessionLogService : ISessionLogService
                 $"Invalid LevelReassessmentLevel '{level}'. Valid values: {string.Join(", ", ValidCefrSubLevels)}");
     }
 
-    private static void PropagateReassessment(Student student, string skill, string level)
+    private static void PropagateReassessment(Student student, string skill, string level, ILogger logger)
     {
         var overrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         try
@@ -199,7 +200,10 @@ public class SessionLogService : ISessionLogService
                 foreach (var kv in existing)
                     overrides[kv.Key] = kv.Value;
         }
-        catch (JsonException) { }
+        catch (JsonException ex)
+        {
+            logger.LogWarning(ex, "Student {StudentId} has corrupt SkillLevelOverrides; resetting to empty before propagation", student.Id);
+        }
 
         overrides[skill.ToLowerInvariant()] = level;
         student.SkillLevelOverrides = JsonSerializer.Serialize(overrides);
