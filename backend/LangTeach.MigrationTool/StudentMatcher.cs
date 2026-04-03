@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using LangTeach.Api.Data.Models;
 
 namespace LangTeach.MigrationTool;
@@ -11,6 +12,38 @@ internal static class StudentMatcher
     // Order matters: longer/more-specific suffixes first so "B1+" matches before "B1"
     private static readonly string[] CefrSuffixes =
         ["C2+", "C1+", "B2+", "B1+", "A2+", "A1+", "A0+", "C2", "C1", "B2", "B1", "A2", "A1", "A0"];
+
+    // Matches A0-C2 with optional plus or dot-subband (e.g. "A2.3", "B1+", "C1")
+    private static readonly Regex CefrLevelRegex =
+        new(@"\b(A0|A1|A2|B1|B2|C1|C2)(?:[+]|[.]\d)?\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>
+    /// Normalizes a raw CEFR level to a base band accepted by the system.
+    /// A0/A0+ -> A1; B1+/B1.x -> B1; null -> null.
+    /// </summary>
+    public static string? NormalizeLevel(string? rawLevel)
+    {
+        if (rawLevel is null) return null;
+        var upper = rawLevel.ToUpperInvariant();
+        // Strip dot-subband notation: A2.3 -> A2
+        if (upper.Length > 2 && upper[2] == '.') upper = upper[..2];
+        // Strip plus suffix: B1+ -> B1
+        if (upper.EndsWith('+')) upper = upper[..^1];
+        // A0 is not a system level; map to A1 (absolute beginner -> A1 content)
+        if (upper == "A0") return "A1";
+        return upper;
+    }
+
+    /// <summary>
+    /// Parses a freeform text (e.g. "Preply A2", "C1", "A0+", "A2.3") and returns
+    /// the first recognised, normalised CEFR level, or null if none found.
+    /// </summary>
+    public static string? ParseLevelFromText(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        var match = CefrLevelRegex.Match(text);
+        return match.Success ? NormalizeLevel(match.Value.ToUpperInvariant()) : null;
+    }
 
     /// <summary>
     /// Parses a sheet name into student name and CEFR level (uppercased, e.g. "B1").

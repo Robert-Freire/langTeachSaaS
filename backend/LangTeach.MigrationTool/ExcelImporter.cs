@@ -47,7 +47,7 @@ internal sealed class ExcelImporter
             var student = StudentMatcher.FindStudent(sheetName, students);
             if (student is null)
             {
-                student = await CreateStudentAsync(sheetName);
+                student = await CreateStudentAsync(sheetName, worksheet);
                 students = [..students, student]; // keep in-memory list up to date
                 result.StudentsCreated++;
             }
@@ -248,12 +248,25 @@ internal sealed class ExcelImporter
         return false;
     }
 
-    private async Task<Student> CreateStudentAsync(string sheetName)
+    private static string? ExtractLevelFromColumnF(IXLWorksheet worksheet)
     {
-        var (name, level) = StudentMatcher.ParseSheetName(sheetName);
+        foreach (var row in worksheet.RowsUsed())
+        {
+            if (row.RowNumber() == 1) continue; // skip header row
+            var colF = row.Cell(6).GetString().Trim();
+            var level = StudentMatcher.ParseLevelFromText(colF);
+            if (level is not null) return level;
+        }
+        return null;
+    }
+
+    private async Task<Student> CreateStudentAsync(string sheetName, IXLWorksheet worksheet)
+    {
+        var (name, rawLevel) = StudentMatcher.ParseSheetName(sheetName);
+        var level = StudentMatcher.NormalizeLevel(rawLevel) ?? ExtractLevelFromColumnF(worksheet);
         var now = DateTime.UtcNow;
 
-        Console.WriteLine($"  CREATE student: \"{name}\" (level: {level ?? "unknown"}) from sheet \"{sheetName}\"");
+        Console.WriteLine($"  CREATE student: \"{name}\" (level: {level ?? "A1 (default)"}) from sheet \"{sheetName}\"");
 
         var student = new Student
         {
@@ -261,7 +274,7 @@ internal sealed class ExcelImporter
             TeacherId = _teacherId,
             Name = name,
             LearningLanguage = "Spanish",
-            CefrLevel = level ?? "A1",
+            CefrLevel = level ?? "A1", // level already normalized; A1 is fallback for unknown
             Interests = "[]",
             LearningGoals = "[]",
             Weaknesses = "[]",

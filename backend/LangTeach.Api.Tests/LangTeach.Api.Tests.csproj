@@ -23,6 +23,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LangTeach.Api\LangTeach.Api.csproj" />
+    <ProjectReference Include="..\LangTeach.MigrationTool\LangTeach.MigrationTool.csproj">
+      <Aliases>MigTool</Aliases>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>
