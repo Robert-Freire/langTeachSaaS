@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, NotebookPen } from 'lucide-react'
+import { ArrowLeft, NotebookPen, BookOpen } from 'lucide-react'
 import { getStudent } from '../api/students'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { getCefrBadgeClasses } from '@/lib/cefr-colors'
 import { StudentProfileSummary } from '@/components/StudentProfileSummary'
+import { StudentProfileOverview } from '@/components/student/StudentProfileOverview'
 import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
 import { SessionLogDialog } from '@/components/session/SessionLogDialog'
@@ -95,7 +96,20 @@ export default function StudentDetail() {
         </TabsList>
 
         <TabsContent value="overview" className="pt-6 space-y-6">
-          <StudentProfileSummary student={student} />
+          <StudentProfileOverview student={student} />
+          <StudentProfileSummary
+            student={student}
+            hasRichNotes={!!student.notes && student.notes.length > 100}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/lessons/new?studentId=${student.id}`)}
+            data-testid="create-lesson-cta"
+          >
+            <BookOpen className="h-4 w-4 mr-1.5" />
+            New lesson
+          </Button>
           <div className="grid gap-6 lg:grid-cols-2">
             <LessonHistoryCard studentId={student.id} />
             <StudentCoursesCard studentId={student.id} />

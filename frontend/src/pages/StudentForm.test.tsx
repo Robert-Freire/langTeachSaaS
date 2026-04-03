@@ -20,6 +20,14 @@ vi.mock('../lib/logger', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }))
 
+vi.mock('../components/student/StudentCoursesCard', () => ({
+  StudentCoursesCard: () => <div data-testid="student-courses-card" />,
+}))
+
+vi.mock('../components/student/LessonHistoryCard', () => ({
+  LessonHistoryCard: () => <div data-testid="lesson-history-card" />,
+}))
+
 vi.mock('../lib/studentOptions', () => ({
   LEARNING_GOALS: [{ value: 'travel', label: 'Travel' }],
   getWeaknessesForLanguage: (lang: string) => {
@@ -103,6 +111,18 @@ describe('StudentForm', () => {
     const back = screen.getByTestId('page-header-back')
     expect(back).toHaveAttribute('href', '/students')
     expect(back).toHaveTextContent('Students')
+  })
+
+  it('shows "Teaching Context" section heading instead of "AI Personalization"', () => {
+    renderNew()
+    expect(screen.getByText('Teaching Context')).toBeInTheDocument()
+    expect(screen.queryByText('AI Personalization')).not.toBeInTheDocument()
+  })
+
+  it('does not render lesson history card in edit form', async () => {
+    renderEdit()
+    await screen.findByText('Edit Student')
+    expect(screen.queryByTestId('lesson-history-card')).not.toBeInTheDocument()
   })
 
   it('renders Save and Cancel buttons in header for new student', () => {

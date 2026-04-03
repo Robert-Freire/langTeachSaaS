@@ -32,6 +32,10 @@ vi.mock('../components/StudentProfileSummary', () => ({
   StudentProfileSummary: () => <div data-testid="student-profile-summary" />,
 }))
 
+vi.mock('../components/student/StudentProfileOverview', () => ({
+  StudentProfileOverview: () => <div data-testid="student-profile-overview" />,
+}))
+
 vi.mock('../components/session/SessionHistoryTab', () => ({
   SessionHistoryTab: () => <div data-testid="session-history-tab" />,
 }))
@@ -59,6 +63,7 @@ function wrapper(studentId = 'student-1') {
         <Routes>
           <Route path="/students/:id" element={<StudentDetail />} />
           <Route path="/students" element={<div>Students list</div>} />
+          <Route path="/lessons/new" element={<div data-testid="lesson-new-page">Lesson new</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -103,8 +108,22 @@ describe('StudentDetail', () => {
   it('shows overview content by default', async () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('student-profile-overview')).toBeInTheDocument()
     expect(screen.getByTestId('student-profile-summary')).toBeInTheDocument()
     expect(screen.queryByTestId('session-history-tab')).not.toBeInTheDocument()
+  })
+
+  it('shows "New lesson" CTA button on overview', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('create-lesson-cta')).toBeInTheDocument()
+  })
+
+  it('"New lesson" CTA navigates to lesson creation with student pre-selected', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    fireEvent.click(screen.getByTestId('create-lesson-cta'))
+    expect(await screen.findByTestId('lesson-new-page')).toBeInTheDocument()
   })
 
   it('switches to History tab on click', async () => {

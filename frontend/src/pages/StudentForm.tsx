@@ -33,7 +33,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
 import { PageHeader } from '@/components/PageHeader'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
@@ -479,12 +478,9 @@ export default function StudentForm() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">AI Personalization</CardTitle>
+            <CardTitle className="text-base">Teaching Context</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-xs text-zinc-400 -mt-1">
-              Used to personalize AI-generated lesson content for this student.
-            </p>
 
             {/* Native Language */}
             <div className="space-y-1.5">
@@ -643,7 +639,6 @@ export default function StudentForm() {
       </form>
 
       {isEdit && id && <StudentCoursesCard studentId={id} />}
-      {isEdit && id && <LessonHistoryCard studentId={id} />}
     </div>
   )
 }
