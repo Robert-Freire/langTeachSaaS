@@ -13,11 +13,6 @@
       "Edit(path:C:/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
       "Edit(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
       "mcp__github__*"
-    ],
-    "deny": [
-      "Bash(git push *main*)",
-      "Bash(git push *master*)",
-      "Bash(git commit* main*)"
     ]
   },
   "enabledPlugins": {

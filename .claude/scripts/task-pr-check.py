@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
 """
-task-pr-check — check CI status and CodeRabbit comments for a PR.
+task-pr-check - check CI status and CodeRabbit comments for a PR.
 
 Usage: python3 .claude/scripts/task-pr-check.py <pr-number>
 """
 
+import io
 import json
 import re
 import subprocess
 import sys
+
+# Force UTF-8 output on Windows to avoid encoding errors from emojis/special chars
+if sys.stdout.encoding != "utf-8":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+if sys.stderr.encoding != "utf-8":
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 REPO = "Robert-Freire/langTeachSaaS"
 
@@ -129,7 +136,7 @@ def main() -> None:
         kind = classify(c["body"])
         if kind == "ACTIONABLE":
             loc = f"{c['path']}:{c['line']}" if c.get("path") else "general"
-            actionable.append(f"[ACTIONABLE] {loc} — {short(c['body'])}")
+            actionable.append(f"[ACTIONABLE] {loc} - {short(c['body'])}")
         elif kind == "NITPICK":
             nitpicks.append(f"[NITPICK] {short(c['body'])}")
 
@@ -140,7 +147,7 @@ def main() -> None:
     else:
         status = "READY"
 
-    print(f"PR #{pr_num} — {title}")
+    print(f"PR #{pr_num} - {title}")
     print()
     print(f"CI: {ci_status}")
     for c in failing:
