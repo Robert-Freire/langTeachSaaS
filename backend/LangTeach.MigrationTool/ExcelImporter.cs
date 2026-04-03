@@ -248,7 +248,7 @@ internal sealed class ExcelImporter
         return false;
     }
 
-    private static string? ExtractLevelFromColumnF(IXLWorksheet worksheet)
+    internal static string? ExtractLevelFromColumnF(IXLWorksheet worksheet)
     {
         foreach (var row in worksheet.RowsUsed())
         {
