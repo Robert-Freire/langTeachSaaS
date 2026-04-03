@@ -26,8 +26,10 @@ interface SessionHistoryTabProps {
 
 function relativeTime(dateStr: string): string {
   const date = new Date(dateStr)
+  if (Number.isNaN(date.getTime())) return ''
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
+  if (diffMs < 0) return 'today'
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
   if (diffDays === 0) return 'today'
@@ -352,9 +354,13 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
     )
   }
 
+  const sortedSessions = [...sessions].sort(
+    (a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime(),
+  )
+
   return (
     <div className="space-y-3 pt-4" data-testid="session-history-list">
-      {sessions.map((session) => (
+      {sortedSessions.map((session) => (
         <SessionEntry key={session.id} session={session} studentId={studentId} />
       ))}
     </div>
