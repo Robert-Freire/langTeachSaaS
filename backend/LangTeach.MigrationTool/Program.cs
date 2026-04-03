@@ -29,6 +29,10 @@ for (int i = 0; i < args.Length; i++)
         case "--dry-run":
             dryRun = true;
             break;
+        default:
+            Console.Error.WriteLine($"ERROR: Unknown argument '{args[i]}'");
+            Console.Error.WriteLine("Usage: LangTeach.MigrationTool --file <xlsx> --teacher-id <guid> [--connection <conn>] [--dry-run]");
+            return 1;
     }
 }
 
@@ -77,10 +81,18 @@ var options = new DbContextOptionsBuilder<AppDbContext>()
     .UseSqlServer(connectionString)
     .Options;
 
-await using var db = new AppDbContext(options);
-
-var importer = new ExcelImporter(db, teacherId.Value, dryRun);
-var result = await importer.ImportAsync(filePath);
+ImportResult result;
+try
+{
+    await using var db = new AppDbContext(options);
+    var importer = new ExcelImporter(db, teacherId.Value, dryRun);
+    result = await importer.ImportAsync(filePath);
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine($"ERROR: Import failed: {ex.Message}");
+    return 1;
+}
 
 Console.WriteLine();
 Console.WriteLine("=== Summary ===");

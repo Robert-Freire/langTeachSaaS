@@ -56,14 +56,14 @@ internal sealed class ExcelImporter
 
             var profileNotes = CollectProfileNotes(worksheet);
 
-            var sessionsImported = await ImportSessionsAsync(worksheet, student, result);
+            var sessionsImported = await ImportSessionsAsync(worksheet, student);
             result.SessionsImported += sessionsImported.imported;
             result.SessionsSkipped += sessionsImported.skipped;
 
             if (profileNotes.preply.Length > 0 || profileNotes.info.Length > 0)
             {
-                await AppendStudentNotesAsync(student, profileNotes.preply, profileNotes.info);
-                result.StudentsNotesUpdated++;
+                var updated = await AppendStudentNotesAsync(student, profileNotes.preply, profileNotes.info);
+                if (updated) result.StudentsNotesUpdated++;
             }
         }
 
@@ -77,6 +77,7 @@ internal sealed class ExcelImporter
 
         foreach (var row in worksheet.RowsUsed())
         {
+            if (row.RowNumber() == 1) continue; // skip header row
             var colF = row.Cell(6).GetString().Trim();
             var colG = row.Cell(7).GetString().Trim();
             if (colF.Length > 0) preplyParts.Add(colF);
@@ -91,23 +92,21 @@ internal sealed class ExcelImporter
 
     private async Task<(int imported, int skipped)> ImportSessionsAsync(
         IXLWorksheet worksheet,
-        Student student,
-        ImportResult result)
+        Student student)
     {
         int imported = 0;
         int skipped = 0;
         var now = DateTime.UtcNow;
 
-        // Load existing dates for this student once to avoid per-row queries
+        // Load existing non-deleted dates for this student once to avoid per-row queries
         var existingDates = await _db.SessionLogs
-            .Where(sl => sl.StudentId == student.Id)
+            .Where(sl => sl.StudentId == student.Id && !sl.IsDeleted)
             .Select(sl => sl.SessionDate)
             .ToHashSetAsync();
 
         foreach (var row in worksheet.RowsUsed())
         {
-            // Skip header row (row 1)
-            if (row.RowNumber() == 1) continue;
+            if (row.RowNumber() == 1) continue; // skip header row
 
             var sessionDate = ExtractDate(row);
             if (sessionDate is null) continue;
@@ -129,6 +128,10 @@ internal sealed class ExcelImporter
                 continue;
             }
 
+            // Track in memory immediately so repeated dates in same sheet are also skipped
+            // (applies in both live and dry-run mode)
+            existingDates.Add(sessionDate.Value);
+
             Console.WriteLine($"  + Session {sessionDate:yyyy-MM-dd}: planned={TruncateLog(planned)}, actual={TruncateLog(actual)}");
 
             if (!_dryRun)
@@ -149,9 +152,6 @@ internal sealed class ExcelImporter
                     CreatedAt = now,
                     UpdatedAt = now,
                 });
-
-                // Track in memory so re-encountered dates in the same sheet are also skipped
-                existingDates.Add(sessionDate.Value);
             }
 
             imported++;
@@ -166,9 +166,6 @@ internal sealed class ExcelImporter
 
     private static DateTime? ExtractDate(IXLRow row)
     {
-        // Try each cell in the row for a parseable date
-        // The Excel layout has a date value — try the date cell heuristic:
-        // check cell 1 first (some sheets put dates there), then scan all cells.
         for (int col = 1; col <= 7; col++)
         {
             var cell = row.Cell(col);
@@ -218,13 +215,13 @@ internal sealed class ExcelImporter
         return false;
     }
 
-    private async Task AppendStudentNotesAsync(Student student, string preply, string info)
+    private async Task<bool> AppendStudentNotesAsync(Student student, string preply, string info)
     {
         const string marker = "[Excel import";
 
         // Idempotency: do not append if already imported
         if (student.Notes?.Contains(marker) == true)
-            return;
+            return false;
 
         var parts = new List<string>();
         if (preply.Length > 0) parts.Add($"Preply test: {preply}");
@@ -239,7 +236,10 @@ internal sealed class ExcelImporter
             student.Notes = (student.Notes ?? string.Empty) + appendBlock;
             student.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+            return true;
         }
+
+        return false;
     }
 
     private static string? NullIfEmpty(string value) =>

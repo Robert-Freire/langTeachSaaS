@@ -26,11 +26,26 @@ internal static class StudentMatcher
         return trimmed;
     }
 
+    /// <summary>
+    /// Returns the matching student, null if no match, or throws if multiple students
+    /// share the same normalized name (to prevent silently importing to the wrong student).
+    /// </summary>
     public static Student? FindStudent(string sheetName, IReadOnlyList<Student> students)
     {
         var nameFromSheet = StripCefrSuffix(sheetName);
 
-        return students.FirstOrDefault(s =>
-            string.Equals(s.Name.Trim(), nameFromSheet, StringComparison.OrdinalIgnoreCase));
+        var matches = students
+            .Where(s => string.Equals(s.Name.Trim(), nameFromSheet, StringComparison.OrdinalIgnoreCase))
+            .Take(2)
+            .ToList();
+
+        return matches.Count switch
+        {
+            0 => null,
+            1 => matches[0],
+            _ => throw new InvalidOperationException(
+                $"Ambiguous sheet match for \"{sheetName}\" (normalized: \"{nameFromSheet}\") — " +
+                "multiple students with this name. Resolve manually before importing.")
+        };
     }
 }
