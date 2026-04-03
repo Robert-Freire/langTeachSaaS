@@ -13,12 +13,15 @@ for (int i = 0; i < args.Length; i++)
     switch (args[i])
     {
         case "--file" when i + 1 < args.Length:
+            if (args[i + 1].StartsWith("--", StringComparison.Ordinal)) { Console.Error.WriteLine("ERROR: --file requires a value"); return 1; }
             filePath = args[++i];
             break;
         case "--connection" when i + 1 < args.Length:
+            if (args[i + 1].StartsWith("--", StringComparison.Ordinal)) { Console.Error.WriteLine("ERROR: --connection requires a value"); return 1; }
             connectionString = args[++i];
             break;
         case "--teacher-id" when i + 1 < args.Length:
+            if (args[i + 1].StartsWith("--", StringComparison.Ordinal)) { Console.Error.WriteLine("ERROR: --teacher-id requires a GUID value"); return 1; }
             if (!Guid.TryParse(args[++i], out var tid))
             {
                 Console.Error.WriteLine("ERROR: --teacher-id must be a valid GUID");
@@ -49,10 +52,12 @@ if (!File.Exists(filePath))
     return 1;
 }
 
-connectionString ??= Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+connectionString ??=
+    Environment.GetEnvironmentVariable("ConnectionStrings__Default") ??
+    Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
 {
-    Console.Error.WriteLine("ERROR: Database connection string required. Set ConnectionStrings__DefaultConnection or use --connection");
+    Console.Error.WriteLine("ERROR: Database connection string required. Set ConnectionStrings__Default or use --connection");
     return 1;
 }
 

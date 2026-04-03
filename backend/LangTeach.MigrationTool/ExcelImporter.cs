@@ -1,3 +1,4 @@
+using System.Globalization;
 using ClosedXML.Excel;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
@@ -164,15 +165,14 @@ internal sealed class ExcelImporter
         return (imported, skipped);
     }
 
+    private static readonly string[] DateFormats =
+        ["yyyy-MM-dd", "dd/MM/yyyy", "MM/dd/yyyy", "d/M/yyyy", "M/d/yyyy", "dd-MM-yyyy", "MM-dd-yyyy"];
+
     private static DateTime? ExtractDate(IXLRow row)
     {
-        for (int col = 1; col <= 7; col++)
-        {
-            var cell = row.Cell(col);
-            if (TryParseDate(cell, out var date))
-                return date;
-        }
-        return null;
+        // Date is expected in column A only; scanning content columns causes false positives.
+        TryParseDate(row.Cell(1), out var date);
+        return date == default ? null : date;
     }
 
     private static bool TryParseDate(IXLCell cell, out DateTime result)
@@ -201,11 +201,12 @@ internal sealed class ExcelImporter
             }
         }
 
-        // Text date
+        // Text date — explicit formats with InvariantCulture to avoid locale differences
         if (cell.DataType == XLDataType.Text)
         {
             var text = cell.GetString().Trim();
-            if (DateTime.TryParse(text, out var parsed))
+            if (DateTime.TryParseExact(text, DateFormats, CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out var parsed))
             {
                 result = parsed.Date;
                 return true;
