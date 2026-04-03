@@ -62,3 +62,7 @@ export async function createSession(
   const res = await apiClient.post<SessionLog>(`/api/students/${studentId}/sessions`, data)
   return res.data
 }
+
+export async function deleteSession(studentId: string, sessionId: string): Promise<void> {
+  await apiClient.delete(`/api/students/${studentId}/sessions/${sessionId}`)
+}

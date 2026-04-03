@@ -32,6 +32,10 @@ vi.mock('../components/StudentProfileSummary', () => ({
   StudentProfileSummary: () => <div data-testid="student-profile-summary" />,
 }))
 
+vi.mock('../components/session/SessionHistoryTab', () => ({
+  SessionHistoryTab: () => <div data-testid="session-history-tab" />,
+}))
+
 const MOCK_STUDENT: studentsApi.Student = {
   id: 'student-1',
   name: 'Ana Garcia',
@@ -87,5 +91,27 @@ describe('StudentDetail', () => {
     vi.mocked(studentsApi.getStudent).mockRejectedValue(new Error('Not found'))
     wrapper('bad-id')
     expect(await screen.findByText('Student not found.')).toBeInTheDocument()
+  })
+
+  it('renders Overview and History tabs', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('tab-overview')).toBeInTheDocument()
+    expect(screen.getByTestId('tab-history')).toBeInTheDocument()
+  })
+
+  it('shows overview content by default', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('student-profile-summary')).toBeInTheDocument()
+    expect(screen.queryByTestId('session-history-tab')).not.toBeInTheDocument()
+  })
+
+  it('switches to History tab on click', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    fireEvent.click(screen.getByTestId('tab-history'))
+    expect(screen.getByTestId('session-history-tab')).toBeInTheDocument()
+    expect(screen.queryByTestId('student-profile-summary')).not.toBeInTheDocument()
   })
 })
