@@ -83,7 +83,7 @@ flowchart TD
     end
 
     subgraph CLOSE ["Close"]
-        Y["Notify user\nPR ready for review"]
+        Y["Notify user\nPR link + consolidated review table\n(every finding, action taken)"]
         Y --> Z["User reviews + merges to sprint branch"]
         Z --> AA["task-merged agent:\nClose issue + move to Ready to Test"]
         AA --> AB["ExitWorktree remove"]

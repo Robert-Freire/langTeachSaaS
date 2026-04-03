@@ -88,7 +88,20 @@ When a task is complete:
    If conflicts: resolve, re-run checks, re-commit.
 8. Push and open PR against the sprint branch. Post `@coderabbitai review` comment.
 9. Run `python3 .claude/scripts/task-pr-check.py <PR_NUMBER>` once to confirm CI is not immediately failing. For any CodeRabbit findings you dismiss as out-of-scope or pre-existing, log them to `plan/observed-issues.md` (same format as step 6). Then stop.
-10. Stop. Do NOT merge. User reviews and merges manually.
+10. **Final summary to user.** Post a message with:
+    - PR link
+    - One table consolidating every reviewer's findings and the action taken:
+      ```
+      | Reviewer | Finding | Action |
+      |----------|---------|--------|
+      | qa-verify | Gap: no e2e for empty state | Fixed (added test) |
+      | review | Unused import in FooBar.tsx | Fixed |
+      | architecture-reviewer | Service could reuse SharedHelper | Deferred (#NNN) |
+      | review-ui | Button clipped on mobile | Fixed |
+      | CodeRabbit | Nullable warning in DTO | Dismissed (pre-existing) |
+      ```
+      Include every finding from every reviewer (qa-verify, code review, architecture, prompt-health, pedagogy, Sophy, UI review, CodeRabbit). For each: what was found, and whether it was **Fixed**, **Deferred** (with issue number), or **Dismissed** (with reason).
+    - Then stop. Do NOT merge. User reviews and merges manually.
 
 **Branch protection:** `task/*`: push freely. `sprint/*`: PR only. `main`: never push directly.
 
