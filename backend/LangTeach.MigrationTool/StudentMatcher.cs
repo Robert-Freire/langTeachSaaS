@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using LangTeach.Api.Data.Models;
+using LangTeach.Api.Services;
 
 namespace LangTeach.MigrationTool;
 
@@ -19,19 +20,13 @@ internal static class StudentMatcher
 
     /// <summary>
     /// Normalizes a raw CEFR level to a base band accepted by the system.
-    /// A0/A0+ -> A1; B1+/B1.x -> B1; null -> null.
+    /// Delegates to CefrLevelNormalizer: A0/A0+ -> A1; B1+ -> B1; A2.3 -> A2; null -> null.
     /// </summary>
     public static string? NormalizeLevel(string? rawLevel)
     {
         if (rawLevel is null) return null;
-        var upper = rawLevel.ToUpperInvariant();
-        // Strip dot-subband notation: A2.3 -> A2
-        if (upper.Length > 2 && upper[2] == '.') upper = upper[..2];
-        // Strip plus suffix: B1+ -> B1
-        if (upper.EndsWith('+')) upper = upper[..^1];
-        // A0 is not a system level; map to A1 (absolute beginner -> A1 content)
-        if (upper == "A0") return "A1";
-        return upper;
+        var normalized = CefrLevelNormalizer.Normalize(rawLevel);
+        return string.IsNullOrEmpty(normalized) ? null : normalized;
     }
 
     /// <summary>
