@@ -45,7 +45,7 @@ public class SessionLogService : ISessionLogService
     public async Task<SessionLogDto?> GetByIdAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default)
     {
         var session = await _db.SessionLogs
-            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
+            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.Student.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken);
 
         return session is null ? null : ToDto(session);
@@ -117,7 +117,7 @@ public class SessionLogService : ISessionLogService
         ValidateReassessment(request.LevelReassessmentSkill, request.LevelReassessmentLevel);
 
         var entity = await _db.SessionLogs
-            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
+            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.Student.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (entity is null)
@@ -165,7 +165,7 @@ public class SessionLogService : ISessionLogService
     public async Task<bool> SoftDeleteAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default)
     {
         var entity = await _db.SessionLogs
-            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
+            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.Student.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (entity is null)
