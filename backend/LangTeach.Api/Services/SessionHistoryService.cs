@@ -3,16 +3,19 @@ using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace LangTeach.Api.Services;
 
 public class SessionHistoryService : ISessionHistoryService
 {
     private readonly AppDbContext _db;
+    private readonly ILogger<SessionHistoryService> _logger;
 
-    public SessionHistoryService(AppDbContext db)
+    public SessionHistoryService(AppDbContext db, ILogger<SessionHistoryService> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     public async Task<SessionHistoryContext?> BuildContextAsync(
@@ -52,7 +55,7 @@ public class SessionHistoryService : ISessionHistoryService
         );
     }
 
-    private static IReadOnlyList<CoveredTopicEntry> AggregateTopicTags(List<SessionLog> sessions)
+    private IReadOnlyList<CoveredTopicEntry> AggregateTopicTags(List<SessionLog> sessions)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var result = new List<CoveredTopicEntry>();
@@ -65,7 +68,7 @@ public class SessionHistoryService : ISessionHistoryService
             try
             {
                 var tags = JsonSerializer.Deserialize<List<TopicTagEntry>>(session.TopicTags,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    JsonOptions);
 
                 if (tags is null) continue;
 
@@ -76,9 +79,9 @@ public class SessionHistoryService : ISessionHistoryService
                     result.Add(new CoveredTopicEntry(tag.Tag.Trim(), tag.Category));
                 }
             }
-            catch (JsonException)
+            catch (JsonException ex)
             {
-                // malformed TopicTags — skip silently
+                _logger.LogWarning(ex, "Malformed TopicTags on session {SessionId}", session.Id);
             }
         }
 
@@ -99,14 +102,18 @@ public class SessionHistoryService : ISessionHistoryService
         try
         {
             return JsonSerializer.Deserialize<Dictionary<string, string>>(overridesJson,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                JsonOptions)
                 ?? new Dictionary<string, string>();
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            _logger.LogWarning(ex, "Malformed SkillLevelOverrides for student {StudentId}", studentId);
             return new Dictionary<string, string>();
         }
     }
+
+    private static readonly JsonSerializerOptions JsonOptions =
+        new() { PropertyNameCaseInsensitive = true };
 
     private sealed record TopicTagEntry(string Tag, string? Category);
 }

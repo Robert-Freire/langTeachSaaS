@@ -3,6 +3,7 @@ using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LangTeach.Api.Tests.Services;
 
@@ -19,7 +20,7 @@ public class SessionHistoryServiceTests : IDisposable
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _db = new AppDbContext(options);
-        _sut = new SessionHistoryService(_db);
+        _sut = new SessionHistoryService(_db, NullLogger<SessionHistoryService>.Instance);
 
         _db.Teachers.Add(new Teacher
         {
