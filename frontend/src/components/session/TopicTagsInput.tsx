@@ -79,7 +79,7 @@ export function TopicTagsInput({ value, onChange }: TopicTagsInputProps) {
         <div className="flex flex-wrap gap-1.5">
           {value.map((tag, i) => (
             <Badge
-              key={i}
+              key={`${tag.tag}-${i}`}
               variant="outline"
               className="text-xs gap-1 pr-1"
             >

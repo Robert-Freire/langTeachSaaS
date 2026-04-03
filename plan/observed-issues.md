@@ -4,6 +4,7 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 | Source issue | Date | Severity | Observation |
 |-------------|------|----------|-------------|
+| #441 | 2026-04-03 | low | SessionLogDialog fetches all lessons (pageSize=100) and filters by studentId client-side; no studentId filter exists on GET /api/lessons. For teachers with many lessons this is inefficient. Add studentId filter to LessonListQuery in a future backend task. |
 | #450 | 2026-04-03 | low | SessionLogDtos TopicTags string has no [MaxLength]; consistent with other JSON fields (nvarchar(max)) but unbounded client input. Consider adding MaxLength validation in a future pass. |
 | #450 | 2026-04-03 | low | LevelReassessment validation messages are English-hardcoded and returned directly to frontend. Consistent with existing HomeworkStatus pattern but diverges from i18n best practice. |
 

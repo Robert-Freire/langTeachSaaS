@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2 } from 'lucide-react'
 import {
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { logger } from '../../lib/logger'
 import { TopicTagsInput } from './TopicTagsInput'
 import {
   listSessions,
@@ -72,6 +73,8 @@ export function SessionLogDialog({
   const [selectedLessonId, setSelectedLessonId] = useState(linkedLessonId ?? '')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [success, setSuccess] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Auto-populate planned content from lesson
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -104,6 +107,7 @@ export function SessionLogDialog({
       setSelectedLessonId(linkedLessonId ?? '')
       setErrors({})
       setSuccess(false)
+      setSubmitError(null)
     }
   }, [open, linkedLessonId])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -120,7 +124,7 @@ export function SessionLogDialog({
 
   // Fetch lessons for linked lesson selector
   const { data: lessonsData } = useQuery({
-    queryKey: ['lessons-all'],
+    queryKey: ['lessons', { pageSize: 100 }],
     queryFn: () => getLessons({ pageSize: 100 }),
     enabled: open,
   })
@@ -143,11 +147,22 @@ export function SessionLogDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
       setSuccess(true)
-      setTimeout(() => {
+      setSubmitError(null)
+      closeTimerRef.current = setTimeout(() => {
         onOpenChange(false)
       }, 1500)
     },
+    onError: (err) => {
+      logger.error('SessionLogDialog', 'session log submit failed', err)
+      setSubmitError('Failed to save session. Please try again.')
+    },
   })
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+    }
+  }, [])
 
   function validate(): boolean {
     const errs: Record<string, string> = {}
@@ -405,6 +420,10 @@ export function SessionLogDialog({
                   </SelectContent>
                 </Select>
               </div>
+            )}
+
+            {submitError && (
+              <p className="text-xs text-red-600" data-testid="session-log-error">{submitError}</p>
             )}
 
             <DialogFooter>
