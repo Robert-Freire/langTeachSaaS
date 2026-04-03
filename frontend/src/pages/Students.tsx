@@ -137,9 +137,13 @@ export default function Students() {
               <CardContent className="flex items-center justify-between py-4 px-4 sm:px-6">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="font-medium text-zinc-900 text-sm" data-testid="student-name">
+                    <Link
+                      to={`/students/${student.id}`}
+                      className="font-medium text-zinc-900 text-sm hover:text-indigo-600 hover:underline"
+                      data-testid="student-name"
+                    >
                       {student.name}
-                    </span>
+                    </Link>
                     <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
                       {student.learningLanguage}
                     </Badge>
