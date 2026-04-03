@@ -44,8 +44,15 @@ test('log session from student detail page', async ({ browser }) => {
   await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
 
   // Date is already filled (today)
+  const todayIso = await page.evaluate(() => {
+    const d = new Date()
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  })
   const dateInput = page.getByTestId('session-date')
-  await expect(dateInput).toHaveValue(/^\d{4}-\d{2}-\d{2}$/)
+  await expect(dateInput).toHaveValue(todayIso)
 
   // Fill actual content (required)
   await page.getByTestId('actual-content').fill('Practiced preterito indefinido with reading exercises.')
