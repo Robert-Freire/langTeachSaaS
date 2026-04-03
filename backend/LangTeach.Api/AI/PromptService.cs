@@ -438,8 +438,21 @@ public class PromptService : IPromptService
             {
                 sb.AppendLine();
                 var byCategory = sh.CoveredTopics
-                    .GroupBy(t => t.Category ?? "other", StringComparer.OrdinalIgnoreCase)
-                    .Select(g => $"{g.Key}: {string.Join(", ", g.Select(t => InputSanitizer.Sanitize(t.Tag)).Where(t => t.Length > 0))}");
+                    .GroupBy(
+                        t =>
+                        {
+                            var cat = InputSanitizer.Sanitize(t.Category);
+                            return string.IsNullOrWhiteSpace(cat) ? "other" : cat;
+                        },
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(g =>
+                    {
+                        var tags = g.Select(t => InputSanitizer.Sanitize(t.Tag))
+                            .Where(t => t.Length > 0)
+                            .ToArray();
+                        return tags.Length == 0 ? null : $"{g.Key}: {string.Join(", ", tags)}";
+                    })
+                    .OfType<string>();
                 sb.AppendLine($"Covered topics: {string.Join("; ", byCategory)}");
             }
 

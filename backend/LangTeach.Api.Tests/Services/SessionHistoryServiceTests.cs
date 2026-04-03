@@ -169,10 +169,11 @@ public class SessionHistoryServiceTests : IDisposable
     [InlineData(2)]
     public async Task DaysSinceLastSession_Band1(int daysAgo)
     {
-        _db.SessionLogs.Add(MakeSession(DateTime.UtcNow.AddDays(-daysAgo)));
+        var now = new DateTime(2026, 4, 3, 12, 0, 0, DateTimeKind.Utc);
+        _db.SessionLogs.Add(MakeSession(now.Date.AddDays(-daysAgo)));
         await _db.SaveChangesAsync();
 
-        var result = await _sut.BuildContextAsync(_teacherId, _studentId, DateTime.UtcNow);
+        var result = await _sut.BuildContextAsync(_teacherId, _studentId, now);
 
         result!.DaysSinceLastSession.Should().Be(daysAgo);
     }
@@ -182,11 +183,11 @@ public class SessionHistoryServiceTests : IDisposable
     [InlineData(7)]
     public async Task DaysSinceLastSession_Band2(int daysAgo)
     {
-        var date = DateTime.UtcNow.Date.AddDays(-daysAgo);
-        _db.SessionLogs.Add(MakeSession(date));
+        var now = new DateTime(2026, 4, 3, 12, 0, 0, DateTimeKind.Utc);
+        _db.SessionLogs.Add(MakeSession(now.Date.AddDays(-daysAgo)));
         await _db.SaveChangesAsync();
 
-        var result = await _sut.BuildContextAsync(_teacherId, _studentId, DateTime.UtcNow);
+        var result = await _sut.BuildContextAsync(_teacherId, _studentId, now);
 
         result!.DaysSinceLastSession.Should().Be(daysAgo);
     }
@@ -196,11 +197,11 @@ public class SessionHistoryServiceTests : IDisposable
     [InlineData(14)]
     public async Task DaysSinceLastSession_Band3(int daysAgo)
     {
-        var date = DateTime.UtcNow.Date.AddDays(-daysAgo);
-        _db.SessionLogs.Add(MakeSession(date));
+        var now = new DateTime(2026, 4, 3, 12, 0, 0, DateTimeKind.Utc);
+        _db.SessionLogs.Add(MakeSession(now.Date.AddDays(-daysAgo)));
         await _db.SaveChangesAsync();
 
-        var result = await _sut.BuildContextAsync(_teacherId, _studentId, DateTime.UtcNow);
+        var result = await _sut.BuildContextAsync(_teacherId, _studentId, now);
 
         result!.DaysSinceLastSession.Should().Be(daysAgo);
     }
@@ -210,11 +211,11 @@ public class SessionHistoryServiceTests : IDisposable
     [InlineData(30)]
     public async Task DaysSinceLastSession_Band4(int daysAgo)
     {
-        var date = DateTime.UtcNow.Date.AddDays(-daysAgo);
-        _db.SessionLogs.Add(MakeSession(date));
+        var now = new DateTime(2026, 4, 3, 12, 0, 0, DateTimeKind.Utc);
+        _db.SessionLogs.Add(MakeSession(now.Date.AddDays(-daysAgo)));
         await _db.SaveChangesAsync();
 
-        var result = await _sut.BuildContextAsync(_teacherId, _studentId, DateTime.UtcNow);
+        var result = await _sut.BuildContextAsync(_teacherId, _studentId, now);
 
         result!.DaysSinceLastSession.Should().Be(daysAgo);
     }
@@ -304,6 +305,24 @@ public class SessionHistoryServiceTests : IDisposable
         result!.SkillLevelOverrides.Should().HaveCount(2);
         result.SkillLevelOverrides["speaking"].Should().Be("A1.2");
         result.SkillLevelOverrides["writing"].Should().Be("B1.2");
+    }
+
+    [Fact]
+    public async Task SkillLevelOverrides_MatchingBaselineCefr_Filtered()
+    {
+        // Student is B1; override that also says B1 should be filtered out
+        var student = await _db.Students.FindAsync(_studentId);
+        student!.SkillLevelOverrides = "{\"speaking\":\"B1\",\"writing\":\"A2.2\"}";
+        await _db.SaveChangesAsync();
+
+        _db.SessionLogs.Add(MakeSession(DateTime.UtcNow.AddDays(-1)));
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.BuildContextAsync(_teacherId, _studentId, DateTime.UtcNow);
+
+        result!.SkillLevelOverrides.Should().HaveCount(1);
+        result.SkillLevelOverrides.Should().ContainKey("writing");
+        result.SkillLevelOverrides.Should().NotContainKey("speaking");
     }
 
     // --- OpenActionItems / PendingHomework from most recent session ---

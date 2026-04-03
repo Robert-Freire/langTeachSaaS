@@ -91,19 +91,25 @@ public class SessionHistoryService : ISessionHistoryService
     private async Task<IReadOnlyDictionary<string, string>> LoadSkillLevelOverridesAsync(
         Guid teacherId, Guid studentId, CancellationToken ct)
     {
-        var overridesJson = await _db.Students
+        var student = await _db.Students
             .Where(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted)
-            .Select(s => s.SkillLevelOverrides)
+            .Select(s => new { s.CefrLevel, s.SkillLevelOverrides })
             .FirstOrDefaultAsync(ct);
 
-        if (string.IsNullOrWhiteSpace(overridesJson) || overridesJson == "{}")
+        if (student is null ||
+            string.IsNullOrWhiteSpace(student.SkillLevelOverrides) ||
+            student.SkillLevelOverrides == "{}")
             return new Dictionary<string, string>();
 
         try
         {
-            return JsonSerializer.Deserialize<Dictionary<string, string>>(overridesJson,
-                JsonOptions)
-                ?? new Dictionary<string, string>();
+            return (JsonSerializer.Deserialize<Dictionary<string, string>>(student.SkillLevelOverrides, JsonOptions)
+                    ?? new Dictionary<string, string>())
+                .Where(kv =>
+                    !string.IsNullOrWhiteSpace(kv.Key) &&
+                    !string.IsNullOrWhiteSpace(kv.Value) &&
+                    !string.Equals(kv.Value, student.CefrLevel, StringComparison.OrdinalIgnoreCase))
+                .ToDictionary(kv => kv.Key, kv => kv.Value);
         }
         catch (JsonException ex)
         {
