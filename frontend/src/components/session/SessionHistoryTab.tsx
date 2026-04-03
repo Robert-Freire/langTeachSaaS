@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronUp, Trash2, ExternalLink, FileText } from 'lucide-react'
+import { logger } from '../../lib/logger'
 import { Link } from 'react-router-dom'
 import { listSessions, deleteSession, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
 import { Button } from '@/components/ui/button'
@@ -85,13 +86,19 @@ function notesCount(session: SessionLog): number {
 function SessionEntry({ session, studentId }: { session: SessionLog; studentId: string }) {
   const [expanded, setExpanded] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
   const { mutate: softDelete, isPending: isDeleting } = useMutation({
     mutationFn: () => deleteSession(studentId, session.id),
     onSuccess: () => {
       setDeleteOpen(false)
+      setDeleteError(null)
       queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+    },
+    onError: (err) => {
+      logger.error('SessionHistoryTab', 'delete session failed', err)
+      setDeleteError('Failed to delete session. Please try again.')
     },
   })
 
@@ -281,6 +288,11 @@ function SessionEntry({ session, studentId }: { session: SessionLog; studentId: 
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
+                  {deleteError && (
+                    <p className="text-xs text-red-600 w-full text-center mb-1" data-testid="delete-session-error">
+                      {deleteError}
+                    </p>
+                  )}
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => softDelete()}
