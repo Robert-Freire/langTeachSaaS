@@ -603,6 +603,8 @@ public class PromptService : IPromptService
         {"fillInBlank":[{"sentence":"","answer":"","hint":"","explanation":"","stage":""}],"multipleChoice":[{"question":"","options":[""],"answer":"","explanation":"","stage":""}],"matching":[{"left":"","right":"","explanation":"","stage":""}],"trueFalse":[{"statement":"","isTrue":true,"justification":"","sourcePassage":"","stage":""}],"sentenceOrdering":[{"fragments":[""],"correctOrder":[0],"hint":"","explanation":"","stage":""}],"sentenceTransformation":[{"prompt":"","original":"","expected":"","alternatives":[""],"explanation":"","stage":""}]}
         sentenceOrdering: fragments is an array of words or phrases; correctOrder is the array of fragment indices that form the correct sentence (e.g. fragments=["en","vivo","Barcelona","yo"], correctOrder=[3,1,0,2] gives "yo vivo en Barcelona"). CRITICAL: joining the fragments in correctOrder MUST produce a grammatically correct, natural Spanish sentence — verify this before outputting each item. Use sentenceOrdering for A1/A2/B1 levels where testing syntax awareness without requiring production is appropriate.
         sentenceTransformation: prompt is the transformation instruction; original is the source sentence; expected is the primary correct answer; alternatives lists other acceptable answers. Use for B1+ levels for tense changes, voice transformations, reported speech, and register shifts. Maps to DELE "transformaciones gramaticales".
+        CRITICAL: For all trueFalse items, the sourcePassage field MUST be non-empty. It must contain the exact sentence or phrase from the lesson text or Presentation examples that makes the statement verifiable. A trueFalse item with an empty sourcePassage is invalid and must not appear in the output.
+        IMPORTANT: trueFalse statements must be consistent with the grammar rules and exceptions actually taught in the lesson. If the lesson presented a nuanced rule or exception (e.g. indicativo is also possible when the fact is confirmed), the trueFalse items must reflect that nuance and must not state the rule as absolute.
         {{levelGuidance}}
         Include at least 3 items for each format you use. For each exercise, include a concise explanation (2-3 sentences) of why the correct answer is correct, considering the student's level and common L1 interference patterns.
         """;
@@ -621,7 +623,10 @@ public class PromptService : IPromptService
 
         var grammarScope = BuildGrammarScopeBlock(level);
         if (!string.IsNullOrEmpty(grammarScope))
+        {
             prompt += "\n\n" + grammarScope;
+            prompt += "\nCRITICAL: Practice exercises MUST only use the grammar structures listed in the GRAMMAR SCOPE above. Do not introduce additional structures, tenses, or paradigms not listed there, even if they appear naturally in context.";
+        }
 
         var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
         if (!string.IsNullOrEmpty(templateGuidance))
@@ -708,6 +713,7 @@ public class PromptService : IPromptService
 
         sb.AppendLine($"{mainInstruction} Return JSON:");
         sb.AppendLine("{\"scenarios\":[{\"setup\":\"\",\"roleA\":\"Teacher\",\"roleB\":\"Student\",\"roleAPhrases\":[\"\"],\"roleBPhrases\":[\"\"]}]}");
+        sb.AppendLine($"CRITICAL: All roleAPhrases and roleBPhrases must use only {level}-appropriate grammar structures. Do not include structures from higher CEFR levels.");
 
         if (!string.IsNullOrEmpty(guidance))
             sb.Append(guidance);
