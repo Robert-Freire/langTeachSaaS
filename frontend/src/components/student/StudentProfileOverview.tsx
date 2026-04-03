@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import type { Student } from '../../api/students'
+import type { Student } from '@/api/students'
 import { parseNotes } from './studentNoteUtils'
 
 interface Props {

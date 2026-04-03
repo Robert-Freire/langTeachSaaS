@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { StudentProfileOverview } from './StudentProfileOverview'
 import { parseNotes } from './studentNoteUtils'
-import type { Student } from '../../api/students'
+import type { Student } from '@/api/students'
 
 const BASE_STUDENT: Student = {
   id: 'student-1',

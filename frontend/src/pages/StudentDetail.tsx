@@ -10,12 +10,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { getCefrBadgeClasses } from '@/lib/cefr-colors'
 import { StudentProfileSummary } from '@/components/StudentProfileSummary'
 import { StudentProfileOverview } from '@/components/student/StudentProfileOverview'
-
-const RICH_NOTES_THRESHOLD = 100
 import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
 import { SessionLogDialog } from '@/components/session/SessionLogDialog'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
+import { parseNotes } from '@/components/student/studentNoteUtils'
 
 export default function StudentDetail() {
   const { id } = useParams<{ id: string }>()
@@ -101,7 +100,7 @@ export default function StudentDetail() {
           <StudentProfileOverview student={student} />
           <StudentProfileSummary
             student={student}
-            hasRichNotes={!!student.notes && student.notes.length > RICH_NOTES_THRESHOLD}
+            hasRichNotes={parseNotes(student.notes) !== null}
           />
           <Button
             variant="outline"
