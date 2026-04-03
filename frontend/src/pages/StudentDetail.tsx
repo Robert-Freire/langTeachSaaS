@@ -6,11 +6,13 @@ import { getStudent } from '../api/students'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { getCefrBadgeClasses } from '@/lib/cefr-colors'
 import { StudentProfileSummary } from '@/components/StudentProfileSummary'
 import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
 import { SessionLogDialog } from '@/components/session/SessionLogDialog'
+import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 
 export default function StudentDetail() {
   const { id } = useParams<{ id: string }>()
@@ -85,14 +87,25 @@ export default function StudentDetail() {
         </Button>
       </div>
 
-      {/* Profile summary */}
-      <StudentProfileSummary student={student} />
+      {/* Tabbed content */}
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+          <TabsTrigger value="history" data-testid="tab-history">History</TabsTrigger>
+        </TabsList>
 
-      {/* Cards */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <LessonHistoryCard studentId={student.id} />
-        <StudentCoursesCard studentId={student.id} />
-      </div>
+        <TabsContent value="overview" className="pt-6 space-y-6">
+          <StudentProfileSummary student={student} />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <LessonHistoryCard studentId={student.id} />
+            <StudentCoursesCard studentId={student.id} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="history">
+          <SessionHistoryTab studentId={student.id} />
+        </TabsContent>
+      </Tabs>
 
       {/* Session log dialog */}
       <SessionLogDialog
