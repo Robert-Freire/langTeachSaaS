@@ -98,9 +98,15 @@ internal sealed class ExcelImporter
         int skipped = 0;
         var now = DateTime.UtcNow;
 
+        // Load existing dates for this student once to avoid per-row queries
+        var existingDates = await _db.SessionLogs
+            .Where(sl => sl.StudentId == student.Id)
+            .Select(sl => sl.SessionDate)
+            .ToHashSetAsync();
+
         foreach (var row in worksheet.RowsUsed())
         {
-            // Skip header row (row 1) or rows where all session columns are empty
+            // Skip header row (row 1)
             if (row.RowNumber() == 1) continue;
 
             var sessionDate = ExtractDate(row);
@@ -115,11 +121,8 @@ internal sealed class ExcelImporter
             if (planned.Length == 0 && actual.Length == 0 && homework.Length == 0 && notes.Length == 0)
                 continue;
 
-            // Idempotency: query before insert
-            var exists = await _db.SessionLogs.AnyAsync(sl =>
-                sl.StudentId == student.Id && sl.SessionDate == sessionDate.Value);
-
-            if (exists)
+            // Idempotency: check in-memory set (populated from DB before loop)
+            if (existingDates.Contains(sessionDate.Value))
             {
                 Console.WriteLine($"  SKIP (duplicate): {sessionDate:yyyy-MM-dd}");
                 skipped++;
@@ -147,11 +150,16 @@ internal sealed class ExcelImporter
                     UpdatedAt = now,
                 });
 
-                await _db.SaveChangesAsync();
+                // Track in memory so re-encountered dates in the same sheet are also skipped
+                existingDates.Add(sessionDate.Value);
             }
 
             imported++;
         }
+
+        // Batch save all sessions for this sheet in one round-trip
+        if (!_dryRun && imported > 0)
+            await _db.SaveChangesAsync();
 
         return (imported, skipped);
     }
@@ -181,11 +189,11 @@ internal sealed class ExcelImporter
             return true;
         }
 
-        // Numeric OA date serial
+        // Numeric OA date serial (1 = 1900-01-01, 50000 = ~2036-11-21)
         if (cell.DataType == XLDataType.Number)
         {
             var num = cell.GetDouble();
-            if (num is >= 1 and <= 100000)
+            if (num is >= 1 and <= 50000)
             {
                 try
                 {
