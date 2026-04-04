@@ -222,7 +222,150 @@ public static class DemoSeeder
 
         logger.LogInformation("Visual seed complete: {Students} students, 2 lessons, 1 content block, 1 course, {Entries} entries.",
             students.Count, entries.Count);
+
+        await SeedScenarioStudentsAsync(db, teacher.Id, logger);
+
         return true;
+    }
+
+    private static async Task SeedScenarioStudentsAsync(AppDbContext db, Guid teacherId, ILogger logger)
+    {
+        var now = DateTime.UtcNow;
+
+        // Ana Seed — rich-profile scenario
+        await UpsertStudentAsync(db, teacherId, new Student
+        {
+            TeacherId        = teacherId,
+            Name             = "Ana Seed",
+            LearningLanguage = "English",
+            CefrLevel        = "B1",
+            NativeLanguage   = "Portuguese",
+            LearningGoals    = """["Improve conversational fluency","Prepare for job interviews in English"]""",
+            Interests        = """["literature","travel","photography"]""",
+            Difficulties     = """["False friends with Portuguese","Subjunctive mood"]""",
+            Weaknesses       = """["Listening to fast native speech","Idiomatic expressions"]""",
+            Notes            = "[scenario-seed]",
+        }, now);
+
+        // Marco Seed — excel-imported scenario
+        await UpsertStudentAsync(db, teacherId, new Student
+        {
+            TeacherId        = teacherId,
+            Name             = "Marco Seed",
+            LearningLanguage = "English",
+            CefrLevel        = "A2",
+            NativeLanguage   = null,
+            LearningGoals    = "[]",
+            Interests        = "[]",
+            Difficulties     = "[]",
+            Weaknesses       = "[]",
+            Notes            = "[Excel import 2026-01-15]\nCurrent level: A2\nObjectives: Business English, travel vocabulary\nDifficulties: Pronunciation, articles",
+        }, now);
+
+        // Clara Seed — minimal scenario
+        await UpsertStudentAsync(db, teacherId, new Student
+        {
+            TeacherId        = teacherId,
+            Name             = "Clara Seed",
+            LearningLanguage = "Spanish",
+            CefrLevel        = "A1",
+            NativeLanguage   = null,
+            LearningGoals    = "[]",
+            Interests        = "[]",
+            Difficulties     = "[]",
+            Weaknesses       = "[]",
+            Notes            = null,
+        }, now);
+
+        // Diego Seed — with-history scenario
+        var diego = await UpsertStudentAsync(db, teacherId, new Student
+        {
+            TeacherId        = teacherId,
+            Name             = "Diego Seed",
+            LearningLanguage = "English",
+            CefrLevel        = "B2",
+            NativeLanguage   = "Spanish",
+            LearningGoals    = """["Achieve C1 certification","Improve academic writing"]""",
+            Interests        = """["history","cinema","chess"]""",
+            Difficulties     = "[]",
+            Weaknesses       = "[]",
+            Notes            = "[scenario-seed]",
+        }, now);
+
+        // Flush all upserted student updates before checking session logs
+        await db.SaveChangesAsync();
+
+        // Add 2 session logs for Diego if not already present
+        var logsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == diego.Id && !s.IsDeleted);
+        if (!logsExist)
+        {
+            db.SessionLogs.AddRange(
+                new SessionLog
+                {
+                    Id                      = Guid.NewGuid(),
+                    StudentId               = diego.Id,
+                    TeacherId               = teacherId,
+                    SessionDate             = now.AddDays(-14),
+                    PlannedContent          = "Conditional sentences: zero and first conditional.",
+                    ActualContent           = "Covered zero conditional fully. Introduced first conditional with examples.",
+                    HomeworkAssigned        = "Write 5 sentences using first conditional.",
+                    PreviousHomeworkStatus  = HomeworkStatus.NotApplicable,
+                    NextSessionTopics       = "Second and third conditional",
+                    GeneralNotes            = "Student is strong on reading, needs more speaking practice.",
+                    TopicTags               = """["grammar","conditionals"]""",
+                    IsDeleted               = false,
+                    CreatedAt               = now.AddDays(-14),
+                    UpdatedAt               = now.AddDays(-14),
+                },
+                new SessionLog
+                {
+                    Id                      = Guid.NewGuid(),
+                    StudentId               = diego.Id,
+                    TeacherId               = teacherId,
+                    SessionDate             = now.AddDays(-7),
+                    PlannedContent          = "Second and third conditional.",
+                    ActualContent           = "Reviewed first conditional homework. Taught second conditional with drill.",
+                    HomeworkAssigned        = "Translate 5 sentences using second conditional.",
+                    PreviousHomeworkStatus  = HomeworkStatus.Done,
+                    NextSessionTopics       = "Third conditional and mixed conditionals",
+                    GeneralNotes            = "Homework was excellent — all correct. Speed of production is improving.",
+                    TopicTags               = """["grammar","conditionals"]""",
+                    IsDeleted               = false,
+                    CreatedAt               = now.AddDays(-7),
+                    UpdatedAt               = now.AddDays(-7),
+                }
+            );
+            await db.SaveChangesAsync();
+        }
+
+        logger.LogInformation("Scenario students seeded (Ana Seed, Marco Seed, Clara Seed, Diego Seed).");
+    }
+
+    private static async Task<Student> UpsertStudentAsync(AppDbContext db, Guid teacherId, Student incoming, DateTime now)
+    {
+        var existing = await db.Students.FirstOrDefaultAsync(
+            s => s.TeacherId == teacherId && s.Name == incoming.Name && !s.IsDeleted);
+
+        if (existing is not null)
+        {
+            existing.LearningLanguage = incoming.LearningLanguage;
+            existing.CefrLevel        = incoming.CefrLevel;
+            existing.NativeLanguage   = incoming.NativeLanguage;
+            existing.LearningGoals    = incoming.LearningGoals;
+            existing.Interests        = incoming.Interests;
+            existing.Difficulties     = incoming.Difficulties;
+            existing.Weaknesses       = incoming.Weaknesses;
+            existing.Notes            = incoming.Notes;
+            existing.UpdatedAt        = now;
+            return existing;
+        }
+
+        incoming.Id        = Guid.NewGuid();
+        incoming.CreatedAt = now;
+        incoming.UpdatedAt = now;
+        db.Students.Add(incoming);
+        await db.SaveChangesAsync();
+        return incoming;
     }
 
     private static Lesson CreateLesson(

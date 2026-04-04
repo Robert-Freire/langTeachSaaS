@@ -79,7 +79,7 @@ When a task is complete:
 2. Run `python3 .claude/scripts/task-build-verify.py <worktree-path>`. Fix failures. Never push with known failures or warnings.
 3. Run `qa-verify` agent. FAIL or PASS WITH GAPS: fix, re-commit, re-run. PASS: proceed.
 4. Run code reviews **sequentially** (not as parallel background agents). **Before launching any reviewer**, check the issue labels (`gh issue view <N> --json labels`) and the diff to determine the full list of required reviewers per `.claude/procedures/review-routing.md`. Run all of them. Do not skip conditional reviewers.
-5. **UI Review (before pushing):** Required if issue has `area:frontend` OR `area:design`. Launch `review-ui` agent with specific routes/screens changed. The agent manages the e2e Docker stack itself (starts and stops it); works from worktrees. NEEDS WORK: fix, re-run checks, re-review. PASS: proceed. Log unfixed findings to `plan/ui-review-backlog.md`.
+5. **UI Review (before pushing):** Required if issue has `area:frontend` OR `area:design`. Launch `review-ui` agent with specific routes/screens changed. The agent manages the e2e Docker stack itself (starts and stops it); works from worktrees. NEEDS WORK: fix, re-run checks, re-review. PASS: proceed. Log unfixed findings to `plan/ui-review-backlog.md`. For any screen involving student data, consult `.claude/procedures/review-ui-scenarios.md` and include the relevant scenario student name(s) in the agent prompt so it navigates to a student with known data rather than improvising.
 6. **Log out-of-scope observations** to `plan/observed-issues.md`: `| #<issue> | <date> | <severity> | <one-line observation> |`
 7. **Check for conflicts:**
    ```bash
