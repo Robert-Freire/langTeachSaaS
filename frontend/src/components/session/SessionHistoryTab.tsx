@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronUp, Trash2, ExternalLink, FileText, BookOpen } from 'lucide-react'
+import { ChevronDown, ChevronUp, Trash2, Pencil, ExternalLink, FileText, BookOpen } from 'lucide-react'
 import { SessionSummaryHeader } from './SessionSummaryHeader'
+import { SessionLogDialog } from './SessionLogDialog'
 import { logger } from '../../lib/logger'
 import { Link } from 'react-router-dom'
 import { listSessions, deleteSession, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
@@ -61,7 +62,15 @@ function notesCount(session: SessionLog): number {
   return count
 }
 
-function SessionEntry({ session, studentId }: { session: SessionLog; studentId: string }) {
+function SessionEntry({
+  session,
+  studentId,
+  onEdit,
+}: {
+  session: SessionLog
+  studentId: string
+  onEdit: (session: SessionLog) => void
+}) {
   const [expanded, setExpanded] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -238,8 +247,17 @@ function SessionEntry({ session, studentId }: { session: SessionLog; studentId: 
             </div>
           )}
 
-          {/* Delete action */}
-          <div className="flex justify-end pt-1">
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(session)}
+              data-testid="edit-session-button"
+            >
+              <Pencil className="h-3.5 w-3.5 mr-1" />
+              Edit
+            </Button>
             <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
               <AlertDialogTrigger
                 render={
@@ -288,6 +306,19 @@ function SessionEntry({ session, studentId }: { session: SessionLog; studentId: 
 }
 
 export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
+  const [editSession, setEditSession] = useState<SessionLog | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+
+  function handleEdit(session: SessionLog) {
+    setEditSession(session)
+    setEditDialogOpen(true)
+  }
+
+  function handleEditDialogChange(open: boolean) {
+    setEditDialogOpen(open)
+    if (!open) setEditSession(null)
+  }
+
   const { data: sessions, isLoading, isError, refetch } = useQuery({
     queryKey: ['sessions', studentId],
     queryFn: () => listSessions(studentId),
@@ -347,9 +378,15 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
       <SessionSummaryHeader studentId={studentId} />
       <div className="space-y-3" data-testid="session-history-list">
         {sortedSessions.map((session) => (
-          <SessionEntry key={session.id} session={session} studentId={studentId} />
+          <SessionEntry key={session.id} session={session} studentId={studentId} onEdit={handleEdit} />
         ))}
       </div>
+      <SessionLogDialog
+        studentId={studentId}
+        open={editDialogOpen}
+        onOpenChange={handleEditDialogChange}
+        initialSession={editSession}
+      />
     </div>
   )
 }

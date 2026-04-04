@@ -4,13 +4,27 @@ import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionHistoryTab } from './SessionHistoryTab'
 import * as sessionLogsApi from '../../api/sessionLogs'
+import * as lessonsApi from '../../api/lessons'
 
 vi.mock('../../api/sessionLogs', () => ({
   listSessions: vi.fn(),
   deleteSession: vi.fn(),
+  updateSession: vi.fn(),
+  createSession: vi.fn(),
+  serializeTopicTags: vi.fn((tags) => JSON.stringify(tags)),
   parseTopicTags: vi.fn((raw: string) => {
     try { return JSON.parse(raw) } catch { return [] }
   }),
+}))
+
+vi.mock('../../api/lessons', () => ({
+  getLessons: vi.fn(),
+}))
+
+vi.mock('./TopicTagsInput', () => ({
+  TopicTagsInput: ({ onChange }: { onChange: (tags: []) => void }) => (
+    <div data-testid="topic-tags-input" onClick={() => onChange([])} />
+  ),
 }))
 
 const SESSION_BASE: sessionLogsApi.SessionLog = {
@@ -46,6 +60,7 @@ function wrapper() {
 describe('SessionHistoryTab', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(lessonsApi.getLessons).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
   })
 
   it('shows loading skeletons while fetching', () => {
@@ -145,6 +160,26 @@ describe('SessionHistoryTab', () => {
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
     expect(screen.getByTestId('delete-session-button')).toBeInTheDocument()
+  })
+
+  it('shows edit button in expanded view', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    expect(screen.getByTestId('edit-session-button')).toBeInTheDocument()
+  })
+
+  it('clicking edit button opens SessionLogDialog in edit mode', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    fireEvent.click(screen.getByTestId('edit-session-button'))
+    await waitFor(() => {
+      expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument()
+      expect(screen.getByText('Edit Session')).toBeInTheDocument()
+    })
   })
 
   it('does not call deleteSession when delete button is clicked without confirming', async () => {

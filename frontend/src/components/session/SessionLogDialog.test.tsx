@@ -4,11 +4,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionLogDialog } from './SessionLogDialog'
 import * as sessionLogsApi from '../../api/sessionLogs'
+import type { SessionLog } from '../../api/sessionLogs'
 import * as lessonsApi from '../../api/lessons'
 
 vi.mock('../../api/sessionLogs', () => ({
   listSessions: vi.fn(),
   createSession: vi.fn(),
+  updateSession: vi.fn(),
   serializeTopicTags: vi.fn((tags) => JSON.stringify(tags)),
   parseTopicTags: vi.fn((raw) => JSON.parse(raw)),
 }))
@@ -25,6 +27,25 @@ vi.mock('./TopicTagsInput', () => ({
 }))
 
 const STUDENT_ID = 'student-1'
+
+const SAMPLE_SESSION: SessionLog = {
+  id: 'session-42',
+  studentId: STUDENT_ID,
+  sessionDate: '2026-03-15',
+  plannedContent: 'Subjunctive introduction',
+  actualContent: 'Covered ser vs estar',
+  homeworkAssigned: 'Exercise 4A',
+  previousHomeworkStatus: 0,
+  previousHomeworkStatusName: 'Done',
+  nextSessionTopics: 'Review homework errors',
+  generalNotes: 'Student was tired',
+  levelReassessmentSkill: 'Speaking',
+  levelReassessmentLevel: 'B1.2',
+  linkedLessonId: null,
+  topicTags: '[]',
+  createdAt: '2026-03-15T10:00:00Z',
+  updatedAt: '2026-03-15T10:00:00Z',
+}
 
 function wrapper(ui: React.ReactElement) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
@@ -146,6 +167,78 @@ describe('SessionLogDialog', () => {
     const field = screen.getByTestId('next-session-topics') as HTMLTextAreaElement
     expect(field.tagName).toBe('TEXTAREA')
     expect(field.rows).toBe(3)
+  })
+
+  describe('edit mode', () => {
+    beforeEach(() => {
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+    })
+
+    it('shows "Edit Session" title and "Save changes" button', async () => {
+      wrapper(
+        <SessionLogDialog
+          studentId={STUDENT_ID}
+          open={true}
+          onOpenChange={vi.fn()}
+          initialSession={SAMPLE_SESSION}
+        />
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Edit Session')).toBeInTheDocument()
+        expect(screen.getByTestId('submit-session-log')).toHaveTextContent('Save changes')
+      })
+    })
+
+    it('pre-populates all fields from initialSession', async () => {
+      wrapper(
+        <SessionLogDialog
+          studentId={STUDENT_ID}
+          open={true}
+          onOpenChange={vi.fn()}
+          initialSession={SAMPLE_SESSION}
+        />
+      )
+
+      await waitFor(() => {
+        expect((screen.getByTestId('session-date') as HTMLInputElement).value).toBe('2026-03-15')
+        expect((screen.getByTestId('planned-content') as HTMLTextAreaElement).value).toBe('Subjunctive introduction')
+        expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Covered ser vs estar')
+        expect((screen.getByTestId('homework-assigned') as HTMLInputElement).value).toBe('Exercise 4A')
+        expect((screen.getByTestId('next-session-topics') as HTMLTextAreaElement).value).toBe('Review homework errors')
+        expect((screen.getByTestId('general-notes') as HTMLTextAreaElement).value).toBe('Student was tired')
+        expect(screen.getByTestId('reassessment-toggle')).toBeChecked()
+      })
+    })
+
+    it('calls updateSession instead of createSession on submit', async () => {
+      vi.mocked(sessionLogsApi.updateSession).mockResolvedValue({
+        ...SAMPLE_SESSION,
+        actualContent: 'Updated content',
+      })
+
+      wrapper(
+        <SessionLogDialog
+          studentId={STUDENT_ID}
+          open={true}
+          onOpenChange={vi.fn()}
+          initialSession={SAMPLE_SESSION}
+        />
+      )
+
+      await waitFor(() => expect(screen.getByTestId('submit-session-log')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('submit-session-log'))
+
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.updateSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          SAMPLE_SESSION.id,
+          expect.objectContaining({ sessionDate: '2026-03-15' }),
+        )
+        expect(vi.mocked(sessionLogsApi.createSession)).not.toHaveBeenCalled()
+      })
+    })
   })
 
   it('shows CEFR validation error for invalid sub-level', async () => {
