@@ -90,7 +90,7 @@ export function SessionLogDialog({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open && initialSession) {
-      setSessionDate(initialSession.sessionDate)
+      setSessionDate(initialSession.sessionDate.split('T')[0])
       setPlannedContent(initialSession.plannedContent ?? '')
       setActualContent(initialSession.actualContent ?? '')
       setHomeworkAssigned(initialSession.homeworkAssigned ?? '')

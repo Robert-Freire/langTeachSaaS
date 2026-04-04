@@ -31,7 +31,7 @@ const STUDENT_ID = 'student-1'
 const SAMPLE_SESSION: SessionLog = {
   id: 'session-42',
   studentId: STUDENT_ID,
-  sessionDate: '2026-03-15',
+  sessionDate: '2026-03-15T00:00:00Z',
   plannedContent: 'Subjunctive introduction',
   actualContent: 'Covered ser vs estar',
   homeworkAssigned: 'Exercise 4A',
