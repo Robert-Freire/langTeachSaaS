@@ -261,7 +261,7 @@ public static class DemoSeeder
             Interests        = "[]",
             Difficulties     = "[]",
             Weaknesses       = "[]",
-            Notes            = "[Excel import 2026-01-15]\nCurrent level: A2\nObjectives: Business English, travel vocabulary\nDifficulties: Pronunciation, articles",
+            Notes            = "Current level: A2\nObjectives: Business English, travel vocabulary\nDifficulties: Pronunciation, articles",
         }, now);
 
         // Clara Seed — minimal scenario
