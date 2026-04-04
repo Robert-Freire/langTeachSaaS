@@ -139,7 +139,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await expect(studentCard).toBeVisible({ timeout: 10000 })
   await expect(studentCard.getByTestId('student-level')).toContainText('B2')
   await expect(studentCard.getByTestId('interest-chip').filter({ hasText: 'travel' })).toBeVisible()
-  await expect(studentCard.getByTestId('native-language-chip')).toContainText('Portuguese speaker')
+  await expect(studentCard.getByTestId('native-language-chip')).toContainText('Native: Portuguese')
 
   // Edit: click the edit button within this student's card
   await studentCard.getByTestId('edit-student').click()
@@ -342,6 +342,78 @@ test('"Create Course" button on student edit page navigates to CourseNew with st
   await expect(lockedStudent).toBeVisible({ timeout: 10000 })
   await expect(lockedStudent).toContainText(studentName)
   await expect(page.getByTestId('student-select')).not.toBeVisible()
+
+  await context.close()
+})
+
+test('student detail overview shows profile fields and New lesson CTA', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Overview Test ${Date.now()}`
+
+  // Create a student with native language set
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: 10000 })
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+  await page.getByTestId('student-native-language').click()
+  await page.getByRole('option', { name: 'Portuguese' }).click()
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL('/students', { timeout: 10000 })
+
+  // Navigate to student detail
+  const studentCard = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await expect(studentCard).toBeVisible({ timeout: 10000 })
+  await studentCard.getByTestId('student-name').click()
+
+  // Overview tab should be active by default
+  await expect(page.getByTestId('tab-overview')).toBeVisible({ timeout: 10000 })
+
+  // Teaching Context card should be visible
+  await expect(page.getByTestId('student-profile-overview')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByText('Teaching Context')).toBeVisible()
+
+  // Native language should appear in the overview
+  await expect(page.getByTestId('overview-native-language')).toContainText('Portuguese', { timeout: 5000 })
+
+  // "New lesson" CTA button should be visible
+  const newLessonBtn = page.getByTestId('create-lesson-cta')
+  await expect(newLessonBtn).toBeVisible()
+
+  // Capture student ID for URL assertion
+  const detailUrl = page.url()
+  const studentId = detailUrl.match(/\/students\/([^/]+)/)?.[1]
+  expect(studentId).toBeTruthy()
+
+  // Click "New lesson" and verify navigation
+  await newLessonBtn.click()
+  await expect(page).toHaveURL(`/lessons/new?studentId=${studentId}`, { timeout: 10000 })
+
+  // Student should be pre-selected in the student select trigger
+  const selectStudent = page.getByTestId('select-student')
+  await expect(selectStudent).toBeVisible({ timeout: 10000 })
+  await expect(selectStudent).toContainText(studentName)
+
+  // Cleanup: go back and delete student
+  await page.goto('/students')
+  await expect(page).toHaveURL('/students', { timeout: 10000 })
+  const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await deleteCard.getByTestId('delete-student').click()
+  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
+  await page.getByTestId('confirm-delete').click()
+  await expect(
+    page.locator('[data-testid^="student-row-"]').filter({
+      has: page.getByTestId('student-name').filter({ hasText: studentName }),
+    }),
+  ).not.toBeVisible({ timeout: 10000 })
 
   await context.close()
 })

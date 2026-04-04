@@ -5,9 +5,10 @@ import { COMPLETENESS_FIELDS, isFieldPopulated, computeProfileCompleteness } fro
 
 interface Props {
   student: Student
+  hasRichNotes?: boolean
 }
 
-export function StudentProfileSummary({ student }: Props) {
+export function StudentProfileSummary({ student, hasRichNotes = false }: Props) {
   const { score, missingFields } = computeProfileCompleteness(student)
 
   return (
@@ -39,21 +40,25 @@ export function StudentProfileSummary({ student }: Props) {
           })}
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-1.5 bg-zinc-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-500 rounded-full transition-all"
-              style={{ width: `${score}%` }}
-              data-testid="completeness-bar"
-            />
-          </div>
-          <span className="text-xs font-medium text-zinc-600 shrink-0" data-testid="completeness-score">{score}% complete</span>
-        </div>
+        {!hasRichNotes && (
+          <>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1.5 bg-zinc-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-all"
+                  style={{ width: `${score}%` }}
+                  data-testid="completeness-bar"
+                />
+              </div>
+              <span className="text-xs font-medium text-zinc-600 shrink-0" data-testid="completeness-score">{score}% complete</span>
+            </div>
 
-        {missingFields.length > 0 && (
-          <p className="text-xs text-zinc-400" data-testid="missing-fields-hint">
-            Adding {missingFields.join(', ')} would improve targeting.
-          </p>
+            {missingFields.length > 0 && (
+              <p className="text-xs text-zinc-400" data-testid="missing-fields-hint">
+                Adding {missingFields.join(', ')} would improve targeting.
+              </p>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

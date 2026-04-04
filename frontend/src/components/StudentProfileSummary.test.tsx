@@ -112,4 +112,17 @@ describe('StudentProfileSummary', () => {
     render(<StudentProfileSummary student={BASE_STUDENT} />)
     expect(screen.getByTestId('student-profile-summary')).toBeInTheDocument()
   })
+
+  it('hides completeness bar and score when hasRichNotes is true', () => {
+    render(<StudentProfileSummary student={BASE_STUDENT} hasRichNotes />)
+    expect(screen.queryByTestId('completeness-bar')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('completeness-score')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('missing-fields-hint')).not.toBeInTheDocument()
+  })
+
+  it('shows completeness bar when hasRichNotes is false (default)', () => {
+    render(<StudentProfileSummary student={BASE_STUDENT} hasRichNotes={false} />)
+    expect(screen.getByTestId('completeness-bar')).toBeInTheDocument()
+    expect(screen.getByTestId('completeness-score')).toBeInTheDocument()
+  })
 })
