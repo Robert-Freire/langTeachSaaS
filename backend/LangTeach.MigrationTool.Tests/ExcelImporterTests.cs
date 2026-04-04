@@ -63,7 +63,7 @@ public class ExcelImporterTests
 
     [Theory]
     [InlineData(0.0)]    // zero — below valid range
-    [InlineData(0.5)]    // fractional below 1 (time-only value)
+    [InlineData(0.5)]    // below range guard (>= 1)
     [InlineData(50001.0)] // above upper bound
     [InlineData(99999.0)]
     public void TryParseDate_NumericOutOfRange_ReturnsNull(double oaValue)
