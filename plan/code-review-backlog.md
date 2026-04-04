@@ -33,6 +33,12 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | Minor | Backend ValidationException messages embed user-facing text; frontend should own display copy (pre-existing pattern) | code-review |
 | Minor | `levelReassessmentPending` logic (compare override vs CefrLevel) duplicated in SessionLogService.GetSummaryAsync and SessionHistoryService.LoadSkillLevelOverridesAsync; extract shared predicate | sophy |
 
+## PR #481 (future date validation, 2026-04-04)
+
+| Severity | Finding | Source |
+|----------|---------|--------|
+| Minor | ValidationException message "Session date cannot be in the future." is hardcoded in backend; pre-existing pattern — backend already uses literal strings for all validation messages in this file | code-review |
+
 ## PR #431 (exercise coherence prompt fixes, 2026-04-03)
 
 | Severity | Finding | Source |
