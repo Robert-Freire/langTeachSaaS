@@ -292,6 +292,9 @@ public static class DemoSeeder
             Notes            = "[scenario-seed]",
         }, now);
 
+        // Flush all upserted student updates before checking session logs
+        await db.SaveChangesAsync();
+
         // Add 2 session logs for Diego if not already present
         var logsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == diego.Id && !s.IsDeleted);
         if (!logsExist)
