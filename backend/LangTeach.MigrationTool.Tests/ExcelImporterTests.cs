@@ -1,9 +1,8 @@
-extern alias MigTool;
 using ClosedXML.Excel;
 using FluentAssertions;
-using MigTool::LangTeach.MigrationTool;
+using LangTeach.MigrationTool;
 
-namespace LangTeach.Api.Tests.MigrationTool;
+namespace LangTeach.MigrationTool.Tests;
 
 public class ExcelImporterTests
 {
