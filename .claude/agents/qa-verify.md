@@ -1,6 +1,6 @@
 ---
 name: qa-verify
-description: Pre-PR verification that implementation covers all acceptance criteria from the linked GitHub issue. Run after pre-push checks pass, before the code review agent. NOT the same as the /qa skill (which checks issue readiness).
+description: Pre-PR verification that implementation covers all acceptance criteria from the linked GitHub issue. Run after pre-push checks pass, before the code review agent. NOT the same as the qa-ready agent (which checks issue readiness before development starts).
 model: sonnet
 disallowedTools: Write, Edit, NotebookEdit
 ---

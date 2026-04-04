@@ -422,6 +422,78 @@ namespace LangTeach.Api.Migrations
                     b.ToTable("Materials");
                 });
 
+            modelBuilder.Entity("LangTeach.Api.Data.Models.SessionLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActualContent")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GeneralNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HomeworkAssigned")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("LevelReassessmentLevel")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LevelReassessmentSkill")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("LinkedLessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("NextSessionTopics")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlannedContent")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PreviousHomeworkStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime>("SessionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TeacherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TopicTags")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("[]");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LinkedLessonId");
+
+                    b.HasIndex("StudentId", "SessionDate");
+
+                    b.HasIndex("TeacherId", "IsDeleted");
+
+                    b.ToTable("SessionLogs");
+                });
+
             modelBuilder.Entity("LangTeach.Api.Data.Models.Student", b =>
                 {
                     b.Property<Guid>("Id")
@@ -465,6 +537,12 @@ namespace LangTeach.Api.Migrations
 
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SkillLevelOverrides")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("{}");
 
                     b.Property<Guid>("TeacherId")
                         .HasColumnType("uniqueidentifier");
@@ -702,6 +780,32 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("LessonSection");
                 });
 
+            modelBuilder.Entity("LangTeach.Api.Data.Models.SessionLog", b =>
+                {
+                    b.HasOne("LangTeach.Api.Data.Models.Lesson", "LinkedLesson")
+                        .WithMany()
+                        .HasForeignKey("LinkedLessonId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("LangTeach.Api.Data.Models.Student", "Student")
+                        .WithMany("SessionLogs")
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("LangTeach.Api.Data.Models.Teacher", "Teacher")
+                        .WithMany()
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("LinkedLesson");
+
+                    b.Navigation("Student");
+
+                    b.Navigation("Teacher");
+                });
+
             modelBuilder.Entity("LangTeach.Api.Data.Models.Student", b =>
                 {
                     b.HasOne("LangTeach.Api.Data.Models.Teacher", "Teacher")
@@ -751,6 +855,8 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("Courses");
 
                     b.Navigation("Lessons");
+
+                    b.Navigation("SessionLogs");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Teacher", b =>

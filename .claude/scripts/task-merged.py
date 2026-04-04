@@ -26,14 +26,30 @@ def gh(*args: str) -> str:
 
 
 def find_item_id(issue_num: int) -> str:
-    for limit in ("100", "200"):
-        raw = gh("project", "item-list", PROJECT_NUM, "--owner", OWNER,
-                 "--format", "json", "--limit", limit)
-        for item in json.loads(raw).get("items", []):
-            if item.get("content", {}).get("number") == issue_num:
-                item_id = item.get("id", "")
-                if item_id.startswith("PVTI_"):
-                    return item_id
+    """Find project item ID via GraphQL (reliable regardless of board size)."""
+    query = """
+    { user(login: "%s") { projectV2(number: %s) {
+        items(first: 100) { nodes { id content { ... on Issue { number } } }
+          pageInfo { hasNextPage endCursor } } } } }
+    """ % (OWNER, PROJECT_NUM)
+
+    cursor = None
+    while True:
+        if cursor:
+            q = query.replace("items(first: 100)",
+                              'items(first: 100, after: "%s")' % cursor)
+        else:
+            q = query
+        raw = gh("api", "graphql", "-f", f"query={q}")
+        data = json.loads(raw)
+        items_data = data["data"]["user"]["projectV2"]["items"]
+        for node in items_data["nodes"]:
+            content = node.get("content") or {}
+            if content.get("number") == issue_num:
+                return node["id"]
+        if not items_data["pageInfo"]["hasNextPage"]:
+            break
+        cursor = items_data["pageInfo"]["endCursor"]
     return ""
 
 
@@ -58,6 +74,7 @@ def main() -> None:
 
     print(f'Done. #{issue_num} closed and moved to "Ready to Test".')
     print('Next: call ExitWorktree(action: "remove") to clean up the worktree.')
+    print('Do NOT update task status memory with per-issue state. GitHub is the source of truth.')
 
 
 if __name__ == "__main__":

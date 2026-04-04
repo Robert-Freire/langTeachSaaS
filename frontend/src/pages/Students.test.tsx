@@ -114,4 +114,61 @@ describe('Students error states', () => {
     await screen.findByTestId('student-name')
     expect(screen.getByText('Ana García')).toBeInTheDocument()
   })
+
+  it('shows native language badge as "Native: X" when set', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue({
+      items: [
+        {
+          id: 'abc-123',
+          name: 'Ana García',
+          learningLanguage: 'Spanish',
+          cefrLevel: 'B2',
+          interests: [],
+          notes: null,
+          nativeLanguage: 'Portuguese',
+          learningGoals: [],
+          weaknesses: [],
+          difficulties: [],
+          createdAt: '',
+          updatedAt: '',
+        },
+      ],
+      totalCount: 1,
+      page: 1,
+      pageSize: 20,
+    })
+
+    wrapper(<Students />)
+    await screen.findByTestId('native-language-chip')
+    expect(screen.getByTestId('native-language-chip')).toHaveTextContent('Native: Portuguese')
+  })
+
+  it('hides target language badge when native language is set', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue({
+      items: [
+        {
+          id: 'abc-123',
+          name: 'Ana García',
+          learningLanguage: 'Spanish',
+          cefrLevel: 'B2',
+          interests: [],
+          notes: null,
+          nativeLanguage: 'Portuguese',
+          learningGoals: [],
+          weaknesses: [],
+          difficulties: [],
+          createdAt: '',
+          updatedAt: '',
+        },
+      ],
+      totalCount: 1,
+      page: 1,
+      pageSize: 20,
+    })
+
+    wrapper(<Students />)
+    await screen.findByTestId('native-language-chip')
+    // Target language badge should not appear when L1 is shown
+    expect(screen.queryByText('Spanish')).not.toBeInTheDocument()
+  })
 })

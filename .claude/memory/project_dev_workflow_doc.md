@@ -14,4 +14,4 @@ Explains the end-to-end development process (idea to merged PR) for a non-techni
 
 ## Maintenance rule
 
-Whenever a workflow rule changes in `.claude/CLAUDE.md`, `.claude/agents/`, or `.claude/skills/sprint-qa/SKILL.md`, check if `docs/dev-workflow.md` needs a corresponding update to stay accurate. The doc is the "public-facing" version of the rules; CLAUDE.md is the machine-enforced version.
+Whenever a workflow rule changes in `.claude/CLAUDE.md`, `.claude/agents/`, or `.claude/skills/`, check if `docs/dev-workflow.md` needs a corresponding update to stay accurate. The doc is the "public-facing" version of the rules; CLAUDE.md is the machine-enforced version.

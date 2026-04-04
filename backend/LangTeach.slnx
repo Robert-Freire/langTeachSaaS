@@ -1,4 +1,6 @@
 <Solution>
   <Project Path="LangTeach.Api.Tests/LangTeach.Api.Tests.csproj" />
   <Project Path="LangTeach.Api/LangTeach.Api.csproj" />
+  <Project Path="LangTeach.MigrationTool/LangTeach.MigrationTool.csproj" />
+  <Project Path="LangTeach.MigrationTool.Tests/LangTeach.MigrationTool.Tests.csproj" />
 </Solution>

@@ -273,6 +273,20 @@ public class PromptService : IPromptService
                 sb.AppendLine($"  Suitable types: {string.Join(", ", def.AllowedExerciseCategories)}");
         }
 
+        if (req.OptionalStages is { Length: > 0 })
+        {
+            sb.AppendLine("Optional stage(s) — include only when additional mechanical consolidation is needed; omit entirely if not needed:");
+            foreach (var stageId in req.OptionalStages)
+            {
+                if (!defs.TryGetValue(stageId, out var def))
+                    continue;
+                var optRange = req.ItemsPerStage.TryGetValue(stageId, out var optBounds) && optBounds.Length >= 2
+                    ? $"{optBounds[0]}-{optBounds[1]}"
+                    : "0-2";
+                sb.AppendLine($"- \"{stageId}\" ({def.NameLong} / {def.NameEs}): {def.Description} Items: {optRange} (optional).");
+            }
+        }
+
         sb.AppendLine("IMPORTANT: Each stage MUST use a different exercise format (fillInBlank / multipleChoice / matching / trueFalse / sentenceOrdering / sentenceTransformation). Do not repeat the same format across stages.");
         return sb.ToString().TrimEnd();
     }
@@ -386,6 +400,89 @@ public class PromptService : IPromptService
                 foreach (var d in ctx.StudentDifficulties)
                     sb.AppendLine($"- [{InputSanitizer.Sanitize(d.Severity)}] {InputSanitizer.Sanitize(d.Category)}: {InputSanitizer.Sanitize(d.Item)}");
                 sb.AppendLine("Design exercises that specifically target these difficulty patterns. For each exercise, ensure at least one item directly addresses a listed difficulty.");
+            }
+        }
+
+        if (ctx.SessionHistory is { } sh)
+        {
+            sb.AppendLine();
+            sb.AppendLine("SESSION HISTORY:");
+
+            var gapInstruction = sh.DaysSinceLastSession <= 2
+                ? "Build directly on previous session. Minimal recap needed."
+                : sh.DaysSinceLastSession <= 7
+                    ? "Include a brief warm-up reviewing key points from last session."
+                    : sh.DaysSinceLastSession <= 14
+                        ? "Include a dedicated review activity before introducing new content."
+                        : "Include a diagnostic mini-activity to assess retention. Do not assume previous content is retained.";
+
+            sb.AppendLine($"Time since last session: {sh.DaysSinceLastSession} days. {gapInstruction}");
+
+            if (sh.RecentSessions.Count > 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine("Last sessions:");
+                foreach (var entry in sh.RecentSessions)
+                {
+                    var planned = InputSanitizer.Sanitize(entry.PlannedContent);
+                    var actual  = InputSanitizer.Sanitize(entry.ActualContent);
+                    var line    = entry.SessionDate.ToString("yyyy-MM-dd");
+                    if (!string.IsNullOrEmpty(planned)) line += $": planned {planned}";
+                    if (!string.IsNullOrEmpty(actual))  line += $", covered {actual}";
+                    sb.AppendLine($"- {line}");
+                }
+            }
+
+            var openItems = InputSanitizer.Sanitize(sh.OpenActionItems);
+            if (!string.IsNullOrEmpty(openItems))
+            {
+                sb.AppendLine();
+                sb.AppendLine($"Open action items: {openItems}");
+            }
+
+            var homework = InputSanitizer.Sanitize(sh.PendingHomework);
+            if (!string.IsNullOrEmpty(homework))
+            {
+                var statusName = sh.LastHomeworkStatus?.ToString() ?? "Unknown";
+                sb.AppendLine();
+                sb.AppendLine($"Pending homework: {homework} (status: {statusName})");
+            }
+
+            if (sh.CoveredTopics.Count > 0)
+            {
+                sb.AppendLine();
+                var byCategory = sh.CoveredTopics
+                    .GroupBy(
+                        t =>
+                        {
+                            var cat = InputSanitizer.Sanitize(t.Category);
+                            return string.IsNullOrWhiteSpace(cat) ? "other" : cat;
+                        },
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(g =>
+                    {
+                        var tags = g.Select(t => InputSanitizer.Sanitize(t.Tag))
+                            .Where(t => t.Length > 0)
+                            .ToArray();
+                        return tags.Length == 0 ? null : $"{g.Key}: {string.Join(", ", tags)}";
+                    })
+                    .OfType<string>();
+                sb.AppendLine($"Covered topics: {string.Join("; ", byCategory)}");
+            }
+
+            if (sh.SkillLevelOverrides.Count > 0)
+            {
+                sb.AppendLine();
+                var overrideText = string.Join(", ", sh.SkillLevelOverrides
+                    .Select(kv => $"{InputSanitizer.Sanitize(kv.Key)} {InputSanitizer.Sanitize(kv.Value)}"));
+                sb.AppendLine($"Teacher-assessed skill level overrides: {overrideText}");
+            }
+
+            var learningStyleNotes = InputSanitizer.Sanitize(sh.LearningStyleNotes);
+            if (!string.IsNullOrWhiteSpace(learningStyleNotes))
+            {
+                sb.AppendLine();
+                sb.AppendLine($"Learning style / context: {learningStyleNotes}");
             }
         }
 
@@ -527,6 +624,8 @@ public class PromptService : IPromptService
         {"fillInBlank":[{"sentence":"","answer":"","hint":"","explanation":"","stage":""}],"multipleChoice":[{"question":"","options":[""],"answer":"","explanation":"","stage":""}],"matching":[{"left":"","right":"","explanation":"","stage":""}],"trueFalse":[{"statement":"","isTrue":true,"justification":"","sourcePassage":"","stage":""}],"sentenceOrdering":[{"fragments":[""],"correctOrder":[0],"hint":"","explanation":"","stage":""}],"sentenceTransformation":[{"prompt":"","original":"","expected":"","alternatives":[""],"explanation":"","stage":""}]}
         sentenceOrdering: fragments is an array of words or phrases; correctOrder is the array of fragment indices that form the correct sentence (e.g. fragments=["en","vivo","Barcelona","yo"], correctOrder=[3,1,0,2] gives "yo vivo en Barcelona"). CRITICAL: joining the fragments in correctOrder MUST produce a grammatically correct, natural Spanish sentence — verify this before outputting each item. Use sentenceOrdering for A1/A2/B1 levels where testing syntax awareness without requiring production is appropriate.
         sentenceTransformation: prompt is the transformation instruction; original is the source sentence; expected is the primary correct answer; alternatives lists other acceptable answers. Use for B1+ levels for tense changes, voice transformations, reported speech, and register shifts. Maps to DELE "transformaciones gramaticales".
+        CRITICAL: For all trueFalse items, the sourcePassage field MUST be non-empty. It must contain the exact sentence or phrase from the lesson text or Presentation examples that makes the statement verifiable. A trueFalse item with an empty sourcePassage is invalid and must not appear in the output.
+        IMPORTANT: trueFalse statements must be consistent with the grammar rules and exceptions actually taught in the lesson. If the lesson presented a nuanced rule or exception (e.g. indicativo is also possible when the fact is confirmed), the trueFalse items must reflect that nuance and must not state the rule as absolute.
         {{levelGuidance}}
         Include at least 3 items for each format you use. For each exercise, include a concise explanation (2-3 sentences) of why the correct answer is correct, considering the student's level and common L1 interference patterns.
         """;
@@ -545,7 +644,10 @@ public class PromptService : IPromptService
 
         var grammarScope = BuildGrammarScopeBlock(level);
         if (!string.IsNullOrEmpty(grammarScope))
+        {
             prompt += "\n\n" + grammarScope;
+            prompt += "\nCRITICAL: Practice exercises MUST only use the grammar structures listed in the GRAMMAR SCOPE above. Do not introduce additional structures, tenses, or paradigms not listed there, even if they appear naturally in context.";
+        }
 
         var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
         if (!string.IsNullOrEmpty(templateGuidance))
@@ -632,6 +734,7 @@ public class PromptService : IPromptService
 
         sb.AppendLine($"{mainInstruction} Return JSON:");
         sb.AppendLine("{\"scenarios\":[{\"setup\":\"\",\"roleA\":\"Teacher\",\"roleB\":\"Student\",\"roleAPhrases\":[\"\"],\"roleBPhrases\":[\"\"]}]}");
+        sb.AppendLine($"CRITICAL: All roleAPhrases and roleBPhrases must use only {level}-appropriate grammar structures. Do not include structures from higher CEFR levels.");
 
         if (!string.IsNullOrEmpty(guidance))
             sb.Append(guidance);

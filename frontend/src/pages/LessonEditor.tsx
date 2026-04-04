@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Copy, Trash2, UserPlus, CheckCircle, Sparkles, Square, CalendarPlus, Plus, Pencil } from 'lucide-react'
+import { ArrowLeft, Copy, Trash2, UserPlus, CheckCircle, Sparkles, Square, CalendarPlus, Plus, Pencil, NotebookPen } from 'lucide-react'
 import {
   getLesson, updateLesson, updateSections, deleteLesson, duplicateLesson, updateLearningTargets,
   type Lesson, type LessonStatus, type SectionType,
@@ -44,6 +44,7 @@ import { FullLessonGenerateButton } from '@/components/lesson/FullLessonGenerate
 import { LessonNotesCard } from '@/components/lesson/LessonNotesCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { LessonObjectivesSummary } from '@/components/lesson/LessonObjectivesSummary'
+import { SessionLogDialog } from '@/components/session/SessionLogDialog'
 
 const SECTION_ORDER: SectionType[] = ['WarmUp', 'Presentation', 'Practice', 'Production', 'WrapUp']
 const SECTION_LABELS: Record<SectionType, string> = {
@@ -68,6 +69,7 @@ export default function LessonEditor() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
+  const [logSessionOpen, setLogSessionOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [schedulingInline, setSchedulingInline] = useState(false)
   const [inlineScheduleDate, setInlineScheduleDate] = useState('')
@@ -506,6 +508,17 @@ export default function LessonEditor() {
             onBlockSaved={handleBlockInsert}
           />
 
+          {lesson.studentId && (
+            <button
+              onClick={() => setLogSessionOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
+              data-testid="log-session-btn"
+            >
+              <NotebookPen className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Log session</span>
+            </button>
+          )}
+
           <button
             onClick={() => { if (!isSaving && !isUpdating) navigate(`/lessons/${id}/study`) }}
             disabled={isSaving || isUpdating}
@@ -932,6 +945,17 @@ export default function LessonEditor() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {lesson.studentId && (
+        <SessionLogDialog
+          studentId={lesson.studentId}
+          open={logSessionOpen}
+          onOpenChange={setLogSessionOpen}
+          linkedLessonId={lesson.id}
+          lessonTitle={lesson.title}
+          lessonObjectives={lesson.objectives}
+        />
+      )}
     </div>
   )
 }

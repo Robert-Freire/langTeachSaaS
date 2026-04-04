@@ -1,5 +1,6 @@
 using FluentAssertions;
 using LangTeach.Api.AI;
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.Extensions.Logging;
@@ -712,6 +713,17 @@ public class PromptServiceTests
         var req = _sut.BuildExercisesPrompt(ctx);
 
         req.UserPrompt.Should().Contain("Minimize purely mechanical");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_C1_IncludesOptionalControlledStageNote()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "C1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("optional");
+        req.UserPrompt.Should().Contain("controlled");
     }
 
     [Fact]
@@ -2069,6 +2081,17 @@ public class PromptServiceTests
             because: "exercises must include the CEFR grammar scope block to prevent level overreach (e.g. imperfect subjunctive at B1.1)");
     }
 
+    [Fact]
+    public void GrammarPrompt_A1_GustarConstrainedToSingular()
+    {
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildGrammarPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("singular",
+            because: "A1.1 grammar scope must constrain gustar to singular form only per PCIC A1.1 p.38");
+    }
+
     // --- Sentence transformation format ---
 
     [Fact]
@@ -2455,5 +2478,261 @@ public class PromptServiceTests
             because: "Guided writing prompt must specify the expected word count range");
         req.UserPrompt.Should().Contain("tips",
             because: "Guided writing prompt must include practical hints to help the student start");
+    }
+
+    // --- Session history block ---
+
+    private static SessionHistoryContext MakeSessionHistory(
+        int daysSince = 5,
+        string? openItems = null,
+        string? homework = null,
+        HomeworkStatus? hwStatus = null,
+        IReadOnlyList<CoveredTopicEntry>? topics = null,
+        IReadOnlyDictionary<string, string>? overrides = null,
+        string? learningStyleNotes = null)
+        => new(
+            RecentSessions:
+            [
+                new(new DateTime(2026, 3, 28, 10, 0, 0, DateTimeKind.Utc), "Past tense", "Irregular verbs")
+            ],
+            DaysSinceLastSession: daysSince,
+            OpenActionItems: openItems,
+            PendingHomework: homework,
+            LastHomeworkStatus: hwStatus,
+            CoveredTopics: topics ?? [],
+            SkillLevelOverrides: overrides ?? new Dictionary<string, string>(),
+            LearningStyleNotes: learningStyleNotes
+        );
+
+    [Fact]
+    public void SessionHistory_Absent_NoSessionHistoryBlock()
+    {
+        var ctx = BaseCtx();
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("SESSION HISTORY");
+    }
+
+    [Fact]
+    public void SessionHistory_Present_SessionHistoryBlockIncluded()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory() };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("SESSION HISTORY:");
+        req.SystemPrompt.Should().Contain("days.");
+    }
+
+    [Fact]
+    public void SessionHistory_Gap1To2Days_CorrectInstruction()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 1) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Build directly on previous session.");
+    }
+
+    [Fact]
+    public void SessionHistory_Gap3To7Days_CorrectInstruction()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 5) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("brief warm-up");
+    }
+
+    [Fact]
+    public void SessionHistory_Gap8To14Days_CorrectInstruction()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 10) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("dedicated review activity");
+    }
+
+    [Fact]
+    public void SessionHistory_Gap15PlusDays_CorrectInstruction()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 20) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("diagnostic mini-activity");
+    }
+
+    [Fact]
+    public void SessionHistory_Gap0Days_TreatedAsBand1()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 0) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Build directly on previous session.");
+    }
+
+    [Fact]
+    public void SessionHistory_OpenActionItems_IncludedInPrompt()
+    {
+        var ctx = BaseCtx() with
+        {
+            SessionHistory = MakeSessionHistory(openItems: "Work on para/por distinction")
+        };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Work on para/por distinction");
+    }
+
+    [Fact]
+    public void SessionHistory_NoPendingHomework_HomeworkBlockAbsent()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(homework: null) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Pending homework:");
+    }
+
+    [Fact]
+    public void SessionHistory_PendingHomework_IncludedInPrompt()
+    {
+        var ctx = BaseCtx() with
+        {
+            SessionHistory = MakeSessionHistory(
+                homework: "Write 10 sentences", hwStatus: HomeworkStatus.NotDone)
+        };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Write 10 sentences");
+        req.SystemPrompt.Should().Contain("NotDone");
+    }
+
+    [Fact]
+    public void SessionHistory_CoveredTopics_ListedByCategory()
+    {
+        var topics = new List<CoveredTopicEntry>
+        {
+            new("preterito indefinido", "grammar"),
+            new("viajes", "vocabulary")
+        };
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(topics: topics) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Covered topics:");
+        req.SystemPrompt.Should().Contain("preterito indefinido");
+        req.SystemPrompt.Should().Contain("viajes");
+    }
+
+    [Fact]
+    public void SessionHistory_NoCoveredTopics_TopicsBlockAbsent()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(topics: []) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Covered topics:");
+    }
+
+    [Fact]
+    public void SessionHistory_SkillLevelOverrides_IncludedInPrompt()
+    {
+        var overrides = new Dictionary<string, string> { ["speaking"] = "A1.2", ["writing"] = "B1.2" };
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(overrides: overrides) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("speaking A1.2");
+        req.SystemPrompt.Should().Contain("writing B1.2");
+    }
+
+    [Fact]
+    public void SessionHistory_NoSkillOverrides_OverridesBlockAbsent()
+    {
+        var ctx = BaseCtx() with
+        {
+            SessionHistory = MakeSessionHistory(overrides: new Dictionary<string, string>())
+        };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Teacher-assessed skill level overrides:");
+    }
+
+    [Fact]
+    public void SessionHistory_LearningStyleNotes_IncludedInPrompt()
+    {
+        var ctx = BaseCtx() with
+        {
+            SessionHistory = MakeSessionHistory(learningStyleNotes: "tiene vergüenza al hablar, mejor no corregir cada error")
+        };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Learning style / context:");
+        req.SystemPrompt.Should().Contain("tiene vergüenza al hablar");
+    }
+
+    [Fact]
+    public void SessionHistory_NoLearningStyleNotes_LearningStyleBlockAbsent()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(learningStyleNotes: null) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Learning style / context:");
+    }
+
+    // --- True/False coherence constraints (#431) ---
+
+    [Fact]
+    public void ExercisesPrompt_TrueFalse_RequiresNonEmptySourcePassage()
+    {
+        // Issue #431: True/False items without source text are invalid. The prompt must mandate non-empty sourcePassage.
+        var req = _sut.BuildExercisesPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("sourcePassage field MUST be non-empty",
+            because: "trueFalse items without an anchoring sourcePassage are pedagogically invalid (#431)");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_TrueFalse_MustNotContradictPresentation()
+    {
+        // Issue #431: True/False items must not state rules as absolute if the Presentation introduced nuanced exceptions.
+        var req = _sut.BuildExercisesPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("trueFalse statements must be consistent with the grammar rules",
+            because: "trueFalse items contradicting the Presentation section are a coherence error (#431)");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_GrammarScope_IncludesNoIntroductionConstraint()
+    {
+        // Issue #431: Practice must not introduce grammar structures beyond the Grammar Scope block.
+        // Use A2 which has a non-empty grammar scope in the config.
+        var ctx = BaseCtx() with { CefrLevel = "A2" };
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("GRAMMAR SCOPE",
+            because: "A2 has a grammar scope and the block must be present");
+        req.UserPrompt.Should().Contain("MUST only use the grammar structures listed in the GRAMMAR SCOPE",
+            because: "the non-introduction constraint must follow the grammar scope block (#431)");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_WarmUp_RolePhrasesCEFRConstraint()
+    {
+        // Issue #431: WarmUp model phrases used structures above B1 (habría dicho). The prompt must enforce level-appropriate grammar.
+        var ctx = BaseCtx() with { SectionType = "WarmUp", CefrLevel = "B1" };
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("roleAPhrases and roleBPhrases must use only B1-appropriate grammar",
+            because: "WarmUp role phrases must not exceed the stated CEFR level (#431)");
     }
 }

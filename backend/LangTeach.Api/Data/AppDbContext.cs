@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<CurriculumEntry> CurriculumEntries => Set<CurriculumEntry>();
     public DbSet<Material> Materials => Set<Material>();
     public DbSet<GenerationUsage> GenerationUsages => Set<GenerationUsage>();
+    public DbSet<SessionLog> SessionLogs => Set<SessionLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,6 +54,7 @@ public class AppDbContext : DbContext
              .HasForeignKey(s => s.TeacherId)
              .OnDelete(DeleteBehavior.Cascade);
             e.Property(s => s.IsDeleted).HasDefaultValue(false);
+            e.Property(s => s.SkillLevelOverrides).HasDefaultValue("{}");
         });
 
         // LessonTemplate — seeded, read-only
@@ -175,6 +177,31 @@ public class AppDbContext : DbContext
              .HasConversion(
                  v => v.ToKebabCase(),
                  v => ContentBlockTypeExtensions.FromKebabCase(v));
+        });
+
+        // SessionLog — no-action from Student, Teacher, and Lesson (SQL Server multi-path constraint)
+        modelBuilder.Entity<SessionLog>(e =>
+        {
+            e.HasKey(sl => sl.Id);
+            e.HasIndex(sl => new { sl.StudentId, sl.SessionDate });
+            e.HasIndex(sl => new { sl.TeacherId, sl.IsDeleted });
+            e.HasOne(sl => sl.Student)
+             .WithMany(s => s.SessionLogs)
+             .HasForeignKey(sl => sl.StudentId)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(sl => sl.Teacher)
+             .WithMany()
+             .HasForeignKey(sl => sl.TeacherId)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(sl => sl.LinkedLesson)
+             .WithMany()
+             .HasForeignKey(sl => sl.LinkedLessonId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.Property(sl => sl.PreviousHomeworkStatus)
+             .HasDefaultValue(HomeworkStatus.NotApplicable);
+            e.Property(sl => sl.IsDeleted).HasDefaultValue(false);
+            e.Property(sl => sl.TopicTags).HasDefaultValue("[]");
         });
 
         // LessonContentBlock — cascade delete from Lesson, no-action from LessonSection (nullable)

@@ -137,18 +137,24 @@ export default function Students() {
               <CardContent className="flex items-center justify-between py-4 px-4 sm:px-6">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="font-medium text-zinc-900 text-sm" data-testid="student-name">
+                    <Link
+                      to={`/students/${student.id}`}
+                      className="font-medium text-zinc-900 text-sm hover:text-indigo-600 hover:underline"
+                      data-testid="student-name"
+                    >
                       {student.name}
-                    </span>
-                    <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
-                      {student.learningLanguage}
-                    </Badge>
+                    </Link>
+                    {student.nativeLanguage && (
+                      <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200" data-testid="native-language-chip">
+                        Native: {student.nativeLanguage}
+                      </Badge>
+                    )}
                     <Badge variant="outline" className={`text-xs ${getCefrBadgeClasses(student.cefrLevel)}`} data-testid="student-level">
                       {student.cefrLevel}
                     </Badge>
-                    {student.nativeLanguage && (
-                      <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200" data-testid="native-language-chip">
-                        {student.nativeLanguage} speaker
+                    {!student.nativeLanguage && (
+                      <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
+                        {student.learningLanguage}
                       </Badge>
                     )}
                     {student.interests.slice(0, 3).map((interest) => (
