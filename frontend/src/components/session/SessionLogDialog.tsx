@@ -15,8 +15,11 @@ import { TopicTagsInput } from './TopicTagsInput'
 import {
   listSessions,
   createSession,
+  updateSession,
+  parseTopicTags,
   serializeTopicTags,
   type TopicTag,
+  type SessionLog,
 } from '../../api/sessionLogs'
 import { getLessons } from '../../api/lessons'
 
@@ -50,6 +53,7 @@ export interface SessionLogDialogProps {
   linkedLessonId?: string | null
   lessonTitle?: string | null
   lessonObjectives?: string | null
+  initialSession?: SessionLog | null
 }
 
 export function SessionLogDialog({
@@ -59,7 +63,9 @@ export function SessionLogDialog({
   linkedLessonId,
   lessonTitle,
   lessonObjectives,
+  initialSession,
 }: SessionLogDialogProps) {
+  const isEditMode = initialSession != null
   const queryClient = useQueryClient()
 
   // Form state
@@ -80,17 +86,37 @@ export function SessionLogDialog({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Auto-populate planned content from lesson
+  // Pre-populate fields when editing an existing session
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (open && linkedLessonId && lessonObjectives) {
+    if (open && initialSession) {
+      setSessionDate(initialSession.sessionDate.split('T')[0])
+      setPlannedContent(initialSession.plannedContent ?? '')
+      setActualContent(initialSession.actualContent ?? '')
+      setHomeworkAssigned(initialSession.homeworkAssigned ?? '')
+      setPrevHomeworkStatus(initialSession.previousHomeworkStatusName ?? 'NotApplicable')
+      setNextSessionTopics(initialSession.nextSessionTopics ?? '')
+      setGeneralNotes(initialSession.generalNotes ?? '')
+      setTopicTags(parseTopicTags(initialSession.topicTags))
+      setReassessmentEnabled(!!initialSession.levelReassessmentSkill)
+      setReassessmentSkill(initialSession.levelReassessmentSkill ?? '')
+      setReassessmentLevel(initialSession.levelReassessmentLevel ?? '')
+      setSelectedLessonId(initialSession.linkedLessonId ?? '')
+    }
+  }, [open, initialSession])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Auto-populate planned content from lesson (create mode only)
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (open && !initialSession && linkedLessonId && lessonObjectives) {
       const prefix = lessonTitle ? `${lessonTitle}: ` : ''
       setPlannedContent(`${prefix}${lessonObjectives}`)
     }
-    if (open && linkedLessonId) {
+    if (open && !initialSession && linkedLessonId) {
       setSelectedLessonId(linkedLessonId)
     }
-  }, [open, linkedLessonId, lessonTitle, lessonObjectives])
+  }, [open, initialSession, linkedLessonId, lessonTitle, lessonObjectives])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Reset form when dialog closes
@@ -124,7 +150,7 @@ export function SessionLogDialog({
   })
 
   const prevSession = sessions?.[0] ?? null
-  const showPrevHomework = prevSession !== null && prevSession.homeworkAssigned !== null
+  const showPrevHomework = isEditMode || (prevSession !== null && prevSession.homeworkAssigned !== null)
 
   // Fetch lessons for linked lesson selector
   const { data: lessonsData } = useQuery({
@@ -135,19 +161,24 @@ export function SessionLogDialog({
   const studentLessons = lessonsData?.items.filter(l => l.studentId === studentId) ?? []
 
   const { mutate: submitLog, isPending } = useMutation({
-    mutationFn: () => createSession(studentId, {
-      sessionDate,
-      plannedContent: plannedContent || null,
-      actualContent: actualContent || null,
-      homeworkAssigned: homeworkAssigned || null,
-      previousHomeworkStatus: prevHomeworkStatus,
-      nextSessionTopics: nextSessionTopics || null,
-      generalNotes: generalNotes || null,
-      levelReassessmentSkill: reassessmentEnabled ? reassessmentSkill || null : null,
-      levelReassessmentLevel: reassessmentEnabled ? reassessmentLevel || null : null,
-      linkedLessonId: selectedLessonId || null,
-      topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
-    }),
+    mutationFn: () => {
+      const payload = {
+        sessionDate,
+        plannedContent: plannedContent || null,
+        actualContent: actualContent || null,
+        homeworkAssigned: homeworkAssigned || null,
+        previousHomeworkStatus: prevHomeworkStatus,
+        nextSessionTopics: nextSessionTopics || null,
+        generalNotes: generalNotes || null,
+        levelReassessmentSkill: reassessmentEnabled ? reassessmentSkill || null : null,
+        levelReassessmentLevel: reassessmentEnabled ? reassessmentLevel || null : null,
+        linkedLessonId: selectedLessonId || null,
+        topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
+      }
+      return isEditMode
+        ? updateSession(studentId, initialSession.id, payload)
+        : createSession(studentId, payload)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
       setSuccess(true)
@@ -204,7 +235,7 @@ export function SessionLogDialog({
         data-testid="session-log-dialog"
       >
         <DialogHeader>
-          <DialogTitle>Log Session</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit Session' : 'Log Session'}</DialogTitle>
         </DialogHeader>
 
         {success ? (
@@ -448,7 +479,7 @@ export function SessionLogDialog({
                 className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 data-testid="submit-session-log"
               >
-                {isPending ? 'Saving...' : 'Log session'}
+                {isPending ? 'Saving...' : isEditMode ? 'Save changes' : 'Log session'}
               </Button>
             </DialogFooter>
           </form>

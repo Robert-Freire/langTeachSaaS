@@ -38,6 +38,8 @@ export interface CreateSessionLogRequest {
   topicTags?: string | null
 }
 
+export type UpdateSessionLogRequest = CreateSessionLogRequest
+
 export interface StudentSessionSummary {
   totalSessions: number
   lastSessionDate: string | null
@@ -74,6 +76,18 @@ export async function createSession(
   data: CreateSessionLogRequest,
 ): Promise<SessionLog> {
   const res = await apiClient.post<SessionLog>(`/api/students/${studentId}/sessions`, data)
+  return res.data
+}
+
+export async function updateSession(
+  studentId: string,
+  sessionId: string,
+  data: UpdateSessionLogRequest,
+): Promise<SessionLog> {
+  const res = await apiClient.put<SessionLog>(
+    `/api/students/${studentId}/sessions/${sessionId}`,
+    data,
+  )
   return res.data
 }
 
