@@ -134,6 +134,20 @@ describe('SessionLogDialog', () => {
     expect(vi.mocked(sessionLogsApi.createSession)).not.toHaveBeenCalled()
   })
 
+  it('renders next-session-topics as a textarea', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+
+    wrapper(
+      <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+    )
+
+    await waitFor(() => expect(screen.getByTestId('next-session-topics')).toBeInTheDocument())
+
+    const field = screen.getByTestId('next-session-topics') as HTMLTextAreaElement
+    expect(field.tagName).toBe('TEXTAREA')
+    expect(field.rows).toBe(3)
+  })
+
   it('shows CEFR validation error for invalid sub-level', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
 
