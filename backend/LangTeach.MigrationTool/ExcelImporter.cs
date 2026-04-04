@@ -115,7 +115,7 @@ internal sealed class ExcelImporter
             var sessionDate = ExtractDate(row);
             if (sessionDate is null) continue;
 
-            if (sessionDate.Value.Date > DateTime.UtcNow.Date)
+            if (sessionDate.Value.Date > now.Date)
             {
                 Console.WriteLine($"  SKIP (future date): {sessionDate.Value.Date:yyyy-MM-dd}");
                 skipped++;
