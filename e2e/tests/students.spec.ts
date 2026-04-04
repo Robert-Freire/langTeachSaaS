@@ -395,10 +395,10 @@ test('student detail overview shows profile fields and New lesson CTA', async ({
   await newLessonBtn.click()
   await expect(page).toHaveURL(`/lessons/new?studentId=${studentId}`, { timeout: 10000 })
 
-  // Student should be pre-selected (locked)
-  const lockedStudent = page.getByTestId('student-locked')
-  await expect(lockedStudent).toBeVisible({ timeout: 10000 })
-  await expect(lockedStudent).toContainText(studentName)
+  // Student should be pre-selected in the student select trigger
+  const selectStudent = page.getByTestId('select-student')
+  await expect(selectStudent).toBeVisible({ timeout: 10000 })
+  await expect(selectStudent).toContainText(studentName)
 
   // Cleanup: go back and delete student
   await page.goto('/students')
