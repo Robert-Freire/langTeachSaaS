@@ -477,6 +477,13 @@ public class PromptService : IPromptService
                     .Select(kv => $"{InputSanitizer.Sanitize(kv.Key)} {InputSanitizer.Sanitize(kv.Value)}"));
                 sb.AppendLine($"Teacher-assessed skill level overrides: {overrideText}");
             }
+
+            var learningStyleNotes = InputSanitizer.Sanitize(sh.LearningStyleNotes);
+            if (!string.IsNullOrWhiteSpace(learningStyleNotes))
+            {
+                sb.AppendLine();
+                sb.AppendLine($"Learning style / context: {learningStyleNotes}");
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(existingNotes))

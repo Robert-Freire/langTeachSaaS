@@ -51,7 +51,8 @@ public class SessionHistoryService : ISessionHistoryService
             PendingHomework: sessions[0].HomeworkAssigned,
             LastHomeworkStatus: sessions[0].PreviousHomeworkStatus,
             CoveredTopics: coveredTopics,
-            SkillLevelOverrides: skillLevelOverrides
+            SkillLevelOverrides: skillLevelOverrides,
+            LearningStyleNotes: sessions[0].GeneralNotes
         );
     }
 

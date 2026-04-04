@@ -50,7 +50,7 @@ public class SessionHistoryServiceTests : IDisposable
 
     private SessionLog MakeSession(DateTime date, string? planned = null, string? actual = null,
         string? nextTopics = null, string? homework = null, HomeworkStatus status = HomeworkStatus.NotApplicable,
-        string topicTags = "[]")
+        string topicTags = "[]", string? generalNotes = null)
         => new()
         {
             Id = Guid.NewGuid(),
@@ -63,6 +63,7 @@ public class SessionHistoryServiceTests : IDisposable
             HomeworkAssigned = homework,
             PreviousHomeworkStatus = status,
             TopicTags = topicTags,
+            GeneralNotes = generalNotes,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
@@ -349,5 +350,31 @@ public class SessionHistoryServiceTests : IDisposable
         var result = await _sut.BuildContextAsync(_teacherId, _studentId, DateTime.UtcNow);
 
         result!.PendingHomework.Should().BeNull();
+    }
+
+    // --- LearningStyleNotes from most recent session ---
+
+    [Fact]
+    public async Task BuildContext_PopulatesLearningStyleNotes_FromMostRecentSession()
+    {
+        var base_ = new DateTime(2026, 3, 1, 10, 0, 0, DateTimeKind.Utc);
+        _db.SessionLogs.Add(MakeSession(base_, generalNotes: "old notes"));
+        _db.SessionLogs.Add(MakeSession(base_.AddDays(7), generalNotes: "no estudia pero aprende rápido"));
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.BuildContextAsync(_teacherId, _studentId, base_.AddDays(14));
+
+        result!.LearningStyleNotes.Should().Be("no estudia pero aprende rápido");
+    }
+
+    [Fact]
+    public async Task BuildContext_LearningStyleNotes_NullWhenGeneralNotesAbsent()
+    {
+        _db.SessionLogs.Add(MakeSession(DateTime.UtcNow.AddDays(-1), generalNotes: null));
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.BuildContextAsync(_teacherId, _studentId, DateTime.UtcNow);
+
+        result!.LearningStyleNotes.Should().BeNull();
     }
 }
