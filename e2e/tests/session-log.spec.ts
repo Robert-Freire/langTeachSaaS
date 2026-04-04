@@ -110,6 +110,116 @@ test('log session dialog prev homework status shows when prev session has homewo
   await context.close()
 })
 
+test('expand session entry shows full detail without duplicating preview content', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Expand Test Student ${Date.now()}`
+  const createRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: studentName,
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+    },
+  })
+  const student = await createRes.json() as { id: string }
+
+  await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      sessionDate: new Date().toISOString().split('T')[0],
+      plannedContent: 'Preterito indefinido intro',
+      actualContent: 'Covered basics and exercises',
+      previousHomeworkStatus: 'NotApplicable',
+    },
+  })
+
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await page.getByRole('tab', { name: /history/i }).click()
+
+  const entry = page.getByTestId('session-entry').first()
+  await expect(entry).toBeVisible({ timeout: 10000 })
+
+  // Collapsed: preview content visible
+  await expect(entry.getByText(/Preterito indefinido intro/)).toBeVisible()
+
+  // Expand
+  await entry.getByTestId('session-entry-toggle').click()
+  await expect(entry.getByTestId('session-entry-detail')).toBeVisible()
+
+  // Expanded: content appears exactly once (in detail section, not in collapsed preview)
+  await expect(page.getByText('Preterito indefinido intro')).toHaveCount(1)
+  await expect(page.getByText('Covered basics and exercises')).toHaveCount(1)
+
+  // Collapse again
+  await entry.getByTestId('session-entry-toggle').click()
+  await expect(entry.getByTestId('session-entry-detail')).toBeHidden()
+
+  await context.close()
+})
+
+test('delete session requires confirmation dialog', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Delete Confirm Test ${Date.now()}`
+  const createRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: studentName,
+      learningLanguage: 'Spanish',
+      cefrLevel: 'A2',
+      interests: [],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+    },
+  })
+  const student = await createRes.json() as { id: string }
+
+  await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      sessionDate: new Date().toISOString().split('T')[0],
+      actualContent: 'Test session to delete',
+      previousHomeworkStatus: 'NotApplicable',
+    },
+  })
+
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await page.getByRole('tab', { name: /history/i }).click()
+
+  const entry = page.getByTestId('session-entry').first()
+  await expect(entry).toBeVisible({ timeout: 10000 })
+  await entry.getByTestId('session-entry-toggle').click()
+
+  // Click delete — confirmation dialog should appear
+  await entry.getByTestId('delete-session-button').click()
+  const confirmBtn = page.getByTestId('confirm-delete-session')
+  await expect(confirmBtn).toBeVisible({ timeout: 5000 })
+
+  // Cancel — session should remain
+  await page.getByRole('button', { name: /cancel/i }).click()
+  await expect(entry).toBeVisible()
+
+  // Delete again and confirm
+  await entry.getByTestId('delete-session-button').click()
+  await expect(confirmBtn).toBeVisible({ timeout: 5000 })
+  await confirmBtn.click()
+
+  // Session entry should be removed from the list
+  await expect(page.getByTestId('session-history-empty')).toBeVisible({ timeout: 10000 })
+
+  await context.close()
+})
+
 test('summary header appears on history tab after logging a session', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()

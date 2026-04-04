@@ -112,16 +112,15 @@ function SessionEntry({ session, studentId }: { session: SessionLog; studentId: 
               )}
             </div>
 
-            {/* Planned */}
-            {session.plannedContent && (
+            {/* Planned and actual — hidden when expanded to avoid duplication with detail section */}
+            {!expanded && session.plannedContent && (
               <p className="text-xs text-zinc-500 truncate">
                 <span className="font-medium text-zinc-700">Planned:</span>{' '}
                 {session.plannedContent}
               </p>
             )}
 
-            {/* Actual */}
-            {session.actualContent && (
+            {!expanded && session.actualContent && (
               <p className="text-xs text-zinc-600 truncate">
                 <span className="font-medium text-zinc-700">Done:</span>{' '}
                 {session.actualContent}
