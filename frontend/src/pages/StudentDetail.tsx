@@ -14,6 +14,7 @@ import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
 import { SessionLogDialog } from '@/components/session/SessionLogDialog'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
+import { SessionSummaryHeader } from '@/components/session/SessionSummaryHeader'
 import { parseNotes } from '@/components/student/studentNoteUtils'
 
 export default function StudentDetail() {
@@ -97,6 +98,7 @@ export default function StudentDetail() {
         </TabsList>
 
         <TabsContent value="overview" className="pt-6 space-y-6">
+          <SessionSummaryHeader studentId={student.id} />
           <StudentProfileOverview student={student} />
           <StudentProfileSummary
             student={student}

@@ -40,6 +40,12 @@ vi.mock('../components/session/SessionHistoryTab', () => ({
   SessionHistoryTab: () => <div data-testid="session-history-tab" />,
 }))
 
+vi.mock('../components/session/SessionSummaryHeader', () => ({
+  SessionSummaryHeader: ({ studentId }: { studentId: string }) => (
+    <div data-testid="session-summary-header" data-student-id={studentId} />
+  ),
+}))
+
 const MOCK_STUDENT: studentsApi.Student = {
   id: 'student-1',
   name: 'Ana Garcia',
@@ -108,9 +114,16 @@ describe('StudentDetail', () => {
   it('shows overview content by default', async () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('session-summary-header')).toBeInTheDocument()
     expect(screen.getByTestId('student-profile-overview')).toBeInTheDocument()
     expect(screen.getByTestId('student-profile-summary')).toBeInTheDocument()
     expect(screen.queryByTestId('session-history-tab')).not.toBeInTheDocument()
+  })
+
+  it('passes correct studentId to session summary header', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('session-summary-header')).toHaveAttribute('data-student-id', 'student-1')
   })
 
   it('shows "New lesson" CTA button on overview', async () => {
