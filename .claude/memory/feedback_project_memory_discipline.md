@@ -12,8 +12,6 @@ After completing a sprint or milestone change, update `project_langteach_task_st
 
 **Do NOT log per-issue status** (e.g., "#269 DONE, PR #401 merged"). This duplicates GitHub and goes stale by next session. GitHub is the source of truth for issue state.
 
-**Never stage or commit `project_langteach_task_status.md` as part of a task PR.** It is only updated at sprint boundaries. Any "task in progress" state belongs in user-level auto-memory (never committed to git).
-
 ## Why
 The old rule was "log every completed task with PR number." This produced a 200-line file of issue snapshots that was wrong by next session. On 2026-04-03, stale per-issue entries caused the PM to present closed issues as open loose ends.
 

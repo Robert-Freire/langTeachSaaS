@@ -75,7 +75,7 @@ All review steps must be invoked as **agents** (via Agent tool with appropriate 
 ## Task Completion Protocol
 
 When a task is complete:
-1. Stage and commit all changes (including `.claude/memory/` and `plan/` files) referencing the task. **Exception: never stage `.claude/memory/project_langteach_task_status.md`** — it holds stable sprint/milestone pointers only and must not be modified mid-task. Any task-in-flight tracking belongs in user-level auto-memory (not git-tracked), not here.
+1. Stage and commit all changes (including `.claude/memory/` and `plan/` files) referencing the task.
 2. Run `python3 .claude/scripts/task-build-verify.py <worktree-path>`. Fix failures. Never push with known failures or warnings.
 3. Run `qa-verify` agent. FAIL or PASS WITH GAPS: fix, re-commit, re-run. PASS: proceed.
 4. Run code reviews **sequentially** (not as parallel background agents). **Before launching any reviewer**, check the issue labels (`gh issue view <N> --json labels`) and the diff to determine the full list of required reviewers per `.claude/procedures/review-routing.md`. Run all of them. Do not skip conditional reviewers.
