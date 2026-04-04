@@ -61,6 +61,10 @@ test('@visual session history tab - expanded entry (no duplication)', async ({ b
   await firstEntry.getByTestId('session-entry-toggle').click()
   await expect(firstEntry.getByTestId('session-entry-detail')).toBeVisible()
 
+  // Verify no duplication: preview "Planned:" / "Done:" labels must be hidden when expanded
+  await expect(firstEntry.getByText(/^Planned:/)).toHaveCount(0)
+  await expect(firstEntry.getByText(/^Done:/)).toHaveCount(0)
+
   await page.screenshot({ path: 'screenshots/session-history-expanded.png', fullPage: true })
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()

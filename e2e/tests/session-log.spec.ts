@@ -207,6 +207,7 @@ test('delete session requires confirmation dialog', async ({ browser }) => {
 
   // Cancel — session should remain
   await page.getByRole('button', { name: /cancel/i }).click()
+  await expect(confirmBtn).toBeHidden()
   await expect(entry).toBeVisible()
 
   // Delete again and confirm
