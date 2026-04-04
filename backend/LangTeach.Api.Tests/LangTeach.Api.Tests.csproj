@@ -24,7 +24,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LangTeach.Api\LangTeach.Api.csproj" />
-
   </ItemGroup>
 
 </Project>
