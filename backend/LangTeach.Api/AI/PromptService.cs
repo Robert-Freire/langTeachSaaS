@@ -479,7 +479,7 @@ public class PromptService : IPromptService
             }
 
             var learningStyleNotes = InputSanitizer.Sanitize(sh.LearningStyleNotes);
-            if (!string.IsNullOrEmpty(learningStyleNotes))
+            if (!string.IsNullOrWhiteSpace(learningStyleNotes))
             {
                 sb.AppendLine();
                 sb.AppendLine($"Learning style / context: {learningStyleNotes}");
