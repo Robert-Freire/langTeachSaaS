@@ -180,7 +180,7 @@ internal sealed class ExcelImporter
         return date == default ? null : date;
     }
 
-    private static bool TryParseDate(IXLCell cell, out DateTime result)
+    internal static bool TryParseDate(IXLCell cell, out DateTime result)
     {
         result = default;
 
