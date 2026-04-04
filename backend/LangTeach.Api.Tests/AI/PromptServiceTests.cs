@@ -2488,7 +2488,8 @@ public class PromptServiceTests
         string? homework = null,
         HomeworkStatus? hwStatus = null,
         IReadOnlyList<CoveredTopicEntry>? topics = null,
-        IReadOnlyDictionary<string, string>? overrides = null)
+        IReadOnlyDictionary<string, string>? overrides = null,
+        string? learningStyleNotes = null)
         => new(
             RecentSessions:
             [
@@ -2499,7 +2500,8 @@ public class PromptServiceTests
             PendingHomework: homework,
             LastHomeworkStatus: hwStatus,
             CoveredTopics: topics ?? [],
-            SkillLevelOverrides: overrides ?? new Dictionary<string, string>()
+            SkillLevelOverrides: overrides ?? new Dictionary<string, string>(),
+            LearningStyleNotes: learningStyleNotes
         );
 
     [Fact]
@@ -2661,6 +2663,30 @@ public class PromptServiceTests
         var req = _sut.BuildVocabularyPrompt(ctx);
 
         req.SystemPrompt.Should().NotContain("Teacher-assessed skill level overrides:");
+    }
+
+    [Fact]
+    public void SessionHistory_LearningStyleNotes_IncludedInPrompt()
+    {
+        var ctx = BaseCtx() with
+        {
+            SessionHistory = MakeSessionHistory(learningStyleNotes: "tiene vergüenza al hablar, mejor no corregir cada error")
+        };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Learning style / context:");
+        req.SystemPrompt.Should().Contain("tiene vergüenza al hablar");
+    }
+
+    [Fact]
+    public void SessionHistory_NoLearningStyleNotes_LearningStyleBlockAbsent()
+    {
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(learningStyleNotes: null) };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Learning style / context:");
     }
 
     // --- True/False coherence constraints (#431) ---

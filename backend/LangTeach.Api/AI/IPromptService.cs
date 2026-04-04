@@ -64,7 +64,8 @@ public record SessionHistoryContext(
     string? PendingHomework,
     HomeworkStatus? LastHomeworkStatus,
     IReadOnlyList<CoveredTopicEntry> CoveredTopics,
-    IReadOnlyDictionary<string, string> SkillLevelOverrides
+    IReadOnlyDictionary<string, string> SkillLevelOverrides,
+    string? LearningStyleNotes = null
 );
 
 public record GenerationContext(
