@@ -108,6 +108,45 @@ public class SessionLogServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateAsync_FutureDate_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.SessionDate = DateTime.UtcNow.AddDays(1);
+
+        var act = () => _sut.CreateAsync(_teacherId, _studentId, request);
+        await act.Should().ThrowAsync<System.ComponentModel.DataAnnotations.ValidationException>()
+            .WithMessage("*future*");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_FutureDate_ThrowsValidationException()
+    {
+        var sessionId = Guid.NewGuid();
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = sessionId,
+            StudentId = _studentId,
+            TeacherId = _teacherId,
+            SessionDate = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc),
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            TopicTags = "[]",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        });
+        _db.SaveChanges();
+
+        var request = new UpdateSessionLogRequest
+        {
+            SessionDate = DateTime.UtcNow.AddDays(1),
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+        };
+
+        var act = () => _sut.UpdateAsync(_teacherId, _studentId, sessionId, request);
+        await act.Should().ThrowAsync<System.ComponentModel.DataAnnotations.ValidationException>()
+            .WithMessage("*future*");
+    }
+
+    [Fact]
     public async Task CreateAsync_WithLinkedLesson_SetsLessonId()
     {
         var lessonId = Guid.NewGuid();
