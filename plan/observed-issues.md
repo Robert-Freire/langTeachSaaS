@@ -11,4 +11,6 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #442 | 2026-04-03 | low | SessionLogsController email claim fallback uses null-forgiving ?? "" — if ClaimTypes.Email is missing, blank email propagates to UpsertTeacherAsync. Same pattern exists in other controllers; fix in a security pass. |
 | #431 | 2026-04-03 | low | Grammar scope non-introduction constraint (PromptService.cs:625) is silently skipped when BuildGrammarScopeBlock returns empty (e.g. levels with no defined scope). Levels without a scope have no constraint on grammar introduction. Intentional by design but consider a fallback general constraint for unlisted levels. |
 
+| #462 | 2026-04-04 | low | CodeRabbit suggested using env var for seed student name in session-history.visual.spec.ts. Dismissed: same hard-coded lookup pattern as student-detail.visual.spec.ts; Diego Seed is a stable scenario seed with no plans to rename. |
+
 *Cleared 2026-04-02 during Pedagogical Quality sprint close. 14 entries triaged: #420 (Catalan bug), #424 (Isaac pedagogy pass), #422 (prompt consistency) received new findings. Remaining entries deleted (dismissed CodeRabbit notes, no-user-impact inconsistencies, i18n patterns, stale QA spec comments, e2e AI coverage gap covered by Teacher QA).*

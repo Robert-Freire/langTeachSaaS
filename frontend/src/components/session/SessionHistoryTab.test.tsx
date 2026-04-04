@@ -82,6 +82,17 @@ describe('SessionHistoryTab', () => {
     expect(screen.getByText(/Covered basics and exercises/)).toBeInTheDocument()
   })
 
+  it('hides planned and actual preview when expanded to avoid duplication', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    expect(screen.getByTestId('session-entry-detail')).toBeInTheDocument()
+    // Full text appears once in the detail section
+    expect(screen.getAllByText(/Preterito indefinido intro/)).toHaveLength(1)
+    expect(screen.getAllByText(/Covered basics and exercises/)).toHaveLength(1)
+  })
+
   it('shows previous homework status badge', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
@@ -134,6 +145,19 @@ describe('SessionHistoryTab', () => {
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
     expect(screen.getByTestId('delete-session-button')).toBeInTheDocument()
+  })
+
+  it('does not call deleteSession when delete button is clicked without confirming', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.deleteSession).mockResolvedValue(undefined)
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    fireEvent.click(screen.getByTestId('delete-session-button'))
+    // Dialog opens but we cancel
+    const cancelBtn = await screen.findByRole('button', { name: /cancel/i })
+    fireEvent.click(cancelBtn)
+    expect(sessionLogsApi.deleteSession).not.toHaveBeenCalled()
   })
 
   it('calls deleteSession and invalidates query on confirm', async () => {

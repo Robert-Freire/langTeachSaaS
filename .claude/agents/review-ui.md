@@ -25,6 +25,7 @@ Map each changed route to its visual spec file in `e2e/tests/visual/`:
 | `/students` | `students-list.visual.spec.ts` |
 | `/students/new` | `students-new.visual.spec.ts` |
 | `/students/:id/edit` | `students-edit.visual.spec.ts` |
+| `/students/:id` (history tab) | `session-history.visual.spec.ts` |
 | `/lessons` | `lessons-list.visual.spec.ts` |
 | `/lessons/new` | `lessons-new.visual.spec.ts` |
 | `/lessons/:id` (editor) | `lesson-editor.visual.spec.ts` |
