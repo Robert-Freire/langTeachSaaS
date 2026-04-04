@@ -131,7 +131,9 @@ public static class DemoSeeder
 
         if (studentsSeeded && coursesSeeded)
         {
-            logger.LogInformation("Visual seed data already exists for teacher {Email}, skipping.", teacher.Email);
+            await db.SaveChangesAsync(); // persist any approval/onboarding updates
+            await SeedScenarioStudentsAsync(db, teacher.Id, logger);
+            logger.LogInformation("Visual seed data already exists for teacher {Email}; scenario students refreshed.", teacher.Email);
             return true;
         }
 
