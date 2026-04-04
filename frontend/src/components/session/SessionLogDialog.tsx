@@ -315,12 +315,13 @@ export function SessionLogDialog({
                 Topics for next session
                 <span className="text-zinc-400 font-normal ml-1">(optional)</span>
               </Label>
-              <Input
+              <Textarea
                 id="next-session-topics"
                 value={nextSessionTopics}
                 onChange={(e) => setNextSessionTopics(e.target.value)}
                 placeholder="What to focus on next time..."
-                className="text-sm"
+                rows={3}
+                className="resize-none text-sm"
                 data-testid="next-session-topics"
               />
             </div>
