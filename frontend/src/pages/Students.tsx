@@ -144,15 +144,17 @@ export default function Students() {
                     >
                       {student.name}
                     </Link>
-                    <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
-                      {student.learningLanguage}
-                    </Badge>
+                    {student.nativeLanguage && (
+                      <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200" data-testid="native-language-chip">
+                        Native: {student.nativeLanguage}
+                      </Badge>
+                    )}
                     <Badge variant="outline" className={`text-xs ${getCefrBadgeClasses(student.cefrLevel)}`} data-testid="student-level">
                       {student.cefrLevel}
                     </Badge>
-                    {student.nativeLanguage && (
-                      <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200" data-testid="native-language-chip">
-                        {student.nativeLanguage} speaker
+                    {!student.nativeLanguage && (
+                      <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
+                        {student.learningLanguage}
                       </Badge>
                     )}
                     {student.interests.slice(0, 3).map((interest) => (
