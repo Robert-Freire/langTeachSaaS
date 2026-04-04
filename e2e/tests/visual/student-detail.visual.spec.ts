@@ -18,26 +18,17 @@ test.beforeAll(async ({ browser }) => {
   const res = await page.request.get(`${API_BASE}/api/students`, { headers: AUTH_HEADER })
   expect(res.ok()).toBeTruthy()
   const body = await res.json()
-  const students: Array<{ notes?: string; id: string }> = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
+  const students: Array<{ notes?: string; name?: string; id: string }> = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
 
   // [visual-seed] student -- no sessions (for empty-state screenshot)
   const visual = students.find((s) => s.notes === '[visual-seed]')
   if (!visual) throw new Error('No [visual-seed] student found. Run start-visual-stack.sh first.')
   studentId = visual.id
 
-  // Find a [scenario-seed] student with sessions (Diego Seed has 2 session logs)
-  const scenarioStudents = students.filter((s) => s.notes === '[scenario-seed]')
-  for (const s of scenarioStudents) {
-    const summaryRes = await page.request.get(`${API_BASE}/api/students/${s.id}/sessions/summary`, { headers: AUTH_HEADER })
-    if (summaryRes.ok()) {
-      const summary = await summaryRes.json()
-      if (summary.totalSessions > 0) {
-        studentWithSessionsId = s.id
-        break
-      }
-    }
-  }
-  if (!studentWithSessionsId) throw new Error('No scenario student with sessions found. Run start-visual-stack.sh first.')
+  // Diego Seed is the scenario student seeded with 2 session logs
+  const diego = students.find((s) => s.name === 'Diego Seed')
+  if (!diego) throw new Error('No Diego Seed student found. Run start-visual-stack.sh first.')
+  studentWithSessionsId = diego.id
 
   await page.close()
   await ctx.close()
