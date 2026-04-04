@@ -10,6 +10,8 @@ const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 let diegoId = ''
 
 test.beforeAll(async ({ browser }) => {
+  fs.mkdirSync('screenshots', { recursive: true })
+
   const ctx = await createMockAuthContext(browser)
   const page = await ctx.newPage()
   await setupMockTeacher(page)
@@ -27,7 +29,6 @@ test.beforeAll(async ({ browser }) => {
 })
 
 test('@visual session history tab - collapsed entries', async ({ browser }) => {
-  fs.mkdirSync('screenshots', { recursive: true })
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
   const consoleErrors: string[] = []
@@ -45,7 +46,6 @@ test('@visual session history tab - collapsed entries', async ({ browser }) => {
 })
 
 test('@visual session history tab - expanded entry (no duplication)', async ({ browser }) => {
-  fs.mkdirSync('screenshots', { recursive: true })
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
   const consoleErrors: string[] = []
@@ -71,7 +71,6 @@ test('@visual session history tab - expanded entry (no duplication)', async ({ b
 })
 
 test('@visual session history tab - edit dialog pre-populated', async ({ browser }) => {
-  fs.mkdirSync('screenshots', { recursive: true })
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
   const consoleErrors: string[] = []
