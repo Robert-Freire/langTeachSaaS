@@ -64,3 +64,4 @@ SECRETS.md
 .claude/scheduled_tasks.lock
 package-lock.json
 plan/langteach-beta/demo feedback 1/imgs/*
+backend/LangTeach.MigrationTool/publish/*

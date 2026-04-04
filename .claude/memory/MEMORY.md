@@ -47,6 +47,7 @@
 - [Stop on infrastructure gaps](feedback_stop_on_infra_gaps.md) — if backend can't fulfill an AC, stop and ask; don't invent frontend workarounds
 - [Review findings must become issues](feedback_review_findings_must_be_issues.md) — file GitHub issues for all sprint-close findings before closing
 - [Task status format is script-parsed](feedback_task_status_format_stability.md) — don't change memory format without updating scripts that parse it
+- [State sprint branch name at merge green light](feedback_sprint_merge_branch_name.md) — always say the branch name (e.g. sprint/post-class-tracking) when approving merge
 
 ## Reference
 - [Token usage tracking](reference_token_usage_tracking.md) — check ~/.claude/logs/usage-log.jsonl; snippets in ~/.claude/usage-guide.md
