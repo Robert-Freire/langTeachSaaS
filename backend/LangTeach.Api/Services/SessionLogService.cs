@@ -56,6 +56,8 @@ public class SessionLogService : ISessionLogService
 
     public async Task<SessionLogDto> CreateAsync(Guid teacherId, Guid studentId, CreateSessionLogRequest request, CancellationToken cancellationToken = default)
     {
+        ValidateSessionDate(request.SessionDate);
+
         if (!Enum.IsDefined(request.PreviousHomeworkStatus))
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
@@ -113,6 +115,8 @@ public class SessionLogService : ISessionLogService
 
     public async Task<SessionLogDto?> UpdateAsync(Guid teacherId, Guid studentId, Guid sessionId, UpdateSessionLogRequest request, CancellationToken cancellationToken = default)
     {
+        ValidateSessionDate(request.SessionDate);
+
         if (!Enum.IsDefined(request.PreviousHomeworkStatus))
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
@@ -180,6 +184,13 @@ public class SessionLogService : ISessionLogService
 
         _logger.LogInformation("Soft-deleted SessionLog {SessionLogId}", sessionId);
         return true;
+    }
+
+    private static void ValidateSessionDate(DateTime sessionDate)
+    {
+        if (sessionDate.Date > DateTime.UtcNow.Date)
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                "Session date cannot be in the future.");
     }
 
     private static void ValidateReassessment(string? skill, string? level)

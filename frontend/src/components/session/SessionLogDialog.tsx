@@ -202,6 +202,7 @@ export function SessionLogDialog({
   function validate(): boolean {
     const errs: Record<string, string> = {}
     if (!sessionDate) errs.sessionDate = 'Date is required.'
+    else if (sessionDate > todayIso()) errs.sessionDate = 'Session date cannot be in the future.'
     if (!plannedContent && !actualContent) {
       errs.content = 'At least one of "What was planned" or "What was actually done" is required.'
     }
@@ -259,6 +260,7 @@ export function SessionLogDialog({
                 id="session-date"
                 type="date"
                 value={sessionDate}
+                max={todayIso()}
                 onChange={(e) => setSessionDate(e.target.value)}
                 required
                 data-testid="session-date"

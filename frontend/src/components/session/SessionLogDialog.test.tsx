@@ -54,6 +54,7 @@ function wrapper(ui: React.ReactElement) {
 
 describe('SessionLogDialog', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     vi.mocked(lessonsApi.getLessons).mockResolvedValue({
       items: [],
       totalCount: 0,
@@ -263,5 +264,37 @@ describe('SessionLogDialog', () => {
 
     expect(await screen.findByText(/valid cefr sub-level/i)).toBeInTheDocument()
     expect(vi.mocked(sessionLogsApi.createSession)).not.toHaveBeenCalled()
+  })
+
+  it('shows validation error when session date is in the future', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+
+    // Pre-populate with a far-future date via initialSession (edit mode)
+    const futureSession: SessionLog = {
+      ...SAMPLE_SESSION,
+      sessionDate: '2099-12-31T00:00:00Z',
+    }
+
+    wrapper(
+      <SessionLogDialog
+        studentId={STUDENT_ID}
+        open={true}
+        onOpenChange={vi.fn()}
+        initialSession={futureSession}
+      />
+    )
+
+    // Wait for the form to pre-populate
+    await waitFor(() => {
+      const dateInput = screen.getByTestId('session-date') as HTMLInputElement
+      expect(dateInput.value).toBe('2099-12-31')
+    })
+
+    // Submit via the form element directly (base-ui button type handling may vary)
+    const form = screen.getByTestId('session-log-dialog').querySelector('form')!
+    fireEvent.submit(form)
+
+    expect(await screen.findByText(/cannot be in the future/i)).toBeInTheDocument()
+    expect(vi.mocked(sessionLogsApi.updateSession)).not.toHaveBeenCalled()
   })
 })
