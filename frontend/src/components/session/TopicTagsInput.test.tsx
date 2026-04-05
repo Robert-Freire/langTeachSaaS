@@ -66,4 +66,15 @@ describe('TopicTagsInput', () => {
     expect(screen.getByText('viajes')).toBeInTheDocument()
     expect(screen.getByText('(Vocabulary)')).toBeInTheDocument()
   })
+
+  it('renders all four curriculum-aligned category options', () => {
+    const { container } = render(<TopicTagsInput value={[]} onChange={vi.fn()} />)
+    const items = container.querySelectorAll('[data-value]')
+    const values = Array.from(items).map((el) => el.getAttribute('data-value'))
+    expect(values).toContain('grammar')
+    expect(values).toContain('vocabulary')
+    expect(values).toContain('competency')
+    expect(values).toContain('communicativeFunction')
+    expect(values).toHaveLength(4)
+  })
 })
