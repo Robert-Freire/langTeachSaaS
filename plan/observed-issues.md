@@ -22,3 +22,5 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #437 | 2026-04-05 | low | UI should verify exercises per block are capped to avoid cognitive overload (17 items seen in one block). Check ExercisesRenderer display logic. |
 | #187 | 2026-04-05 | low | `VoiceNote` model: `BlobPath`, `OriginalFileName`, `ContentType` have no `[MaxLength]` - will be nvarchar(max) in SQL |
 | #187 | 2026-04-05 | low | `AudioRecorder`: rapid double-click on Upload could trigger two concurrent uploads before state update prevents second |
+| #487 | 2026-04-05 | low | E2E tests create students/lessons but never clean up; test data accumulates in the persistent test DB (consistent with all existing e2e tests) |
+| #487 | 2026-04-05 | low | `student-detail.visual.spec.ts` does not scroll to capture the linked lesson area; consider adding a scrolled screenshot for regression coverage |
