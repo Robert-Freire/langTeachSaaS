@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import path from 'path'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 import { UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
@@ -109,6 +110,50 @@ test('post-class reflection: voice input section is visible on lesson with stude
   const voiceSection = page.getByTestId('voice-input-section')
   await voiceSection.scrollIntoViewIfNeeded()
   await expect(voiceSection).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await page.close()
+  await context.close()
+})
+
+test('post-class reflection: upload voice note triggers extraction flow with AI suggestions', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const { lesson, lessonTitle } = await createStudentAndLesson(page)
+
+  await page.goto(`/lessons/${lesson.id}`)
+  await expect(page.getByTestId('lesson-title')).toHaveText(lessonTitle, { timeout: UI_TIMEOUT })
+
+  const voiceSection = page.getByTestId('voice-input-section')
+  await voiceSection.scrollIntoViewIfNeeded()
+
+  // Upload a test audio file via the file input (triggers upload + transcription via stub)
+  const audioPath = path.join(__dirname, '../fixtures/test-audio.webm')
+  const fileInput = page.getByTestId('audio-file-input')
+  await fileInput.setInputFiles(audioPath)
+
+  // Wait for transcription to appear (stub returns "[Test transcription]")
+  await expect(page.getByTestId('voice-note-transcription')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await expect(page.getByTestId('extract-notes-button')).toBeVisible()
+
+  // Click extract - calls stub extraction service which returns fixed values
+  await page.getByTestId('extract-notes-button').click()
+
+  // Suggestions panel should appear with AI-extracted fields
+  await expect(page.getByTestId('suggestions-panel')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await expect(page.getByTestId('suggestion-whatWasCovered')).toBeVisible()
+  await expect(page.getByTestId('suggestion-emotionalSignals')).toBeVisible()
+
+  // Apply all suggestions
+  await page.getByTestId('suggestions-apply-all').click()
+
+  // Panel dismissed and notes saved
+  await expect(page.getByTestId('suggestions-panel')).not.toBeVisible()
+  await expect(page.getByTestId('notes-saved-indicator')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+
+  // Verify extracted content is in the form fields
+  await expect(page.getByTestId('notes-whatWasCovered')).toHaveValue('[Extracted] What was covered')
+  await expect(page.getByTestId('notes-emotionalSignals')).toHaveValue('[Extracted] Emotional signals')
 
   await page.close()
   await context.close()

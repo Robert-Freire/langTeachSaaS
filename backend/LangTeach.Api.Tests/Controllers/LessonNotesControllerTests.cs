@@ -1,13 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
-using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
-using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Fixtures;
-using LangTeach.Api.Tests.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LangTeach.Api.Tests.Controllers;
@@ -327,47 +324,24 @@ public class LessonNotesControllerTests
         entries![0].TemplateName.Should().Be("Grammar Focus");
     }
 
-    private HttpClient CreateClientWithFakeExtraction(string auth0Id, string email, ExtractedReflectionDto result)
-    {
-        var client = _factory
-            .WithWebHostBuilder(b => b.ConfigureServices(services =>
-            {
-                var existing = services.FirstOrDefault(d => d.ServiceType == typeof(IReflectionExtractionService));
-                if (existing is not null) services.Remove(existing);
-                services.AddScoped<IReflectionExtractionService>(_ => new StubReflectionExtractionService(result));
-            }))
-            .CreateClient();
-        client.DefaultRequestHeaders.Add("X-Test-Auth0Id", auth0Id);
-        client.DefaultRequestHeaders.Add("X-Test-Email", email);
-        return client;
-    }
-
     [Fact]
     public async Task ExtractNotes_ReturnsExtractedFields()
     {
-        var (_, lessonId, _) = await SeedLessonWithStudent(
+        // In Testing environment, StubReflectionExtractionService is registered automatically.
+        // It returns fixed "[Extracted]..." values regardless of input.
+        var (client, lessonId, _) = await SeedLessonWithStudent(
             "auth0|notes-extract", "notes-extract@example.com");
-
-        var expected = new ExtractedReflectionDto(
-            WhatWasCovered: "Past tense verbs",
-            AreasToImprove: "Irregular verbs confusion",
-            EmotionalSignals: "Student was engaged and enthusiastic",
-            HomeworkAssigned: "Exercises 1-5",
-            NextLessonIdeas: "Present perfect"
-        );
-
-        var client = CreateClientWithFakeExtraction("auth0|notes-extract", "notes-extract@example.com", expected);
 
         var request = new ExtractReflectionRequest { Text = "We covered past tense today. Student got confused on irregulars but was very enthusiastic." };
         var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/notes/extract", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var dto = await response.Content.ReadFromJsonAsync<ExtractedReflectionDto>();
-        dto!.WhatWasCovered.Should().Be("Past tense verbs");
-        dto.AreasToImprove.Should().Be("Irregular verbs confusion");
-        dto.EmotionalSignals.Should().Be("Student was engaged and enthusiastic");
-        dto.HomeworkAssigned.Should().Be("Exercises 1-5");
-        dto.NextLessonIdeas.Should().Be("Present perfect");
+        dto!.WhatWasCovered.Should().Be("[Extracted] What was covered");
+        dto.AreasToImprove.Should().Be("[Extracted] Areas to improve");
+        dto.EmotionalSignals.Should().Be("[Extracted] Emotional signals");
+        dto.HomeworkAssigned.Should().Be("[Extracted] Homework assigned");
+        dto.NextLessonIdeas.Should().Be("[Extracted] Next lesson ideas");
     }
 
     [Fact]
