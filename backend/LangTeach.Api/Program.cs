@@ -55,6 +55,7 @@ if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("
             "Auth0:Audience",
             "Claude:ApiKey",
             "AzureBlobStorage:ConnectionString",
+            "OpenAI:ApiKey",
         ]);
 }
 
@@ -119,6 +120,13 @@ builder.Services.AddHttpClient("Claude", (sp, client) =>
     client.DefaultRequestHeaders.Add("x-api-key", opts.ApiKey);
     client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
 });
+builder.Services.AddHttpClient("OpenAI", client =>
+{
+    var apiKey = builder.Configuration["OpenAI:ApiKey"] ?? "";
+    client.BaseAddress = new Uri("https://api.openai.com");
+    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
 builder.Services.AddScoped<IClaudeClient, ClaudeApiClient>();
 builder.Services.AddSingleton<ISectionProfileService, SectionProfileService>();
 builder.Services.AddSingleton<IPedagogyConfigService, PedagogyConfigService>();
@@ -149,6 +157,15 @@ builder.Services.AddSingleton(_ =>
 builder.Services.AddSingleton<BlobStorageService>();
 builder.Services.AddSingleton<IBlobStorageService>(sp => sp.GetRequiredService<BlobStorageService>());
 builder.Services.AddScoped<IMaterialService, MaterialService>();
+
+if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddScoped<ITranscriptionService, StubTranscriptionService>();
+else
+    builder.Services.AddScoped<ITranscriptionService, WhisperTranscriptionService>();
+
+builder.Services.AddSingleton<VoiceNoteBlobStorage>();
+builder.Services.AddSingleton<IVoiceNoteBlobStorage>(sp => sp.GetRequiredService<VoiceNoteBlobStorage>());
+builder.Services.AddScoped<IVoiceNoteService, VoiceNoteService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<ILessonNoteService, LessonNoteService>();
 builder.Services.AddScoped<ISessionLogService, SessionLogService>();
@@ -185,6 +202,10 @@ using (var scope = app.Services.CreateScope())
     var blobService = scope.ServiceProvider.GetService<BlobStorageService>();
     if (blobService is not null)
         await blobService.InitializeAsync();
+
+    var voiceNoteBlobStorage = scope.ServiceProvider.GetService<VoiceNoteBlobStorage>();
+    if (voiceNoteBlobStorage is not null)
+        await voiceNoteBlobStorage.InitializeAsync();
 }
 
 // Demo seeder: dotnet run -- --seed <auth0-user-id|email>

@@ -40,11 +40,13 @@ public class AuthenticatedWebAppFactory : WebApplicationFactory<Program>
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                     TestAuthHandler.SchemeName, _ => { });
 
-            // Replace blob storage with in-memory implementation
+            // Replace blob storage with in-memory implementations
             var blobDescriptors = services
                 .Where(d => d.ServiceType == typeof(BlobServiceClient)
                          || d.ServiceType == typeof(BlobStorageService)
-                         || d.ServiceType == typeof(IBlobStorageService))
+                         || d.ServiceType == typeof(IBlobStorageService)
+                         || d.ServiceType == typeof(VoiceNoteBlobStorage)
+                         || d.ServiceType == typeof(IVoiceNoteBlobStorage))
                 .ToList();
             foreach (var d in blobDescriptors)
                 services.Remove(d);
@@ -52,6 +54,7 @@ public class AuthenticatedWebAppFactory : WebApplicationFactory<Program>
             var inMemoryBlob = new InMemoryBlobStorageService();
             services.AddSingleton<IBlobStorageService>(inMemoryBlob);
             services.AddSingleton(inMemoryBlob);
+            services.AddSingleton<IVoiceNoteBlobStorage>(new InMemoryVoiceNoteBlobStorage());
         });
     }
 

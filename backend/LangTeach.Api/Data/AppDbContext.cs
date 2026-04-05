@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<Material> Materials => Set<Material>();
     public DbSet<GenerationUsage> GenerationUsages => Set<GenerationUsage>();
     public DbSet<SessionLog> SessionLogs => Set<SessionLog>();
+    public DbSet<VoiceNote> VoiceNotes => Set<VoiceNote>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -202,6 +203,18 @@ public class AppDbContext : DbContext
              .HasDefaultValue(HomeworkStatus.NotApplicable);
             e.Property(sl => sl.IsDeleted).HasDefaultValue(false);
             e.Property(sl => sl.TopicTags).HasDefaultValue("[]");
+        });
+
+        // VoiceNote — cascade delete from Teacher
+        modelBuilder.Entity<VoiceNote>(e =>
+        {
+            e.HasKey(v => v.Id);
+            e.HasIndex(v => new { v.TeacherId, v.CreatedAt });
+            e.HasOne(v => v.Teacher)
+             .WithMany()
+             .HasForeignKey(v => v.TeacherId)
+             .OnDelete(DeleteBehavior.Cascade);
+            // TranscribedAt: null = not transcribed, non-null = transcription complete (timestamp provides timing)
         });
 
         // LessonContentBlock — cascade delete from Lesson, no-action from LessonSection (nullable)
