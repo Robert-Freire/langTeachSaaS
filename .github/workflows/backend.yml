@@ -172,8 +172,8 @@ jobs:
 
             echo "  Attempt ${i}/24: runningState=${STATE}"
 
-            if [ "${STATE}" = "Running" ]; then
-              echo "Revision ${NEW_REVISION} is running and serving traffic."
+            if [ "${STATE}" = "Running" ] || [ "${STATE}" = "RunningAtMaxScale" ]; then
+              echo "Revision ${NEW_REVISION} is running and serving traffic (${STATE})."
               exit 0
             elif [ "${STATE}" = "ActivationFailed" ] || [ "${STATE}" = "Failed" ]; then
               echo "ERROR: Revision ${NEW_REVISION} entered ${STATE} state."
