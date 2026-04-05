@@ -44,7 +44,7 @@ jobs:
   validate-secrets:
     name: Validate Key Vault secrets
     needs: ci
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.DEPLOY_FROZEN != 'true'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && vars.DEPLOY_FROZEN != 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -112,7 +112,7 @@ jobs:
   deploy:
     name: Build image and deploy
     needs: [ci, validate-secrets]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.DEPLOY_FROZEN != 'true'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && vars.DEPLOY_FROZEN != 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
