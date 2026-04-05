@@ -2,6 +2,7 @@ using System.Text.Json;
 using LangTeach.Api.AI;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 
 namespace LangTeach.Api.Services;
 
@@ -216,10 +217,10 @@ public class CurriculumGenerationService : ICurriculumGenerationService
 
             if (!string.IsNullOrWhiteSpace(p.Topic))
                 skeleton.Topic = p.Topic!;
-            if (!string.IsNullOrWhiteSpace(p.ContextDescription))
-                skeleton.ContextDescription = p.ContextDescription;
-            if (!string.IsNullOrWhiteSpace(p.PersonalizationNotes))
-                skeleton.PersonalizationNotes = p.PersonalizationNotes;
+            if (p.ContextDescription is not null)
+                skeleton.ContextDescription = JsonStorageHelper.Serialize(p.ContextDescription);
+            if (p.PersonalizationNotes is not null)
+                skeleton.PersonalizationNotes = JsonStorageHelper.Serialize(p.PersonalizationNotes);
         }
     }
 
@@ -236,8 +237,8 @@ public class CurriculumGenerationService : ICurriculumGenerationService
     private record PersonalizationDto(
         int OrderIndex,
         string? Topic,
-        string? ContextDescription,
-        string? PersonalizationNotes
+        ContextDescriptionData? ContextDescription,
+        PersonalizationNotesData? PersonalizationNotes
     );
 }
 

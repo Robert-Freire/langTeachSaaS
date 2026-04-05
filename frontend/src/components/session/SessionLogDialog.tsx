@@ -253,6 +253,16 @@ export function SessionLogDialog({
               </div>
             )}
 
+            {!isEditMode && prevSession?.nextSessionTopics?.trim() && (
+              <div
+                className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-900"
+                data-testid="prev-session-topics"
+              >
+                <span className="font-medium">From last session: </span>
+                {prevSession.nextSessionTopics}
+              </div>
+            )}
+
             {/* Date */}
             <div className="space-y-1">
               <Label htmlFor="session-date" className="text-sm">Date</Label>

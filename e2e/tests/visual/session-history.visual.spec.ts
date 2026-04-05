@@ -8,6 +8,7 @@ const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 
 let diegoId = ''
+let claraSeedId = ''
 
 test.beforeAll(async ({ browser }) => {
   fs.mkdirSync('screenshots', { recursive: true })
@@ -23,6 +24,10 @@ test.beforeAll(async ({ browser }) => {
   const diego = students.find((s: { name?: string; id: string }) => s.name === 'Diego Seed')
   if (!diego) throw new Error('Diego Seed not found. Run start-visual-stack.sh first.')
   diegoId = diego.id
+
+  const clara = students.find((s: { name?: string; id: string }) => s.name === 'Clara Seed')
+  if (!clara) throw new Error('Clara Seed not found. Run start-visual-stack.sh first.')
+  claraSeedId = clara.id
 
   await page.close()
   await ctx.close()
@@ -66,6 +71,42 @@ test('@visual session history tab - expanded entry (no duplication)', async ({ b
   await expect(firstEntry.getByText(/^Done:/)).toHaveCount(0)
 
   await page.screenshot({ path: 'screenshots/session-history-expanded.png', fullPage: true })
+  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
+  await context.close()
+})
+
+test('@visual session log dialog - create mode with prior topics', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const consoleErrors: string[] = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
+
+  // Diego Seed has 2 sessions with NextSessionTopics set — amber block should appear
+  await page.goto(`/students/${diegoId}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await page.getByTestId('log-session-button').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('prev-session-topics')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await page.screenshot({ path: 'screenshots/session-log-create-with-topics.png', fullPage: true })
+  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
+  await context.close()
+})
+
+test('@visual session log dialog - create mode no prior sessions', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const consoleErrors: string[] = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
+
+  // Clara Seed has no sessions — amber block must be absent
+  await page.goto(`/students/${claraSeedId}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await page.getByTestId('log-session-button').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('prev-session-topics')).not.toBeVisible()
+
+  await page.screenshot({ path: 'screenshots/session-log-create-no-topics.png', fullPage: true })
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()
 })
