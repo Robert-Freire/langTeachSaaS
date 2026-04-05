@@ -37,27 +37,18 @@ test('lesson sections match template and support add/remove', async ({ browser }
   await expect(page).toHaveURL(/\/lessons\/[0-9a-f-]+$/, { timeout: 10000 })
   await expect(page.getByTestId('lesson-title')).toHaveText(lessonTitle, { timeout: 10000 })
 
-  // Conversation template has 4 sections: WarmUp, Practice, Production, WrapUp (no Presentation)
+  // Conversation template has 5 sections: WarmUp, Presentation, Practice, Production, WrapUp
   await expect(page.getByTestId('section-card-warmup')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('section-card-presentation')).toBeVisible()
   await expect(page.getByTestId('section-card-practice')).toBeVisible()
   await expect(page.getByTestId('section-card-production')).toBeVisible()
   await expect(page.getByTestId('section-card-wrapup')).toBeVisible()
-  await expect(page.getByTestId('section-card-presentation')).not.toBeVisible()
 
-  // Count section cards: should be exactly 4
+  // Count section cards: should be exactly 5
   const sectionCards = page.locator('[data-testid^="section-card-"]')
-  await expect(sectionCards).toHaveCount(4)
-
-  // Add the missing Presentation section via dropdown
-  await expect(page.getByTestId('add-section-select')).toBeVisible()
-  await page.getByTestId('add-section-select').click()
-  await page.getByRole('option', { name: 'Presentation' }).click()
-
-  // Wait for save and verify 5 sections now shown
-  await expect(page.getByTestId('section-card-presentation')).toBeVisible({ timeout: UI_TIMEOUT })
   await expect(sectionCards).toHaveCount(5)
 
-  // Add Section dropdown should be hidden now (all 5 types present)
+  // Add Section dropdown should be hidden (all 5 types present)
   await expect(page.getByTestId('add-section-container')).not.toBeVisible()
 
   // Remove the Presentation section
@@ -65,12 +56,18 @@ test('lesson sections match template and support add/remove', async ({ browser }
   // Confirm removal dialog
   await page.getByTestId('confirm-remove-section').click()
 
-  // Verify section count decreases back to 4
+  // Verify section count decreases to 4 and add-section dropdown reappears
   await expect(page.getByTestId('section-card-presentation')).not.toBeVisible({ timeout: UI_TIMEOUT })
   await expect(sectionCards).toHaveCount(4)
-
-  // Add Section dropdown should reappear
   await expect(page.getByTestId('add-section-select')).toBeVisible()
+
+  // Add Presentation back via dropdown
+  await page.getByTestId('add-section-select').click()
+  await page.getByRole('option', { name: 'Presentation' }).click()
+
+  // Verify 5 sections again
+  await expect(page.getByTestId('section-card-presentation')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(sectionCards).toHaveCount(5)
 
   await context.close()
 })

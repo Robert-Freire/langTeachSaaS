@@ -55,9 +55,11 @@ test('grammar type renders editor and student view', async ({ browser }) => {
     await productionSection.blur()
     await expect(page.getByTestId('saved-indicator')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
-    // Open generate panel for Production section (defaults to grammar)
+    // Open generate panel for Production section
     await page.getByTestId('generate-btn-production').click()
     await expect(page.getByTestId('generate-panel')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+    // Wait for content-type rules to load so task type is resolved before generating
+    await expect(page.getByTestId('task-type-loading')).not.toBeVisible({ timeout: UI_TIMEOUT })
 
     // Trigger generation
     await page.getByTestId('generate-btn').click()
