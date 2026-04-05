@@ -47,6 +47,9 @@ describe('LessonHistoryCard', () => {
         homeworkAssigned: null,
         areasToImprove: 'Pronunciation',
         nextLessonIdeas: null,
+        emotionalSignals: null,
+        followingSessionHomeworkStatus: null,
+        followingSessionHomeworkStatusName: null,
       },
       {
         lessonId: 'lesson-2',
@@ -57,6 +60,9 @@ describe('LessonHistoryCard', () => {
         homeworkAssigned: 'Worksheet 3',
         areasToImprove: null,
         nextLessonIdeas: null,
+        emotionalSignals: null,
+        followingSessionHomeworkStatus: null,
+        followingSessionHomeworkStatusName: null,
       },
     ])
     renderCard('student-1')
@@ -71,5 +77,75 @@ describe('LessonHistoryCard', () => {
     expect(screen.getByText(/Pronunciation/)).toBeInTheDocument()
     expect(screen.getByText(/Colors and numbers/)).toBeInTheDocument()
     expect(screen.getByText(/Worksheet 3/)).toBeInTheDocument()
+  })
+
+  const baseEntry = {
+    lessonId: 'lesson-1',
+    title: 'Vocab Lesson',
+    templateName: null,
+    lessonDate: '2026-03-15T10:00:00Z',
+    whatWasCovered: null,
+    homeworkAssigned: 'Read chapter 2',
+    areasToImprove: null,
+    nextLessonIdeas: null,
+    emotionalSignals: null,
+    followingSessionHomeworkStatus: null,
+    followingSessionHomeworkStatusName: null,
+  }
+
+  it('shows green badge when homework was Done', async () => {
+    mockGetLessonHistory.mockResolvedValue([
+      { ...baseEntry, followingSessionHomeworkStatus: 3, followingSessionHomeworkStatusName: 'Done' },
+    ])
+    renderCard('student-1')
+
+    const badge = await screen.findByTestId('lesson-history-hw-status-badge')
+    expect(badge).toBeInTheDocument()
+    expect(badge).toHaveTextContent('Done')
+    expect(badge.className).toContain('text-green-700')
+  })
+
+  it('shows amber badge when homework was Partial', async () => {
+    mockGetLessonHistory.mockResolvedValue([
+      { ...baseEntry, followingSessionHomeworkStatus: 2, followingSessionHomeworkStatusName: 'Partial' },
+    ])
+    renderCard('student-1')
+
+    const badge = await screen.findByTestId('lesson-history-hw-status-badge')
+    expect(badge).toBeInTheDocument()
+    expect(badge).toHaveTextContent('Partial')
+    expect(badge.className).toContain('text-amber-700')
+  })
+
+  it('shows red badge when homework was NotDone', async () => {
+    mockGetLessonHistory.mockResolvedValue([
+      { ...baseEntry, followingSessionHomeworkStatus: 1, followingSessionHomeworkStatusName: 'NotDone' },
+    ])
+    renderCard('student-1')
+
+    const badge = await screen.findByTestId('lesson-history-hw-status-badge')
+    expect(badge).toBeInTheDocument()
+    expect(badge).toHaveTextContent('Not done')
+    expect(badge.className).toContain('text-red-700')
+  })
+
+  it('shows no badge when status is NotApplicable', async () => {
+    mockGetLessonHistory.mockResolvedValue([
+      { ...baseEntry, followingSessionHomeworkStatus: 0, followingSessionHomeworkStatusName: 'NotApplicable' },
+    ])
+    renderCard('student-1')
+
+    await screen.findByTestId('lesson-history-homeworkAssigned')
+    expect(screen.queryByTestId('lesson-history-hw-status-badge')).not.toBeInTheDocument()
+  })
+
+  it('shows no badge when followingSessionHomeworkStatusName is null', async () => {
+    mockGetLessonHistory.mockResolvedValue([
+      { ...baseEntry, followingSessionHomeworkStatus: null, followingSessionHomeworkStatusName: null },
+    ])
+    renderCard('student-1')
+
+    await screen.findByTestId('lesson-history-homeworkAssigned')
+    expect(screen.queryByTestId('lesson-history-hw-status-badge')).not.toBeInTheDocument()
   })
 })

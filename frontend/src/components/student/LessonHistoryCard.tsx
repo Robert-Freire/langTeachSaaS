@@ -2,12 +2,20 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { getLessonHistory } from '../../api/students'
 import { formatDate } from '../../utils/formatDate'
+import { HOMEWORK_STATUS_STYLES } from '../../utils/homeworkStatusStyles'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface LessonHistoryCardProps {
   studentId: string
+}
+
+
+const HOMEWORK_STATUS_LABELS: Record<string, string> = {
+  Done: 'Done',
+  Partial: 'Partial',
+  NotDone: 'Not done',
 }
 
 const NOTE_LABELS: { key: 'whatWasCovered' | 'homeworkAssigned' | 'areasToImprove' | 'nextLessonIdeas' | 'emotionalSignals'; label: string; testId: string }[] = [
@@ -70,8 +78,20 @@ export function LessonHistoryCard({ studentId }: LessonHistoryCardProps) {
                 <div className="space-y-1">
                   {NOTE_LABELS.map(({ key, label, testId }) =>
                     entry[key] ? (
-                      <p key={key} className="text-xs text-zinc-600" data-testid={testId}>
+                      <p key={key} className="text-xs text-zinc-600 flex items-center gap-1.5 flex-wrap" data-testid={testId}>
                         <span className="font-medium text-zinc-700">{label}:</span> {entry[key]}
+                        {key === 'homeworkAssigned' &&
+                          entry.followingSessionHomeworkStatusName &&
+                          entry.followingSessionHomeworkStatusName !== 'NotApplicable' &&
+                          HOMEWORK_STATUS_STYLES[entry.followingSessionHomeworkStatusName] && (
+                            <Badge
+                              variant="outline"
+                              className={`text-xs px-1.5 py-0 ${HOMEWORK_STATUS_STYLES[entry.followingSessionHomeworkStatusName]}`}
+                              data-testid="lesson-history-hw-status-badge"
+                            >
+                              {HOMEWORK_STATUS_LABELS[entry.followingSessionHomeworkStatusName] ?? entry.followingSessionHomeworkStatusName}
+                            </Badge>
+                          )}
                       </p>
                     ) : null
                   )}
