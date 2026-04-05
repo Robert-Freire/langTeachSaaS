@@ -44,6 +44,14 @@ internal sealed class ExcelImporter
             result.SheetsProcessed++;
             var sheetName = worksheet.Name;
 
+            var profileNotes = CollectProfileNotes(worksheet);
+
+            if (IsBlankSheet(worksheet, profileNotes))
+            {
+                Console.WriteLine($"SKIP (blank sheet): {sheetName}");
+                continue;
+            }
+
             var student = StudentMatcher.FindStudent(sheetName, students);
             if (student is null)
             {
@@ -54,8 +62,6 @@ internal sealed class ExcelImporter
 
             Console.WriteLine($"Processing sheet: {sheetName} -> student: {student.Name}");
             result.SheetsMatched++;
-
-            var profileNotes = CollectProfileNotes(worksheet);
 
             var sessionsImported = await ImportSessionsAsync(worksheet, student);
             result.SessionsImported += sessionsImported.imported;
@@ -69,6 +75,23 @@ internal sealed class ExcelImporter
         }
 
         return result;
+    }
+
+    // A sheet is blank when it has no session dates and no profile notes.
+    // Used to skip template sheets like "Libre" that would otherwise create empty students.
+    internal static bool IsBlankSheet(IXLWorksheet worksheet, (string preply, string info) profileNotes)
+    {
+        if (profileNotes.preply.Length > 0 || profileNotes.info.Length > 0)
+            return false;
+
+        foreach (var row in worksheet.RowsUsed())
+        {
+            if (row.RowNumber() == 1) continue; // header
+            if (TryParseDate(row.Cell(1), out _))
+                return false;
+        }
+
+        return true;
     }
 
     private static (string preply, string info) CollectProfileNotes(IXLWorksheet worksheet)
