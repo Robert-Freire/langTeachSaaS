@@ -230,7 +230,7 @@ internal sealed class ExcelImporter
 
     private async Task<bool> AppendStudentNotesAsync(Student student, string preply, string info)
     {
-        const string marker = "[Excel import";
+        const string marker = "Preply test:";
 
         // Idempotency: do not append if already imported
         if (student.Notes?.Contains(marker) == true)
@@ -240,7 +240,7 @@ internal sealed class ExcelImporter
         if (preply.Length > 0) parts.Add($"Preply test: {preply}");
         if (info.Length > 0) parts.Add($"Student info: {info}");
 
-        var appendBlock = $"\n[Excel import {DateTime.UtcNow:yyyy-MM-dd}]\n{string.Join("\n", parts)}";
+        var appendBlock = $"\n{string.Join("\n", parts)}";
 
         Console.WriteLine($"  Appending profile notes for {student.Name}");
 
