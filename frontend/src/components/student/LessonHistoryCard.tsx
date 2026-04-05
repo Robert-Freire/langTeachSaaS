@@ -10,6 +10,18 @@ interface LessonHistoryCardProps {
   studentId: string
 }
 
+const HOMEWORK_STATUS_STYLES: Record<string, string> = {
+  Done: 'bg-green-50 text-green-700 border-green-200',
+  Partial: 'bg-amber-50 text-amber-700 border-amber-200',
+  NotDone: 'bg-red-50 text-red-700 border-red-200',
+}
+
+const HOMEWORK_STATUS_LABELS: Record<string, string> = {
+  Done: 'Done',
+  Partial: 'Partial',
+  NotDone: 'Not done',
+}
+
 const NOTE_LABELS: { key: 'whatWasCovered' | 'homeworkAssigned' | 'areasToImprove' | 'nextLessonIdeas' | 'emotionalSignals'; label: string; testId: string }[] = [
   { key: 'whatWasCovered', label: 'Covered', testId: 'lesson-history-whatWasCovered' },
   { key: 'homeworkAssigned', label: 'Homework', testId: 'lesson-history-homeworkAssigned' },
@@ -70,8 +82,20 @@ export function LessonHistoryCard({ studentId }: LessonHistoryCardProps) {
                 <div className="space-y-1">
                   {NOTE_LABELS.map(({ key, label, testId }) =>
                     entry[key] ? (
-                      <p key={key} className="text-xs text-zinc-600" data-testid={testId}>
+                      <p key={key} className="text-xs text-zinc-600 flex items-center gap-1.5 flex-wrap" data-testid={testId}>
                         <span className="font-medium text-zinc-700">{label}:</span> {entry[key]}
+                        {key === 'homeworkAssigned' &&
+                          entry.followingSessionHomeworkStatusName &&
+                          entry.followingSessionHomeworkStatusName !== 'NotApplicable' &&
+                          HOMEWORK_STATUS_STYLES[entry.followingSessionHomeworkStatusName] && (
+                            <Badge
+                              variant="outline"
+                              className={`text-xs px-1.5 py-0 ${HOMEWORK_STATUS_STYLES[entry.followingSessionHomeworkStatusName]}`}
+                              data-testid="lesson-history-hw-status-badge"
+                            >
+                              {HOMEWORK_STATUS_LABELS[entry.followingSessionHomeworkStatusName] ?? entry.followingSessionHomeworkStatusName}
+                            </Badge>
+                          )}
                       </p>
                     ) : null
                   )}
