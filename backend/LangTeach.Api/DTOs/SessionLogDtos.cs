@@ -20,7 +20,8 @@ public record SessionLogDto(
     Guid? LinkedLessonId,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    string TopicTags
+    string TopicTags,
+    bool IsCancelled
 );
 
 public class CreateSessionLogRequest
@@ -41,6 +42,7 @@ public class CreateSessionLogRequest
     public string? LevelReassessmentLevel { get; set; }
     public Guid? LinkedLessonId { get; set; }
     public string? TopicTags { get; set; }
+    public bool IsCancelled { get; set; }
 }
 
 public record StudentSessionSummaryDto(
@@ -70,4 +72,5 @@ public class UpdateSessionLogRequest
     public string? LevelReassessmentLevel { get; set; }
     public Guid? LinkedLessonId { get; set; }
     public string? TopicTags { get; set; }
+    public bool IsCancelled { get; set; }
 }
