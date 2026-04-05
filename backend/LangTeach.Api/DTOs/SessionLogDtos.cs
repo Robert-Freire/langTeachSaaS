@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using LangTeach.Api.Data.Models;
 
@@ -7,7 +6,7 @@ namespace LangTeach.Api.DTOs;
 public record SessionLogDto(
     Guid Id,
     Guid StudentId,
-    DateTime SessionDate,
+    DateTime? SessionDate,
     string? PlannedContent,
     string? ActualContent,
     string? HomeworkAssigned,
@@ -26,8 +25,7 @@ public record SessionLogDto(
 
 public class CreateSessionLogRequest
 {
-    [Required]
-    public DateTime SessionDate { get; set; }
+    public DateTime? SessionDate { get; set; }
 
     public string? PlannedContent { get; set; }
     public string? ActualContent { get; set; }
@@ -56,8 +54,7 @@ public record StudentSessionSummaryDto(
 
 public class UpdateSessionLogRequest
 {
-    [Required]
-    public DateTime SessionDate { get; set; }
+    public DateTime? SessionDate { get; set; }
 
     public string? PlannedContent { get; set; }
     public string? ActualContent { get; set; }

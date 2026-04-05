@@ -70,7 +70,7 @@ export function SessionLogDialog({
   const queryClient = useQueryClient()
 
   // Form state
-  const [sessionDate, setSessionDate] = useState(todayIso())
+  const [sessionDate, setSessionDate] = useState('')
   const [plannedContent, setPlannedContent] = useState('')
   const [actualContent, setActualContent] = useState('')
   const [homeworkAssigned, setHomeworkAssigned] = useState('')
@@ -92,7 +92,7 @@ export function SessionLogDialog({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open && initialSession) {
-      setSessionDate(initialSession.sessionDate.split('T')[0])
+      setSessionDate(initialSession.sessionDate ? initialSession.sessionDate.split('T')[0] : '')
       setPlannedContent(initialSession.plannedContent ?? '')
       setActualContent(initialSession.actualContent ?? '')
       setHomeworkAssigned(initialSession.homeworkAssigned ?? '')
@@ -126,7 +126,7 @@ export function SessionLogDialog({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!open) {
-      setSessionDate(todayIso())
+      setSessionDate('')
       setPlannedContent('')
       setActualContent('')
       setHomeworkAssigned('')
@@ -167,7 +167,7 @@ export function SessionLogDialog({
   const { mutate: submitLog, isPending } = useMutation({
     mutationFn: () => {
       const payload = {
-        sessionDate: sessionDate || todayIso(),
+        sessionDate: sessionDate || null,
         plannedContent: plannedContent || null,
         actualContent: actualContent || null,
         homeworkAssigned: homeworkAssigned || null,

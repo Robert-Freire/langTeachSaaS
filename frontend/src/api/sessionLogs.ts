@@ -8,7 +8,7 @@ export interface TopicTag {
 export interface SessionLog {
   id: string
   studentId: string
-  sessionDate: string
+  sessionDate: string | null
   plannedContent: string | null
   actualContent: string | null
   homeworkAssigned: string | null
@@ -26,7 +26,7 @@ export interface SessionLog {
 }
 
 export interface CreateSessionLogRequest {
-  sessionDate: string
+  sessionDate?: string | null
   plannedContent?: string | null
   actualContent?: string | null
   homeworkAssigned?: string | null
