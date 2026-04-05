@@ -64,6 +64,17 @@ export const E2E_TEST_EMAIL = 'e2e-test@langteach.io'
 export async function resetE2ETestTeacher(): Promise<void> {
   const pool = await new sql.ConnectionPool(config).connect()
   try {
+    // SessionLogs.StudentId has no cascade delete, so delete session logs first
+    // before the Teachers delete cascades to Students.
+    await pool
+      .request()
+      .input('email', sql.NVarChar, E2E_TEST_EMAIL)
+      .query(`
+        DELETE sl FROM SessionLogs sl
+        INNER JOIN Students s ON sl.StudentId = s.Id
+        INNER JOIN Teachers t ON s.TeacherId = t.Id
+        WHERE t.Email = @email
+      `)
     await pool
       .request()
       .input('email', sql.NVarChar, E2E_TEST_EMAIL)
