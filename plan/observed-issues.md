@@ -14,3 +14,5 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 | #186 | 2026-04-05 | low | `VoiceNote.DurationSeconds` always 0 - audio duration extraction not implemented. Field reserved for future use. |
 | #186 | 2026-04-05 | low | `VoiceNoteService`: blob upload before DB commit (orphan risk on failure). Consistent with `MaterialService` pattern. |
+| #186 | 2026-04-05 | dismissed | CodeRabbit: `AzureSpeechOptions.Language` startup validation - value is hardcoded `es-ES`, querying Azure locales API at startup is over-engineering |
+| #186 | 2026-04-05 | deferred | CodeRabbit: `IVoiceNoteBlobStorage` missing `DeleteAsync` - filed #512, no delete endpoint exists yet |
