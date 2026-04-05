@@ -356,8 +356,8 @@ public class CurriculumGenerationServiceTests
     {
         var personalizationJson = """
             [
-                {"orderIndex":1,"topic":"Marco at the registration office","contextDescription":"Marco tells the clerk his name and phone number at a Barcelona registration office.","personalizationNotes":"Extra ser/estar practice. No role-play, written exercises only."},
-                {"orderIndex":2,"topic":"Marco counts the seats at Camp Nou","contextDescription":"Marco uses numbers to count seats and prices at Camp Nou.","personalizationNotes":"Reinforce false cognates with Italian numbers."}
+                {"orderIndex":1,"topic":"Marco at the registration office","contextDescription":{"setting":"Barcelona registration office","scenario":"Marco tells the clerk his name and phone number."},"personalizationNotes":{"emphasisAreas":["ser/estar practice"],"constraints":["no role-play, written exercises only"],"l1Notes":[]}},
+                {"orderIndex":2,"topic":"Marco counts the seats at Camp Nou","contextDescription":{"setting":"Camp Nou","scenario":"Marco uses numbers to count seats and prices."},"personalizationNotes":{"emphasisAreas":[],"constraints":[],"l1Notes":["false cognates with Italian numbers"]}}
             ]
             """;
         var claude = new ConfigurableClaudeClient(personalizationJson);
@@ -372,9 +372,9 @@ public class CurriculumGenerationServiceTests
 
         var (entries, _) = await sut.GenerateAsync(ctx);
 
-        entries[0].ContextDescription.Should().Be("Marco tells the clerk his name and phone number at a Barcelona registration office.");
+        entries[0].ContextDescription.Should().Contain("Barcelona registration office");
         entries[0].PersonalizationNotes.Should().Contain("ser/estar");
-        entries[1].ContextDescription.Should().Be("Marco uses numbers to count seats and prices at Camp Nou.");
+        entries[1].ContextDescription.Should().Contain("Camp Nou");
         entries[1].PersonalizationNotes.Should().Contain("false cognates");
     }
 
@@ -384,8 +384,8 @@ public class CurriculumGenerationServiceTests
         // AI response where weakness emphasis ("ser/estar") appears in BOTH session notes
         var personalizationJson = """
             [
-                {"orderIndex":1,"topic":"Marco greets at the office","contextDescription":"Marco introduces himself at a Barcelona office.","personalizationNotes":"ser/estar focus: Marco uses 'soy' (not 'estoy') to introduce himself."},
-                {"orderIndex":2,"topic":"Marco discusses his work","contextDescription":"Marco talks about his job and daily routines.","personalizationNotes":"ser/estar revisited: describing permanent (ser) vs. temporary (estar) states."}
+                {"orderIndex":1,"topic":"Marco greets at the office","contextDescription":{"setting":"Barcelona office","scenario":"Marco introduces himself at a Barcelona office."},"personalizationNotes":{"emphasisAreas":["ser/estar focus: uses 'soy' not 'estoy'"],"constraints":[],"l1Notes":[]}},
+                {"orderIndex":2,"topic":"Marco discusses his work","contextDescription":{"setting":"Workplace","scenario":"Marco talks about his job and daily routines."},"personalizationNotes":{"emphasisAreas":["ser/estar revisited: permanent vs. temporary states"],"constraints":[],"l1Notes":[]}}
             ]
             """;
         var claude = new ConfigurableClaudeClient(personalizationJson);
@@ -418,8 +418,8 @@ public class CurriculumGenerationServiceTests
             """;
         var personalizationJson = """
             [
-                {"orderIndex":1,"topic":"Marco greets the team","contextDescription":"Marco introduces himself to his football team.","personalizationNotes":"Ser/estar focus for Italian speaker."},
-                {"orderIndex":2,"topic":"Marco counts goals","contextDescription":"Marco counts goals and match scores.","personalizationNotes":"Numbers in sports context."}
+                {"orderIndex":1,"topic":"Marco greets the team","contextDescription":{"setting":"Football team","scenario":"Marco introduces himself to his football team."},"personalizationNotes":{"emphasisAreas":["ser/estar focus for Italian speaker"],"constraints":[],"l1Notes":[]}},
+                {"orderIndex":2,"topic":"Marco counts goals","contextDescription":{"setting":"Football stadium","scenario":"Marco counts goals and match scores."},"personalizationNotes":{"emphasisAreas":["numbers in sports context"],"constraints":[],"l1Notes":[]}}
             ]
             """;
         var claude = new SequentialClaudeClient(freeGenJson, personalizationJson);
@@ -446,7 +446,7 @@ public class CurriculumGenerationServiceTests
             """;
         var personalizationJson = """
             [
-                {"orderIndex":1,"topic":"Marco greets the team","contextDescription":"Marco introduces himself to his football team in Barcelona.","personalizationNotes":"Ser/estar for Italian speaker."}
+                {"orderIndex":1,"topic":"Marco greets the team","contextDescription":{"setting":"Football team in Barcelona","scenario":"Marco introduces himself to his football team in Barcelona."},"personalizationNotes":{"emphasisAreas":["ser/estar for Italian speaker"],"constraints":[],"l1Notes":[]}}
             ]
             """;
         var claude = new SequentialClaudeClient(freeGenJson, personalizationJson);
@@ -460,7 +460,7 @@ public class CurriculumGenerationServiceTests
 
         var (entries, _) = await sut.GenerateAsync(ctx);
 
-        entries[0].ContextDescription.Should().Be("Marco introduces himself to his football team in Barcelona.");
-        entries[0].PersonalizationNotes.Should().Contain("Ser/estar");
+        entries[0].ContextDescription.Should().Contain("Football team in Barcelona");
+        entries[0].PersonalizationNotes.Should().Contain("ser/estar");
     }
 }

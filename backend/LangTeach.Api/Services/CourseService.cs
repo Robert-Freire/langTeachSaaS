@@ -354,7 +354,24 @@ public class CourseService : ICourseService
         );
 
     private static CurriculumEntryDto MapEntryToDto(CurriculumEntry e) =>
-        new(e.Id, e.OrderIndex, e.Topic, e.GrammarFocus, e.Competencies, e.LessonType, e.LessonId, e.Status, e.TemplateUnitRef, e.CompetencyFocus, e.ContextDescription, e.PersonalizationNotes, e.VocabularyThemes);
+        new(
+            e.Id,
+            e.OrderIndex,
+            e.Topic,
+            e.GrammarFocus,
+            e.Competencies,
+            e.LessonType,
+            e.LessonId,
+            e.Status,
+            e.TemplateUnitRef,
+            e.CompetencyFocus,
+            JsonStorageHelper.DeserializeWithFallback<ContextDescriptionData>(
+                e.ContextDescription,
+                text => new ContextDescriptionData(Setting: string.Empty, Scenario: text)),
+            JsonStorageHelper.DeserializeWithFallback<PersonalizationNotesData>(
+                e.PersonalizationNotes,
+                text => new PersonalizationNotesData(EmphasisAreas: [text], Constraints: [], L1Notes: [])),
+            e.VocabularyThemes);
 
     private static CourseDto MapToDto(Course c, List<CurriculumWarning>? warnings = null, List<string>? dismissedKeys = null) =>
         new(

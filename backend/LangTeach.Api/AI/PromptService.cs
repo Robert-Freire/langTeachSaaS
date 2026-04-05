@@ -1277,27 +1277,32 @@ public class PromptService : IPromptService
         sb.AppendLine($"The following {units.Count} sessions are fixed by the institutional curriculum. Their grammar focus and order must NOT change.");
         sb.AppendLine("For each session, provide:");
         sb.AppendLine("1. A short, student-specific topic title connecting the grammar to this student's world and interests.");
-        sb.AppendLine("2. A contextDescription: a one-sentence scenario drawn from the student's life (e.g., 'Marco tells the clerk his name and phone number at a Barcelona registration office.')");
-        sb.AppendLine("3. personalizationNotes: a brief note on emphasis areas or constraint compliance for this session (e.g., 'Extra ser/estar contrast practice. Written exercises only per teacher notes.')");
+        sb.AppendLine("2. contextDescription: an object with two string fields:");
+        sb.AppendLine("   - setting: the physical or social context drawn from the student's life (e.g., 'Barcelona registration office')");
+        sb.AppendLine("   - scenario: one sentence describing the student's action in that setting (e.g., 'Marco tells the clerk his name and phone number')");
+        sb.AppendLine("3. personalizationNotes: an object with three string-array fields:");
+        sb.AppendLine("   - emphasisAreas: areas of focus for this session based on known weaknesses (e.g., [\"ser/estar contrast\"])");
+        sb.AppendLine("   - constraints: teacher-note compliance items (e.g., [\"written exercises only\"])");
+        sb.AppendLine("   - l1Notes: L1-interference observations relevant to this session (e.g., [\"false cognates with French\"])");
         sb.AppendLine();
 
         if (ctx.StudentNativeLanguage is not null)
         {
-            sb.AppendLine($"L1 interference: the student's native language is {InputSanitizer.Sanitize(ctx.StudentNativeLanguage)}. Flag L1-specific challenges in personalizationNotes where relevant (false cognates, structures that differ from L1).");
+            sb.AppendLine($"L1 interference: the student's native language is {InputSanitizer.Sanitize(ctx.StudentNativeLanguage)}. Flag L1-specific challenges in personalizationNotes.l1Notes where relevant (false cognates, structures that differ from L1).");
             sb.AppendLine();
         }
 
         if (ctx.StudentWeaknesses?.Length > 0)
         {
             sb.AppendLine($"Known weaknesses: {string.Join(", ", ctx.StudentWeaknesses.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0))}");
-            sb.AppendLine("Spread emphasis on these weaknesses across multiple sessions in personalizationNotes, not just one.");
+            sb.AppendLine("Spread emphasis on these weaknesses across multiple sessions in personalizationNotes.emphasisAreas, not just one.");
             sb.AppendLine();
         }
 
         if (!string.IsNullOrWhiteSpace(ctx.TeacherNotes))
         {
             sb.AppendLine($"Teacher constraints: {InputSanitizer.Sanitize(ctx.TeacherNotes)}");
-            sb.AppendLine("Ensure personalizationNotes reflects compliance with these constraints (e.g., if 'no role-play', note 'written exercises only').");
+            sb.AppendLine("Ensure personalizationNotes.constraints reflects compliance with these constraints (e.g., if 'no role-play', add 'written exercises only').");
             sb.AppendLine();
         }
 
@@ -1314,7 +1319,7 @@ public class PromptService : IPromptService
 
         sb.AppendLine();
         sb.AppendLine($"Return a JSON array with exactly {units.Count} objects:");
-        sb.AppendLine("[{ \"orderIndex\": 1, \"topic\": \"...\", \"contextDescription\": \"...\", \"personalizationNotes\": \"...\" }, ...]");
+        sb.AppendLine("[{ \"orderIndex\": 1, \"topic\": \"...\", \"contextDescription\": { \"setting\": \"...\", \"scenario\": \"...\" }, \"personalizationNotes\": { \"emphasisAreas\": [...], \"constraints\": [...], \"l1Notes\": [...] } }, ...]");
         sb.AppendLine("Output ONLY the JSON array. No markdown, no explanation.");
 
         return sb.ToString();

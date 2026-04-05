@@ -10,6 +10,17 @@ export interface CurriculumWarning {
   suggestedLevel: string | null
 }
 
+export interface ContextDescriptionData {
+  setting: string
+  scenario: string
+}
+
+export interface PersonalizationNotesData {
+  emphasisAreas: string[]
+  constraints: string[]
+  l1Notes: string[]
+}
+
 export interface CurriculumEntry {
   id: string
   orderIndex: number
@@ -19,8 +30,8 @@ export interface CurriculumEntry {
   lessonType: string | null
   lessonId: string | null
   status: EntryStatus
-  contextDescription: string | null
-  personalizationNotes: string | null
+  contextDescription: ContextDescriptionData | null
+  personalizationNotes: PersonalizationNotesData | null
   vocabularyThemes: string | null
 }
 

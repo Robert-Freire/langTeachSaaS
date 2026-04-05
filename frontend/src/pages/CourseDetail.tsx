@@ -363,26 +363,31 @@ function SortableEntryRow({
               )}
 
               {entry.contextDescription && (
-                <div>
+                <div data-testid={`context-description-${idx}`}>
                   <p className="text-xs font-medium text-zinc-500 mb-1">Personalized context</p>
-                  <p
-                    data-testid={`context-description-${idx}`}
-                    className="text-sm text-zinc-700 bg-blue-50 border border-blue-100 rounded-md px-3 py-2"
-                  >
-                    {entry.contextDescription}
-                  </p>
+                  <div className="text-sm text-zinc-700 bg-blue-50 border border-blue-100 rounded-md px-3 py-2 space-y-0.5">
+                    {entry.contextDescription.setting && (
+                      <p className="text-xs text-zinc-500">{entry.contextDescription.setting}</p>
+                    )}
+                    <p>{entry.contextDescription.scenario}</p>
+                  </div>
                 </div>
               )}
 
               {entry.personalizationNotes && (
-                <div>
+                <div data-testid={`personalization-notes-${idx}`}>
                   <p className="text-xs font-medium text-zinc-500 mb-1">Personalization rationale</p>
-                  <p
-                    data-testid={`personalization-notes-${idx}`}
-                    className="text-xs text-zinc-500 italic"
-                  >
-                    {entry.personalizationNotes}
-                  </p>
+                  <div className="text-xs text-zinc-500 space-y-1">
+                    {entry.personalizationNotes.emphasisAreas.length > 0 && (
+                      <p><span className="font-medium">Emphasis:</span> {entry.personalizationNotes.emphasisAreas.join(' · ')}</p>
+                    )}
+                    {entry.personalizationNotes.constraints.length > 0 && (
+                      <p><span className="font-medium">Constraints:</span> {entry.personalizationNotes.constraints.join(' · ')}</p>
+                    )}
+                    {entry.personalizationNotes.l1Notes.length > 0 && (
+                      <p><span className="font-medium">L1:</span> {entry.personalizationNotes.l1Notes.join(' · ')}</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
