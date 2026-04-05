@@ -170,6 +170,7 @@ builder.Services.AddSingleton<IVoiceNoteBlobStorage>(sp => sp.GetRequiredService
 builder.Services.AddScoped<IVoiceNoteService, VoiceNoteService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<ILessonNoteService, LessonNoteService>();
+builder.Services.AddScoped<IReflectionExtractionService, ReflectionExtractionService>();
 builder.Services.AddScoped<ISessionLogService, SessionLogService>();
 builder.Services.AddScoped<ISessionHistoryService, SessionHistoryService>();
 builder.Services.AddScoped<ICurriculumGenerationService, CurriculumGenerationService>();

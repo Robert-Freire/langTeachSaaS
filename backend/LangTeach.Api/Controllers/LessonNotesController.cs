@@ -12,15 +12,18 @@ namespace LangTeach.Api.Controllers;
 public class LessonNotesController : ControllerBase
 {
     private readonly ILessonNoteService _lessonNoteService;
+    private readonly IReflectionExtractionService _extractionService;
     private readonly IProfileService _profileService;
     private readonly ILogger<LessonNotesController> _logger;
 
     public LessonNotesController(
         ILessonNoteService lessonNoteService,
+        IReflectionExtractionService extractionService,
         IProfileService profileService,
         ILogger<LessonNotesController> logger)
     {
         _lessonNoteService = lessonNoteService;
+        _extractionService = extractionService;
         _profileService = profileService;
         _logger = logger;
     }
@@ -65,5 +68,16 @@ public class LessonNotesController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    [HttpPost("extract")]
+    public async Task<IActionResult> Extract(Guid lessonId, [FromBody] ExtractReflectionRequest request, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        _logger.LogInformation("POST /api/lessons/{LessonId}/notes/extract. Auth0Id={Auth0Id}", lessonId, Auth0Id);
+        var extracted = await _extractionService.ExtractAsync(request.Text, cancellationToken);
+        return Ok(extracted);
     }
 }

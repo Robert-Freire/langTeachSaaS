@@ -8,5 +8,6 @@ public record LessonHistoryEntryDto(
     string? WhatWasCovered,
     string? HomeworkAssigned,
     string? AreasToImprove,
-    string? NextLessonIdeas
+    string? NextLessonIdeas,
+    string? EmotionalSignals
 );
