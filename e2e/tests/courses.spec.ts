@@ -271,9 +271,30 @@ test('generate lesson from curriculum entry navigates to LessonNew pre-filled', 
 
   const STUDENT_ID = '00000000-0000-0000-0000-000000000001'
 
+  // Only register the course mock before navigating — lesson-templates and
+  // students mocks are only needed for the subsequent LessonNew navigation and
+  // must not be active while the course page loads (they can interfere with
+  // the profile fetch that drives OnboardingGuard).
   await page.route(`**/api/courses/${STUDENT_COURSE_ID}`, async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(courseWithStudent) })
   })
+
+  await page.goto(`/courses/${STUDENT_COURSE_ID}`)
+  await expect(page.getByTestId('course-title')).toHaveText('B2 English Course', { timeout: NAV_TIMEOUT })
+
+  // Verify "Not generated" badge on the first planned entry
+  await expect(page.getByTestId('curriculum-entry-0')).toContainText('Not generated')
+
+  // Verify the generate lesson link has the expected URL params (check href without clicking)
+  const generateLink = page.getByTestId('generate-lesson-0')
+  const href = await generateLink.getAttribute('href')
+  expect(href).toContain('level=B2')
+  expect(href).toContain(`studentId=${STUDENT_ID}`)
+  expect(href).toContain('language=English')
+  expect(href).toContain('topic=Greetings')
+
+  // Register LessonNew mocks now (after course page has loaded) so they don't
+  // interfere with the profile fetch that drives OnboardingGuard.
   await page.route('**/api/lesson-templates', async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
   })
@@ -287,34 +308,6 @@ test('generate lesson from curriculum entry navigates to LessonNew pre-filled', 
       }),
     })
   })
-
-  const pageErrors: string[] = []
-  page.on('pageerror', err => pageErrors.push(err.message))
-
-  await page.goto(`/courses/${STUDENT_COURSE_ID}`)
-
-  // Wait for either course-title or course-load-error to diagnose failure mode
-  await Promise.race([
-    page.getByTestId('course-title').waitFor({ state: 'visible', timeout: NAV_TIMEOUT }),
-    page.getByTestId('course-load-error').waitFor({ state: 'visible', timeout: NAV_TIMEOUT }),
-  ]).catch(async () => {
-    const url = page.url()
-    const bodyText = await page.locator('body').innerText().catch(() => '(could not get body text)')
-    const errors = pageErrors.join('; ') || '(none)'
-    throw new Error(`course page did not render in ${NAV_TIMEOUT}ms. URL: ${url}. Page errors: ${errors}. Body: ${bodyText.slice(0, 500)}`)
-  })
-  await expect(page.getByTestId('course-title')).toHaveText('B2 English Course', { timeout: UI_TIMEOUT })
-
-  // Verify "Not generated" badge on the first planned entry
-  await expect(page.getByTestId('curriculum-entry-0')).toContainText('Not generated')
-
-  // Verify the generate lesson link has the expected URL params (check href without clicking)
-  const generateLink = page.getByTestId('generate-lesson-0')
-  const href = await generateLink.getAttribute('href')
-  expect(href).toContain('level=B2')
-  expect(href).toContain(`studentId=${STUDENT_ID}`)
-  expect(href).toContain('language=English')
-  expect(href).toContain('topic=Greetings')
 
   // Click "Generate lesson" — should navigate to LessonNew step 2 (auto-advanced due to entryId param)
   await generateLink.click()
