@@ -1,5 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionLogDialog } from './SessionLogDialog'
@@ -138,6 +139,110 @@ describe('SessionLogDialog', () => {
     await waitFor(() => {
       const textarea = screen.getByTestId('planned-content') as HTMLTextAreaElement
       expect(textarea.value).toBe('Unit 3: Practice ser/estar in context')
+    })
+  })
+
+  it('auto-populates planned content when lesson is selected from dropdown', async () => {
+    const user = userEvent.setup()
+
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+    vi.mocked(lessonsApi.getLessons).mockResolvedValue({
+      items: [{
+        id: 'lesson-99',
+        title: 'Unit 5',
+        objectives: 'Practice subjunctive mood',
+        studentId: STUDENT_ID,
+        language: 'Spanish',
+        cefrLevel: 'B1',
+        topic: 'Subjunctive',
+        durationMinutes: 60,
+        status: 'Published' as const,
+        templateId: null,
+        templateName: null,
+        sections: [],
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+        scheduledAt: null,
+        studentName: 'Test Student',
+        learningTargets: null,
+      }],
+      totalCount: 1,
+      page: 1,
+      pageSize: 100,
+    })
+
+    wrapper(
+      <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+    )
+
+    // Wait for the lesson selector to appear
+    await waitFor(() => {
+      expect(screen.getByTestId('linked-lesson')).toBeInTheDocument()
+    })
+
+    // Open the Select dropdown and pick the lesson
+    await user.click(screen.getByTestId('linked-lesson'))
+    await user.click(await screen.findByRole('option', { name: 'Unit 5' }))
+
+    // Planned content should be auto-populated
+    await waitFor(() => {
+      const textarea = screen.getByTestId('planned-content') as HTMLTextAreaElement
+      expect(textarea.value).toBe('Unit 5: Practice subjunctive mood')
+    })
+  })
+
+  it('sends linkedLessonId in payload when lesson is selected', async () => {
+    const user = userEvent.setup()
+
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+    vi.mocked(sessionLogsApi.createSession).mockResolvedValue({
+      ...SAMPLE_SESSION,
+      id: 'new-session',
+      linkedLessonId: 'lesson-99',
+    })
+    vi.mocked(lessonsApi.getLessons).mockResolvedValue({
+      items: [{
+        id: 'lesson-99',
+        title: 'Unit 5',
+        objectives: 'Practice subjunctive mood',
+        studentId: STUDENT_ID,
+        language: 'Spanish',
+        cefrLevel: 'B1',
+        topic: 'Subjunctive',
+        durationMinutes: 60,
+        status: 'Published' as const,
+        templateId: null,
+        templateName: null,
+        sections: [],
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+        scheduledAt: null,
+        studentName: 'Test Student',
+        learningTargets: null,
+      }],
+      totalCount: 1,
+      page: 1,
+      pageSize: 100,
+    })
+
+    wrapper(
+      <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+    )
+
+    await waitFor(() => expect(screen.getByTestId('linked-lesson')).toBeInTheDocument())
+
+    await user.click(screen.getByTestId('linked-lesson'))
+    await user.click(await screen.findByRole('option', { name: 'Unit 5' }))
+
+    // Submit the form
+    const form = screen.getByTestId('session-log-dialog').querySelector('form')!
+    fireEvent.submit(form)
+
+    await waitFor(() => {
+      expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledWith(
+        STUDENT_ID,
+        expect.objectContaining({ linkedLessonId: 'lesson-99' }),
+      )
     })
   })
 
