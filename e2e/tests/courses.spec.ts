@@ -288,8 +288,22 @@ test('generate lesson from curriculum entry navigates to LessonNew pre-filled', 
     })
   })
 
+  const pageErrors: string[] = []
+  page.on('pageerror', err => pageErrors.push(err.message))
+
   await page.goto(`/courses/${STUDENT_COURSE_ID}`)
-  await expect(page.getByTestId('course-title')).toHaveText('B2 English Course', { timeout: NAV_TIMEOUT })
+
+  // Wait for either course-title or course-load-error to diagnose failure mode
+  await Promise.race([
+    page.getByTestId('course-title').waitFor({ state: 'visible', timeout: NAV_TIMEOUT }),
+    page.getByTestId('course-load-error').waitFor({ state: 'visible', timeout: NAV_TIMEOUT }),
+  ]).catch(async () => {
+    const url = page.url()
+    const bodyText = await page.locator('body').innerText().catch(() => '(could not get body text)')
+    const errors = pageErrors.join('; ') || '(none)'
+    throw new Error(`course page did not render in ${NAV_TIMEOUT}ms. URL: ${url}. Page errors: ${errors}. Body: ${bodyText.slice(0, 500)}`)
+  })
+  await expect(page.getByTestId('course-title')).toHaveText('B2 English Course', { timeout: UI_TIMEOUT })
 
   // Verify "Not generated" badge on the first planned entry
   await expect(page.getByTestId('curriculum-entry-0')).toContainText('Not generated')
