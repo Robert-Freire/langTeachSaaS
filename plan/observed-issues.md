@@ -18,3 +18,5 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #186 | 2026-04-05 | deferred | CodeRabbit: `IVoiceNoteBlobStorage` missing `DeleteAsync` - filed #512, no delete endpoint exists yet |
 | #186 | 2026-04-05 | deferred | CodeRabbit: audio file magic bytes / signature validation on upload - filed #513 |
 | #186 | 2026-04-05 | dismissed | CodeRabbit: orphaned blob on transcription/DB failure - fix depends on DeleteAsync in #512 |
+| #187 | 2026-04-05 | low | `VoiceNote` model: `BlobPath`, `OriginalFileName`, `ContentType` have no `[MaxLength]` - will be nvarchar(max) in SQL |
+| #187 | 2026-04-05 | low | `AudioRecorder`: rapid double-click on Upload could trigger two concurrent uploads before state update prevents second |

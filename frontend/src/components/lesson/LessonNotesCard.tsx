@@ -37,6 +37,7 @@ export function LessonNotesCard({ lessonId, studentId }: LessonNotesCardProps) {
 
   const [voiceNote, setVoiceNote] = useState<VoiceNote | null>(null)
   const [extracting, setExtracting] = useState(false)
+  const [extractError, setExtractError] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<ExtractedReflection | null>(null)
 
   const { data: notes } = useQuery({
@@ -93,9 +94,12 @@ export function LessonNotesCard({ lessonId, studentId }: LessonNotesCardProps) {
   async function handleExtract() {
     if (!voiceNote?.transcription) return
     setExtracting(true)
+    setExtractError(null)
     try {
       const extracted = await extractReflectionNotes(lessonId, voiceNote.transcription)
       setSuggestions(extracted)
+    } catch {
+      setExtractError('Could not extract notes. Please try again.')
     } finally {
       setExtracting(false)
     }
@@ -162,6 +166,9 @@ export function LessonNotesCard({ lessonId, studentId }: LessonNotesCardProps) {
                   'Extract notes from transcription'
                 )}
               </Button>
+              {extractError && (
+                <p className="text-xs text-red-600" data-testid="extract-error">{extractError}</p>
+              )}
             </div>
           )}
 

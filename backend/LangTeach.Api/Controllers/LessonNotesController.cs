@@ -76,7 +76,8 @@ public class LessonNotesController : ControllerBase
         if (Auth0Id is null) return Unauthorized();
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        _logger.LogInformation("POST /api/lessons/{LessonId}/notes/extract. Auth0Id={Auth0Id}", lessonId, Auth0Id);
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        _logger.LogInformation("POST /api/lessons/{LessonId}/notes/extract. TeacherId={TeacherId}", lessonId, teacherId);
         var extracted = await _extractionService.ExtractAsync(request.Text, cancellationToken);
         return Ok(extracted);
     }

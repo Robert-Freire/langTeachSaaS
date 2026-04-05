@@ -35,13 +35,11 @@ export function SuggestedNotesPanel({ suggestions, onApplyAll, onDismiss }: Sugg
   }
 
   function handleApplyAll() {
-    const values: Partial<SaveLessonNotesRequest> = {}
-    for (const { key, formKey } of SUGGESTION_FIELDS) {
-      if (suggestions[key]) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(values as any)[formKey] = suggestions[key]
-      }
-    }
+    const values = Object.fromEntries(
+      SUGGESTION_FIELDS
+        .filter(({ key }) => suggestions[key])
+        .map(({ key, formKey }) => [formKey, suggestions[key]])
+    ) as Partial<SaveLessonNotesRequest>
     onApplyAll(values)
   }
 
