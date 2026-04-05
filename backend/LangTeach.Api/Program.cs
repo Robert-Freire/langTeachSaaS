@@ -55,7 +55,8 @@ if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("
             "Auth0:Audience",
             "Claude:ApiKey",
             "AzureBlobStorage:ConnectionString",
-            "OpenAI:ApiKey",
+            "AzureSpeech:ApiKey",
+            "AzureSpeech:Region",
         ]);
 }
 
@@ -120,11 +121,10 @@ builder.Services.AddHttpClient("Claude", (sp, client) =>
     client.DefaultRequestHeaders.Add("x-api-key", opts.ApiKey);
     client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
 });
-builder.Services.AddHttpClient("OpenAI", client =>
+builder.Services.AddHttpClient("AzureSpeech", client =>
 {
-    var apiKey = builder.Configuration["OpenAI:ApiKey"] ?? "";
-    client.BaseAddress = new Uri("https://api.openai.com");
-    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+    var apiKey = builder.Configuration["AzureSpeech:ApiKey"] ?? "";
+    client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", apiKey);
     client.Timeout = TimeSpan.FromSeconds(60);
 });
 builder.Services.AddScoped<IClaudeClient, ClaudeApiClient>();
@@ -158,10 +158,12 @@ builder.Services.AddSingleton<BlobStorageService>();
 builder.Services.AddSingleton<IBlobStorageService>(sp => sp.GetRequiredService<BlobStorageService>());
 builder.Services.AddScoped<IMaterialService, MaterialService>();
 
+builder.Services.Configure<AzureSpeechOptions>(builder.Configuration.GetSection(AzureSpeechOptions.SectionName));
+
 if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddScoped<ITranscriptionService, StubTranscriptionService>();
 else
-    builder.Services.AddScoped<ITranscriptionService, WhisperTranscriptionService>();
+    builder.Services.AddScoped<ITranscriptionService, AzureSpeechTranscriptionService>();
 
 builder.Services.AddSingleton<VoiceNoteBlobStorage>();
 builder.Services.AddSingleton<IVoiceNoteBlobStorage>(sp => sp.GetRequiredService<VoiceNoteBlobStorage>());
