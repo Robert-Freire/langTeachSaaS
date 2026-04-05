@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronUp, Trash2, Pencil, ExternalLink, FileText, BookOpen } from 'lucide-react'
+import { ChevronDown, ChevronUp, Trash2, Pencil, ExternalLink, BookOpen } from 'lucide-react'
 import { SessionSummaryHeader } from './SessionSummaryHeader'
 import { SessionLogDialog } from './SessionLogDialog'
 import { logger } from '../../lib/logger'
@@ -50,13 +50,6 @@ function tagCategoryClass(category?: string): string {
   return 'bg-zinc-100 text-zinc-600 border-zinc-200'
 }
 
-function notesCount(session: SessionLog): number {
-  let count = 0
-  if (session.generalNotes) count++
-  if (session.nextSessionTopics) count++
-  return count
-}
-
 function SessionEntry({
   session,
   studentId,
@@ -85,7 +78,8 @@ function SessionEntry({
   })
 
   const topicTags = parseTopicTags(session.topicTags)
-  const notes = notesCount(session)
+  const hasActionItem = Boolean(session.nextSessionTopics)
+  const hasNote = Boolean(session.generalNotes)
   const hwStatus = session.previousHomeworkStatusName
 
   return (
@@ -108,10 +102,16 @@ function SessionEntry({
                 {formatDate(session.sessionDate)}
               </span>
               <span className="text-xs text-zinc-400">{relativeTime(session.sessionDate)}</span>
-              {notes > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
-                  <FileText className="h-3 w-3" />
-                  {notes} {notes === 1 ? 'note' : 'notes'}
+              {hasActionItem && (
+                <span className="inline-flex items-center gap-1 text-xs text-amber-600" data-testid="action-item-count">
+                  <span className="bg-amber-400 rounded-full w-1.5 h-1.5 shrink-0" />
+                  1 action item
+                </span>
+              )}
+              {hasNote && (
+                <span className="inline-flex items-center gap-1 text-xs text-zinc-400" data-testid="general-note-count">
+                  <span className="bg-zinc-300 rounded-full w-1.5 h-1.5 shrink-0" />
+                  1 note
                 </span>
               )}
             </div>
