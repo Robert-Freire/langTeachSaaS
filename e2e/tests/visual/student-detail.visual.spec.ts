@@ -4,7 +4,7 @@ import { setupMockTeacher } from '../../helpers/mock-teacher-helper'
 import { NAV_TIMEOUT, UI_TIMEOUT } from '../../helpers/timeouts'
 import * as fs from 'fs'
 
-const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
+const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5178'
 const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 
 let studentId = ''
