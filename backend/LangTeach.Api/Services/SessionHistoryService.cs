@@ -25,7 +25,7 @@ public class SessionHistoryService : ISessionHistoryService
         CancellationToken ct = default)
     {
         var sessions = await _db.SessionLogs
-            .Where(sl => sl.TeacherId == teacherId && sl.StudentId == studentId && !sl.IsDeleted)
+            .Where(sl => sl.TeacherId == teacherId && sl.StudentId == studentId && !sl.IsDeleted && !sl.IsCancelled)
             .OrderByDescending(sl => sl.SessionDate)
             .Take(5)
             .ToListAsync(ct);

@@ -46,6 +46,7 @@ function todayIso(): string {
   return `${y}-${m}-${d}`
 }
 
+
 export interface SessionLogDialogProps {
   studentId: string
   open: boolean
@@ -81,6 +82,7 @@ export function SessionLogDialog({
   const [reassessmentSkill, setReassessmentSkill] = useState('')
   const [reassessmentLevel, setReassessmentLevel] = useState('')
   const [selectedLessonId, setSelectedLessonId] = useState(linkedLessonId ?? '')
+  const [isCancelled, setIsCancelled] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [success, setSuccess] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -102,6 +104,7 @@ export function SessionLogDialog({
       setReassessmentSkill(initialSession.levelReassessmentSkill ?? '')
       setReassessmentLevel(initialSession.levelReassessmentLevel ?? '')
       setSelectedLessonId(initialSession.linkedLessonId ?? '')
+      setIsCancelled(initialSession.isCancelled ?? false)
     }
   }, [open, initialSession])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -135,6 +138,7 @@ export function SessionLogDialog({
       setReassessmentSkill('')
       setReassessmentLevel('')
       setSelectedLessonId(linkedLessonId ?? '')
+      setIsCancelled(false)
       setErrors({})
       setSuccess(false)
       setSubmitError(null)
@@ -174,6 +178,7 @@ export function SessionLogDialog({
         levelReassessmentLevel: reassessmentEnabled ? reassessmentLevel || null : null,
         linkedLessonId: selectedLessonId || null,
         topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
+        isCancelled,
       }
       return isEditMode
         ? updateSession(studentId, initialSession.id, payload)
@@ -202,7 +207,6 @@ export function SessionLogDialog({
   function validate(): boolean {
     const errs: Record<string, string> = {}
     if (!sessionDate) errs.sessionDate = 'Date is required.'
-    else if (sessionDate > todayIso()) errs.sessionDate = 'Session date cannot be in the future.'
     if (!plannedContent && !actualContent) {
       errs.content = 'At least one of "What was planned" or "What was actually done" is required.'
     }
@@ -260,13 +264,27 @@ export function SessionLogDialog({
                 id="session-date"
                 type="date"
                 value={sessionDate}
-                max={todayIso()}
                 onChange={(e) => setSessionDate(e.target.value)}
                 required
                 data-testid="session-date"
                 className="text-sm"
               />
               {errors.sessionDate && <p className="text-xs text-red-600">{errors.sessionDate}</p>}
+            </div>
+
+            {/* Cancelled toggle */}
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="cancelled-toggle"
+                checked={isCancelled}
+                onChange={(e) => setIsCancelled(e.target.checked)}
+                className="h-4 w-4 rounded border-zinc-300 text-indigo-600"
+                data-testid="cancelled-toggle"
+              />
+              <Label htmlFor="cancelled-toggle" className="text-sm cursor-pointer">
+                Cancelled
+              </Label>
             </div>
 
             {/* Planned content */}

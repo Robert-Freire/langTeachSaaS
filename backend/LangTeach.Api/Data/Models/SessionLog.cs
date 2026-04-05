@@ -16,6 +16,7 @@ public class SessionLog
     public string? LevelReassessmentLevel { get; set; }
     public Guid? LinkedLessonId { get; set; }
     public bool IsDeleted { get; set; }
+    public bool IsCancelled { get; set; }
     public string TopicTags { get; set; } = "[]";
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
