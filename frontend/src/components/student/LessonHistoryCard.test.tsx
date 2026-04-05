@@ -47,6 +47,7 @@ describe('LessonHistoryCard', () => {
         homeworkAssigned: null,
         areasToImprove: 'Pronunciation',
         nextLessonIdeas: null,
+        emotionalSignals: null,
         followingSessionHomeworkStatus: null,
         followingSessionHomeworkStatusName: null,
       },
@@ -59,6 +60,7 @@ describe('LessonHistoryCard', () => {
         homeworkAssigned: 'Worksheet 3',
         areasToImprove: null,
         nextLessonIdeas: null,
+        emotionalSignals: null,
         followingSessionHomeworkStatus: null,
         followingSessionHomeworkStatusName: null,
       },
@@ -87,6 +89,8 @@ describe('LessonHistoryCard', () => {
     areasToImprove: null,
     nextLessonIdeas: null,
     emotionalSignals: null,
+    followingSessionHomeworkStatus: null,
+    followingSessionHomeworkStatusName: null,
   }
 
   it('shows green badge when homework was Done', async () => {

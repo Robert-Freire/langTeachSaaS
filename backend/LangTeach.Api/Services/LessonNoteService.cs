@@ -128,7 +128,7 @@ public class LessonNoteService : ILessonNoteService
                 FollowingSessionHomeworkStatus = _db.SessionLogs
                     .Where(sl => sl.TeacherId == teacherId && sl.StudentId == studentId && !sl.IsDeleted
                         && sl.SessionDate > (x.Lesson.ScheduledAt ?? x.Lesson.CreatedAt))
-                    .OrderBy(sl => sl.SessionDate)
+                    .OrderBy(sl => sl.SessionDate).ThenBy(sl => sl.Id)
                     .Select(sl => (HomeworkStatus?)sl.PreviousHomeworkStatus)
                     .FirstOrDefault(),
             })
