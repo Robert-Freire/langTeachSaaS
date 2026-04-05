@@ -1,74 +1,97 @@
 import { test, expect } from '@playwright/test'
-import { createCourse, deleteCourse } from './helpers/courses'
-import { loginAsTeacher } from './helpers/auth'
+import { createMockAuthContext } from '../helpers/auth-helper'
+import { setupMockTeacher } from '../helpers/mock-teacher-helper'
+import { NAV_TIMEOUT, UI_TIMEOUT } from '../helpers/timeouts'
 
-// This spec exercises the AI generation quality guardrails feature.
-// The e2e stack uses a mock Claude that returns deterministic responses,
-// so warnings will only appear when the mock is configured to return them.
-// The primary happy-path here verifies that:
-// 1. A course with no warnings shows no warning panel.
-// 2. When warnings are seeded directly in the DB (via API), they display in the UI.
-// 3. The dismiss button removes a warning from the visible list.
+const COURSE_ID = '00000000-0000-0000-0000-000000000498'
 
-test.describe('AI generation quality guardrails', () => {
-  test('course without warnings shows no warning panel', async ({ page }) => {
-    await loginAsTeacher(page)
+const BASE_COURSE = {
+  id: COURSE_ID,
+  name: 'Guardrails Test Course',
+  description: null,
+  language: 'Spanish',
+  mode: 'general',
+  targetCefrLevel: 'A2',
+  targetExam: null,
+  examDate: null,
+  sessionCount: 3,
+  studentId: null,
+  studentName: null,
+  lessonsCreated: 0,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  entries: [],
+  dismissedWarningKeys: null,
+}
 
-    // Create a template-based course (template generation skips validation → no warnings)
-    const courseId = await createCourse(page, {
-      name: 'Guardrail Test - No Warnings',
-      language: 'Spanish',
-      mode: 'general',
-      templateLevel: 'A1.1',
+const WARNING = {
+  sessionIndex: 0,
+  grammarFocus: 'Present simple',
+  flagReason: 'Structure is below the target level for A2.',
+  suggestedLevel: null,
+}
+
+test.beforeAll(async ({ browser }) => {
+  const ctx = await createMockAuthContext(browser)
+  const page = await ctx.newPage()
+  await setupMockTeacher(page)
+  await page.close()
+  await ctx.close()
+})
+
+test('course without warnings shows no warning panel', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  await page.route(`**/api/courses/${COURSE_ID}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ...BASE_COURSE, warnings: [] }),
     })
-
-    await page.goto(`/courses/${courseId}`)
-    await page.waitForSelector('[data-testid="course-title"]')
-
-    await expect(page.getByTestId('warnings-panel')).not.toBeVisible()
-    await expect(page.getByTestId('warnings-panel-clear')).not.toBeVisible()
-
-    await deleteCourse(page, courseId)
   })
 
-  test('course with warnings shows panel and dismiss removes warning', async ({ page, request }) => {
-    await loginAsTeacher(page)
+  await page.goto(`/courses/${COURSE_ID}`)
+  await expect(page.getByTestId('course-title')).toBeVisible({ timeout: NAV_TIMEOUT })
 
-    // Create a free-mode course first, then inject a warning via the dismiss endpoint test
-    // by verifying the UI renders when warnings are present in the API response.
-    // We use the API directly to set up state.
-    const courseId = await createCourse(page, {
-      name: 'Guardrail Test - With Warning',
-      language: 'Spanish',
-      mode: 'general',
-      targetCefrLevel: 'A1',
-      sessionCount: 2,
-    })
+  await expect(page.getByTestId('warnings-panel')).not.toBeVisible()
+  await expect(page.getByTestId('warnings-panel-clear')).not.toBeVisible()
 
-    // Navigate to the course — if the mock Claude returns a warning for this free course,
-    // the panel will be visible. If it returns no warnings (mock returns []), we still
-    // confirm the UI renders without errors.
-    await page.goto(`/courses/${courseId}`)
-    await page.waitForSelector('[data-testid="course-title"]')
+  await context.close()
+})
 
-    // The page should load without errors regardless of whether warnings are present.
-    await expect(page.getByTestId('course-title')).toBeVisible()
-    await expect(page.getByTestId('curriculum-list')).toBeVisible()
+test('course with warning shows panel and dismiss clears it', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
 
-    // If a warnings panel appears, test the dismiss flow.
-    const warningsPanel = page.getByTestId('warnings-panel')
-    if (await warningsPanel.isVisible()) {
-      const dismissButtons = page.locator('[data-testid^="dismiss-warning-"]')
-      const count = await dismissButtons.count()
-      if (count > 0) {
-        await dismissButtons.first().click()
-        // After dismiss, either the panel disappears or shows the clear badge
-        await expect(
-          page.getByTestId('warnings-panel').or(page.getByTestId('warnings-panel-clear'))
-        ).toBeVisible()
-      }
-    }
+  let warningDismissed = false
 
-    await deleteCourse(page, courseId)
+  await page.route(`**/api/courses/${COURSE_ID}/warnings/dismiss`, async (route) => {
+    warningDismissed = true
+    await route.fulfill({ status: 204 })
   })
+
+  await page.route(`**/api/courses/${COURSE_ID}`, async (route) => {
+    const body = warningDismissed
+      ? {
+          ...BASE_COURSE,
+          warnings: [WARNING],
+          dismissedWarningKeys: [`session:${WARNING.sessionIndex}:${WARNING.grammarFocus}`],
+        }
+      : { ...BASE_COURSE, warnings: [WARNING], dismissedWarningKeys: null }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
+  })
+
+  await page.goto(`/courses/${COURSE_ID}`)
+  await expect(page.getByTestId('course-title')).toBeVisible({ timeout: NAV_TIMEOUT })
+
+  const warningsPanel = page.getByTestId('warnings-panel')
+  await expect(warningsPanel).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await page.getByTestId(`dismiss-warning-${WARNING.sessionIndex}`).click()
+
+  await expect(warningsPanel).not.toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('warnings-panel-clear')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await context.close()
 })

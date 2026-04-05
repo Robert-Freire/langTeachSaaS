@@ -46,6 +46,9 @@ jobs:
     if: needs.check-changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
@@ -114,7 +117,7 @@ jobs:
           echo "Frontend is ready."
 
       - name: Run Playwright tests
-        run: npx playwright test --reporter=html
+        run: npx playwright test --project mock-auth --project parallel --project serial --reporter=html
         working-directory: e2e
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:5173
@@ -140,6 +143,32 @@ jobs:
           name: docker-compose-logs
           path: docker-compose.log
           retention-days: 7
+
+      - name: Create failure issue
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const today = new Date().toISOString().slice(0, 10)
+            const title = `Nightly E2E failure (${today})`
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'bug,area:e2e',
+              state: 'open',
+            })
+            if (existing.data.some(i => i.title === title)) {
+              console.log('Failure issue already exists for today, skipping.')
+              return
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body: `Nightly E2E workflow failed on ${today}.\n\nRun: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              labels: ['bug', 'area:e2e']
+            })
 
       - name: Stop services
         if: always()
