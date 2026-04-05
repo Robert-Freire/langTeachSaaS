@@ -176,6 +176,11 @@ jobs:
               exit 0
             elif [ "${STATE}" = "ActivationFailed" ] || [ "${STATE}" = "Failed" ]; then
               echo "ERROR: Revision ${NEW_REVISION} entered ${STATE} state."
+              echo "Deactivating failed revision to prevent orphan accumulation..."
+              az containerapp revision deactivate \
+                --name ${{ env.CONTAINER_APP_NAME }} \
+                --resource-group ${{ env.RESOURCE_GROUP }} \
+                --revision "${NEW_REVISION}" || true
               echo "Investigate via: az containerapp revision show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --revision ${NEW_REVISION}"
               exit 1
             fi
@@ -184,4 +189,8 @@ jobs:
           done
 
           echo "ERROR: Revision ${NEW_REVISION} did not reach Running state within 2 minutes."
+          az containerapp revision deactivate \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --revision "${NEW_REVISION}" || true
           exit 1
