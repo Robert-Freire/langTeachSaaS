@@ -325,6 +325,60 @@ public class LessonNotesControllerTests
     }
 
     [Fact]
+    public async Task ExtractNotes_ReturnsExtractedFields()
+    {
+        // In Testing environment, StubReflectionExtractionService is registered automatically.
+        // It returns fixed "[Extracted]..." values regardless of input.
+        var (client, lessonId, _) = await SeedLessonWithStudent(
+            "auth0|notes-extract", "notes-extract@example.com");
+
+        var request = new ExtractReflectionRequest { Text = "We covered past tense today. Student got confused on irregulars but was very enthusiastic." };
+        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/notes/extract", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dto = await response.Content.ReadFromJsonAsync<ExtractedReflectionDto>();
+        dto!.WhatWasCovered.Should().Be("[Extracted] What was covered");
+        dto.AreasToImprove.Should().Be("[Extracted] Areas to improve");
+        dto.EmotionalSignals.Should().Be("[Extracted] Emotional signals");
+        dto.HomeworkAssigned.Should().Be("[Extracted] Homework assigned");
+        dto.NextLessonIdeas.Should().Be("[Extracted] Next lesson ideas");
+    }
+
+    [Fact]
+    public async Task ExtractNotes_RequiresText()
+    {
+        var (client, lessonId, _) = await SeedLessonWithStudent(
+            "auth0|notes-extract-empty", "notes-extract-empty@example.com");
+
+        var request = new { text = "" };
+        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/notes/extract", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PutNotes_IncludesEmotionalSignals()
+    {
+        var (client, lessonId, _) = await SeedLessonWithStudent(
+            "auth0|notes-emotional", "notes-emotional@example.com");
+
+        var request = new SaveLessonNotesRequest
+        {
+            WhatWasCovered = "Ser vs Estar",
+            EmotionalSignals = "Student was frustrated but persevered",
+        };
+
+        var putResponse = await client.PutAsJsonAsync($"/api/lessons/{lessonId}/notes", request);
+        putResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dto = await putResponse.Content.ReadFromJsonAsync<LessonNotesDto>();
+        dto!.EmotionalSignals.Should().Be("Student was frustrated but persevered");
+
+        var getResponse = await client.GetAsync($"/api/lessons/{lessonId}/notes");
+        var getDto = await getResponse.Content.ReadFromJsonAsync<LessonNotesDto>();
+        getDto!.EmotionalSignals.Should().Be("Student was frustrated but persevered");
+    }
+
+    [Fact]
     public async Task CrossTeacherIsolation_CannotAccessOtherTeacherNotes()
     {
         var (_, lessonId, _) = await SeedLessonWithStudent(

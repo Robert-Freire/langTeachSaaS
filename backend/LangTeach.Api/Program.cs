@@ -170,6 +170,10 @@ builder.Services.AddSingleton<IVoiceNoteBlobStorage>(sp => sp.GetRequiredService
 builder.Services.AddScoped<IVoiceNoteService, VoiceNoteService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<ILessonNoteService, LessonNoteService>();
+if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddScoped<IReflectionExtractionService, StubReflectionExtractionService>();
+else
+    builder.Services.AddScoped<IReflectionExtractionService, ReflectionExtractionService>();
 builder.Services.AddScoped<ISessionLogService, SessionLogService>();
 builder.Services.AddScoped<ISessionHistoryService, SessionHistoryService>();
 builder.Services.AddScoped<ICurriculumGenerationService, CurriculumGenerationService>();

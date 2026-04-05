@@ -6,5 +6,6 @@ public record LessonNotesDto(
     string? WhatWasCovered,
     string? HomeworkAssigned,
     string? AreasToImprove,
-    string? NextLessonIdeas
+    string? NextLessonIdeas,
+    string? EmotionalSignals
 );

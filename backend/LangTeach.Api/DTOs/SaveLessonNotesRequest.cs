@@ -12,4 +12,6 @@ public class SaveLessonNotesRequest
     public string? AreasToImprove { get; set; }
     [MaxLength(2000)]
     public string? NextLessonIdeas { get; set; }
+    [MaxLength(2000)]
+    public string? EmotionalSignals { get; set; }
 }
