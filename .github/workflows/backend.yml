@@ -6,6 +6,7 @@ on:
     paths: ['backend/**', 'data/**', '.github/workflows/backend.yml']
   pull_request:
     paths: ['backend/**', 'data/**', '.github/workflows/backend.yml']
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -43,7 +44,7 @@ jobs:
   validate-secrets:
     name: Validate Key Vault secrets
     needs: ci
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.DEPLOY_FROZEN != 'true'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -111,7 +112,7 @@ jobs:
   deploy:
     name: Build image and deploy
     needs: [ci, validate-secrets]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.DEPLOY_FROZEN != 'true'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
