@@ -6,3 +6,6 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 |-------------|------|----------|-------------|
 
 *Cleared 2026-04-04 during Post-Class Tracking sprint close. 6 entries triaged: #441 lesson filter batched into #494, #450/#442 MaxLength batched into #492, remaining entries deleted (pre-existing patterns, dismissed CodeRabbit notes, stale worktree artifact).*
+
+| #186 | 2026-04-05 | low | `VoiceNote.DurationSeconds` always 0 - audio duration extraction not implemented. Field reserved for future use. |
+| #186 | 2026-04-05 | low | `VoiceNoteService`: blob upload before DB commit (orphan risk on failure). Consistent with `MaterialService` pattern. |
