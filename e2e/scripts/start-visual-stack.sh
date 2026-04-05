@@ -2,11 +2,11 @@
 # start-visual-stack.sh
 # Starts the e2e stack for host-side visual Playwright specs.
 # Uses docker-compose.e2e.yml + docker-compose.visual.yml overlay.
-# The overlay exposes api:5000 and sqlserver:1434 to the host so that
+# The overlay exposes api:5178 and sqlserver:1434 to the host so that
 # host-side Playwright can call the API and SQL Server directly.
 #
 # Frontend is at http://localhost:5174 (matches playwright.config.ts default baseURL).
-# API is at http://localhost:5000 (matches VITE_API_BASE_URL default in specs).
+# API is at http://localhost:5178 (matches VITE_API_BASE_URL default in specs).
 # SQL Server is at 127.0.0.1:1434 (matches DB_PORT default in db-helper.ts).
 #
 # Idempotent: safe to call on an already-running stack.
@@ -81,7 +81,7 @@ if [ $attempt -eq $max_attempts ]; then
 fi
 
 echo "[visual-stack] Registering mock teacher (auto-registers on first /api/auth/me call)..."
-curl -sf http://localhost:5000/api/auth/me \
+curl -sf http://localhost:5178/api/auth/me \
   -H "Authorization: Bearer test-token" \
   -H "Accept: application/json" > /dev/null
 echo "[visual-stack] Mock teacher registered."
@@ -92,5 +92,5 @@ echo "[visual-stack] Visual seed complete."
 
 echo "[visual-stack] Stack is ready."
 echo "[visual-stack]   Frontend: http://localhost:5174"
-echo "[visual-stack]   API:      http://localhost:5000"
+echo "[visual-stack]   API:      http://localhost:5178"
 echo "[visual-stack] Run: cd e2e && npx playwright test --project=visual"
