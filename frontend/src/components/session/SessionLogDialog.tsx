@@ -38,14 +38,6 @@ const CEFR_SUBLEVELS = new Set([
   'C1.1','C1.2','C2.1','C2.2',
 ])
 
-function todayIso(): string {
-  const now = new Date()
-  const y = now.getFullYear()
-  const m = String(now.getMonth() + 1).padStart(2, '0')
-  const d = String(now.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
 
 export interface SessionLogDialogProps {
   studentId: string
