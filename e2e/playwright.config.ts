@@ -46,6 +46,8 @@ export default defineConfig({
         '**/provider-switch.spec.ts',
         '**/registration.spec.ts',
         '**/ai-guardrails.spec.ts',
+        '**/material-upload.spec.ts',
+        '**/usage-limits.spec.ts',
         '**/dashboard.spec.ts',
         '**/lessons.spec.ts',
         '**/students.spec.ts',

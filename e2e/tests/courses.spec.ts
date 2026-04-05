@@ -21,6 +21,8 @@ const MOCK_COURSE = {
   lessonsCreated: 0,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
+  warnings: null,
+  dismissedWarningKeys: null,
   entries: [
     { id: 'e1', orderIndex: 1, topic: 'Greetings and Introductions', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: 'Ana introduces herself at language school', personalizationNotes: 'Prioritized oral production based on student goals', vocabularyThemes: 'Greetings,Names,Countries' },
     { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: 'Present simple habits', competencies: 'reading,writing', lessonType: 'Mixed', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: 'Time expressions,Activities' },
