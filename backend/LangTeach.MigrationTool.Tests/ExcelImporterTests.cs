@@ -17,6 +17,59 @@ public class ExcelImporterTests
         return ws;
     }
 
+    private static IXLWorksheet BuildEmptyWorksheet()
+    {
+        var wb = new XLWorkbook();
+        return wb.AddWorksheet("Libre");
+    }
+
+    private static IXLWorksheet BuildWorksheetWithDate(DateTime date)
+    {
+        var wb = new XLWorkbook();
+        var ws = wb.AddWorksheet("Test");
+        ws.Cell(1, 1).Value = "Fecha"; // header
+        ws.Cell(2, 1).Value = date;
+        ws.Cell(2, 3).Value = "some content";
+        return ws;
+    }
+
+    // --- IsBlankSheet ---
+
+    [Fact]
+    public void IsBlankSheet_TrulyEmptySheet_ReturnsTrue()
+    {
+        var ws = BuildEmptyWorksheet();
+        ExcelImporter.IsBlankSheet(ws, ("", "")).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsBlankSheet_HeaderOnlyNoData_ReturnsTrue()
+    {
+        var ws = BuildWorksheet(); // only header row, no data rows
+        ExcelImporter.IsBlankSheet(ws, ("", "")).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsBlankSheet_SheetWithSessionDate_ReturnsFalse()
+    {
+        var ws = BuildWorksheetWithDate(new DateTime(2024, 3, 15));
+        ExcelImporter.IsBlankSheet(ws, ("", "")).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsBlankSheet_SheetWithPreplyNote_ReturnsFalse()
+    {
+        var ws = BuildEmptyWorksheet();
+        ExcelImporter.IsBlankSheet(ws, ("A2", "")).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsBlankSheet_SheetWithInfoNote_ReturnsFalse()
+    {
+        var ws = BuildEmptyWorksheet();
+        ExcelImporter.IsBlankSheet(ws, ("", "Some background info")).Should().BeFalse();
+    }
+
     // Helpers for TryParseDate tests
     private static IXLCell BuildNumericCell(double value)
     {
