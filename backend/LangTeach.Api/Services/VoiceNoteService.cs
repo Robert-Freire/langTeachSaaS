@@ -19,7 +19,6 @@ public class VoiceNoteService : IVoiceNoteService
     };
 
     private const long MaxFileSizeBytes = 50 * 1024 * 1024; // 50 MB
-    private const int MaxDurationSeconds = 5 * 60;           // 5 minutes
 
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly IVoiceNoteBlobStorage _blobStorage;
@@ -40,6 +39,9 @@ public class VoiceNoteService : IVoiceNoteService
 
     public async Task<VoiceNoteDto> UploadAsync(Guid teacherId, IFormFile file, CancellationToken ct = default)
     {
+        if (file.Length == 0)
+            throw new InvalidOperationException("An audio file is required and cannot be empty.");
+
         if (file.Length > MaxFileSizeBytes)
             throw new InvalidOperationException($"File exceeds maximum allowed size of {MaxFileSizeBytes / (1024 * 1024)} MB.");
 
