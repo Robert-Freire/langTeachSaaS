@@ -174,6 +174,10 @@ if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnv
     builder.Services.AddScoped<IReflectionExtractionService, StubReflectionExtractionService>();
 else
     builder.Services.AddScoped<IReflectionExtractionService, ReflectionExtractionService>();
+if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddScoped<IReplanSuggestionService, StubReplanSuggestionService>();
+else
+    builder.Services.AddScoped<IReplanSuggestionService, ReplanSuggestionService>();
 builder.Services.AddScoped<ISessionLogService, SessionLogService>();
 builder.Services.AddScoped<ISessionHistoryService, SessionHistoryService>();
 builder.Services.AddScoped<ICurriculumGenerationService, CurriculumGenerationService>();

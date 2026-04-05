@@ -58,6 +58,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import { logger } from '../lib/logger'
+import { CourseSuggestionsPanel } from '../components/course/CourseSuggestionsPanel'
 
 const STATUS_LABELS: Record<string, string> = {
   planned: 'Not generated',
@@ -468,6 +469,7 @@ export default function CourseDetail() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [addState, setAddState] = useState({ topic: '', grammarFocus: '', competencies: '' })
+  const [activeTab, setActiveTab] = useState<'curriculum' | 'suggestions'>('curriculum')
 
   if (expandedForCourseId !== id) {
     setExpandedForCourseId(id)
@@ -679,6 +681,40 @@ export default function CourseDetail() {
         onDismiss={doDismissWarning}
       />
 
+      {/* Tab navigation */}
+      <div className="flex border-b border-gray-200" data-testid="course-tabs">
+        <button
+          className={cn(
+            'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            activeTab === 'curriculum'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700',
+          )}
+          onClick={() => setActiveTab('curriculum')}
+          data-testid="tab-curriculum"
+        >
+          Curriculum
+        </button>
+        <button
+          className={cn(
+            'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            activeTab === 'suggestions'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700',
+          )}
+          onClick={() => setActiveTab('suggestions')}
+          data-testid="tab-suggestions"
+        >
+          Suggestions
+        </button>
+      </div>
+
+      {activeTab === 'suggestions' && id && (
+        <CourseSuggestionsPanel courseId={id} />
+      )}
+
+      {activeTab === 'curriculum' && (
+      <>
       {/* Curriculum list */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={entries.map(e => e.id)} strategy={verticalListSortingStrategy}>
@@ -761,6 +797,9 @@ export default function CourseDetail() {
         >
           <Plus className="h-4 w-4 mr-1" /> Add session
         </Button>
+      )}
+
+      </>
       )}
 
       {/* Delete confirmation dialog */}
