@@ -46,7 +46,7 @@ public class PromptService : IPromptService
     {
         var system = BuildSystemPrompt(ctx);
         var user   = ExercisesUserPrompt(ctx);
-        return BuildRequest("exercises", "practice", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Haiku, 4096);
+        return BuildRequest("exercises", "practice", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 8192);
     }
 
     public ClaudeRequest BuildConversationPrompt(GenerationContext ctx)
