@@ -246,8 +246,8 @@ public class PromptServiceTests
         => _sut.BuildGrammarPrompt(BaseCtx()).MaxTokens.Should().Be(3000);
 
     [Fact]
-    public void ExercisesPrompt_HasMaxTokens4096()
-        => _sut.BuildExercisesPrompt(BaseCtx()).MaxTokens.Should().Be(4096);
+    public void ExercisesPrompt_HasMaxTokens8192()
+        => _sut.BuildExercisesPrompt(BaseCtx()).MaxTokens.Should().Be(8192);
 
     [Fact]
     public void ConversationPrompt_HasMaxTokens3000()
@@ -314,8 +314,8 @@ public class PromptServiceTests
         _sut.BuildGrammarPrompt(BaseCtx()).Model.Should().Be(ClaudeModel.Sonnet);
 
     [Fact]
-    public void HaikuUsed_ForExercises() =>
-        _sut.BuildExercisesPrompt(BaseCtx()).Model.Should().Be(ClaudeModel.Haiku);
+    public void SonnetUsed_ForExercises() =>
+        _sut.BuildExercisesPrompt(BaseCtx()).Model.Should().Be(ClaudeModel.Sonnet);
 
     [Fact]
     public void HaikuUsed_ForConversation() =>
