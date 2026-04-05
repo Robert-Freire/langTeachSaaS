@@ -221,6 +221,49 @@ test('delete session requires confirmation dialog', async ({ browser }) => {
   await context.close()
 })
 
+test('topic tag category dropdown has all four curriculum-aligned options', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Tag Category Test ${Date.now()}`
+  const createRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: studentName,
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+    },
+  })
+  const student = await createRes.json() as { id: string }
+
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await page.getByTestId('log-session-button').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+
+  // Open the category dropdown and verify all four options exist
+  await page.getByTestId('topic-tag-category').click()
+  await expect(page.getByRole('option', { name: 'Grammar' })).toBeVisible()
+  await expect(page.getByRole('option', { name: 'Vocabulary' })).toBeVisible()
+  await expect(page.getByRole('option', { name: 'Competency' })).toBeVisible()
+  await expect(page.getByRole('option', { name: 'Communicative function' })).toBeVisible()
+
+  // Select Grammar and add a tag
+  await page.getByRole('option', { name: 'Grammar' }).click()
+  await page.getByTestId('topic-tag-name').fill('preterito indefinido')
+  await page.getByTestId('topic-tag-add').click()
+
+  // Badge should display tag with category label
+  await expect(page.getByTestId('topic-tags-input')).toContainText('preterito indefinido')
+  await expect(page.getByTestId('topic-tags-input')).toContainText('(Grammar)')
+
+  await context.close()
+})
+
 test('summary header appears on history tab after logging a session', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
