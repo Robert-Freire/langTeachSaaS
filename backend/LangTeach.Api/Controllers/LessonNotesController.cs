@@ -12,15 +12,21 @@ namespace LangTeach.Api.Controllers;
 public class LessonNotesController : ControllerBase
 {
     private readonly ILessonNoteService _lessonNoteService;
+    private readonly ILessonService _lessonService;
+    private readonly IReflectionExtractionService _extractionService;
     private readonly IProfileService _profileService;
     private readonly ILogger<LessonNotesController> _logger;
 
     public LessonNotesController(
         ILessonNoteService lessonNoteService,
+        ILessonService lessonService,
+        IReflectionExtractionService extractionService,
         IProfileService profileService,
         ILogger<LessonNotesController> logger)
     {
         _lessonNoteService = lessonNoteService;
+        _lessonService = lessonService;
+        _extractionService = extractionService;
         _profileService = profileService;
         _logger = logger;
     }
@@ -65,5 +71,21 @@ public class LessonNotesController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    [HttpPost("extract")]
+    public async Task<IActionResult> Extract(Guid lessonId, [FromBody] ExtractReflectionRequest request, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        var lesson = await _lessonService.GetByIdAsync(teacherId, lessonId, cancellationToken);
+        if (lesson is null) return NotFound();
+
+        _logger.LogInformation("POST /api/lessons/{LessonId}/notes/extract. TeacherId={TeacherId}", lessonId, teacherId);
+        var extracted = await _extractionService.ExtractAsync(request.Text, cancellationToken);
+        return Ok(extracted);
     }
 }

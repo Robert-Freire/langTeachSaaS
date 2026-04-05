@@ -10,6 +10,7 @@ public class LessonNote
     public string? HomeworkAssigned { get; set; }
     public string? AreasToImprove { get; set; }
     public string? NextLessonIdeas { get; set; }
+    public string? EmotionalSignals { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

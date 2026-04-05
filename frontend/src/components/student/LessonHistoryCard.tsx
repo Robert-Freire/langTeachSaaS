@@ -10,11 +10,12 @@ interface LessonHistoryCardProps {
   studentId: string
 }
 
-const NOTE_LABELS: { key: 'whatWasCovered' | 'homeworkAssigned' | 'areasToImprove' | 'nextLessonIdeas'; label: string }[] = [
-  { key: 'whatWasCovered', label: 'Covered' },
-  { key: 'homeworkAssigned', label: 'Homework' },
-  { key: 'areasToImprove', label: 'Improve' },
-  { key: 'nextLessonIdeas', label: 'Next ideas' },
+const NOTE_LABELS: { key: 'whatWasCovered' | 'homeworkAssigned' | 'areasToImprove' | 'nextLessonIdeas' | 'emotionalSignals'; label: string; testId: string }[] = [
+  { key: 'whatWasCovered', label: 'Covered', testId: 'lesson-history-whatWasCovered' },
+  { key: 'homeworkAssigned', label: 'Homework', testId: 'lesson-history-homeworkAssigned' },
+  { key: 'areasToImprove', label: 'Improve', testId: 'lesson-history-areasToImprove' },
+  { key: 'nextLessonIdeas', label: 'Next ideas', testId: 'lesson-history-nextLessonIdeas' },
+  { key: 'emotionalSignals', label: 'Emotional', testId: 'lesson-history-emotional-signals' },
 ]
 
 export function LessonHistoryCard({ studentId }: LessonHistoryCardProps) {
@@ -67,9 +68,9 @@ export function LessonHistoryCard({ studentId }: LessonHistoryCardProps) {
                   </span>
                 </div>
                 <div className="space-y-1">
-                  {NOTE_LABELS.map(({ key, label }) =>
+                  {NOTE_LABELS.map(({ key, label, testId }) =>
                     entry[key] ? (
-                      <p key={key} className="text-xs text-zinc-600">
+                      <p key={key} className="text-xs text-zinc-600" data-testid={testId}>
                         <span className="font-medium text-zinc-700">{label}:</span> {entry[key]}
                       </p>
                     ) : null
