@@ -242,6 +242,84 @@ describe('SessionLogDialog', () => {
     })
   })
 
+  describe('previous session topics context block', () => {
+    it('shows topics from previous session in create mode', async () => {
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+        {
+          id: 's1', studentId: STUDENT_ID, sessionDate: '2026-03-30', plannedContent: null,
+          actualContent: 'Some content', homeworkAssigned: null, previousHomeworkStatus: 3,
+          previousHomeworkStatusName: 'Not applicable', nextSessionTopics: 'Work on para/por distinction',
+          generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
+          linkedLessonId: null, topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
+        },
+      ])
+
+      wrapper(
+        <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+      )
+
+      await waitFor(() => {
+        const block = screen.getByTestId('prev-session-topics')
+        expect(block).toBeInTheDocument()
+        expect(block).toHaveTextContent('Work on para/por distinction')
+      })
+    })
+
+    it('hides topics block when there are no previous sessions', async () => {
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+
+      wrapper(
+        <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+      )
+
+      await waitFor(() => expect(screen.getByTestId('session-date')).toBeInTheDocument())
+      expect(screen.queryByTestId('prev-session-topics')).not.toBeInTheDocument()
+    })
+
+    it('hides topics block when previous session has null nextSessionTopics', async () => {
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+        {
+          id: 's1', studentId: STUDENT_ID, sessionDate: '2026-03-30', plannedContent: null,
+          actualContent: 'Some content', homeworkAssigned: null, previousHomeworkStatus: 3,
+          previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null,
+          generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
+          linkedLessonId: null, topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
+        },
+      ])
+
+      wrapper(
+        <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+      )
+
+      await waitFor(() => expect(screen.getByTestId('session-date')).toBeInTheDocument())
+      expect(screen.queryByTestId('prev-session-topics')).not.toBeInTheDocument()
+    })
+
+    it('hides topics block in edit mode even when previous session has topics', async () => {
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+        {
+          id: 's0', studentId: STUDENT_ID, sessionDate: '2026-03-01', plannedContent: null,
+          actualContent: 'Older session', homeworkAssigned: null, previousHomeworkStatus: 3,
+          previousHomeworkStatusName: 'Not applicable', nextSessionTopics: 'Review subjunctive',
+          generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
+          linkedLessonId: null, topicTags: '[]', createdAt: '2026-03-01T10:00:00Z', updatedAt: '2026-03-01T10:00:00Z',
+        },
+      ])
+
+      wrapper(
+        <SessionLogDialog
+          studentId={STUDENT_ID}
+          open={true}
+          onOpenChange={vi.fn()}
+          initialSession={SAMPLE_SESSION}
+        />
+      )
+
+      await waitFor(() => expect(screen.getByText('Edit Session')).toBeInTheDocument())
+      expect(screen.queryByTestId('prev-session-topics')).not.toBeInTheDocument()
+    })
+  })
+
   it('shows CEFR validation error for invalid sub-level', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
 
