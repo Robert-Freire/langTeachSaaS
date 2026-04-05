@@ -43,8 +43,12 @@ public class VoiceNoteService : IVoiceNoteService
         if (file.Length > MaxFileSizeBytes)
             throw new InvalidOperationException($"File exceeds maximum allowed size of {MaxFileSizeBytes / (1024 * 1024)} MB.");
 
-        if (!AllowedContentTypes.Contains(file.ContentType))
-            throw new InvalidOperationException($"File type '{file.ContentType}' is not supported. Supported types: webm, mp4, mpeg, wav, ogg.");
+        // Browsers send MIME types with codec parameters (e.g. "audio/webm;codecs=opus").
+        // Strip parameters before validation and storage so the base type matches AllowedContentTypes.
+        var baseContentType = file.ContentType.Split(';')[0].Trim();
+
+        if (!AllowedContentTypes.Contains(baseContentType))
+            throw new InvalidOperationException($"File type '{baseContentType}' is not supported. Supported types: webm, mp4, mpeg, wav, ogg.");
 
         var id = Guid.NewGuid();
         var ext = Path.GetExtension(file.FileName);
@@ -56,12 +60,12 @@ public class VoiceNoteService : IVoiceNoteService
         buffer.Position = 0;
 
         // Upload audio to blob storage
-        await _blobStorage.UploadAsync(buffer, blobPath, file.ContentType, ct);
+        await _blobStorage.UploadAsync(buffer, blobPath, baseContentType, ct);
 
         _logger.LogInformation("Voice note uploaded to blob. TeacherId={TeacherId} BlobPath={BlobPath}", teacherId, blobPath);
 
         buffer.Position = 0;
-        var transcription = await _transcription.TranscribeAsync(buffer, file.FileName, file.ContentType, ct);
+        var transcription = await _transcription.TranscribeAsync(buffer, file.FileName, baseContentType, ct);
 
         var note = new VoiceNote
         {
@@ -69,7 +73,7 @@ public class VoiceNoteService : IVoiceNoteService
             TeacherId = teacherId,
             BlobPath = blobPath,
             OriginalFileName = Path.GetFileName(file.FileName),
-            ContentType = file.ContentType,
+            ContentType = baseContentType,
             SizeBytes = file.Length,
             DurationSeconds = 0, // Duration extraction not yet implemented; field reserved for future use
             Transcription = transcription,

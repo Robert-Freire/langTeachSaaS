@@ -45,8 +45,8 @@ public class AzureSpeechTranscriptionService(
         var status = doc.RootElement.TryGetProperty("RecognitionStatus", out var s) ? s.GetString() : null;
         if (status != "Success")
         {
-            logger.LogWarning("Azure Speech returned non-success status. Status={Status}", status);
-            return string.Empty;
+            logger.LogError("Azure Speech returned non-success status. Status={Status}", status);
+            throw new InvalidOperationException($"Transcription was not successful. Status: {status ?? "Unknown"}");
         }
 
         var text = doc.RootElement.TryGetProperty("DisplayText", out var t) ? t.GetString() ?? string.Empty : string.Empty;

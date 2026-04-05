@@ -1,10 +1,11 @@
+using System.Collections.Concurrent;
 using LangTeach.Api.Services;
 
 namespace LangTeach.Api.Tests.Helpers;
 
 public class InMemoryVoiceNoteBlobStorage : IVoiceNoteBlobStorage
 {
-    private readonly Dictionary<string, byte[]> _blobs = new();
+    private readonly ConcurrentDictionary<string, byte[]> _blobs = new();
 
     public Task InitializeAsync() => Task.CompletedTask;
 
