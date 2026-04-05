@@ -44,6 +44,7 @@ const SESSION_BASE: sessionLogsApi.SessionLog = {
   topicTags: '[]',
   createdAt: '2026-03-30T10:00:00Z',
   updatedAt: '2026-03-30T10:00:00Z',
+  isCancelled: false,
 }
 
 function wrapper() {
@@ -238,5 +239,19 @@ describe('SessionHistoryTab', () => {
     wrapper()
     await screen.findByTestId('session-entry')
     expect(screen.getByText('2 weeks ago')).toBeInTheDocument()
+  })
+
+  it('shows Cancelled badge for a cancelled session', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, isCancelled: true }])
+    wrapper()
+    expect(await screen.findByTestId('cancelled-badge')).toBeInTheDocument()
+    expect(screen.getByTestId('cancelled-badge')).toHaveTextContent('Cancelled')
+  })
+
+  it('does not show Cancelled badge for a non-cancelled session', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.queryByTestId('cancelled-badge')).not.toBeInTheDocument()
   })
 })

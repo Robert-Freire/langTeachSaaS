@@ -95,7 +95,7 @@ function SessionEntry({
 
   return (
     <div
-      className="border border-zinc-200 rounded-lg bg-white overflow-hidden"
+      className={`border rounded-lg overflow-hidden ${session.isCancelled ? 'border-zinc-200 bg-zinc-50' : 'border-zinc-200 bg-white'}`}
       data-testid="session-entry"
     >
       {/* Inline preview row */}
@@ -109,10 +109,19 @@ function SessionEntry({
           <div className="flex-1 min-w-0 space-y-1.5">
             {/* Date row */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium text-zinc-900">
+              <span className={`text-sm font-medium ${session.isCancelled ? 'line-through text-zinc-400' : 'text-zinc-900'}`}>
                 {formatDate(session.sessionDate)}
               </span>
               <span className="text-xs text-zinc-400">{relativeTime(session.sessionDate)}</span>
+              {session.isCancelled && (
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-zinc-100 text-zinc-500 border-zinc-300"
+                  data-testid="cancelled-badge"
+                >
+                  Cancelled
+                </Badge>
+              )}
               {notes > 0 && (
                 <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
                   <FileText className="h-3 w-3" />
