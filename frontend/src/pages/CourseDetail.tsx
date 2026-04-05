@@ -378,13 +378,13 @@ function SortableEntryRow({
                 <div data-testid={`personalization-notes-${idx}`}>
                   <p className="text-xs font-medium text-zinc-500 mb-1">Personalization rationale</p>
                   <div className="text-xs text-zinc-500 space-y-1">
-                    {entry.personalizationNotes.emphasisAreas.length > 0 && (
+                    {(entry.personalizationNotes.emphasisAreas ?? []).length > 0 && (
                       <p><span className="font-medium">Emphasis:</span> {entry.personalizationNotes.emphasisAreas.join(' · ')}</p>
                     )}
-                    {entry.personalizationNotes.constraints.length > 0 && (
+                    {(entry.personalizationNotes.constraints ?? []).length > 0 && (
                       <p><span className="font-medium">Constraints:</span> {entry.personalizationNotes.constraints.join(' · ')}</p>
                     )}
-                    {entry.personalizationNotes.l1Notes.length > 0 && (
+                    {(entry.personalizationNotes.l1Notes ?? []).length > 0 && (
                       <p><span className="font-medium">L1:</span> {entry.personalizationNotes.l1Notes.join(' · ')}</p>
                     )}
                   </div>

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FluentAssertions;
 using LangTeach.Api.AI;
 using LangTeach.Api.Data.Models;
@@ -372,10 +373,19 @@ public class CurriculumGenerationServiceTests
 
         var (entries, _) = await sut.GenerateAsync(ctx);
 
-        entries[0].ContextDescription.Should().Contain("Barcelona registration office");
-        entries[0].PersonalizationNotes.Should().Contain("ser/estar");
-        entries[1].ContextDescription.Should().Contain("Camp Nou");
-        entries[1].PersonalizationNotes.Should().Contain("false cognates");
+        var ctx0 = JsonSerializer.Deserialize<ContextDescriptionData>(entries[0].ContextDescription!, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        ctx0!.Setting.Should().Contain("Barcelona registration office");
+        ctx0.Scenario.Should().Contain("tells the clerk");
+
+        var notes0 = JsonSerializer.Deserialize<PersonalizationNotesData>(entries[0].PersonalizationNotes!, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        notes0!.EmphasisAreas.Should().ContainMatch("*ser/estar*");
+        notes0.Constraints.Should().ContainMatch("*role-play*");
+
+        var ctx1 = JsonSerializer.Deserialize<ContextDescriptionData>(entries[1].ContextDescription!, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        ctx1!.Setting.Should().Contain("Camp Nou");
+
+        var notes1 = JsonSerializer.Deserialize<PersonalizationNotesData>(entries[1].PersonalizationNotes!, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        notes1!.L1Notes.Should().ContainMatch("*false cognates*");
     }
 
     [Fact]
@@ -402,9 +412,12 @@ public class CurriculumGenerationServiceTests
 
         var (entries, _) = await sut.GenerateAsync(ctx);
 
-        // Weakness emphasis should appear in PersonalizationNotes for BOTH entries
-        entries[0].PersonalizationNotes.Should().Contain("ser/estar");
-        entries[1].PersonalizationNotes.Should().Contain("ser/estar");
+        // Weakness emphasis should appear in PersonalizationNotes.EmphasisAreas for BOTH entries
+        var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var n0 = JsonSerializer.Deserialize<PersonalizationNotesData>(entries[0].PersonalizationNotes!, opts);
+        var n1 = JsonSerializer.Deserialize<PersonalizationNotesData>(entries[1].PersonalizationNotes!, opts);
+        n0!.EmphasisAreas.Should().ContainMatch("*ser/estar*");
+        n1!.EmphasisAreas.Should().ContainMatch("*ser/estar*");
     }
 
     [Fact]
@@ -460,7 +473,12 @@ public class CurriculumGenerationServiceTests
 
         var (entries, _) = await sut.GenerateAsync(ctx);
 
-        entries[0].ContextDescription.Should().Contain("Football team in Barcelona");
-        entries[0].PersonalizationNotes.Should().Contain("ser/estar");
+        var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var ctx0 = JsonSerializer.Deserialize<ContextDescriptionData>(entries[0].ContextDescription!, opts);
+        ctx0!.Setting.Should().Contain("Barcelona");
+        ctx0.Scenario.Should().Contain("introduces himself");
+
+        var notes0 = JsonSerializer.Deserialize<PersonalizationNotesData>(entries[0].PersonalizationNotes!, opts);
+        notes0!.EmphasisAreas.Should().ContainMatch("*ser/estar*");
     }
 }

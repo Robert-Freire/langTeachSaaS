@@ -367,10 +367,10 @@ public class CourseService : ICourseService
             e.CompetencyFocus,
             JsonStorageHelper.DeserializeWithFallback<ContextDescriptionData>(
                 e.ContextDescription,
-                text => new ContextDescriptionData(Setting: string.Empty, Scenario: text)),
+                text => new ContextDescriptionData { Setting = string.Empty, Scenario = text }),
             JsonStorageHelper.DeserializeWithFallback<PersonalizationNotesData>(
                 e.PersonalizationNotes,
-                text => new PersonalizationNotesData(EmphasisAreas: [text], Constraints: [], L1Notes: [])),
+                text => new PersonalizationNotesData { EmphasisAreas = [text] }),
             e.VocabularyThemes);
 
     private static CourseDto MapToDto(Course c, List<CurriculumWarning>? warnings = null, List<string>? dismissedKeys = null) =>
