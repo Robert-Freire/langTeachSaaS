@@ -16,3 +16,5 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #186 | 2026-04-05 | low | `VoiceNoteService`: blob upload before DB commit (orphan risk on failure). Consistent with `MaterialService` pattern. |
 | #186 | 2026-04-05 | dismissed | CodeRabbit: `AzureSpeechOptions.Language` startup validation - value is hardcoded `es-ES`, querying Azure locales API at startup is over-engineering |
 | #186 | 2026-04-05 | deferred | CodeRabbit: `IVoiceNoteBlobStorage` missing `DeleteAsync` - filed #512, no delete endpoint exists yet |
+| #186 | 2026-04-05 | deferred | CodeRabbit: audio file magic bytes / signature validation on upload - filed #513 |
+| #186 | 2026-04-05 | dismissed | CodeRabbit: orphaned blob on transcription/DB failure - fix depends on DeleteAsync in #512 |
