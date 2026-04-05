@@ -47,6 +47,8 @@ async function createLessonWithNoticingTask(browser: Parameters<typeof createMoc
 
   await page.getByTestId('generate-btn-presentation').click()
   await expect(page.getByTestId('generate-panel')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  // Wait for content-type rules to load so task type is resolved before generating
+  await expect(page.getByTestId('task-type-loading')).not.toBeVisible({ timeout: UI_TIMEOUT })
   await page.getByTestId('generate-btn').click()
 
   return { page, context }

@@ -92,7 +92,7 @@ test('student can complete sentence ordering exercises', async ({ browser }) => 
     await student.getByTestId('check-answers-btn').click()
 
     // Item 0 should be correct
-    await expect(student.getByTestId('so-result-0')).toHaveText('✓', { timeout: UI_TIMEOUT })
+    await expect(student.getByTestId('so-result-0')).toHaveText('✓ Correct', { timeout: UI_TIMEOUT })
 
     // Total score: 2 SO items total; item 0 correct, item 1 unanswered (wrong)
     await expect(student.getByTestId('score-summary')).toContainText('/ 2 correct', { timeout: UI_TIMEOUT })

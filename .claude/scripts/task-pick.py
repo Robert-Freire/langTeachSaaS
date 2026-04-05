@@ -36,11 +36,13 @@ def gh(*args: str) -> str:
 
 def extract_sprint_info() -> tuple[str, str]:
     text = MEMORY_FILE.read_text(encoding="utf-8")
-    branch_match = re.search(r"Active sprint branch:\*\*\s*`?(sprint/[\w-]+)`?", text)
+    branch_match = re.search(r"\*\*Active sprint branch:\*\*\s*`?(sprint/[\w-]+)`?", text)
+    if not branch_match:
+        branch_match = re.search(r"Active sprint branch:\*\*\s*`?(sprint/[\w-]+)`?", text)
     # Support both list format ("- Name: ACTIVE") and table format ("| Name | ACTIVE |")
     milestone_match = re.search(r"^- ([^:]+): ACTIVE", text, re.MULTILINE)
     if not milestone_match:
-        milestone_match = re.search(r"^\|\s*([^|]+?)\s*\|\s*ACTIVE\s*\|", text, re.MULTILINE)
+        milestone_match = re.search(r"^\|\s*([^|]+?)\s*\|\s*ACTIVE\b[^|]*\|", text, re.MULTILINE)
     if not branch_match or not milestone_match:
         print("ERROR: Could not extract sprint/milestone from memory file.", file=sys.stderr)
         sys.exit(1)

@@ -21,6 +21,8 @@ const MOCK_COURSE = {
   lessonsCreated: 0,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
+  warnings: null,
+  dismissedWarningKeys: null,
   entries: [
     { id: 'e1', orderIndex: 1, topic: 'Greetings and Introductions', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: 'Ana introduces herself at language school', personalizationNotes: 'Prioritized oral production based on student goals', vocabularyThemes: 'Greetings,Names,Countries' },
     { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: 'Present simple habits', competencies: 'reading,writing', lessonType: 'Mixed', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: 'Time expressions,Activities' },
@@ -269,21 +271,12 @@ test('generate lesson from curriculum entry navigates to LessonNew pre-filled', 
 
   const STUDENT_ID = '00000000-0000-0000-0000-000000000001'
 
+  // Only register the course mock before navigating — lesson-templates and
+  // students mocks are only needed for the subsequent LessonNew navigation and
+  // must not be active while the course page loads (they can interfere with
+  // the profile fetch that drives OnboardingGuard).
   await page.route(`**/api/courses/${STUDENT_COURSE_ID}`, async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(courseWithStudent) })
-  })
-  await page.route('**/api/lesson-templates', async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
-  })
-  await page.route('**/api/students**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        items: [{ id: STUDENT_ID, name: 'Ana', learningLanguage: 'English', cefrLevel: 'B2', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '', updatedAt: '' }],
-        totalCount: 1,
-      }),
-    })
   })
 
   await page.goto(`/courses/${STUDENT_COURSE_ID}`)
@@ -299,6 +292,22 @@ test('generate lesson from curriculum entry navigates to LessonNew pre-filled', 
   expect(href).toContain(`studentId=${STUDENT_ID}`)
   expect(href).toContain('language=English')
   expect(href).toContain('topic=Greetings')
+
+  // Register LessonNew mocks now (after course page has loaded) so they don't
+  // interfere with the profile fetch that drives OnboardingGuard.
+  await page.route('**/api/lesson-templates', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
+  })
+  await page.route('**/api/students**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [{ id: STUDENT_ID, name: 'Ana', learningLanguage: 'English', cefrLevel: 'B2', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '', updatedAt: '' }],
+        totalCount: 1,
+      }),
+    })
+  })
 
   // Click "Generate lesson" — should navigate to LessonNew step 2 (auto-advanced due to entryId param)
   await generateLink.click()

@@ -6,6 +6,7 @@ on:
     paths: ['frontend/**', '.github/workflows/frontend.yml']
   pull_request:
     paths: ['frontend/**', '.github/workflows/frontend.yml']
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -47,7 +48,7 @@ jobs:
   deploy:
     name: Deploy to Azure SWA
     needs: ci
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.DEPLOY_FROZEN != 'true'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && vars.DEPLOY_FROZEN != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

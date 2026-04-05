@@ -13,6 +13,32 @@ export default defineConfig({
   },
   projects: [
     {
+      // Nightly smoke test: core CRUD + navigation + AI canary.
+      // Excludes visual, destructive, and AI content-type specs.
+      // Uses mock-auth throughout (no real Auth0).
+      name: 'nightly',
+      testMatch: [
+        '**/students.spec.ts',
+        '**/lessons.spec.ts',
+        '**/lesson-sections.spec.ts',
+        '**/courses.spec.ts',
+        '**/session-log.spec.ts',
+        '**/dashboard.spec.ts',
+        '**/navigation-flow.spec.ts',
+        '**/teacher-profile.spec.ts',
+        '**/lesson-ai-generate.spec.ts',
+      ],
+      fullyParallel: true,
+      workers: 4,
+    },
+    {
+      // Onboarding resets the shared teacher record; must run after all other nightly specs.
+      name: 'nightly-onboarding',
+      testMatch: ['**/onboarding.spec.ts'],
+      workers: 1,
+      dependencies: ['nightly'],
+    },
+    {
       name: 'mock-auth',
       testMatch: [
         '**/dashboard.spec.ts',
@@ -44,6 +70,8 @@ export default defineConfig({
         '**/teacher-profile.spec.ts',
         '**/provider-switch.spec.ts',
         '**/registration.spec.ts',
+        '**/material-upload.spec.ts',
+        '**/usage-limits.spec.ts',
         '**/dashboard.spec.ts',
         '**/lessons.spec.ts',
         '**/students.spec.ts',
