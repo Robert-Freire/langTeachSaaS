@@ -38,7 +38,7 @@ public class SessionLogService : ISessionLogService
 
         var sessions = await _db.SessionLogs
             .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
-            .OrderByDescending(sl => sl.SessionDate.HasValue)
+            .OrderBy(sl => sl.SessionDate.HasValue)
             .ThenByDescending(sl => sl.SessionDate)
             .Select(sl => ToDto(sl))
             .ToListAsync(cancellationToken);
