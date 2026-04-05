@@ -128,7 +128,8 @@ internal sealed class ExcelImporter
             .Where(sl => sl.StudentId == student.Id && !sl.IsDeleted)
             .Select(sl => sl.SessionDate)
             .ToListAsync())
-            .Select(d => d.Date)
+            .Where(d => d.HasValue)
+            .Select(d => d!.Value.Date)
             .ToHashSet();
 
         foreach (var row in worksheet.RowsUsed())

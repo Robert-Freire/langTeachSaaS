@@ -38,14 +38,6 @@ const CEFR_SUBLEVELS = new Set([
   'C1.1','C1.2','C2.1','C2.2',
 ])
 
-function todayIso(): string {
-  const now = new Date()
-  const y = now.getFullYear()
-  const m = String(now.getMonth() + 1).padStart(2, '0')
-  const d = String(now.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
 
 export interface SessionLogDialogProps {
   studentId: string
@@ -70,7 +62,7 @@ export function SessionLogDialog({
   const queryClient = useQueryClient()
 
   // Form state
-  const [sessionDate, setSessionDate] = useState(todayIso())
+  const [sessionDate, setSessionDate] = useState('')
   const [plannedContent, setPlannedContent] = useState('')
   const [actualContent, setActualContent] = useState('')
   const [homeworkAssigned, setHomeworkAssigned] = useState('')
@@ -92,7 +84,7 @@ export function SessionLogDialog({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open && initialSession) {
-      setSessionDate(initialSession.sessionDate.split('T')[0])
+      setSessionDate(initialSession.sessionDate ? initialSession.sessionDate.split('T')[0] : '')
       setPlannedContent(initialSession.plannedContent ?? '')
       setActualContent(initialSession.actualContent ?? '')
       setHomeworkAssigned(initialSession.homeworkAssigned ?? '')
@@ -126,7 +118,7 @@ export function SessionLogDialog({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!open) {
-      setSessionDate(todayIso())
+      setSessionDate('')
       setPlannedContent('')
       setActualContent('')
       setHomeworkAssigned('')
@@ -167,7 +159,7 @@ export function SessionLogDialog({
   const { mutate: submitLog, isPending } = useMutation({
     mutationFn: () => {
       const payload = {
-        sessionDate: sessionDate || todayIso(),
+        sessionDate: sessionDate || null,
         plannedContent: plannedContent || null,
         actualContent: actualContent || null,
         homeworkAssigned: homeworkAssigned || null,

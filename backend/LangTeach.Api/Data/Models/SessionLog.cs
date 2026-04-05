@@ -5,7 +5,7 @@ public class SessionLog
     public Guid Id { get; set; }
     public Guid StudentId { get; set; }
     public Guid TeacherId { get; set; }
-    public DateTime SessionDate { get; set; }
+    public DateTime? SessionDate { get; set; }
     public string? PlannedContent { get; set; }
     public string? ActualContent { get; set; }
     public string? HomeworkAssigned { get; set; }

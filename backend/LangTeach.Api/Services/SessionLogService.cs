@@ -38,7 +38,8 @@ public class SessionLogService : ISessionLogService
 
         var sessions = await _db.SessionLogs
             .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
-            .OrderByDescending(sl => sl.SessionDate)
+            .OrderBy(sl => sl.SessionDate.HasValue)
+            .ThenByDescending(sl => sl.SessionDate)
             .Select(sl => ToDto(sl))
             .ToListAsync(cancellationToken);
 
@@ -227,7 +228,7 @@ public class SessionLogService : ISessionLogService
             .CountAsync(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled, cancellationToken);
 
         var mostRecent = await _db.SessionLogs
-            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled)
+            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue)
             .OrderByDescending(sl => sl.SessionDate)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -237,8 +238,8 @@ public class SessionLogService : ISessionLogService
 
         if (mostRecent is not null)
         {
-            lastSessionDate = mostRecent.SessionDate.ToString("yyyy-MM-dd");
-            daysSinceLastSession = (int)(DateTime.UtcNow.Date - mostRecent.SessionDate.Date).TotalDays;
+            lastSessionDate = mostRecent.SessionDate!.Value.ToString("yyyy-MM-dd");
+            daysSinceLastSession = (int)(DateTime.UtcNow.Date - mostRecent.SessionDate.Value.Date).TotalDays;
             if (!string.IsNullOrWhiteSpace(mostRecent.NextSessionTopics))
             {
                 openActionItems = mostRecent.NextSessionTopics

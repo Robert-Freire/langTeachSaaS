@@ -114,7 +114,7 @@ public class SessionLogServiceTests : IDisposable
         request.SessionDate = DateTime.UtcNow.AddDays(1);
 
         var result = await _sut.CreateAsync(_teacherId, _studentId, request);
-        result.SessionDate.Date.Should().Be(request.SessionDate.Date);
+        result.SessionDate!.Value.Date.Should().Be(request.SessionDate!.Value.Date);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public class SessionLogServiceTests : IDisposable
 
         var result = await _sut.UpdateAsync(_teacherId, _studentId, sessionId, request);
         result.Should().NotBeNull();
-        result!.SessionDate.Date.Should().Be(futureDate.Date);
+        result!.SessionDate!.Value.Date.Should().Be(futureDate.Date);
     }
 
     [Fact]

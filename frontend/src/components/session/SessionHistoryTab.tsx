@@ -110,9 +110,11 @@ function SessionEntry({
             {/* Date row */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className={`text-sm font-medium ${session.isCancelled ? 'line-through text-zinc-400' : 'text-zinc-900'}`}>
-                {formatDate(session.sessionDate)}
+                {session.sessionDate ? formatDate(session.sessionDate) : 'No date'}
               </span>
-              <span className="text-xs text-zinc-400">{relativeTime(session.sessionDate)}</span>
+              {session.sessionDate && (
+                <span className="text-xs text-zinc-400">{relativeTime(session.sessionDate)}</span>
+              )}
               {session.isCancelled && (
                 <Badge
                   variant="outline"
@@ -378,9 +380,12 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
     )
   }
 
-  const sortedSessions = [...sessions].sort(
-    (a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime(),
-  )
+  const sortedSessions = [...sessions].sort((a, b) => {
+    if (!a.sessionDate && !b.sessionDate) return 0
+    if (!a.sessionDate) return -1
+    if (!b.sessionDate) return 1
+    return new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime()
+  })
 
   return (
     <div className="space-y-4 pt-4">
