@@ -230,15 +230,19 @@ internal sealed class ExcelImporter
 
     private async Task<bool> AppendStudentNotesAsync(Student student, string preply, string info)
     {
-        const string marker = "Preply test:";
-
         // Idempotency: do not append if already imported
-        if (student.Notes?.Contains(marker) == true)
+        if (student.Notes?.Contains("Preply test:") == true || student.Notes?.Contains("Student info:") == true)
             return false;
 
         var parts = new List<string>();
-        if (preply.Length > 0) parts.Add($"Preply test: {preply}");
+        if (preply.Length > 0)
+        {
+            var level = StudentMatcher.ParseLevelFromText(preply);
+            parts.Add(level is not null ? $"Preply test: {level}" : preply);
+        }
         if (info.Length > 0) parts.Add($"Student info: {info}");
+
+        if (parts.Count == 0) return false;
 
         var appendBlock = $"\n{string.Join("\n", parts)}";
 
