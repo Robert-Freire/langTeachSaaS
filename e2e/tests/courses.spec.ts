@@ -24,7 +24,7 @@ const MOCK_COURSE = {
   warnings: null,
   dismissedWarningKeys: null,
   entries: [
-    { id: 'e1', orderIndex: 1, topic: 'Greetings and Introductions', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: 'Ana introduces herself at language school', personalizationNotes: 'Prioritized oral production based on student goals', vocabularyThemes: 'Greetings,Names,Countries' },
+    { id: 'e1', orderIndex: 1, topic: 'Greetings and Introductions', grammarFocus: 'Present simple', competencies: 'speaking,listening', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: { setting: 'Language school in Barcelona', scenario: 'Ana introduces herself to her new classmates on the first day.' }, personalizationNotes: { emphasisAreas: ['Prioritized oral production based on student goals'], constraints: [], l1Notes: [] }, vocabularyThemes: 'Greetings,Names,Countries' },
     { id: 'e2', orderIndex: 2, topic: 'Daily Routines', grammarFocus: 'Present simple habits', competencies: 'reading,writing', lessonType: 'Mixed', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: 'Time expressions,Activities' },
     { id: 'e3', orderIndex: 3, topic: 'Past Events', grammarFocus: 'Past simple', competencies: 'speaking,listening', lessonType: 'Grammar-focused', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
     { id: 'e4', orderIndex: 4, topic: 'Future Plans', grammarFocus: 'Going to / will', competencies: 'writing', lessonType: 'Communicative', lessonId: null, status: 'planned', contextDescription: null, personalizationNotes: null, vocabularyThemes: null },
@@ -559,10 +559,11 @@ test('expand toggle shows vocabulary themes and personalized context', async ({ 
   await expect(entryDetails.getByText('Greetings', { exact: true })).toBeVisible()
   await expect(entryDetails.getByText('Countries', { exact: true })).toBeVisible()
 
-  // Personalized context shown
-  await expect(page.getByTestId('context-description-0')).toHaveText('Ana introduces herself at language school')
+  // Personalized context shown (structured: setting + scenario)
+  await expect(page.getByTestId('context-description-0')).toContainText('Language school in Barcelona')
+  await expect(page.getByTestId('context-description-0')).toContainText('Ana introduces herself')
 
-  // Personalization rationale shown
+  // Personalization rationale shown (structured: emphasis areas)
   await expect(page.getByTestId('personalization-notes-0')).toContainText('Prioritized oral production')
 
   // Collapse again
