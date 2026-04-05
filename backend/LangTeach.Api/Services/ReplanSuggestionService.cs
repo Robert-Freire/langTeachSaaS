@@ -126,6 +126,14 @@ public class ReplanSuggestionService : IReplanSuggestionService
         var plannedEntryIds = plannedEntries.Select(e => e.Id).ToHashSet();
         var suggestions = ParseSuggestions(response.Content, courseId, plannedEntryIds);
 
+        if (suggestions is null)
+        {
+            _logger.LogWarning(
+                "Keeping existing pending suggestions because replan parsing failed for course {CourseId}",
+                courseId);
+            return await GetSuggestionsAsync(courseId, teacherId, ct);
+        }
+
         // Replace existing pending suggestions for this course
         var existingPending = await _db.CourseSuggestions
             .Where(s => s.CourseId == courseId && s.Status == "pending")
@@ -225,7 +233,11 @@ public class ReplanSuggestionService : IReplanSuggestionService
         return sb.ToString();
     }
 
-    internal List<CourseSuggestion> ParseSuggestions(
+    /// <summary>
+    /// Returns a list of parsed suggestions on success (may be empty if the model found no gaps),
+    /// or null if the AI response was malformed so callers can preserve existing pending suggestions.
+    /// </summary>
+    internal List<CourseSuggestion>? ParseSuggestions(
         string json,
         Guid courseId,
         HashSet<Guid> validPlannedEntryIds)
@@ -241,14 +253,25 @@ public class ReplanSuggestionService : IReplanSuggestionService
             if (!root.TryGetProperty("suggestions", out var suggestionsEl) ||
                 suggestionsEl.ValueKind != JsonValueKind.Array)
             {
-                _logger.LogWarning("Replan AI response missing 'suggestions' array: {Json}", json);
-                return result;
+                _logger.LogWarning(
+                    "Replan AI response missing 'suggestions' array for course {CourseId}. PayloadLength={PayloadLength}",
+                    courseId, json.Length);
+                return null;
             }
 
             foreach (var item in suggestionsEl.EnumerateArray())
             {
-                var proposed = item.TryGetProperty("proposedChange", out var pc) ? pc.GetString() : null;
-                var reasoning = item.TryGetProperty("reasoning", out var r) ? r.GetString() : null;
+                if (item.ValueKind != JsonValueKind.Object)
+                    continue;
+
+                var proposed = item.TryGetProperty("proposedChange", out var pc) &&
+                               pc.ValueKind == JsonValueKind.String
+                    ? pc.GetString()
+                    : null;
+                var reasoning = item.TryGetProperty("reasoning", out var r) &&
+                                r.ValueKind == JsonValueKind.String
+                    ? r.GetString()
+                    : null;
 
                 if (string.IsNullOrWhiteSpace(proposed) || string.IsNullOrWhiteSpace(reasoning))
                     continue;
@@ -279,7 +302,11 @@ public class ReplanSuggestionService : IReplanSuggestionService
         }
         catch (JsonException ex)
         {
-            _logger.LogWarning(ex, "Failed to parse replan suggestion JSON: {Json}", json);
+            _logger.LogWarning(
+                ex,
+                "Failed to parse replan suggestion JSON for course {CourseId}. PayloadLength={PayloadLength}",
+                courseId, json.Length);
+            return null;
         }
 
         return result;
@@ -297,6 +324,9 @@ internal static class ReplanSuggestionResponder
 {
     internal static void Apply(CourseSuggestion suggestion, string action, string? teacherEdit)
     {
+        if (suggestion.Status != "pending")
+            throw new InvalidOperationException($"Only pending suggestions can be responded to. Current status: {suggestion.Status}.");
+
         if (action == "accept")
         {
             suggestion.Status = "accepted";

@@ -95,5 +95,9 @@ public class CourseSuggestionsController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { error = ex.Message });
+        }
     }
 }

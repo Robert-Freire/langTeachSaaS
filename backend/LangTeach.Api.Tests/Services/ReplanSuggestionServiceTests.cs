@@ -150,7 +150,8 @@ public class ReplanSuggestionServiceTests : IDisposable
 
         var result = sut.ParseSuggestions(json, _courseId, [_plannedEntryId]);
 
-        result.Should().HaveCount(2);
+        result.Should().NotBeNull();
+        result!.Should().HaveCount(2);
         result[0].CurriculumEntryId.Should().Be(_plannedEntryId);
         result[0].ProposedChange.Should().Be("Add subjunctive review");
         result[1].CurriculumEntryId.Should().BeNull();
@@ -165,16 +166,25 @@ public class ReplanSuggestionServiceTests : IDisposable
 
         var result = sut.ParseSuggestions(json, _courseId, [_plannedEntryId]);
 
-        result.Should().HaveCount(1);
+        result.Should().NotBeNull();
+        result!.Should().HaveCount(1);
         result[0].CurriculumEntryId.Should().BeNull();
     }
 
     [Fact]
-    public void ParseSuggestions_MalformedJson_ReturnsEmpty()
+    public void ParseSuggestions_MalformedJson_ReturnsNull()
     {
         var sut = CreateSut("{}");
         var result = sut.ParseSuggestions("not json at all", _courseId, []);
-        result.Should().BeEmpty();
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void ParseSuggestions_MissingSuggestionsArray_ReturnsNull()
+    {
+        var sut = CreateSut("{}");
+        var result = sut.ParseSuggestions("{}", _courseId, []);
+        result.Should().BeNull();
     }
 
     [Fact]
@@ -184,7 +194,8 @@ public class ReplanSuggestionServiceTests : IDisposable
         var json = """{"suggestions":[{"reasoning":"Only reasoning, no proposed change"}]}""";
 
         var result = sut.ParseSuggestions(json, _courseId, []);
-        result.Should().BeEmpty();
+        result.Should().NotBeNull();
+        result!.Should().BeEmpty();
     }
 
     // --- GenerateSuggestionsAsync tests ---
