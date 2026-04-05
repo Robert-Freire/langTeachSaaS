@@ -167,7 +167,7 @@ export function SessionLogDialog({
   const { mutate: submitLog, isPending } = useMutation({
     mutationFn: () => {
       const payload = {
-        sessionDate,
+        sessionDate: sessionDate || todayIso(),
         plannedContent: plannedContent || null,
         actualContent: actualContent || null,
         homeworkAssigned: homeworkAssigned || null,
@@ -206,7 +206,6 @@ export function SessionLogDialog({
 
   function validate(): boolean {
     const errs: Record<string, string> = {}
-    if (!sessionDate) errs.sessionDate = 'Date is required.'
     if (!plannedContent && !actualContent) {
       errs.content = 'At least one of "What was planned" or "What was actually done" is required.'
     }
@@ -265,7 +264,6 @@ export function SessionLogDialog({
                 type="date"
                 value={sessionDate}
                 onChange={(e) => setSessionDate(e.target.value)}
-                required
                 data-testid="session-date"
                 className="text-sm"
               />
