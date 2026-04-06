@@ -16,7 +16,6 @@ test('students list loads without infinite-scroll spinner when all fit on one pa
   const page = await context.newPage()
 
   await page.goto('/students')
-  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
   await expect(page.locator('h1')).toHaveText('Students', { timeout: 15000 })
 
   // Spinner should never appear when all students fit within the first page
