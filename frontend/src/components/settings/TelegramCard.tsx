@@ -4,6 +4,7 @@ import { Check, Copy, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getTelegramStatus, generateConnectCode, deleteTelegramLink } from '@/api/telegram'
+import type { TelegramStatus } from '@/api/telegram'
 import { logger } from '@/lib/logger'
 
 const POLL_INTERVAL_MS = 3000
@@ -17,26 +18,27 @@ export function TelegramCard() {
   const [pollingTimedOut, setPollingTimedOut] = useState(false)
   const pollingStartRef = useRef<number | null>(null)
   const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { data: status, isLoading: statusLoading } = useQuery({
     queryKey: ['telegram-status'],
     queryFn: getTelegramStatus,
-    refetchInterval: () => {
+    // Stop polling as soon as the link succeeds, or when no connect flow is active
+    refetchInterval: (query) => {
+      const data = query.state.data as TelegramStatus | undefined
+      if (data?.connected) return false
       if (connectCode === null) return false
       if (pollingStartRef.current === null) return false
-      if (Date.now() - pollingStartRef.current > POLL_TIMEOUT_MS) {
-        return false
-      }
+      if (Date.now() - pollingStartRef.current > POLL_TIMEOUT_MS) return false
       return POLL_INTERVAL_MS
     },
     refetchOnWindowFocus: false,
   })
 
-  // Clear the polling timeout on unmount to prevent state updates on unmounted component
+  // Clear pending state timers on unmount
   useEffect(() => () => {
-    if (pollingTimeoutRef.current !== null) {
-      clearTimeout(pollingTimeoutRef.current)
-    }
+    if (pollingTimeoutRef.current !== null) clearTimeout(pollingTimeoutRef.current)
+    if (copyTimerRef.current !== null) clearTimeout(copyTimerRef.current)
   }, [])
 
   const generate = useMutation({
@@ -65,10 +67,15 @@ export function TelegramCard() {
   function clearPendingState() {
     setConnectCode(null)
     setPollingTimedOut(false)
+    setCopied(false)
     pollingStartRef.current = null
     if (pollingTimeoutRef.current !== null) {
       clearTimeout(pollingTimeoutRef.current)
       pollingTimeoutRef.current = null
+    }
+    if (copyTimerRef.current !== null) {
+      clearTimeout(copyTimerRef.current)
+      copyTimerRef.current = null
     }
   }
 
@@ -76,8 +83,9 @@ export function TelegramCard() {
     if (!connectCode) return
     try {
       await navigator.clipboard.writeText(`/connect ${connectCode}`)
+      if (copyTimerRef.current !== null) clearTimeout(copyTimerRef.current)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
     } catch {
       // clipboard not available in test env — ignore
     }

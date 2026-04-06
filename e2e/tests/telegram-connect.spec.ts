@@ -123,11 +123,12 @@ async function seedConnectedState(browser: Browser): Promise<{ context: Awaited<
   const codeRes = await page.request.post(`${API_BASE}/api/telegram/connect-code`, {
     headers: { Authorization: 'Bearer test-token' },
   })
+  if (!codeRes.ok()) throw new Error(`seedConnectedState: connect-code returned ${codeRes.status()}`)
   const { code } = await codeRes.json()
 
   // Use a deterministic test-namespaced chatId to avoid accumulating junk on the persistent test DB
   const chatId = 9_000_000_000 + Math.floor(Math.random() * 1_000)
-  await page.request.post(`${API_BASE}/api/telegram/webhook`, {
+  const webhookRes = await page.request.post(`${API_BASE}/api/telegram/webhook`, {
     headers: {
       'Content-Type': 'application/json',
       'X-Telegram-Bot-Api-Secret-Token': WEBHOOK_SECRET,
@@ -141,6 +142,7 @@ async function seedConnectedState(browser: Browser): Promise<{ context: Awaited<
       },
     },
   })
+  if (!webhookRes.ok()) throw new Error(`seedConnectedState: webhook returned ${webhookRes.status()}`)
 
   await page.close()
   return { context, chatId }
@@ -174,7 +176,8 @@ test('clicking Connect Telegram shows code and instructions', async ({ browser }
   await page.getByTestId('telegram-connect-btn').click()
 
   await expect(page.getByTestId('telegram-code')).toBeVisible({ timeout: UI_TIMEOUT })
-  await expect(page.getByText(/@LangTeachBot/)).toBeVisible({ timeout: UI_TIMEOUT })
+  const botHandle = process.env.VITE_TELEGRAM_BOT_HANDLE ?? '@LangTeachBot'
+  await expect(page.getByText(new RegExp(botHandle.replace('@', '\\@')))).toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()
 })
