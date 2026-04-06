@@ -87,6 +87,7 @@ export interface LessonListQuery {
   pageSize?: number
   scheduledFrom?: string
   scheduledTo?: string
+  studentId?: string
 }
 
 export async function getLessons(query?: LessonListQuery): Promise<LessonListResponse> {

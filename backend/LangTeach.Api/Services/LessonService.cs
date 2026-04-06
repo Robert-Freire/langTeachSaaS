@@ -49,6 +49,9 @@ public class LessonService : ILessonService
             q = q.Where(l => l.ScheduledAt.HasValue && l.ScheduledAt.Value < scheduledToExclusive);
         }
 
+        if (query.StudentId.HasValue)
+            q = q.Where(l => l.StudentId == query.StudentId.Value);
+
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             var term = $"%{query.Search}%";
