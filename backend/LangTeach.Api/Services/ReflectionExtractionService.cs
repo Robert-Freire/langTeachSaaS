@@ -9,12 +9,6 @@ public class ReflectionExtractionService : IReflectionExtractionService
     private readonly IClaudeClient _claude;
     private readonly ILogger<ReflectionExtractionService> _logger;
 
-    private static readonly HashSet<string> ValidCompetencies =
-        new(StringComparer.OrdinalIgnoreCase) { "Grammar", "Vocabulary", "Pronunciation", "Fluency", "Discourse" };
-
-    private static readonly HashSet<string> ValidSeverities =
-        new(StringComparer.OrdinalIgnoreCase) { "low", "medium", "high" };
-
     private const string SystemPrompt = """
         You are a tool that helps language teachers structure their post-class notes.
         Extract structured information from a teacher's free-form reflection text.
@@ -106,7 +100,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
             var severity = GetStringOrNull(item, "severity");
 
             if (description is null || competency is null || severity is null) continue;
-            if (!ValidCompetencies.Contains(competency) || !ValidSeverities.Contains(severity))
+            if (!DifficultyConstants.ValidCompetencies.Contains(competency) || !DifficultyConstants.ValidSeverities.Contains(severity))
             {
                 _logger.LogWarning("Skipping suggested difficulty with invalid fields: Competency={Competency}, Severity={Severity}", competency, severity);
                 continue;

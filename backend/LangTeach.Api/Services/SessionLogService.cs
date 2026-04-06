@@ -16,11 +16,6 @@ public class SessionLogService : ISessionLogService
     private static readonly HashSet<string> ValidSkills = new(StringComparer.OrdinalIgnoreCase)
         { "Speaking", "Writing", "Reading", "Listening" };
 
-    private static readonly HashSet<string> ValidDifficultyCompetencies = new(StringComparer.OrdinalIgnoreCase)
-        { "Grammar", "Vocabulary", "Pronunciation", "Fluency", "Discourse" };
-
-    private static readonly HashSet<string> ValidDifficultySeverities = new(StringComparer.OrdinalIgnoreCase)
-        { "low", "medium", "high" };
 
     // TODO: source CEFR sub-levels from config if the set ever changes
     private static readonly HashSet<string> ValidCefrSubLevels = new(StringComparer.OrdinalIgnoreCase)
@@ -369,7 +364,7 @@ public class SessionLogService : ISessionLogService
         var existing = JsonStorageHelper.DeserializeList<DifficultyDto>(student.Difficulties);
         foreach (var s in suggested)
         {
-            if (!ValidDifficultyCompetencies.Contains(s.Competency) || !ValidDifficultySeverities.Contains(s.Severity))
+            if (!DifficultyConstants.ValidCompetencies.Contains(s.Competency) || !DifficultyConstants.ValidSeverities.Contains(s.Severity))
             {
                 logger.LogWarning("Skipping suggested difficulty with invalid fields: Competency={Competency}, Severity={Severity}", s.Competency, s.Severity);
                 continue;
