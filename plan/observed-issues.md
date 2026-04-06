@@ -33,3 +33,6 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #534 | 2026-04-06 | low | DemoSeeder has no students with difficulties; SessionLogDialog "Difficulties mentioned" section untestable in standard review-ui runs without manual API calls. |
 | #188 | 2026-04-06 | low | SuggestedDifficulties count cap missing on CreateSessionLogRequest - buggy client could bloat Student.Difficulties. Low risk (teacher-only app). |
 | #188 | 2026-04-06 | low | Competency/severity vocabulary in DifficultyConstants + AI prompt + DifficultyDto consumers - 3 update points if a 6th competency is added. Known drift. |
+| #545 | 2026-04-06 | low | TelegramConversationService bot reply strings are hardcoded English literals. Acceptable for single-teacher initial use; consider centralization if multi-locale or multi-teacher. |
+| #545 | 2026-04-06 | low | Student list fetch uses PageSize=100; teachers with >100 students will silently miss students beyond page 1 in name-matching. Acceptable at current scale. |
+| #545 | 2026-04-06 | low | Session date logged as DateTime.UtcNow.Date (server UTC). For teachers in UTC+N time zones, late-night notes may land on the next calendar date. Known limitation. |
