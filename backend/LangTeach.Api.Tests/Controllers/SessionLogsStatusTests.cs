@@ -190,6 +190,43 @@ public class SessionLogsStatusTests
     }
 
     [Fact]
+    public async Task CreateSession_PlannedContentExceedsMaxLength_ReturnsBadRequest()
+    {
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|maxlength-test", "maxlength@example.com");
+
+        var payload = new
+        {
+            plannedContent = new string('x', 5001),
+            previousHomeworkStatus = "NotApplicable",
+            status = "Confirmed",
+        };
+
+        var response = await client.PostAsJsonAsync($"/api/students/{studentId}/sessions", payload);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task CreateSession_ReturnsTeacherIdInDto()
+    {
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|teacherid-dto-test", "teacherid-dto@example.com");
+
+        var payload = new
+        {
+            previousHomeworkStatus = "NotApplicable",
+            status = "Confirmed",
+        };
+
+        var response = await client.PostAsJsonAsync($"/api/students/{studentId}/sessions", payload);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        doc.RootElement.GetProperty("teacherId").GetString().Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
     public async Task CreateSession_Draft_WithSuggestedDifficulties_DoesNotUpsertToProfile()
     {
         var (client, studentId) = await SeedTeacherWithStudent(
