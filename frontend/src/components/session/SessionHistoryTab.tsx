@@ -138,14 +138,14 @@ function SessionEntry({
 
             {/* Planned and actual — hidden when expanded to avoid duplication with detail section */}
             {!expanded && session.plannedContent && (
-              <p className="text-xs text-zinc-500 truncate">
+              <p className="text-xs text-zinc-500 line-clamp-1">
                 <span className="font-medium text-zinc-700">Planned:</span>{' '}
                 {session.plannedContent}
               </p>
             )}
 
             {!expanded && session.actualContent && (
-              <p className="text-xs text-zinc-600 truncate">
+              <p className="text-xs text-zinc-600 line-clamp-1">
                 <span className="font-medium text-zinc-700">Done:</span>{' '}
                 {session.actualContent}
               </p>
@@ -154,7 +154,7 @@ function SessionEntry({
             {/* Homework + status badges */}
             <div className="flex flex-wrap gap-1.5 items-center">
               {session.homeworkAssigned && (
-                <span className="text-xs text-zinc-500 truncate max-w-[160px]">
+                <span className="text-xs text-zinc-500 line-clamp-1 max-w-[160px]">
                   HW: {session.homeworkAssigned}
                 </span>
               )}
