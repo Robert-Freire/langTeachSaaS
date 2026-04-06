@@ -70,7 +70,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to parse reflection extraction JSON: {Json}", json);
+            _logger.LogWarning(ex, "Failed to parse reflection extraction JSON (length: {Length})", json?.Length ?? 0);
             return new ExtractedReflectionDto(null, null, null, null, null);
         }
     }
