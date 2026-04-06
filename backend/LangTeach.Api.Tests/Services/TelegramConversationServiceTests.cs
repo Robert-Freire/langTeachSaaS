@@ -246,9 +246,37 @@ public class TelegramConversationServiceTests : IDisposable
 
         await _sut.HandleUpdateAsync(VoiceUpdate(_chatId), CancellationToken.None);
 
-        // StubTranscriptionService returns empty string; no name match => asks for student
+        // StubTranscriptionService returns "[Test transcription]"; no name match => asks for student
         var state = _stateStore.GetConversationState(_chatId);
         state.Should().NotBeNull();
         _botService.LastSentMessage.Should().Contain("Which student");
+    }
+
+    [Fact]
+    public async Task TranscriptionFailure_SendsManualTextReply()
+    {
+        LinkTeacher();
+        await CreateStudentAsync("Ana");
+
+        // Create a conversation service that uses a throwing transcription service
+        var throwingTranscription = new ThrowingTranscriptionService();
+        var difficultyService = new DifficultyTrendService(_db, NullLogger<DifficultyTrendService>.Instance);
+        var sessionLogService = new SessionLogService(_db, difficultyService, NullLogger<SessionLogService>.Instance);
+        var studentService = new StudentService(_db, NullLogger<StudentService>.Instance);
+        var sut = new TelegramConversationService(
+            _db, _stateStore, _botService, throwingTranscription,
+            sessionLogService, studentService,
+            NullLogger<TelegramConversationService>.Instance);
+
+        await sut.HandleUpdateAsync(VoiceUpdate(_chatId), CancellationToken.None);
+
+        _botService.LastSentMessage.Should().Contain("text message");
+        _stateStore.GetConversationState(_chatId).Should().BeNull();
+    }
+
+    private class ThrowingTranscriptionService : ITranscriptionService
+    {
+        public Task<string> TranscribeAsync(Stream audio, string fileName, string contentType, CancellationToken ct = default)
+            => throw new InvalidOperationException("Transcription service unavailable");
     }
 }
