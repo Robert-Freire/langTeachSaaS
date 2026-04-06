@@ -2,6 +2,7 @@ using System.Text.Json;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Services;
@@ -114,7 +115,8 @@ public class SessionLogService : ISessionLogService
 
         _logger.LogInformation("Created SessionLog {SessionLogId} for Student {StudentId}", entity.Id, studentId);
 
-        await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken);
+        try { await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken); }
+        catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session create", studentId); }
 
         return ToDto(entity);
     }
@@ -173,7 +175,8 @@ public class SessionLogService : ISessionLogService
 
         _logger.LogInformation("Updated SessionLog {SessionLogId}", sessionId);
 
-        await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken);
+        try { await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken); }
+        catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session update", studentId); }
 
         return ToDto(entity);
     }
@@ -308,7 +311,5 @@ public class SessionLogService : ISessionLogService
     );
 
     private static string SerializePairs(List<DifficultyPairDto>? pairs) =>
-        pairs is null or { Count: 0 }
-            ? "[]"
-            : JsonSerializer.Serialize(pairs, new JsonSerializerOptions { PropertyNamingPolicy = null });
+        pairs is null or { Count: 0 } ? "[]" : JsonStorageHelper.Serialize(pairs);
 }

@@ -50,6 +50,9 @@ export default function StudentDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student', id] })
     },
+    onError: (err) => {
+      console.error('Failed to update difficulty status', err)
+    },
   })
 
   if (isLoading) {

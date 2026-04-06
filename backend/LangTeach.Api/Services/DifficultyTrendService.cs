@@ -28,12 +28,11 @@ public class DifficultyTrendService : IDifficultyTrendService
         if (difficulties.Count == 0)
             return;
 
-        // Load all non-deleted, non-cancelled session logs ordered chronologically.
-        // Nulls (no date) sort before dated entries; among dated, ascending.
+        // Load all non-deleted, non-cancelled session logs with a date, ordered chronologically.
+        // Sessions without a date are excluded: their chronological position is ambiguous.
         var sessionLogs = await _db.SessionLogs
-            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled)
-            .OrderBy(sl => sl.SessionDate.HasValue)
-            .ThenBy(sl => sl.SessionDate)
+            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue)
+            .OrderBy(sl => sl.SessionDate)
             .ToListAsync(ct);
 
         // Parse the mentioned pairs from each session log (list of (competency, subcategory) pairs).
@@ -43,7 +42,7 @@ public class DifficultyTrendService : IDifficultyTrendService
 
         var updated = difficulties.Select(d =>
         {
-            var key = (d.Competency.ToLowerInvariant(), d.Subcategory.ToLowerInvariant());
+            var key = (d.Competency.ToLowerInvariant(), (d.Subcategory ?? "").ToLowerInvariant());
             var appearedInSession = sessionMentions
                 .Select(mentions => mentions.Contains(key))
                 .ToList();
@@ -94,27 +93,9 @@ public class DifficultyTrendService : IDifficultyTrendService
 
     private static HashSet<(string, string)> ParsePairs(string json)
     {
-        try
-        {
-            var pairs = System.Text.Json.JsonSerializer.Deserialize<List<System.Text.Json.JsonElement>>(json);
-            if (pairs is null) return [];
-
-            var result = new HashSet<(string, string)>();
-            foreach (var el in pairs)
-            {
-                var competency = el.TryGetProperty("Competency", out var cp)
-                    ? cp.GetString() ?? ""
-                    : el.TryGetProperty("competency", out var cpl) ? cpl.GetString() ?? "" : "";
-                var subcategory = el.TryGetProperty("Subcategory", out var sc)
-                    ? sc.GetString() ?? ""
-                    : el.TryGetProperty("subcategory", out var scl) ? scl.GetString() ?? "" : "";
-                result.Add((competency.ToLowerInvariant(), subcategory.ToLowerInvariant()));
-            }
-            return result;
-        }
-        catch
-        {
-            return [];
-        }
+        var pairs = JsonStorageHelper.DeserializeList<DifficultyPairDto>(json);
+        return pairs
+            .Select(p => (p.Competency.ToLowerInvariant(), (p.Subcategory ?? "").ToLowerInvariant()))
+            .ToHashSet();
     }
 }

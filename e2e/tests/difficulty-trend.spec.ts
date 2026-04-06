@@ -4,6 +4,8 @@ import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 
 const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 
+const createdStudentIds: string[] = []
+
 test.beforeAll(async ({ browser }) => {
   const ctx = await createMockAuthContext(browser)
   const page = await ctx.newPage()
@@ -12,11 +14,24 @@ test.beforeAll(async ({ browser }) => {
   await ctx.close()
 })
 
+test.afterAll(async ({ browser }) => {
+  if (createdStudentIds.length === 0) return
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  for (const id of createdStudentIds) {
+    await page.request.delete(`${API_BASE}/api/students/${id}`, {
+      headers: { Authorization: 'Bearer test-token' },
+    })
+  }
+  await page.close()
+  await context.close()
+})
+
 test('trend starts stable with no session logs', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  const studentName = `Trend Test Student ${Date.now()}`
+  const studentName = `[QA] Trend Test Student ${Date.now()}`
   const createRes = await page.request.post(`${API_BASE}/api/students`, {
     headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
     data: {
@@ -34,6 +49,7 @@ test('trend starts stable with no session logs', async ({ browser }) => {
   })
   expect(createRes.status()).toBe(201)
   const student = await createRes.json()
+  createdStudentIds.push(student.id)
   expect(student.difficulties[0].trend).toBe('stable')
 
   await context.close()
@@ -43,7 +59,7 @@ test('trend becomes worsening after 3 consecutive session logs mentioning pair',
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  const studentName = `Worsening Trend Student ${Date.now()}`
+  const studentName = `[QA] Worsening Trend Student ${Date.now()}`
   const createRes = await page.request.post(`${API_BASE}/api/students`, {
     headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
     data: {
@@ -61,6 +77,7 @@ test('trend becomes worsening after 3 consecutive session logs mentioning pair',
   })
   const student = await createRes.json()
   const studentId = student.id
+  createdStudentIds.push(studentId)
 
   // Create 3 session logs, each mentioning the Grammar/ser/estar pair
   for (let i = 0; i < 3; i++) {
@@ -90,7 +107,7 @@ test('covered difficulty becomes improving when not mentioned in last 2 sessions
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  const studentName = `Improving Trend Student ${Date.now()}`
+  const studentName = `[QA] Improving Trend Student ${Date.now()}`
   const createRes = await page.request.post(`${API_BASE}/api/students`, {
     headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
     data: {
@@ -108,6 +125,7 @@ test('covered difficulty becomes improving when not mentioned in last 2 sessions
   })
   const student = await createRes.json()
   const studentId = student.id
+  createdStudentIds.push(studentId)
 
   // Create 2 session logs NOT mentioning the pair
   for (let i = 0; i < 2; i++) {
@@ -137,7 +155,7 @@ test('session log dialog shows active difficulties checkboxes', async ({ browser
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  const studentName = `Dialog Difficulties Student ${Date.now()}`
+  const studentName = `[QA] Dialog Difficulties Student ${Date.now()}`
   const createRes = await page.request.post(`${API_BASE}/api/students`, {
     headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
     data: {
@@ -156,6 +174,7 @@ test('session log dialog shows active difficulties checkboxes', async ({ browser
   })
   const student = await createRes.json()
   const studentId = student.id
+  createdStudentIds.push(studentId)
 
   await page.goto(`/students/${studentId}`)
   await page.getByRole('button', { name: 'Log Session' }).click()
