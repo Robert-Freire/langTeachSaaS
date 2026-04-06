@@ -45,8 +45,8 @@ const SESSION_BASE: sessionLogsApi.SessionLog = {
   createdAt: '2026-03-30T10:00:00Z',
   updatedAt: '2026-03-30T10:00:00Z',
   isCancelled: false,
-  status: 'Confirmed' as const,
-  statusName: 'Confirmed',
+  status: 0,
+  statusName: 'Confirmed' as const,
 }
 
 function wrapper() {
@@ -290,7 +290,7 @@ describe('SessionHistoryTab', () => {
 
   it('shows "Pending review" badge for a Draft session', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
-      { ...SESSION_BASE, status: 'Draft' as const, statusName: 'Draft' },
+      { ...SESSION_BASE, status: 1, statusName: 'Draft' as const },
     ])
     wrapper()
     expect(await screen.findByTestId('draft-badge')).toBeInTheDocument()

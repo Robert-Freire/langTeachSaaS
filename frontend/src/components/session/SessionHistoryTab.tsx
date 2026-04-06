@@ -113,7 +113,7 @@ function SessionEntry({
                   Cancelled
                 </Badge>
               )}
-              {session.status === 'Draft' && (
+              {session.statusName === 'Draft' && (
                 <Badge
                   variant="outline"
                   className="text-xs bg-amber-50 text-amber-700 border-amber-300"

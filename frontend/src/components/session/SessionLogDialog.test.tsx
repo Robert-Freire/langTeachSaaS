@@ -64,8 +64,8 @@ const SAMPLE_SESSION: SessionLog = {
   createdAt: '2026-03-15T10:00:00Z',
   updatedAt: '2026-03-15T10:00:00Z',
   isCancelled: false,
-  status: 'Confirmed',
-  statusName: 'Confirmed',
+  status: 0,
+  statusName: 'Confirmed' as const,
 }
 
 function wrapper(ui: React.ReactElement) {
@@ -92,7 +92,7 @@ describe('SessionLogDialog', () => {
         previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null, generalNotes: null,
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
-        isCancelled: false, status: 'Confirmed' as const, statusName: 'Confirmed',
+        isCancelled: false, status: 0, statusName: 'Confirmed' as const,
       },
     ])
 
@@ -113,7 +113,7 @@ describe('SessionLogDialog', () => {
         previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null, generalNotes: null,
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
-        isCancelled: false, status: 'Confirmed' as const, statusName: 'Confirmed',
+        isCancelled: false, status: 0, statusName: 'Confirmed' as const,
       },
     ])
 
@@ -377,7 +377,7 @@ describe('SessionLogDialog', () => {
           actualContent: 'Some content', homeworkAssigned: null, previousHomeworkStatus: 3,
           previousHomeworkStatusName: 'Not applicable', nextSessionTopics: 'Work on para/por distinction',
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
-          linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 'Confirmed' as const, statusName: 'Confirmed',
+          linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 0, statusName: 'Confirmed' as const,
           createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         },
       ])
@@ -411,7 +411,7 @@ describe('SessionLogDialog', () => {
           actualContent: 'Some content', homeworkAssigned: null, previousHomeworkStatus: 3,
           previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null,
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
-          linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 'Confirmed' as const, statusName: 'Confirmed',
+          linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 0, statusName: 'Confirmed' as const,
           createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         },
       ])
@@ -431,7 +431,7 @@ describe('SessionLogDialog', () => {
           actualContent: 'Older session', homeworkAssigned: null, previousHomeworkStatus: 3,
           previousHomeworkStatusName: 'Not applicable', nextSessionTopics: 'Review subjunctive',
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
-          linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 'Confirmed' as const, statusName: 'Confirmed',
+          linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 0, statusName: 'Confirmed' as const,
           createdAt: '2026-03-01T10:00:00Z', updatedAt: '2026-03-01T10:00:00Z',
         },
       ])
@@ -567,8 +567,8 @@ describe('SessionLogDialog', () => {
       vi.mocked(sessionLogsApi.createSession).mockResolvedValue({
         ...SAMPLE_SESSION,
         id: 'draft-session-id',
-        status: 'Draft',
-        statusName: 'Draft',
+        status: 1,
+        statusName: 'Draft' as const,
       })
     })
 
@@ -635,8 +635,8 @@ describe('SessionLogDialog', () => {
     it('calls updateSession with Confirmed on Confirm click after draft save', async () => {
       vi.mocked(sessionLogsApi.updateSession).mockResolvedValue({
         ...SAMPLE_SESSION,
-        status: 'Confirmed',
-        statusName: 'Confirmed',
+        status: 0,
+        statusName: 'Confirmed' as const,
       })
 
       wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
@@ -677,7 +677,7 @@ describe('SessionLogDialog', () => {
     })
 
     it('manual create (no voice) sends status Confirmed', async () => {
-      vi.mocked(sessionLogsApi.createSession).mockResolvedValue({ ...SAMPLE_SESSION, status: 'Confirmed', statusName: 'Confirmed' })
+      vi.mocked(sessionLogsApi.createSession).mockResolvedValue({ ...SAMPLE_SESSION, status: 0, statusName: 'Confirmed' as const })
 
       wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
       await waitFor(() => expect(screen.getByTestId('submit-session-log')).toBeInTheDocument())

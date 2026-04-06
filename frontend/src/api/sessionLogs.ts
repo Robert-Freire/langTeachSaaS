@@ -23,8 +23,8 @@ export interface SessionLog {
   createdAt: string
   updatedAt: string
   isCancelled: boolean
-  status: 'Draft' | 'Confirmed'
-  statusName: string
+  status: number
+  statusName: 'Draft' | 'Confirmed'
 }
 
 export interface ExtractedReflection {
