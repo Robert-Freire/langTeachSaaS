@@ -12,3 +12,11 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
 if (typeof Element.prototype.scrollIntoView === 'undefined') {
   Element.prototype.scrollIntoView = () => {}
 }
+
+if (typeof globalThis.IntersectionObserver === 'undefined') {
+  globalThis.IntersectionObserver = class IntersectionObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof globalThis.IntersectionObserver
+}

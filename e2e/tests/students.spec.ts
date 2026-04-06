@@ -10,6 +10,20 @@ test.beforeAll(async ({ browser }) => {
   await ctx.close()
 })
 
+test('students list loads without infinite-scroll spinner when all fit on one page', async ({ browser }) => {
+  // Assumes test environment has ≤20 students so all fit on the first page
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  await page.goto('/students')
+  await expect(page.locator('h1')).toHaveText('Students', { timeout: 15000 })
+
+  // Spinner should never appear when all students fit within the first page
+  await expect(page.getByTestId('fetch-next-loading')).not.toBeVisible()
+
+  await context.close()
+})
+
 test('shows not-found message for invalid student edit URL', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()

@@ -3,6 +3,8 @@
 Out-of-scope observations logged by agents during implementation. Each row is something an agent noticed but did not fix because it was outside the current task's scope. These get batched into future GitHub issues by the PM.
 
 | Source issue | Date | Severity | Observation |
+| #550 | 2026-04-06 | low | No e2e test for the >20-student pagination path (would require seeding 21+ students via API in e2e) |
+| #550 | 2026-04-06 | low | IntersectionObserver effect recreates observer on each isFetchingNextPage toggle; minor waste, functionally correct |
 |-------------|------|----------|-------------|
 | #498 | 2026-04-05 | P2:should | material-upload.spec.ts can't run in nightly CI (no Azure storage creds) — excluded from parallel project, filed #503 |
 | #498 | 2026-04-05 | P2:should | usage-limits.spec.ts times out in nightly CI (real AI generation too slow) — excluded from parallel project, filed #504 |
