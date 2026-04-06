@@ -29,3 +29,5 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #534 | 2026-04-06 | low | StudentForm: partially-completed difficulty rows (one field filled, one empty) are silently discarded on save rather than blocking submission. Consider validation UX improvement. |
 | #534 | 2026-04-06 | low | Trend thresholds (3 consecutive sessions for worsening, 2 sessions for improving) are hardcoded in DifficultyTrendService. Sophy recommends moving to config for pedagogy tuning. |
 | #534 | 2026-04-06 | low | DemoSeeder has no students with difficulties; SessionLogDialog "Difficulties mentioned" section untestable in standard review-ui runs without manual API calls. |
+| #188 | 2026-04-06 | low | SuggestedDifficulties count cap missing on CreateSessionLogRequest - buggy client could bloat Student.Difficulties. Low risk (teacher-only app). |
+| #188 | 2026-04-06 | low | Competency/severity vocabulary in DifficultyConstants + AI prompt + DifficultyDto consumers - 3 update points if a 6th competency is added. Known drift. |
