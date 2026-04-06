@@ -4,6 +4,7 @@ using LangTeach.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LangTeach.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260406071125_AddMentionedDifficultyPairs")]
+    partial class AddMentionedDifficultyPairs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -522,9 +525,6 @@ namespace LangTeach.Api.Migrations
                     b.Property<DateTime?>("SessionDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
                     b.Property<Guid>("StudentId")
                         .HasColumnType("uniqueidentifier");
 
@@ -547,9 +547,6 @@ namespace LangTeach.Api.Migrations
                     b.HasIndex("StudentId", "SessionDate");
 
                     b.HasIndex("TeacherId", "IsDeleted");
-
-                    b.HasIndex("Status")
-                        .HasDatabaseName("IX_SessionLogs_Status");
 
                     b.ToTable("SessionLogs");
                 });

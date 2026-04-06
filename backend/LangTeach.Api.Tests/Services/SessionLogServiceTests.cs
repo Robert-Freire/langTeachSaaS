@@ -22,7 +22,7 @@ public class SessionLogServiceTests : IDisposable
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _db = new AppDbContext(options);
-        _sut = new SessionLogService(_db, NullLogger<SessionLogService>.Instance);
+        _sut = new SessionLogService(_db, new NullDifficultyTrendService(), NullLogger<SessionLogService>.Instance);
 
         _db.Teachers.Add(new Teacher
         {
@@ -694,4 +694,10 @@ public class SessionLogServiceTests : IDisposable
         result.Should().NotBeNull();
         result!.IsCancelled.Should().BeTrue();
     }
+}
+
+file class NullDifficultyTrendService : IDifficultyTrendService
+{
+    public Task RecomputeAsync(Guid teacherId, Guid studentId, CancellationToken ct = default)
+        => Task.CompletedTask;
 }

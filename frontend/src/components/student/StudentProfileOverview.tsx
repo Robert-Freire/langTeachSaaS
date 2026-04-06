@@ -2,13 +2,14 @@ import { Link } from 'react-router-dom'
 import { Pencil } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { buttonVariants } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Student } from '@/api/students'
 import { parseNotes } from './studentNoteUtils'
 
 interface Props {
   student: Student
+  onToggleDifficultyStatus?: (id: string, status: 'Active' | 'Covered') => void
 }
 
 function ChipList({ items, emptyText }: { items: string[]; emptyText: string }) {
@@ -35,7 +36,7 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
   )
 }
 
-export function StudentProfileOverview({ student }: Props) {
+export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Props) {
   const parsedNotes = parseNotes(student.notes)
 
   return (
@@ -75,18 +76,64 @@ export function StudentProfileOverview({ student }: Props) {
 
           {student.difficulties.length > 0 && (
             <FieldRow label="Specific difficulties">
-              <div className="space-y-1">
-                {student.difficulties.map((d) => (
-                  <div key={d.id} className="flex items-center gap-2 text-sm text-zinc-700">
-                    <span>{d.item}</span>
-                    <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
-                      {d.category}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
-                      {d.severity}
-                    </Badge>
-                  </div>
-                ))}
+              <div className="space-y-2">
+                {student.difficulties.map((d) => {
+                  const isCovered = d.status === 'Covered'
+                  return (
+                    <div key={d.id} className="flex items-start gap-2 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <span className={cn('text-zinc-700', isCovered && 'line-through text-zinc-400')}>
+                          {d.description}
+                        </span>
+                        {d.subcategory && (
+                          <span className="ml-1 text-zinc-400 text-xs">({d.subcategory})</span>
+                        )}
+                      </div>
+                      <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200 shrink-0">
+                        {d.competency}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'text-xs shrink-0',
+                          d.severity === 'high' ? 'border-red-200 text-red-600' :
+                          d.severity === 'medium' ? 'border-amber-200 text-amber-600' :
+                          'border-blue-200 text-blue-600'
+                        )}
+                      >
+                        {d.severity}
+                      </Badge>
+                      {d.trend && d.trend !== 'stable' && (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'text-xs shrink-0',
+                            d.trend === 'worsening' ? 'border-red-200 text-red-600' : 'border-green-200 text-green-600'
+                          )}
+                        >
+                          {d.trend}
+                        </Badge>
+                      )}
+                      {isCovered && (
+                        <Badge variant="secondary" className="text-xs shrink-0 bg-zinc-100 text-zinc-500">
+                          Covered
+                        </Badge>
+                      )}
+                      {onToggleDifficultyStatus && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs text-zinc-400 hover:text-zinc-700 shrink-0"
+                          onClick={() => onToggleDifficultyStatus(d.id, isCovered ? 'Active' : 'Covered')}
+                          data-testid={`toggle-difficulty-status-${d.id}`}
+                        >
+                          {isCovered ? 'Mark Active' : 'Mark Covered'}
+                        </Button>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </FieldRow>
           )}

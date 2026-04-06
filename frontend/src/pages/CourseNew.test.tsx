@@ -225,7 +225,7 @@ describe('CourseNew wizard', () => {
         notes: null, nativeLanguage: 'Italian',
         learningGoals: ['get a job in Barcelona'],
         weaknesses: ['ser vs estar'],
-        difficulties: [{ id: 'x', category: 'grammar', item: 'subjunctive', severity: 'high', trend: 'stable' }],
+        difficulties: [{ id: 'x', description: 'subjunctive', competency: 'Grammar', subcategory: '', severity: 'high', trend: 'stable', status: 'Active' }],
         createdAt: '2026-01-01', updatedAt: '2026-01-01',
       }],
       totalCount: 1, page: 1, pageSize: 100,

@@ -111,20 +111,15 @@ test('full student CRUD flow', async ({ browser }) => {
   const diffRow = page.getByTestId('difficulty-row').first()
   await expect(diffRow).toBeVisible({ timeout: 10000 })
 
-  // Fill difficulty item text first (most reliable)
-  await diffRow.getByTestId('difficulty-item').fill('ser/estar in past tense')
+  // Fill difficulty description
+  await diffRow.getByTestId('difficulty-description').fill('Confuses ser/estar in past tense')
 
-  // Select category
-  await diffRow.getByTestId('difficulty-category').click()
+  // Select competency
+  await diffRow.getByTestId('difficulty-competency').click()
   await page.getByRole('option', { name: 'Grammar' }).click()
 
-  // Select severity
-  await diffRow.getByTestId('difficulty-severity').click()
-  await page.getByRole('option', { name: 'High' }).click()
-
-  // Select trend
-  await diffRow.getByTestId('difficulty-trend').click()
-  await page.getByRole('option', { name: 'Stable' }).click()
+  // Fill subcategory
+  await diffRow.getByTestId('difficulty-subcategory').fill('ser/estar')
 
   // Save
   await page.getByRole('button', { name: 'Save Student' }).click()
@@ -153,10 +148,10 @@ test('full student CRUD flow', async ({ browser }) => {
   // Verify difficulty persisted
   const editDiffRow = page.getByTestId('difficulty-row')
   await expect(editDiffRow).toBeVisible({ timeout: 5000 })
-  await expect(editDiffRow.getByTestId('difficulty-item')).toHaveValue('ser/estar in past tense')
+  await expect(editDiffRow.getByTestId('difficulty-description')).toHaveValue('Confuses ser/estar in past tense')
 
-  // Modify the difficulty item text
-  await editDiffRow.getByTestId('difficulty-item').fill('ser/estar in all tenses')
+  // Modify the difficulty description
+  await editDiffRow.getByTestId('difficulty-description').fill('ser/estar in all tenses')
 
   // Change CEFR level to C1
   await page.getByTestId('student-cefr').click()
@@ -175,7 +170,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await updatedCard.getByTestId('edit-student').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: 10000 })
   const verifyDiffRow = page.getByTestId('difficulty-row')
-  await expect(verifyDiffRow.getByTestId('difficulty-item')).toHaveValue('ser/estar in all tenses')
+  await expect(verifyDiffRow.getByTestId('difficulty-description')).toHaveValue('ser/estar in all tenses')
 
   // Remove the difficulty
   await verifyDiffRow.getByTestId('remove-difficulty').click()

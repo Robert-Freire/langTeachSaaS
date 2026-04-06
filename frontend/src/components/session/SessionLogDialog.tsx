@@ -23,6 +23,7 @@ import {
   type SessionLog,
 } from '../../api/sessionLogs'
 import { getLessons } from '../../api/lessons'
+import { getStudent } from '../../api/students'
 import { AudioRecorder } from '../audio/AudioRecorder'
 import type { VoiceNote } from '../../api/voiceNotes'
 
@@ -83,6 +84,7 @@ export function SessionLogDialog({
   const [reassessmentLevel, setReassessmentLevel] = useState('')
   const [selectedLessonId, setSelectedLessonId] = useState(linkedLessonId ?? '')
   const [isCancelled, setIsCancelled] = useState(false)
+  const [mentionedDifficultyKeys, setMentionedDifficultyKeys] = useState<Set<string>>(new Set())
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [success, setSuccess] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -111,6 +113,12 @@ export function SessionLogDialog({
       setReassessmentLevel(initialSession.levelReassessmentLevel ?? '')
       setSelectedLessonId(initialSession.linkedLessonId ?? '')
       setIsCancelled(initialSession.isCancelled ?? false)
+      try {
+        const pairs = JSON.parse(initialSession.mentionedDifficultyPairs || '[]') as { Competency: string; Subcategory: string }[]
+        setMentionedDifficultyKeys(new Set(pairs.map(p => `${p.Competency}|${p.Subcategory}`)))
+      } catch {
+        setMentionedDifficultyKeys(new Set())
+      }
     }
   }, [open, initialSession])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -144,6 +152,7 @@ export function SessionLogDialog({
       setReassessmentLevel('')
       setSelectedLessonId(linkedLessonId ?? '')
       setIsCancelled(false)
+      setMentionedDifficultyKeys(new Set())
       setErrors({})
       setSuccess(false)
       setSubmitError(null)
@@ -173,6 +182,13 @@ export function SessionLogDialog({
   })
   const studentLessons = lessonsData?.items.filter(l => l.studentId === studentId) ?? []
 
+  const { data: studentData } = useQuery({
+    queryKey: ['student', studentId],
+    queryFn: () => getStudent(studentId),
+    enabled: open,
+  })
+  const activeDifficulties = studentData?.difficulties.filter(d => d.status === 'Active') ?? []
+
   const { mutate: submitLog, isPending } = useMutation({
     mutationFn: () => {
       const payload = {
@@ -189,6 +205,19 @@ export function SessionLogDialog({
         topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
         isCancelled,
         status: 'Confirmed' as const,
+        mentionedDifficultyPairs: (() => {
+          // Include active difficulties that were checked in the UI.
+          const activeKeys = new Set(activeDifficulties.map(d => `${d.competency}|${d.subcategory}`))
+          const fromActive = activeDifficulties
+            .filter(d => mentionedDifficultyKeys.has(`${d.competency}|${d.subcategory}`))
+            .map(d => ({ Competency: d.competency, Subcategory: d.subcategory }))
+          // Preserve originally-mentioned pairs that are no longer active (e.g. now Covered)
+          // so re-editing a session doesn't silently drop their historical record.
+          const preserved = [...mentionedDifficultyKeys]
+            .filter(k => !activeKeys.has(k))
+            .map(k => { const [c, s] = k.split('|'); return { Competency: c, Subcategory: s ?? '' } })
+          return [...fromActive, ...preserved]
+        })(),
       }
       if (draftSessionId) {
         return updateSession(studentId, draftSessionId, payload)
@@ -493,6 +522,45 @@ export function SessionLogDialog({
               </Label>
               <TopicTagsInput value={topicTags} onChange={setTopicTags} />
             </div>
+
+            {/* Mentioned difficulties */}
+            {activeDifficulties.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm">
+                  Difficulties observed this session
+                  <span className="text-zinc-400 font-normal ml-1">(optional)</span>
+                </Label>
+                <div className="space-y-1">
+                  {activeDifficulties.map((d) => {
+                    const key = `${d.competency}|${d.subcategory}`
+                    const checked = mentionedDifficultyKeys.has(key)
+                    return (
+                      <label
+                        key={d.id}
+                        className="flex items-center gap-2 text-sm cursor-pointer"
+                        data-testid={`mentioned-difficulty-${d.competency}-${d.subcategory}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setMentionedDifficultyKeys(prev => {
+                              const next = new Set(prev)
+                              if (checked) next.delete(key)
+                              else next.add(key)
+                              return next
+                            })
+                          }}
+                          className="rounded border-zinc-300"
+                        />
+                        <span className="text-zinc-700">{d.description}</span>
+                        <span className="text-xs text-zinc-400">({d.competency}{d.subcategory ? ` / ${d.subcategory}` : ''})</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Level reassessment toggle */}
             <div className="space-y-2 rounded-lg border border-zinc-200 p-3">

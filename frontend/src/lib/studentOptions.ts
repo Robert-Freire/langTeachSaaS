@@ -75,22 +75,16 @@ export function getLanguageSpecificWeaknessValues(language: string): Set<string>
   return new Set((WEAKNESSES_BY_LANGUAGE[language] ?? []).map((o) => o.value))
 }
 
-export const DIFFICULTY_CATEGORIES: Option[] = [
-  { value: 'grammar', label: 'Grammar' },
-  { value: 'vocabulary', label: 'Vocabulary' },
-  { value: 'pronunciation', label: 'Pronunciation' },
-  { value: 'writing', label: 'Writing' },
-  { value: 'comprehension', label: 'Comprehension' },
+export const COMPETENCY_OPTIONS: Option[] = [
+  { value: 'Grammar', label: 'Grammar' },
+  { value: 'Vocabulary', label: 'Vocabulary' },
+  { value: 'Pronunciation', label: 'Pronunciation' },
+  { value: 'Fluency', label: 'Fluency' },
+  { value: 'Discourse', label: 'Discourse' },
 ]
 
 export const SEVERITY_LEVELS: Option[] = [
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
   { value: 'high', label: 'High' },
-]
-
-export const TREND_OPTIONS: Option[] = [
-  { value: 'improving', label: 'Improving' },
-  { value: 'stable', label: 'Stable' },
-  { value: 'declining', label: 'Declining' },
 ]

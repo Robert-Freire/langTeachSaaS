@@ -1,3 +1,11 @@
 namespace LangTeach.Api.DTOs;
 
-public record DifficultyDto(string Id, string Category, string Item, string Severity, string Trend);
+public record DifficultyDto(
+    string Id,
+    string Description,
+    string Competency,
+    string Subcategory,
+    string Severity,
+    string Trend,
+    string Status
+);

@@ -361,18 +361,18 @@ public class PromptServiceTests
         {
             StudentDifficulties =
             [
-                new DifficultyDto("d1", "grammar", "ser/estar in past tense", "high", "stable"),
-                new DifficultyDto("d2", "vocabulary", "false cognates with English", "medium", "improving"),
-                new DifficultyDto("d3", "pronunciation", "vowel reduction", "low", "stable"),
+                new DifficultyDto("d1", "Confuses ser/estar in past tense", "Grammar", "ser/estar", "high", "stable", "Active"),
+                new DifficultyDto("d2", "Uses false cognates from English", "Vocabulary", "false cognates", "medium", "stable", "Active"),
+                new DifficultyDto("d3", "Reduces vowel quality", "Pronunciation", "vowel quality", "low", "stable", "Active"),
             ]
         };
 
         var req = _sut.BuildExercisesPrompt(ctx);
 
         req.SystemPrompt.Should().Contain("Known difficulties");
-        req.SystemPrompt.Should().Contain("[high] grammar: ser/estar in past tense");
-        req.SystemPrompt.Should().Contain("[medium] vocabulary: false cognates with English");
-        req.SystemPrompt.Should().Contain("[low] pronunciation: vowel reduction");
+        req.SystemPrompt.Should().Contain("[high] Grammar: Confuses ser/estar in past tense");
+        req.SystemPrompt.Should().Contain("[medium] Vocabulary: Uses false cognates from English");
+        req.SystemPrompt.Should().Contain("[low] Pronunciation: Reduces vowel quality");
         req.SystemPrompt.Should().Contain("target these difficulty patterns");
     }
 
@@ -403,7 +403,7 @@ public class PromptServiceTests
         {
             StudentDifficulties =
             [
-                new DifficultyDto("d1", "grammar", "articles", "high", "stable"),
+                new DifficultyDto("d1", "Struggles with article usage", "Grammar", "articles", "high", "stable", "Active"),
             ]
         };
 
@@ -933,16 +933,16 @@ public class PromptServiceTests
         {
             StudentDifficulties =
             [
-                new DifficultyDto("1", "grammar", "past tense", "high", "stable"),
-                new DifficultyDto("2", "vocabulary", "false cognates", "medium", "improving"),
+                new DifficultyDto("1", "Issues with past tense selection", "Grammar", "past tense", "high", "stable", "Active"),
+                new DifficultyDto("2", "Uses false cognates with English", "Vocabulary", "false cognates", "medium", "stable", "Active"),
             ]
         };
 
         var req = _sut.BuildCurriculumPrompt(ctx);
 
         req.SystemPrompt.Should().Contain("Documented difficulties");
-        req.SystemPrompt.Should().Contain("grammar: past tense");
-        req.SystemPrompt.Should().Contain("vocabulary: false cognates");
+        req.SystemPrompt.Should().Contain("Grammar: Issues with past tense selection");
+        req.SystemPrompt.Should().Contain("Vocabulary: Uses false cognates with English");
     }
 
     [Fact]

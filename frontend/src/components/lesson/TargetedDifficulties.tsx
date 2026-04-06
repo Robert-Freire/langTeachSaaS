@@ -30,16 +30,21 @@ export function TargetedDifficulties(props: TargetedDifficultiesProps) {
 
   return (
     <div className="flex flex-wrap gap-1" data-testid="targeted-difficulties">
-      {difficulties.map((d, i) => (
-        <span
-          key={`${d.category}-${d.item}-${i}`}
-          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs border ${SEVERITY_CLASSES[d.severity] ?? SEVERITY_CLASSES.low}`}
-          data-testid="difficulty-badge"
-        >
-          <span className="font-medium">[{d.category}]</span>
-          {d.item}
-        </span>
-      ))}
+      {difficulties.map((d, i) => {
+        // Support legacy blocks that used {category, item} before the taxonomy rename.
+        const competency = d.competency ?? (d as unknown as { category?: string }).category ?? ''
+        const description = d.description ?? (d as unknown as { item?: string }).item ?? ''
+        return (
+          <span
+            key={`${competency}-${description}-${i}`}
+            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs border ${SEVERITY_CLASSES[d.severity] ?? SEVERITY_CLASSES.low}`}
+            data-testid="difficulty-badge"
+          >
+            <span className="font-medium">[{competency}]</span>
+            {description}
+          </span>
+        )
+      })}
     </div>
   )
 }

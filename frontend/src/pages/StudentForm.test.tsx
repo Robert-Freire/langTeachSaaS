@@ -41,17 +41,13 @@ vi.mock('../lib/studentOptions', () => ({
     if (lang === 'Spanish') return new Set(['ser/estar'])
     return new Set<string>()
   },
-  DIFFICULTY_CATEGORIES: [
-    { value: 'grammar', label: 'Grammar' },
-    { value: 'pronunciation', label: 'Pronunciation' },
+  COMPETENCY_OPTIONS: [
+    { value: 'Grammar', label: 'Grammar' },
+    { value: 'Pronunciation', label: 'Pronunciation' },
   ],
   SEVERITY_LEVELS: [
     { value: 'low', label: 'Low' },
     { value: 'high', label: 'High' },
-  ],
-  TREND_OPTIONS: [
-    { value: 'stable', label: 'Stable' },
-    { value: 'improving', label: 'Improving' },
   ],
 }))
 
@@ -213,8 +209,8 @@ describe('StudentForm', () => {
       learningGoals: [],
       weaknesses: [],
       difficulties: [
-        { id: 'd1', category: 'grammar', item: 'ser/estar', severity: 'high', trend: 'stable' },
-        { id: 'd2', category: 'pronunciation', item: 'rolled r', severity: 'low', trend: 'improving' },
+        { id: 'd1', description: 'Confuses ser/estar', competency: 'Grammar', subcategory: 'ser/estar', severity: 'high', trend: 'stable', status: 'Active' },
+        { id: 'd2', description: 'Difficulty with rolled r', competency: 'Pronunciation', subcategory: '/r/', severity: 'low', trend: 'stable', status: 'Active' },
       ],
       notes: '',
     })
@@ -224,9 +220,9 @@ describe('StudentForm', () => {
     const rows = await screen.findAllByTestId('difficulty-row')
     expect(rows).toHaveLength(2)
 
-    const items = screen.getAllByTestId('difficulty-item')
-    expect(items[0]).toHaveValue('ser/estar')
-    expect(items[1]).toHaveValue('rolled r')
+    const items = screen.getAllByTestId('difficulty-description')
+    expect(items[0]).toHaveValue('Confuses ser/estar')
+    expect(items[1]).toHaveValue('Difficulty with rolled r')
   })
 
   it('shows "Add custom" option when typing non-matching text in learning goals', async () => {
@@ -339,14 +335,14 @@ describe('StudentForm', () => {
     await user.click(screen.getByTestId('student-cefr'))
     await user.click(await screen.findByRole('option', { name: 'B1' }))
 
-    // Add a difficulty and fill the item text
+    // Add a difficulty and fill description but no competency
     await user.click(screen.getByTestId('add-difficulty'))
-    await user.type(screen.getByTestId('difficulty-item'), 'test difficulty')
+    await user.type(screen.getByTestId('difficulty-description'), 'test difficulty')
 
     // Submit
     await user.click(screen.getByRole('button', { name: 'Save Student' }))
 
-    // The difficulty row with empty category/severity/trend gets filtered out
+    // The difficulty row with empty competency gets filtered out
     expect(mockCreateStudent).toHaveBeenCalledWith(
       expect.objectContaining({
         difficulties: [],

@@ -23,6 +23,7 @@ public class SessionLog
     // Status=Draft + IsCancelled=true is not a valid combination.
     public SessionLogStatus Status { get; set; } = SessionLogStatus.Confirmed;
     public string TopicTags { get; set; } = "[]";
+    public string MentionedDifficultyPairs { get; set; } = "[]";
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

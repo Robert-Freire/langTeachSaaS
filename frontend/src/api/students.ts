@@ -2,10 +2,12 @@ import { apiClient } from '../lib/apiClient'
 
 export interface Difficulty {
   id: string
-  category: string
-  item: string
+  description: string
+  competency: string
+  subcategory: string
   severity: string
   trend: string
+  status: string
 }
 
 export interface Student {

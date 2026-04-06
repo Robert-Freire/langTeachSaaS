@@ -3,6 +3,8 @@ using LangTeach.Api.Data.Models;
 
 namespace LangTeach.Api.DTOs;
 
+public record DifficultyPairDto(string Competency, string Subcategory);
+
 public record SessionLogDto(
     Guid Id,
     Guid StudentId,
@@ -22,7 +24,8 @@ public record SessionLogDto(
     string TopicTags,
     bool IsCancelled,
     SessionLogStatus Status,
-    string StatusName
+    string StatusName,
+    string MentionedDifficultyPairs
 );
 
 public class CreateSessionLogRequest
@@ -43,8 +46,11 @@ public class CreateSessionLogRequest
     public Guid? LinkedLessonId { get; set; }
     public string? TopicTags { get; set; }
     public bool IsCancelled { get; set; }
+
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public SessionLogStatus Status { get; set; } = SessionLogStatus.Confirmed;
+
+    public List<DifficultyPairDto>? MentionedDifficultyPairs { get; set; }
 }
 
 public record StudentSessionSummaryDto(
@@ -74,6 +80,9 @@ public class UpdateSessionLogRequest
     public Guid? LinkedLessonId { get; set; }
     public string? TopicTags { get; set; }
     public bool IsCancelled { get; set; }
+
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public SessionLogStatus Status { get; set; } = SessionLogStatus.Confirmed;
+
+    public List<DifficultyPairDto>? MentionedDifficultyPairs { get; set; }
 }

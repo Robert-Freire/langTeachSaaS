@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, ChevronsUpDown, Check, Plus, Trash2 } from 'lucide-react'
 import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty } from '../api/students'
-import { LEARNING_GOALS, getWeaknessesForLanguage, getLanguageSpecificWeaknessValues, DIFFICULTY_CATEGORIES, SEVERITY_LEVELS, TREND_OPTIONS } from '../lib/studentOptions'
+import { LEARNING_GOALS, getWeaknessesForLanguage, getLanguageSpecificWeaknessValues, COMPETENCY_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -257,7 +257,7 @@ export default function StudentForm() {
       : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
     setDifficulties((prev) => [
       ...prev,
-      { id, category: '', item: '', severity: '', trend: '' },
+      { id, description: '', competency: '', subcategory: '', severity: 'medium', trend: 'stable', status: 'Active' },
     ])
   }
 
@@ -287,7 +287,7 @@ export default function StudentForm() {
       ? [...interests, interestInput.trim()]
       : interests
     const validDifficulties = difficulties.filter(
-      (d) => d.category && d.item.trim() && d.severity && d.trend
+      (d) => d.competency && d.description.trim()
     )
     mutate({
       name: name.trim(),
@@ -550,64 +550,59 @@ export default function StudentForm() {
               {difficulties.map((d) => (
                 <div
                   key={d.id}
-                  className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_2fr_1fr_1fr_auto] sm:gap-2 sm:items-start"
+                  className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_auto_1fr_auto_auto] sm:gap-2 sm:items-start"
                   data-testid="difficulty-row"
                 >
                   <Input
-                    value={d.item}
-                    onChange={(e) => updateDifficulty(d.id, 'item', e.target.value)}
-                    placeholder="e.g. ser/estar in past tense"
-                    maxLength={200}
-                    className="sm:order-2"
-                    data-testid="difficulty-item"
+                    value={d.description}
+                    onChange={(e) => updateDifficulty(d.id, 'description', e.target.value)}
+                    placeholder="e.g. Confuses ser/estar in past tense"
+                    maxLength={500}
+                    className="sm:col-span-1"
+                    data-testid="difficulty-description"
                   />
 
-                  <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 sm:contents">
-                    <Select value={d.category || undefined} onValueChange={(v) => v && updateDifficulty(d.id, 'category', v)}>
-                      <SelectTrigger data-testid="difficulty-category" className="sm:order-1">
-                        <SelectValue placeholder="Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DIFFICULTY_CATEGORIES.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <Select value={d.competency || undefined} onValueChange={(v) => v && updateDifficulty(d.id, 'competency', v)}>
+                    <SelectTrigger data-testid="difficulty-competency" className="w-[140px]">
+                      <SelectValue placeholder="Competency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COMPETENCY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                    <Select value={d.severity || undefined} onValueChange={(v) => v && updateDifficulty(d.id, 'severity', v)}>
-                      <SelectTrigger data-testid="difficulty-severity" className="sm:order-3">
-                        <SelectValue placeholder="Severity" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SEVERITY_LEVELS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <Input
+                    value={d.subcategory}
+                    onChange={(e) => updateDifficulty(d.id, 'subcategory', e.target.value)}
+                    placeholder="Subcategory (e.g. ser/estar)"
+                    maxLength={200}
+                    data-testid="difficulty-subcategory"
+                  />
 
-                    <Select value={d.trend || undefined} onValueChange={(v) => v && updateDifficulty(d.id, 'trend', v)}>
-                      <SelectTrigger data-testid="difficulty-trend" className="sm:order-4">
-                        <SelectValue placeholder="Trend" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TREND_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <Button
+                    type="button"
+                    variant={d.status === 'Covered' ? 'secondary' : 'outline'}
+                    size="sm"
+                    onClick={() => updateDifficulty(d.id, 'status', d.status === 'Covered' ? 'Active' : 'Covered')}
+                    data-testid="difficulty-status"
+                    className="whitespace-nowrap"
+                  >
+                    {d.status === 'Covered' ? 'Covered' : 'Active'}
+                  </Button>
 
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeDifficulty(d.id)}
-                      className="text-zinc-400 hover:text-red-600 h-9 w-9 sm:order-5"
-                      data-testid="remove-difficulty"
-                      aria-label="Remove difficulty"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeDifficulty(d.id)}
+                    className="text-zinc-400 hover:text-red-600 h-9 w-9"
+                    data-testid="remove-difficulty"
+                    aria-label="Remove difficulty"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
 

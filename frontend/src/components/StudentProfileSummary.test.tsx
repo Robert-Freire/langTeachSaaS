@@ -26,7 +26,7 @@ const FULL_STUDENT: Student = {
   learningGoals: ['get a job in Barcelona'],
   weaknesses: ['ser vs estar'],
   difficulties: [
-    { id: 'x', category: 'grammar', item: 'subjunctive', severity: 'high', trend: 'stable' },
+    { id: 'x', description: 'subjunctive', competency: 'Grammar', subcategory: '', severity: 'high', trend: 'stable', status: 'Active' },
   ],
 }
 

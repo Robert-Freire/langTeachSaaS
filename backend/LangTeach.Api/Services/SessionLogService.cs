@@ -2,6 +2,7 @@ using System.Text.Json;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Services;
@@ -9,6 +10,7 @@ namespace LangTeach.Api.Services;
 public class SessionLogService : ISessionLogService
 {
     private readonly AppDbContext _db;
+    private readonly IDifficultyTrendService _trendService;
     private readonly ILogger<SessionLogService> _logger;
 
     private static readonly HashSet<string> ValidSkills = new(StringComparer.OrdinalIgnoreCase)
@@ -21,9 +23,10 @@ public class SessionLogService : ISessionLogService
     private static readonly JsonSerializerOptions JsonOptions =
         new() { PropertyNameCaseInsensitive = true };
 
-    public SessionLogService(AppDbContext db, ILogger<SessionLogService> logger)
+    public SessionLogService(AppDbContext db, IDifficultyTrendService trendService, ILogger<SessionLogService> logger)
     {
         _db = db;
+        _trendService = trendService;
         _logger = logger;
     }
 
@@ -105,6 +108,7 @@ public class SessionLogService : ISessionLogService
             LevelReassessmentLevel = request.LevelReassessmentLevel,
             LinkedLessonId = request.LinkedLessonId,
             TopicTags = request.TopicTags ?? "[]",
+            MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs),
             IsCancelled = request.IsCancelled,
             Status = request.Status,
             CreatedAt = now,
@@ -119,6 +123,10 @@ public class SessionLogService : ISessionLogService
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Created SessionLog {SessionLogId} for Student {StudentId}", entity.Id, studentId);
+
+        try { await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken); }
+        catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session create", studentId); }
+
         return ToDto(entity);
     }
 
@@ -166,6 +174,7 @@ public class SessionLogService : ISessionLogService
         entity.LevelReassessmentLevel = request.LevelReassessmentLevel;
         entity.LinkedLessonId = request.LinkedLessonId;
         entity.TopicTags = request.TopicTags ?? "[]";
+        entity.MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs);
         entity.IsCancelled = request.IsCancelled;
         entity.Status = request.Status;
         entity.UpdatedAt = DateTime.UtcNow;
@@ -183,6 +192,10 @@ public class SessionLogService : ISessionLogService
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Updated SessionLog {SessionLogId}", sessionId);
+
+        try { await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken); }
+        catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session update", studentId); }
+
         return ToDto(entity);
     }
 
@@ -200,6 +213,10 @@ public class SessionLogService : ISessionLogService
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Soft-deleted SessionLog {SessionLogId}", sessionId);
+
+        try { await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken); }
+        catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session delete", studentId); }
+
         return true;
     }
 
@@ -313,6 +330,10 @@ public class SessionLogService : ISessionLogService
         sl.TopicTags,
         sl.IsCancelled,
         sl.Status,
-        sl.Status.ToString()
+        sl.Status.ToString(),
+        sl.MentionedDifficultyPairs
     );
+
+    private static string SerializePairs(List<DifficultyPairDto>? pairs) =>
+        pairs is null or { Count: 0 } ? "[]" : JsonStorageHelper.Serialize(pairs);
 }

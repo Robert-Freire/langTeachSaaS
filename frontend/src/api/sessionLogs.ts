@@ -25,6 +25,7 @@ export interface SessionLog {
   isCancelled: boolean
   status: number
   statusName: 'Draft' | 'Confirmed'
+  mentionedDifficultyPairs: string
 }
 
 export interface ExtractedReflection {
@@ -49,6 +50,7 @@ export interface CreateSessionLogRequest {
   topicTags?: string | null
   isCancelled?: boolean
   status?: 'Draft' | 'Confirmed'
+  mentionedDifficultyPairs?: { Competency: string; Subcategory: string }[]
 }
 
 export type UpdateSessionLogRequest = CreateSessionLogRequest

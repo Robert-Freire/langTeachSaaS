@@ -66,6 +66,7 @@ const SAMPLE_SESSION: SessionLog = {
   isCancelled: false,
   status: 0,
   statusName: 'Confirmed' as const,
+  mentionedDifficultyPairs: '[]',
 }
 
 function wrapper(ui: React.ReactElement) {
@@ -92,7 +93,7 @@ describe('SessionLogDialog', () => {
         previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null, generalNotes: null,
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
-        isCancelled: false, status: 0, statusName: 'Confirmed' as const,
+        isCancelled: false, status: 0, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]',
       },
     ])
 
@@ -113,7 +114,7 @@ describe('SessionLogDialog', () => {
         previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null, generalNotes: null,
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
-        isCancelled: false, status: 0, statusName: 'Confirmed' as const,
+        isCancelled: false, status: 0, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]',
       },
     ])
 
@@ -378,6 +379,7 @@ describe('SessionLogDialog', () => {
           previousHomeworkStatusName: 'Not applicable', nextSessionTopics: 'Work on para/por distinction',
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
           linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 0, statusName: 'Confirmed' as const,
+          mentionedDifficultyPairs: '[]',
           createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         },
       ])
@@ -412,6 +414,7 @@ describe('SessionLogDialog', () => {
           previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null,
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
           linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 0, statusName: 'Confirmed' as const,
+          mentionedDifficultyPairs: '[]',
           createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         },
       ])
@@ -432,6 +435,7 @@ describe('SessionLogDialog', () => {
           previousHomeworkStatusName: 'Not applicable', nextSessionTopics: 'Review subjunctive',
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
           linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 0, statusName: 'Confirmed' as const,
+          mentionedDifficultyPairs: '[]',
           createdAt: '2026-03-01T10:00:00Z', updatedAt: '2026-03-01T10:00:00Z',
         },
       ])
