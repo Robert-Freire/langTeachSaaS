@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -141,6 +141,77 @@ describe('Students error states', () => {
     wrapper(<Students />)
     await screen.findByTestId('native-language-chip')
     expect(screen.getByTestId('native-language-chip')).toHaveTextContent('Native: Portuguese')
+  })
+
+  it('renders scroll sentinel element and no loading indicator when all students fit one page', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 20,
+    })
+
+    wrapper(<Students />)
+    await waitFor(() => {
+      expect(document.querySelector('[data-testid="scroll-sentinel"]')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('fetch-next-loading')).not.toBeInTheDocument()
+  })
+
+  it('fetches next page when sentinel enters viewport and more pages exist', async () => {
+    const originalIO = globalThis.IntersectionObserver
+    let triggerIntersect: () => void = () => {}
+    globalThis.IntersectionObserver = class {
+      callback: IntersectionObserverCallback
+      constructor(callback: IntersectionObserverCallback) {
+        this.callback = callback
+        triggerIntersect = () =>
+          callback(
+            [{ isIntersecting: true } as IntersectionObserverEntry],
+            this as unknown as IntersectionObserver
+          )
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof IntersectionObserver
+
+    try {
+      const page1Items = Array.from({ length: 20 }, (_, i) => ({
+        id: `id-${i}`,
+        name: `Student ${i}`,
+        learningLanguage: 'Spanish',
+        cefrLevel: 'B1',
+        interests: [] as string[],
+        notes: null,
+        nativeLanguage: null,
+        learningGoals: [] as string[],
+        weaknesses: [] as string[],
+        difficulties: [] as studentsApi.Difficulty[],
+        createdAt: '',
+        updatedAt: '',
+      }))
+
+      vi.mocked(studentsApi.getStudents)
+        .mockResolvedValueOnce({ items: page1Items, totalCount: 21, page: 1, pageSize: 20 })
+        .mockResolvedValueOnce({
+          items: [{ id: 'id-20', name: 'Student 20', learningLanguage: 'Spanish', cefrLevel: 'B1', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '', updatedAt: '' }],
+          totalCount: 21,
+          page: 2,
+          pageSize: 20,
+        })
+
+      wrapper(<Students />)
+
+      await waitFor(() => expect(screen.getAllByTestId('student-name').length).toBe(20))
+
+      act(() => triggerIntersect())
+
+      await waitFor(() => expect(studentsApi.getStudents).toHaveBeenCalledWith({ page: 2 }))
+      await waitFor(() => expect(screen.getAllByTestId('student-name').length).toBe(21))
+    } finally {
+      globalThis.IntersectionObserver = originalIO
+    }
   })
 
   it('hides target language badge when native language is set', async () => {
