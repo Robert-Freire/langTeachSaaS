@@ -75,6 +75,7 @@ public class SessionLogServiceTests : IDisposable
 
         result.Id.Should().NotBeEmpty();
         result.StudentId.Should().Be(_studentId);
+        result.TeacherId.Should().Be(_teacherId);
         result.SessionDate.Should().Be(request.SessionDate);
         result.PlannedContent.Should().Be("Review past tense");
         result.ActualContent.Should().Be("Covered regular verbs only");
