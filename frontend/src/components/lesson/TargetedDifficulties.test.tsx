@@ -6,8 +6,8 @@ describe('TargetedDifficulties', () => {
   it('renders badges from generationParams JSON', () => {
     const params = JSON.stringify({
       targetedDifficulties: [
-        { category: 'grammar', item: 'ser/estar in past tense', severity: 'high' },
-        { category: 'vocabulary', item: 'false cognates', severity: 'medium' },
+        { competency: 'Grammar', description: 'Confuses ser/estar in past tense', severity: 'high' },
+        { competency: 'Vocabulary', description: 'False cognates with English', severity: 'medium' },
       ],
     })
 
@@ -15,31 +15,31 @@ describe('TargetedDifficulties', () => {
 
     const badges = screen.getAllByTestId('difficulty-badge')
     expect(badges).toHaveLength(2)
-    expect(badges[0]).toHaveTextContent('[grammar]')
-    expect(badges[0]).toHaveTextContent('ser/estar in past tense')
-    expect(badges[1]).toHaveTextContent('[vocabulary]')
-    expect(badges[1]).toHaveTextContent('false cognates')
+    expect(badges[0]).toHaveTextContent('[Grammar]')
+    expect(badges[0]).toHaveTextContent('Confuses ser/estar in past tense')
+    expect(badges[1]).toHaveTextContent('[Vocabulary]')
+    expect(badges[1]).toHaveTextContent('False cognates with English')
   })
 
   it('renders badges from difficulties prop directly', () => {
     const difficulties = [
-      { category: 'pronunciation', item: 'vowel reduction', severity: 'low' },
+      { competency: 'Pronunciation', description: 'Vowel quality reduction', severity: 'low' },
     ]
 
     render(<TargetedDifficulties difficulties={difficulties} />)
 
     const badges = screen.getAllByTestId('difficulty-badge')
     expect(badges).toHaveLength(1)
-    expect(badges[0]).toHaveTextContent('[pronunciation]')
-    expect(badges[0]).toHaveTextContent('vowel reduction')
+    expect(badges[0]).toHaveTextContent('[Pronunciation]')
+    expect(badges[0]).toHaveTextContent('Vowel quality reduction')
   })
 
   it('applies correct severity colors', () => {
     const params = JSON.stringify({
       targetedDifficulties: [
-        { category: 'grammar', item: 'high item', severity: 'high' },
-        { category: 'vocab', item: 'medium item', severity: 'medium' },
-        { category: 'pron', item: 'low item', severity: 'low' },
+        { competency: 'Grammar', description: 'high item', severity: 'high' },
+        { competency: 'Vocabulary', description: 'medium item', severity: 'medium' },
+        { competency: 'Pronunciation', description: 'low item', severity: 'low' },
       ],
     })
 

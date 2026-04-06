@@ -3,6 +3,8 @@ using LangTeach.Api.Data.Models;
 
 namespace LangTeach.Api.DTOs;
 
+public record DifficultyPairDto(string Competency, string Subcategory);
+
 public record SessionLogDto(
     Guid Id,
     Guid StudentId,
@@ -20,7 +22,8 @@ public record SessionLogDto(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     string TopicTags,
-    bool IsCancelled
+    bool IsCancelled,
+    string MentionedDifficultyPairs
 );
 
 public class CreateSessionLogRequest
@@ -41,6 +44,7 @@ public class CreateSessionLogRequest
     public Guid? LinkedLessonId { get; set; }
     public string? TopicTags { get; set; }
     public bool IsCancelled { get; set; }
+    public List<DifficultyPairDto>? MentionedDifficultyPairs { get; set; }
 }
 
 public record StudentSessionSummaryDto(
@@ -70,4 +74,5 @@ public class UpdateSessionLogRequest
     public Guid? LinkedLessonId { get; set; }
     public string? TopicTags { get; set; }
     public bool IsCancelled { get; set; }
+    public List<DifficultyPairDto>? MentionedDifficultyPairs { get; set; }
 }

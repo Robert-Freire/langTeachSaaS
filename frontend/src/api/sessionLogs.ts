@@ -23,6 +23,7 @@ export interface SessionLog {
   createdAt: string
   updatedAt: string
   isCancelled: boolean
+  mentionedDifficultyPairs: string
 }
 
 export interface CreateSessionLogRequest {
@@ -38,6 +39,7 @@ export interface CreateSessionLogRequest {
   linkedLessonId?: string | null
   topicTags?: string | null
   isCancelled?: boolean
+  mentionedDifficultyPairs?: { Competency: string; Subcategory: string }[]
 }
 
 export type UpdateSessionLogRequest = CreateSessionLogRequest

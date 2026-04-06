@@ -9,6 +9,7 @@ namespace LangTeach.Api.Services;
 public class SessionLogService : ISessionLogService
 {
     private readonly AppDbContext _db;
+    private readonly IDifficultyTrendService _trendService;
     private readonly ILogger<SessionLogService> _logger;
 
     private static readonly HashSet<string> ValidSkills = new(StringComparer.OrdinalIgnoreCase)
@@ -21,9 +22,10 @@ public class SessionLogService : ISessionLogService
     private static readonly JsonSerializerOptions JsonOptions =
         new() { PropertyNameCaseInsensitive = true };
 
-    public SessionLogService(AppDbContext db, ILogger<SessionLogService> logger)
+    public SessionLogService(AppDbContext db, IDifficultyTrendService trendService, ILogger<SessionLogService> logger)
     {
         _db = db;
+        _trendService = trendService;
         _logger = logger;
     }
 
@@ -97,6 +99,7 @@ public class SessionLogService : ISessionLogService
             LevelReassessmentLevel = request.LevelReassessmentLevel,
             LinkedLessonId = request.LinkedLessonId,
             TopicTags = request.TopicTags ?? "[]",
+            MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs),
             IsCancelled = request.IsCancelled,
             CreatedAt = now,
             UpdatedAt = now
@@ -110,6 +113,9 @@ public class SessionLogService : ISessionLogService
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Created SessionLog {SessionLogId} for Student {StudentId}", entity.Id, studentId);
+
+        await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken);
+
         return ToDto(entity);
     }
 
@@ -149,6 +155,7 @@ public class SessionLogService : ISessionLogService
         entity.LevelReassessmentLevel = request.LevelReassessmentLevel;
         entity.LinkedLessonId = request.LinkedLessonId;
         entity.TopicTags = request.TopicTags ?? "[]";
+        entity.MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs);
         entity.IsCancelled = request.IsCancelled;
         entity.UpdatedAt = DateTime.UtcNow;
 
@@ -165,6 +172,9 @@ public class SessionLogService : ISessionLogService
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Updated SessionLog {SessionLogId}", sessionId);
+
+        await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken);
+
         return ToDto(entity);
     }
 
@@ -293,6 +303,12 @@ public class SessionLogService : ISessionLogService
         sl.CreatedAt,
         sl.UpdatedAt,
         sl.TopicTags,
-        sl.IsCancelled
+        sl.IsCancelled,
+        sl.MentionedDifficultyPairs
     );
+
+    private static string SerializePairs(List<DifficultyPairDto>? pairs) =>
+        pairs is null or { Count: 0 }
+            ? "[]"
+            : JsonSerializer.Serialize(pairs, new JsonSerializerOptions { PropertyNamingPolicy = null });
 }

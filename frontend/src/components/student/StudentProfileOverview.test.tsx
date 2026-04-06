@@ -152,18 +152,20 @@ describe('StudentProfileOverview', () => {
     expect(link).toHaveAttribute('href', '/students/student-1/edit')
   })
 
-  it('renders difficulties with category and severity badges', () => {
+  it('renders difficulties with competency and severity badges', () => {
     renderOverview({
       difficulties: [{
         id: 'd1',
-        category: 'Grammar',
-        item: 'Ser/estar confusion',
-        severity: 'High',
-        trend: 'Stable',
+        description: 'Ser/estar confusion',
+        competency: 'Grammar',
+        subcategory: '',
+        severity: 'high',
+        trend: 'stable',
+        status: 'Active',
       }],
     })
     expect(screen.getByText('Ser/estar confusion')).toBeInTheDocument()
     expect(screen.getByText('Grammar')).toBeInTheDocument()
-    expect(screen.getByText('High')).toBeInTheDocument()
+    expect(screen.getByText('high')).toBeInTheDocument()
   })
 })

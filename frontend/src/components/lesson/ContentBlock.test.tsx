@@ -142,7 +142,7 @@ describe('ContentBlock - targeted difficulties', () => {
   it('renders difficulty badges when generationParams contains targetedDifficulties', () => {
     const params = JSON.stringify({
       targetedDifficulties: [
-        { category: 'grammar', item: 'ser/estar', severity: 'high' },
+        { competency: 'Grammar', description: 'Confuses ser/estar', severity: 'high' },
       ],
     })
     const block = makeBlock({ generationParams: params })
@@ -157,8 +157,8 @@ describe('ContentBlock - targeted difficulties', () => {
     )
 
     expect(screen.getByTestId('targeted-difficulties')).toBeInTheDocument()
-    expect(screen.getByText('[grammar]')).toBeInTheDocument()
-    expect(screen.getByText('ser/estar')).toBeInTheDocument()
+    expect(screen.getByText('[Grammar]')).toBeInTheDocument()
+    expect(screen.getByText('Confuses ser/estar')).toBeInTheDocument()
   })
 
   it('does not render difficulty badges when generationParams has no difficulties', () => {

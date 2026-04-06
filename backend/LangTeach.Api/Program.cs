@@ -178,6 +178,7 @@ if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnv
     builder.Services.AddScoped<IReplanSuggestionService, StubReplanSuggestionService>();
 else
     builder.Services.AddScoped<IReplanSuggestionService, ReplanSuggestionService>();
+builder.Services.AddScoped<IDifficultyTrendService, DifficultyTrendService>();
 builder.Services.AddScoped<ISessionLogService, SessionLogService>();
 builder.Services.AddScoped<ISessionHistoryService, SessionHistoryService>();
 builder.Services.AddScoped<ICurriculumGenerationService, CurriculumGenerationService>();

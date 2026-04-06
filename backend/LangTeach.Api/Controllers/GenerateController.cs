@@ -454,6 +454,7 @@ public class GenerateController : ControllerBase
 
     private static DifficultyDto[]? TopDifficulties(StudentDto? student) =>
         student?.Difficulties
+            .Where(d => string.Equals(d.Status, "Active", StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(d => d.Severity switch { "high" => 3, "medium" => 2, _ => 1 })
             .Take(3)
             .ToArray();

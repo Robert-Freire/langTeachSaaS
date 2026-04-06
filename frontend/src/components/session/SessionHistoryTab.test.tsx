@@ -45,6 +45,7 @@ const SESSION_BASE: sessionLogsApi.SessionLog = {
   createdAt: '2026-03-30T10:00:00Z',
   updatedAt: '2026-03-30T10:00:00Z',
   isCancelled: false,
+  mentionedDifficultyPairs: '[]',
 }
 
 function wrapper() {

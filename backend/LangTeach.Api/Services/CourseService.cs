@@ -348,7 +348,9 @@ public class CourseService : ICourseService
                 ? JsonStorageHelper.DeserializeList<string>(student.Weaknesses).ToArray()
                 : null,
             StudentDifficulties: student is not null
-                ? JsonStorageHelper.DeserializeList<DifficultyDto>(student.Difficulties).ToArray()
+                ? JsonStorageHelper.DeserializeList<DifficultyDto>(student.Difficulties)
+                    .Where(d => string.Equals(d.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                    .ToArray()
                 : null,
             TeacherNotes: req.TeacherNotes
         );

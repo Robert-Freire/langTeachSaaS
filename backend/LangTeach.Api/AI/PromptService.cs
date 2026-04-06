@@ -398,7 +398,7 @@ public class PromptService : IPromptService
                 sb.AppendLine();
                 sb.AppendLine("Known difficulties (prioritize these in exercises and examples):");
                 foreach (var d in ctx.StudentDifficulties)
-                    sb.AppendLine($"- [{InputSanitizer.Sanitize(d.Severity)}] {InputSanitizer.Sanitize(d.Category)}: {InputSanitizer.Sanitize(d.Item)}");
+                    sb.AppendLine($"- [{InputSanitizer.Sanitize(d.Severity)}] {InputSanitizer.Sanitize(d.Competency)}: {InputSanitizer.Sanitize(d.Description)}");
                 sb.AppendLine("Design exercises that specifically target these difficulty patterns. For each exercise, ensure at least one item directly addresses a listed difficulty.");
             }
         }
@@ -1122,9 +1122,9 @@ public class PromptService : IPromptService
                 var topDifficulties = ctx.StudentDifficulties
                     .OrderByDescending(d => d.Severity switch { "high" => 3, "medium" => 2, _ => 1 })
                     .Take(5)
-                    .Select(d => (Category: InputSanitizer.Sanitize(d.Category), Item: InputSanitizer.Sanitize(d.Item)))
-                    .Where(d => d.Category.Length > 0 && d.Item.Length > 0)
-                    .Select(d => $"{d.Category}: {d.Item}");
+                    .Select(d => (Competency: InputSanitizer.Sanitize(d.Competency), Description: InputSanitizer.Sanitize(d.Description)))
+                    .Where(d => d.Competency.Length > 0 && d.Description.Length > 0)
+                    .Select(d => $"{d.Competency}: {d.Description}");
                 sb.AppendLine($"Documented difficulties: {string.Join("; ", topDifficulties)}");
             }
         }

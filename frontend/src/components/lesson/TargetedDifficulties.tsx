@@ -32,12 +32,12 @@ export function TargetedDifficulties(props: TargetedDifficultiesProps) {
     <div className="flex flex-wrap gap-1" data-testid="targeted-difficulties">
       {difficulties.map((d, i) => (
         <span
-          key={`${d.category}-${d.item}-${i}`}
+          key={`${d.competency}-${d.description}-${i}`}
           className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs border ${SEVERITY_CLASSES[d.severity] ?? SEVERITY_CLASSES.low}`}
           data-testid="difficulty-badge"
         >
-          <span className="font-medium">[{d.category}]</span>
-          {d.item}
+          <span className="font-medium">[{d.competency}]</span>
+          {d.description}
         </span>
       ))}
     </div>
