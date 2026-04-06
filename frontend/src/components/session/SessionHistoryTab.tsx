@@ -126,12 +126,22 @@ function SessionEntry({
                 <span className="inline-flex items-center gap-1 text-xs text-amber-600" data-testid="action-item-count">
                   <span className="bg-amber-400 rounded-full w-1.5 h-1.5 shrink-0" />
                   1 action item
+                  {expanded ? (
+                    <ChevronUp className="h-3 w-3 shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 shrink-0" />
+                  )}
                 </span>
               )}
               {hasNote && (
                 <span className="inline-flex items-center gap-1 text-xs text-zinc-400" data-testid="general-note-count">
                   <span className="bg-zinc-300 rounded-full w-1.5 h-1.5 shrink-0" />
                   1 note
+                  {expanded ? (
+                    <ChevronUp className="h-3 w-3 shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 shrink-0" />
+                  )}
                 </span>
               )}
             </div>

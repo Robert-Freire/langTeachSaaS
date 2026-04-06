@@ -412,6 +412,9 @@ export function SessionLogDialog({
                 data-testid="session-date"
                 className="text-sm"
               />
+              {sessionDate && (
+                <p className="text-xs text-zinc-400" data-testid="session-date-iso">{sessionDate}</p>
+              )}
               {errors.sessionDate && <p className="text-xs text-red-600">{errors.sessionDate}</p>}
             </div>
 
