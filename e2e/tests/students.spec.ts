@@ -11,6 +11,7 @@ test.beforeAll(async ({ browser }) => {
 })
 
 test('students list loads without infinite-scroll spinner when all fit on one page', async ({ browser }) => {
+  // Assumes test environment has ≤20 students so all fit on the first page
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 

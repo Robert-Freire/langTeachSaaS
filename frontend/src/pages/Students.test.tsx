@@ -176,40 +176,42 @@ describe('Students error states', () => {
       disconnect() {}
     } as unknown as typeof IntersectionObserver
 
-    const page1Items = Array.from({ length: 20 }, (_, i) => ({
-      id: `id-${i}`,
-      name: `Student ${i}`,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [] as string[],
-      notes: null,
-      nativeLanguage: null,
-      learningGoals: [] as string[],
-      weaknesses: [] as string[],
-      difficulties: [] as studentsApi.Difficulty[],
-      createdAt: '',
-      updatedAt: '',
-    }))
+    try {
+      const page1Items = Array.from({ length: 20 }, (_, i) => ({
+        id: `id-${i}`,
+        name: `Student ${i}`,
+        learningLanguage: 'Spanish',
+        cefrLevel: 'B1',
+        interests: [] as string[],
+        notes: null,
+        nativeLanguage: null,
+        learningGoals: [] as string[],
+        weaknesses: [] as string[],
+        difficulties: [] as studentsApi.Difficulty[],
+        createdAt: '',
+        updatedAt: '',
+      }))
 
-    vi.mocked(studentsApi.getStudents)
-      .mockResolvedValueOnce({ items: page1Items, totalCount: 21, page: 1, pageSize: 20 })
-      .mockResolvedValueOnce({
-        items: [{ id: 'id-20', name: 'Student 20', learningLanguage: 'Spanish', cefrLevel: 'B1', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '', updatedAt: '' }],
-        totalCount: 21,
-        page: 2,
-        pageSize: 20,
-      })
+      vi.mocked(studentsApi.getStudents)
+        .mockResolvedValueOnce({ items: page1Items, totalCount: 21, page: 1, pageSize: 20 })
+        .mockResolvedValueOnce({
+          items: [{ id: 'id-20', name: 'Student 20', learningLanguage: 'Spanish', cefrLevel: 'B1', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '', updatedAt: '' }],
+          totalCount: 21,
+          page: 2,
+          pageSize: 20,
+        })
 
-    wrapper(<Students />)
+      wrapper(<Students />)
 
-    await waitFor(() => expect(screen.getAllByTestId('student-name').length).toBe(20))
+      await waitFor(() => expect(screen.getAllByTestId('student-name').length).toBe(20))
 
-    act(() => triggerIntersect())
+      act(() => triggerIntersect())
 
-    await waitFor(() => expect(studentsApi.getStudents).toHaveBeenCalledWith({ page: 2 }))
-    await waitFor(() => expect(screen.getAllByTestId('student-name').length).toBe(21))
-
-    globalThis.IntersectionObserver = originalIO
+      await waitFor(() => expect(studentsApi.getStudents).toHaveBeenCalledWith({ page: 2 }))
+      await waitFor(() => expect(screen.getAllByTestId('student-name').length).toBe(21))
+    } finally {
+      globalThis.IntersectionObserver = originalIO
+    }
   })
 
   it('hides target language badge when native language is set', async () => {
