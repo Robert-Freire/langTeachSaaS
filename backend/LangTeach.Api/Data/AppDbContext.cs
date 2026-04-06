@@ -187,6 +187,7 @@ public class AppDbContext : DbContext
             e.HasKey(sl => sl.Id);
             e.HasIndex(sl => new { sl.StudentId, sl.SessionDate });
             e.HasIndex(sl => new { sl.TeacherId, sl.IsDeleted });
+            e.HasIndex(sl => sl.Status).HasDatabaseName("IX_SessionLogs_Status");
             e.HasOne(sl => sl.Student)
              .WithMany(s => s.SessionLogs)
              .HasForeignKey(sl => sl.StudentId)

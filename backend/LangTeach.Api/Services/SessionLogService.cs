@@ -61,6 +61,14 @@ public class SessionLogService : ISessionLogService
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
 
+        if (!Enum.IsDefined(request.Status))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid Status value: {(int)request.Status}");
+
+        if (request.Status == SessionLogStatus.Draft && request.IsCancelled)
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                "Draft sessions cannot be cancelled.");
+
         ValidateReassessment(request.LevelReassessmentSkill, request.LevelReassessmentLevel);
 
         var student = await _db.Students
@@ -98,6 +106,7 @@ public class SessionLogService : ISessionLogService
             LinkedLessonId = request.LinkedLessonId,
             TopicTags = request.TopicTags ?? "[]",
             IsCancelled = request.IsCancelled,
+            Status = request.Status,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -118,6 +127,14 @@ public class SessionLogService : ISessionLogService
         if (!Enum.IsDefined(request.PreviousHomeworkStatus))
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
+
+        if (!Enum.IsDefined(request.Status))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid Status value: {(int)request.Status}");
+
+        if (request.Status == SessionLogStatus.Draft && request.IsCancelled)
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                "Draft sessions cannot be cancelled.");
 
         ValidateReassessment(request.LevelReassessmentSkill, request.LevelReassessmentLevel);
 
@@ -150,6 +167,7 @@ public class SessionLogService : ISessionLogService
         entity.LinkedLessonId = request.LinkedLessonId;
         entity.TopicTags = request.TopicTags ?? "[]";
         entity.IsCancelled = request.IsCancelled;
+        entity.Status = request.Status;
         entity.UpdatedAt = DateTime.UtcNow;
 
         if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
@@ -225,10 +243,10 @@ public class SessionLogService : ISessionLogService
             throw new KeyNotFoundException($"Student {studentId} not found.");
 
         var totalSessions = await _db.SessionLogs
-            .CountAsync(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled, cancellationToken);
+            .CountAsync(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.Status == SessionLogStatus.Confirmed, cancellationToken);
 
         var mostRecent = await _db.SessionLogs
-            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue)
+            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.Status == SessionLogStatus.Confirmed && sl.SessionDate.HasValue)
             .OrderByDescending(sl => sl.SessionDate)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -293,6 +311,8 @@ public class SessionLogService : ISessionLogService
         sl.CreatedAt,
         sl.UpdatedAt,
         sl.TopicTags,
-        sl.IsCancelled
+        sl.IsCancelled,
+        sl.Status,
+        sl.Status.ToString()
     );
 }
