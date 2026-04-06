@@ -513,6 +513,37 @@ describe('SessionLogDialog', () => {
     expect(vi.mocked(sessionLogsApi.createSession)).not.toHaveBeenCalled()
   })
 
+  it('shows ISO date helper text when a date is entered', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+
+    wrapper(
+      <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+    )
+
+    await waitFor(() => expect(screen.getByTestId('session-date')).toBeInTheDocument())
+
+    fireEvent.change(screen.getByTestId('session-date'), { target: { value: '2026-04-06' } })
+
+    expect(screen.getByTestId('session-date-iso')).toHaveTextContent('2026-04-06')
+  })
+
+  it('shows ISO date helper text pre-populated in edit mode', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+
+    wrapper(
+      <SessionLogDialog
+        studentId={STUDENT_ID}
+        open={true}
+        onOpenChange={vi.fn()}
+        initialSession={SAMPLE_SESSION}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('session-date-iso')).toHaveTextContent('2026-03-15')
+    })
+  })
+
   it('accepts a future session date without validation error', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
     vi.mocked(sessionLogsApi.createSession).mockResolvedValue({

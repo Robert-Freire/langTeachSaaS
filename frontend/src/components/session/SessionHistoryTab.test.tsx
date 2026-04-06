@@ -309,4 +309,20 @@ describe('SessionHistoryTab', () => {
     await screen.findByTestId('session-entry')
     expect(screen.queryByTestId('draft-badge')).not.toBeInTheDocument()
   })
+
+  it('action item badge contains a chevron icon for expand affordance', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    const badge = screen.getByTestId('action-item-count')
+    expect(badge.querySelector('svg')).not.toBeNull()
+  })
+
+  it('general note badge contains a chevron icon for expand affordance', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    const badge = screen.getByTestId('general-note-count')
+    expect(badge.querySelector('svg')).not.toBeNull()
+  })
 })
