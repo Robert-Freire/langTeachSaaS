@@ -2936,5 +2936,57 @@ public class PromptServiceTests
         grammar.SystemPrompt.Should().NotContain("dedicated review activity",
             because: "gap instruction must not appear in per-block system prompts (#422)");
     }
+
+    [Fact]
+    public void LessonPlanPrompt_CultureSocietyPractice_NoSoftNegative()
+    {
+        // Issue #422 (AC3): "Avoid purely mechanical grammar drills" replaced with positive description.
+        var ctx = BaseCtx() with { TemplateName = "Culture & Society" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("Avoid purely mechanical grammar drills",
+            because: "soft negative replaced with positive task description in culture-society:practice (#422)");
+        req.UserPrompt.Should().Contain("communicative and analytical activities",
+            because: "culture-society:practice now uses positive framing (#422)");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_GrammarFocusWarmUp_NoDiscoveryAmbiguity()
+    {
+        // Issue #422 (AC5): "not practice or discovery" rephrased to "not practice" only.
+        var ctx = BaseCtx() with { TemplateName = "Grammar Focus" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("not practice or discovery",
+            because: "'or discovery' ambiguity removed from grammar-focus warmUp override (#422)");
+        req.UserPrompt.Should().Contain("not practice",
+            because: "activation scope still explicitly excludes practice (#422)");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_A1_NoSentenceTransformationNegative()
+    {
+        // Issue #422 (AC10): A1 practice guidance no longer states the exclusion redundant with validExerciseTypes.
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("Do not include sentence transformation or error correction",
+            because: "redundant negative removed from A1 practice guidance — validExerciseTypes already excludes them (#422)");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_B1_NoRelyOnJustOneType()
+    {
+        // Issue #422 (AC11): B1 practice guidance "do not rely on just one type" removed — already enforced by minExerciseVariety.
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("do not rely on just one type",
+            because: "redundant negative removed from B1 practice guidance — minExerciseVariety already enforces variety (#422)");
+    }
 }
 
