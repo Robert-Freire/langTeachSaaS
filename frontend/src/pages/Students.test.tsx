@@ -159,6 +159,7 @@ describe('Students error states', () => {
   })
 
   it('fetches next page when sentinel enters viewport and more pages exist', async () => {
+    const originalIO = globalThis.IntersectionObserver
     let triggerIntersect: () => void = () => {}
     globalThis.IntersectionObserver = class {
       callback: IntersectionObserverCallback
@@ -207,6 +208,8 @@ describe('Students error states', () => {
 
     await waitFor(() => expect(studentsApi.getStudents).toHaveBeenCalledWith({ page: 2 }))
     await waitFor(() => expect(screen.getAllByTestId('student-name').length).toBe(21))
+
+    globalThis.IntersectionObserver = originalIO
   })
 
   it('hides target language badge when native language is set', async () => {
