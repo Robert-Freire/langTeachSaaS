@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/PageHeader'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { LANGUAGES } from '@/lib/languages'
+import { TelegramCard } from '@/components/settings/TelegramCard'
 
 const STYLES = ['Formal', 'Conversational', 'Exam-prep']
 
@@ -228,6 +229,19 @@ export default function Settings() {
           </CardContent>
         </Card>
       </form>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Integrations</CardTitle>
+          <CardDescription>Connect external services to LangTeach.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-zinc-700">Telegram</h3>
+            <TelegramCard />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
