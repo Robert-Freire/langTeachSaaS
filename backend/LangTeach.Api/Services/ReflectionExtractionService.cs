@@ -94,10 +94,10 @@ public class ReflectionExtractionService : IReflectionExtractionService
         {
             if (item.ValueKind != JsonValueKind.Object) continue;
 
-            var description = GetStringOrNull(item, "description");
-            var competency = GetStringOrNull(item, "competency");
-            var subcategory = GetStringOrNull(item, "subcategory") ?? string.Empty;
-            var severity = GetStringOrNull(item, "severity");
+            var description = GetStringOrNull(item, "description")?.Trim();
+            var competency = GetStringOrNull(item, "competency")?.Trim();
+            var subcategory = GetStringOrNull(item, "subcategory")?.Trim() ?? string.Empty;
+            var severity = GetStringOrNull(item, "severity")?.Trim();
 
             if (description is null || competency is null || severity is null) continue;
             if (!DifficultyConstants.ValidCompetencies.Contains(competency) || !DifficultyConstants.ValidSeverities.Contains(severity))

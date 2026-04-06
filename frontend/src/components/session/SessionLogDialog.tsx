@@ -28,6 +28,17 @@ import { getStudent } from '../../api/students'
 import { AudioRecorder } from '../audio/AudioRecorder'
 import type { VoiceNote } from '../../api/voiceNotes'
 
+function isSuggestedDifficulty(value: unknown): value is SuggestedDifficulty {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    typeof (value as SuggestedDifficulty).description === 'string' &&
+    typeof (value as SuggestedDifficulty).competency === 'string' &&
+    typeof (value as SuggestedDifficulty).subcategory === 'string' &&
+    typeof (value as SuggestedDifficulty).severity === 'string'
+  )
+}
+
 const HOMEWORK_STATUSES = [
   { value: 'Done', label: 'Done' },
   { value: 'Partial', label: 'Partial' },
@@ -122,7 +133,8 @@ export function SessionLogDialog({
         setMentionedDifficultyKeys(new Set())
       }
       try {
-        setSuggestedDifficulties(JSON.parse(initialSession.suggestedDifficulties || '[]') as SuggestedDifficulty[])
+        const parsed: unknown = JSON.parse(initialSession.suggestedDifficulties || '[]')
+        setSuggestedDifficulties(Array.isArray(parsed) ? parsed.filter(isSuggestedDifficulty) : [])
       } catch {
         setSuggestedDifficulties([])
       }

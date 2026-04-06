@@ -1,10 +1,14 @@
+using System.Collections.Frozen;
+
 namespace LangTeach.Api.DTOs;
 
 public static class DifficultyConstants
 {
-    public static readonly HashSet<string> ValidCompetencies =
-        new(StringComparer.OrdinalIgnoreCase) { "Grammar", "Vocabulary", "Pronunciation", "Fluency", "Discourse" };
+    public static readonly FrozenSet<string> ValidCompetencies =
+        new[] { "Grammar", "Vocabulary", "Pronunciation", "Fluency", "Discourse" }
+            .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
-    public static readonly HashSet<string> ValidSeverities =
-        new(StringComparer.OrdinalIgnoreCase) { "low", "medium", "high" };
+    public static readonly FrozenSet<string> ValidSeverities =
+        new[] { "low", "medium", "high" }
+            .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 }
