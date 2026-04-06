@@ -94,6 +94,10 @@ public class TelegramController : ControllerBase
         {
             await _conversationService.HandleUpdateAsync(update, ct);
         }
+        catch (OperationCanceledException)
+        {
+            // Cancellation on shutdown — not an error
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled error processing Telegram update {UpdateId}", update.UpdateId);
@@ -105,7 +109,8 @@ public class TelegramController : ControllerBase
     private static string GenerateCode()
     {
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        var rng = new Random();
-        return new string(Enumerable.Range(0, 8).Select(_ => chars[rng.Next(chars.Length)]).ToArray());
+        return new string(Enumerable.Range(0, 8)
+            .Select(_ => chars[System.Security.Cryptography.RandomNumberGenerator.GetInt32(chars.Length)])
+            .ToArray());
     }
 }

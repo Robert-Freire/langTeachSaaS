@@ -113,9 +113,12 @@ public class TelegramConversationService
             return;
         }
 
-        // Try to match a student name in the notes
+        // Try to match a student name in the notes using word-token matching to avoid
+        // false positives (e.g. "Ana" matching "banana" or "mañana").
+        var noteTokens = notes.Split([' ', ',', '.', ';', ':', '!', '?', '\n', '\r'],
+            StringSplitOptions.RemoveEmptyEntries);
         var matched = students.FirstOrDefault(s =>
-            notes.Contains(s.Name, StringComparison.OrdinalIgnoreCase));
+            noteTokens.Any(t => t.Equals(s.Name, StringComparison.OrdinalIgnoreCase)));
 
         if (matched is not null)
         {
@@ -214,7 +217,8 @@ public class TelegramConversationService
             return;
         }
 
-        // Remove any existing link for this chat or teacher, then insert new
+        // Remove any existing link for this chat or teacher, then insert new.
+        // SaveChangesAsync is atomic on SQL Server; on in-memory DB (tests) transactions are not supported.
         var existing = await _db.Set<TelegramLink>()
             .Where(l => l.ChatId == chatId || l.TeacherId == teacherId.Value)
             .ToListAsync(ct);

@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -10,19 +12,37 @@ public class TelegramWebhookSecretFilter : IActionFilter
     private const string HeaderName = "X-Telegram-Bot-Api-Secret-Token";
 
     private readonly string _expectedSecret;
+    private readonly IWebHostEnvironment _env;
 
-    public TelegramWebhookSecretFilter(IOptions<TelegramOptions> options)
+    public TelegramWebhookSecretFilter(IOptions<TelegramOptions> options, IWebHostEnvironment env)
     {
         _expectedSecret = options.Value.WebhookSecret;
+        _env = env;
     }
 
     public void OnActionExecuting(ActionExecutingContext context)
     {
-        // If no secret is configured, skip validation (dev/test mode)
-        if (string.IsNullOrEmpty(_expectedSecret)) return;
+        // Skip validation only in Development/Testing/E2ETesting with no secret configured.
+        // In production the StartupConfigValidator ensures the secret is always set,
+        // so this path is unreachable in production.
+        if (string.IsNullOrEmpty(_expectedSecret)
+            && (_env.IsDevelopment()
+                || _env.IsEnvironment("Testing")
+                || _env.IsEnvironment("E2ETesting")))
+        {
+            return;
+        }
 
-        if (!context.HttpContext.Request.Headers.TryGetValue(HeaderName, out var value)
-            || value.ToString() != _expectedSecret)
+        if (!context.HttpContext.Request.Headers.TryGetValue(HeaderName, out var value))
+        {
+            context.Result = new UnauthorizedResult();
+            return;
+        }
+
+        // Fixed-time comparison to prevent timing attacks
+        var incoming = Encoding.UTF8.GetBytes(value.ToString());
+        var expected = Encoding.UTF8.GetBytes(_expectedSecret);
+        if (!CryptographicOperations.FixedTimeEquals(incoming, expected))
         {
             context.Result = new UnauthorizedResult();
         }
