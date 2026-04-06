@@ -123,6 +123,7 @@ public class SessionLogService : ISessionLogService
             PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);
 
         if (request.Status == SessionLogStatus.Confirmed && request.SuggestedDifficulties is { Count: > 0 })
+            // Re-validate here: request may arrive directly (bypassing ReflectionExtractionService sanitization)
             UpsertDifficulties(student, request.SuggestedDifficulties, _logger);
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -199,6 +200,7 @@ public class SessionLogService : ISessionLogService
 
         if (request.Status == SessionLogStatus.Confirmed && request.SuggestedDifficulties is { Count: > 0 })
         {
+            // Re-validate here: request may arrive directly (bypassing ReflectionExtractionService sanitization)
             studentForUpdate ??= await _db.Students
                 .Where(s => s.Id == studentId && s.TeacherId == teacherId)
                 .FirstOrDefaultAsync(cancellationToken);

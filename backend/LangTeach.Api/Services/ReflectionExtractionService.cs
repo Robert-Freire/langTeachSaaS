@@ -14,11 +14,11 @@ public class ReflectionExtractionService : IReflectionExtractionService
         Extract structured information from a teacher's free-form reflection text.
         Respond ONLY with a valid JSON object using these exact keys:
         - whatWasCovered: string or null
-        - areasToImprove: string or null (student difficulties, mistakes, or struggles)
+        - areasToImprove: string or null (narrative summary of student difficulties and struggles — prose, not a list)
         - emotionalSignals: string or null (student attitude, mood, motivation, engagement signals)
         - homeworkAssigned: string or null
         - nextLessonIdeas: string or null
-        - suggestedDifficulties: array of objects (can be empty [])
+        - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
 
         For suggestedDifficulties, each object must have:
         - description: full sentence describing the difficulty, extracted verbatim from the teacher's language

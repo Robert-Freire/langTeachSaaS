@@ -15,6 +15,8 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | #188 | low | `UpsertDifficulties` uses `existing.IndexOf(match)` (O(n)) to get the index for record update. | Deferred: lists are typically <10 items; premature optimisation. |
 | #188 | info | `JsonDocument` disposal: reviewer flagged lack of `using`; actually `using var doc` is present at line 73. Dismissed (false positive). | Dismissed: code is correct. |
 | #188 | info | Draft->Confirmed transition using previously stored `SuggestedDifficulties` column will not re-upsert unless the confirm payload includes them again. | By design: the form sends the current teacher-edited list on confirm. |
+| #188 | low | `CreateSessionLogRequest.SuggestedDifficulties` has no count cap; a buggy client could post hundreds of entries and bloat Student.Difficulties. | Deferred: teacher-only single-tenant app; no public API surface at this stage. |
+| #188 | low | Competency/severity vocabulary lives in DifficultyConstants, AI prompt, and DifficultyDto consumers. Adding a 6th competency requires 3 updates. | Deferred: set is stable by design; over-engineering to centralise further. |
 
 ## PR #546 (sessions/extract endpoint) - 2026-04-06
 
