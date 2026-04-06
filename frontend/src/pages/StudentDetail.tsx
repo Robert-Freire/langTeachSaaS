@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, NotebookPen, BookOpen } from 'lucide-react'
 import { getStudent, updateStudent } from '../api/students'
@@ -12,6 +12,7 @@ import { StudentProfileSummary } from '@/components/StudentProfileSummary'
 import { StudentProfileOverview } from '@/components/student/StudentProfileOverview'
 import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
+import { ProgressDashboard } from '@/components/student/ProgressDashboard'
 import { SessionLogDialog } from '@/components/session/SessionLogDialog'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { SessionSummaryHeader } from '@/components/session/SessionSummaryHeader'
@@ -21,6 +22,8 @@ export default function StudentDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const defaultTab = searchParams.get('tab') ?? 'overview'
   const [logSessionOpen, setLogSessionOpen] = useState(false)
 
   const { data: student, isLoading, isError } = useQuery({
@@ -118,10 +121,11 @@ export default function StudentDetail() {
       </div>
 
       {/* Tabbed content */}
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue={defaultTab}>
         <TabsList>
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="history" data-testid="tab-history">History</TabsTrigger>
+          <TabsTrigger value="progress" data-testid="tab-progress">Progress</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="pt-6 space-y-6">
@@ -153,6 +157,10 @@ export default function StudentDetail() {
 
         <TabsContent value="history">
           <SessionHistoryTab studentId={student.id} />
+        </TabsContent>
+
+        <TabsContent value="progress" className="pt-6">
+          <ProgressDashboard studentId={student.id} />
         </TabsContent>
       </Tabs>
 
