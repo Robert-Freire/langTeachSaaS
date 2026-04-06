@@ -24,6 +24,9 @@ public class SessionLogService : ISessionLogService
     private static readonly JsonSerializerOptions JsonOptions =
         new() { PropertyNameCaseInsensitive = true };
 
+    private static readonly JsonSerializerOptions CamelCaseOptions =
+        new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     public SessionLogService(AppDbContext db, IDifficultyTrendService trendService, ILogger<SessionLogService> logger)
     {
         _db = db;
@@ -358,8 +361,9 @@ public class SessionLogService : ISessionLogService
     private static string SerializePairs(List<DifficultyPairDto>? pairs) =>
         pairs is null or { Count: 0 } ? "[]" : JsonStorageHelper.Serialize(pairs);
 
+    // Serialize with camelCase so the raw JSON column matches the API response casing the frontend expects.
     private static string SerializeSuggestedDifficulties(List<SuggestedDifficultyDto>? items) =>
-        items is null or { Count: 0 } ? "[]" : JsonStorageHelper.Serialize(items);
+        items is null or { Count: 0 } ? "[]" : JsonSerializer.Serialize(items, CamelCaseOptions);
 
     private static void UpsertDifficulties(Student student, List<SuggestedDifficultyDto> suggested, ILogger logger)
     {
