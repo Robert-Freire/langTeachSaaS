@@ -286,26 +286,32 @@ public class SessionLogService : ISessionLogService
         var totalSessions = await _db.SessionLogs
             .CountAsync(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.Status == SessionLogStatus.Confirmed, cancellationToken);
 
-        var mostRecent = await _db.SessionLogs
+        var recentSessions = await _db.SessionLogs
             .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.Status == SessionLogStatus.Confirmed && sl.SessionDate.HasValue)
             .OrderByDescending(sl => sl.SessionDate)
-            .FirstOrDefaultAsync(cancellationToken);
+            .Take(3)
+            .ToListAsync(cancellationToken);
 
         string? lastSessionDate = null;
         int? daysSinceLastSession = null;
         var openActionItems = new List<string>();
 
-        if (mostRecent is not null)
+        if (recentSessions.Count > 0)
         {
+            var mostRecent = recentSessions[0];
             lastSessionDate = mostRecent.SessionDate!.Value.ToString("yyyy-MM-dd");
             daysSinceLastSession = (int)(DateTime.UtcNow.Date - mostRecent.SessionDate.Value.Date).TotalDays;
-            if (!string.IsNullOrWhiteSpace(mostRecent.NextSessionTopics))
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var session in recentSessions)
             {
-                openActionItems = mostRecent.NextSessionTopics
-                    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(l => l.Trim())
-                    .Where(l => l.Length > 0)
-                    .ToList();
+                if (string.IsNullOrWhiteSpace(session.NextSessionTopics)) continue;
+                foreach (var line in session.NextSessionTopics.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var item = line.Trim();
+                    if (item.Length > 0 && seen.Add(item))
+                        openActionItems.Add(item);
+                }
             }
         }
 
