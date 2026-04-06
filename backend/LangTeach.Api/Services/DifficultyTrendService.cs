@@ -64,8 +64,11 @@ public class DifficultyTrendService : IDifficultyTrendService
             return "stable";
 
         // improving: status = Covered AND pair did NOT appear in last 2 confirmed session logs
+        // Require at least 2 sessions so a single absence does not trigger improving.
         if (string.Equals(status, "Covered", StringComparison.OrdinalIgnoreCase))
         {
+            if (appearedInSession.Count < 2)
+                return "stable";
             var last2 = appearedInSession.TakeLast(2).ToList();
             if (last2.All(appeared => !appeared))
                 return "improving";

@@ -182,7 +182,7 @@ test('session log dialog shows active difficulties checkboxes', async ({ browser
   // Only Active difficulties should appear as checkboxes
   await expect(page.getByTestId('mentioned-difficulty-Grammar-ser/estar')).toBeVisible()
   // Covered difficulty should NOT appear
-  await expect(page.getByTestId('mentioned-difficulty-Vocabulary-false friends')).not.toBeVisible()
+  await expect(page.getByTestId('mentioned-difficulty-Vocabulary-false friends')).not.toBeAttached()
 
   await context.close()
 })

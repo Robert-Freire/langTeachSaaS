@@ -191,9 +191,19 @@ export function SessionLogDialog({
         linkedLessonId: selectedLessonId || null,
         topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
         isCancelled,
-        mentionedDifficultyPairs: activeDifficulties
-          .filter(d => mentionedDifficultyKeys.has(`${d.competency}|${d.subcategory}`))
-          .map(d => ({ Competency: d.competency, Subcategory: d.subcategory })),
+        mentionedDifficultyPairs: (() => {
+          // Include active difficulties that were checked in the UI.
+          const activeKeys = new Set(activeDifficulties.map(d => `${d.competency}|${d.subcategory}`))
+          const fromActive = activeDifficulties
+            .filter(d => mentionedDifficultyKeys.has(`${d.competency}|${d.subcategory}`))
+            .map(d => ({ Competency: d.competency, Subcategory: d.subcategory }))
+          // Preserve originally-mentioned pairs that are no longer active (e.g. now Covered)
+          // so re-editing a session doesn't silently drop their historical record.
+          const preserved = [...mentionedDifficultyKeys]
+            .filter(k => !activeKeys.has(k))
+            .map(k => { const [c, s] = k.split('|'); return { Competency: c, Subcategory: s ?? '' } })
+          return [...fromActive, ...preserved]
+        })(),
       }
       return isEditMode
         ? updateSession(studentId, initialSession.id, payload)

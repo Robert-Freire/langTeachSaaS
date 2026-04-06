@@ -25,3 +25,7 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #187 | 2026-04-05 | low | `AudioRecorder`: rapid double-click on Upload could trigger two concurrent uploads before state update prevents second |
 | #487 | 2026-04-05 | low | E2E tests create students/lessons but never clean up; test data accumulates in the persistent test DB (consistent with all existing e2e tests) |
 | #487 | 2026-04-05 | low | `student-detail.visual.spec.ts` does not scroll to capture the linked lesson area; consider adding a scrolled screenshot for regression coverage |
+| #534 | 2026-04-06 | low | ExcelImporter.cs: malformed date strings (non-empty, non-parseable) are silently treated as null date instead of being rejected. CodeRabbit finding, out of scope for t534. |
+| #534 | 2026-04-06 | low | StudentForm: partially-completed difficulty rows (one field filled, one empty) are silently discarded on save rather than blocking submission. Consider validation UX improvement. |
+| #534 | 2026-04-06 | low | Trend thresholds (3 consecutive sessions for worsening, 2 sessions for improving) are hardcoded in DifficultyTrendService. Sophy recommends moving to config for pedagogy tuning. |
+| #534 | 2026-04-06 | low | DemoSeeder has no students with difficulties; SessionLogDialog "Difficulties mentioned" section untestable in standard review-ui runs without manual API calls. |

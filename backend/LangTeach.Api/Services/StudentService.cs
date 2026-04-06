@@ -81,6 +81,7 @@ public class StudentService : IStudentService
     {
         ValidateNativeLanguage(request.NativeLanguage);
         ValidateDifficulties(request.Difficulties);
+        var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
 
         var student = new Student
         {
@@ -93,7 +94,7 @@ public class StudentService : IStudentService
             NativeLanguage = request.NativeLanguage,
             LearningGoals = Serialize(request.LearningGoals),
             Weaknesses = Serialize(request.Weaknesses),
-            Difficulties = Serialize(request.Difficulties),
+            Difficulties = Serialize(normalizedDifficulties),
             Notes = request.Notes,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
@@ -117,6 +118,7 @@ public class StudentService : IStudentService
 
         ValidateNativeLanguage(request.NativeLanguage);
         ValidateDifficulties(request.Difficulties);
+        var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
 
         student.Name = request.Name;
         student.LearningLanguage = request.LearningLanguage;
@@ -125,7 +127,7 @@ public class StudentService : IStudentService
         student.NativeLanguage = request.NativeLanguage;
         student.LearningGoals = Serialize(request.LearningGoals);
         student.Weaknesses = Serialize(request.Weaknesses);
-        student.Difficulties = Serialize(request.Difficulties);
+        student.Difficulties = Serialize(normalizedDifficulties);
         student.Notes = request.Notes;
         student.UpdatedAt = DateTime.UtcNow;
 
@@ -193,6 +195,11 @@ public class StudentService : IStudentService
             // Trend is system-computed; any submitted value is silently accepted and will be overwritten by DifficultyTrendService.
         }
     }
+
+    // Trend is system-computed by DifficultyTrendService. Reset any client-supplied value to "stable"
+    // so the server is always authoritative after the next session log confirm.
+    private static List<DifficultyDto> NormalizeSystemFields(List<DifficultyDto> difficulties) =>
+        difficulties.Select(d => d with { Trend = "stable" }).ToList();
 
     private static string Serialize<T>(List<T> list) =>
         JsonStorageHelper.Serialize(list);

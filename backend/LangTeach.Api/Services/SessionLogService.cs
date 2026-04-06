@@ -195,6 +195,10 @@ public class SessionLogService : ISessionLogService
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Soft-deleted SessionLog {SessionLogId}", sessionId);
+
+        try { await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken); }
+        catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session delete", studentId); }
+
         return true;
     }
 
