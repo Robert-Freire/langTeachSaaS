@@ -110,6 +110,29 @@ public class VoiceNoteService : IVoiceNoteService
         return ToDto(note);
     }
 
+    public async Task<bool> DeleteAsync(Guid teacherId, Guid id, CancellationToken ct = default)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(ct);
+        var note = await db.VoiceNotes
+            .FirstOrDefaultAsync(v => v.Id == id && v.TeacherId == teacherId, ct);
+        if (note is null) return false;
+
+        var blobPath = note.BlobPath;
+        db.VoiceNotes.Remove(note);
+        await db.SaveChangesAsync(ct);
+
+        try
+        {
+            await _blobStorage.DeleteAsync(blobPath, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Blob delete failed for orphaned path. Id={Id} BlobPath={BlobPath}", id, blobPath);
+        }
+
+        return true;
+    }
+
     public async Task<string?> GetAudioUrlAsync(Guid teacherId, Guid id, CancellationToken ct = default)
     {
         await using var db = await _dbFactory.CreateDbContextAsync(ct);

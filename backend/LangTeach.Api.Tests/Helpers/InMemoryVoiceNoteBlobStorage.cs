@@ -19,4 +19,12 @@ public class InMemoryVoiceNoteBlobStorage : IVoiceNoteBlobStorage
 
     public Task<string> GetDownloadUrlAsync(string blobPath)
         => Task.FromResult($"http://localhost/voice-notes/{blobPath}");
+
+    public Task DeleteAsync(string blobPath, CancellationToken ct = default)
+    {
+        _blobs.TryRemove(blobPath, out _);
+        return Task.CompletedTask;
+    }
+
+    public bool ContainsBlob(string blobPath) => _blobs.ContainsKey(blobPath);
 }
