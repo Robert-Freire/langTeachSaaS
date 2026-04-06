@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<SessionLog> SessionLogs => Set<SessionLog>();
     public DbSet<VoiceNote> VoiceNotes => Set<VoiceNote>();
     public DbSet<CourseSuggestion> CourseSuggestions => Set<CourseSuggestion>();
+    public DbSet<TelegramLink> TelegramLinks => Set<TelegramLink>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -255,6 +256,17 @@ public class AppDbContext : DbContext
              .HasConversion(
                  v => v.ToKebabCase(),
                  v => ContentBlockTypeExtensions.FromKebabCase(v));
+        });
+
+        // TelegramLink — cascade delete from Teacher, ChatId is PK (bigint, assigned by Telegram, not auto-generated)
+        modelBuilder.Entity<TelegramLink>(e =>
+        {
+            e.HasKey(t => t.ChatId);
+            e.Property(t => t.ChatId).ValueGeneratedNever();
+            e.HasOne<Teacher>()
+             .WithMany()
+             .HasForeignKey(t => t.TeacherId)
+             .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -57,6 +57,8 @@ if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("
             "AzureBlobStorage:ConnectionString",
             "AzureSpeech:ApiKey",
             "AzureSpeech:Region",
+            "Telegram:BotToken",
+            "Telegram:WebhookSecret",
         ]);
 }
 
@@ -189,6 +191,20 @@ builder.Services.AddSingleton<ISessionMappingService, SessionMappingService>();
 
 QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddScoped<IPdfExportService, PdfExportService>();
+
+builder.Services.AddMemoryCache();
+builder.Services.Configure<TelegramOptions>(builder.Configuration.GetSection(TelegramOptions.SectionName));
+builder.Services.AddHttpClient("Telegram", client =>
+{
+    client.BaseAddress = new Uri("https://api.telegram.org/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddSingleton<ITelegramStateStore, TelegramStateStore>();
+if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddScoped<ITelegramBotService, StubTelegramBotService>();
+else
+    builder.Services.AddScoped<ITelegramBotService, TelegramBotService>();
+builder.Services.AddScoped<ITelegramConversationService, TelegramConversationService>();
 
 var app = builder.Build();
 
