@@ -6,7 +6,8 @@
 #
 # Exposed ports (in addition to frontend:5174):
 #   localhost:5178 -> api:5000  (for VITE_API_BASE_URL and visual-seed health check)
-#   localhost:1434 -> sqlserver:1433  (for db-helper.ts SQL connections)
+#   localhost:1435 -> sqlserver:1433  (for db-helper.ts SQL connections)
+#   Port 1435 avoids conflict with the dev stack which uses 1434.
 
 services:
   api:
@@ -14,7 +15,7 @@ services:
       - "5178:5000"
   sqlserver:
     ports:
-      - "1434:1433"
+      - "1435:1433"
   frontend:
     environment:
       # Override the e2e compose value (http://api:5000) so the host browser

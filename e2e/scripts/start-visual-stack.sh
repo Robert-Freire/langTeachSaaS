@@ -2,12 +2,12 @@
 # start-visual-stack.sh
 # Starts the e2e stack for host-side visual Playwright specs.
 # Uses docker-compose.e2e.yml + docker-compose.visual.yml overlay.
-# The overlay exposes api:5178 and sqlserver:1434 to the host so that
+# The overlay exposes api:5178 and sqlserver:1435 to the host so that
 # host-side Playwright can call the API and SQL Server directly.
 #
 # Frontend is at http://localhost:5174 (matches playwright.config.ts default baseURL).
 # API is at http://localhost:5178 (matches VITE_API_BASE_URL default in specs).
-# SQL Server is at 127.0.0.1:1434 (matches DB_PORT default in db-helper.ts).
+# SQL Server is at 127.0.0.1:1435 (port 1434 is reserved for the dev stack).
 #
 # Idempotent: safe to call on an already-running stack.
 # Requires .env.e2e in the repo root.
@@ -93,4 +93,4 @@ echo "[visual-stack] Visual seed complete."
 echo "[visual-stack] Stack is ready."
 echo "[visual-stack]   Frontend: http://localhost:5174"
 echo "[visual-stack]   API:      http://localhost:5178"
-echo "[visual-stack] Run: cd e2e && npx playwright test --project=visual"
+echo "[visual-stack] Run: cd e2e && DB_PORT=1435 npx playwright test --project=visual"
