@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Trash2, UserPlus, Users } from 'lucide-react'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Loader2, Pencil, Trash2, UserPlus, Users } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { getStudents, deleteStudent, type Student } from '../api/students'
 import { logger } from '../lib/logger'
@@ -26,11 +26,39 @@ import {
 export default function Students() {
   const queryClient = useQueryClient()
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
-  const { data, isLoading, isError: isStudentsError } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError: isStudentsError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['students'],
-    queryFn: () => getStudents(),
+    queryFn: ({ pageParam }) => getStudents({ page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page * lastPage.pageSize < lastPage.totalCount
+        ? lastPage.page + 1
+        : undefined,
   })
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { threshold: 0 }
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
@@ -49,7 +77,7 @@ export default function Students() {
     },
   })
 
-  const students = data?.items ?? []
+  const students = data?.pages.flatMap(p => p.items) ?? []
 
   if (isLoading) {
     return (
@@ -207,6 +235,14 @@ export default function Students() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Infinite scroll sentinel and loading indicator */}
+      <div ref={sentinelRef} data-testid="scroll-sentinel" />
+      {isFetchingNextPage && (
+        <div className="flex justify-center py-4" data-testid="fetch-next-loading">
+          <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
         </div>
       )}
 

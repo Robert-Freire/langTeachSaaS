@@ -143,6 +143,21 @@ describe('Students error states', () => {
     expect(screen.getByTestId('native-language-chip')).toHaveTextContent('Native: Portuguese')
   })
 
+  it('renders scroll sentinel element', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 20,
+    })
+
+    wrapper(<Students />)
+    await waitFor(() => {
+      expect(document.querySelector('[data-testid="scroll-sentinel"]')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('fetch-next-loading')).not.toBeInTheDocument()
+  })
+
   it('hides target language badge when native language is set', async () => {
     vi.mocked(studentsApi.getStudents).mockResolvedValue({
       items: [
