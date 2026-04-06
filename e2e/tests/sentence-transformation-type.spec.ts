@@ -61,7 +61,7 @@ test('sentence transformation exercises render in editor', async ({ browser }) =
 
   try {
     await expect(page.getByTestId('exercises-editor').first()).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
-    await expect(page.getByText('Sentence Transformation')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByTestId('exercises-editor').getByText('Sentence Transformation')).toBeVisible({ timeout: UI_TIMEOUT })
   } finally {
     await context.close()
   }

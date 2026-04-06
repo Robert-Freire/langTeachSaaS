@@ -39,6 +39,8 @@ services:
       Auth0__Domain: "${AUTH0_DOMAIN}"
       Auth0__Audience: "${AUTH0_AUDIENCE}"
       Claude__ApiKey: "${CLAUDE_API_KEY}"
+      AzureSpeech__ApiKey: "${AZURE_SPEECH_API_KEY}"
+      AzureSpeech__Region: "${AZURE_SPEECH_REGION}"
       AzureBlobStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
     healthcheck:
       test: curl -sf http://localhost:5000/health || exit 1

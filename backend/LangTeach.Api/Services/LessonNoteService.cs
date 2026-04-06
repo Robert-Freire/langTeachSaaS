@@ -1,4 +1,5 @@
 using LangTeach.Api.Data;
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,7 +30,8 @@ public class LessonNoteService : ILessonNoteService
             note.WhatWasCovered,
             note.HomeworkAssigned,
             note.AreasToImprove,
-            note.NextLessonIdeas
+            note.NextLessonIdeas,
+            note.EmotionalSignals
         );
     }
 
@@ -61,6 +63,7 @@ public class LessonNoteService : ILessonNoteService
                 HomeworkAssigned = request.HomeworkAssigned,
                 AreasToImprove = request.AreasToImprove,
                 NextLessonIdeas = request.NextLessonIdeas,
+                EmotionalSignals = request.EmotionalSignals,
                 CreatedAt = now,
                 UpdatedAt = now,
             };
@@ -73,6 +76,7 @@ public class LessonNoteService : ILessonNoteService
             note.HomeworkAssigned = request.HomeworkAssigned;
             note.AreasToImprove = request.AreasToImprove;
             note.NextLessonIdeas = request.NextLessonIdeas;
+            note.EmotionalSignals = request.EmotionalSignals;
             note.UpdatedAt = now;
             _logger.LogInformation("Updated LessonNote {NoteId} for Lesson {LessonId}", note.Id, lessonId);
         }
@@ -85,13 +89,14 @@ public class LessonNoteService : ILessonNoteService
             note.WhatWasCovered,
             note.HomeworkAssigned,
             note.AreasToImprove,
-            note.NextLessonIdeas
+            note.NextLessonIdeas,
+            note.EmotionalSignals
         );
     }
 
     public async Task<List<LessonHistoryEntryDto>> GetLessonHistoryAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken = default)
     {
-        var entries = await _db.Lessons
+        var rawEntries = await _db.Lessons
             .AsNoTracking()
             .Include(l => l.Template)
             .Where(l => l.TeacherId == teacherId && l.StudentId == studentId && !l.IsDeleted)
@@ -105,20 +110,43 @@ public class LessonNoteService : ILessonNoteService
                 !string.IsNullOrWhiteSpace(x.Note.WhatWasCovered) ||
                 !string.IsNullOrWhiteSpace(x.Note.HomeworkAssigned) ||
                 !string.IsNullOrWhiteSpace(x.Note.AreasToImprove) ||
-                !string.IsNullOrWhiteSpace(x.Note.NextLessonIdeas)
+                !string.IsNullOrWhiteSpace(x.Note.NextLessonIdeas) ||
+                !string.IsNullOrWhiteSpace(x.Note.EmotionalSignals)
             )
             .OrderByDescending(x => x.Lesson.ScheduledAt ?? x.Lesson.CreatedAt)
-            .Select(x => new LessonHistoryEntryDto(
+            .Select(x => new
+            {
                 x.Lesson.Id,
                 x.Lesson.Title,
-                x.Lesson.Template != null ? x.Lesson.Template.Name : null,
-                x.Lesson.ScheduledAt ?? x.Lesson.CreatedAt,
+                TemplateName = x.Lesson.Template != null ? x.Lesson.Template.Name : null,
+                LessonDate = x.Lesson.ScheduledAt ?? x.Lesson.CreatedAt,
                 x.Note.WhatWasCovered,
                 x.Note.HomeworkAssigned,
                 x.Note.AreasToImprove,
-                x.Note.NextLessonIdeas
-            ))
+                x.Note.NextLessonIdeas,
+                x.Note.EmotionalSignals,
+                FollowingSessionHomeworkStatus = _db.SessionLogs
+                    .Where(sl => sl.TeacherId == teacherId && sl.StudentId == studentId && !sl.IsDeleted
+                        && sl.SessionDate > (x.Lesson.ScheduledAt ?? x.Lesson.CreatedAt))
+                    .OrderBy(sl => sl.SessionDate).ThenBy(sl => sl.Id)
+                    .Select(sl => (HomeworkStatus?)sl.PreviousHomeworkStatus)
+                    .FirstOrDefault(),
+            })
             .ToListAsync(cancellationToken);
+
+        var entries = rawEntries.Select(x => new LessonHistoryEntryDto(
+            x.Id,
+            x.Title,
+            x.TemplateName,
+            x.LessonDate,
+            x.WhatWasCovered,
+            x.HomeworkAssigned,
+            x.AreasToImprove,
+            x.NextLessonIdeas,
+            x.EmotionalSignals,
+            x.FollowingSessionHomeworkStatus,
+            x.FollowingSessionHomeworkStatus?.ToString()
+        )).ToList();
 
         return entries;
     }

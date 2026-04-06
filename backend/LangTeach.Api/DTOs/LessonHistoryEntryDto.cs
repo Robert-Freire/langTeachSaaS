@@ -1,3 +1,5 @@
+using LangTeach.Api.Data.Models;
+
 namespace LangTeach.Api.DTOs;
 
 public record LessonHistoryEntryDto(
@@ -8,5 +10,8 @@ public record LessonHistoryEntryDto(
     string? WhatWasCovered,
     string? HomeworkAssigned,
     string? AreasToImprove,
-    string? NextLessonIdeas
+    string? NextLessonIdeas,
+    string? EmotionalSignals,
+    HomeworkStatus? FollowingSessionHomeworkStatus,
+    string? FollowingSessionHomeworkStatusName
 );

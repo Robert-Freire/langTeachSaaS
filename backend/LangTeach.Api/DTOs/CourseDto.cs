@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using LangTeach.Api.Data.Models;
 
 namespace LangTeach.Api.DTOs;
 
@@ -13,8 +14,8 @@ public record CurriculumEntryDto(
     string Status,
     string? TemplateUnitRef,
     string? CompetencyFocus,
-    string? ContextDescription,
-    string? PersonalizationNotes,
+    ContextDescriptionData? ContextDescription,
+    PersonalizationNotesData? PersonalizationNotes,
     string? VocabularyThemes
 );
 
