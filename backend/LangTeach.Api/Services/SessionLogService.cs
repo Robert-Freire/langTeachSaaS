@@ -61,6 +61,10 @@ public class SessionLogService : ISessionLogService
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
 
+        if (!Enum.IsDefined(request.Status))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid Status value: {(int)request.Status}");
+
         ValidateReassessment(request.LevelReassessmentSkill, request.LevelReassessmentLevel);
 
         var student = await _db.Students
@@ -119,6 +123,10 @@ public class SessionLogService : ISessionLogService
         if (!Enum.IsDefined(request.PreviousHomeworkStatus))
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
+
+        if (!Enum.IsDefined(request.Status))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid Status value: {(int)request.Status}");
 
         ValidateReassessment(request.LevelReassessmentSkill, request.LevelReassessmentLevel);
 
@@ -227,10 +235,10 @@ public class SessionLogService : ISessionLogService
             throw new KeyNotFoundException($"Student {studentId} not found.");
 
         var totalSessions = await _db.SessionLogs
-            .CountAsync(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled, cancellationToken);
+            .CountAsync(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.Status == SessionLogStatus.Confirmed, cancellationToken);
 
         var mostRecent = await _db.SessionLogs
-            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue)
+            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.Status == SessionLogStatus.Confirmed && sl.SessionDate.HasValue)
             .OrderByDescending(sl => sl.SessionDate)
             .FirstOrDefaultAsync(cancellationToken);
 

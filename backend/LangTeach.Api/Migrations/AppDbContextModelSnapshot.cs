@@ -544,6 +544,9 @@ namespace LangTeach.Api.Migrations
 
                     b.HasIndex("TeacherId", "IsDeleted");
 
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_SessionLogs_Status");
+
                     b.ToTable("SessionLogs");
                 });
 

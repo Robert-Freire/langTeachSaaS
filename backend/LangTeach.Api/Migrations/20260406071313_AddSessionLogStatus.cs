@@ -16,11 +16,20 @@ namespace LangTeach.Api.Migrations
                 type: "int",
                 nullable: false,
                 defaultValue: 0);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SessionLogs_Status",
+                table: "SessionLogs",
+                column: "Status");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropIndex(
+                name: "IX_SessionLogs_Status",
+                table: "SessionLogs");
+
             migrationBuilder.DropColumn(
                 name: "Status",
                 table: "SessionLogs");
