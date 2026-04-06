@@ -196,11 +196,11 @@ export function SessionLogDialog({
 
   // Fetch lessons for linked lesson selector
   const { data: lessonsData } = useQuery({
-    queryKey: ['lessons', { pageSize: 100 }],
-    queryFn: () => getLessons({ pageSize: 100 }),
+    queryKey: ['lessons', { pageSize: 100, studentId }],
+    queryFn: () => getLessons({ pageSize: 100, studentId }),
     enabled: open,
   })
-  const studentLessons = lessonsData?.items.filter(l => l.studentId === studentId) ?? []
+  const studentLessons = lessonsData?.items ?? []
 
   const { data: studentData } = useQuery({
     queryKey: ['student', studentId],

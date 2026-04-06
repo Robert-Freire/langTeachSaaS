@@ -232,6 +232,20 @@ describe('SessionLogDialog', () => {
     })
   })
 
+  it('fetches lessons with studentId to avoid client-side filtering', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+
+    wrapper(
+      <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+    )
+
+    await waitFor(() => {
+      expect(vi.mocked(lessonsApi.getLessons)).toHaveBeenCalledWith(
+        expect.objectContaining({ studentId: STUDENT_ID })
+      )
+    })
+  })
+
   it('sends linkedLessonId in payload when lesson is selected', async () => {
     const user = userEvent.setup()
 

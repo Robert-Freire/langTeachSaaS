@@ -24,6 +24,7 @@ public class LessonListQuery : IValidatableObject
 
     public DateTime? ScheduledFrom { get; set; }
     public DateTime? ScheduledTo { get; set; }
+    public Guid? StudentId { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

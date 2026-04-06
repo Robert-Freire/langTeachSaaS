@@ -603,3 +603,49 @@ test('confirming session updates existing difficulty in profile', async ({ brows
 
   await context.close()
 })
+
+test('lesson dropdown in session log shows only lessons for the selected student', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const ts = Date.now()
+
+  // Create two students
+  const createStudentA = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: { name: `Student A ${ts}`, learningLanguage: 'Spanish', cefrLevel: 'B1', interests: [], learningGoals: [], weaknesses: [], difficulties: [] },
+  })
+  const studentA = await createStudentA.json() as { id: string }
+
+  const createStudentB = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: { name: `Student B ${ts}`, learningLanguage: 'French', cefrLevel: 'A2', interests: [], learningGoals: [], weaknesses: [], difficulties: [] },
+  })
+  const studentB = await createStudentB.json() as { id: string }
+
+  // Create one lesson per student
+  await page.request.post(`${API_BASE}/api/lessons`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: { title: `Lesson for A ${ts}`, language: 'Spanish', cefrLevel: 'B1', topic: 'Subjunctive', durationMinutes: 60, studentId: studentA.id },
+  })
+  await page.request.post(`${API_BASE}/api/lessons`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: { title: `Lesson for B ${ts}`, language: 'French', cefrLevel: 'A2', topic: 'Articles', durationMinutes: 60, studentId: studentB.id },
+  })
+
+  // Open session log dialog for student A
+  await page.goto(`/students/${studentA.id}`)
+  await expect(page.getByTestId('student-detail-name')).toHaveText(`Student A ${ts}`, { timeout: 15000 })
+  await page.getByTestId('log-session-button').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('linked-lesson')).toBeVisible({ timeout: 8000 })
+
+  // Open the lesson dropdown
+  await page.getByTestId('linked-lesson').click()
+
+  // Student A's lesson should be visible; Student B's lesson should not
+  await expect(page.getByRole('option', { name: `Lesson for A ${ts}` })).toBeVisible()
+  await expect(page.getByRole('option', { name: `Lesson for B ${ts}` })).not.toBeVisible()
+
+  await context.close()
+})
