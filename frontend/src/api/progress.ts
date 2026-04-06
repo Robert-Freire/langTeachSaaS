@@ -1,14 +1,7 @@
 import { apiClient } from '../lib/apiClient'
+import type { Difficulty } from './students'
 
-export interface DifficultyProgress {
-  id: string
-  description: string
-  competency: string
-  subcategory: string
-  severity: string
-  status: 'Active' | 'Covered'
-  trend: 'improving' | 'stable' | 'worsening'
-}
+export type { Difficulty as DifficultyProgress }
 
 export interface TimelineEntry {
   orderIndex: number
@@ -34,10 +27,10 @@ export interface StudentProgress {
   pacingStatus: PacingStatus
   daysUntilExam: number | null
   sessionsRemaining: number | null
-  difficulties: DifficultyProgress[]
+  difficulties: Difficulty[]
   timeline: TimelineEntry[]
 }
 
 export function getProgress(studentId: string): Promise<StudentProgress> {
-  return apiClient(`/students/${studentId}/progress`)
+  return apiClient.get<StudentProgress>(`/api/students/${studentId}/progress`).then(r => r.data)
 }

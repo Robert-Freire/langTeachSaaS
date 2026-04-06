@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { TrendingUp, TrendingDown, Minus, CalendarDays, BookOpen, Target, Clock } from 'lucide-react'
-import { getProgress, type PacingStatus, type TimelineEntry, type DifficultyProgress } from '@/api/progress'
+import { getProgress, type PacingStatus, type TimelineEntry } from '@/api/progress'
+import type { Difficulty } from '@/api/students'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -24,7 +25,7 @@ function PacingChip({ status }: { status: PacingStatus }) {
   )
 }
 
-function TrendIcon({ trend }: { trend: DifficultyProgress['trend'] }) {
+function TrendIcon({ trend }: { trend: Difficulty['trend'] }) {
   if (trend === 'improving') return <TrendingUp className="h-3.5 w-3.5 text-green-500" />
   if (trend === 'worsening') return <TrendingDown className="h-3.5 w-3.5 text-red-500" />
   return <Minus className="h-3.5 w-3.5 text-zinc-400" />
