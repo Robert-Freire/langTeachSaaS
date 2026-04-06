@@ -113,6 +113,13 @@ public class LessonContentBlocksController : ControllerBase
                 return NotFound("Section not found.");
         }
 
+        if (request.BlockType == ContentBlockType.Exercises)
+        {
+            var validationError = ValidateExercisesContent(request.GeneratedContent);
+            if (validationError is not null)
+                return BadRequest(validationError);
+        }
+
         await _lessonService.EnsureLearningTargetsAsync(lesson, ct);
 
         var block = new LessonContentBlock
@@ -210,5 +217,33 @@ public class LessonContentBlocksController : ControllerBase
             "DELETE edited-content reset. LessonId={LessonId} BlockId={BlockId}", lessonId, blockId);
 
         return Ok(ToDto(block));
+    }
+
+    /// Returns an error message if the exercises content contains trueFalse items with empty sourcePassage;
+    /// null means valid.
+    internal static string? ValidateExercisesContent(string generatedContent)
+    {
+        try
+        {
+            var stripped = ContentJsonHelper.StripFences(generatedContent);
+            if (stripped is null) return null;
+
+            using var doc = JsonDocument.Parse(stripped);
+            if (!doc.RootElement.TryGetProperty("trueFalse", out var trueFalseArray))
+                return null;
+
+            foreach (var item in trueFalseArray.EnumerateArray())
+            {
+                if (!item.TryGetProperty("sourcePassage", out var sourcePassage) ||
+                    string.IsNullOrWhiteSpace(sourcePassage.GetString()))
+                    return "All trueFalse items must have a non-empty sourcePassage field.";
+            }
+
+            return null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 }
