@@ -20,6 +20,7 @@ public class LessonContentBlocksController : ControllerBase
     private readonly IProfileService _profileService;
     private readonly ILessonService _lessonService;
     private readonly IGrammarValidationService _grammarValidation;
+    private readonly IContentValidationService _contentValidation;
     private readonly ILogger<LessonContentBlocksController> _logger;
 
     public LessonContentBlocksController(
@@ -27,12 +28,14 @@ public class LessonContentBlocksController : ControllerBase
         IProfileService profileService,
         ILessonService lessonService,
         IGrammarValidationService grammarValidation,
+        IContentValidationService contentValidation,
         ILogger<LessonContentBlocksController> logger)
     {
         _db = db;
         _profileService = profileService;
         _lessonService = lessonService;
         _grammarValidation = grammarValidation;
+        _contentValidation = contentValidation;
         _logger = logger;
     }
 
@@ -111,6 +114,13 @@ public class LessonContentBlocksController : ControllerBase
             var section = await _db.LessonSections.FindAsync(new object[] { request.LessonSectionId.Value }, ct);
             if (section is null || section.LessonId != lessonId)
                 return NotFound("Section not found.");
+        }
+
+        if (request.BlockType == ContentBlockType.Exercises)
+        {
+            var validationError = _contentValidation.ValidateExercisesContent(request.GeneratedContent);
+            if (validationError is not null)
+                return BadRequest(validationError);
         }
 
         await _lessonService.EnsureLearningTargetsAsync(lesson, ct);
@@ -211,4 +221,5 @@ public class LessonContentBlocksController : ControllerBase
 
         return Ok(ToDto(block));
     }
+
 }

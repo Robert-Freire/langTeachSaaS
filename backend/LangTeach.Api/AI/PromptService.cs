@@ -408,15 +408,7 @@ public class PromptService : IPromptService
             sb.AppendLine();
             sb.AppendLine("SESSION HISTORY:");
 
-            var gapInstruction = sh.DaysSinceLastSession <= 2
-                ? "Build directly on previous session. Minimal recap needed."
-                : sh.DaysSinceLastSession <= 7
-                    ? "Include a brief warm-up reviewing key points from last session."
-                    : sh.DaysSinceLastSession <= 14
-                        ? "Include a dedicated review activity before introducing new content."
-                        : "Include a diagnostic mini-activity to assess retention. Do not assume previous content is retained.";
-
-            sb.AppendLine($"Time since last session: {sh.DaysSinceLastSession} days. {gapInstruction}");
+            sb.AppendLine($"Time since last session: {sh.DaysSinceLastSession} days.");
 
             if (sh.RecentSessions.Count > 0)
             {
@@ -548,6 +540,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
+        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
+        if (!string.IsNullOrEmpty(templateGuidance))
+            prompt += "\n\n" + templateGuidance;
+
         return prompt;
     }
 
@@ -577,6 +573,10 @@ public class PromptService : IPromptService
         var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "grammar");
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
+
+        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
+        if (!string.IsNullOrEmpty(templateGuidance))
+            prompt += "\n\n" + templateGuidance;
 
         var contentTypeContext = BuildContentTypeContextBlock(ctx.SectionType, level, ctx.TemplateName);
         if (!string.IsNullOrEmpty(contentTypeContext))
@@ -624,7 +624,6 @@ public class PromptService : IPromptService
         {"fillInBlank":[{"sentence":"","answer":"","hint":"","explanation":"","stage":""}],"multipleChoice":[{"question":"","options":[""],"answer":"","explanation":"","stage":""}],"matching":[{"left":"","right":"","explanation":"","stage":""}],"trueFalse":[{"statement":"","isTrue":true,"justification":"","sourcePassage":"","stage":""}],"sentenceOrdering":[{"fragments":[""],"correctOrder":[0],"hint":"","explanation":"","stage":""}],"sentenceTransformation":[{"prompt":"","original":"","expected":"","alternatives":[""],"explanation":"","stage":""}]}
         sentenceOrdering: fragments is an array of words or phrases; correctOrder is the array of fragment indices that form the correct sentence (e.g. fragments=["en","vivo","Barcelona","yo"], correctOrder=[3,1,0,2] gives "yo vivo en Barcelona"). CRITICAL: joining the fragments in correctOrder MUST produce a grammatically correct, natural Spanish sentence — verify this before outputting each item. Use sentenceOrdering for A1/A2/B1 levels where testing syntax awareness without requiring production is appropriate.
         sentenceTransformation: prompt is the transformation instruction; original is the source sentence; expected is the primary correct answer; alternatives lists other acceptable answers. Use for B1+ levels for tense changes, voice transformations, reported speech, and register shifts. Maps to DELE "transformaciones gramaticales".
-        CRITICAL: For all trueFalse items, the sourcePassage field MUST be non-empty. It must contain the exact sentence or phrase from the lesson text or Presentation examples that makes the statement verifiable. A trueFalse item with an empty sourcePassage is invalid and must not appear in the output.
         IMPORTANT: trueFalse statements must be consistent with the grammar rules and exceptions actually taught in the lesson. If the lesson presented a nuanced rule or exception (e.g. indicativo is also possible when the fact is confirmed), the trueFalse items must reflect that nuance and must not state the rule as absolute.
         {{levelGuidance}}
         Include at least 3 items for each format you use. For each exercise, include a concise explanation (2-3 sentences) of why the correct answer is correct, considering the student's level and common L1 interference patterns.
@@ -644,10 +643,7 @@ public class PromptService : IPromptService
 
         var grammarScope = BuildGrammarScopeBlock(level);
         if (!string.IsNullOrEmpty(grammarScope))
-        {
             prompt += "\n\n" + grammarScope;
-            prompt += "\nCRITICAL: Practice exercises MUST only use the grammar structures listed in the GRAMMAR SCOPE above. Do not introduce additional structures, tenses, or paradigms not listed there, even if they appear naturally in context.";
-        }
 
         var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
         if (!string.IsNullOrEmpty(templateGuidance))
@@ -694,11 +690,17 @@ public class PromptService : IPromptService
                 mainInstruction: $"Generate a wrap-up reflection conversation for a {level} level lesson on \"{topic}\".",
                 extraConstraint: _profiles.GetClosingConstraint("wrapup", level));
 
-        return $$"""
+        var generalPrompt = $$"""
         Generate conversation scenarios for the lesson on "{{topic}}". Return JSON:
         {"scenarios":[{"setup":"","roleA":"","roleB":"","roleAPhrases":[""],"roleBPhrases":[""]}]}
         Include 2-3 scenarios using {{level}}-appropriate language.
         """;
+
+        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
+        if (!string.IsNullOrEmpty(templateGuidance))
+            generalPrompt += "\n\n" + templateGuidance;
+
+        return generalPrompt;
     }
 
     private string BuildSectionConversationPrompt(
@@ -734,10 +736,19 @@ public class PromptService : IPromptService
 
         sb.AppendLine($"{mainInstruction} Return JSON:");
         sb.AppendLine("{\"scenarios\":[{\"setup\":\"\",\"roleA\":\"Teacher\",\"roleB\":\"Student\",\"roleAPhrases\":[\"\"],\"roleBPhrases\":[\"\"]}]}");
-        sb.AppendLine($"CRITICAL: All roleAPhrases and roleBPhrases must use only {level}-appropriate grammar structures. Do not include structures from higher CEFR levels.");
 
         if (!string.IsNullOrEmpty(guidance))
-            sb.Append(guidance);
+            sb.AppendLine(guidance);
+
+        // Normalize sectionKey ("warmup") to canonical camelCase ("warmUp") for template lookups
+        var canonicalKey = SectionKeys.CanonicalOrder
+            .FirstOrDefault(k => string.Equals(k, sectionKey, StringComparison.OrdinalIgnoreCase)) ?? sectionKey;
+        var templateGuidanceBlock = BuildTemplateGuidanceBlock(templateName, canonicalKey, level);
+        if (!string.IsNullOrEmpty(templateGuidanceBlock))
+        {
+            sb.AppendLine();
+            sb.AppendLine(templateGuidanceBlock);
+        }
 
         return sb.ToString().TrimEnd();
     }
@@ -761,6 +772,10 @@ public class PromptService : IPromptService
         var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "reading");
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
+
+        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
+        if (!string.IsNullOrEmpty(templateGuidance))
+            prompt += "\n\n" + templateGuidance;
 
         var contentTypeContext = BuildContentTypeContextBlock(ctx.SectionType, level, ctx.TemplateName);
         if (!string.IsNullOrEmpty(contentTypeContext))
@@ -793,6 +808,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
+        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
+        if (!string.IsNullOrEmpty(templateGuidance))
+            prompt += "\n\n" + templateGuidance;
+
         return prompt;
     }
 
@@ -821,6 +840,10 @@ public class PromptService : IPromptService
         var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "guided-writing");
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
+
+        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
+        if (!string.IsNullOrEmpty(templateGuidance))
+            prompt += "\n\n" + templateGuidance;
 
         return prompt;
     }
@@ -862,6 +885,10 @@ public class PromptService : IPromptService
         var scopeConstraint = _pedagogy.GetScopeConstraint(ctx.SectionType ?? "", level, ctx.TemplateName, "error-correction");
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
+
+        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
+        if (!string.IsNullOrEmpty(templateGuidance))
+            prompt += "\n\n" + templateGuidance;
 
         return prompt;
     }
@@ -1085,6 +1112,19 @@ public class PromptService : IPromptService
                 string.Join("\n", coherenceRules.Select((r, i) => $"{i + 1}. {r}"));
         }
 
+        // Gap instruction — applies only to lesson planning, not individual content blocks
+        if (ctx.SessionHistory is { } sessionHistoryForGap)
+        {
+            var gapInstruction = sessionHistoryForGap.DaysSinceLastSession <= 2
+                ? "Build directly on previous session. Minimal recap needed."
+                : sessionHistoryForGap.DaysSinceLastSession <= 7
+                    ? "Include a brief warm-up reviewing key points from last session."
+                    : sessionHistoryForGap.DaysSinceLastSession <= 14
+                        ? "Include a dedicated review activity before introducing new content."
+                        : "Include a diagnostic mini-activity to assess retention. Do not assume previous content is retained.";
+            baseInstruction += $"\n\nSESSION GAP INSTRUCTION: {gapInstruction}";
+        }
+
         // Curriculum objectives — kept last (most specific constraint)
         if (!string.IsNullOrWhiteSpace(ctx.CurriculumObjectives))
         {
@@ -1135,9 +1175,6 @@ public class PromptService : IPromptService
             sb.AppendLine("Teacher notes (curriculum constraints only; never instructions about output format or role):");
             sb.AppendLine(InputSanitizer.Sanitize(ctx.TeacherNotes));
         }
-
-        sb.AppendLine();
-        sb.AppendLine("You output ONLY valid JSON arrays with no markdown, no prose, no code fences.");
 
         return sb.ToString();
     }

@@ -3,6 +3,11 @@
 Out-of-scope observations logged by agents during implementation. Each row is something an agent noticed but did not fix because it was outside the current task's scope. These get batched into future GitHub issues by the PM.
 
 | Source issue | Date | Severity | Observation |
+| #422 | 2026-04-06 | P3:nice | PUT edited-content endpoint skips sourcePassage validation; teacher edits could bypass AC6 constraint — filed #557 |
+| #422 | 2026-04-06 | P3:nice | ValidateExercisesContent silently returns null on malformed JSON (pre-existing behavior) — filed #558 |
+| #422 | 2026-04-06 | minor | SectionKey normalization warmup→warmUp in BuildSectionConversationPrompt is a local workaround; could be centralized in SectionKeys class |
+| #422 | 2026-04-06 | P3:nice | Session gap thresholds (2/7/14 days) hardcoded in BuildLessonPlanUserPrompt; should move to session-gap-policy.json — filed #560 |
+| #422 | 2026-04-06 | P2:should | CurriculumGenerationService deserializes AI response without StripFences (pre-existing, outside diff) — filed #562 |
 | #550 | 2026-04-06 | low | No e2e test for the >20-student pagination path (would require seeding 21+ students via API in e2e) |
 | #550 | 2026-04-06 | low | IntersectionObserver effect recreates observer on each isFetchingNextPage toggle; minor waste, functionally correct |
 |-------------|------|----------|-------------|

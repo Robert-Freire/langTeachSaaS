@@ -56,7 +56,7 @@
       "sections": {
         "warmUp": {
           "required": true,
-          "overrideGuidance": "Open with a single question that reveals what the student already knows or assumes about today's grammar point. One question, one student response, brief teacher reaction. This is activation, not practice or discovery.",
+          "overrideGuidance": "Open with a single question that reveals what the student already knows or assumes about today's grammar point. One question, one student response, brief teacher reaction. This is activation, not practice.",
           "priorityExerciseTypes": ["EO-08", "PRAG-01"],
           "minExerciseVarietyOverride": null,
           "notes": null
@@ -153,7 +153,7 @@
         {
           "type": "exerciseCategory",
           "value": "LUD",
-          "reason": "Ludic activities are inappropriate in reading comprehension lessons where the focus is on text processing and comprehension skills."
+          "reason": "Focus on text processing and comprehension skills. Written and analytical exercises only."
         }
       ]
     },
@@ -209,7 +209,7 @@
         {
           "type": "exerciseCategory",
           "value": "EO",
-          "reason": "Oral exercises are excluded in this template to keep focus on written production outcomes."
+          "reason": "Use written tasks only. Oral exercises are not part of this template."
         }
       ]
     },
@@ -265,7 +265,7 @@
         {
           "type": "exerciseCategory",
           "value": "LUD",
-          "reason": "Ludic activities are inappropriate in exam preparation lessons where the focus is on exam-format written tasks."
+          "reason": "Use exam-format written tasks only. Ludic activities are not part of this template."
         }
       ]
     },
@@ -339,7 +339,7 @@
         },
         "practice": {
           "required": true,
-          "overrideGuidance": "Cultural comprehension and analysis tasks. Compare cultural practices, analyse a cultural text, or explore a societal theme. Avoid purely mechanical grammar drills.",
+          "overrideGuidance": "Cultural comprehension and analysis tasks. Compare cultural practices, analyse a cultural text, or explore a societal theme. Use communicative and analytical activities.",
           "priorityExerciseTypes": ["CE-07", "PRAG-03", "PRAG-04", "EO-06"],
           "minExerciseVarietyOverride": null,
           "notes": null
