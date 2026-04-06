@@ -14,6 +14,12 @@ vi.mock('../hooks/useProfile', () => ({
   useUpdateProfile: () => ({ mutate: mockMutate, reset: mockReset, ...mockMutationState }),
 }))
 
+vi.mock('../api/telegram', () => ({
+  getTelegramStatus: vi.fn().mockResolvedValue({ connected: false, linkedAt: null }),
+  generateConnectCode: vi.fn(),
+  deleteTelegramLink: vi.fn(),
+}))
+
 import { useProfile } from '../hooks/useProfile'
 
 function wrapper(ui: React.ReactElement) {
@@ -31,6 +37,24 @@ const profileData = {
   cefrLevels: ['B1'],
   preferredStyle: 'Conversational',
 }
+
+describe('Settings integrations section', () => {
+  beforeEach(() => {
+    mockMutationState = { isPending: false, isSuccess: false, isError: false }
+    vi.mocked(useProfile).mockReturnValue({
+      data: profileData,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useProfile>)
+  })
+
+  it('renders Integrations section with Connect Telegram button', async () => {
+    wrapper(<Settings />)
+    expect(screen.getByText('Integrations')).toBeInTheDocument()
+    expect(await screen.findByTestId('telegram-connect-btn')).toBeInTheDocument()
+  })
+})
 
 describe('Settings error states', () => {
   beforeEach(() => {

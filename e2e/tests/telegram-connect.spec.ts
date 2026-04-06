@@ -1,6 +1,7 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, Browser } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
+import { NAV_TIMEOUT, UI_TIMEOUT } from '../helpers/timeouts'
 
 const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET ?? ''
@@ -109,6 +110,96 @@ test('telegram connect flow: webhook connect sets status to connected, delete re
   expect(statusAfterRes.ok()).toBeTruthy()
   const statusAfter = await statusAfterRes.json()
   expect(statusAfter.connected).toBe(false)
+
+  await context.close()
+})
+
+// ---- UI tests ----
+
+async function seedConnectedState(browser: Browser): Promise<{ context: Awaited<ReturnType<typeof createMockAuthContext>>; chatId: number }> {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const codeRes = await page.request.post(`${API_BASE}/api/telegram/connect-code`, {
+    headers: { Authorization: 'Bearer test-token' },
+  })
+  const { code } = await codeRes.json()
+
+  // Use a deterministic test-namespaced chatId to avoid accumulating junk on the persistent test DB
+  const chatId = 9_000_000_000 + Math.floor(Math.random() * 1_000)
+  await page.request.post(`${API_BASE}/api/telegram/webhook`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Telegram-Bot-Api-Secret-Token': WEBHOOK_SECRET,
+    },
+    data: {
+      update_id: 2,
+      message: {
+        message_id: 2,
+        chat: { id: chatId },
+        text: `/connect ${code}`,
+      },
+    },
+  })
+
+  await page.close()
+  return { context, chatId }
+}
+
+test('settings page shows integrations section with Connect Telegram button', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  await page.goto('/settings')
+  await expect(page.getByText('Integrations')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await expect(page.getByTestId('telegram-connect-btn')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await context.close()
+})
+
+test('clicking Connect Telegram shows code and instructions', async ({ browser }) => {
+  // Ensure not connected first
+  const setupCtx = await createMockAuthContext(browser)
+  const setupPage = await setupCtx.newPage()
+  await setupPage.request.delete(`${API_BASE}/api/telegram/link`, {
+    headers: { Authorization: 'Bearer test-token' },
+  })
+  await setupPage.close()
+  await setupCtx.close()
+
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  await page.goto('/settings')
+  await page.getByTestId('telegram-connect-btn').click()
+
+  await expect(page.getByTestId('telegram-code')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByText(/@LangTeachBot/)).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await context.close()
+})
+
+test('settings page shows Connected state and disconnect button when linked', async ({ browser }) => {
+  const { context } = await seedConnectedState(browser)
+  const page = await context.newPage()
+
+  await page.goto('/settings')
+  await expect(page.getByTestId('telegram-connected')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await expect(page.getByText(/Connected/)).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('telegram-disconnect-btn')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await context.close()
+})
+
+test('clicking Disconnect returns settings page to idle state', async ({ browser }) => {
+  const { context } = await seedConnectedState(browser)
+  const page = await context.newPage()
+
+  await page.goto('/settings')
+  await page.getByTestId('telegram-disconnect-btn').click({ timeout: NAV_TIMEOUT })
+
+  await expect(page.getByTestId('telegram-idle')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('telegram-connect-btn')).toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()
 })
