@@ -17,6 +17,7 @@ public class SessionLog
     public Guid? LinkedLessonId { get; set; }
     public bool IsDeleted { get; set; }
     public bool IsCancelled { get; set; }
+    public SessionLogStatus Status { get; set; } = SessionLogStatus.Confirmed;
     public string TopicTags { get; set; } = "[]";
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

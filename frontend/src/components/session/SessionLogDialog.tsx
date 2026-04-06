@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, Loader2 } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
@@ -16,12 +16,15 @@ import {
   listSessions,
   createSession,
   updateSession,
+  extractSessionReflection,
   parseTopicTags,
   serializeTopicTags,
   type TopicTag,
   type SessionLog,
 } from '../../api/sessionLogs'
 import { getLessons } from '../../api/lessons'
+import { AudioRecorder } from '../audio/AudioRecorder'
+import type { VoiceNote } from '../../api/voiceNotes'
 
 const HOMEWORK_STATUSES = [
   { value: 'Done', label: 'Done' },
@@ -85,6 +88,11 @@ export function SessionLogDialog({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Voice extraction state
+  const [isExtracting, setIsExtracting] = useState(false)
+  const [draftSessionId, setDraftSessionId] = useState<string | null>(null)
+  const [extractionFailed, setExtractionFailed] = useState(false)
+
   // Pre-populate fields when editing an existing session
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -138,6 +146,9 @@ export function SessionLogDialog({
       setErrors({})
       setSuccess(false)
       setSubmitError(null)
+      setIsExtracting(false)
+      setDraftSessionId(null)
+      setExtractionFailed(false)
     }
   }, [open, linkedLessonId])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -175,6 +186,10 @@ export function SessionLogDialog({
         linkedLessonId: selectedLessonId || null,
         topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
         isCancelled,
+        status: 'Confirmed' as const,
+      }
+      if (draftSessionId) {
+        return updateSession(studentId, draftSessionId, payload)
       }
       return isEditMode
         ? updateSession(studentId, initialSession.id, payload)
@@ -199,6 +214,43 @@ export function SessionLogDialog({
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
     }
   }, [])
+
+  async function handleVoiceNote(voiceNote: VoiceNote) {
+    if (!voiceNote.transcription) {
+      setExtractionFailed(true)
+      return
+    }
+    setIsExtracting(true)
+    try {
+      const extracted = await extractSessionReflection(studentId, voiceNote.transcription)
+      // Pre-fill form fields from extraction
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setActualContent(extracted.whatWasCovered ?? '')
+      setHomeworkAssigned(extracted.homeworkAssigned ?? '')
+      setNextSessionTopics(extracted.nextLessonIdeas ?? '')
+      const notes = [extracted.areasToImprove, extracted.emotionalSignals]
+        .filter(Boolean)
+        .join('\n')
+      setGeneralNotes(notes)
+      /* eslint-enable react-hooks/set-state-in-effect */
+      // Auto-save as Draft
+      const draft = await createSession(studentId, {
+        actualContent: extracted.whatWasCovered ?? null,
+        homeworkAssigned: extracted.homeworkAssigned ?? null,
+        nextSessionTopics: extracted.nextLessonIdeas ?? null,
+        generalNotes: notes || null,
+        previousHomeworkStatus: 'NotApplicable',
+        linkedLessonId: selectedLessonId || null,
+        status: 'Draft',
+      })
+      setDraftSessionId(draft.id)
+    } catch (err) {
+      logger.error('SessionLogDialog', 'voice extraction or draft save failed', err)
+      setExtractionFailed(true)
+    } finally {
+      setIsExtracting(false)
+    }
+  }
 
   function validate(): boolean {
     const errs: Record<string, string> = {}
@@ -245,6 +297,29 @@ export function SessionLogDialog({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Voice recording — create mode only, hidden after draft is saved */}
+            {!isEditMode && !draftSessionId && (
+              <div className="space-y-1" data-testid="voice-recorder-section">
+                <Label className="text-sm">Record session notes</Label>
+                {isExtracting ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="extracting-indicator">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Extracting session notes...
+                  </div>
+                ) : (
+                  <AudioRecorder
+                    onVoiceNote={(note) => void handleVoiceNote(note)}
+                    disabled={isExtracting}
+                  />
+                )}
+                {extractionFailed && (
+                  <p className="text-xs text-amber-700" data-testid="extraction-failed-message">
+                    Could not extract fields from audio. Fill in the form manually.
+                  </p>
+                )}
+              </div>
+            )}
+
             {sessionsLoading && (
               <div className="space-y-2">
                 <Skeleton className="h-4 w-full" />
@@ -506,11 +581,11 @@ export function SessionLogDialog({
             <DialogFooter>
               <Button
                 type="submit"
-                disabled={isPending}
+                disabled={isPending || isExtracting}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 data-testid="submit-session-log"
               >
-                {isPending ? 'Saving...' : isEditMode ? 'Save changes' : 'Log session'}
+                {isPending ? 'Saving...' : draftSessionId ? 'Confirm' : isEditMode ? 'Save changes' : 'Log session'}
               </Button>
             </DialogFooter>
           </form>

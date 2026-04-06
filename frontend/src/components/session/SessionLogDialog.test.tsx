@@ -12,12 +12,29 @@ vi.mock('../../api/sessionLogs', () => ({
   listSessions: vi.fn(),
   createSession: vi.fn(),
   updateSession: vi.fn(),
+  extractSessionReflection: vi.fn(),
   serializeTopicTags: vi.fn((tags) => JSON.stringify(tags)),
   parseTopicTags: vi.fn((raw) => JSON.parse(raw)),
 }))
 
 vi.mock('../../api/lessons', () => ({
   getLessons: vi.fn(),
+}))
+
+// AudioRecorder mock: exposes a button that fires onVoiceNote when clicked
+vi.mock('../audio/AudioRecorder', () => ({
+  AudioRecorder: ({ onVoiceNote, disabled }: { onVoiceNote: (note: { id: string; transcription: string }) => void; disabled?: boolean }) => {
+    return (
+      <button
+        type="button"
+        data-testid="mock-audio-recorder-trigger"
+        disabled={disabled}
+        onClick={() => onVoiceNote({ id: 'vn-1', transcription: 'We covered ser vs estar.' })}
+      >
+        Record
+      </button>
+    )
+  },
 }))
 
 // Minimal mock of TopicTagsInput to isolate SessionLogDialog tests
@@ -47,6 +64,8 @@ const SAMPLE_SESSION: SessionLog = {
   createdAt: '2026-03-15T10:00:00Z',
   updatedAt: '2026-03-15T10:00:00Z',
   isCancelled: false,
+  status: 'Confirmed',
+  statusName: 'Confirmed',
 }
 
 function wrapper(ui: React.ReactElement) {
@@ -73,7 +92,7 @@ describe('SessionLogDialog', () => {
         previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null, generalNotes: null,
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
-        isCancelled: false,
+        isCancelled: false, status: 'Confirmed' as const, statusName: 'Confirmed',
       },
     ])
 
@@ -94,7 +113,7 @@ describe('SessionLogDialog', () => {
         previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null, generalNotes: null,
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
-        isCancelled: false,
+        isCancelled: false, status: 'Confirmed' as const, statusName: 'Confirmed',
       },
     ])
 
@@ -358,7 +377,7 @@ describe('SessionLogDialog', () => {
           actualContent: 'Some content', homeworkAssigned: null, previousHomeworkStatus: 3,
           previousHomeworkStatusName: 'Not applicable', nextSessionTopics: 'Work on para/por distinction',
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
-          linkedLessonId: null, topicTags: '[]', isCancelled: false,
+          linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 'Confirmed' as const, statusName: 'Confirmed',
           createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         },
       ])
@@ -392,7 +411,7 @@ describe('SessionLogDialog', () => {
           actualContent: 'Some content', homeworkAssigned: null, previousHomeworkStatus: 3,
           previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null,
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
-          linkedLessonId: null, topicTags: '[]', isCancelled: false,
+          linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 'Confirmed' as const, statusName: 'Confirmed',
           createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         },
       ])
@@ -412,7 +431,7 @@ describe('SessionLogDialog', () => {
           actualContent: 'Older session', homeworkAssigned: null, previousHomeworkStatus: 3,
           previousHomeworkStatusName: 'Not applicable', nextSessionTopics: 'Review subjunctive',
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
-          linkedLessonId: null, topicTags: '[]', isCancelled: false,
+          linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 'Confirmed' as const, statusName: 'Confirmed',
           createdAt: '2026-03-01T10:00:00Z', updatedAt: '2026-03-01T10:00:00Z',
         },
       ])
@@ -530,6 +549,148 @@ describe('SessionLogDialog', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('cancelled-toggle')).toBeChecked()
+    })
+  })
+
+  describe('voice extraction', () => {
+    const EXTRACTED = {
+      whatWasCovered: 'Covered ser vs estar',
+      areasToImprove: 'Irregular verbs need work',
+      emotionalSignals: 'Student was enthusiastic',
+      homeworkAssigned: 'Exercise 4A',
+      nextLessonIdeas: 'Review preterito',
+    }
+
+    beforeEach(() => {
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue(EXTRACTED)
+      vi.mocked(sessionLogsApi.createSession).mockResolvedValue({
+        ...SAMPLE_SESSION,
+        id: 'draft-session-id',
+        status: 'Draft',
+        statusName: 'Draft',
+      })
+    })
+
+    it('shows AudioRecorder in create mode', async () => {
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+    })
+
+    it('does not show AudioRecorder in edit mode', async () => {
+      wrapper(
+        <SessionLogDialog
+          studentId={STUDENT_ID}
+          open={true}
+          onOpenChange={vi.fn()}
+          initialSession={SAMPLE_SESSION}
+        />
+      )
+      await waitFor(() => expect(screen.getByText('Edit Session')).toBeInTheDocument())
+      expect(screen.queryByTestId('mock-audio-recorder-trigger')).not.toBeInTheDocument()
+    })
+
+    it('calls extractSessionReflection after voice note received', async () => {
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.extractSessionReflection)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          'We covered ser vs estar.',
+        )
+      })
+    })
+
+    it('pre-fills form fields after successful extraction', async () => {
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Covered ser vs estar')
+        expect((screen.getByTestId('homework-assigned') as HTMLInputElement).value).toBe('Exercise 4A')
+        expect((screen.getByTestId('next-session-topics') as HTMLTextAreaElement).value).toBe('Review preterito')
+      })
+    })
+
+    it('auto-saves Draft and changes submit button to "Confirm"', async () => {
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          expect.objectContaining({ status: 'Draft' }),
+        )
+        expect(screen.getByTestId('submit-session-log')).toHaveTextContent('Confirm')
+      })
+    })
+
+    it('calls updateSession with Confirmed on Confirm click after draft save', async () => {
+      vi.mocked(sessionLogsApi.updateSession).mockResolvedValue({
+        ...SAMPLE_SESSION,
+        status: 'Confirmed',
+        statusName: 'Confirmed',
+      })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => expect(screen.getByTestId('submit-session-log')).toHaveTextContent('Confirm'))
+
+      fireEvent.click(screen.getByTestId('submit-session-log'))
+
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.updateSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          'draft-session-id',
+          expect.objectContaining({ status: 'Confirmed' }),
+        )
+      })
+    })
+
+    it('shows extraction-failed message and keeps blank form when extraction throws', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockRejectedValue(new Error('AI failed'))
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('extraction-failed-message')).toBeInTheDocument()
+        expect(screen.getByTestId('submit-session-log')).toHaveTextContent('Log session')
+      })
+      // Draft should NOT have been saved
+      expect(vi.mocked(sessionLogsApi.createSession)).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ status: 'Draft' }),
+      )
+    })
+
+    it('manual create (no voice) sends status Confirmed', async () => {
+      vi.mocked(sessionLogsApi.createSession).mockResolvedValue({ ...SAMPLE_SESSION, status: 'Confirmed', statusName: 'Confirmed' })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('submit-session-log')).toBeInTheDocument())
+
+      fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'We did grammar.' } })
+      fireEvent.click(screen.getByTestId('submit-session-log'))
+
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          expect.objectContaining({ status: 'Confirmed' }),
+        )
+      })
     })
   })
 })

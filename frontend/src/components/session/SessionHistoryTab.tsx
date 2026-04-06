@@ -113,6 +113,15 @@ function SessionEntry({
                   Cancelled
                 </Badge>
               )}
+              {session.status === 'Draft' && (
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-amber-50 text-amber-700 border-amber-300"
+                  data-testid="draft-badge"
+                >
+                  Pending review
+                </Badge>
+              )}
               {hasActionItem && (
                 <span className="inline-flex items-center gap-1 text-xs text-amber-600" data-testid="action-item-count">
                   <span className="bg-amber-400 rounded-full w-1.5 h-1.5 shrink-0" />

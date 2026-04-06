@@ -45,6 +45,8 @@ const SESSION_BASE: sessionLogsApi.SessionLog = {
   createdAt: '2026-03-30T10:00:00Z',
   updatedAt: '2026-03-30T10:00:00Z',
   isCancelled: false,
+  status: 'Confirmed' as const,
+  statusName: 'Confirmed',
 }
 
 function wrapper() {
@@ -284,5 +286,21 @@ describe('SessionHistoryTab', () => {
     wrapper()
     await screen.findByTestId('session-entry')
     expect(screen.queryByTestId('cancelled-badge')).not.toBeInTheDocument()
+  })
+
+  it('shows "Pending review" badge for a Draft session', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, status: 'Draft' as const, statusName: 'Draft' },
+    ])
+    wrapper()
+    expect(await screen.findByTestId('draft-badge')).toBeInTheDocument()
+    expect(screen.getByTestId('draft-badge')).toHaveTextContent('Pending review')
+  })
+
+  it('does not show "Pending review" badge for a Confirmed session', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.queryByTestId('draft-badge')).not.toBeInTheDocument()
   })
 })

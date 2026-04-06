@@ -20,7 +20,9 @@ public record SessionLogDto(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     string TopicTags,
-    bool IsCancelled
+    bool IsCancelled,
+    SessionLogStatus Status,
+    string StatusName
 );
 
 public class CreateSessionLogRequest
@@ -41,6 +43,8 @@ public class CreateSessionLogRequest
     public Guid? LinkedLessonId { get; set; }
     public string? TopicTags { get; set; }
     public bool IsCancelled { get; set; }
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public SessionLogStatus Status { get; set; } = SessionLogStatus.Confirmed;
 }
 
 public record StudentSessionSummaryDto(
@@ -70,4 +74,6 @@ public class UpdateSessionLogRequest
     public Guid? LinkedLessonId { get; set; }
     public string? TopicTags { get; set; }
     public bool IsCancelled { get; set; }
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public SessionLogStatus Status { get; set; } = SessionLogStatus.Confirmed;
 }

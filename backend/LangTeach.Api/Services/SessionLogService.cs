@@ -98,6 +98,7 @@ public class SessionLogService : ISessionLogService
             LinkedLessonId = request.LinkedLessonId,
             TopicTags = request.TopicTags ?? "[]",
             IsCancelled = request.IsCancelled,
+            Status = request.Status,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -150,6 +151,7 @@ public class SessionLogService : ISessionLogService
         entity.LinkedLessonId = request.LinkedLessonId;
         entity.TopicTags = request.TopicTags ?? "[]";
         entity.IsCancelled = request.IsCancelled;
+        entity.Status = request.Status;
         entity.UpdatedAt = DateTime.UtcNow;
 
         if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
@@ -293,6 +295,8 @@ public class SessionLogService : ISessionLogService
         sl.CreatedAt,
         sl.UpdatedAt,
         sl.TopicTags,
-        sl.IsCancelled
+        sl.IsCancelled,
+        sl.Status,
+        sl.Status.ToString()
     );
 }
