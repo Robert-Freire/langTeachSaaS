@@ -4,7 +4,6 @@ using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
-using static LangTeach.Api.Helpers.SkillLevelHelper;
 
 namespace LangTeach.Api.Services;
 
@@ -323,7 +322,7 @@ public class SessionLogService : ISessionLogService
             _logger.LogWarning(ex, "Student {StudentId} has corrupt SkillLevelOverrides", studentId);
         }
 
-        var levelReassessmentPending = IsReassessmentPending(skillOverrides, student.CefrLevel);
+        var levelReassessmentPending = SkillLevelHelper.IsReassessmentPending(skillOverrides, student.CefrLevel);
 
         return new StudentSessionSummaryDto(
             totalSessions,
