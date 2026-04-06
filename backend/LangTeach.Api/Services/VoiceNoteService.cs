@@ -17,6 +17,28 @@ public class VoiceNoteService : IVoiceNoteService
         "audio/x-m4a",
     };
 
+    // Each validator receives up to 16 header bytes and returns true if they match the format.
+    private static readonly Dictionary<string, Func<byte[], bool>> MagicByteValidators = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // EBML header (Matroska / WebM)
+        ["audio/webm"] = h => h.Length >= 4 && h[0] == 0x1A && h[1] == 0x45 && h[2] == 0xDF && h[3] == 0xA3,
+        // ISO Base Media File Format: "ftyp" box at offset 4
+        ["audio/mp4"]  = h => h.Length >= 8 && h[4] == (byte)'f' && h[5] == (byte)'t' && h[6] == (byte)'y' && h[7] == (byte)'p',
+        ["audio/x-m4a"]= h => h.Length >= 8 && h[4] == (byte)'f' && h[5] == (byte)'t' && h[6] == (byte)'y' && h[7] == (byte)'p',
+        // RIFF container with WAVE tag at offset 8
+        ["audio/wav"]  = h => h.Length >= 12
+                              && h[0] == (byte)'R' && h[1] == (byte)'I' && h[2] == (byte)'F' && h[3] == (byte)'F'
+                              && h[8] == (byte)'W' && h[9] == (byte)'A' && h[10] == (byte)'V' && h[11] == (byte)'E',
+        // Ogg bitstream capture pattern
+        ["audio/ogg"]  = h => h.Length >= 4 && h[0] == (byte)'O' && h[1] == (byte)'g' && h[2] == (byte)'g' && h[3] == (byte)'S',
+        // ID3 tag or MPEG sync word (0xFF followed by 0xFB / 0xF3 / 0xF2)
+        ["audio/mpeg"] = h => h.Length >= 3
+                              && (
+                                  (h[0] == (byte)'I' && h[1] == (byte)'D' && h[2] == (byte)'3')
+                                  || (h[0] == 0xFF && (h[1] == 0xFB || h[1] == 0xF3 || h[1] == 0xF2))
+                              ),
+    };
+
     private const long MaxFileSizeBytes = 50 * 1024 * 1024; // 50 MB
 
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
@@ -58,6 +80,14 @@ public class VoiceNoteService : IVoiceNoteService
         // Buffer the stream so we can reuse the bytes for blob upload and transcription
         using var buffer = new MemoryStream();
         await audio.CopyToAsync(buffer, ct);
+        buffer.Position = 0;
+
+        // Verify magic bytes match the declared content type to prevent MIME spoofing
+        var header = new byte[16];
+        var bytesRead = await buffer.ReadAsync(header, 0, header.Length, ct);
+        var effectiveHeader = header[..bytesRead]; // slice to actual bytes; short files fail h.Length guards
+        if (!MagicByteValidators.TryGetValue(baseContentType, out var isValidMagic) || !isValidMagic(effectiveHeader))
+            throw new InvalidOperationException($"File content does not match the declared type '{baseContentType}'.");
         buffer.Position = 0;
 
         // Upload audio to blob storage
