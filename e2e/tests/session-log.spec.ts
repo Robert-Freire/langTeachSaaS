@@ -264,6 +264,61 @@ test('topic tag category dropdown has all four curriculum-aligned options', asyn
   await context.close()
 })
 
+test('selecting a lesson in log session dialog auto-populates planned content', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Lesson Link Test ${Date.now()}`
+  const createStudentRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: studentName,
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+    },
+  })
+  expect(createStudentRes.ok()).toBeTruthy()
+  const student = await createStudentRes.json() as { id: string }
+
+  // Create a lesson linked to this student
+  const createLessonRes = await page.request.post(`${API_BASE}/api/lessons`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      title: 'Subjunctive Intro',
+      language: 'Spanish',
+      cefrLevel: 'B1',
+      topic: 'Subjunctive',
+      durationMinutes: 60,
+      objectives: 'Use subjunctive in wishes and doubt',
+      studentId: student.id,
+    },
+  })
+  expect(createLessonRes.ok()).toBeTruthy()
+
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await page.getByTestId('log-session-button').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+
+  // The linked lesson selector should be visible (student has a lesson)
+  await expect(page.getByTestId('linked-lesson')).toBeVisible({ timeout: 8000 })
+
+  // Select the lesson
+  await page.getByTestId('linked-lesson').click()
+  await page.getByRole('option', { name: 'Subjunctive Intro' }).click()
+
+  // Planned content should be auto-populated
+  await expect(page.getByTestId('planned-content')).toHaveValue(
+    'Subjunctive Intro: Use subjunctive in wishes and doubt'
+  )
+
+  await context.close()
+})
+
 test('summary header appears on history tab after logging a session', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()

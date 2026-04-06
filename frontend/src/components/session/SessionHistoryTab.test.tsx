@@ -209,11 +209,42 @@ describe('SessionHistoryTab', () => {
     })
   })
 
-  it('shows notes count when generalNotes and nextSessionTopics are set', async () => {
+  it('shows separate action item and note counts when both are set', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
-    expect(screen.getByText(/2 notes/)).toBeInTheDocument()
+    expect(screen.getByTestId('action-item-count')).toHaveTextContent('1 action item')
+    expect(screen.getByTestId('general-note-count')).toHaveTextContent('1 note')
+  })
+
+  it('shows only action item count when nextSessionTopics is set and generalNotes is null', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, generalNotes: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('action-item-count')).toHaveTextContent('1 action item')
+    expect(screen.queryByTestId('general-note-count')).not.toBeInTheDocument()
+  })
+
+  it('shows only general note count when generalNotes is set and nextSessionTopics is null', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, nextSessionTopics: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('general-note-count')).toHaveTextContent('1 note')
+    expect(screen.queryByTestId('action-item-count')).not.toBeInTheDocument()
+  })
+
+  it('shows no count indicators when both generalNotes and nextSessionTopics are null', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, generalNotes: null, nextSessionTopics: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.queryByTestId('action-item-count')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('general-note-count')).not.toBeInTheDocument()
   })
 
   it('shows relative time label: "today" for same-day session', async () => {
