@@ -6,6 +6,13 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-04-04 during Post-Class Tracking sprint close. Findings from PRs #440, #441, #442, #444, #445, #450, #431, #481 triaged: batched into #492 (SessionLog DTO hardening), #494 (lessons studentId filter). Sophy findings on prompt redundancy added to #422. All remaining entries deleted (one-time migration tool caveats, pre-existing patterns, cosmetic DTO sharing).*
 
+## PR #546 (sessions/extract endpoint) - 2026-04-06
+
+| PR | Severity | Finding | Decision |
+|----|----------|---------|----------|
+| #546 | Minor | e2e sessions-extract.spec.ts: happy-path asserts only key presence, not content values (weaker than sibling specs) | Deferred; backend unit test covers content assertion |
+| #546 | Minor | e2e sessions-extract.spec.ts: AUTH_HEADER bundles Content-Type, inconsistent with sibling specs | Deferred; cosmetic inconsistency |
+
 ## PR #186 (Audio input infrastructure) - 2026-04-05
 
 | PR | Severity | Finding | Decision |

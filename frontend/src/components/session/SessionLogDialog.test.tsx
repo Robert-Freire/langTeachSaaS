@@ -358,7 +358,8 @@ describe('SessionLogDialog', () => {
           actualContent: 'Some content', homeworkAssigned: null, previousHomeworkStatus: 3,
           previousHomeworkStatusName: 'Not applicable', nextSessionTopics: 'Work on para/por distinction',
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
-          linkedLessonId: null, topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
+          linkedLessonId: null, topicTags: '[]', isCancelled: false,
+          createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         },
       ])
 
@@ -391,7 +392,8 @@ describe('SessionLogDialog', () => {
           actualContent: 'Some content', homeworkAssigned: null, previousHomeworkStatus: 3,
           previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null,
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
-          linkedLessonId: null, topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
+          linkedLessonId: null, topicTags: '[]', isCancelled: false,
+          createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         },
       ])
 
@@ -410,7 +412,8 @@ describe('SessionLogDialog', () => {
           actualContent: 'Older session', homeworkAssigned: null, previousHomeworkStatus: 3,
           previousHomeworkStatusName: 'Not applicable', nextSessionTopics: 'Review subjunctive',
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
-          linkedLessonId: null, topicTags: '[]', createdAt: '2026-03-01T10:00:00Z', updatedAt: '2026-03-01T10:00:00Z',
+          linkedLessonId: null, topicTags: '[]', isCancelled: false,
+          createdAt: '2026-03-01T10:00:00Z', updatedAt: '2026-03-01T10:00:00Z',
         },
       ])
 
