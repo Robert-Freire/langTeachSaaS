@@ -10,6 +10,7 @@ public class StubReflectionExtractionService : IReflectionExtractionService
             AreasToImprove: "[Extracted] Areas to improve",
             EmotionalSignals: "[Extracted] Emotional signals",
             HomeworkAssigned: "[Extracted] Homework assigned",
-            NextLessonIdeas: "[Extracted] Next lesson ideas"
+            NextLessonIdeas: "[Extracted] Next lesson ideas",
+            SuggestedDifficulties: []
         ));
 }

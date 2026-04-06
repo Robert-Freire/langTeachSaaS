@@ -21,6 +21,7 @@ import {
   serializeTopicTags,
   type TopicTag,
   type SessionLog,
+  type SuggestedDifficulty,
 } from '../../api/sessionLogs'
 import { getLessons } from '../../api/lessons'
 import { getStudent } from '../../api/students'
@@ -85,6 +86,7 @@ export function SessionLogDialog({
   const [selectedLessonId, setSelectedLessonId] = useState(linkedLessonId ?? '')
   const [isCancelled, setIsCancelled] = useState(false)
   const [mentionedDifficultyKeys, setMentionedDifficultyKeys] = useState<Set<string>>(new Set())
+  const [suggestedDifficulties, setSuggestedDifficulties] = useState<SuggestedDifficulty[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [success, setSuccess] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -118,6 +120,11 @@ export function SessionLogDialog({
         setMentionedDifficultyKeys(new Set(pairs.map(p => `${p.Competency}|${p.Subcategory}`)))
       } catch {
         setMentionedDifficultyKeys(new Set())
+      }
+      try {
+        setSuggestedDifficulties(JSON.parse(initialSession.suggestedDifficulties || '[]') as SuggestedDifficulty[])
+      } catch {
+        setSuggestedDifficulties([])
       }
     }
   }, [open, initialSession])
@@ -153,6 +160,7 @@ export function SessionLogDialog({
       setSelectedLessonId(linkedLessonId ?? '')
       setIsCancelled(false)
       setMentionedDifficultyKeys(new Set())
+      setSuggestedDifficulties([])
       setErrors({})
       setSuccess(false)
       setSubmitError(null)
@@ -205,6 +213,7 @@ export function SessionLogDialog({
         topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
         isCancelled,
         status: 'Confirmed' as const,
+        suggestedDifficulties: suggestedDifficulties.length > 0 ? suggestedDifficulties : undefined,
         mentionedDifficultyPairs: (() => {
           // Include active difficulties that were checked in the UI.
           const activeKeys = new Set(activeDifficulties.map(d => `${d.competency}|${d.subcategory}`))
@@ -265,6 +274,7 @@ export function SessionLogDialog({
       setHomeworkAssigned(extracted.homeworkAssigned ?? '')
       setNextSessionTopics(extracted.nextLessonIdeas ?? '')
       setGeneralNotes(notes)
+      setSuggestedDifficulties(extracted.suggestedDifficulties ?? [])
       /* eslint-enable react-hooks/set-state-in-effect */
       if (runId !== voiceRunRef.current) return
       // Auto-save as Draft using full current form state + extracted fields
@@ -282,6 +292,7 @@ export function SessionLogDialog({
         topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
         isCancelled,
         status: 'Draft',
+        suggestedDifficulties: extracted.suggestedDifficulties?.length ? extracted.suggestedDifficulties : undefined,
       })
       if (runId !== voiceRunRef.current) return
       setDraftSessionId(draft.id)
@@ -513,6 +524,41 @@ export function SessionLogDialog({
                 data-testid="general-notes"
               />
             </div>
+
+            {/* Suggested difficulties (from AI extraction) */}
+            {suggestedDifficulties.length > 0 && (
+              <div className="space-y-2" data-testid="suggested-difficulties">
+                <Label className="text-sm">
+                  Suggested difficulties
+                  <span className="text-zinc-400 font-normal ml-1">(from session notes — remove any that look wrong)</span>
+                </Label>
+                <div className="space-y-1">
+                  {suggestedDifficulties.map((d, i) => (
+                    <div
+                      key={`${d.competency}|${d.subcategory}|${i}`}
+                      className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 px-3 py-2 text-sm"
+                      data-testid="suggested-difficulty-item"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <span className="text-zinc-800">{d.description}</span>
+                        <span className="ml-2 text-xs text-zinc-400">
+                          {d.competency}{d.subcategory ? ` / ${d.subcategory}` : ''} · {d.severity}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSuggestedDifficulties(prev => prev.filter((_, j) => j !== i))}
+                        className="shrink-0 text-zinc-400 hover:text-zinc-700 text-base leading-none"
+                        aria-label="Remove difficulty"
+                        data-testid="remove-suggested-difficulty"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Topic tags */}
             <div className="space-y-1">

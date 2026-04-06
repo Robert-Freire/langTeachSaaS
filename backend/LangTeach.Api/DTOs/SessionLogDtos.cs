@@ -25,7 +25,8 @@ public record SessionLogDto(
     bool IsCancelled,
     SessionLogStatus Status,
     string StatusName,
-    string MentionedDifficultyPairs
+    string MentionedDifficultyPairs,
+    string SuggestedDifficulties
 );
 
 public class CreateSessionLogRequest
@@ -51,6 +52,7 @@ public class CreateSessionLogRequest
     public SessionLogStatus Status { get; set; } = SessionLogStatus.Confirmed;
 
     public List<DifficultyPairDto>? MentionedDifficultyPairs { get; set; }
+    public List<SuggestedDifficultyDto>? SuggestedDifficulties { get; set; }
 }
 
 public record StudentSessionSummaryDto(
@@ -85,4 +87,5 @@ public class UpdateSessionLogRequest
     public SessionLogStatus Status { get; set; } = SessionLogStatus.Confirmed;
 
     public List<DifficultyPairDto>? MentionedDifficultyPairs { get; set; }
+    public List<SuggestedDifficultyDto>? SuggestedDifficulties { get; set; }
 }

@@ -5,6 +5,7 @@ using LangTeach.Api.DTOs;
 using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace LangTeach.Api.Services;
 
 public class SessionLogService : ISessionLogService
@@ -15,6 +16,12 @@ public class SessionLogService : ISessionLogService
 
     private static readonly HashSet<string> ValidSkills = new(StringComparer.OrdinalIgnoreCase)
         { "Speaking", "Writing", "Reading", "Listening" };
+
+    private static readonly HashSet<string> ValidDifficultyCompetencies = new(StringComparer.OrdinalIgnoreCase)
+        { "Grammar", "Vocabulary", "Pronunciation", "Fluency", "Discourse" };
+
+    private static readonly HashSet<string> ValidDifficultySeverities = new(StringComparer.OrdinalIgnoreCase)
+        { "low", "medium", "high" };
 
     // TODO: source CEFR sub-levels from config if the set ever changes
     private static readonly HashSet<string> ValidCefrSubLevels = new(StringComparer.OrdinalIgnoreCase)
@@ -109,6 +116,7 @@ public class SessionLogService : ISessionLogService
             LinkedLessonId = request.LinkedLessonId,
             TopicTags = request.TopicTags ?? "[]",
             MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs),
+            SuggestedDifficulties = SerializeSuggestedDifficulties(request.SuggestedDifficulties),
             IsCancelled = request.IsCancelled,
             Status = request.Status,
             CreatedAt = now,
@@ -119,6 +127,9 @@ public class SessionLogService : ISessionLogService
 
         if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
             PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);
+
+        if (request.Status == SessionLogStatus.Confirmed && request.SuggestedDifficulties is { Count: > 0 })
+            UpsertDifficulties(student, request.SuggestedDifficulties, _logger);
 
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -175,18 +186,31 @@ public class SessionLogService : ISessionLogService
         entity.LinkedLessonId = request.LinkedLessonId;
         entity.TopicTags = request.TopicTags ?? "[]";
         entity.MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs);
+        entity.SuggestedDifficulties = SerializeSuggestedDifficulties(request.SuggestedDifficulties);
         entity.IsCancelled = request.IsCancelled;
         entity.Status = request.Status;
         entity.UpdatedAt = DateTime.UtcNow;
 
+        Student? studentForUpdate = null;
+
         if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
         {
-            var student = await _db.Students
+            studentForUpdate = await _db.Students
                 .Where(s => s.Id == studentId && s.TeacherId == teacherId)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (student is not null)
-                PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);
+            if (studentForUpdate is not null)
+                PropagateReassessment(studentForUpdate, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);
+        }
+
+        if (request.Status == SessionLogStatus.Confirmed && request.SuggestedDifficulties is { Count: > 0 })
+        {
+            studentForUpdate ??= await _db.Students
+                .Where(s => s.Id == studentId && s.TeacherId == teacherId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (studentForUpdate is not null)
+                UpsertDifficulties(studentForUpdate, request.SuggestedDifficulties, _logger);
         }
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -331,9 +355,48 @@ public class SessionLogService : ISessionLogService
         sl.IsCancelled,
         sl.Status,
         sl.Status.ToString(),
-        sl.MentionedDifficultyPairs
+        sl.MentionedDifficultyPairs,
+        sl.SuggestedDifficulties
     );
 
     private static string SerializePairs(List<DifficultyPairDto>? pairs) =>
         pairs is null or { Count: 0 } ? "[]" : JsonStorageHelper.Serialize(pairs);
+
+    private static string SerializeSuggestedDifficulties(List<SuggestedDifficultyDto>? items) =>
+        items is null or { Count: 0 } ? "[]" : JsonStorageHelper.Serialize(items);
+
+    private static void UpsertDifficulties(Student student, List<SuggestedDifficultyDto> suggested, ILogger logger)
+    {
+        var existing = JsonStorageHelper.DeserializeList<DifficultyDto>(student.Difficulties);
+        foreach (var s in suggested)
+        {
+            if (!ValidDifficultyCompetencies.Contains(s.Competency) || !ValidDifficultySeverities.Contains(s.Severity))
+            {
+                logger.LogWarning("Skipping suggested difficulty with invalid fields: Competency={Competency}, Severity={Severity}", s.Competency, s.Severity);
+                continue;
+            }
+            var match = existing.FirstOrDefault(d =>
+                string.Equals(d.Competency, s.Competency, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(d.Subcategory, s.Subcategory, StringComparison.OrdinalIgnoreCase));
+            if (match is not null)
+            {
+                var idx = existing.IndexOf(match);
+                existing[idx] = match with { Description = s.Description, Severity = s.Severity, Status = "Active" };
+            }
+            else
+            {
+                existing.Add(new DifficultyDto(
+                    Id: Guid.NewGuid().ToString(),
+                    Description: s.Description,
+                    Competency: s.Competency,
+                    Subcategory: s.Subcategory,
+                    Severity: s.Severity,
+                    Trend: "stable",
+                    Status: "Active"
+                ));
+            }
+        }
+        student.Difficulties = JsonStorageHelper.Serialize(existing);
+        student.UpdatedAt = DateTime.UtcNow;
+    }
 }

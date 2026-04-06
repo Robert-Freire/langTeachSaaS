@@ -46,6 +46,8 @@ test('sessions extract: returns structured reflection for a valid student', asyn
   expect(body).toHaveProperty('emotionalSignals')
   expect(body).toHaveProperty('homeworkAssigned')
   expect(body).toHaveProperty('nextLessonIdeas')
+  expect(body).toHaveProperty('suggestedDifficulties')
+  expect(Array.isArray(body.suggestedDifficulties)).toBe(true)
 
   await context.close()
 })

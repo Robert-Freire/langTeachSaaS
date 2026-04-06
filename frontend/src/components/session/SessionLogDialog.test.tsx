@@ -67,6 +67,7 @@ const SAMPLE_SESSION: SessionLog = {
   status: 0,
   statusName: 'Confirmed' as const,
   mentionedDifficultyPairs: '[]',
+        suggestedDifficulties: '[]',
 }
 
 function wrapper(ui: React.ReactElement) {
@@ -94,6 +95,7 @@ describe('SessionLogDialog', () => {
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         isCancelled: false, status: 0, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]',
+        suggestedDifficulties: '[]',
       },
     ])
 
@@ -115,6 +117,7 @@ describe('SessionLogDialog', () => {
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         isCancelled: false, status: 0, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]',
+        suggestedDifficulties: '[]',
       },
     ])
 
@@ -380,6 +383,7 @@ describe('SessionLogDialog', () => {
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
           linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 0, statusName: 'Confirmed' as const,
           mentionedDifficultyPairs: '[]',
+        suggestedDifficulties: '[]',
           createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         },
       ])
@@ -415,6 +419,7 @@ describe('SessionLogDialog', () => {
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
           linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 0, statusName: 'Confirmed' as const,
           mentionedDifficultyPairs: '[]',
+        suggestedDifficulties: '[]',
           createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         },
       ])
@@ -436,6 +441,7 @@ describe('SessionLogDialog', () => {
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
           linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 0, statusName: 'Confirmed' as const,
           mentionedDifficultyPairs: '[]',
+        suggestedDifficulties: '[]',
           createdAt: '2026-03-01T10:00:00Z', updatedAt: '2026-03-01T10:00:00Z',
         },
       ])
@@ -563,6 +569,7 @@ describe('SessionLogDialog', () => {
       emotionalSignals: 'Student was enthusiastic',
       homeworkAssigned: 'Exercise 4A',
       nextLessonIdeas: 'Review preterito',
+      suggestedDifficulties: [] as { description: string; competency: string; subcategory: string; severity: string }[],
     }
 
     beforeEach(() => {
@@ -693,6 +700,98 @@ describe('SessionLogDialog', () => {
         expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledWith(
           STUDENT_ID,
           expect.objectContaining({ status: 'Confirmed' }),
+        )
+      })
+    })
+
+    it('shows suggested difficulties after extraction returns them', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        ...EXTRACTED,
+        suggestedDifficulties: [
+          { description: 'Confuses ser and estar', competency: 'Grammar', subcategory: 'ser/estar', severity: 'high' },
+        ],
+      })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('suggested-difficulties')).toBeInTheDocument()
+        expect(screen.getAllByTestId('suggested-difficulty-item')).toHaveLength(1)
+        expect(screen.getByText('Confuses ser and estar')).toBeInTheDocument()
+      })
+    })
+
+    it('does not show suggested difficulties section when extraction returns empty list', async () => {
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        // Wait for extraction to complete (actual-content gets filled)
+        expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Covered ser vs estar')
+      })
+
+      expect(screen.queryByTestId('suggested-difficulties')).not.toBeInTheDocument()
+    })
+
+    it('removes a suggested difficulty when the remove button is clicked', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        ...EXTRACTED,
+        suggestedDifficulties: [
+          { description: 'Grammar issue', competency: 'Grammar', subcategory: 'ser/estar', severity: 'high' },
+          { description: 'Vocab gap', competency: 'Vocabulary', subcategory: 'food', severity: 'medium' },
+        ],
+      })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId('suggested-difficulty-item')).toHaveLength(2)
+      })
+
+      const removeButtons = screen.getAllByTestId('remove-suggested-difficulty')
+      fireEvent.click(removeButtons[0])
+
+      expect(screen.getAllByTestId('suggested-difficulty-item')).toHaveLength(1)
+      expect(screen.getByText('Vocab gap')).toBeInTheDocument()
+      expect(screen.queryByText('Grammar issue')).not.toBeInTheDocument()
+    })
+
+    it('includes suggestedDifficulties in the confirm payload', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        ...EXTRACTED,
+        suggestedDifficulties: [
+          { description: 'Confuses ser and estar', competency: 'Grammar', subcategory: 'ser/estar', severity: 'high' },
+        ],
+      })
+      vi.mocked(sessionLogsApi.updateSession).mockResolvedValue({ ...SAMPLE_SESSION, status: 0, statusName: 'Confirmed' as const })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => expect(screen.getByTestId('submit-session-log')).toHaveTextContent('Confirm'))
+
+      fireEvent.click(screen.getByTestId('submit-session-log'))
+
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.updateSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          'draft-session-id',
+          expect.objectContaining({
+            status: 'Confirmed',
+            suggestedDifficulties: [
+              { description: 'Confuses ser and estar', competency: 'Grammar', subcategory: 'ser/estar', severity: 'high' },
+            ],
+          }),
         )
       })
     })

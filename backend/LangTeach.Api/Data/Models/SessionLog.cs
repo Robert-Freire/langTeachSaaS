@@ -24,6 +24,7 @@ public class SessionLog
     public SessionLogStatus Status { get; set; } = SessionLogStatus.Confirmed;
     public string TopicTags { get; set; } = "[]";
     public string MentionedDifficultyPairs { get; set; } = "[]";
+    public string SuggestedDifficulties { get; set; } = "[]";
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

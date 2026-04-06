@@ -100,4 +100,118 @@ public class SessionLogsStatusTests
         using var doc = JsonDocument.Parse(json);
         doc.RootElement.GetProperty("statusName").GetString().Should().Be("Confirmed");
     }
+
+    [Fact]
+    public async Task CreateSession_Confirmed_WithSuggestedDifficulties_UpsertsToStudentProfile()
+    {
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|difficulty-upsert-create", "difficulty-upsert-create@example.com");
+
+        var payload = new
+        {
+            actualContent = "Worked on ser vs estar",
+            previousHomeworkStatus = "NotApplicable",
+            status = "Confirmed",
+            suggestedDifficulties = new[]
+            {
+                new { description = "Confuses ser and estar", competency = "Grammar", subcategory = "ser/estar", severity = "high" },
+            },
+        };
+
+        var response = await client.PostAsJsonAsync($"/api/students/{studentId}/sessions", payload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var studentResponse = await client.GetAsync($"/api/students/{studentId}");
+        studentResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var studentJson = await studentResponse.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(studentJson);
+        var difficulties = doc.RootElement.GetProperty("difficulties");
+        difficulties.GetArrayLength().Should().Be(1);
+        var d = difficulties[0];
+        d.GetProperty("competency").GetString().Should().Be("Grammar");
+        d.GetProperty("subcategory").GetString().Should().Be("ser/estar");
+        d.GetProperty("severity").GetString().Should().Be("high");
+        d.GetProperty("status").GetString().Should().Be("Active");
+    }
+
+    [Fact]
+    public async Task UpdateSession_Confirmed_WithSuggestedDifficulties_UpsertsAndUpdatesExisting()
+    {
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|difficulty-upsert-update", "difficulty-upsert-update@example.com");
+
+        // Create a draft session first
+        var createPayload = new
+        {
+            actualContent = "Initial session",
+            previousHomeworkStatus = "NotApplicable",
+            status = "Draft",
+            suggestedDifficulties = new[]
+            {
+                new { description = "Struggles with ser", competency = "Grammar", subcategory = "ser/estar", severity = "low" },
+            },
+        };
+        var createResponse = await client.PostAsJsonAsync($"/api/students/{studentId}/sessions", createPayload);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var createJson = await createResponse.Content.ReadAsStringAsync();
+        using var createDoc = JsonDocument.Parse(createJson);
+        var sessionId = createDoc.RootElement.GetProperty("id").GetString()!;
+
+        // Draft creation should NOT have upserted difficulties
+        var studentBefore = await client.GetAsync($"/api/students/{studentId}");
+        var studentBeforeJson = await studentBefore.Content.ReadAsStringAsync();
+        using var beforeDoc = JsonDocument.Parse(studentBeforeJson);
+        beforeDoc.RootElement.GetProperty("difficulties").GetArrayLength().Should().Be(0);
+
+        // Now confirm with updated severity
+        var updatePayload = new
+        {
+            actualContent = "Updated session",
+            previousHomeworkStatus = "NotApplicable",
+            status = "Confirmed",
+            suggestedDifficulties = new[]
+            {
+                new { description = "Confuses ser and estar consistently", competency = "Grammar", subcategory = "ser/estar", severity = "high" },
+            },
+        };
+        var updateResponse = await client.PutAsJsonAsync($"/api/students/{studentId}/sessions/{sessionId}", updatePayload);
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Difficulty should be upserted (updated severity from low to high)
+        var studentAfter = await client.GetAsync($"/api/students/{studentId}");
+        var studentAfterJson = await studentAfter.Content.ReadAsStringAsync();
+        using var afterDoc = JsonDocument.Parse(studentAfterJson);
+        var difficulties = afterDoc.RootElement.GetProperty("difficulties");
+        difficulties.GetArrayLength().Should().Be(1);
+        difficulties[0].GetProperty("severity").GetString().Should().Be("high");
+        difficulties[0].GetProperty("status").GetString().Should().Be("Active");
+        difficulties[0].GetProperty("description").GetString().Should().Be("Confuses ser and estar consistently");
+    }
+
+    [Fact]
+    public async Task CreateSession_Draft_WithSuggestedDifficulties_DoesNotUpsertToProfile()
+    {
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|difficulty-draft-no-upsert", "difficulty-draft@example.com");
+
+        var payload = new
+        {
+            actualContent = "Some draft content",
+            previousHomeworkStatus = "NotApplicable",
+            status = "Draft",
+            suggestedDifficulties = new[]
+            {
+                new { description = "Vocabulary gaps", competency = "Vocabulary", subcategory = "food", severity = "medium" },
+            },
+        };
+
+        var response = await client.PostAsJsonAsync($"/api/students/{studentId}/sessions", payload);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var studentResponse = await client.GetAsync($"/api/students/{studentId}");
+        var studentJson = await studentResponse.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(studentJson);
+        doc.RootElement.GetProperty("difficulties").GetArrayLength().Should().Be(0);
+    }
 }
