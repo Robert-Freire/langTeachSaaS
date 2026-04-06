@@ -65,6 +65,10 @@ public class SessionLogService : ISessionLogService
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid Status value: {(int)request.Status}");
 
+        if (request.Status == SessionLogStatus.Draft && request.IsCancelled)
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                "Draft sessions cannot be cancelled.");
+
         ValidateReassessment(request.LevelReassessmentSkill, request.LevelReassessmentLevel);
 
         var student = await _db.Students
@@ -127,6 +131,10 @@ public class SessionLogService : ISessionLogService
         if (!Enum.IsDefined(request.Status))
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid Status value: {(int)request.Status}");
+
+        if (request.Status == SessionLogStatus.Draft && request.IsCancelled)
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                "Draft sessions cannot be cancelled.");
 
         ValidateReassessment(request.LevelReassessmentSkill, request.LevelReassessmentLevel);
 

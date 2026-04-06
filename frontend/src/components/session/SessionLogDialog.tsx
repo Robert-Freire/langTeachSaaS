@@ -92,6 +92,7 @@ export function SessionLogDialog({
   const [isExtracting, setIsExtracting] = useState(false)
   const [draftSessionId, setDraftSessionId] = useState<string | null>(null)
   const [extractionFailed, setExtractionFailed] = useState(false)
+  const voiceRunRef = useRef(0)
 
   // Pre-populate fields when editing an existing session
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -146,6 +147,7 @@ export function SessionLogDialog({
       setErrors({})
       setSuccess(false)
       setSubmitError(null)
+      voiceRunRef.current += 1
       setIsExtracting(false)
       setDraftSessionId(null)
       setExtractionFailed(false)
@@ -220,29 +222,39 @@ export function SessionLogDialog({
       setExtractionFailed(true)
       return
     }
+    const runId = ++voiceRunRef.current
     setIsExtracting(true)
     try {
       const extracted = await extractSessionReflection(studentId, voiceNote.transcription)
+      if (runId !== voiceRunRef.current) return
+      const notes = [extracted.areasToImprove, extracted.emotionalSignals]
+        .filter(Boolean)
+        .join('\n')
       // Pre-fill form fields from extraction
       /* eslint-disable react-hooks/set-state-in-effect */
       setActualContent(extracted.whatWasCovered ?? '')
       setHomeworkAssigned(extracted.homeworkAssigned ?? '')
       setNextSessionTopics(extracted.nextLessonIdeas ?? '')
-      const notes = [extracted.areasToImprove, extracted.emotionalSignals]
-        .filter(Boolean)
-        .join('\n')
       setGeneralNotes(notes)
       /* eslint-enable react-hooks/set-state-in-effect */
-      // Auto-save as Draft
+      if (runId !== voiceRunRef.current) return
+      // Auto-save as Draft using full current form state + extracted fields
       const draft = await createSession(studentId, {
+        sessionDate: sessionDate || null,
+        plannedContent: plannedContent || null,
         actualContent: extracted.whatWasCovered ?? null,
         homeworkAssigned: extracted.homeworkAssigned ?? null,
+        previousHomeworkStatus: prevHomeworkStatus,
         nextSessionTopics: extracted.nextLessonIdeas ?? null,
         generalNotes: notes || null,
-        previousHomeworkStatus: 'NotApplicable',
+        levelReassessmentSkill: reassessmentEnabled ? reassessmentSkill || null : null,
+        levelReassessmentLevel: reassessmentEnabled ? reassessmentLevel || null : null,
         linkedLessonId: selectedLessonId || null,
+        topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
+        isCancelled,
         status: 'Draft',
       })
+      if (runId !== voiceRunRef.current) return
       setDraftSessionId(draft.id)
     } catch (err) {
       logger.error('SessionLogDialog', 'voice extraction or draft save failed', err)
