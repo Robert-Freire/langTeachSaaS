@@ -106,6 +106,7 @@ test('telegram connect flow: webhook connect sets status to connected, delete re
   const statusAfterRes = await page.request.get(`${API_BASE}/api/telegram/status`, {
     headers: { Authorization: 'Bearer test-token' },
   })
+  expect(statusAfterRes.ok()).toBeTruthy()
   const statusAfter = await statusAfterRes.json()
   expect(statusAfter.connected).toBe(false)
 

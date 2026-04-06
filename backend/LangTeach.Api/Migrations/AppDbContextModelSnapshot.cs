@@ -708,10 +708,8 @@ namespace LangTeach.Api.Migrations
             modelBuilder.Entity("LangTeach.Api.Data.Models.TelegramLink", b =>
                 {
                     b.Property<long>("ChatId")
-                        .ValueGeneratedOnAdd()
+                        .ValueGeneratedNever()
                         .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ChatId"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");

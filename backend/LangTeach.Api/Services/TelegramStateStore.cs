@@ -5,6 +5,7 @@ namespace LangTeach.Api.Services;
 public class TelegramStateStore : ITelegramStateStore
 {
     private readonly IMemoryCache _cache;
+    private static readonly object ConsumeCodeLock = new();
 
     public TelegramStateStore(IMemoryCache cache)
     {
@@ -24,12 +25,15 @@ public class TelegramStateStore : ITelegramStateStore
 
     public Guid? ConsumeConnectCode(string code)
     {
-        if (_cache.TryGetValue(CodeKey(code), out Guid teacherId))
+        // Lock to make read-then-remove atomic (one-time use guarantee)
+        lock (ConsumeCodeLock)
         {
+            if (!_cache.TryGetValue(CodeKey(code), out Guid teacherId))
+                return null;
+
             _cache.Remove(CodeKey(code));
             return teacherId;
         }
-        return null;
     }
 
     public void SetConversationState(long chatId, TelegramConversationState state, TimeSpan expiry)

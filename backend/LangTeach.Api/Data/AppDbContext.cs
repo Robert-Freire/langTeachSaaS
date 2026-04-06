@@ -258,10 +258,11 @@ public class AppDbContext : DbContext
                  v => ContentBlockTypeExtensions.FromKebabCase(v));
         });
 
-        // TelegramLink — cascade delete from Teacher, ChatId is PK (bigint)
+        // TelegramLink — cascade delete from Teacher, ChatId is PK (bigint, assigned by Telegram, not auto-generated)
         modelBuilder.Entity<TelegramLink>(e =>
         {
             e.HasKey(t => t.ChatId);
+            e.Property(t => t.ChatId).ValueGeneratedNever();
             e.HasOne<Teacher>()
              .WithMany()
              .HasForeignKey(t => t.TeacherId)

@@ -83,6 +83,10 @@ public class TelegramConversationService : ITelegramConversationService
                 using var audioStream = await _botService.DownloadFileAsync(message.Voice.FileId, ct);
                 notes = await _transcriptionService.TranscribeAsync(audioStream, "voice.ogg", "audio/ogg", ct);
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Transcription failed for chatId={ChatId}", chatId);
@@ -156,12 +160,11 @@ public class TelegramConversationService : ITelegramConversationService
             selected = state.Students.FirstOrDefault(s => s.Index == index);
         }
 
-        // Try name match
-        if (selected is null)
+        // Try exact name match (case-insensitive); guard against blank to avoid matching first student
+        if (selected is null && !string.IsNullOrWhiteSpace(reply))
         {
             selected = state.Students.FirstOrDefault(s =>
-                s.Name.Contains(reply, StringComparison.OrdinalIgnoreCase)
-                || reply.Contains(s.Name, StringComparison.OrdinalIgnoreCase));
+                string.Equals(s.Name, reply, StringComparison.OrdinalIgnoreCase));
         }
 
         if (selected is null)

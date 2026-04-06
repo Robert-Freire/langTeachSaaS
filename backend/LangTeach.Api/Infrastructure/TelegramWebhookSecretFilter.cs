@@ -22,14 +22,19 @@ public class TelegramWebhookSecretFilter : IActionFilter
 
     public void OnActionExecuting(ActionExecutingContext context)
     {
-        // Skip validation only in Development/Testing/E2ETesting with no secret configured.
-        // In production the StartupConfigValidator ensures the secret is always set,
-        // so this path is unreachable in production.
-        if (string.IsNullOrEmpty(_expectedSecret)
-            && (_env.IsDevelopment()
-                || _env.IsEnvironment("Testing")
-                || _env.IsEnvironment("E2ETesting")))
+        if (string.IsNullOrWhiteSpace(_expectedSecret))
         {
+            // Skip validation in Development/Testing/E2ETesting when no secret is configured.
+            // In production StartupConfigValidator ensures the secret is always set, so this
+            // path is unreachable there. Fail closed for any other unconfigured environment.
+            if (_env.IsDevelopment()
+                || _env.IsEnvironment("Testing")
+                || _env.IsEnvironment("E2ETesting"))
+            {
+                return;
+            }
+
+            context.Result = new UnauthorizedResult();
             return;
         }
 
