@@ -1,13 +1,9 @@
-using LangTeach.Api.Data;
-using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Infrastructure;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using System.Text;
 
 namespace LangTeach.Api.Controllers;
 
@@ -18,20 +14,17 @@ public class TelegramController : ControllerBase
 {
     private static readonly TimeSpan ConnectCodeExpiry = TimeSpan.FromMinutes(10);
 
-    private readonly AppDbContext _db;
     private readonly ITelegramStateStore _stateStore;
-    private readonly TelegramConversationService _conversationService;
+    private readonly ITelegramConversationService _conversationService;
     private readonly IProfileService _profileService;
     private readonly ILogger<TelegramController> _logger;
 
     public TelegramController(
-        AppDbContext db,
         ITelegramStateStore stateStore,
-        TelegramConversationService conversationService,
+        ITelegramConversationService conversationService,
         IProfileService profileService,
         ILogger<TelegramController> logger)
     {
-        _db = db;
         _stateStore = stateStore;
         _conversationService = conversationService;
         _profileService = profileService;
@@ -60,11 +53,7 @@ public class TelegramController : ControllerBase
     {
         if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-
-        var link = await _db.Set<TelegramLink>()
-            .FirstOrDefaultAsync(l => l.TeacherId == teacherId, ct);
-
-        return Ok(new TelegramStatusResponse(link is not null, link?.CreatedAt));
+        return Ok(await _conversationService.GetLinkStatusAsync(teacherId, ct));
     }
 
     [HttpDelete("link")]
@@ -73,13 +62,8 @@ public class TelegramController : ControllerBase
         if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
 
-        var link = await _db.Set<TelegramLink>()
-            .FirstOrDefaultAsync(l => l.TeacherId == teacherId, ct);
-
-        if (link is null) return NotFound();
-
-        _db.Set<TelegramLink>().Remove(link);
-        await _db.SaveChangesAsync(ct);
+        var deleted = await _conversationService.DeleteLinkAsync(teacherId, ct);
+        if (!deleted) return NotFound();
 
         _logger.LogInformation("TelegramLink removed for TeacherId={TeacherId}", teacherId);
         return NoContent();

@@ -203,7 +203,7 @@ if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnv
     builder.Services.AddScoped<ITelegramBotService, StubTelegramBotService>();
 else
     builder.Services.AddScoped<ITelegramBotService, TelegramBotService>();
-builder.Services.AddScoped<TelegramConversationService>();
+builder.Services.AddScoped<ITelegramConversationService, TelegramConversationService>();
 
 var app = builder.Build();
 

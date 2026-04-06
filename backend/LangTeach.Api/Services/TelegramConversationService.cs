@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Services;
 
-public class TelegramConversationService
+public class TelegramConversationService : ITelegramConversationService
 {
     private static readonly TimeSpan ConversationExpiry = TimeSpan.FromMinutes(10);
 
@@ -196,6 +196,22 @@ public class TelegramConversationService
         await _botService.SendMessageAsync(chatId,
             $"Logged for {studentName}. Summary saved.",
             ct);
+    }
+
+    public async Task<TelegramStatusResponse> GetLinkStatusAsync(Guid teacherId, CancellationToken ct)
+    {
+        var link = await _db.Set<TelegramLink>().FirstOrDefaultAsync(l => l.TeacherId == teacherId, ct);
+        return new TelegramStatusResponse(link is not null, link?.CreatedAt);
+    }
+
+    public async Task<bool> DeleteLinkAsync(Guid teacherId, CancellationToken ct)
+    {
+        var link = await _db.Set<TelegramLink>().FirstOrDefaultAsync(l => l.TeacherId == teacherId, ct);
+        if (link is null) return false;
+
+        _db.Set<TelegramLink>().Remove(link);
+        await _db.SaveChangesAsync(ct);
+        return true;
     }
 
     private async Task HandleConnectCodeAsync(long chatId, string code, CancellationToken ct)
