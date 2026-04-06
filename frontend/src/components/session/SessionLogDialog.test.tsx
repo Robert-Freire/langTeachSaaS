@@ -148,6 +148,21 @@ describe('SessionLogDialog', () => {
     expect(screen.getByTestId('reassessment-level')).toBeInTheDocument()
   })
 
+  it('shows (optional) label on "What was actually done" field', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+
+    wrapper(
+      <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('actual-content')).toBeInTheDocument()
+    })
+
+    const label = screen.getByText(/What was actually done/i).closest('label')
+    expect(label).toHaveTextContent('(optional)')
+  })
+
   it('auto-populates planned content when lessonObjectives provided', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
 

@@ -94,12 +94,16 @@ describe('SessionHistoryTab', () => {
     expect(await screen.findAllByTestId('session-entry')).toHaveLength(1)
   })
 
-  it('shows inline preview with truncated planned and actual content', async () => {
+  it('shows inline preview with word-boundary-truncated planned and actual content', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
-    expect(screen.getByText(/Preterito indefinido intro/)).toBeInTheDocument()
-    expect(screen.getByText(/Covered basics and exercises/)).toBeInTheDocument()
+    const plannedEl = screen.getByText(/Preterito indefinido intro/)
+    const actualEl = screen.getByText(/Covered basics and exercises/)
+    expect(plannedEl).toBeInTheDocument()
+    expect(actualEl).toBeInTheDocument()
+    expect(plannedEl.closest('p')).toHaveClass('line-clamp-1')
+    expect(actualEl.closest('p')).toHaveClass('line-clamp-1')
   })
 
   it('hides planned and actual preview when expanded to avoid duplication', async () => {

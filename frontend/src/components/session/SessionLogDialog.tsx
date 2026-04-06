@@ -451,6 +451,7 @@ export function SessionLogDialog({
             <div className="space-y-1">
               <Label htmlFor="actual-content" className="text-sm">
                 What was actually done
+                <span className="text-zinc-400 font-normal ml-1">(optional)</span>
               </Label>
               <Textarea
                 id="actual-content"
