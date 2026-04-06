@@ -20,6 +20,7 @@ public class LessonContentBlocksController : ControllerBase
     private readonly IProfileService _profileService;
     private readonly ILessonService _lessonService;
     private readonly IGrammarValidationService _grammarValidation;
+    private readonly IContentValidationService _contentValidation;
     private readonly ILogger<LessonContentBlocksController> _logger;
 
     public LessonContentBlocksController(
@@ -27,12 +28,14 @@ public class LessonContentBlocksController : ControllerBase
         IProfileService profileService,
         ILessonService lessonService,
         IGrammarValidationService grammarValidation,
+        IContentValidationService contentValidation,
         ILogger<LessonContentBlocksController> logger)
     {
         _db = db;
         _profileService = profileService;
         _lessonService = lessonService;
         _grammarValidation = grammarValidation;
+        _contentValidation = contentValidation;
         _logger = logger;
     }
 
@@ -115,7 +118,7 @@ public class LessonContentBlocksController : ControllerBase
 
         if (request.BlockType == ContentBlockType.Exercises)
         {
-            var validationError = ValidateExercisesContent(request.GeneratedContent);
+            var validationError = _contentValidation.ValidateExercisesContent(request.GeneratedContent);
             if (validationError is not null)
                 return BadRequest(validationError);
         }
@@ -219,31 +222,4 @@ public class LessonContentBlocksController : ControllerBase
         return Ok(ToDto(block));
     }
 
-    /// Returns an error message if the exercises content contains trueFalse items with empty sourcePassage;
-    /// null means valid.
-    internal static string? ValidateExercisesContent(string generatedContent)
-    {
-        try
-        {
-            var stripped = ContentJsonHelper.StripFences(generatedContent);
-            if (stripped is null) return null;
-
-            using var doc = JsonDocument.Parse(stripped);
-            if (!doc.RootElement.TryGetProperty("trueFalse", out var trueFalseArray))
-                return null;
-
-            foreach (var item in trueFalseArray.EnumerateArray())
-            {
-                if (!item.TryGetProperty("sourcePassage", out var sourcePassage) ||
-                    string.IsNullOrWhiteSpace(sourcePassage.GetString()))
-                    return "All trueFalse items must have a non-empty sourcePassage field.";
-            }
-
-            return null;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
 }
