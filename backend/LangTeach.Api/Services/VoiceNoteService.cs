@@ -84,8 +84,9 @@ public class VoiceNoteService : IVoiceNoteService
 
         // Verify magic bytes match the declared content type to prevent MIME spoofing
         var header = new byte[16];
-        _ = await buffer.ReadAsync(header, 0, header.Length, ct);
-        if (!MagicByteValidators.TryGetValue(baseContentType, out var isValidMagic) || !isValidMagic(header))
+        var bytesRead = await buffer.ReadAsync(header, 0, header.Length, ct);
+        var effectiveHeader = header[..bytesRead]; // slice to actual bytes; short files fail h.Length guards
+        if (!MagicByteValidators.TryGetValue(baseContentType, out var isValidMagic) || !isValidMagic(effectiveHeader))
             throw new InvalidOperationException($"File content does not match the declared type '{baseContentType}'.");
         buffer.Position = 0;
 
