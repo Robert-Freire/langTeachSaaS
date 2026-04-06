@@ -106,6 +106,41 @@ test('Draft session shows "Pending review" badge in history', async ({ browser }
   await context.close()
 })
 
+test('voice recorder is accessible from the Lesson editor', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const student = await createStudent(page, `Lesson Editor Voice Student ${Date.now()}`)
+
+  // Create a lesson linked to this student
+  const lessonRes = await page.request.post(`${API_BASE}/api/lessons`, {
+    headers: AUTH_HEADER,
+    data: {
+      title: 'Voice Test Lesson',
+      language: 'Spanish',
+      cefrLevel: 'B1',
+      topic: 'Grammar',
+      durationMinutes: 60,
+      studentId: student.id,
+    },
+  })
+  expect(lessonRes.ok()).toBeTruthy()
+  const lesson = await lessonRes.json()
+
+  // Navigate to the lesson editor
+  await page.goto(`/lessons/${lesson.id}`)
+  await expect(page.getByTestId('log-session-btn')).toBeVisible({ timeout: 15000 })
+
+  // Open Log Session dialog from lesson editor
+  await page.getByTestId('log-session-btn').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+
+  // Voice recorder section should be present (create mode)
+  await expect(page.getByTestId('voice-recorder-section')).toBeVisible({ timeout: 5000 })
+
+  await context.close()
+})
+
 test('editing a Draft session and saving confirms it', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
