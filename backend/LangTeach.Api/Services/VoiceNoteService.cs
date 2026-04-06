@@ -1,7 +1,6 @@
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Services;
@@ -37,28 +36,28 @@ public class VoiceNoteService : IVoiceNoteService
         _logger = logger;
     }
 
-    public async Task<VoiceNoteDto> UploadAsync(Guid teacherId, IFormFile file, CancellationToken ct = default)
+    public async Task<VoiceNoteDto> UploadAsync(Guid teacherId, Stream audio, string fileName, string contentType, long sizeBytes, CancellationToken ct = default)
     {
-        if (file.Length == 0)
+        if (sizeBytes == 0)
             throw new InvalidOperationException("An audio file is required and cannot be empty.");
 
-        if (file.Length > MaxFileSizeBytes)
+        if (sizeBytes > MaxFileSizeBytes)
             throw new InvalidOperationException($"File exceeds maximum allowed size of {MaxFileSizeBytes / (1024 * 1024)} MB.");
 
         // Browsers send MIME types with codec parameters (e.g. "audio/webm;codecs=opus").
         // Strip parameters before validation and storage so the base type matches AllowedContentTypes.
-        var baseContentType = file.ContentType.Split(';')[0].Trim();
+        var baseContentType = contentType.Split(';')[0].Trim();
 
         if (!AllowedContentTypes.Contains(baseContentType))
             throw new InvalidOperationException($"File type '{baseContentType}' is not supported. Supported types: webm, mp4, mpeg, wav, ogg.");
 
         var id = Guid.NewGuid();
-        var ext = Path.GetExtension(file.FileName);
+        var ext = Path.GetExtension(fileName);
         var blobPath = $"teachers/{teacherId}/{id}{ext}";
 
-        // Buffer the file so we can reuse the bytes for blob upload and transcription
+        // Buffer the stream so we can reuse the bytes for blob upload and transcription
         using var buffer = new MemoryStream();
-        await file.CopyToAsync(buffer, ct);
+        await audio.CopyToAsync(buffer, ct);
         buffer.Position = 0;
 
         // Upload audio to blob storage
@@ -67,16 +66,16 @@ public class VoiceNoteService : IVoiceNoteService
         _logger.LogInformation("Voice note uploaded to blob. TeacherId={TeacherId} BlobPath={BlobPath}", teacherId, blobPath);
 
         buffer.Position = 0;
-        var transcription = await _transcription.TranscribeAsync(buffer, file.FileName, baseContentType, ct);
+        var transcription = await _transcription.TranscribeAsync(buffer, fileName, baseContentType, ct);
 
         var note = new VoiceNote
         {
             Id = id,
             TeacherId = teacherId,
             BlobPath = blobPath,
-            OriginalFileName = Path.GetFileName(file.FileName),
+            OriginalFileName = Path.GetFileName(fileName),
             ContentType = baseContentType,
-            SizeBytes = file.Length,
+            SizeBytes = sizeBytes,
             DurationSeconds = 0, // Duration extraction not yet implemented; field reserved for future use
             Transcription = transcription,
             TranscribedAt = DateTime.UtcNow,

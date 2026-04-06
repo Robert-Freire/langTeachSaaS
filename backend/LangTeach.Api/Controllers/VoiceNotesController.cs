@@ -37,7 +37,8 @@ public class VoiceNotesController : ControllerBase
 
         try
         {
-            var note = await _voiceNoteService.UploadAsync(teacherId, file, ct);
+            using var stream = file.OpenReadStream();
+            var note = await _voiceNoteService.UploadAsync(teacherId, stream, file.FileName, file.ContentType, file.Length, ct);
             _logger.LogInformation("POST voice-note uploaded. TeacherId={TeacherId} Id={Id}", teacherId, note.Id);
             return CreatedAtAction(nameof(GetById), new { id = note.Id }, note);
         }

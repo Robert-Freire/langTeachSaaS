@@ -3,7 +3,6 @@ using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Helpers;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -48,11 +47,11 @@ public class VoiceNoteServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task UploadAsync_ValidFile_ReturnsTranscribedNote()
+    public async Task UploadAsync_ValidStream_ReturnsTranscribedNote()
     {
-        var file = MakeFormFile("recording.webm", "audio/webm", 1024);
+        using var stream = MakeStream(1024);
 
-        var result = await _sut.UploadAsync(_teacherId, file);
+        var result = await _sut.UploadAsync(_teacherId, stream, "recording.webm", "audio/webm", 1024);
 
         result.Should().NotBeNull();
         result.TranscribedAt.Should().NotBeNull();
@@ -62,11 +61,12 @@ public class VoiceNoteServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task UploadAsync_FileTooLarge_ThrowsInvalidOperation()
+    public async Task UploadAsync_StreamTooLarge_ThrowsInvalidOperation()
     {
-        var oversizeFile = MakeFormFile("big.webm", "audio/webm", sizeBytes: 51 * 1024 * 1024);
+        using var stream = MakeStream(1024);
+        var oversizeBytes = 51L * 1024 * 1024;
 
-        var act = () => _sut.UploadAsync(_teacherId, oversizeFile);
+        var act = () => _sut.UploadAsync(_teacherId, stream, "big.webm", "audio/webm", oversizeBytes);
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*exceeds maximum*");
@@ -75,9 +75,9 @@ public class VoiceNoteServiceTests : IDisposable
     [Fact]
     public async Task UploadAsync_UnsupportedContentType_ThrowsInvalidOperation()
     {
-        var file = MakeFormFile("video.mp4", "video/mp4", 1024);
+        using var stream = MakeStream(1024);
 
-        var act = () => _sut.UploadAsync(_teacherId, file);
+        var act = () => _sut.UploadAsync(_teacherId, stream, "video.mp4", "video/mp4", 1024);
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*not supported*");
@@ -86,8 +86,8 @@ public class VoiceNoteServiceTests : IDisposable
     [Fact]
     public async Task GetByIdAsync_ExistingNote_ReturnsNote()
     {
-        var file = MakeFormFile("recording.webm", "audio/webm", 1024);
-        var created = await _sut.UploadAsync(_teacherId, file);
+        using var stream = MakeStream(1024);
+        var created = await _sut.UploadAsync(_teacherId, stream, "recording.webm", "audio/webm", 1024);
 
         var result = await _sut.GetByIdAsync(_teacherId, created.Id);
 
@@ -98,8 +98,8 @@ public class VoiceNoteServiceTests : IDisposable
     [Fact]
     public async Task GetByIdAsync_OtherTeacherNote_ReturnsNull()
     {
-        var file = MakeFormFile("recording.webm", "audio/webm", 1024);
-        var created = await _sut.UploadAsync(_teacherId, file);
+        using var stream = MakeStream(1024);
+        var created = await _sut.UploadAsync(_teacherId, stream, "recording.webm", "audio/webm", 1024);
         var otherTeacherId = Guid.NewGuid();
 
         var result = await _sut.GetByIdAsync(otherTeacherId, created.Id);
@@ -110,8 +110,8 @@ public class VoiceNoteServiceTests : IDisposable
     [Fact]
     public async Task UpdateTranscriptionAsync_ValidNote_UpdatesText()
     {
-        var file = MakeFormFile("recording.webm", "audio/webm", 1024);
-        var created = await _sut.UploadAsync(_teacherId, file);
+        using var stream = MakeStream(1024);
+        var created = await _sut.UploadAsync(_teacherId, stream, "recording.webm", "audio/webm", 1024);
 
         var updated = await _sut.UpdateTranscriptionAsync(_teacherId, created.Id, "Edited text");
 
@@ -129,17 +129,8 @@ public class VoiceNoteServiceTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private static IFormFile MakeFormFile(string fileName, string contentType, long sizeBytes)
-    {
-        var bytes = new byte[sizeBytes];
-        var stream = new MemoryStream(bytes);
-        var file = new FormFile(stream, 0, sizeBytes, "file", fileName)
-        {
-            Headers = new HeaderDictionary(),
-            ContentType = contentType,
-        };
-        return file;
-    }
+    private static MemoryStream MakeStream(int sizeBytes) =>
+        new(new byte[sizeBytes]);
 
     /// <summary>
     /// Simple IDbContextFactory implementation that creates contexts with pre-built options.
