@@ -1191,6 +1191,21 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void CurriculumUserPrompt_InjectsNeverSubstituteWithGlobPattern_WhenRolePlayRejected()
+    {
+        // style-substitutions.json role-play entry has neverSubstituteWith: ["EE-*"].
+        // PromptService must include the raw glob in the prompt so the AI interprets it correctly.
+        var ctx = BaseGeneralCtx(teacherNotes: "Student hates role-play. Prefers written exercises.");
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Never substitute with",
+            because: "role-play substitution entry has neverSubstituteWith constraints that must appear in the prompt");
+        req.UserPrompt.Should().Contain("EE-*",
+            because: "the neverSubstituteWith glob pattern must be preserved verbatim so the AI excludes all EE-type IDs");
+    }
+
+    [Fact]
     public void CurriculumUserPrompt_OmitsStyleSubstitutionGuidance_WhenTeacherNotesHaveNoMatchingKeyword()
     {
         var ctx = BaseGeneralCtx(teacherNotes: "Student relocating to Barcelona. Loves sports.");
