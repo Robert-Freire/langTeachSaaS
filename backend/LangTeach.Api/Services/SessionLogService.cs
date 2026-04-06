@@ -96,6 +96,7 @@ public class SessionLogService : ISessionLogService
         }
 
         var now = DateTime.UtcNow;
+        var sanitizedDifficulties = SanitizeSuggestedDifficulties(request.SuggestedDifficulties, _logger);
         var entity = new SessionLog
         {
             Id = Guid.NewGuid(),
@@ -113,7 +114,7 @@ public class SessionLogService : ISessionLogService
             LinkedLessonId = request.LinkedLessonId,
             TopicTags = request.TopicTags ?? "[]",
             MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs),
-            SuggestedDifficulties = SerializeSuggestedDifficulties(request.SuggestedDifficulties),
+            SuggestedDifficulties = SerializeSuggestedDifficulties(sanitizedDifficulties),
             IsCancelled = request.IsCancelled,
             Status = request.Status,
             CreatedAt = now,
@@ -125,9 +126,8 @@ public class SessionLogService : ISessionLogService
         if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
             PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);
 
-        if (request.Status == SessionLogStatus.Confirmed && request.SuggestedDifficulties is { Count: > 0 })
-            // Re-validate here: request may arrive directly (bypassing ReflectionExtractionService sanitization)
-            UpsertDifficulties(student, request.SuggestedDifficulties, _logger);
+        if (request.Status == SessionLogStatus.Confirmed && sanitizedDifficulties.Count > 0)
+            UpsertDifficulties(student, sanitizedDifficulties, _logger);
 
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -172,6 +172,8 @@ public class SessionLogService : ISessionLogService
                 throw new KeyNotFoundException($"Lesson {request.LinkedLessonId.Value} not found.");
         }
 
+        var sanitizedDifficulties = SanitizeSuggestedDifficulties(request.SuggestedDifficulties, _logger);
+
         entity.SessionDate = request.SessionDate;
         entity.PlannedContent = request.PlannedContent;
         entity.ActualContent = request.ActualContent;
@@ -184,7 +186,7 @@ public class SessionLogService : ISessionLogService
         entity.LinkedLessonId = request.LinkedLessonId;
         entity.TopicTags = request.TopicTags ?? "[]";
         entity.MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs);
-        entity.SuggestedDifficulties = SerializeSuggestedDifficulties(request.SuggestedDifficulties);
+        entity.SuggestedDifficulties = SerializeSuggestedDifficulties(sanitizedDifficulties);
         entity.IsCancelled = request.IsCancelled;
         entity.Status = request.Status;
         entity.UpdatedAt = DateTime.UtcNow;
@@ -201,15 +203,14 @@ public class SessionLogService : ISessionLogService
                 PropagateReassessment(studentForUpdate, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);
         }
 
-        if (request.Status == SessionLogStatus.Confirmed && request.SuggestedDifficulties is { Count: > 0 })
+        if (request.Status == SessionLogStatus.Confirmed && sanitizedDifficulties.Count > 0)
         {
-            // Re-validate here: request may arrive directly (bypassing ReflectionExtractionService sanitization)
             studentForUpdate ??= await _db.Students
                 .Where(s => s.Id == studentId && s.TeacherId == teacherId)
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (studentForUpdate is not null)
-                UpsertDifficulties(studentForUpdate, request.SuggestedDifficulties, _logger);
+                UpsertDifficulties(studentForUpdate, sanitizedDifficulties, _logger);
         }
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -362,8 +363,28 @@ public class SessionLogService : ISessionLogService
         pairs is null or { Count: 0 } ? "[]" : JsonStorageHelper.Serialize(pairs);
 
     // Serialize with camelCase so the raw JSON column matches the API response casing the frontend expects.
-    private static string SerializeSuggestedDifficulties(List<SuggestedDifficultyDto>? items) =>
-        items is null or { Count: 0 } ? "[]" : JsonSerializer.Serialize(items, CamelCaseOptions);
+    private static string SerializeSuggestedDifficulties(List<SuggestedDifficultyDto> items) =>
+        items.Count == 0 ? "[]" : JsonSerializer.Serialize(items, CamelCaseOptions);
+
+    // Filter out entries with invalid competency/severity before storing or upserting,
+    // so the SessionLog column never contains data that would silently break on rehydration.
+    private static List<SuggestedDifficultyDto> SanitizeSuggestedDifficulties(
+        List<SuggestedDifficultyDto>? items, ILogger logger)
+    {
+        if (items is null or { Count: 0 }) return [];
+        var result = new List<SuggestedDifficultyDto>(items.Count);
+        foreach (var item in items)
+        {
+            if (!DifficultyConstants.ValidCompetencies.Contains(item.Competency) ||
+                !DifficultyConstants.ValidSeverities.Contains(item.Severity))
+            {
+                logger.LogWarning("Dropping suggested difficulty with invalid fields: Competency={Competency}, Severity={Severity}", item.Competency, item.Severity);
+                continue;
+            }
+            result.Add(item);
+        }
+        return result;
+    }
 
     private static void UpsertDifficulties(Student student, List<SuggestedDifficultyDto> suggested, ILogger logger)
     {
