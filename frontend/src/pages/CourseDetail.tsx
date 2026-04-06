@@ -672,6 +672,17 @@ export default function CourseDetail() {
             {course.lessonsCreated} of {course.sessionCount} lessons created
           </span>
         </div>
+        {course.studentId && (
+          <div>
+            <Link
+              to={`/students/${course.studentId}?tab=progress`}
+              className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline"
+              data-testid="view-student-progress"
+            >
+              View student progress
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Generation quality warnings */}

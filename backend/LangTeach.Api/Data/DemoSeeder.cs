@@ -289,7 +289,7 @@ public static class DemoSeeder
             NativeLanguage   = "Spanish",
             LearningGoals    = """["Achieve C1 certification","Improve academic writing"]""",
             Interests        = """["history","cinema","chess"]""",
-            Difficulties     = "[]",
+            Difficulties     = """[{"id":"d1","description":"Third conditional structures","competency":"Grammar","subcategory":"Conditionals","severity":"medium","status":"Active","trend":"stable"},{"id":"d2","description":"Academic vocabulary range","competency":"Vocabulary","subcategory":"Academic","severity":"high","status":"Active","trend":"worsening"},{"id":"d3","description":"Reading speed","competency":"Reading","subcategory":"Comprehension","severity":"low","status":"Covered","trend":"improving"}]""",
             Weaknesses       = "[]",
             Notes            = "[scenario-seed]",
         }, now);
@@ -297,7 +297,64 @@ public static class DemoSeeder
         // Flush all upserted student updates before checking session logs
         await db.SaveChangesAsync();
 
-        // Add 2 session logs for Diego if not already present
+        // Add course with curriculum entries for Diego (progress dashboard) — separate guard for idempotency
+        var diegoCourseExists = await db.Courses.AnyAsync(c => c.StudentId == diego.Id && !c.IsDeleted);
+        Guid diegoLessonId;
+        if (!diegoCourseExists)
+        {
+            var diegoCourse = new Course
+            {
+                Id              = Guid.NewGuid(),
+                TeacherId       = teacherId,
+                StudentId       = diego.Id,
+                Name            = "B2 English — C1 Preparation",
+                Language        = "English",
+                Mode            = "general",
+                TargetCefrLevel = "C1",
+                SessionCount    = 8,
+                IsDeleted       = false,
+                CreatedAt       = now.AddDays(-30),
+                UpdatedAt       = now.AddDays(-30),
+            };
+            db.Courses.Add(diegoCourse);
+
+            var diegoLesson = new Lesson
+            {
+                Id               = Guid.NewGuid(),
+                TeacherId        = teacherId,
+                StudentId        = diego.Id,
+                Title            = "Conditionals: Zero and First",
+                Topic            = "Conditionals",
+                Language         = "English",
+                CefrLevel        = "B2",
+                DurationMinutes  = 60,
+                Status           = "Draft",
+                IsDeleted        = false,
+                CreatedAt        = now.AddDays(-14),
+                UpdatedAt        = now.AddDays(-14),
+            };
+            db.Lessons.Add(diegoLesson);
+            diegoLessonId = diegoLesson.Id;
+
+            db.CurriculumEntries.AddRange(
+                new CurriculumEntry { Id = Guid.NewGuid(), CourseId = diegoCourse.Id, OrderIndex = 1, Topic = "Conditionals: Zero and First",       GrammarFocus = "Conditional clauses", Competencies = "grammar,speaking", LessonType = "Grammar-focused", LessonId = diegoLesson.Id, Status = "taught",  IsDeleted = false },
+                new CurriculumEntry { Id = Guid.NewGuid(), CourseId = diegoCourse.Id, OrderIndex = 2, Topic = "Conditionals: Second and Third",      GrammarFocus = "Conditional clauses", Competencies = "grammar,writing",  LessonType = "Grammar-focused", LessonId = null,            Status = "planned", IsDeleted = false },
+                new CurriculumEntry { Id = Guid.NewGuid(), CourseId = diegoCourse.Id, OrderIndex = 3, Topic = "Academic Writing: Argument Structure", GrammarFocus = "Cohesion devices",   Competencies = "writing",          LessonType = "Writing",         LessonId = null,            Status = "planned", IsDeleted = false },
+                new CurriculumEntry { Id = Guid.NewGuid(), CourseId = diegoCourse.Id, OrderIndex = 4, Topic = "Passive Voice and Nominalisation",     GrammarFocus = "Passive voice",       Competencies = "grammar,writing",  LessonType = "Grammar-focused", LessonId = null,            Status = "planned", IsDeleted = false }
+            );
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            var existingLesson = await db.Lessons
+                .Where(l => l.StudentId == diego.Id && !l.IsDeleted)
+                .OrderBy(l => l.CreatedAt)
+                .Select(l => l.Id)
+                .FirstOrDefaultAsync();
+            diegoLessonId = existingLesson;
+        }
+
+        // Add session logs for Diego if not already present
         var logsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == diego.Id && !s.IsDeleted);
         if (!logsExist)
         {
@@ -315,6 +372,7 @@ public static class DemoSeeder
                     NextSessionTopics       = "Second and third conditional",
                     GeneralNotes            = "Student is strong on reading, needs more speaking practice.",
                     TopicTags               = """["grammar","conditionals"]""",
+                    LinkedLessonId          = diegoLessonId != Guid.Empty ? diegoLessonId : null,
                     IsDeleted               = false,
                     CreatedAt               = now.AddDays(-14),
                     UpdatedAt               = now.AddDays(-14),
