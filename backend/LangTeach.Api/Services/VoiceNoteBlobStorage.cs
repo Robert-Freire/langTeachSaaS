@@ -47,4 +47,9 @@ public class VoiceNoteBlobStorage : IVoiceNoteBlobStorage
 
         return Task.FromResult(blob.Uri.ToString());
     }
+
+    public async Task DeleteAsync(string blobPath, CancellationToken ct = default)
+    {
+        await _container.GetBlobClient(blobPath).DeleteIfExistsAsync(cancellationToken: ct);
+    }
 }

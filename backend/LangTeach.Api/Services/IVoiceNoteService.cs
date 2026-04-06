@@ -8,4 +8,5 @@ public interface IVoiceNoteService
     Task<VoiceNoteDto?> GetByIdAsync(Guid teacherId, Guid id, CancellationToken ct = default);
     Task<VoiceNoteDto?> UpdateTranscriptionAsync(Guid teacherId, Guid id, string transcription, CancellationToken ct = default);
     Task<string?> GetAudioUrlAsync(Guid teacherId, Guid id, CancellationToken ct = default);
+    Task<bool> DeleteAsync(Guid teacherId, Guid id, CancellationToken ct = default);
 }

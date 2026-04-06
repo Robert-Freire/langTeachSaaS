@@ -81,6 +81,23 @@ public class VoiceNotesController : ControllerBase
         return Ok(note);
     }
 
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        var deleted = await _voiceNoteService.DeleteAsync(teacherId, id, ct);
+        if (!deleted)
+        {
+            _logger.LogWarning("DELETE voice-note not found. TeacherId={TeacherId} Id={Id}", teacherId, id);
+            return NotFound();
+        }
+
+        _logger.LogInformation("DELETE voice-note succeeded. TeacherId={TeacherId} Id={Id}", teacherId, id);
+        return NoContent();
+    }
+
     [HttpGet("{id:guid}/audio")]
     public async Task<IActionResult> GetAudio(Guid id, CancellationToken ct)
     {

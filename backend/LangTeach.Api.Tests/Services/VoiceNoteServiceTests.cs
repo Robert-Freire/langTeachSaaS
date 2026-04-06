@@ -211,6 +211,52 @@ public class VoiceNoteServiceTests : IDisposable
         result.Should().BeNull();
     }
 
+    [Fact]
+    public async Task DeleteAsync_ExistingNote_ReturnsTrueAndRemovesRow()
+    {
+        using var stream = MakeStream(1024, WebmHeader);
+        var created = await _sut.UploadAsync(_teacherId, stream, "recording.webm", "audio/webm", WebmHeader.Length + 1024);
+
+        var result = await _sut.DeleteAsync(_teacherId, created.Id);
+
+        result.Should().BeTrue();
+        var note = await _sut.GetByIdAsync(_teacherId, created.Id);
+        note.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ExistingNote_BlobDeleteCalledWithCorrectPath()
+    {
+        var blobStorage = new Helpers.InMemoryVoiceNoteBlobStorage();
+        var sut = new VoiceNoteService(_dbFactory, blobStorage, new StubTranscriptionService(), NullLogger<VoiceNoteService>.Instance);
+        using var stream = MakeStream(1024, WebmHeader);
+        var created = await sut.UploadAsync(_teacherId, stream, "recording.webm", "audio/webm", WebmHeader.Length + 1024);
+
+        await sut.DeleteAsync(_teacherId, created.Id);
+
+        blobStorage.ContainsBlob($"teachers/{_teacherId}/{created.Id}.webm").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_OtherTeacherNote_ReturnsFalse()
+    {
+        using var stream = MakeStream(1024, WebmHeader);
+        var created = await _sut.UploadAsync(_teacherId, stream, "recording.webm", "audio/webm", WebmHeader.Length + 1024);
+        var otherTeacherId = Guid.NewGuid();
+
+        var result = await _sut.DeleteAsync(otherTeacherId, created.Id);
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NotFound_ReturnsFalse()
+    {
+        var result = await _sut.DeleteAsync(_teacherId, Guid.NewGuid());
+
+        result.Should().BeFalse();
+    }
+
     public void Dispose() => _db.Dispose();
 
     /// <summary>
