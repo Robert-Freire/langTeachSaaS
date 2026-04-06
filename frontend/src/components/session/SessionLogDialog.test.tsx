@@ -46,6 +46,7 @@ const SAMPLE_SESSION: SessionLog = {
   topicTags: '[]',
   createdAt: '2026-03-15T10:00:00Z',
   updatedAt: '2026-03-15T10:00:00Z',
+  isCancelled: false,
 }
 
 function wrapper(ui: React.ReactElement) {
@@ -72,6 +73,7 @@ describe('SessionLogDialog', () => {
         previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null, generalNotes: null,
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
+        isCancelled: false,
       },
     ])
 
@@ -92,6 +94,7 @@ describe('SessionLogDialog', () => {
         previousHomeworkStatusName: 'Not applicable', nextSessionTopics: null, generalNotes: null,
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
+        isCancelled: false,
       },
     ])
 
@@ -449,35 +452,81 @@ describe('SessionLogDialog', () => {
     expect(vi.mocked(sessionLogsApi.createSession)).not.toHaveBeenCalled()
   })
 
-  it('shows validation error when session date is in the future', async () => {
+  it('accepts a future session date without validation error', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
-
-    // Pre-populate with a far-future date via initialSession (edit mode)
-    const futureSession: SessionLog = {
+    vi.mocked(sessionLogsApi.createSession).mockResolvedValue({
       ...SAMPLE_SESSION,
       sessionDate: '2099-12-31T00:00:00Z',
-    }
+    })
+
+    wrapper(
+      <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+    )
+
+    await waitFor(() => expect(screen.getByTestId('session-date')).toBeInTheDocument())
+
+    fireEvent.change(screen.getByTestId('session-date'), { target: { value: '2099-12-31' } })
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Planned content.' } })
+    fireEvent.click(screen.getByTestId('submit-session-log'))
+
+    await waitFor(() => {
+      expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledWith(
+        STUDENT_ID,
+        expect.objectContaining({ sessionDate: '2099-12-31' }),
+      )
+    })
+    expect(screen.queryByText(/cannot be in the future/i)).not.toBeInTheDocument()
+  })
+
+  it('renders cancelled toggle unchecked by default', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+
+    wrapper(
+      <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+    )
+
+    await waitFor(() => expect(screen.getByTestId('cancelled-toggle')).toBeInTheDocument())
+    expect(screen.getByTestId('cancelled-toggle')).not.toBeChecked()
+  })
+
+  it('includes isCancelled: true in payload when cancelled toggle is checked', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+    vi.mocked(sessionLogsApi.createSession).mockResolvedValue({ ...SAMPLE_SESSION, isCancelled: true })
+
+    wrapper(
+      <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+    )
+
+    await waitFor(() => expect(screen.getByTestId('cancelled-toggle')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByTestId('cancelled-toggle'))
+    fireEvent.change(screen.getByTestId('planned-content'), { target: { value: 'Planned for tomorrow.' } })
+    fireEvent.click(screen.getByTestId('submit-session-log'))
+
+    await waitFor(() => {
+      expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledWith(
+        STUDENT_ID,
+        expect.objectContaining({ isCancelled: true }),
+      )
+    })
+  })
+
+  it('pre-populates isCancelled from initialSession in edit mode', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+
+    const cancelledSession: SessionLog = { ...SAMPLE_SESSION, isCancelled: true }
 
     wrapper(
       <SessionLogDialog
         studentId={STUDENT_ID}
         open={true}
         onOpenChange={vi.fn()}
-        initialSession={futureSession}
+        initialSession={cancelledSession}
       />
     )
 
-    // Wait for the form to pre-populate
     await waitFor(() => {
-      const dateInput = screen.getByTestId('session-date') as HTMLInputElement
-      expect(dateInput.value).toBe('2099-12-31')
+      expect(screen.getByTestId('cancelled-toggle')).toBeChecked()
     })
-
-    // Submit via the form element directly (base-ui button type handling may vary)
-    const form = screen.getByTestId('session-log-dialog').querySelector('form')!
-    fireEvent.submit(form)
-
-    expect(await screen.findByText(/cannot be in the future/i)).toBeInTheDocument()
-    expect(vi.mocked(sessionLogsApi.updateSession)).not.toHaveBeenCalled()
   })
 })

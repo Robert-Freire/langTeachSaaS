@@ -4,6 +4,7 @@ using LangTeach.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LangTeach.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260405205747_MakeSessionDateNullable")]
+    partial class MakeSessionDateNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -87,50 +90,6 @@ namespace LangTeach.Api.Migrations
                     b.HasIndex("TeacherId", "IsDeleted");
 
                     b.ToTable("Courses");
-                });
-
-            modelBuilder.Entity("LangTeach.Api.Data.Models.CourseSuggestion", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CourseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CurriculumEntryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("GeneratedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ProposedChange")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Reasoning")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("RespondedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
-                        .HasDefaultValue("pending");
-
-                    b.Property<string>("TeacherEdit")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CourseId");
-
-                    b.HasIndex("CurriculumEntryId");
-
-                    b.ToTable("CourseSuggestions");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.CurriculumEntry", b =>
@@ -343,9 +302,6 @@ namespace LangTeach.Api.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("EmotionalSignals")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("HomeworkAssigned")
                         .HasColumnType("nvarchar(max)");
@@ -691,49 +647,6 @@ namespace LangTeach.Api.Migrations
                     b.ToTable("TeacherSettings");
                 });
 
-            modelBuilder.Entity("LangTeach.Api.Data.Models.VoiceNote", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("BlobPath")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("DurationSeconds")
-                        .HasColumnType("int");
-
-                    b.Property<string>("OriginalFileName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<long>("SizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid>("TeacherId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("TranscribedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Transcription")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TeacherId", "CreatedAt");
-
-                    b.ToTable("VoiceNotes");
-                });
-
             modelBuilder.Entity("LangTeach.Api.Data.Models.Course", b =>
                 {
                     b.HasOne("LangTeach.Api.Data.Models.Student", "Student")
@@ -750,24 +663,6 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("Student");
 
                     b.Navigation("Teacher");
-                });
-
-            modelBuilder.Entity("LangTeach.Api.Data.Models.CourseSuggestion", b =>
-                {
-                    b.HasOne("LangTeach.Api.Data.Models.Course", "Course")
-                        .WithMany()
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LangTeach.Api.Data.Models.CurriculumEntry", "CurriculumEntry")
-                        .WithMany()
-                        .HasForeignKey("CurriculumEntryId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.Navigation("Course");
-
-                    b.Navigation("CurriculumEntry");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.CurriculumEntry", b =>
@@ -933,17 +828,6 @@ namespace LangTeach.Api.Migrations
                     b.HasOne("LangTeach.Api.Data.Models.Teacher", "Teacher")
                         .WithOne("Settings")
                         .HasForeignKey("LangTeach.Api.Data.Models.TeacherSettings", "TeacherId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Teacher");
-                });
-
-            modelBuilder.Entity("LangTeach.Api.Data.Models.VoiceNote", b =>
-                {
-                    b.HasOne("LangTeach.Api.Data.Models.Teacher", "Teacher")
-                        .WithMany()
-                        .HasForeignKey("TeacherId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

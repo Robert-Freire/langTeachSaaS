@@ -38,7 +38,8 @@ public class SessionLogService : ISessionLogService
 
         var sessions = await _db.SessionLogs
             .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
-            .OrderByDescending(sl => sl.SessionDate)
+            .OrderBy(sl => sl.SessionDate.HasValue)
+            .ThenByDescending(sl => sl.SessionDate)
             .Select(sl => ToDto(sl))
             .ToListAsync(cancellationToken);
 
@@ -56,8 +57,6 @@ public class SessionLogService : ISessionLogService
 
     public async Task<SessionLogDto> CreateAsync(Guid teacherId, Guid studentId, CreateSessionLogRequest request, CancellationToken cancellationToken = default)
     {
-        ValidateSessionDate(request.SessionDate);
-
         if (!Enum.IsDefined(request.PreviousHomeworkStatus))
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
@@ -98,6 +97,7 @@ public class SessionLogService : ISessionLogService
             LevelReassessmentLevel = request.LevelReassessmentLevel,
             LinkedLessonId = request.LinkedLessonId,
             TopicTags = request.TopicTags ?? "[]",
+            IsCancelled = request.IsCancelled,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -115,8 +115,6 @@ public class SessionLogService : ISessionLogService
 
     public async Task<SessionLogDto?> UpdateAsync(Guid teacherId, Guid studentId, Guid sessionId, UpdateSessionLogRequest request, CancellationToken cancellationToken = default)
     {
-        ValidateSessionDate(request.SessionDate);
-
         if (!Enum.IsDefined(request.PreviousHomeworkStatus))
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
@@ -151,6 +149,7 @@ public class SessionLogService : ISessionLogService
         entity.LevelReassessmentLevel = request.LevelReassessmentLevel;
         entity.LinkedLessonId = request.LinkedLessonId;
         entity.TopicTags = request.TopicTags ?? "[]";
+        entity.IsCancelled = request.IsCancelled;
         entity.UpdatedAt = DateTime.UtcNow;
 
         if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
@@ -184,13 +183,6 @@ public class SessionLogService : ISessionLogService
 
         _logger.LogInformation("Soft-deleted SessionLog {SessionLogId}", sessionId);
         return true;
-    }
-
-    private static void ValidateSessionDate(DateTime sessionDate)
-    {
-        if (sessionDate.Date > DateTime.UtcNow.Date)
-            throw new System.ComponentModel.DataAnnotations.ValidationException(
-                "Session date cannot be in the future.");
     }
 
     private static void ValidateReassessment(string? skill, string? level)
@@ -233,10 +225,10 @@ public class SessionLogService : ISessionLogService
             throw new KeyNotFoundException($"Student {studentId} not found.");
 
         var totalSessions = await _db.SessionLogs
-            .CountAsync(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted, cancellationToken);
+            .CountAsync(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled, cancellationToken);
 
         var mostRecent = await _db.SessionLogs
-            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
+            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue)
             .OrderByDescending(sl => sl.SessionDate)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -246,8 +238,8 @@ public class SessionLogService : ISessionLogService
 
         if (mostRecent is not null)
         {
-            lastSessionDate = mostRecent.SessionDate.ToString("yyyy-MM-dd");
-            daysSinceLastSession = (int)(DateTime.UtcNow.Date - mostRecent.SessionDate.Date).TotalDays;
+            lastSessionDate = mostRecent.SessionDate!.Value.ToString("yyyy-MM-dd");
+            daysSinceLastSession = (int)(DateTime.UtcNow.Date - mostRecent.SessionDate.Value.Date).TotalDays;
             if (!string.IsNullOrWhiteSpace(mostRecent.NextSessionTopics))
             {
                 openActionItems = mostRecent.NextSessionTopics
@@ -300,6 +292,7 @@ public class SessionLogService : ISessionLogService
         sl.LinkedLessonId,
         sl.CreatedAt,
         sl.UpdatedAt,
-        sl.TopicTags
+        sl.TopicTags,
+        sl.IsCancelled
     );
 }

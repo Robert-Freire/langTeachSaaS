@@ -84,7 +84,7 @@ function SessionEntry({
 
   return (
     <div
-      className="border border-zinc-200 rounded-lg bg-white overflow-hidden"
+      className={`border rounded-lg overflow-hidden ${session.isCancelled ? 'border-zinc-200 bg-zinc-50' : 'border-zinc-200 bg-white'}`}
       data-testid="session-entry"
     >
       {/* Inline preview row */}
@@ -98,10 +98,21 @@ function SessionEntry({
           <div className="flex-1 min-w-0 space-y-1.5">
             {/* Date row */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium text-zinc-900">
-                {formatDate(session.sessionDate)}
+              <span className={`text-sm font-medium ${session.isCancelled ? 'line-through text-zinc-400' : 'text-zinc-900'}`}>
+                {session.sessionDate ? formatDate(session.sessionDate) : 'No date'}
               </span>
-              <span className="text-xs text-zinc-400">{relativeTime(session.sessionDate)}</span>
+              {session.sessionDate && (
+                <span className="text-xs text-zinc-400">{relativeTime(session.sessionDate)}</span>
+              )}
+              {session.isCancelled && (
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-zinc-100 text-zinc-500 border-zinc-300"
+                  data-testid="cancelled-badge"
+                >
+                  Cancelled
+                </Badge>
+              )}
               {hasActionItem && (
                 <span className="inline-flex items-center gap-1 text-xs text-amber-600" data-testid="action-item-count">
                   <span className="bg-amber-400 rounded-full w-1.5 h-1.5 shrink-0" />
@@ -364,9 +375,12 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
     )
   }
 
-  const sortedSessions = [...sessions].sort(
-    (a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime(),
-  )
+  const sortedSessions = [...sessions].sort((a, b) => {
+    if (!a.sessionDate && !b.sessionDate) return 0
+    if (!a.sessionDate) return -1
+    if (!b.sessionDate) return 1
+    return new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime()
+  })
 
   return (
     <div className="space-y-4 pt-4">

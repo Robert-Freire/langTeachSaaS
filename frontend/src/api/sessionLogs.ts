@@ -8,7 +8,7 @@ export interface TopicTag {
 export interface SessionLog {
   id: string
   studentId: string
-  sessionDate: string
+  sessionDate: string | null
   plannedContent: string | null
   actualContent: string | null
   homeworkAssigned: string | null
@@ -22,10 +22,11 @@ export interface SessionLog {
   topicTags: string
   createdAt: string
   updatedAt: string
+  isCancelled: boolean
 }
 
 export interface CreateSessionLogRequest {
-  sessionDate: string
+  sessionDate?: string | null
   plannedContent?: string | null
   actualContent?: string | null
   homeworkAssigned?: string | null
@@ -36,6 +37,7 @@ export interface CreateSessionLogRequest {
   levelReassessmentLevel?: string | null
   linkedLessonId?: string | null
   topicTags?: string | null
+  isCancelled?: boolean
 }
 
 export type UpdateSessionLogRequest = CreateSessionLogRequest

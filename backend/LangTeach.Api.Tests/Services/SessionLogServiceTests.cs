@@ -108,18 +108,17 @@ public class SessionLogServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateAsync_FutureDate_ThrowsValidationException()
+    public async Task CreateAsync_FutureDate_Succeeds()
     {
         var request = BaseRequest();
         request.SessionDate = DateTime.UtcNow.AddDays(1);
 
-        var act = () => _sut.CreateAsync(_teacherId, _studentId, request);
-        await act.Should().ThrowAsync<System.ComponentModel.DataAnnotations.ValidationException>()
-            .WithMessage("*future*");
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.SessionDate!.Value.Date.Should().Be(request.SessionDate!.Value.Date);
     }
 
     [Fact]
-    public async Task UpdateAsync_FutureDate_ThrowsValidationException()
+    public async Task UpdateAsync_FutureDate_Succeeds()
     {
         var sessionId = Guid.NewGuid();
         _db.SessionLogs.Add(new SessionLog
@@ -135,15 +134,16 @@ public class SessionLogServiceTests : IDisposable
         });
         _db.SaveChanges();
 
+        var futureDate = DateTime.UtcNow.AddDays(1);
         var request = new UpdateSessionLogRequest
         {
-            SessionDate = DateTime.UtcNow.AddDays(1),
+            SessionDate = futureDate,
             PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
         };
 
-        var act = () => _sut.UpdateAsync(_teacherId, _studentId, sessionId, request);
-        await act.Should().ThrowAsync<System.ComponentModel.DataAnnotations.ValidationException>()
-            .WithMessage("*future*");
+        var result = await _sut.UpdateAsync(_teacherId, _studentId, sessionId, request);
+        result.Should().NotBeNull();
+        result!.SessionDate!.Value.Date.Should().Be(futureDate.Date);
     }
 
     [Fact]
@@ -629,5 +629,69 @@ public class SessionLogServiceTests : IDisposable
 
         result.TotalSessions.Should().Be(0);
         result.OpenActionItems.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetSummary_IgnoresCancelledSessions()
+    {
+        _db.SessionLogs.AddRange(
+            new SessionLog
+            {
+                Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId,
+                SessionDate = DateTime.UtcNow.AddDays(-1), PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                NextSessionTopics = "Cancelled topic", IsCancelled = true,
+                TopicTags = "[]", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+            },
+            new SessionLog
+            {
+                Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId,
+                SessionDate = DateTime.UtcNow.AddDays(-2), PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                NextSessionTopics = "Normal topic", IsCancelled = false,
+                TopicTags = "[]", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+            }
+        );
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.GetSummaryAsync(_teacherId, _studentId);
+
+        result.TotalSessions.Should().Be(1);
+        result.OpenActionItems.Should().BeEquivalentTo(new[] { "Normal topic" });
+    }
+
+    [Fact]
+    public async Task CreateAsync_SetsIsCancelledFromRequest()
+    {
+        var request = BaseRequest();
+        request.IsCancelled = true;
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+
+        result.IsCancelled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_SetsIsCancelledFromRequest()
+    {
+        var sessionId = Guid.NewGuid();
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = sessionId, StudentId = _studentId, TeacherId = _teacherId,
+            SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            IsCancelled = false, TopicTags = "[]",
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        _db.SaveChanges();
+
+        var request = new UpdateSessionLogRequest
+        {
+            SessionDate = DateTime.UtcNow,
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            IsCancelled = true,
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, _studentId, sessionId, request);
+
+        result.Should().NotBeNull();
+        result!.IsCancelled.Should().BeTrue();
     }
 }

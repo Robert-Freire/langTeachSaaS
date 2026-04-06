@@ -25,7 +25,7 @@ public class SessionHistoryService : ISessionHistoryService
         CancellationToken ct = default)
     {
         var sessions = await _db.SessionLogs
-            .Where(sl => sl.TeacherId == teacherId && sl.StudentId == studentId && !sl.IsDeleted)
+            .Where(sl => sl.TeacherId == teacherId && sl.StudentId == studentId && !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue)
             .OrderByDescending(sl => sl.SessionDate)
             .Take(5)
             .ToListAsync(ct);
@@ -33,11 +33,11 @@ public class SessionHistoryService : ISessionHistoryService
         if (sessions.Count == 0)
             return null;
 
-        var daysSince = Math.Max(0, (generationDate.Date - sessions[0].SessionDate.Date).Days);
+        var daysSince = Math.Max(0, (generationDate.Date - sessions[0].SessionDate!.Value.Date).Days);
 
         var recentSessions = sessions
             .Take(3)
-            .Select(s => new SessionSummaryEntry(s.SessionDate, s.PlannedContent, s.ActualContent))
+            .Select(s => new SessionSummaryEntry(s.SessionDate!.Value, s.PlannedContent, s.ActualContent))
             .ToList();
 
         var coveredTopics = AggregateTopicTags(sessions);

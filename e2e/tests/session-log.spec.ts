@@ -264,6 +264,44 @@ test('topic tag category dropdown has all four curriculum-aligned options', asyn
   await context.close()
 })
 
+test('future session date is accepted and appears in history', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Future Date Student ${Date.now()}`
+  const createRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: studentName, learningLanguage: 'Spanish', cefrLevel: 'B1',
+      interests: [], learningGoals: [], weaknesses: [], difficulties: [],
+    },
+  })
+  const student = await createRes.json() as { id: string }
+
+  // Log a session with a future date via UI
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await page.getByTestId('log-session-button').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+
+  // Set a future date (tomorrow)
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+  const tomorrowIso = tomorrow.toISOString().split('T')[0]
+  await page.getByTestId('session-date').fill(tomorrowIso)
+  await page.getByTestId('planned-content').fill('Planned grammar session')
+  await page.getByTestId('submit-session-log').click()
+
+  // Success -- no validation error
+  await expect(page.getByTestId('session-log-success')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-log-dialog')).toBeHidden({ timeout: 3000 })
+
+  // Session appears in history
+  await page.getByRole('tab', { name: /history/i }).click()
+  await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: 10000 })
+
+  await context.close()
+})
+
 test('selecting a lesson in log session dialog auto-populates planned content', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
@@ -315,6 +353,113 @@ test('selecting a lesson in log session dialog auto-populates planned content', 
   await expect(page.getByTestId('planned-content')).toHaveValue(
     'Subjunctive Intro: Use subjunctive in wishes and doubt'
   )
+
+  await context.close()
+})
+
+test('cancelled session shows Cancelled badge and is excluded from summary count', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Cancelled Session Student ${Date.now()}`
+  const createRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: studentName, learningLanguage: 'Spanish', cefrLevel: 'B1',
+      interests: [], learningGoals: [], weaknesses: [], difficulties: [],
+    },
+  })
+  const student = await createRes.json() as { id: string }
+
+  // Create a normal session and a cancelled session via API
+  await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      sessionDate: new Date().toISOString().split('T')[0],
+      actualContent: 'Normal session',
+      previousHomeworkStatus: 'NotApplicable',
+      isCancelled: false,
+    },
+  })
+  await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      sessionDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      plannedContent: 'Planned but cancelled',
+      previousHomeworkStatus: 'NotApplicable',
+      isCancelled: true,
+    },
+  })
+
+  // Cancelled badge visible in history
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await page.getByRole('tab', { name: /history/i }).click()
+  await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('cancelled-badge')).toBeVisible()
+
+  // Summary count = 1 (only the non-cancelled session)
+  const summaryRes = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions/summary`, {
+    headers: { Authorization: 'Bearer test-token' },
+  })
+  expect(summaryRes.ok()).toBeTruthy()
+  const summary = await summaryRes.json() as { totalSessions: number }
+  expect(summary.totalSessions).toBe(1)
+
+  await context.close()
+})
+
+test('un-cancel a session removes the Cancelled badge', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Uncancel Student ${Date.now()}`
+  const createRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: studentName, learningLanguage: 'Spanish', cefrLevel: 'B1',
+      interests: [], learningGoals: [], weaknesses: [], difficulties: [],
+    },
+  })
+  const student = await createRes.json() as { id: string }
+
+  const sessionRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      sessionDate: new Date().toISOString().split('T')[0],
+      plannedContent: 'Was cancelled',
+      previousHomeworkStatus: 'NotApplicable',
+      isCancelled: true,
+    },
+  })
+  const session = await sessionRes.json() as { id: string }
+
+  // View history -- badge present
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await page.getByRole('tab', { name: /history/i }).click()
+  await expect(page.getByTestId('cancelled-badge')).toBeVisible({ timeout: 10000 })
+
+  // Edit session -- uncheck cancelled
+  const entry = page.getByTestId('session-entry').first()
+  await entry.getByTestId('session-entry-toggle').click()
+  await entry.getByTestId('edit-session-button').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('cancelled-toggle')).toBeChecked()
+  await page.getByTestId('cancelled-toggle').click()
+  await page.getByTestId('submit-session-log').click()
+  await expect(page.getByTestId('session-log-success')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-log-dialog')).toBeHidden({ timeout: 3000 })
+
+  // Badge should be gone
+  await expect(page.getByTestId('cancelled-badge')).toBeHidden()
+
+  // Verify via API -- session is no longer cancelled
+  const updated = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions/${session.id}`, {
+    headers: { Authorization: 'Bearer test-token' },
+  })
+  const updatedData = await updated.json() as { isCancelled: boolean }
+  expect(updatedData.isCancelled).toBe(false)
 
   await context.close()
 })

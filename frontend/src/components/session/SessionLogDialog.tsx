@@ -43,13 +43,6 @@ const CEFR_SUBLEVELS = new Set([
   'C1.1','C1.2','C2.1','C2.2',
 ])
 
-function todayIso(): string {
-  const now = new Date()
-  const y = now.getFullYear()
-  const m = String(now.getMonth() + 1).padStart(2, '0')
-  const d = String(now.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
 
 export interface SessionLogDialogProps {
   studentId: string
@@ -74,7 +67,7 @@ export function SessionLogDialog({
   const queryClient = useQueryClient()
 
   // Form state
-  const [sessionDate, setSessionDate] = useState(todayIso())
+  const [sessionDate, setSessionDate] = useState('')
   const [plannedContent, setPlannedContent] = useState('')
   const [actualContent, setActualContent] = useState('')
   const [homeworkAssigned, setHomeworkAssigned] = useState('')
@@ -86,6 +79,7 @@ export function SessionLogDialog({
   const [reassessmentSkill, setReassessmentSkill] = useState('')
   const [reassessmentLevel, setReassessmentLevel] = useState('')
   const [selectedLessonId, setSelectedLessonId] = useState(linkedLessonId ?? '')
+  const [isCancelled, setIsCancelled] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [success, setSuccess] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -95,7 +89,7 @@ export function SessionLogDialog({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open && initialSession) {
-      setSessionDate(initialSession.sessionDate.split('T')[0])
+      setSessionDate(initialSession.sessionDate ? initialSession.sessionDate.split('T')[0] : '')
       setPlannedContent(initialSession.plannedContent ?? '')
       setActualContent(initialSession.actualContent ?? '')
       setHomeworkAssigned(initialSession.homeworkAssigned ?? '')
@@ -107,6 +101,7 @@ export function SessionLogDialog({
       setReassessmentSkill(initialSession.levelReassessmentSkill ?? '')
       setReassessmentLevel(initialSession.levelReassessmentLevel ?? '')
       setSelectedLessonId(initialSession.linkedLessonId ?? '')
+      setIsCancelled(initialSession.isCancelled ?? false)
     }
   }, [open, initialSession])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -127,7 +122,7 @@ export function SessionLogDialog({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!open) {
-      setSessionDate(todayIso())
+      setSessionDate('')
       setPlannedContent('')
       setActualContent('')
       setHomeworkAssigned('')
@@ -139,6 +134,7 @@ export function SessionLogDialog({
       setReassessmentSkill('')
       setReassessmentLevel('')
       setSelectedLessonId(linkedLessonId ?? '')
+      setIsCancelled(false)
       setErrors({})
       setSuccess(false)
       setSubmitError(null)
@@ -167,7 +163,7 @@ export function SessionLogDialog({
   const { mutate: submitLog, isPending } = useMutation({
     mutationFn: () => {
       const payload = {
-        sessionDate,
+        sessionDate: sessionDate || null,
         plannedContent: plannedContent || null,
         actualContent: actualContent || null,
         homeworkAssigned: homeworkAssigned || null,
@@ -178,6 +174,7 @@ export function SessionLogDialog({
         levelReassessmentLevel: reassessmentEnabled ? reassessmentLevel || null : null,
         linkedLessonId: selectedLessonId || null,
         topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
+        isCancelled,
       }
       return isEditMode
         ? updateSession(studentId, initialSession.id, payload)
@@ -205,8 +202,6 @@ export function SessionLogDialog({
 
   function validate(): boolean {
     const errs: Record<string, string> = {}
-    if (!sessionDate) errs.sessionDate = 'Date is required.'
-    else if (sessionDate > todayIso()) errs.sessionDate = 'Session date cannot be in the future.'
     if (!plannedContent && !actualContent) {
       errs.content = 'At least one of "What was planned" or "What was actually done" is required.'
     }
@@ -274,13 +269,26 @@ export function SessionLogDialog({
                 id="session-date"
                 type="date"
                 value={sessionDate}
-                max={todayIso()}
                 onChange={(e) => setSessionDate(e.target.value)}
-                required
                 data-testid="session-date"
                 className="text-sm"
               />
               {errors.sessionDate && <p className="text-xs text-red-600">{errors.sessionDate}</p>}
+            </div>
+
+            {/* Cancelled toggle */}
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="cancelled-toggle"
+                checked={isCancelled}
+                onChange={(e) => setIsCancelled(e.target.checked)}
+                className="h-4 w-4 rounded border-zinc-300 text-indigo-600"
+                data-testid="cancelled-toggle"
+              />
+              <Label htmlFor="cancelled-toggle" className="text-sm cursor-pointer">
+                Cancelled
+              </Label>
             </div>
 
             {/* Planned content */}

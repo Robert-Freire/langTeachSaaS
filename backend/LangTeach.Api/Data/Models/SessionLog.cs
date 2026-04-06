@@ -5,7 +5,7 @@ public class SessionLog
     public Guid Id { get; set; }
     public Guid StudentId { get; set; }
     public Guid TeacherId { get; set; }
-    public DateTime SessionDate { get; set; }
+    public DateTime? SessionDate { get; set; }
     public string? PlannedContent { get; set; }
     public string? ActualContent { get; set; }
     public string? HomeworkAssigned { get; set; }
@@ -16,6 +16,7 @@ public class SessionLog
     public string? LevelReassessmentLevel { get; set; }
     public Guid? LinkedLessonId { get; set; }
     public bool IsDeleted { get; set; }
+    public bool IsCancelled { get; set; }
     public string TopicTags { get; set; } = "[]";
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
