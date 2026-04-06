@@ -26,6 +26,14 @@ export interface SessionLog {
   status: number
   statusName: 'Draft' | 'Confirmed'
   mentionedDifficultyPairs: string
+  suggestedDifficulties: string
+}
+
+export interface SuggestedDifficulty {
+  description: string
+  competency: string
+  subcategory: string
+  severity: string
 }
 
 export interface ExtractedReflection {
@@ -34,6 +42,7 @@ export interface ExtractedReflection {
   emotionalSignals: string | null
   homeworkAssigned: string | null
   nextLessonIdeas: string | null
+  suggestedDifficulties: SuggestedDifficulty[]
 }
 
 export interface CreateSessionLogRequest {
@@ -51,6 +60,7 @@ export interface CreateSessionLogRequest {
   isCancelled?: boolean
   status?: 'Draft' | 'Confirmed'
   mentionedDifficultyPairs?: { Competency: string; Subcategory: string }[]
+  suggestedDifficulties?: SuggestedDifficulty[]
 }
 
 export type UpdateSessionLogRequest = CreateSessionLogRequest

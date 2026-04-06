@@ -6,6 +6,18 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-04-04 during Post-Class Tracking sprint close. Findings from PRs #440, #441, #442, #444, #445, #450, #431, #481 triaged: batched into #492 (SessionLog DTO hardening), #494 (lessons studentId filter). Sophy findings on prompt redundancy added to #422. All remaining entries deleted (one-time migration tool caveats, pre-existing patterns, cosmetic DTO sharing).*
 
+## PR #188 (difficulty extraction from session notes) - 2026-04-06
+
+| PR | Severity | Finding | Decision |
+|----|----------|---------|----------|
+| #188 | low | `UpsertDifficulties` matches on competency+subcategory case-insensitively but stores the AI-supplied casing. Re-extract with different casing creates duplicate. | Deferred: AI output is normalised by the prompt; edge case only arises if AI drifts casing. |
+| #188 | low | `ValidCompetencies`/`ValidSeverities` in `ReflectionExtractionService` duplicate the sets in `SessionLogService`. Consider shared constants. | Deferred: both sets are small and rarely change; shared constants are premature abstraction here. |
+| #188 | low | `UpsertDifficulties` uses `existing.IndexOf(match)` (O(n)) to get the index for record update. | Deferred: lists are typically <10 items; premature optimisation. |
+| #188 | info | `JsonDocument` disposal: reviewer flagged lack of `using`; actually `using var doc` is present at line 73. Dismissed (false positive). | Dismissed: code is correct. |
+| #188 | info | Draft->Confirmed transition using previously stored `SuggestedDifficulties` column will not re-upsert unless the confirm payload includes them again. | By design: the form sends the current teacher-edited list on confirm. |
+| #188 | low | `CreateSessionLogRequest.SuggestedDifficulties` has no count cap; a buggy client could post hundreds of entries and bloat Student.Difficulties. | Deferred: teacher-only single-tenant app; no public API surface at this stage. |
+| #188 | low | Competency/severity vocabulary lives in DifficultyConstants, AI prompt, and DifficultyDto consumers. Adding a 6th competency requires 3 updates. | Deferred: set is stable by design; over-engineering to centralise further. |
+
 ## PR #546 (sessions/extract endpoint) - 2026-04-06
 
 | PR | Severity | Finding | Decision |

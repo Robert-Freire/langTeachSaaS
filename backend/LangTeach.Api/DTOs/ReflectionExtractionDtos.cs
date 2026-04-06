@@ -9,10 +9,18 @@ public class ExtractReflectionRequest
     public string Text { get; set; } = string.Empty;
 }
 
+public record SuggestedDifficultyDto(
+    string Description,
+    string Competency,
+    string Subcategory,
+    string Severity
+);
+
 public record ExtractedReflectionDto(
     string? WhatWasCovered,
     string? AreasToImprove,
     string? EmotionalSignals,
     string? HomeworkAssigned,
-    string? NextLessonIdeas
+    string? NextLessonIdeas,
+    List<SuggestedDifficultyDto> SuggestedDifficulties
 );

@@ -509,3 +509,97 @@ test('summary header appears on history tab after logging a session', async ({ b
 
   await context.close()
 })
+
+
+test('confirming session with suggestedDifficulties upserts them to student profile', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const createRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: `Difficulty Upsert Test ${Date.now()}`,
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+    },
+  })
+  const student = await createRes.json() as { id: string }
+
+  // Create a confirmed session with suggested difficulties
+  const sessionRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      actualContent: 'Ser vs estar practice',
+      previousHomeworkStatus: 'NotApplicable',
+      status: 'Confirmed',
+      suggestedDifficulties: [
+        { description: 'Confuses ser and estar', competency: 'Grammar', subcategory: 'ser/estar', severity: 'high' },
+      ],
+    },
+  })
+  expect(sessionRes.ok()).toBeTruthy()
+
+  // Verify student now has the difficulty
+  const studentRes = await page.request.get(`${API_BASE}/api/students/${student.id}`, {
+    headers: { Authorization: 'Bearer test-token' },
+  })
+  const studentData = await studentRes.json() as { difficulties: { competency: string; subcategory: string; severity: string; status: string }[] }
+  expect(studentData.difficulties).toHaveLength(1)
+  expect(studentData.difficulties[0].competency).toBe('Grammar')
+  expect(studentData.difficulties[0].subcategory).toBe('ser/estar')
+  expect(studentData.difficulties[0].severity).toBe('high')
+  expect(studentData.difficulties[0].status).toBe('Active')
+
+  await context.close()
+})
+
+test('confirming session updates existing difficulty in profile', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const createRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: `Difficulty Update Test ${Date.now()}`,
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [
+        { id: 'manual-1', description: 'Old description', competency: 'Grammar', subcategory: 'ser/estar', severity: 'low', trend: 'stable', status: 'Covered' },
+      ],
+    },
+  })
+  const student = await createRes.json() as { id: string }
+
+  // Confirm session with updated difficulty (same competency+subcategory)
+  const sessionRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      actualContent: 'Revisited ser/estar',
+      previousHomeworkStatus: 'NotApplicable',
+      status: 'Confirmed',
+      suggestedDifficulties: [
+        { description: 'Still confusing ser and estar', competency: 'Grammar', subcategory: 'ser/estar', severity: 'medium' },
+      ],
+    },
+  })
+  expect(sessionRes.ok()).toBeTruthy()
+
+  // Student should still have 1 difficulty, but updated
+  const studentRes = await page.request.get(`${API_BASE}/api/students/${student.id}`, {
+    headers: { Authorization: 'Bearer test-token' },
+  })
+  const studentData = await studentRes.json() as { difficulties: { description: string; severity: string; status: string }[] }
+  expect(studentData.difficulties).toHaveLength(1)
+  expect(studentData.difficulties[0].description).toBe('Still confusing ser and estar')
+  expect(studentData.difficulties[0].severity).toBe('medium')
+  expect(studentData.difficulties[0].status).toBe('Active')
+
+  await context.close()
+})

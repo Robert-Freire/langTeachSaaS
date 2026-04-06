@@ -63,6 +63,90 @@ public class ReflectionExtractionServiceTests
         result.EmotionalSignals.Should().Be("Very engaged");
         result.HomeworkAssigned.Should().Be("Exercises 1-5");
         result.NextLessonIdeas.Should().Be("Present perfect");
+        result.SuggestedDifficulties.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsSuggestedDifficulties()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "whatWasCovered": "Ser vs estar",
+              "areasToImprove": null,
+              "emotionalSignals": null,
+              "homeworkAssigned": null,
+              "nextLessonIdeas": null,
+              "suggestedDifficulties": [
+                {
+                  "description": "Student confuses ser and estar consistently",
+                  "competency": "Grammar",
+                  "subcategory": "ser/estar",
+                  "severity": "high"
+                },
+                {
+                  "description": "Struggles a little with subjunctive forms",
+                  "competency": "Grammar",
+                  "subcategory": "subjunctive",
+                  "severity": "low"
+                }
+              ]
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.SuggestedDifficulties.Should().HaveCount(2);
+        result.SuggestedDifficulties[0].Description.Should().Be("Student confuses ser and estar consistently");
+        result.SuggestedDifficulties[0].Competency.Should().Be("Grammar");
+        result.SuggestedDifficulties[0].Subcategory.Should().Be("ser/estar");
+        result.SuggestedDifficulties[0].Severity.Should().Be("high");
+        result.SuggestedDifficulties[1].Severity.Should().Be("low");
+    }
+
+    [Fact]
+    public void ParseResponse_SkipsEntriesWithInvalidCompetency()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "whatWasCovered": null,
+              "areasToImprove": null,
+              "emotionalSignals": null,
+              "homeworkAssigned": null,
+              "nextLessonIdeas": null,
+              "suggestedDifficulties": [
+                {
+                  "description": "Valid entry",
+                  "competency": "Grammar",
+                  "subcategory": "ser/estar",
+                  "severity": "medium"
+                },
+                {
+                  "description": "Invalid competency entry",
+                  "competency": "Spelling",
+                  "subcategory": "accents",
+                  "severity": "low"
+                }
+              ]
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.SuggestedDifficulties.Should().HaveCount(1);
+        result.SuggestedDifficulties[0].Competency.Should().Be("Grammar");
+    }
+
+    [Fact]
+    public void ParseResponse_HandlesMissingSuggestedDifficultiesKey_ReturnsEmpty()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"whatWasCovered": "Test", "areasToImprove": null, "emotionalSignals": null, "homeworkAssigned": null, "nextLessonIdeas": null}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.SuggestedDifficulties.Should().BeEmpty();
     }
 
     [Fact]
@@ -130,6 +214,7 @@ public class ReflectionExtractionServiceTests
         var result = await sut.ExtractAsync("We practiced vocabulary today.");
 
         result.WhatWasCovered.Should().Be("Vocab");
+        result.SuggestedDifficulties.Should().BeEmpty();
         captured.Should().NotBeNull();
         captured!.Model.Should().Be(ClaudeModel.Haiku);
     }
