@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
-import { TEST_TIMEOUT, AI_STREAM_TIMEOUT, NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
+import { mockAiStream, GRAMMAR_FIXTURE } from '../helpers/mock-ai-stream'
+import { TEST_TIMEOUT, NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
 
 test.beforeAll(async ({ browser }) => {
   const ctx = await createMockAuthContext(browser)
@@ -17,6 +18,8 @@ test('usage counter is visible in sidebar and increments after generation', asyn
   const page = await context.newPage()
 
   try {
+    await mockAiStream(page, GRAMMAR_FIXTURE)
+
     // Navigate to dashboard and verify usage indicator is visible
     await page.goto('/')
     await expect(page.getByTestId('usage-indicator')).toBeVisible({ timeout: NAV_TIMEOUT })
@@ -63,7 +66,7 @@ test('usage counter is visible in sidebar and increments after generation', asyn
     await page.getByTestId('generate-btn-presentation').click()
     await expect(page.getByTestId('generate-panel')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
     await page.getByTestId('generate-btn').click()
-    await page.getByTestId('insert-btn').waitFor({ state: 'visible', timeout: AI_STREAM_TIMEOUT })
+    await page.getByTestId('insert-btn').waitFor({ state: 'visible', timeout: FEEDBACK_TIMEOUT })
     await page.getByTestId('insert-btn').click()
     await expect(page.getByTestId('generate-panel')).not.toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
