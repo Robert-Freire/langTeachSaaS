@@ -15,7 +15,7 @@ namespace LangTeach.Api.Migrations
                 table: "SessionLogs",
                 type: "nvarchar(max)",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "[]");
         }
 
         /// <inheritdoc />

@@ -5,7 +5,6 @@ using LangTeach.Api.DTOs;
 using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
 
-
 namespace LangTeach.Api.Services;
 
 public class SessionLogService : ISessionLogService
