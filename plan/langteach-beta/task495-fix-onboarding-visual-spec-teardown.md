@@ -9,7 +9,7 @@ The `onboarding.visual.spec.ts` calls `resetE2ETestTeacher()` in `beforeAll` to 
 
 When `DELETE FROM Teachers WHERE Email = @email` runs, SQL Server cascades to `Students` (via `Students.TeacherId CASCADE`). Before cascading to delete those students, SQL Server checks NoAction FK constraints that reference the Students being deleted. Session logs referencing those students would block the delete.
 
-**Note on SQL Server NoAction semantics:** `NoAction` in SQL Server means the constraint is checked *after* all CASCADE operations in the statement complete, not immediately. This means the fix needs to handle rows that are NOT cleaned up via any cascade chain.
+**Note on SQL Server NoAction semantics:** `NoAction` in SQL Server means the constraint is checked after all CASCADE operations in the statement complete. If any referencing rows remain at that point, the statement fails and rolls back. This means the fix needs to handle rows that are NOT cleaned up via any cascade chain -- those rows must be deleted manually before the statement runs.
 
 ## Fix already applied (commit 8165735)
 
@@ -34,7 +34,7 @@ await pool.request()
 Other tables with NoAction FKs on StudentId:
 - `Courses.StudentId` (NoAction) — also has `Courses.TeacherId` CASCADE, so Courses are deleted in the Teacher cascade chain before NoAction check
 - `Lessons.StudentId` (NoAction) — also has `Lessons.TeacherId` CASCADE, same reasoning
-- `LessonNotes.StudentId` (NoAction) — LessonNotes have `LessonId` CASCADE, so they are deleted when Lessons cascade-delete, before NoAction check
+- `LessonNotes.StudentId` (NoAction) — LessonNotes have `LessonId` CASCADE (verified in `AppDbContext.cs` line 109-112), so they are deleted when Lessons cascade-delete, before NoAction check. LessonNotes always belong to a Lesson (non-nullable FK), so no orphaned LessonNotes can exist without a Lesson to carry the cascade.
 
 Other potential FK issues introduced in the adaptive-replanning sprint:
 - `VoiceNotes.TeacherId` (CASCADE) — no StudentId FK, no issue
@@ -55,7 +55,7 @@ The fix is already in place. This task requires:
 
 Run the onboarding visual spec in isolation:
 ```bash
-cd e2e && npx playwright test tests/visual/onboarding.visual.spec.ts --project=visual
+cd e2e && npx playwright test --project=visual-onboarding
 ```
 
 Acceptance criteria:
