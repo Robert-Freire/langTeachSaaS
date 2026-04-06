@@ -136,16 +136,6 @@ internal sealed class ExcelImporter
         {
             if (row.RowNumber() == 1) continue; // skip header row
 
-            var sessionDate = ExtractDate(row);
-            if (sessionDate is null) continue;
-
-            if (sessionDate.Value.Date > now.Date)
-            {
-                Console.WriteLine($"  SKIP (future date): {sessionDate.Value.Date:yyyy-MM-dd}");
-                skipped++;
-                continue;
-            }
-
             var planned = row.Cell(2).GetString().Trim();
             var actual = row.Cell(3).GetString().Trim();
             var homework = row.Cell(4).GetString().Trim();
@@ -155,21 +145,30 @@ internal sealed class ExcelImporter
             if (planned.Length == 0 && actual.Length == 0 && homework.Length == 0 && notes.Length == 0)
                 continue;
 
-            var sessionDay = sessionDate.Value.Date;
+            var sessionDate = ExtractDate(row);
 
-            // Idempotency: check in-memory set (populated from DB before loop)
-            if (existingDates.Contains(sessionDay))
+            if (sessionDate is not null && sessionDate.Value.Date > now.Date)
             {
-                Console.WriteLine($"  SKIP (duplicate): {sessionDay:yyyy-MM-dd}");
+                Console.WriteLine($"  SKIP (future date): {sessionDate.Value.Date:yyyy-MM-dd}");
                 skipped++;
                 continue;
             }
 
-            // Track in memory immediately so repeated dates in same sheet are also skipped
-            // (applies in both live and dry-run mode)
-            existingDates.Add(sessionDay);
+            // Dated rows: deduplicate by date. Undated rows (null) are always imported.
+            if (sessionDate is not null)
+            {
+                var sessionDay = sessionDate.Value.Date;
+                if (existingDates.Contains(sessionDay))
+                {
+                    Console.WriteLine($"  SKIP (duplicate): {sessionDay:yyyy-MM-dd}");
+                    skipped++;
+                    continue;
+                }
+                existingDates.Add(sessionDay);
+            }
 
-            Console.WriteLine($"  + Session {sessionDay:yyyy-MM-dd}: planned={TruncateLog(planned)}, actual={TruncateLog(actual)}");
+            var dateLabel = sessionDate.HasValue ? sessionDate.Value.Date.ToString("yyyy-MM-dd") : "no date";
+            Console.WriteLine($"  + Session {dateLabel}: planned={TruncateLog(planned)}, actual={TruncateLog(actual)}");
 
             if (!_dryRun)
             {
@@ -178,7 +177,7 @@ internal sealed class ExcelImporter
                     Id = Guid.NewGuid(),
                     StudentId = student.Id,
                     TeacherId = _teacherId,
-                    SessionDate = sessionDay,
+                    SessionDate = sessionDate?.Date,
                     PlannedContent = NullIfEmpty(planned),
                     ActualContent = NullIfEmpty(actual),
                     HomeworkAssigned = NullIfEmpty(homework),
