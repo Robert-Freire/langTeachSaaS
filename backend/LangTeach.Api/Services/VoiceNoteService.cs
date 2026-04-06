@@ -125,6 +125,10 @@ public class VoiceNoteService : IVoiceNoteService
         {
             await _blobStorage.DeleteAsync(blobPath, ct);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Blob delete failed for orphaned path. Id={Id} BlobPath={BlobPath}", id, blobPath);
