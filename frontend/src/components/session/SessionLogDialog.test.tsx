@@ -764,6 +764,32 @@ describe('SessionLogDialog', () => {
       expect(screen.queryByText('Grammar issue')).not.toBeInTheDocument()
     })
 
+    it('shows severity as display text, not a selector input', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        ...EXTRACTED,
+        suggestedDifficulties: [
+          { description: 'Mixes up ser and estar', competency: 'Grammar', subcategory: 'ser/estar', severity: 'high' },
+        ],
+      })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('suggested-difficulties')).toBeInTheDocument()
+      })
+
+      // Severity label should be visible as text
+      expect(screen.getByText(/high/)).toBeInTheDocument()
+      // No select or input for severity within the suggested difficulties section
+      const section = screen.getByTestId('suggested-difficulties')
+      expect(section.querySelector('select')).toBeNull()
+      expect(section.querySelector('input[type="text"]')).toBeNull()
+      expect(section.querySelector('input[type="number"]')).toBeNull()
+    })
+
     it('includes suggestedDifficulties in the confirm payload', async () => {
       vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
         ...EXTRACTED,
