@@ -58,6 +58,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import { logger } from '../lib/logger'
+import { CourseSuggestionsPanel } from '../components/course/CourseSuggestionsPanel'
 
 const STATUS_LABELS: Record<string, string> = {
   planned: 'Not generated',
@@ -363,26 +364,31 @@ function SortableEntryRow({
               )}
 
               {entry.contextDescription && (
-                <div>
+                <div data-testid={`context-description-${idx}`}>
                   <p className="text-xs font-medium text-zinc-500 mb-1">Personalized context</p>
-                  <p
-                    data-testid={`context-description-${idx}`}
-                    className="text-sm text-zinc-700 bg-blue-50 border border-blue-100 rounded-md px-3 py-2"
-                  >
-                    {entry.contextDescription}
-                  </p>
+                  <div className="text-sm text-zinc-700 bg-blue-50 border border-blue-100 rounded-md px-3 py-2 space-y-0.5">
+                    {entry.contextDescription.setting && (
+                      <p className="text-xs text-zinc-500">{entry.contextDescription.setting}</p>
+                    )}
+                    <p>{entry.contextDescription.scenario}</p>
+                  </div>
                 </div>
               )}
 
               {entry.personalizationNotes && (
-                <div>
+                <div data-testid={`personalization-notes-${idx}`}>
                   <p className="text-xs font-medium text-zinc-500 mb-1">Personalization rationale</p>
-                  <p
-                    data-testid={`personalization-notes-${idx}`}
-                    className="text-xs text-zinc-500 italic"
-                  >
-                    {entry.personalizationNotes}
-                  </p>
+                  <div className="text-xs text-zinc-500 space-y-1">
+                    {(entry.personalizationNotes.emphasisAreas ?? []).length > 0 && (
+                      <p><span className="font-medium">Emphasis:</span> {entry.personalizationNotes.emphasisAreas.join(' · ')}</p>
+                    )}
+                    {(entry.personalizationNotes.constraints ?? []).length > 0 && (
+                      <p><span className="font-medium">Constraints:</span> {entry.personalizationNotes.constraints.join(' · ')}</p>
+                    )}
+                    {(entry.personalizationNotes.l1Notes ?? []).length > 0 && (
+                      <p><span className="font-medium">L1:</span> {entry.personalizationNotes.l1Notes.join(' · ')}</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -463,6 +469,7 @@ export default function CourseDetail() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [addState, setAddState] = useState({ topic: '', grammarFocus: '', competencies: '' })
+  const [activeTab, setActiveTab] = useState<'curriculum' | 'suggestions'>('curriculum')
 
   if (expandedForCourseId !== id) {
     setExpandedForCourseId(id)
@@ -674,6 +681,40 @@ export default function CourseDetail() {
         onDismiss={doDismissWarning}
       />
 
+      {/* Tab navigation */}
+      <div className="flex border-b border-gray-200" data-testid="course-tabs">
+        <button
+          className={cn(
+            'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            activeTab === 'curriculum'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700',
+          )}
+          onClick={() => setActiveTab('curriculum')}
+          data-testid="tab-curriculum"
+        >
+          Curriculum
+        </button>
+        <button
+          className={cn(
+            'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            activeTab === 'suggestions'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700',
+          )}
+          onClick={() => setActiveTab('suggestions')}
+          data-testid="tab-suggestions"
+        >
+          Suggestions
+        </button>
+      </div>
+
+      {activeTab === 'suggestions' && id && (
+        <CourseSuggestionsPanel courseId={id} />
+      )}
+
+      {activeTab === 'curriculum' && (
+      <>
       {/* Curriculum list */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={entries.map(e => e.id)} strategy={verticalListSortingStrategy}>
@@ -756,6 +797,9 @@ export default function CourseDetail() {
         >
           <Plus className="h-4 w-4 mr-1" /> Add session
         </Button>
+      )}
+
+      </>
       )}
 
       {/* Delete confirmation dialog */}

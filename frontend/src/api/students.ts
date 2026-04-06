@@ -80,6 +80,9 @@ export interface LessonHistoryEntry {
   homeworkAssigned: string | null
   areasToImprove: string | null
   nextLessonIdeas: string | null
+  emotionalSignals: string | null
+  followingSessionHomeworkStatus: number | null
+  followingSessionHomeworkStatusName: string | null
 }
 
 export async function getLessonHistory(studentId: string): Promise<LessonHistoryEntry[]> {

@@ -20,6 +20,8 @@ public class AppDbContext : DbContext
     public DbSet<Material> Materials => Set<Material>();
     public DbSet<GenerationUsage> GenerationUsages => Set<GenerationUsage>();
     public DbSet<SessionLog> SessionLogs => Set<SessionLog>();
+    public DbSet<VoiceNote> VoiceNotes => Set<VoiceNote>();
+    public DbSet<CourseSuggestion> CourseSuggestions => Set<CourseSuggestion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -202,6 +204,35 @@ public class AppDbContext : DbContext
              .HasDefaultValue(HomeworkStatus.NotApplicable);
             e.Property(sl => sl.IsDeleted).HasDefaultValue(false);
             e.Property(sl => sl.TopicTags).HasDefaultValue("[]");
+        });
+
+        // VoiceNote — cascade delete from Teacher
+        modelBuilder.Entity<VoiceNote>(e =>
+        {
+            e.HasKey(v => v.Id);
+            e.HasIndex(v => new { v.TeacherId, v.CreatedAt });
+            e.HasOne(v => v.Teacher)
+             .WithMany()
+             .HasForeignKey(v => v.TeacherId)
+             .OnDelete(DeleteBehavior.Cascade);
+            // TranscribedAt: null = not transcribed, non-null = transcription complete (timestamp provides timing)
+        });
+
+        // CourseSuggestion — cascade delete from Course, no-action from CurriculumEntry (nullable)
+        modelBuilder.Entity<CourseSuggestion>(e =>
+        {
+            e.HasKey(cs => cs.Id);
+            e.HasIndex(cs => cs.CourseId);
+            e.HasOne(cs => cs.Course)
+             .WithMany()
+             .HasForeignKey(cs => cs.CourseId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(cs => cs.CurriculumEntry)
+             .WithMany()
+             .HasForeignKey(cs => cs.CurriculumEntryId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.Property(cs => cs.Status).HasDefaultValue("pending");
         });
 
         // LessonContentBlock — cascade delete from Lesson, no-action from LessonSection (nullable)

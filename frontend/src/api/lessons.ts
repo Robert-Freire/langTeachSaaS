@@ -160,6 +160,7 @@ export interface LessonNotesDto {
   homeworkAssigned: string | null
   areasToImprove: string | null
   nextLessonIdeas: string | null
+  emotionalSignals: string | null
 }
 
 export interface SaveLessonNotesRequest {
@@ -167,6 +168,15 @@ export interface SaveLessonNotesRequest {
   homeworkAssigned?: string | null
   areasToImprove?: string | null
   nextLessonIdeas?: string | null
+  emotionalSignals?: string | null
+}
+
+export interface ExtractedReflection {
+  whatWasCovered: string | null
+  areasToImprove: string | null
+  emotionalSignals: string | null
+  homeworkAssigned: string | null
+  nextLessonIdeas: string | null
 }
 
 export async function getLessonNotes(lessonId: string): Promise<LessonNotesDto | null> {
@@ -177,6 +187,11 @@ export async function getLessonNotes(lessonId: string): Promise<LessonNotesDto |
 
 export async function saveLessonNotes(lessonId: string, data: SaveLessonNotesRequest): Promise<LessonNotesDto> {
   const res = await apiClient.put<LessonNotesDto>(`/api/lessons/${lessonId}/notes`, data)
+  return res.data
+}
+
+export async function extractReflectionNotes(lessonId: string, text: string): Promise<ExtractedReflection> {
+  const res = await apiClient.post<ExtractedReflection>(`/api/lessons/${lessonId}/notes/extract`, { text })
   return res.data
 }
 

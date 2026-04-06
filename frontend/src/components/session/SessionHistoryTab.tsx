@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronUp, Trash2, Pencil, ExternalLink, FileText, BookOpen } from 'lucide-react'
+import { ChevronDown, ChevronUp, Trash2, Pencil, ExternalLink, BookOpen } from 'lucide-react'
 import { SessionSummaryHeader } from './SessionSummaryHeader'
 import { SessionLogDialog } from './SessionLogDialog'
 import { logger } from '../../lib/logger'
 import { Link } from 'react-router-dom'
 import { listSessions, deleteSession, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
 import { formatDate, relativeTime } from '../../utils/formatDate'
+import { HOMEWORK_STATUS_STYLES } from '../../utils/homeworkStatusStyles'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -26,12 +27,6 @@ interface SessionHistoryTabProps {
   studentId: string
 }
 
-const HOMEWORK_STATUS_STYLES: Record<string, string> = {
-  Done: 'bg-green-50 text-green-700 border-green-200',
-  Partial: 'bg-amber-50 text-amber-700 border-amber-200',
-  NotDone: 'bg-red-50 text-red-700 border-red-200',
-  NotApplicable: 'bg-zinc-100 text-zinc-500 border-zinc-200',
-}
 
 const HOMEWORK_STATUS_LABELS: Record<string, string> = {
   Done: 'HW: Done',
@@ -53,13 +48,6 @@ function tagCategoryClass(category?: string): string {
   if (category === 'competency') return 'bg-amber-50 text-amber-700 border-amber-200'
   if (category === 'communicativeFunction') return 'bg-purple-50 text-purple-700 border-purple-200'
   return 'bg-zinc-100 text-zinc-600 border-zinc-200'
-}
-
-function notesCount(session: SessionLog): number {
-  let count = 0
-  if (session.generalNotes) count++
-  if (session.nextSessionTopics) count++
-  return count
 }
 
 function SessionEntry({
@@ -90,7 +78,8 @@ function SessionEntry({
   })
 
   const topicTags = parseTopicTags(session.topicTags)
-  const notes = notesCount(session)
+  const hasActionItem = Boolean(session.nextSessionTopics)
+  const hasNote = Boolean(session.generalNotes)
   const hwStatus = session.previousHomeworkStatusName
 
   return (
@@ -124,10 +113,16 @@ function SessionEntry({
                   Cancelled
                 </Badge>
               )}
-              {notes > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
-                  <FileText className="h-3 w-3" />
-                  {notes} {notes === 1 ? 'note' : 'notes'}
+              {hasActionItem && (
+                <span className="inline-flex items-center gap-1 text-xs text-amber-600" data-testid="action-item-count">
+                  <span className="bg-amber-400 rounded-full w-1.5 h-1.5 shrink-0" />
+                  1 action item
+                </span>
+              )}
+              {hasNote && (
+                <span className="inline-flex items-center gap-1 text-xs text-zinc-400" data-testid="general-note-count">
+                  <span className="bg-zinc-300 rounded-full w-1.5 h-1.5 shrink-0" />
+                  1 note
                 </span>
               )}
             </div>

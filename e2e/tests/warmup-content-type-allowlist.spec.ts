@@ -68,9 +68,9 @@ test('WarmUp generate panel shows Conversation starter (read-only), not Vocabula
     await expect(readonlyLabel).toContainText('Conversation starter')
 
     // Vocabulary, Grammar, Exercises must not appear anywhere in the generate panel
-    await expect(page.getByTestId('generate-panel').getByText('Vocabulary')).not.toBeVisible()
-    await expect(page.getByTestId('generate-panel').getByText('Grammar')).not.toBeVisible()
-    await expect(page.getByTestId('generate-panel').getByText('Exercises')).not.toBeVisible()
+    await expect(page.getByTestId('generate-panel').getByText('Vocabulary', { exact: true })).not.toBeVisible()
+    await expect(page.getByTestId('generate-panel').getByText('Grammar', { exact: true })).not.toBeVisible()
+    await expect(page.getByTestId('generate-panel').getByText('Exercises', { exact: true })).not.toBeVisible()
   } finally {
     await context.close()
   }

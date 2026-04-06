@@ -80,8 +80,8 @@ const mockCourseWithPersonalization = {
       lessonType: 'Communicative',
       lessonId: null,
       status: 'planned' as const,
-      contextDescription: 'Ana introduces herself at a Barcelona language school',
-      personalizationNotes: 'Focused on oral production given Ana\'s speaking goal',
+      contextDescription: { setting: 'Barcelona language school', scenario: 'Ana introduces herself to the class on the first day' },
+      personalizationNotes: { emphasisAreas: ['oral production'], constraints: [], l1Notes: [] },
       vocabularyThemes: 'Saludos,Despedidas,Números del 1 al 10',
     },
   ],
@@ -204,8 +204,8 @@ describe('CourseDetail', () => {
     await screen.findByTestId('course-title')
     fireEvent.click(screen.getByTestId('expand-entry-0'))
 
-    expect(screen.getByTestId('context-description-0')).toHaveTextContent('Ana introduces herself at a Barcelona language school')
-    expect(screen.getByTestId('personalization-notes-0')).toHaveTextContent('Focused on oral production')
+    expect(screen.getByTestId('context-description-0')).toHaveTextContent('Ana introduces herself to the class on the first day')
+    expect(screen.getByTestId('personalization-notes-0')).toHaveTextContent('oral production')
     expect(screen.getByText('Saludos')).toBeInTheDocument()
     expect(screen.getByText('Despedidas')).toBeInTheDocument()
     expect(screen.getByText('speaking')).toBeInTheDocument()

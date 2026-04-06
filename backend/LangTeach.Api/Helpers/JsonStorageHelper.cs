@@ -28,6 +28,20 @@ internal static class JsonStorageHelper
 
     public static string Serialize<T>(List<T> list) => JsonSerializer.Serialize(list);
 
+    public static string Serialize<T>(T value) => JsonSerializer.Serialize(value);
+
+    /// <summary>
+    /// Deserializes a JSON string into a typed object.
+    /// Returns null on null or empty input.
+    /// Falls back to <paramref name="legacyCoerce"/> when the string is not valid JSON or cannot be deserialized.
+    /// </summary>
+    public static T? DeserializeWithFallback<T>(string? json, Func<string, T> legacyCoerce) where T : class
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+        try { return JsonSerializer.Deserialize<T>(json, CaseInsensitive); }
+        catch (JsonException) { return legacyCoerce(json); }
+    }
+
     /// <summary>
     /// Reads a top-level string property from a JSON object.
     /// Returns null on null/empty input, missing key, non-string value, or parse error.

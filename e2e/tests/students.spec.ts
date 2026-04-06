@@ -391,9 +391,14 @@ test('student detail overview shows profile fields and New lesson CTA', async ({
   const studentId = detailUrl.match(/\/students\/([^/]+)/)?.[1]
   expect(studentId).toBeTruthy()
 
-  // Click "New lesson" and verify navigation
+  // Click "New lesson" and verify navigation to template selection step
   await newLessonBtn.click()
   await expect(page).toHaveURL(`/lessons/new?studentId=${studentId}`, { timeout: 10000 })
+
+  // Select a template to advance to the lesson details form (step 2)
+  await expect(page.getByTestId('template-grid')).toBeVisible({ timeout: 10000 })
+  await page.getByTestId('template-conversation').click()
+  await expect(page.locator('h1')).toHaveText('Lesson Details', { timeout: 10000 })
 
   // Student should be pre-selected in the student select trigger
   const selectStudent = page.getByTestId('select-student')

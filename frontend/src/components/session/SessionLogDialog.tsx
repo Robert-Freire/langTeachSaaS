@@ -32,6 +32,11 @@ const HOMEWORK_STATUSES = [
 
 const SKILLS = ['Speaking', 'Writing', 'Reading', 'Listening']
 
+function buildPlannedContent(title: string | null | undefined, objectives: string | null | undefined): string {
+  const prefix = title ? `${title}: ` : ''
+  return `${prefix}${objectives ?? ''}`
+}
+
 const CEFR_SUBLEVELS = new Set([
   'A1.1','A1.2','A2.1','A2.2',
   'B1.1','B1.2','B2.1','B2.2',
@@ -105,8 +110,7 @@ export function SessionLogDialog({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open && !initialSession && linkedLessonId && lessonObjectives) {
-      const prefix = lessonTitle ? `${lessonTitle}: ` : ''
-      setPlannedContent(`${prefix}${lessonObjectives}`)
+      setPlannedContent(buildPlannedContent(lessonTitle, lessonObjectives))
     }
     if (open && !initialSession && linkedLessonId) {
       setSelectedLessonId(linkedLessonId)
@@ -245,6 +249,16 @@ export function SessionLogDialog({
               <div className="space-y-2">
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-3/4" />
+              </div>
+            )}
+
+            {!isEditMode && prevSession?.nextSessionTopics?.trim() && (
+              <div
+                className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-900"
+                data-testid="prev-session-topics"
+              >
+                <span className="font-medium">From last session: </span>
+                {prevSession.nextSessionTopics}
               </div>
             )}
 
@@ -460,7 +474,14 @@ export function SessionLogDialog({
                 </Label>
                 <Select
                   value={selectedLessonId ?? ''}
-                  onValueChange={(v) => setSelectedLessonId(v ?? '')}
+                  onValueChange={(v) => {
+                    const id = v ?? ''
+                    setSelectedLessonId(id)
+                    const lesson = studentLessons.find(l => l.id === id)
+                    if (lesson && !plannedContent) {
+                      setPlannedContent(buildPlannedContent(lesson.title, lesson.objectives))
+                    }
+                  }}
                 >
                   <SelectTrigger
                     id="linked-lesson"
