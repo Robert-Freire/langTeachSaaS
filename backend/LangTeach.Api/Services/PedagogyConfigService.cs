@@ -323,8 +323,8 @@ public class PedagogyConfigService : IPedagogyConfigService
 
     public string[] GetSectionCoherenceRules() => _courseRules.SectionCoherenceRules ?? [];
 
-    public string? GetWeaknessTargetingGuidance(string sectionType) =>
-        _sectionProfileService.GetWeaknessTargetingGuidance(sectionType);
+    public string? GetWeaknessTargetingGuidance(string sectionType, string weaknessType) =>
+        _sectionProfileService.GetWeaknessTargetingGuidance(sectionType, weaknessType);
 
     public StyleSubstitution[] GetStyleSubstitutions(string[] rejectedTypes)
     {

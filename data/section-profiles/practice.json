@@ -1,6 +1,10 @@
 {
   "sectionType": "practice",
-  "weaknessTargetingGuidance": "MANDATORY when the weakness is compatible with the lesson's communicative goal — include at least 1 exercise, using a format appropriate to the lesson's CEFR level, that directly targets this student's documented weakness: {weaknesses}. If the weakness is lexical or orthographic and the lesson topic provides no natural context for it, omit this exercise rather than inserting an incoherent drill. Keep it brief (3-4 items). This exercise is in addition to the main lesson exercises, not a replacement.",
+  "weaknessTargetingGuidance": {
+    "grammatical": "MANDATORY — include at least 1 exercise, using a format appropriate to the lesson's CEFR level, that directly targets this student's documented grammatical weakness: {weaknesses}. Keep it brief (3-4 items). This exercise is in addition to the main lesson exercises, not a replacement.",
+    "lexical": "Include 1 exercise only if the lesson topic creates a natural vocabulary context for: {weaknesses}. Otherwise omit.",
+    "orthographic": "Include 1 exercise only if the lesson involves written production and the orthographic weakness is relevant to the written output: {weaknesses}. Otherwise omit."
+  },
   "levels": {
     "A1": {
       "contentTypes": [

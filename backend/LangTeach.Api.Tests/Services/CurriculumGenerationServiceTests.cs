@@ -408,7 +408,7 @@ public class CurriculumGenerationServiceTests
             StudentInterests: null, StudentGoals: null,
             TemplateLevel: "A1.1",
             TemplateUnits: null,
-            StudentWeaknesses: ["ser/estar distinction"]);
+            StudentWeaknesses: [new StudentWeakness("ser/estar distinction")]);
 
         var (entries, _) = await sut.GenerateAsync(ctx);
 

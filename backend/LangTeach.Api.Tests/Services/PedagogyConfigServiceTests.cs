@@ -794,9 +794,9 @@ public class PedagogyConfigServiceTests
     [InlineData("wrapup")]
     public void GetWeaknessTargetingGuidance_ReturnsNonNull_ForTargetedSections(string section)
     {
-        var result = _sut.GetWeaknessTargetingGuidance(section);
+        var result = _sut.GetWeaknessTargetingGuidance(section, "grammatical");
 
-        result.Should().NotBeNullOrEmpty(because: $"{section} should define weaknessTargetingGuidance");
+        result.Should().NotBeNullOrEmpty(because: $"{section} should define weaknessTargetingGuidance for grammatical type");
     }
 
     [Theory]
@@ -804,7 +804,7 @@ public class PedagogyConfigServiceTests
     [InlineData("presentation")]
     public void GetWeaknessTargetingGuidance_ReturnsNull_ForNonTargetedSections(string section)
     {
-        var result = _sut.GetWeaknessTargetingGuidance(section);
+        var result = _sut.GetWeaknessTargetingGuidance(section, "grammatical");
 
         result.Should().BeNull(because: $"{section} does not participate in weakness targeting");
     }
@@ -812,9 +812,30 @@ public class PedagogyConfigServiceTests
     [Fact]
     public void GetWeaknessTargetingGuidance_Practice_ContainsWeaknessesPlaceholder()
     {
-        var result = _sut.GetWeaknessTargetingGuidance("practice");
+        var result = _sut.GetWeaknessTargetingGuidance("practice", "grammatical");
 
         result.Should().Contain("{weaknesses}",
-            because: "practice guidance must contain {weaknesses} placeholder for interpolation");
+            because: "practice grammatical guidance must contain {weaknesses} placeholder for interpolation");
+    }
+
+    [Theory]
+    [InlineData("grammatical")]
+    [InlineData("lexical")]
+    [InlineData("orthographic")]
+    public void GetWeaknessTargetingGuidance_Practice_ReturnsGuidanceForEachType(string weaknessType)
+    {
+        var result = _sut.GetWeaknessTargetingGuidance("practice", weaknessType);
+
+        result.Should().NotBeNullOrEmpty(because: $"practice should define weaknessTargetingGuidance for {weaknessType} type");
+    }
+
+    [Fact]
+    public void GetWeaknessTargetingGuidance_UnknownType_FallsBackToGrammatical()
+    {
+        var grammatical = _sut.GetWeaknessTargetingGuidance("practice", "grammatical");
+        var unknown = _sut.GetWeaknessTargetingGuidance("practice", "unknown-type");
+
+        unknown.Should().Be(grammatical,
+            because: "an unrecognised weakness type should fall back to the grammatical guidance");
     }
 }

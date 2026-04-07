@@ -154,8 +154,13 @@ public class SectionProfileService : ISectionProfileService
         return string.Empty;
     }
 
-    public string? GetWeaknessTargetingGuidance(string sectionType) =>
-        GetProfile(sectionType)?.WeaknessTargetingGuidance;
+    public string? GetWeaknessTargetingGuidance(string sectionType, string weaknessType)
+    {
+        var guidance = GetProfile(sectionType)?.WeaknessTargetingGuidance;
+        if (guidance is null) return null;
+        var key = weaknessType is "grammatical" or "lexical" or "orthographic" ? weaknessType : "grammatical";
+        return guidance.GetValueOrDefault(key) ?? guidance.GetValueOrDefault("grammatical");
+    }
 
     public string? GetClosingConstraint(string sectionType, string cefrLevel)
     {
