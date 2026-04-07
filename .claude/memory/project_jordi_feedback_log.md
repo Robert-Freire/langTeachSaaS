@@ -193,6 +193,93 @@ Source: WhatsApp voice note from Jordi, forwarded by Robert via email. Response 
 
 Raw: `feedback/raw/2026-03-29-jordi-audio-daily-workflow.txt`
 
+## Feedback Round 10 (2026-03-29, voice note via Robert — WA0004)
+
+Source: WhatsApp voice note from Jordi, forwarded by Robert via email (msg #33). Exercise pedagogy.
+
+| # | Feedback | Roadmap fit | Status |
+|---|----------|-------------|--------|
+| 46 | **Inductive/discovery pedagogy**: Jordi's approach is: give context (text or audio) → student notices the structure → student discovers the rule. NOT: explain grammar → drill. Activities include dynamics, not just fill-in-the-gap. "Que sea el propio alumno que descubra lo que hay detrás." | Phase 2A: Content generation. Isaac confirms this is mainstream ELE (noticing hypothesis / PCIC "observa y reflexiona" sequences). | **New pedagogical signal** |
+| 47 | **Noticing tasks and reflection prompts as first-class activity types**: The platform should generate: (1) input text/audio with target structure, (2) guided noticing task ("subraya los verbos en pasado"), (3) reflection prompt ("qué observas"), (4) controlled practice. | Phase 2A: Content types expansion (new block types: noticingTask already exists — verify if it covers this) | **New exercise taxonomy signal** |
+
+Raw: `feedback/raw/2026-03-29_jordi_whatsapp_WA0004_exercise-pedagogy.txt`
+
+## Feedback Round 11 (2026-04-03, voice note via Robert — WA0009)
+
+Source: WhatsApp voice note from Jordi, forwarded by Robert via email (msg #34). Audio/listening comprehension. Jordi asked this be shared with both PM and Isaac.
+
+| # | Feedback | Roadmap fit | Status |
+|---|----------|-------------|--------|
+| 48 | **Audio comprehension materials gap**: Harder to find good audio activities than text. Wants: teacher supplies audio URL/file → AI generates pre/while/post-listening activity sequence around it. Prefers real audio (authentic interviews, 3-4 min). | Phase 2A: Material Upload enhancement. Platform generates activity wrapper around teacher-supplied audio. | **New, actionable** |
+| 49 | **Listening activity type diversity**: Beyond T/F and gap-fill: global comprehension summary, selective listening, inference tasks, language focus noticing within audio, discussion/debate launch from audio. Isaac validates all of these as documented ELE methodology. | Phase 2A: Content types. Activity variety around listening input. | **New detail** |
+
+Raw: `feedback/raw/2026-04-03_jordi_whatsapp_WA0009_audio-comprehension.txt`
+
+## Feedback Round 12 (2026-04-05, demo meeting — recording)
+
+Source: ~48 min video call Robert + Jordi. Robert showed the app with Jordi's Excel data imported. Transcript: `feedback/raw/2026-04-05_jordi_robert_meeting_demo-review.txt`
+
+### Key reactions
+
+- "Está muchísimo mejor que el Excel visualmente" — confirmed visual improvement
+- BUT: "Me tiene que ahorrar tiempo. Tengo 5 minutos entre clase y clase." — usage depends on speed
+- Voice input is the unlock: "En voz me ahorra muchísimo tiempo porque escribo muchísimo más información en voz."
+- Still sees it as "Excel with better UI" until voice + lesson generation + materials are connected
+
+| # | Feedback | Roadmap fit | Status |
+|---|----------|-------------|--------|
+| 50 | **Student profile basic fields missing**: Wants: age, profession, where they live, native language, other languages spoken, why studying Spanish. These are the 5-6 mandatory fields. | Student profile enrichment. Partially in existing profile, but some fields missing. | **New, actionable** |
+| 51 | **Two-level CEFR**: (1) Official test result (Preply), (2) Teacher's own assessment. Both visible. "Preply dice A2 pero yo creo que es B1." | Student profile field enhancement | **New, actionable** |
+| 52 | **Short-term objective with date**: Time-bounded goal field ("viajo a Madrid en 3 meses", "reunión de negocio en 2 semanas"). Different from long-term learning goals. Isaac: changes content priority, methodology (role-play simulations), urgency ordering of grammar. When active + deadline within 6 weeks, inject with higher weight in generation. | Phase 2A: Student profile + generation. Micro-ESP constraint on general CEFR syllabus. | **New, actionable** |
+| 53 | **"Ideas para próximas clases" teaching to-do list**: Structured list per student: topics/grammar to cover. Markable as "done/covered" (not deleted). Separate from general notes. Isaac: "done" = covered in teaching, not mastered — consider surfacing for spaced review. | Could extend current difficulties section or session log area. | **New, actionable** |
+| 54 | **Student list: last class date + session count**: Show these in the student list view. Tells teacher which students are dormant. Sort by last class, session count, rate. | Student list UX enhancement | **New, actionable** |
+| 55 | **Student rate/fee field**: For prioritization. "A veces me interesa ordenarlos por tarifa." Not necessarily displayed publicly. | Student profile field + list sort | **New** |
+| 56 | **Cancelled session logging**: Log "planned but cancelled" — keep the planned content (topic/activities) even when session didn't happen. Teacher can pick it up next time. | Session log enhancement | **New, actionable** |
+| 57 | **Notes field separation**: Current notes mix personal info (has kids, health issues) + teaching observations. Should be separated. | Student profile UX | **New** |
+| 58 | **Difficulty tracker: structured taxonomy + mark-as-done**: Categories by competency (Grammar, Vocabulary, Pronunciation, etc.) > subcategory (ser/estar, subjunctive). Items markable as "covered." Isaac suggests spaced review surfacing rather than permanent removal. | Extends #188 (current sprint) | **New detail** |
+
+Raw: `feedback/raw/2026-04-05_jordi_robert_meeting_demo-review.txt`
+
+## Feedback Round 13 (2026-04-06, live app walkthrough with real students)
+
+Source: 44-minute video call. Jordi used the app for 6 back-to-back real classes. Live screen share showing student list, profiles, and session cards. Transcript: `feedback/raw/2026-04-06_jordi_robert_call_app-walkthrough.txt`
+
+### General mood
+
+Positive and actively engaged. "Me ha gustado." First day using it with real students. Still sees it as "Excel with better UI" but is invested in making it work. Gave very concrete, workflow-grounded feedback.
+
+### Key workflow insight (not a feature request, a mental model)
+
+**Jordi does not create future sessions in advance.** He works on the last session: logs what happened, notes what to do next, and comes back to those notes when the next class arrives. The "next session" only exists as a note inside the current session, not as a separate card. The app's model of "each box is a session" is technically correct, but the UX needs to meet him where he is -- the `NextSessionTopics` field on the current session IS his next-class plan, and it must be prominent and actionable.
+
+### New feedback items
+
+| # | Feedback | Roadmap fit | Status | Issue |
+|---|----------|-------------|--------|-------|
+| 59 | **Student active/inactive status + filter**: Mark current vs former students. List defaults to active only, filterable. | UI Modernisation | New | #576 |
+| 60 | **Corporate student flag**: Boolean field for students paid by their employer. Simple boolean for now. | UI Modernisation | New | #577 |
+| 61 | **Student list search box**: Magnifying glass / lupa to find a student by name. | UI Modernisation | New | #578 |
+| 62 | **After saving student, redirect to profile**: Currently redirects to list. Should stay on the student's profile page. | UI Modernisation | New (UX bug) | #579 |
+| 63 | **Session form: confirm before closing if unsaved changes**: Jordi lost data by clicking outside the form. | UI Modernisation | New (UX bug) | #580 |
+| 64 | **Show NextSessionTopics on session card**: Backend field exists. "What I planned for next class" should be visible and distinct on the session detail view. | UI Modernisation | New | #581 |
+| 65 | **"Start next session" button**: From the last session card, one click creates the next session pre-populated with NextSessionTopics as the planned content. | UI Modernisation | New | #582 |
+| 66 | **Learning Goals: hierarchical structure**: Category (Business, Pronunciation, etc.) + free text description. Current flat tag list doesn't match how Jordi thinks about goals. | UI Modernisation | New | #583 |
+| 67 | **Teaching Context field goes unused**: He puts everything in Notes. The field design needs rethinking. | Deferred observation | Logged | - |
+
+### Items that reinforce existing issues
+
+| Existing | Reinforcement |
+|----------|--------------|
+| #525 (basic info fields) | Country of origin, city, current location, other languages -- reinforced with specifics: origin vs current location is important; city matters more for Spain-based students |
+| #531 (rate/tarifa field) | Strong reinforcement. Jordi mentioned it 3 times. Confirmed: open list with autocomplete, currency-agnostic (free text "12 euros") |
+| #530 (last class + session count on list) | Reinforced |
+
+### Preply post-class AI report (observed, no action)
+
+Jordi showed a Preply post-class AI report (lesson summary, vocabulary, errors, speaking time ratio). His take: interesting but "todo este tocho no se lo puede decir al alumno -- es demasiado jargón." He wants the AI insights for himself, not to share with students. Confirms direction for AI session analysis, but output should be teacher-facing and actionable, not verbose.
+
+Raw: `feedback/raw/2026-04-06_jordi_robert_call_app-walkthrough.txt`
+
 ## Open items (internal, do not chase Jordi)
 
 - ~~Awaiting: course programs for all levels~~ RECEIVED

@@ -61,6 +61,11 @@ This is a critical section. Every plan must have explicit test coverage. Check f
 - Does the plan introduce unnecessary abstractions or over-engineering?
 - Are there changes mixed in that belong to a different task?
 
+### Architectural decisions (stop and ask)
+- Does the plan make a technology, vendor, or service choice that was NOT explicitly specified in the issue? (e.g., picking OpenAI Whisper when the issue said "Azure Speech-to-Text", or choosing a library the issue didn't mention)
+- Does the plan introduce a new external dependency (API, SDK, cloud service) without the issue explicitly requiring it?
+- If any architectural decision is made by the plan that the issue left open or did not specify: **flag as Critical** with the message "STOP: architectural decision not authorized by the issue. The bot must ask the user before proceeding."
+
 ### Safety
 - Could the migration cause data loss on existing records?
 - Are there breaking API changes that would affect the frontend or other consumers?

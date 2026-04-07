@@ -60,13 +60,13 @@
   },
   "suites": [
     {
-      "title": "sprint-reviewer.spec.ts",
-      "file": "sprint-reviewer.spec.ts",
+      "title": "ricardo-c1.spec.ts",
+      "file": "ricardo-c1.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "Sprint Reviewer — integration test for current sprint features",
+          "title": "Ricardo C1.1 — create student, generate lesson, capture output",
           "ok": true,
           "tags": [],
           "tests": [
@@ -81,32 +81,25 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 74794,
+                  "duration": 64779,
                   "errors": [],
                   "stdout": [
                     {
-                      "text": "Sprint Reviewer run complete. Output: C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\output\\sprint-reviewer-2026-04-04T21-40-54\n"
+                      "text": "[teacher-qa] PDF export succeeded: lesson_teacher.pdf\n"
                     },
                     {
-                      "text": "Topic: \"ser vs estar in past and present: generating a lesson for a B1 student with tracked session history and general learning notes, exercising session-history-injection into AI generation context\"\n"
+                      "text": "Ricardo C1.1 run complete. Output: C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\output\\ricardo-c1-2026-04-07T13-35-53\n"
                     },
                     {
-                      "text": "Sprint issues: 23 items\n"
+                      "text": "Generation took 52s. 5 blocks across 5 sections.\n"
                     },
                     {
-                      "text": "Generation took 32s. 5 blocks across 5 sections.\n"
-                    },
-                    {
-                      "text": "Artifacts: student-view=true, pdf=false\n"
+                      "text": "Artifacts: student-view=true, pdf=true\n"
                     }
                   ],
-                  "stderr": [
-                    {
-                      "text": "[teacher-qa] PDF export failed for lesson 81684e89-c907-41fb-915c-785444871d65: TimeoutError: page.waitForEvent: Timeout 30000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================\n"
-                    }
-                  ],
+                  "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-04-04T21:40:54.091Z",
+                  "startTime": "2026-04-07T13:35:53.287Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -114,9 +107,9 @@
               "status": "expected"
             }
           ],
-          "id": "920727f3123f68d271de-3847e17a49d5bcd80219",
-          "file": "sprint-reviewer.spec.ts",
-          "line": 62,
+          "id": "44d14a2394a70dd34915-aa43b90681677b604652",
+          "file": "ricardo-c1.spec.ts",
+          "line": 48,
           "column": 5
         }
       ]
@@ -124,8 +117,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-04T21:40:53.291Z",
-    "duration": 75858.065,
+    "startTime": "2026-04-07T13:35:52.519Z",
+    "duration": 65675.63,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,

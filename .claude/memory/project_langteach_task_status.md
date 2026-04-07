@@ -14,14 +14,14 @@ Key queries:
 - Must-haves: `gh issue list --milestone "<milestone-name>" --label "P1:must" --state open`
 - Ready to pick up: `gh issue list --milestone "<milestone-name>" --label "qa:ready" --state open`
 
-**Active sprint branch:** `sprint/adaptive-replanning` (to be created)
+**Active sprint branch:** `sprint/adaptive-replanning`
 Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Workflow" section.
 
 ## Milestone Sequence (newest first)
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| Adaptive Replanning | NEXT | milestone #8, sprint/adaptive-replanning (not yet created) |
+| Adaptive Replanning | ACTIVE 2026-04-05 | milestone #8, sprint/adaptive-replanning |
 | Post-Class Tracking | CLOSED 2026-04-04 | 23/23 done, merged to main |
 | Pedagogical Quality | CLOSED 2026-04-02 | 35/35 done, merged to main |
 | Student-Aware Curriculum | CLOSED 2026-03-29 | merged to main |

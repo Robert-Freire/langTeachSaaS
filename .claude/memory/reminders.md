@@ -14,7 +14,7 @@ type: project
 
 | Date | Reminder | Status |
 |------|----------|--------|
-| 2026-04-01 | **Semana Santa readiness (our deadline, not Jordi's).** Is the app ready to show Jordi a working workflow? What's still missing? Prepare a "here's what you can try" guide, not a "please test these things" checklist. The burden is on us to deliver something compelling, not on him to QA it. | pending |
+| 2026-04-01 | **Semana Santa readiness (our deadline, not Jordi's).** Is the app ready to show Jordi a working workflow? What's still missing? Prepare a "here's what you can try" guide, not a "please test these things" checklist. The burden is on us to deliver something compelling, not on him to QA it. | done |
 
 ## Done
 
