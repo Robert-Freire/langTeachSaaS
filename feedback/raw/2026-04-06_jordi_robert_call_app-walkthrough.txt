@@ -1,0 +1,972 @@
+Ya está, ya está grabando.
+¿Has utilizado hoy?
+Me ha gustado, me ha gustado.
+Ha sido un día un poco estresante porque he tenido seis clases,
+una detrás de otra, o sea, no he tenido mucho tiempo
+y ha ido bien, le ha dado algo de orden.
+Sigue habiendo un problema de que no tengo tiempo
+para dedicarme a ponerme, realmente y estructurarlo,
+pero varias cosas que ya vi ayer cuando estuve introduciendo datos.
+Comparte si me vas contando.
+La idea, lo que estamos haciendo ahora es lo de las rotas de voz,
+a ver si así te es más fácil.
+Y se va con Telegram también, o sea, desde la aplicación o desde Telegram.
+Bueno, paso a paso, esto ya me parece un avance.
+Vale, entonces primero con los estudiantes,
+aquí que hablamos de poder ordenar,
+aquí también estaría bien añadir la típica lupa
+para poder buscar un estudiante, vale?
+Eso aquí, vale.
+Entonces, creo que estaría bien.
+No, no, ya está bien, ya está bien.
+Después aquí ya miraremos, todavía no tomo la información suficiente,
+pero a ver qué información debería aparecer aquí
+como primera información de la estudiante, vale?
+Pero de momento lo que se me ocurre es poder ordenar y lupa.
+Y lupa, para buscar por el nombre, sí, sí.
+Y luego ya miraremos ordenar,
+queda claro por el nombre, ordenar por tarifa.
+Yo creo que ayer no lo pilló todo, lo que me dijiste.
+Yo sigo que no.
+Pero bueno, estoy apuntando y estoy grabando ahora, así es mejor.
+Lo tengo apuntado un papel, con lo cual sé cualquier cosa,
+porque tengo las cosas bastante claras que quería.
+Vale, perfecto.
+Después, no sé si aquí...
+Sí, también deberíamos aquí poner estudiante actual no actual, vale?
+¿Qué significa actual no actual?
+Vale, que lo tengo como estudiante o que ya no es estudiante.
+Que ha pausado, lo ha dejado.
+Lo que tenemos estudiante es que ya no le decrasas.
+Ok, o sea, es un nuevo campo, necesitas un nuevo campo.
+O sea, tenemos que decir, es estudiante actual o no actual
+y es un nuevo campo que tienes que marcar.
+Sí, en función de cada estudiante que se añade, es actual
+y después cuando dejáis es actual, que yo le pueda...
+Pues cuando ya no es actual, en la primera lista no me aparezca o me aparezcas,
+y yo quiero que...
+No, no, no, no, no, no.
+Y puedes filtrar por eso.
+Exacto, filtrar por eso, pero no es...
+Vale, vale, ¿a qué cual no es actual?
+Vale, después, una cosa que no hablamos, tampoco tengo claro que debe aparecer aquí,
+pero sí, en el perfil del estudiante, es que tengo alumnos que les pagan a la empresa,
+no pagan a ellos, se le llaman alumnos corporativos, tiene que haber algún sitio donde al alumno
+le pueda poner que es un alumno corporativo.
+O sea, ¿es corporativo o no corporativo o puede haber diferentes clases en el perfil? ¿Puede ser corporativo o en otras cosas?
+Ya, a día de hoy, solo estoy dando clases individuales, quizás en un futuro puede ser que tengamos que
+cambiar esto, a día de hoy solo se me ocurre corporativo o no corporativo.
+Vale, lo haremos, lo haremos, o sea, lo intentamos hacer lo más sencillo posible, o sea,
+será un campo corporativo o no corporativo, pero si en un futuro me dices,
+¡ey, aunque tenga tres o cuatro valores, a lo mejor lo cambiamos!
+Y será otro tipo de campo, pero bueno, eso podría ir cambiando, no hay...
+Exacto, ahora solo tengo, cuando tenga alumnos grupales, pues seguramente,
+y si tengo alumnos presenciales, seguramente habrá que cambiar.
+Habrá que cambiar, pero...
+Exactamente, no lo sé, ya...
+Sí, no nos preocupemos tampoco demasiado.
+Exacto, ahora, ahora, exacto.
+Exacto, esto, esta información que me das es justo lo que es útil, lo que necesitas, exacto.
+Vale, luego por ejemplo, vale, esto ya no estuve trabajando, aquí ya lo he puesto tal,
+esto me parece bien, él dice Sissons, que esto es algo nuevo.
+Sí.
+Vale.
+Vale.
+Sobre el teaching context, lo que me encontré al evitar...
+Sí.
+Es que al final lo que prácticamente todo lo pondría en notas.
+Es un tema mío, es una reflexión mío, eh, que tenemos que buscar, pero bueno,
+vamos por partes, espera, vamos.
+Bien, ¿qué debería parecer aquí cada día de hoy no está?
+Sí.
+¿Qué debería parecer aquí cada día de hoy no está?
+Eh...
+Que ya estuvimos hablando de algunas cosas.
+¿De dónde es?
+País, pero...
+País y ciudad.
+País y ciudad de origen.
+Origen, en este caso, por ejemplo, es escocés, lo he puesto en notas.
+Bueno, es escocés y está en Turquía, ¿vale?
+Me decís además también año nacimiento, es que me parece que todo...
+Exacto, sí.
+Año nacimiento, me dijiste y también me dijiste idiomas que hablan.
+Año...
+Uy, uy, estoy en segundo.
+Año nacimiento, bueno, año nacimiento no es claro que lo sepa,
+menos si no es año nacimiento de la edad.
+Vale, año nacimiento de la edad.
+Sí, ya le hemos algo.
+Ya le hemos algo.
+Vale, ¿es alguna que te cortaba?
+No, me dijiste también idiomas, es que...
+Exacto.
+Sí, eso lo tengo, sí.
+Idiomas que hablan.
+Idiomas que hablan.
+Vale, que aquí solo ha apuntado el inglés porque eso idioma nativo, pero idiomas que hablan.
+Vale.
+También, ¿dónde vive ahora?
+Que es diferente a dónde es o dónde es nacido.
+¿Dónde vive?
+Vale.
+¿Y dónde vive? Me interesa especialmente...
+Bueno...
+A ver, no sé si país, ciudad, sí.
+A ver, la ciudad me interesa sobre todo para los que viven en España.
+Vivo en Valencia, viven en Madrid, viven en Barcelona.
+Vale, que tengo varios.
+Tengo este, por ejemplo, está en Turquía.
+La ciudad de Turquía posiblemente tampoco sabría escribirla.
+¿Sabes?
+Vale, pero bueno...
+Vale.
+Vale.
+Después, trabajo, profesión, ¿a qué se dedica?
+Que creo que también lo comentamos.
+Profesor.
+Idiomas que hablan.
+Ah, vale, sí, después.
+Aquí no parece, pero inglés nativo, ¿vale?
+Aquí tengo varios que he puesto a Other.
+Ucraniano, Hungarian.
+Vale, debería...
+Esto deberías poder añadir idiomas sin aparecer en medio de otros.
+Vale, porque ve, si le pongo otro, se queda en otro.
+Sí, ya, ya.
+Después, al final...
+Fíjate que al final lo que acabo de rellenando son notes.
+Y es algo que tengo que dar vueltas, ¿sabes?
+Pero fíjate que al final, ni letting goals, ni areas to improve,
+al final no le estoy dando juego a esto.
+Veremos, esto es cuestión de practicar y ver que...
+Sí.
+...como digo, la funcionalidad, ¿vale?
+Pero tengo que acabar de ver...
+Tengo que acabar de ver específicos dificultades.
+Tampoco, tampoco le da un juego.
+Tampoco le da un juego, ¿vale?
+Entonces...
+Tampoco te hago bien si no le das juego o no.
+O sea, tú ves me diciendo lo que necesitas.
+Si vemos que algo de lo que tú me dices que necesitas
+caben en algunas de las partes que tenemos, te lo digo.
+Pero no te preocupes, no le des amas a vueltas.
+Tú ves diciendo lo que necesitas, como me estás diciendo.
+O sea, lo que me estás diciendo es perfecto.
+Esto es lo que necesito.
+Bien, y esto es un poco lo que yo he visto de...
+el estudiante.
+¿Vale?
+Bueno, le añadió lo de interés y tal.
+¿Vale?
+Update.
+Bien.
+Entonces, le doy Update.
+¿Vale?
+Voy directamente aquí,
+estudiante.
+¿Vale?
+Pero, por ejemplo, vamos a...
+o lo que he tenido hoy...
+¿Vale?
+Bricks.
+¿Vale?
+Ahora lo que quiero es...
+¿Vale?
+Overview.
+Necesitamos en el Overview.
+Si fijate que aquí, esto que me aparece aquí,
+la única información que aparece es la de...
+Sí, bueno, aquí lo que te estoy diciendo
+es que ya has puesto información de todo esto.
+Tampoco será hasta que el punto es demasiado útil.
+Esto es algo que, bueno, se ha creado...
+Sí, no me estaba dando.
+Ya, no.
+Pero, bueno, lo que te está diciendo es que
+a este alumno le has documentado todo esto.
+Quizás, quizás...
+me hace que la pena quitarlo, eso.
+Se está ocupando mucho este espacio.
+Pero, bueno, por momento...
+Vale.
+Mira.
+A ver.
+Fijate el Learning Goals.
+Le he puesto Business.
+Pero, cada vez, lo que me interesa
+es esto que he puesto aquí.
+Quiera aprender español.
+Quizás el Learning Goals
+habría que estar bien las opciones que da.
+Me parece que puedes poner el Learning Goals
+tú mismo.
+Si la sabes Learning Goals.
+¿Dale?
+Sí.
+Pisa escribir.
+Sí, pero quizás estaría bien Business,
+pero, claro...
+No, pero escribes, escribes, escribes.
+Quiere...
+Es abogado.
+Que...
+Es abogado.
+¿Dale?
+Quiere...
+No, escribes.
+Quiero aprender.
+Y dale Enter.
+Ah, vale.
+¿Sí?
+Lo puedo poner así, entonces.
+No...
+¿Cómo te es más útil?
+Aquí te...
+Podríamos decir que lo tienes más...
+Si te es útil aquí como...
+Es abogado y quiera aprender lo que sea.
+A lo mejor lo de es abogado no estaría aquí,
+pero ¿qué es lo que quería decir?
+Quiera aprender...
+Claro.
+Quiere aprender español lo que tengo aquí.
+Quiere aprender español porque es abogado
+y le gustaría hacer marcasos en español.
+Pues sí, sería...
+Claro, yo me lo imagino como Business
+y debajo de Business la frase.
+Porque a lo mejor puedo tener luego pronunciación,
+¿sabes?
+Que no lo sé, ¿eh?
+Ya, tú lo estás viendo como algo jerárquico
+y aquí lo que tenemos es una lista.
+Exacto.
+Vale, me lo apunto.
+No lo puedo gritar, Robert.
+Claro, lo puedes cancelar, lo puedes cerrar.
+Claro.
+Lo puedes gritar.
+Si quiero añadir sobre esto, no puedo.
+Sí.
+Claro, porque esto está pensado más para otra cosa
+que no para que yo me ponga escribiendo la frase.
+Y luego, a esto hay que darle una vuelta
+y no lo sé, Robert, ¿eh?
+Ya tengo que darle una vuelta de también.
+Porque esto es muy importante, pero así no me acaba de...
+Harías de mejora.
+Vale, tienen que mejorar los que posicieron en subjuntivo,
+pero después de cada clase voy a ver yo Harías de mejor.
+Entonces, no sé si debería aparecer aquí.
+No sé, le tengo que darle una vuelta.
+Sí, por esto no lo vienes porque...
+Bueno, también lo estamos cambiando.
+O sea, esta es la próxima versión.
+O sea, así que de eso sí que recogió cosas,
+Isaac, para cambiarlo.
+Vale, y ahora...
+Claro, la otra cosa, quizás...
+quizás...
+Fíjate, le doy a...
+entonces el estudiante lo actualizo
+y se me va directamente a la página de inicial de estudiantes.
+Ya.
+Quizás me debería ir a la página esta.
+Sí.
+Creo que aquí también estaría bien.
+Tenemos que dar vuelta, esta información está bien.
+Quizás aquí debería aparecer última clase, próxima clase.
+No, olvídalo, olvídalo.
+Bueno, ya te lo diré, ya te lo diré, ya te lo diré,
+porque si tiene que haber próxima clase
+yo tengo que ponerle la próxima clase cuando es.
+Pero quizás aquí, esto está bien,
+quizás aquí debería aparecer algo de información
+que a lo mejor puede ser.
+Si por ejemplo ahora pones una clase en el futuro,
+te pondrá de última la clase del futuro,
+a lo mejor tú quieres ver las dos.
+Bueno, ahora si quieres probarlo,
+puedes modificar una de estas que no tiene fecha,
+le pones una fecha
+y te saldrá como última programa en el futuro.
+Sabes que puedes modificarlas, ¿no?
+Cuando le das.
+Estoy pensando por aquí, que parezca...
+Dime cómo se ve ahora, si se ve como se ve mucho mejor.
+Yo no veo igual, ¿eh?
+Yo no veo bien, ¿eh?
+Por mí no...
+Yo no tengo ningún problema, yo lo veo bien.
+A mí me ves bien.
+A ti ya la pantalla, todo lo veo bien.
+Te decido, preguntaba a mí ahora, ¿eh?
+Sí, te veo bien, te veo bien.
+Quizás a mí me ves oscuro.
+Es que tengo la persona bajada porque tengo mucho sol.
+Vale, esto es lo que hemos hecho hoy.
+Vale, claro, esto porque lo has subido del éxtel.
+Sí.
+Si que no me gusta, eso ya lo trabajé yo.
+Vale, esto es lo que se ve de la última clase,
+el 6 de abril.
+Creo que aquí se debería ver el plan,
+el don y el next class.
+Next class tiene que ser la de esa otra sesión.
+Esto que tienes con no date es la próxima clase.
+Lo que tienes...
+Sí, lo sé.
+Vale, o sea, esa es la próxima clase.
+Cada línea, cada cajita es una clase.
+A ver la diferencia es que...
+Eso ya lo he entendido, pero...
+Claro.
+Sí.
+Sí.
+Cancera, cancera, cancera.
+Cancera, bueno, cierra esto.
+Esta es una clase, el 6 de abril.
+Correcto.
+Dale al no date, dale al...
+Esta es otra sesión, que no tiene fecha.
+Pero dale al edit, dale al edit.
+Si tú piensas que esta clase va a ser en el futuro,
+por ejemplo mañana, pon la fecha de mañana
+o la fecha que quieras.
+Del futuro.
+Sálvalo.
+Vale.
+Esta es ahora del futuro.
+Vale, pero yo no estoy preguntando.
+Si usted está preguntando, es información de dónde sale.
+Ahora viene del Excel, pero es información que tú le pongas.
+Vale, vale, bien.
+Lo que estoy diciendo es...
+Pero es que esta es la próxima clase.
+Vale.
+Lo que estoy diciendo es que la próxima clase...
+Vale, yo no hablo de la próxima clase, hablo...
+Que la información de la última clase...
+No hablo de la próxima, hablo de la información de la última clase
+que aquí me aparece en las últimas clases.
+La andón, vale.
+De todas las clases, de la última.
+Vale.
+Quizás estaría bien que me apareciera, igual que me aparece
+whatbots.com
+que está planeado en la última clase
+para la siguiente clase.
+Que está planeado, que me aparezca aquí.
+Otra cosa es que tú me dices que sí, puede estar bien.
+Es decir, que si yo relleno...
+que si yo relleno aquí...
+No, es que no nos entendemos,
+porque me estás diciendo una cosa y no entiendes
+lo que quiero decir yo.
+Es que no me pillas.
+Vale.
+La cajita es una sesión independiente.
+Sí, eso no sé, Robert.
+Cada clase es una clase.
+Ya, pero por eso sí.
+Si quieres una clase del futuro, es otra cajita.
+Es la cajita del 7.
+Es la cajita del futuro.
+No quiero una clase del futuro.
+Hablo de la clase del 6 de abril.
+¿Qué quiero que me aparezca en la clase del 6 de abril?
+Cuando yo entro aquí y leo la clase del 6 de abril,
+¿qué quiero que me aparezca?
+Vale, ahora aparece whatbots.com
+o whatbots.com
+o whatbots.com
+Pues a mí lo que me interesa
+de la última clase que doy
+lo que he planeado
+y también lo que he planeado
+para la siguiente clase.
+Me gustaría que aquí me apareciese.
+Pero lo que has planeado para la siguiente clase
+es lo que tienes que aparecerte en la siguiente clase.
+Vale, pero Robert,
+todavía no he creado la siguiente clase.
+Porque no la he creado.
+Ni la voy a crear, Robert.
+No la voy a crear.
+Lo trabajo sobre la última clase, Robert.
+Hablo de la última clase
+6 de abril.
+¿Qué he hecho con esto?
+He hecho esto.
+Y aquí mismo...
+Pues aquí te podemos poner
+otro botón que sea
+siguiente clase.
+Y cuando le des el botón de siguiente clase
+te aparecerá la pantalla vacía
+para que pongan los datos
+y esos datos se van a grabar para la siguiente clase.
+Porque cada clase
+es la siguiente clase.
+Que vale, me parece bien.
+Sientiendo lo de la cada clase, Robert.
+Explícame entonces por qué es tan difícil
+por qué es tan difícil
+que aquí aparezca otra cosita.
+De la misma forma que aparece.
+Porque esa cosita es la siguiente clase
+y cuando quieras aparecer
+en la siguiente clase en el what was planet
+quieres que aparezca lo que has planificado
+en la clase anterior.
+Y quieres que aparezca lo mismo en el what was planet
+de la clase del 6 de abril
+y en la clase del 22
+que he planeado para la próxima.
+Eso es lo que es difícil.
+Porque realmente lo que me estás hablando
+es de esa clase. Por eso te estoy diciendo vale
+pues te podemos poner una cajita ahí.
+Pero esa cajita va para otro sitio
+y lo que vas a ver va a ser repetido la misma información
+en los dos sitios.
+¿Qué es planeado aquí? Correciendo los deberes
+y 6 de abril. ¿Qué es planeado para la próxima clase?
+Correciendo los deberes.
+Pero tú lo estás viendo ya.
+Pero tú lo estás viendo como si yo esta clase
+aunque esté sin data
+aunque esté planeada
+aunque sólo sepas
+que para la próxima clase
+es corrección
+de los deberes
+o lo que sea.
+Lo que estoy diciendo es que cada cajita
+es una clase
+aunque sólo existe en tu mente
+como que es lo que el próximo que quiero hacer
+y puede ser una...
+Vale, entonces esto
+esto
+tendría que copiarse
+a la próxima clase.
+Vale, entonces es fantástico.
+Me aparecerán la siguiente clase sin data.
+Sin fecha.
+Y si tengo la fecha
+ya sería entrar, me aparecerá el no plan
+y ahí ya lo modifico.
+Bueno, en principio no tienes fechas
+cuando estás haciendo la última clase
+es para él.
+Puede ser que sí, puede ser que no.
+Por ejemplo este alumno
+tengo la clase mañana
+y en principio si...
+Se afecha en principio, muchas veces tengo otras cosas
+que yo he decidido no ponérselo porque
+es la semana que viene y lo voy a cancelar
+pero tengo otros casos de alumnos
+que la clase la tenga mañana. Por ejemplo este alumno
+tengo la clase mañana.
+Que no pasa nada, eh. Si esto le crea
+y lo planea o lo planea
+no pasa nada. Ya me parece bien.
+Ya me parece bien
+y de hecho lo voy a hacer.
+Tranquilamente es lo que voy a hacer.
+Si estás viendo precisamente lo que tenía
+que haber hecho después de la clase
+pero precisamente después de la clase no sabía
+que iba a trabajar con él.
+Esto es lo que voy a planear
+lo que pondrían en el excel o aquí mismo.
+Acabar
+con
+la redacción
+hacer esta interso mal
+imperfecto
+pensarte
+redacción
+vale
+y entonces esto
+me parecería
+como en el...
+Eso lo tenemos que trabajar
+lo tenemos que trabajar pero si la idea sería
+que esto te apareciese a lo mejor
+además en otro color o algo diferente
+para que tú vieses
+para que te...
+esto es lo que tengo planificado
+y se da sobre eso lo que puedas trabajar
+y cuando le pongas la fecha se lo pondrás ahí
+y ya lo tendrás
+y cuando quieras
+bueno
+añadirlo
+o sea será todo solo la información de eso
+pero hay que trabajarlo más
+pero si o sea es
+ver lo que quieras y que lo quedo
+vale y aquí por ejemplo
+aquí tengo las dificultades
+con el tema
+publicado. Hoy trabajando con él
+por ejemplo he visto que aquí
+en la clase de hoy tenía que
+trabajar el tema de preposiciones
+vale y debe
+preposiciones y debe
+ya
+esto de alguna forma
+tiene que ir a
+alguna parte más general
+no se han perdido las notas de la clase
+aquí está aquí es donde está
+pero tiene que estar en otra parte más general
+y esto me lo apunto
+si de alguna forma
+debería parecer quizás en la fecha
+del alumno quizás entrando en el alumno
+un apartado de aspectos a trabajar
+o temas a tratar
+de alguna forma
+no tanto como
+objetivos que me planteé del alumno
+sino como oye
+vemos que de esta clase
+sale que hemos de trabajar esto, esto y esto
+yo
+no
+topics
+esto de topics
+no se que se refiere
+en
+no
+lo de topics
+no se, pero bueno
+vocabular y competente
+topics generalmente se refiere
+a temas
+de qué tienes a hablar
+de post de barcos
+y lo de
+eso es una marca para hacer
+un nivel de test
+si le doy
+a esto
+la idea es utilizar esta información
+para generar ejercicios
+para la próxima, para las sesiones
+todo esto en teoría es para generar
+también para
+por un lado es para que te vaya bien a ti
+para generar ejercicios
+pero también es para que el sistema sea capaz
+de generar ejercicios
+esta bien
+esta bien
+esta bien
+no ha desaparecido ahora
+le has dado a aceptar
+le has dado a grabar
+este es el otro tema
+que ha pasado
+le he dado a una cosa que no era
+le ha dado a la fuera
+he hecho algo así
+le has hecho click fuera
+y desaparece sin salvar
+si
+haremos que te aparezca un mensaje
+antes de cerrarse
+si hay información
+un homework me ha comentado
+que debe
+no se si ponen aquí un homework
+o no
+quizás me comentan
+que
+el siguiente son
+hemos dicho
+no
+si sale y se fuera
+le ha dado a salvar
+asegurarse de que está
+y si quieres modificar más cosas dale
+lo que no hay es que lo percibes otra vez
+por qué no me parecen el día 7
+porque es lo que salvamos
+acuerdas que
+no vale
+porque lo grababa el día 7
+porque es que realmente me parece
+que querías grabarlo en el otro
+si lo quería grabar el día 6
+si porque aquí he puesto
+o algo así
+si no grabamos el 6 ¿qué pasaría?
+vamos a generar el 6
+si no se van a quedar los dos cosas
+porque son independientes
+cada uno es una sesión
+diferente
+puedes poner el mismo contenido
+puedes copiarlos
+puedes tener dos sesiones el día 6
+y puedes borrarla del 6
+y puedes coger el 7
+si te llamas hacer así
+¿edit? dale a edit
+bueno ya me pondré después
+cuando lo haga ya me pondré
+entonces
+hemos dicho esto
+vale
+si lo de esto
+aquí no aporta mucha información
+que esté aquí
+porque ya tengo las clases
+¿sabes?
+lo quiero decir
+si es un otro contador
+se puede quitar
+pero me parece muy importante
+porque más creo que yo lo pedí
+pero debería parecer creo que aquí
+te parece también la resta
+el número de asociaciones
+que así pareciese en información inicial
+que es lo que tenemos que ver
+que quiero que me aparezca del estudiante
+aquí, cuando pongo estudiante
+es que imagen quiero que me aparezca
+lo del B1 como ya parece aquí
+que me parece fantástico
+lo de Spanish fuera
+bueno
+aquí quiero que me aparezca
+tarifa
+última clase
+el número de clases
+número de clases también
+vale, el número de clases también me parece bien
+me parece muy lo clases que llevo con él
+la última clase
+tarifa no lo tenemos que campo, es un nuevo campo también
+exacto, si, es un nuevo campo
+ya tendría que dar
+tendría que yo introducirla
+tarifa
+claro
+eso es un
+que ponemos en el tarifa
+es una lista que tú puedes
+poner lo que quieras
+dejarlo abierto
+dejarlo abierto
+y yo puedo poner el número
+porque el número va a cambiar
+pero es un número, o quieres poner un número ahí
+pero el tarifa me refiero a lo que pagan
+vale, luego campo tarifa
+lista
+abierta
+con los valores
+que será lista abierta
+a medida que vayas añadiendo valores
+te van a aparecer también las siguientes veces
+sobre la idea
+y luego aquí
+claro, estamos hablando de monedas
+ya
+de momento eso lo trabajo con dólares
+evidentemente a euros también
+bueno, como es una lista
+tú puedes poner ahí lo que quieras
+puedes poner doce euros, doce libras
+doce dólares
+vale
+si, yo creo que
+en este momento lo partís a lo más práctico
+una lista que puedas inventar algo
+y si más adelante vemos que
+eso tiene que ser más rico
+pues ya lo hacemos
+si
+y
+vale
+la última clase también debería aparecer
+si
+entonces tengo que pensar, yo si lo pongo
+no lo pongo, me gusta
+no, lo voy a poner
+lo voy a poner
+pues aquí también estaría bien que estuviera
+la siguiente clase
+esa fecha de la última clase
+y la próxima clase
+vale
+vale
+estoy pensando en Robert
+si, yo estoy mirando que
+estoy grabando todavía
+estoy grabando
+estoy cogiendo notas
+así también me da mejor porque aunque tú harás
+pues yo puedo tomar notas y es mejor que
+pasarle todo esto al Isaac
+ya
+vale, si, de momento
+creo que sería eso
+bueno, ya hay muchas cosas pero si
+o sea
+de esto
+la mayor parte de las cosas seguramente
+será para el próximo spring
+que vamos a dar cambios visuales
+y todos los nuevos campos
+la lista y todo esto
+será para el próximo
+ahora, en este
+yo de momento puedo seguir trabajando
+si, todas las cosas que pongas
+no se pierde
+la idea es que luego puedas
+poner más cosas o cosas que
+estés poniendo hayan mejor en notas
+podamos moverlas a lo mejor
+a otros sitios
+bueno, si
+antes toca la guitarra preparada algo
+para el ser y el estar
+la información que saco de la clase de prueba
+a lo mejor estaría bien diferencial entre
+la valoración inicial
+que es lo que te dice el alumno, lo que me dice el alumno
+en la primera clase mi objetivo es
+vale
+pues prepararme para una reunión
+tal y cual y luego
+no lo sé, tenemos que ver un poquito como trabajamos
+todo eso
+a ver como lo acabamos de trabajar
+si, yo creo con lo que
+más he dicho hay un montón
+de cosas para hacerlo más rico
+y también para que veamos ahí entonces más fácilmente
+las cosas que faltan
+y entonces podemos trabajar las cosas más que faltan
+pero si, por eso estoy mucho
+bueno hay mucho
+ahí para trabajar y para hacerlo más rico
+y también para que sea más fácil luego detectar
+que falta y como organizamos
+no le falta detectar todos los problemas
+ahora quiero decir
+ni prever
+ni prever todo lo que vamos a necesitar
+lo vamos encontrando
+y vamos reaccionando, está bien
+está bien
+vale, esto está bien, que te pongo aquí
+cuánto tiempo hace, está bien
+está bien
+Manic se debería poder ordenar también
+por fecha de clase
+es la lista de estudiantes
+es la lista aquí
+si
+muy bien
+pues eso
+poco acaso nos tengo
+a ver, de preparar algo para la mañana
+¿a qué edad tienes clase?
+no
+tengo las nueve
+lo que pasa es que
+mañana ya trabajo por la tarde
+y mañana tenía una la libre
+pero un alumno de hoy
+me ha dicho que podía hacer tres clases
+y al final si lo he puesto mañana
+también ser el alumno es que más me paga
+pero pero
+eso es equivale a
+es precisamente el pris
+equivale a
+uno nada más, pero bueno, ya he tenido seis clases
+y ha ido bastante bien
+bueno, es lo que hay
+bueno, a ver si
+la idea
+lo de la voz, creo que te puede
+ir bien para ahorrarte tiempo
+y puede significar
+puede dar chulo, se funciona o que te puede dar chulo
+pero es que nunca lo he hecho nada así, mirá
+de este pequeño que presentaron una cosa
+hay que a lo mejor te lo puedo enviar mañana
+ah, mirálo, mirálo, se está aquí
+mirálo, lo voy a compartir
+esto es lo nuevo que me acabo de presentar
+preply como informe
+después de una clase
+me dice esto
+grabo la chula si me dice esto
+le tengo que dar una vuelta a ver si me sirve
+no me sirve
+si
+pero todavía estamos lejos
+pero si, la idea sería poder
+hacer algo así
+tampoco a mi que me haga un resumen
+de lo que yo he visto
+si, pero
+a lo mejor
+para que puedas
+comentar
+lo que tú ves con otra
+herramienta
+con una gente realmente que puedes
+estar bien, estas observaciones
+comentar lo que estás poniendo realmente
+en la lista, que de alguna forma puedes
+hablarlo con la gente
+a ver si él ve cosas que tú no has visto
+o tú ves cosas que el
+bueno
+a mi me resulta muy rico
+a veces comentar
+los temas con la idea
+si, si, a mi también
+me no había visto aquí, me está planteando
+las cosas que he hecho mal, me gusta jugar al fútbol
+y ver más serie
+bueno, bueno
+está empezando a trabajar con esto
+lo demás de vocabulario, mira
+nadie, gustar
+pero, para que veas
+fíjate
+hoy no se oye ahora
+no, ahora no lo digo
+no, es que ahora no se oye
+te da el ejemplo
+interesa
+si, pero es que aquí
+es la alumna
+no se porque no se oye ahora
+se supone que se oye hoy
+antes lo he escuchado
+pero bueno, lo graba
+bueno
+mira, lo saca de aquí
+bueno, si, está bien
+o sea, es muy interesante
+pero
+lo compartiré con alguna alumna
+a ver qué me dicen los alumnos
+a ver qué me dicen los alumnos
+empezaré a compartirlo
+el problema que tengo es que yo no sé si puedo grabarlo
+descargar audio
+bueno, tengo que ver
+bueno
+ya veré
+ya veré
+pero aquí hay cosas que claro
+todo este tocho no se lo puede decir a mí al alumno
+porque el alumno no entiende la ocasión preposicional
+sino yo mismo sé lo que es una ocasión preposicional
+pero bueno
+al final
+cuando hacen estas cosas te das cuenta de dónde va el dinero
+y si es bueno pues no me parece mal
+lo veo de alguna forma, sabes
+si, si, te aportan a lo de valor
+no solamente
+conectar los dos extremos
+a lo mejor no lo utilizo
+pero digo bueno pues si
+no me parece mal que me parecen estas cosas
+bueno, Robert
+mamá bien ¿no?
+vamos a lo como más
+hoy ha ido al parque
+ha ido al parque, yo la llamaré
+yo la voy a llamar más tarde
+yo la llamaré
+mañana tiene médico
+por la mañana
+pues si
+es curioso este que era museo
+a ver si esto desapareció
+no sé
+hubo intentado ver si podría hacer otra vez
+pero creo que es evidente
+que tampoco se oye porque coge sólo la palabra
+aquí tiene cosas que mejorar
+porque lo que ocurre es que el alumno habla muy lento
+es que ni si oye la palabra que dice el alumno
+sabes debería dar un poquito más
+si, tiene que dar más contexto
+ah mira esto la pillo
+esta así
+y sin embargo dice
+que está como mal
+ahora el alumno es una alumna que para mucho
+que tiene que coger un poco y eso es verdad
+aquí lo dice
+no sé de otro leído
+bueno aparte del tema de la maticar
+que no está mal
+de hecho no está mal, para las cosas que hay
+esas cosas normalmente te encuentras de errores
+pero
+es verdad te ha trabajado el verbo gustar
+y dice y está, o sea realmente
+anima tu estudiante
+que aumenta gradualmente el ritmo
+para hablar con el follismo natural
+tiene toda la razón
+la alumna habla
+lentamente
+corta mucho
+me tienen que decir lo contrario
+que hablo demasiado rápido coño
+luego de lo tiempo no me queda el todo claro
+si esto lo hace bien
+tiempo de conversación
+cuánto tiempo hablas tú y cuánto tiempo hablas el estudiante
+bueno no me parece mal
+esta información para horas nuevas
+tampoco
+interesante
+interesante si, sin más
+tampoco
+de comenzar a trabajar con esto
+seré alumno a ver que me digan su opinión
+ni siquiera
+vocabulario y claro
+a mi
+nadie
+vale
+me agrada
+muy bien
+ya estamos
+si tampoco pasa
+dejaré compartir
+oye pues nos vemos
+vale ya hablamos
+y vamos hablando
+si vamos hablando
+gracias
+nos vemos
+chao
+vamos a estar
+otra cosa

@@ -31,6 +31,8 @@ Every issue must pass all of these:
 | Area label | At least one of: `area:frontend`, `area:backend`, `area:e2e`, `area:infra`, `area:design`, `area:ai`, `area:testing` |
 | Milestone | Has a milestone assigned |
 | Focused scope | Addresses a single concern |
+| Full-stack split check | If the issue has both `area:frontend` AND `area:backend` labels, the body must explicitly state why it is a single issue (e.g., "trivial field rename that touches both layers end-to-end"). If it does not, flag it: list the frontend work and backend work as separate concerns and route through PM for a split/keep verdict before approving. An issue that bundles a backend service with a frontend UI is almost always two issues. |
+| No unresolved decisions | Body must not contain open architectural choices (e.g., "X or Y", "Options: A, B, C", "TBD", "to be decided"). Every technology, vendor, service, and approach must be decided. If the issue says "Whisper or Azure Speech", that is a FAIL: the PM must pick one before a bot can implement. |
 | T-shirt size | See Size Gate below |
 
 **Exception for small issues:** if the issue body is under 200 characters and the scope is genuinely obvious, the title may serve as the problem statement.
