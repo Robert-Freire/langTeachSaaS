@@ -65,7 +65,7 @@ public class PromptServiceTests
             StudentNativeLanguage = "Portuguese",
             StudentInterests = ["cooking", "travel"],
             StudentGoals = ["speak fluently"],
-            StudentWeaknesses = ["articles"]
+            StudentWeaknesses = [new StudentWeakness("articles")]
         };
 
         var req = _sut.BuildVocabularyPrompt(ctx);
@@ -918,7 +918,7 @@ public class PromptServiceTests
     [Fact]
     public void CurriculumSystemPrompt_IncludesWeaknesses_WhenStudentWeaknessesProvided()
     {
-        var ctx = BaseCurriculumCtx() with { StudentWeaknesses = ["ser vs estar", "subjunctive mood"] };
+        var ctx = BaseCurriculumCtx() with { StudentWeaknesses = [new StudentWeakness("ser vs estar"), new StudentWeakness("subjunctive mood")] };
 
         var req = _sut.BuildCurriculumPrompt(ctx);
 
@@ -1041,7 +1041,7 @@ public class PromptServiceTests
     {
         var ctx = BaseCurriculumCtx("Marco") with
         {
-            StudentWeaknesses = ["ser/estar distinction", "false cognates"],
+            StudentWeaknesses = [new StudentWeakness("ser/estar distinction"), new StudentWeakness("false cognates")],
         };
 
         var req = _sut.BuildCurriculumPrompt(ctx);
@@ -1302,7 +1302,7 @@ public class PromptServiceTests
     [Fact]
     public void LessonPlanPrompt_InjectsDifficultyTargeting_WhenWeaknessesPresent()
     {
-        var ctx = BaseCtx("Ana") with { StudentWeaknesses = ["articles", "ser vs estar"] };
+        var ctx = BaseCtx("Ana") with { StudentWeaknesses = [new StudentWeakness("articles"), new StudentWeakness("ser vs estar")] };
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
@@ -1321,17 +1321,39 @@ public class PromptServiceTests
     [Fact]
     public void LessonPlanPrompt_WeaknessBlock_ContainsSectionSpecificGuidanceFromConfig()
     {
-        var ctx = BaseCtx() with { StudentWeaknesses = ["subjunctive"] };
+        var ctx = BaseCtx() with { StudentWeaknesses = [new StudentWeakness("subjunctive")] };
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
         // Verify section-specific labels and guidance are assembled from config
-        req.UserPrompt.Should().Contain("Practice:", because: "practice has weaknessTargetingGuidance in config");
-        req.UserPrompt.Should().Contain("Production:", because: "production has weaknessTargetingGuidance in config");
-        req.UserPrompt.Should().Contain("WrapUp:", because: "wrapup has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().Contain("Practice (grammatical):", because: "practice has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().Contain("Production (grammatical):", because: "production has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().Contain("WrapUp (grammatical):", because: "wrapup has weaknessTargetingGuidance in config");
         req.UserPrompt.Should().NotContain("WarmUp:", because: "warmup does not participate in weakness targeting");
         req.UserPrompt.Should().NotContain("Presentation:", because: "presentation does not participate in weakness targeting");
         req.UserPrompt.Should().Contain("subjunctive", because: "weakness text must be interpolated into the practice guidance");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_WeaknessesGroupedByType_InErrorProfile()
+    {
+        var ctx = BaseCtx() with
+        {
+            StudentWeaknesses =
+            [
+                new StudentWeakness("ser/estar confusion", "grammatical"),
+                new StudentWeakness("false cognates", "lexical"),
+            ]
+        };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Grammatical weaknesses:",
+            because: "error profile must include a grammatical type header");
+        req.UserPrompt.Should().Contain("Lexical weaknesses:",
+            because: "error profile must include a lexical type header");
+        req.UserPrompt.Should().Contain("ser/estar confusion");
+        req.UserPrompt.Should().Contain("false cognates");
     }
 
     [Fact]
@@ -2608,6 +2630,25 @@ public class PromptServiceTests
         lessonPlan.UserPrompt.Should().Contain("Build directly on previous session.");
     }
 
+    [Theory]
+    [InlineData(2, "Build directly on previous session.")]
+    [InlineData(3, "brief warm-up")]
+    [InlineData(7, "brief warm-up")]
+    [InlineData(8, "dedicated review activity")]
+    [InlineData(14, "dedicated review activity")]
+    [InlineData(15, "diagnostic mini-activity")]
+    public void SessionGapPolicy_BucketBoundaries_AllFourBandsResolved(int daysSince, string expectedFragment)
+    {
+        // Issue #560: gap instruction is now driven by session-gap-policy.json config.
+        // Verifies that the real loaded policy maps all boundary values to the correct band.
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: daysSince) };
+
+        var lessonPlan = _sut.BuildLessonPlanPrompt(ctx);
+
+        lessonPlan.UserPrompt.Should().Contain(expectedFragment,
+            because: $"{daysSince} days since last session should match the correct bucket");
+    }
+
     [Fact]
     public void SessionHistory_OpenActionItems_IncludedInPrompt()
     {
@@ -3009,7 +3050,7 @@ public class PromptServiceTests
     [Fact]
     public void LessonPlanPrompt_WithWeaknesses_IncludesStudentErrorProfile()
     {
-        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = ["article gender agreement", "written accent marks"] };
+        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("article gender agreement"), new StudentWeakness("written accent marks")] };
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
@@ -3022,7 +3063,7 @@ public class PromptServiceTests
     [Fact]
     public void ExercisesPrompt_WithWeaknesses_IncludesWeaknessTargeting()
     {
-        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = ["article gender agreement", "written accent marks"] };
+        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("article gender agreement"), new StudentWeakness("written accent marks")] };
 
         var req = _sut.BuildExercisesPrompt(ctx);
 
@@ -3045,7 +3086,7 @@ public class PromptServiceTests
     [Fact]
     public void ErrorCorrectionPrompt_WithWeaknesses_IncludesWeaknessTargeting()
     {
-        var ctx = BaseCtx("Ricardo") with { StudentWeaknesses = ["false cognate vigilance"] };
+        var ctx = BaseCtx("Ricardo") with { StudentWeaknesses = [new StudentWeakness("false cognate vigilance")] };
 
         var req = _sut.BuildErrorCorrectionPrompt(ctx);
 
@@ -3057,13 +3098,65 @@ public class PromptServiceTests
     [Fact]
     public void GuidedWritingPrompt_WithWeaknesses_IncludesWeaknessTargeting()
     {
-        var ctx = BaseCtx("Ricardo") with { StudentWeaknesses = ["false cognate vigilance"] };
+        var ctx = BaseCtx("Ricardo") with { StudentWeaknesses = [new StudentWeakness("false cognate vigilance")] };
 
         var req = _sut.BuildGuidedWritingPrompt(ctx);
 
         req.UserPrompt.Should().Contain("STUDENT WEAKNESS TARGETING",
             because: "guided-writing prompt must inject block-level weakness guidance (#432)");
         req.UserPrompt.Should().Contain("false cognate vigilance");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_GrammaticalWeakness_UsesGrammaticalGuidance()
+    {
+        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("ser/estar confusion", "grammatical")] };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("MANDATORY",
+            because: "grammatical weaknesses in practice sections must use MANDATORY guidance");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_LexicalWeakness_UsesLexicalGuidance()
+    {
+        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("false cognates", "lexical")] };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("STUDENT WEAKNESS TARGETING",
+            because: "lexical weakness must inject a guidance block");
+        req.UserPrompt.Should().NotContain("MANDATORY",
+            because: "lexical guidance is conditional, not mandatory");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_OrthographicWeakness_UsesOrthographicGuidance()
+    {
+        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("accent marks on stressed vowels", "orthographic")] };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("STUDENT WEAKNESS TARGETING",
+            because: "orthographic weakness must inject a guidance block");
+        req.UserPrompt.Should().NotContain("MANDATORY",
+            because: "orthographic guidance is conditional, not mandatory");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_UnknownWeaknessType_FallsBackToGrammaticalGuidance()
+    {
+        var ctxUnknown = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("some issue", "unknown-type")] };
+        var ctxGrammatical = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("some issue", "grammatical")] };
+
+        var unknownPrompt = _sut.BuildExercisesPrompt(ctxUnknown).UserPrompt;
+        var grammaticalPrompt = _sut.BuildExercisesPrompt(ctxGrammatical).UserPrompt;
+
+        unknownPrompt.Should().Contain("STUDENT WEAKNESS TARGETING",
+            because: "unknown type should fall back to grammatical guidance and still inject a block");
+        unknownPrompt.Should().Contain("MANDATORY",
+            because: "the fallback is grammatical guidance which is MANDATORY");
     }
 }
 

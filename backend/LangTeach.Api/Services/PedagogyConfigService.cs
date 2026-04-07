@@ -22,6 +22,7 @@ public class PedagogyConfigService : IPedagogyConfigService
     // Outer key: scope value ("brief"); inner key: content type kebab ("conversation"); value: constraint text
     private readonly Dictionary<string, Dictionary<string, string>> _scopeConstraints;
     private readonly PracticeStagesFile _practiceStages;
+    private readonly SessionGapPolicyFile _sessionGapPolicy;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -110,6 +111,9 @@ public class PedagogyConfigService : IPedagogyConfigService
         };
         _log.LogInformation("PedagogyConfigService: loaded {StageCount} practice stages across {LevelCount} CEFR levels",
             _practiceStages.Stages.Length, _practiceStages.CefrStageRequirements.Count);
+
+        // Load session gap policy
+        _sessionGapPolicy = LoadJson<SessionGapPolicyFile>(assembly, "LangTeach.Api.Pedagogy.session-gap-policy.json");
 
         // Validate cross-layer references — fail fast on dangling IDs
         ValidateCrossLayerRefs();
@@ -323,8 +327,14 @@ public class PedagogyConfigService : IPedagogyConfigService
 
     public string[] GetSectionCoherenceRules() => _courseRules.SectionCoherenceRules ?? [];
 
-    public string? GetWeaknessTargetingGuidance(string sectionType) =>
-        _sectionProfileService.GetWeaknessTargetingGuidance(sectionType);
+    public IReadOnlyList<SessionGapBucket> GetSessionGapPolicy() => _sessionGapPolicy.Buckets;
+
+    public string? GetWeaknessTargetingGuidance(string sectionType, string weaknessType) =>
+        _sectionProfileService.GetWeaknessTargetingGuidance(sectionType, weaknessType);
+
+    public string GetLessonWeaknessProfileGuidance() =>
+        _courseRules.LessonWeaknessProfileGuidance
+        ?? "Design at least one Practice exercise and one Production task that directly address these patterns.";
 
     public StyleSubstitution[] GetStyleSubstitutions(string[] rejectedTypes)
     {
@@ -597,6 +607,34 @@ public class PedagogyConfigService : IPedagogyConfigService
             {
                 if (!_catalogIds.Contains(id))
                     errors.Add($"practice-stages.json stage '{stage.Id}' allowedExerciseCategories: unknown ID '{id}'");
+            }
+        }
+
+        // Validate session gap policy
+        if (_sessionGapPolicy.Buckets.Length < 2)
+        {
+            errors.Add("session-gap-policy.json: buckets array must contain at least two entries (one bounded + one fallback)");
+        }
+        else
+        {
+            if (_sessionGapPolicy.Buckets[^1].MaxDays is not null)
+                errors.Add("session-gap-policy.json: last bucket must have no maxDays (fallback bucket)");
+
+            int? prevMax = null;
+            for (var i = 0; i < _sessionGapPolicy.Buckets.Length - 1; i++)
+            {
+                var b = _sessionGapPolicy.Buckets[i];
+                if (b.MaxDays is null)
+                    errors.Add($"session-gap-policy.json: bucket[{i}] has null maxDays but is not the last bucket");
+                else if (prevMax is not null && b.MaxDays <= prevMax)
+                    errors.Add($"session-gap-policy.json: maxDays values must be strictly ascending (bucket[{i}]={b.MaxDays} <= bucket[{i - 1}]={prevMax})");
+                prevMax = b.MaxDays;
+            }
+
+            foreach (var b in _sessionGapPolicy.Buckets)
+            {
+                if (string.IsNullOrWhiteSpace(b.Instruction))
+                    errors.Add("session-gap-policy.json: all bucket instruction strings must be non-empty");
             }
         }
 

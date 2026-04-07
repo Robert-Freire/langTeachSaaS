@@ -182,11 +182,18 @@ public class PromptService : IPromptService
     /// Sanitizes and truncates the student weakness list: max 2, max 120 chars each.
     /// Returns an empty array when no weaknesses are present.
     /// </summary>
-    private static string[] SanitizeWeaknesses(GenerationContext ctx) =>
+    private static StudentWeakness[] SanitizeWeaknesses(GenerationContext ctx) =>
         ctx.StudentWeaknesses
-            ?.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0)
+            ?.Select(w =>
+            {
+                var normalizedType = (w.WeaknessType ?? string.Empty).Trim().ToLowerInvariant();
+                if (normalizedType is not ("grammatical" or "lexical" or "orthographic"))
+                    normalizedType = "grammatical";
+                return w with { Description = InputSanitizer.Sanitize(w.Description), WeaknessType = normalizedType };
+            })
+            .Where(w => w.Description.Length > 0)
             .Take(2)
-            .Select(s => s.Length > 120 ? s[..120] : s)
+            .Select(w => w with { Description = w.Description.Length > 120 ? w.Description[..120] : w.Description })
             .ToArray() ?? [];
 
     /// <summary>
@@ -201,14 +208,18 @@ public class PromptService : IPromptService
         if (weaknesses.Length == 0)
             return string.Empty;
 
-        var guidance = _pedagogy.GetWeaknessTargetingGuidance(sectionType);
-        if (string.IsNullOrEmpty(guidance))
-            return string.Empty;
-
-        var weaknessText = string.Join("; ", weaknesses);
-        return "STUDENT WEAKNESS TARGETING:\n" +
-               $"Documented weaknesses: {weaknessText}\n" +
-               guidance.Replace("{weaknesses}", weaknessText, StringComparison.Ordinal);
+        var blocks = new List<string>();
+        foreach (var group in weaknesses.GroupBy(w => w.WeaknessType))
+        {
+            var guidance = _pedagogy.GetWeaknessTargetingGuidance(sectionType, group.Key);
+            if (string.IsNullOrEmpty(guidance))
+                continue;
+            var typeText = string.Join("; ", group.Select(w => w.Description));
+            blocks.Add("STUDENT WEAKNESS TARGETING:\n" +
+                       $"Documented weaknesses: {typeText}\n" +
+                       guidance.Replace("{weaknesses}", typeText, StringComparison.Ordinal));
+        }
+        return string.Join("\n\n", blocks);
     }
 
     private string BuildGrammarScopeBlock(string level)
@@ -401,7 +412,7 @@ public class PromptService : IPromptService
         {
             var interests  = ctx.StudentInterests?.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0).ToArray() ?? [];
             var goals      = ctx.StudentGoals?.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0).ToArray() ?? [];
-            var weaknesses = ctx.StudentWeaknesses?.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0).ToArray() ?? [];
+            var weaknesses = ctx.StudentWeaknesses?.Select(w => InputSanitizer.Sanitize(w.Description)).Where(s => s.Length > 0).ToArray() ?? [];
 
             sb.AppendLine();
             sb.AppendLine("Student profile:");
@@ -1139,23 +1150,31 @@ public class PromptService : IPromptService
         var weaknesses = SanitizeWeaknesses(ctx);
         if (weaknesses.Length > 0)
         {
-            var weaknessText = string.Join("; ", weaknesses);
-
-            // Student error profile — explicit enumeration with actionable design instruction
+            // Student error profile — grouped by type with actionable design instruction
             var profileSb = new StringBuilder("\n\nSTUDENT ERROR PROFILE — top documented error patterns for this student:\n");
-            for (var i = 0; i < weaknesses.Length; i++)
-                profileSb.AppendLine($"{i + 1}. {weaknesses[i]}");
-            profileSb.Append("Design at least one Practice exercise and one Production task that directly address these patterns.");
+            var n = 1;
+            foreach (var group in weaknesses.GroupBy(w => w.WeaknessType))
+            {
+                var typeLabel = char.ToUpper(group.Key[0]) + group.Key[1..] + " weaknesses:";
+                profileSb.AppendLine(typeLabel);
+                foreach (var w in group)
+                    profileSb.AppendLine($"{n++}. {w.Description}");
+            }
+            profileSb.Append(_pedagogy.GetLessonWeaknessProfileGuidance());
             baseInstruction += profileSb.ToString();
 
             var sb = new StringBuilder("\n\nDECLARED WEAKNESSES (max 1-2 targeted exercises per lesson):\n");
             foreach (var section in SectionOrder)
             {
-                var guidance = _pedagogy.GetWeaknessTargetingGuidance(section);
-                if (!string.IsNullOrEmpty(guidance))
+                var label = char.ToUpper(section[0]) + section[1..];
+                foreach (var group in weaknesses.GroupBy(w => w.WeaknessType))
                 {
-                    var label = char.ToUpper(section[0]) + section[1..];
-                    sb.AppendLine($"{label}: {guidance.Replace("{weaknesses}", weaknessText, StringComparison.Ordinal)}");
+                    var guidance = _pedagogy.GetWeaknessTargetingGuidance(section, group.Key);
+                    if (!string.IsNullOrEmpty(guidance))
+                    {
+                        var typeText = string.Join("; ", group.Select(w => w.Description));
+                        sb.AppendLine($"{label} ({group.Key}): {guidance.Replace("{weaknesses}", typeText, StringComparison.Ordinal)}");
+                    }
                 }
             }
             baseInstruction += sb.ToString().TrimEnd();
@@ -1172,13 +1191,10 @@ public class PromptService : IPromptService
         // Gap instruction — applies only to lesson planning, not individual content blocks
         if (ctx.SessionHistory is { } sessionHistoryForGap)
         {
-            var gapInstruction = sessionHistoryForGap.DaysSinceLastSession <= 2
-                ? "Build directly on previous session. Minimal recap needed."
-                : sessionHistoryForGap.DaysSinceLastSession <= 7
-                    ? "Include a brief warm-up reviewing key points from last session."
-                    : sessionHistoryForGap.DaysSinceLastSession <= 14
-                        ? "Include a dedicated review activity before introducing new content."
-                        : "Include a diagnostic mini-activity to assess retention. Do not assume previous content is retained.";
+            var gapBuckets = _pedagogy.GetSessionGapPolicy();
+            var gapInstruction = gapBuckets
+                .FirstOrDefault(b => b.MaxDays >= sessionHistoryForGap.DaysSinceLastSession)?.Instruction
+                ?? gapBuckets[^1].Instruction;
             baseInstruction += $"\n\nSESSION GAP INSTRUCTION: {gapInstruction}";
         }
 
@@ -1213,7 +1229,7 @@ public class PromptService : IPromptService
             if (ctx.StudentGoals?.Length > 0)
                 sb.AppendLine($"Goals: {string.Join(", ", ctx.StudentGoals.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0))}");
             if (ctx.StudentWeaknesses?.Length > 0)
-                sb.AppendLine($"Known weaknesses: {string.Join(", ", ctx.StudentWeaknesses.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0))}");
+                sb.AppendLine($"Known weaknesses: {string.Join(", ", ctx.StudentWeaknesses.Select(w => InputSanitizer.Sanitize(w.Description)).Where(s => s.Length > 0))}");
             if (ctx.StudentDifficulties?.Length > 0)
             {
                 var topDifficulties = ctx.StudentDifficulties
@@ -1388,7 +1404,7 @@ public class PromptService : IPromptService
 
         if (ctx.StudentWeaknesses?.Length > 0)
         {
-            sb.AppendLine($"Known weaknesses: {string.Join(", ", ctx.StudentWeaknesses.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0))}");
+            sb.AppendLine($"Known weaknesses: {string.Join(", ", ctx.StudentWeaknesses.Select(w => InputSanitizer.Sanitize(w.Description)).Where(s => s.Length > 0))}");
             sb.AppendLine("Spread emphasis on these weaknesses across multiple sessions in personalizationNotes.emphasisAreas, not just one.");
             sb.AppendLine();
         }
