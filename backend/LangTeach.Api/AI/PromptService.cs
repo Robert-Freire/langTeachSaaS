@@ -184,10 +184,12 @@ public class PromptService : IPromptService
     /// </summary>
     private static StudentWeakness[] SanitizeWeaknesses(GenerationContext ctx) =>
         ctx.StudentWeaknesses
-            ?.Select(w => w with
+            ?.Select(w =>
             {
-                Description = InputSanitizer.Sanitize(w.Description),
-                WeaknessType = w.WeaknessType is "grammatical" or "lexical" or "orthographic" ? w.WeaknessType : "grammatical"
+                var normalizedType = (w.WeaknessType ?? string.Empty).Trim().ToLowerInvariant();
+                if (normalizedType is not ("grammatical" or "lexical" or "orthographic"))
+                    normalizedType = "grammatical";
+                return w with { Description = InputSanitizer.Sanitize(w.Description), WeaknessType = normalizedType };
             })
             .Where(w => w.Description.Length > 0)
             .Take(2)
