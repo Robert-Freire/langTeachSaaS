@@ -312,6 +312,28 @@ public class LessonContentBlocksControllerTests
         reset.GeneratedContent.Should().Be("Original AI content.");
     }
 
+    // --- Exercises malformed JSON validation (#558) ---
+
+    [Fact]
+    public async Task Post_ExercisesWithMalformedJson_Returns400()
+    {
+        var auth0Id = "auth0|cb-exercises-malformed-json";
+        var email = "cb-exercises-malformed-json@example.com";
+        var (lessonId, _) = await SeedTeacherLessonAndSection(auth0Id, email);
+        var client = _factory.CreateAuthenticatedClient(auth0Id, email);
+
+        var request = new SaveContentBlockRequest
+        {
+            BlockType = ContentBlockType.Exercises,
+            GeneratedContent = "this is not json {{{",
+        };
+
+        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", request, TestJsonOptions.Default);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            because: "exercises with malformed JSON must be rejected at write time (#558)");
+    }
+
     // --- Exercises sourcePassage validation (#422 AC6) ---
 
     [Fact]

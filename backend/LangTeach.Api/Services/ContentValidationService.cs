@@ -27,7 +27,7 @@ public class ContentValidationService : IContentValidationService
         }
         catch (JsonException)
         {
-            return null;
+            return "Exercises content is not valid JSON";
         }
     }
 }
