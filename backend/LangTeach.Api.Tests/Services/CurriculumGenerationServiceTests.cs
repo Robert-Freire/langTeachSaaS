@@ -481,4 +481,94 @@ public class CurriculumGenerationServiceTests
         var notes0 = JsonSerializer.Deserialize<PersonalizationNotesData>(entries[0].PersonalizationNotes!, opts);
         notes0!.EmphasisAreas.Should().ContainMatch("*ser/estar*");
     }
+
+    // -------------------------------------------------------------------------
+    // StripFences: markdown-fenced responses are accepted
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task FreePath_FenceWrappedJson_IsDeserializedCorrectly()
+    {
+        var fencedJson = """
+            ```json
+            [
+                {"orderIndex":1,"topic":"Greetings","grammarFocus":"ser/estar","competencies":["speaking"],"lessonType":"Communicative"}
+            ]
+            ```
+            """;
+        var sut = BuildService(new FakeTemplateService(), new ConfigurableClaudeClient(fencedJson));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 1,
+            TargetCefrLevel: null, TargetExam: null, ExamDate: null,
+            StudentName: null, StudentNativeLanguage: null,
+            StudentInterests: null, StudentGoals: null);
+
+        var (entries, _) = await sut.GenerateAsync(ctx);
+
+        entries.Should().HaveCount(1);
+        entries[0].Topic.Should().Be("Greetings");
+    }
+
+    [Fact]
+    public async Task FreePath_NonJsonResponse_ThrowsCurriculumGenerationException()
+    {
+        var sut = BuildService(new FakeTemplateService(), new ConfigurableClaudeClient("Sorry, I cannot generate that."));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 1,
+            TargetCefrLevel: null, TargetExam: null, ExamDate: null,
+            StudentName: null, StudentNativeLanguage: null,
+            StudentInterests: null, StudentGoals: null);
+
+        await sut.Invoking(s => s.GenerateAsync(ctx))
+            .Should().ThrowAsync<CurriculumGenerationException>();
+    }
+
+    [Fact]
+    public async Task TemplatePath_PersonalizationFenceWrappedJson_IsAppliedCorrectly()
+    {
+        var fencedPersonalization = """
+            ```json
+            [{"orderIndex":1,"topic":"Marco meets his football team"},{"orderIndex":2,"topic":"Marco explains why he loves football"}]
+            ```
+            """;
+        var sut = BuildService(
+            new FakeTemplateService(FakeTemplates.TwoUnitTemplate()),
+            new ConfigurableClaudeClient(fencedPersonalization));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 2,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: "Marco", StudentNativeLanguage: "Italian",
+            StudentInterests: ["football"], StudentGoals: null,
+            TemplateLevel: "A1.1");
+
+        var (entries, _) = await sut.GenerateAsync(ctx);
+
+        entries[0].Topic.Should().Be("Marco meets his football team");
+        entries[1].Topic.Should().Be("Marco explains why he loves football");
+    }
+
+    [Fact]
+    public async Task TemplatePath_PersonalizationNonJsonResponse_KeepsOriginalTopics()
+    {
+        var sut = BuildService(
+            new FakeTemplateService(FakeTemplates.TwoUnitTemplate()),
+            new ConfigurableClaudeClient("Sorry, I cannot generate personalization."));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 2,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: "Marco", StudentNativeLanguage: "Italian",
+            StudentInterests: null, StudentGoals: null,
+            TemplateLevel: "A1.1");
+
+        // Should not throw; original template entries are preserved
+        var (entries, _) = await sut.GenerateAsync(ctx);
+
+        entries.Should().HaveCount(2);
+        entries[0].TemplateUnitRef.Should().Be("Nosotros");
+        entries[1].TemplateUnitRef.Should().Be("Quiero aprender español");
+    }
 }
