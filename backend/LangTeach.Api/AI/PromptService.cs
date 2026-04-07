@@ -184,7 +184,11 @@ public class PromptService : IPromptService
     /// </summary>
     private static StudentWeakness[] SanitizeWeaknesses(GenerationContext ctx) =>
         ctx.StudentWeaknesses
-            ?.Select(w => w with { Description = InputSanitizer.Sanitize(w.Description) })
+            ?.Select(w => w with
+            {
+                Description = InputSanitizer.Sanitize(w.Description),
+                WeaknessType = w.WeaknessType is "grammatical" or "lexical" or "orthographic" ? w.WeaknessType : "grammatical"
+            })
             .Where(w => w.Description.Length > 0)
             .Take(2)
             .Select(w => w with { Description = w.Description.Length > 120 ? w.Description[..120] : w.Description })
