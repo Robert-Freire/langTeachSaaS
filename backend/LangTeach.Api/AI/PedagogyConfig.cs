@@ -126,7 +126,8 @@ public record CourseRulesFile(
     CourseVarietyRules VarietyRules,
     Dictionary<string, Dictionary<string, SkillRange>> SkillDistribution,
     GrammarProgression GrammarProgression,
-    string[]? SectionCoherenceRules = null
+    string[]? SectionCoherenceRules = null,
+    string? LessonWeaknessProfileGuidance = null
 );
 
 public record CourseVarietyRules(

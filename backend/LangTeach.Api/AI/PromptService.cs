@@ -1145,7 +1145,7 @@ public class PromptService : IPromptService
             var profileSb = new StringBuilder("\n\nSTUDENT ERROR PROFILE — top documented error patterns for this student:\n");
             for (var i = 0; i < weaknesses.Length; i++)
                 profileSb.AppendLine($"{i + 1}. {weaknesses[i]}");
-            profileSb.Append("Design at least one Practice exercise and one Production task that directly address these patterns.");
+            profileSb.Append(_pedagogy.GetLessonWeaknessProfileGuidance());
             baseInstruction += profileSb.ToString();
 
             var sb = new StringBuilder("\n\nDECLARED WEAKNESSES (max 1-2 targeted exercises per lesson):\n");

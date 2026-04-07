@@ -817,4 +817,26 @@ public class PedagogyConfigServiceTests
         result.Should().Contain("{weaknesses}",
             because: "practice guidance must contain {weaknesses} placeholder for interpolation");
     }
+
+    // --- GetLessonWeaknessProfileGuidance ---
+
+    [Fact]
+    public void GetLessonWeaknessProfileGuidance_ReturnsNonEmpty()
+    {
+        var result = _sut.GetLessonWeaknessProfileGuidance();
+
+        result.Should().NotBeNullOrWhiteSpace(
+            because: "course-rules.json must define lessonWeaknessProfileGuidance");
+    }
+
+    [Fact]
+    public void GetLessonWeaknessProfileGuidance_MentionsPracticeAndProduction()
+    {
+        var result = _sut.GetLessonWeaknessProfileGuidance().ToLowerInvariant();
+
+        result.Should().Contain("practice",
+            because: "the guidance must direct the model to address weaknesses in Practice");
+        result.Should().Contain("production",
+            because: "the guidance must direct the model to address weaknesses in Production");
+    }
 }
