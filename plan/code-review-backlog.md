@@ -40,3 +40,11 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | #484 | low | `LessonHistoryEntryDto.FollowingSessionHomeworkStatus` returns `NotApplicable` (non-null) when following session exists but status is N/A; frontend filters display-side. Reviewer suggests backend filter. | Deferred: returning the actual recorded value is accurate data; display logic is the right filter boundary. |
 | #484 | low | `LessonHistoryCard` badge falls through silently for unknown enum string values (no defensive default style). Badge guard `HOMEWORK_STATUS_STYLES[name] &&` already prevents rendering. | Deferred: current guard is sufficient; new enum values would require frontend update anyway. |
 | #484 | low | `LessonHistoryEntryDto` references `HomeworkStatus` data-model enum directly. Existing `SessionLogDtos.cs` follows same pattern. | Deferred: consistent with existing project convention. |
+
+## PR #432 (block-level weakness injection) - 2026-04-07
+
+| PR | Severity | Finding | Decision |
+|----|----------|---------|----------|
+| #432 | low | LessonPlanUserPrompt: weakness now emits 3 overlapping directives (system prompt brief mention, STUDENT ERROR PROFILE block, DECLARED WEAKNESSES per-section loop). The MANDATORY language from practice.json appears in the lesson plan too. May dilute intent. | Deferred: lesson plan and exercises are separate generation contexts; the three directives reinforce at different levels and don't conflict. |
+| #432 | low | No test asserting non-duplication of weakness block in lesson plan (the "STUDENT WEAKNESS TARGETING" text should not appear in lesson plan user prompt since lesson plan uses the DECLARED WEAKNESSES pattern). | Deferred: tested behavior is that STUDENT WEAKNESS TARGETING appears in exercises/block prompts; lesson plan's STUDENT ERROR PROFILE is a different label. |
+| #432 | info | Four near-identical 3-line injection snippets (exercises, guided writing, error correction, conversation). Could use an `AppendIfNotEmpty` one-liner. | Deferred: 4 occurrences doesn't meet the threshold for abstraction. |
