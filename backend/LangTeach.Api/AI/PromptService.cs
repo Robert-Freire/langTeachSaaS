@@ -174,6 +174,30 @@ public class PromptService : IPromptService
 
     // --- Pedagogy block builders ---
 
+    /// <summary>
+    /// Returns a weakness targeting block for a specific section type, or empty string when
+    /// the student has no documented weaknesses or the section has no targeting guidance.
+    /// </summary>
+    private string BuildWeaknessTargetingForSection(GenerationContext ctx, string sectionType)
+    {
+        var weaknesses = ctx.StudentWeaknesses
+            ?.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0)
+            .Take(2)
+            .Select(s => s.Length > 120 ? s[..120] : s)
+            .ToArray() ?? [];
+        if (weaknesses.Length == 0)
+            return string.Empty;
+
+        var guidance = _pedagogy.GetWeaknessTargetingGuidance(sectionType);
+        if (string.IsNullOrEmpty(guidance))
+            return string.Empty;
+
+        var weaknessText = string.Join("; ", weaknesses);
+        return "\n\nSTUDENT WEAKNESS TARGETING:\n" +
+               $"Documented weaknesses: {weaknessText}\n" +
+               guidance.Replace("{weaknesses}", weaknessText, StringComparison.Ordinal);
+    }
+
     private string BuildGrammarScopeBlock(string level)
     {
         var scope = _pedagogy.GetGrammarScope(level);
@@ -629,6 +653,11 @@ public class PromptService : IPromptService
         Include at least 3 items for each format you use. For each exercise, include a concise explanation (2-3 sentences) of why the correct answer is correct, considering the student's level and common L1 interference patterns.
         """;
 
+        // Weakness targeting injected early so it is prominent and not buried after format constraints
+        var weaknessBlock = BuildWeaknessTargetingForSection(ctx, "practice");
+        if (!string.IsNullOrEmpty(weaknessBlock))
+            prompt += weaknessBlock;
+
         var exerciseGuidance = BuildExerciseGuidanceBlock("practice", level);
         if (!string.IsNullOrEmpty(exerciseGuidance))
             prompt += "\n" + exerciseGuidance;
@@ -699,6 +728,10 @@ public class PromptService : IPromptService
         var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
         if (!string.IsNullOrEmpty(templateGuidance))
             generalPrompt += "\n\n" + templateGuidance;
+
+        var convWeaknessBlock = BuildWeaknessTargetingForSection(ctx, ctx.SectionType ?? "production");
+        if (!string.IsNullOrEmpty(convWeaknessBlock))
+            generalPrompt += convWeaknessBlock;
 
         return generalPrompt;
     }
@@ -845,6 +878,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(templateGuidance))
             prompt += "\n\n" + templateGuidance;
 
+        var gwWeaknessBlock = BuildWeaknessTargetingForSection(ctx, ctx.SectionType ?? "production");
+        if (!string.IsNullOrEmpty(gwWeaknessBlock))
+            prompt += gwWeaknessBlock;
+
         return prompt;
     }
 
@@ -889,6 +926,10 @@ public class PromptService : IPromptService
         var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
         if (!string.IsNullOrEmpty(templateGuidance))
             prompt += "\n\n" + templateGuidance;
+
+        var ecWeaknessBlock = BuildWeaknessTargetingForSection(ctx, "practice");
+        if (!string.IsNullOrEmpty(ecWeaknessBlock))
+            prompt += ecWeaknessBlock;
 
         return prompt;
     }
@@ -1091,6 +1132,14 @@ public class PromptService : IPromptService
         if (weaknesses.Length > 0)
         {
             var weaknessText = string.Join("; ", weaknesses);
+
+            // Student error profile — explicit enumeration with actionable design instruction
+            var profileSb = new StringBuilder("\n\nSTUDENT ERROR PROFILE — top documented error patterns for this student:\n");
+            for (var i = 0; i < weaknesses.Length; i++)
+                profileSb.AppendLine($"{i + 1}. {weaknesses[i]}");
+            profileSb.Append("Design at least one Practice exercise and one Production task that directly address these patterns.");
+            baseInstruction += profileSb.ToString();
+
             var sb = new StringBuilder("\n\nDECLARED WEAKNESSES (max 1-2 targeted exercises per lesson):\n");
             foreach (var section in SectionOrder)
             {

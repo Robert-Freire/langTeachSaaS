@@ -3003,5 +3003,67 @@ public class PromptServiceTests
         req.UserPrompt.Should().NotContain("do not rely on just one type",
             because: "redundant negative removed from B1 practice guidance — minExerciseVariety already enforces variety (#422)");
     }
+
+    // --- Block-level weakness targeting (#432) ---
+
+    [Fact]
+    public void LessonPlanPrompt_WithWeaknesses_IncludesStudentErrorProfile()
+    {
+        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = ["article gender agreement", "written accent marks"] };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("STUDENT ERROR PROFILE",
+            because: "lesson plan must include a structured error profile block listing the student's top weaknesses (#432)");
+        req.UserPrompt.Should().Contain("article gender agreement");
+        req.UserPrompt.Should().Contain("written accent marks");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_WithWeaknesses_IncludesWeaknessTargeting()
+    {
+        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = ["article gender agreement", "written accent marks"] };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("STUDENT WEAKNESS TARGETING",
+            because: "exercises prompt must inject block-level weakness guidance so individual exercises target documented weaknesses (#432)");
+        req.UserPrompt.Should().Contain("article gender agreement");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_WithoutWeaknesses_DoesNotIncludeWeaknessTargeting()
+    {
+        var ctx = BaseCtx("Maria") with { StudentWeaknesses = null };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("STUDENT WEAKNESS TARGETING",
+            because: "weakness targeting block must be absent when no weaknesses are documented");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_WithWeaknesses_IncludesWeaknessTargeting()
+    {
+        var ctx = BaseCtx("Ricardo") with { StudentWeaknesses = ["false cognate vigilance"] };
+
+        var req = _sut.BuildErrorCorrectionPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("STUDENT WEAKNESS TARGETING",
+            because: "error-correction prompt must inject block-level weakness guidance (#432)");
+        req.UserPrompt.Should().Contain("false cognate vigilance");
+    }
+
+    [Fact]
+    public void GuidedWritingPrompt_WithWeaknesses_IncludesWeaknessTargeting()
+    {
+        var ctx = BaseCtx("Ricardo") with { StudentWeaknesses = ["false cognate vigilance"] };
+
+        var req = _sut.BuildGuidedWritingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("STUDENT WEAKNESS TARGETING",
+            because: "guided-writing prompt must inject block-level weakness guidance (#432)");
+        req.UserPrompt.Should().Contain("false cognate vigilance");
+    }
 }
 
