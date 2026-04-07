@@ -1,5 +1,10 @@
 import { apiClient } from '../lib/apiClient'
 
+export interface StudentWeaknessItem {
+  description: string
+  weaknessType: 'grammatical' | 'lexical' | 'orthographic'
+}
+
 export interface Difficulty {
   id: string
   description: string
@@ -19,7 +24,7 @@ export interface Student {
   notes: string | null
   nativeLanguage: string | null
   learningGoals: string[]
-  weaknesses: string[]
+  weaknesses: StudentWeaknessItem[]
   difficulties: Difficulty[]
   createdAt: string
   updatedAt: string
@@ -40,7 +45,7 @@ export interface StudentFormData {
   notes?: string | null
   nativeLanguage?: string | null
   learningGoals: string[]
-  weaknesses: string[]
+  weaknesses: StudentWeaknessItem[]
   difficulties: Difficulty[]
 }
 

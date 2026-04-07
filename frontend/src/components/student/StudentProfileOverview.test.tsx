@@ -124,9 +124,10 @@ describe('StudentProfileOverview', () => {
     expect(screen.getByText('Music')).toBeInTheDocument()
   })
 
-  it('renders weaknesses as chips', () => {
-    renderOverview({ weaknesses: ['Ser/Estar'] })
+  it('renders weaknesses as chips with type', () => {
+    renderOverview({ weaknesses: [{ description: 'Ser/Estar', weaknessType: 'grammatical' }] })
     expect(screen.getByText('Ser/Estar')).toBeInTheDocument()
+    expect(screen.getByText('(grammatical)')).toBeInTheDocument()
   })
 
   it('renders notes stripping Excel import prefix', () => {

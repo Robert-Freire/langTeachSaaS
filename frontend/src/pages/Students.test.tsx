@@ -186,7 +186,7 @@ describe('Students error states', () => {
         notes: null,
         nativeLanguage: null,
         learningGoals: [] as string[],
-        weaknesses: [] as string[],
+        weaknesses: [] as studentsApi.StudentWeaknessItem[],
         difficulties: [] as studentsApi.Difficulty[],
         createdAt: '',
         updatedAt: '',

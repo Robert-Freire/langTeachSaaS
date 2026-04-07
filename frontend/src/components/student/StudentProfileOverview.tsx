@@ -71,7 +71,20 @@ export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Pr
           </FieldRow>
 
           <FieldRow label="Areas to improve">
-            <ChipList items={student.weaknesses} emptyText="None specified" />
+            {student.weaknesses.length === 0
+              ? <span className="text-zinc-400 text-sm">None specified</span>
+              : <div className="flex flex-wrap gap-1.5">
+                  {student.weaknesses.map((w, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded px-2 py-0.5"
+                    >
+                      {w.description}
+                      <span className="text-indigo-400">({w.weaknessType})</span>
+                    </span>
+                  ))}
+                </div>
+            }
           </FieldRow>
 
           {student.difficulties.length > 0 && (
