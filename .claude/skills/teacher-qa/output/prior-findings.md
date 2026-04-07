@@ -141,8 +141,8 @@ These are structural issues for the **Pedagogical Quality** sprint to address:
 
 | ID | Finding | Reason |
 |----|---------|--------|
-| LIM-432-1 | Ricardo C1: false cognate weakness not surfaced in subjunctive grammar lesson | Lexical weakness (false cognate vigilance) has no natural context in a pure grammar lesson on concessive/conditional clauses. Coherence gate correctly suppresses injection. Weakness taxonomy (#586) will formalize this rule. |
-| LIM-432-2 | Nadia B2: written accent marks weakness not directly addressed | B2 debate conversation lesson on subjunctive does not naturally produce an orthographic accent-mark drill. Coherence gate applies. |
+| LIM-432-1 | Ricardo C1: false cognate weakness not surfaced in subjunctive grammar lesson | Lexical weakness (false cognate vigilance) has no natural context in a pure grammar lesson on concessive/conditional clauses. Coherence gate correctly suppresses injection. Weakness taxonomy typed injection (#586) PR #594, deployed 2026-04-07. |
+| LIM-432-2 | Nadia B2: written accent marks weakness not directly addressed | B2 debate conversation lesson on subjunctive does not naturally produce an orthographic accent-mark drill. Coherence gate applies. Weakness taxonomy typed injection (#586) PR #594, deployed 2026-04-07. |
 
 ### Positive findings (protect these)
 
