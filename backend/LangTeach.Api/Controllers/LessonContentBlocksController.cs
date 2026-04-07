@@ -177,6 +177,9 @@ public class LessonContentBlocksController : ControllerBase
         var (_, block) = await ResolveBlock(lessonId, blockId, ct);
         if (block is null) return NotFound("Content block not found.");
 
+        // sourcePassage validation (added in #422) is intentionally skipped here.
+        // Teachers are authenticated owners of their content and are not subject to
+        // AI-output integrity rules. Their edits are accepted and persisted as-is.
         block.EditedContent = request.EditedContent;
         block.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);

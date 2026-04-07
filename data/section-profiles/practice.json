@@ -1,6 +1,6 @@
 {
   "sectionType": "practice",
-  "weaknessTargetingGuidance": "include at least 1 exercise targeting: {weaknesses}. If no weakness data is available for this student, omit this instruction entirely.",
+  "weaknessTargetingGuidance": "MANDATORY when the weakness is compatible with the lesson's communicative goal — include at least 1 exercise, using a format appropriate to the lesson's CEFR level, that directly targets this student's documented weakness: {weaknesses}. If the weakness is lexical or orthographic and the lesson topic provides no natural context for it, omit this exercise rather than inserting an incoherent drill. Keep it brief (3-4 items). This exercise is in addition to the main lesson exercises, not a replacement.",
   "levels": {
     "A1": {
       "contentTypes": [
