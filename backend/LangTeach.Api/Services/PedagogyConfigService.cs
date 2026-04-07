@@ -607,9 +607,9 @@ public class PedagogyConfigService : IPedagogyConfigService
         }
 
         // Validate session gap policy
-        if (_sessionGapPolicy.Buckets.Length == 0)
+        if (_sessionGapPolicy.Buckets.Length < 2)
         {
-            errors.Add("session-gap-policy.json: buckets array must not be empty");
+            errors.Add("session-gap-policy.json: buckets array must contain at least two entries (one bounded + one fallback)");
         }
         else
         {
