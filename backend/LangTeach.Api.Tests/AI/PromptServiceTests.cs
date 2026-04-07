@@ -2608,6 +2608,25 @@ public class PromptServiceTests
         lessonPlan.UserPrompt.Should().Contain("Build directly on previous session.");
     }
 
+    [Theory]
+    [InlineData(2, "Build directly on previous session.")]
+    [InlineData(3, "brief warm-up")]
+    [InlineData(7, "brief warm-up")]
+    [InlineData(8, "dedicated review activity")]
+    [InlineData(14, "dedicated review activity")]
+    [InlineData(15, "diagnostic mini-activity")]
+    public void SessionGapPolicy_BucketBoundaries_AllFourBandsResolved(int daysSince, string expectedFragment)
+    {
+        // Issue #560: gap instruction is now driven by session-gap-policy.json config.
+        // Verifies that the real loaded policy maps all boundary values to the correct band.
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: daysSince) };
+
+        var lessonPlan = _sut.BuildLessonPlanPrompt(ctx);
+
+        lessonPlan.UserPrompt.Should().Contain(expectedFragment,
+            because: $"{daysSince} days since last session should match the correct bucket");
+    }
+
     [Fact]
     public void SessionHistory_OpenActionItems_IncludedInPrompt()
     {
