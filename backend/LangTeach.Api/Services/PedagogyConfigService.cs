@@ -329,8 +329,8 @@ public class PedagogyConfigService : IPedagogyConfigService
 
     public IReadOnlyList<SessionGapBucket> GetSessionGapPolicy() => _sessionGapPolicy.Buckets;
 
-    public string? GetWeaknessTargetingGuidance(string sectionType) =>
-        _sectionProfileService.GetWeaknessTargetingGuidance(sectionType);
+    public string? GetWeaknessTargetingGuidance(string sectionType, string weaknessType) =>
+        _sectionProfileService.GetWeaknessTargetingGuidance(sectionType, weaknessType);
 
     public string GetLessonWeaknessProfileGuidance() =>
         _courseRules.LessonWeaknessProfileGuidance

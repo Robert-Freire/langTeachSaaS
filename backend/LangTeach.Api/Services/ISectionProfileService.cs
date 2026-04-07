@@ -73,7 +73,7 @@ public interface ISectionProfileService
     /// has no weakness targeting guidance. The template may contain {weaknesses} as a placeholder
     /// for the student weakness list.
     /// </summary>
-    string? GetWeaknessTargetingGuidance(string sectionType);
+    string? GetWeaknessTargetingGuidance(string sectionType, string weaknessType);
 
     /// <summary>
     /// Returns the closing constraint for a section at the given CEFR level, or null if none is set.

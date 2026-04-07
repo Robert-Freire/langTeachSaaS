@@ -345,7 +345,7 @@ public class CourseService : ICourseService
             TemplateLevel: string.IsNullOrWhiteSpace(req.TemplateLevel) ? null : req.TemplateLevel,
             TemplateUnits: null,
             StudentWeaknesses: student is not null
-                ? JsonStorageHelper.DeserializeList<string>(student.Weaknesses).ToArray()
+                ? JsonStorageHelper.DeserializeList<string>(student.Weaknesses).Select(s => new StudentWeakness(s)).ToArray()
                 : null,
             StudentDifficulties: student is not null
                 ? JsonStorageHelper.DeserializeList<DifficultyDto>(student.Difficulties)

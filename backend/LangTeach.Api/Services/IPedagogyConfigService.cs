@@ -147,7 +147,7 @@ public interface IPedagogyConfigService
     /// The template may contain {weaknesses} as a placeholder for the student weakness list.
     /// Sections practice, production, and wrapUp have guidance; warmUp and presentation do not.
     /// </summary>
-    string? GetWeaknessTargetingGuidance(string sectionType);
+    string? GetWeaknessTargetingGuidance(string sectionType, string weaknessType);
 
     /// <summary>
     /// Returns the lesson-plan design instruction appended to the STUDENT ERROR PROFILE block
