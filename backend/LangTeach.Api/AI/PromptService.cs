@@ -1172,13 +1172,10 @@ public class PromptService : IPromptService
         // Gap instruction — applies only to lesson planning, not individual content blocks
         if (ctx.SessionHistory is { } sessionHistoryForGap)
         {
-            var gapInstruction = sessionHistoryForGap.DaysSinceLastSession <= 2
-                ? "Build directly on previous session. Minimal recap needed."
-                : sessionHistoryForGap.DaysSinceLastSession <= 7
-                    ? "Include a brief warm-up reviewing key points from last session."
-                    : sessionHistoryForGap.DaysSinceLastSession <= 14
-                        ? "Include a dedicated review activity before introducing new content."
-                        : "Include a diagnostic mini-activity to assess retention. Do not assume previous content is retained.";
+            var gapBuckets = _pedagogy.GetSessionGapPolicy();
+            var gapInstruction = gapBuckets
+                .FirstOrDefault(b => b.MaxDays >= sessionHistoryForGap.DaysSinceLastSession)?.Instruction
+                ?? gapBuckets[^1].Instruction;
             baseInstruction += $"\n\nSESSION GAP INSTRUCTION: {gapInstruction}";
         }
 

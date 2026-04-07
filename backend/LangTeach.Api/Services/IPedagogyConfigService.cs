@@ -137,6 +137,12 @@ public interface IPedagogyConfigService
     string[] GetSectionCoherenceRules();
 
     /// <summary>
+    /// Returns session gap policy buckets in order. Iterate from first to last;
+    /// use the first bucket whose MaxDays >= daysSince, or the last bucket as fallback (MaxDays == null).
+    /// </summary>
+    IReadOnlyList<SessionGapBucket> GetSessionGapPolicy();
+
+    /// <summary>
     /// Returns the weakness targeting guidance template for the given section, or null if none defined.
     /// The template may contain {weaknesses} as a placeholder for the student weakness list.
     /// Sections practice, production, and wrapUp have guidance; warmUp and presentation do not.

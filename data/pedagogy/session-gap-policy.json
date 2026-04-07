@@ -1,0 +1,8 @@
+{
+  "buckets": [
+    { "maxDays": 2, "instruction": "Build directly on previous session. Minimal recap needed." },
+    { "maxDays": 7, "instruction": "Include a brief warm-up reviewing key points from last session." },
+    { "maxDays": 14, "instruction": "Include a dedicated review activity before introducing new content." },
+    { "instruction": "Include a diagnostic mini-activity to assess retention. Do not assume previous content is retained." }
+  ]
+}
