@@ -150,6 +150,12 @@ public interface IPedagogyConfigService
     string? GetWeaknessTargetingGuidance(string sectionType);
 
     /// <summary>
+    /// Returns the lesson-plan design instruction appended to the STUDENT ERROR PROFILE block
+    /// when the student has documented weaknesses. Backed by course-rules.json.
+    /// </summary>
+    string GetLessonWeaknessProfileGuidance();
+
+    /// <summary>
     /// Returns a contrastive note result for the given native language, grammar topic, and CEFR level.
     /// Looks up contrastive patterns for the native language (specific-language patterns take priority
     /// over family-level patterns). Matches the first pattern whose Pattern value is a case-insensitive

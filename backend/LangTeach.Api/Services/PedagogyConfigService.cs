@@ -332,6 +332,10 @@ public class PedagogyConfigService : IPedagogyConfigService
     public string? GetWeaknessTargetingGuidance(string sectionType) =>
         _sectionProfileService.GetWeaknessTargetingGuidance(sectionType);
 
+    public string GetLessonWeaknessProfileGuidance() =>
+        _courseRules.LessonWeaknessProfileGuidance
+        ?? "Design at least one Practice exercise and one Production task that directly address these patterns.";
+
     public StyleSubstitution[] GetStyleSubstitutions(string[] rejectedTypes)
     {
         var rejectedSet = rejectedTypes.ToHashSet(StringComparer.OrdinalIgnoreCase);
