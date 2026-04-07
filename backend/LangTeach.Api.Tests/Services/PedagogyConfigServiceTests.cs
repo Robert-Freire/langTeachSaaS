@@ -838,4 +838,26 @@ public class PedagogyConfigServiceTests
         unknown.Should().Be(grammatical,
             because: "an unrecognised weakness type should fall back to the grammatical guidance");
     }
+
+    // --- GetLessonWeaknessProfileGuidance ---
+
+    [Fact]
+    public void GetLessonWeaknessProfileGuidance_ReturnsNonEmpty()
+    {
+        var result = _sut.GetLessonWeaknessProfileGuidance();
+
+        result.Should().NotBeNullOrWhiteSpace(
+            because: "course-rules.json must define lessonWeaknessProfileGuidance");
+    }
+
+    [Fact]
+    public void GetLessonWeaknessProfileGuidance_MentionsPracticeAndProduction()
+    {
+        var result = _sut.GetLessonWeaknessProfileGuidance().ToLowerInvariant();
+
+        result.Should().Contain("practice",
+            because: "the guidance must direct the model to address weaknesses in Practice");
+        result.Should().Contain("production",
+            because: "the guidance must direct the model to address weaknesses in Production");
+    }
 }

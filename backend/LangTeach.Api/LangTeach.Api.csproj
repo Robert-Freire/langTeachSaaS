@@ -32,6 +32,8 @@
                       Link="Pedagogy\scope-constraints.json" />
     <EmbeddedResource Include="..\..\data\pedagogy\practice-stages.json"
                       Link="Pedagogy\practice-stages.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\session-gap-policy.json"
+                      Link="Pedagogy\session-gap-policy.json" />
     <EmbeddedResource Include="..\..\data\content-schemas\*.json"
                       Link="ContentSchemas\%(Filename)%(Extension)" />
     <EmbeddedResource Include="..\..\data\pedagogy\grammar-validation-rules.json"

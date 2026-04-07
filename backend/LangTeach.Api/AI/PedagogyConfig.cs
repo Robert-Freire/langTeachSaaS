@@ -126,7 +126,8 @@ public record CourseRulesFile(
     CourseVarietyRules VarietyRules,
     Dictionary<string, Dictionary<string, SkillRange>> SkillDistribution,
     GrammarProgression GrammarProgression,
-    string[]? SectionCoherenceRules = null
+    string[]? SectionCoherenceRules = null,
+    string? LessonWeaknessProfileGuidance = null
 );
 
 public record CourseVarietyRules(
@@ -179,6 +180,15 @@ public record CefrStageRequirement(
     Dictionary<string, int[]> ItemsPerStage,
     string[]? OptionalStages = null
 );
+
+// Session gap policy (session-gap-policy.json)
+public record SessionGapPolicyFile(SessionGapBucket[] Buckets);
+
+/// <param name="MaxDays">
+/// Inclusive upper bound in days since the last session.
+/// Null means this is the fallback bucket (must be the last entry, at most one).
+/// </param>
+public record SessionGapBucket(int? MaxDays, string Instruction);
 
 /// <summary>
 /// Canonical PPP section keys in lesson order.
