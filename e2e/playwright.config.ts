@@ -71,7 +71,6 @@ export default defineConfig({
         '**/teacher-profile.spec.ts',
         '**/provider-switch.spec.ts',
         '**/registration.spec.ts',
-        '**/material-upload.spec.ts',
         '**/dashboard.spec.ts',
         '**/lessons.spec.ts',
         '**/students.spec.ts',

@@ -9,6 +9,12 @@ services:
       - "10000:10000"
     volumes:
       - azurite-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:10000/devstoreaccount1 2>/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -51,7 +57,7 @@ services:
       sqlserver:
         condition: service_healthy
       azurite:
-        condition: service_started
+        condition: service_healthy
 
   frontend:
     build:
