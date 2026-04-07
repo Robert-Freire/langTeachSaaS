@@ -83,7 +83,7 @@ public class PromptService : IPromptService
     {
         var system  = BuildSystemPrompt(ctx);
         var user    = GuidedWritingUserPrompt(ctx);
-        var section = ctx.SectionType ?? "production";
+        var section = ctx.SectionType ?? DefaultSectionType;
         return BuildRequest("guided-writing", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 2048);
     }
 
@@ -174,17 +174,30 @@ public class PromptService : IPromptService
 
     // --- Pedagogy block builders ---
 
+    /// Default section-type profile used for block prompts whose SectionType may be null
+    /// (e.g. GuidedWriting and Conversation when called without an explicit section context).
+    private const string DefaultSectionType = "production";
+
     /// <summary>
-    /// Returns a weakness targeting block for a specific section type, or empty string when
-    /// the student has no documented weaknesses or the section has no targeting guidance.
+    /// Sanitizes and truncates the student weakness list: max 2, max 120 chars each.
+    /// Returns an empty array when no weaknesses are present.
     /// </summary>
-    private string BuildWeaknessTargetingForSection(GenerationContext ctx, string sectionType)
-    {
-        var weaknesses = ctx.StudentWeaknesses
+    private static string[] SanitizeWeaknesses(GenerationContext ctx) =>
+        ctx.StudentWeaknesses
             ?.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0)
             .Take(2)
             .Select(s => s.Length > 120 ? s[..120] : s)
             .ToArray() ?? [];
+
+    /// <summary>
+    /// Returns a weakness targeting block for a specific section type, or empty string when
+    /// the student has no documented weaknesses or the section has no targeting guidance.
+    /// Callers are responsible for prepending a "\n\n" separator (follows the same convention
+    /// as BuildGrammarScopeBlock, BuildL1Block, etc.).
+    /// </summary>
+    private string BuildWeaknessTargetingForSection(GenerationContext ctx, string sectionType)
+    {
+        var weaknesses = SanitizeWeaknesses(ctx);
         if (weaknesses.Length == 0)
             return string.Empty;
 
@@ -193,7 +206,7 @@ public class PromptService : IPromptService
             return string.Empty;
 
         var weaknessText = string.Join("; ", weaknesses);
-        return "\n\nSTUDENT WEAKNESS TARGETING:\n" +
+        return "STUDENT WEAKNESS TARGETING:\n" +
                $"Documented weaknesses: {weaknessText}\n" +
                guidance.Replace("{weaknesses}", weaknessText, StringComparison.Ordinal);
     }
@@ -656,7 +669,7 @@ public class PromptService : IPromptService
         // Weakness targeting injected early so it is prominent and not buried after format constraints
         var weaknessBlock = BuildWeaknessTargetingForSection(ctx, "practice");
         if (!string.IsNullOrEmpty(weaknessBlock))
-            prompt += weaknessBlock;
+            prompt += "\n\n" + weaknessBlock;
 
         var exerciseGuidance = BuildExerciseGuidanceBlock("practice", level);
         if (!string.IsNullOrEmpty(exerciseGuidance))
@@ -729,9 +742,9 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(templateGuidance))
             generalPrompt += "\n\n" + templateGuidance;
 
-        var convWeaknessBlock = BuildWeaknessTargetingForSection(ctx, ctx.SectionType ?? "production");
+        var convWeaknessBlock = BuildWeaknessTargetingForSection(ctx, ctx.SectionType ?? DefaultSectionType);
         if (!string.IsNullOrEmpty(convWeaknessBlock))
-            generalPrompt += convWeaknessBlock;
+            generalPrompt += "\n\n" + convWeaknessBlock;
 
         return generalPrompt;
     }
@@ -878,9 +891,9 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(templateGuidance))
             prompt += "\n\n" + templateGuidance;
 
-        var gwWeaknessBlock = BuildWeaknessTargetingForSection(ctx, ctx.SectionType ?? "production");
+        var gwWeaknessBlock = BuildWeaknessTargetingForSection(ctx, ctx.SectionType ?? DefaultSectionType);
         if (!string.IsNullOrEmpty(gwWeaknessBlock))
-            prompt += gwWeaknessBlock;
+            prompt += "\n\n" + gwWeaknessBlock;
 
         return prompt;
     }
@@ -929,7 +942,7 @@ public class PromptService : IPromptService
 
         var ecWeaknessBlock = BuildWeaknessTargetingForSection(ctx, "practice");
         if (!string.IsNullOrEmpty(ecWeaknessBlock))
-            prompt += ecWeaknessBlock;
+            prompt += "\n\n" + ecWeaknessBlock;
 
         return prompt;
     }
@@ -1123,12 +1136,7 @@ public class PromptService : IPromptService
         }
 
         // Declared weakness targeting (StudentWeaknesses, not StudentDifficulties)
-        // Truncate each entry to 120 chars to prevent over-long prompt injection
-        var weaknesses = ctx.StudentWeaknesses
-            ?.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0)
-            .Take(2)
-            .Select(s => s.Length > 120 ? s[..120] : s)
-            .ToArray() ?? [];
+        var weaknesses = SanitizeWeaknesses(ctx);
         if (weaknesses.Length > 0)
         {
             var weaknessText = string.Join("; ", weaknesses);
