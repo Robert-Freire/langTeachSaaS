@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, Loader2 } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,12 +20,28 @@ import {
   listSessions,
   createSession,
   updateSession,
+  extractSessionReflection,
   parseTopicTags,
   serializeTopicTags,
   type TopicTag,
   type SessionLog,
+  type SuggestedDifficulty,
 } from '../../api/sessionLogs'
 import { getLessons } from '../../api/lessons'
+import { getStudent } from '../../api/students'
+import { AudioRecorder } from '../audio/AudioRecorder'
+import type { VoiceNote } from '../../api/voiceNotes'
+
+function isSuggestedDifficulty(value: unknown): value is SuggestedDifficulty {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    typeof (value as SuggestedDifficulty).description === 'string' &&
+    typeof (value as SuggestedDifficulty).competency === 'string' &&
+    typeof (value as SuggestedDifficulty).subcategory === 'string' &&
+    typeof (value as SuggestedDifficulty).severity === 'string'
+  )
+}
 
 const HOMEWORK_STATUSES = [
   { value: 'Done', label: 'Done' },
@@ -31,6 +51,11 @@ const HOMEWORK_STATUSES = [
 ]
 
 const SKILLS = ['Speaking', 'Writing', 'Reading', 'Listening']
+
+function buildPlannedContent(title: string | null | undefined, objectives: string | null | undefined): string {
+  const prefix = title ? `${title}: ` : ''
+  return `${prefix}${objectives ?? ''}`
+}
 
 const CEFR_SUBLEVELS = new Set([
   'A1.1','A1.2','A2.1','A2.2',
@@ -47,6 +72,7 @@ export interface SessionLogDialogProps {
   lessonTitle?: string | null
   lessonObjectives?: string | null
   initialSession?: SessionLog | null
+  initialPlannedContent?: string | null
 }
 
 export function SessionLogDialog({
@@ -57,6 +83,7 @@ export function SessionLogDialog({
   lessonTitle,
   lessonObjectives,
   initialSession,
+  initialPlannedContent,
 }: SessionLogDialogProps) {
   const isEditMode = initialSession != null
   const queryClient = useQueryClient()
@@ -75,28 +102,69 @@ export function SessionLogDialog({
   const [reassessmentLevel, setReassessmentLevel] = useState('')
   const [selectedLessonId, setSelectedLessonId] = useState(linkedLessonId ?? '')
   const [isCancelled, setIsCancelled] = useState(false)
+  const [mentionedDifficultyKeys, setMentionedDifficultyKeys] = useState<Set<string>>(new Set())
+  const [suggestedDifficulties, setSuggestedDifficulties] = useState<SuggestedDifficulty[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [success, setSuccess] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const editSnapshotRef = useRef<Record<string, string | boolean>>({})
+
+  // Voice extraction state
+  const [isExtracting, setIsExtracting] = useState(false)
+  const [draftSessionId, setDraftSessionId] = useState<string | null>(null)
+  const [extractionFailed, setExtractionFailed] = useState(false)
+  const voiceRunRef = useRef(0)
 
   // Pre-populate fields when editing an existing session
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open && initialSession) {
-      setSessionDate(initialSession.sessionDate ? initialSession.sessionDate.split('T')[0] : '')
-      setPlannedContent(initialSession.plannedContent ?? '')
-      setActualContent(initialSession.actualContent ?? '')
-      setHomeworkAssigned(initialSession.homeworkAssigned ?? '')
-      setPrevHomeworkStatus(initialSession.previousHomeworkStatusName ?? 'NotApplicable')
-      setNextSessionTopics(initialSession.nextSessionTopics ?? '')
-      setGeneralNotes(initialSession.generalNotes ?? '')
-      setTopicTags(parseTopicTags(initialSession.topicTags))
-      setReassessmentEnabled(!!initialSession.levelReassessmentSkill)
-      setReassessmentSkill(initialSession.levelReassessmentSkill ?? '')
-      setReassessmentLevel(initialSession.levelReassessmentLevel ?? '')
-      setSelectedLessonId(initialSession.linkedLessonId ?? '')
-      setIsCancelled(initialSession.isCancelled ?? false)
+      const date = initialSession.sessionDate ? initialSession.sessionDate.split('T')[0] : ''
+      const planned = initialSession.plannedContent ?? ''
+      const actual = initialSession.actualContent ?? ''
+      const homework = initialSession.homeworkAssigned ?? ''
+      const prevHw = initialSession.previousHomeworkStatusName ?? 'NotApplicable'
+      const nextTopics = initialSession.nextSessionTopics ?? ''
+      const notes = initialSession.generalNotes ?? ''
+      const cancelled = initialSession.isCancelled ?? false
+      const raEnabled = !!initialSession.levelReassessmentSkill
+      const raSkill = initialSession.levelReassessmentSkill ?? ''
+      const raLevel = initialSession.levelReassessmentLevel ?? ''
+      const linkedLesson = initialSession.linkedLessonId ?? ''
+      const rawTopicTags = initialSession.topicTags ?? '[]'
+      let mentionedKeysHash = ''
+      try {
+        const pairs = JSON.parse(initialSession.mentionedDifficultyPairs || '[]') as { Competency: string; Subcategory: string }[]
+        mentionedKeysHash = pairs.map(p => `${p.Competency}|${p.Subcategory}`).sort().join(',')
+      } catch { /* empty */ }
+      editSnapshotRef.current = { date, planned, actual, homework, prevHw, nextTopics, notes, cancelled, raEnabled, raSkill, raLevel, linkedLesson, rawTopicTags, mentionedKeysHash }
+      setSessionDate(date)
+      setPlannedContent(planned)
+      setActualContent(actual)
+      setHomeworkAssigned(homework)
+      setPrevHomeworkStatus(prevHw)
+      setNextSessionTopics(nextTopics)
+      setGeneralNotes(notes)
+      setTopicTags(parseTopicTags(rawTopicTags))
+      setReassessmentEnabled(raEnabled)
+      setReassessmentSkill(raSkill)
+      setReassessmentLevel(raLevel)
+      setSelectedLessonId(linkedLesson)
+      setIsCancelled(cancelled)
+      try {
+        const pairs = JSON.parse(initialSession.mentionedDifficultyPairs || '[]') as { Competency: string; Subcategory: string }[]
+        setMentionedDifficultyKeys(new Set(pairs.map(p => `${p.Competency}|${p.Subcategory}`)))
+      } catch {
+        setMentionedDifficultyKeys(new Set())
+      }
+      try {
+        const parsed: unknown = JSON.parse(initialSession.suggestedDifficulties || '[]')
+        setSuggestedDifficulties(Array.isArray(parsed) ? parsed.filter(isSuggestedDifficulty) : [])
+      } catch {
+        setSuggestedDifficulties([])
+      }
     }
   }, [open, initialSession])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -105,13 +173,21 @@ export function SessionLogDialog({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open && !initialSession && linkedLessonId && lessonObjectives) {
-      const prefix = lessonTitle ? `${lessonTitle}: ` : ''
-      setPlannedContent(`${prefix}${lessonObjectives}`)
+      setPlannedContent(buildPlannedContent(lessonTitle, lessonObjectives))
     }
     if (open && !initialSession && linkedLessonId) {
       setSelectedLessonId(linkedLessonId)
     }
   }, [open, initialSession, linkedLessonId, lessonTitle, lessonObjectives])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Pre-populate planned content from a prior session's NextSessionTopics (create mode, no linked lesson)
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (open && !initialSession && !linkedLessonId && initialPlannedContent) {
+      setPlannedContent(initialPlannedContent)
+    }
+  }, [open, initialSession, linkedLessonId, initialPlannedContent])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Reset form when dialog closes
@@ -131,9 +207,17 @@ export function SessionLogDialog({
       setReassessmentLevel('')
       setSelectedLessonId(linkedLessonId ?? '')
       setIsCancelled(false)
+      setMentionedDifficultyKeys(new Set())
+      setSuggestedDifficulties([])
       setErrors({})
       setSuccess(false)
       setSubmitError(null)
+      setShowDiscardConfirm(false)
+      editSnapshotRef.current = {}
+      voiceRunRef.current += 1
+      setIsExtracting(false)
+      setDraftSessionId(null)
+      setExtractionFailed(false)
     }
   }, [open, linkedLessonId])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -150,11 +234,18 @@ export function SessionLogDialog({
 
   // Fetch lessons for linked lesson selector
   const { data: lessonsData } = useQuery({
-    queryKey: ['lessons', { pageSize: 100 }],
-    queryFn: () => getLessons({ pageSize: 100 }),
+    queryKey: ['lessons', { pageSize: 100, studentId }],
+    queryFn: () => getLessons({ pageSize: 100, studentId }),
     enabled: open,
   })
-  const studentLessons = lessonsData?.items.filter(l => l.studentId === studentId) ?? []
+  const studentLessons = lessonsData?.items ?? []
+
+  const { data: studentData } = useQuery({
+    queryKey: ['student', studentId],
+    queryFn: () => getStudent(studentId),
+    enabled: open,
+  })
+  const activeDifficulties = studentData?.difficulties.filter(d => d.status === 'Active') ?? []
 
   const { mutate: submitLog, isPending } = useMutation({
     mutationFn: () => {
@@ -171,6 +262,24 @@ export function SessionLogDialog({
         linkedLessonId: selectedLessonId || null,
         topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
         isCancelled,
+        status: 'Confirmed' as const,
+        suggestedDifficulties: suggestedDifficulties.length > 0 ? suggestedDifficulties : undefined,
+        mentionedDifficultyPairs: (() => {
+          // Include active difficulties that were checked in the UI.
+          const activeKeys = new Set(activeDifficulties.map(d => `${d.competency}|${d.subcategory}`))
+          const fromActive = activeDifficulties
+            .filter(d => mentionedDifficultyKeys.has(`${d.competency}|${d.subcategory}`))
+            .map(d => ({ Competency: d.competency, Subcategory: d.subcategory }))
+          // Preserve originally-mentioned pairs that are no longer active (e.g. now Covered)
+          // so re-editing a session doesn't silently drop their historical record.
+          const preserved = [...mentionedDifficultyKeys]
+            .filter(k => !activeKeys.has(k))
+            .map(k => { const [c, s] = k.split('|'); return { Competency: c, Subcategory: s ?? '' } })
+          return [...fromActive, ...preserved]
+        })(),
+      }
+      if (draftSessionId) {
+        return updateSession(studentId, draftSessionId, payload)
       }
       return isEditMode
         ? updateSession(studentId, initialSession.id, payload)
@@ -195,6 +304,100 @@ export function SessionLogDialog({
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
     }
   }, [])
+
+  async function handleVoiceNote(voiceNote: VoiceNote) {
+    if (!voiceNote.transcription) {
+      setExtractionFailed(true)
+      return
+    }
+    const runId = ++voiceRunRef.current
+    setIsExtracting(true)
+    try {
+      const extracted = await extractSessionReflection(studentId, voiceNote.transcription)
+      if (runId !== voiceRunRef.current) return
+      const notes = [extracted.areasToImprove, extracted.emotionalSignals]
+        .filter(Boolean)
+        .join('\n')
+      // Pre-fill form fields from extraction
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setActualContent(extracted.whatWasCovered ?? '')
+      setHomeworkAssigned(extracted.homeworkAssigned ?? '')
+      setNextSessionTopics(extracted.nextLessonIdeas ?? '')
+      setGeneralNotes(notes)
+      setSuggestedDifficulties(extracted.suggestedDifficulties ?? [])
+      /* eslint-enable react-hooks/set-state-in-effect */
+      if (runId !== voiceRunRef.current) return
+      // Auto-save as Draft using full current form state + extracted fields
+      const draft = await createSession(studentId, {
+        sessionDate: sessionDate || null,
+        plannedContent: plannedContent || null,
+        actualContent: extracted.whatWasCovered ?? null,
+        homeworkAssigned: extracted.homeworkAssigned ?? null,
+        previousHomeworkStatus: prevHomeworkStatus,
+        nextSessionTopics: extracted.nextLessonIdeas ?? null,
+        generalNotes: notes || null,
+        levelReassessmentSkill: reassessmentEnabled ? reassessmentSkill || null : null,
+        levelReassessmentLevel: reassessmentEnabled ? reassessmentLevel || null : null,
+        linkedLessonId: selectedLessonId || null,
+        topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
+        isCancelled,
+        status: 'Draft',
+        suggestedDifficulties: extracted.suggestedDifficulties?.length ? extracted.suggestedDifficulties : undefined,
+      })
+      if (runId !== voiceRunRef.current) return
+      setDraftSessionId(draft.id)
+    } catch (err) {
+      logger.error('SessionLogDialog', 'voice extraction or draft save failed', err)
+      setExtractionFailed(true)
+    } finally {
+      setIsExtracting(false)
+    }
+  }
+
+  const autoPlannedContent = !initialSession && linkedLessonId && lessonObjectives
+    ? buildPlannedContent(lessonTitle, lessonObjectives)
+    : (!initialSession && !linkedLessonId && initialPlannedContent)
+      ? initialPlannedContent
+      : ''
+
+  const isDirty = isEditMode
+    ? (
+      sessionDate !== (editSnapshotRef.current.date ?? '') ||
+      plannedContent !== (editSnapshotRef.current.planned ?? '') ||
+      actualContent !== (editSnapshotRef.current.actual ?? '') ||
+      homeworkAssigned !== (editSnapshotRef.current.homework ?? '') ||
+      prevHomeworkStatus !== (editSnapshotRef.current.prevHw ?? 'NotApplicable') ||
+      nextSessionTopics !== (editSnapshotRef.current.nextTopics ?? '') ||
+      generalNotes !== (editSnapshotRef.current.notes ?? '') ||
+      isCancelled !== (editSnapshotRef.current.cancelled ?? false) ||
+      reassessmentEnabled !== (editSnapshotRef.current.raEnabled ?? false) ||
+      reassessmentSkill !== (editSnapshotRef.current.raSkill ?? '') ||
+      reassessmentLevel !== (editSnapshotRef.current.raLevel ?? '') ||
+      selectedLessonId !== (editSnapshotRef.current.linkedLesson ?? '') ||
+      serializeTopicTags(topicTags) !== (editSnapshotRef.current.rawTopicTags ?? '[]') ||
+      [...mentionedDifficultyKeys].sort().join(',') !== (editSnapshotRef.current.mentionedKeysHash ?? '')
+    )
+    : (
+      sessionDate !== '' ||
+      plannedContent !== autoPlannedContent ||
+      actualContent !== '' ||
+      homeworkAssigned !== '' ||
+      prevHomeworkStatus !== 'NotApplicable' ||
+      nextSessionTopics !== '' ||
+      generalNotes !== '' ||
+      topicTags.length > 0 ||
+      isCancelled ||
+      reassessmentEnabled ||
+      selectedLessonId !== (linkedLessonId ?? '') ||
+      mentionedDifficultyKeys.size > 0 ||
+      suggestedDifficulties.length > 0
+    )
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (nextOpen) { onOpenChange(true); return }
+    if (isDirty && !success) { setShowDiscardConfirm(true); return }
+    onOpenChange(false)
+  }
 
   function validate(): boolean {
     const errs: Record<string, string> = {}
@@ -225,7 +428,8 @@ export function SessionLogDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="max-w-2xl max-h-[90vh] overflow-y-auto"
         data-testid="session-log-dialog"
@@ -241,10 +445,43 @@ export function SessionLogDialog({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Voice recording — create mode only, hidden after draft is saved */}
+            {!isEditMode && !draftSessionId && (
+              <div className="space-y-1" data-testid="voice-recorder-section">
+                <Label className="text-sm">Record session notes</Label>
+                {isExtracting ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="extracting-indicator">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Extracting session notes...
+                  </div>
+                ) : (
+                  <AudioRecorder
+                    onVoiceNote={(note) => void handleVoiceNote(note)}
+                    disabled={isExtracting}
+                  />
+                )}
+                {extractionFailed && (
+                  <p className="text-xs text-amber-700" data-testid="extraction-failed-message">
+                    Could not extract fields from audio. Fill in the form manually.
+                  </p>
+                )}
+              </div>
+            )}
+
             {sessionsLoading && (
               <div className="space-y-2">
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-3/4" />
+              </div>
+            )}
+
+            {!isEditMode && prevSession?.nextSessionTopics?.trim() && (
+              <div
+                className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-900"
+                data-testid="prev-session-topics"
+              >
+                <span className="font-medium">From last session: </span>
+                {prevSession.nextSessionTopics}
               </div>
             )}
 
@@ -259,6 +496,9 @@ export function SessionLogDialog({
                 data-testid="session-date"
                 className="text-sm"
               />
+              {sessionDate && (
+                <p className="text-xs text-zinc-400" data-testid="session-date-iso">{sessionDate}</p>
+              )}
               {errors.sessionDate && <p className="text-xs text-red-600">{errors.sessionDate}</p>}
             </div>
 
@@ -298,6 +538,7 @@ export function SessionLogDialog({
             <div className="space-y-1">
               <Label htmlFor="actual-content" className="text-sm">
                 What was actually done
+                <span className="text-zinc-400 font-normal ml-1">(optional)</span>
               </Label>
               <Textarea
                 id="actual-content"
@@ -384,6 +625,41 @@ export function SessionLogDialog({
               />
             </div>
 
+            {/* Suggested difficulties (from AI extraction) */}
+            {suggestedDifficulties.length > 0 && (
+              <div className="space-y-2" data-testid="suggested-difficulties">
+                <Label className="text-sm">
+                  Suggested difficulties
+                  <span className="text-zinc-400 font-normal ml-1">(from session notes — remove any that look wrong)</span>
+                </Label>
+                <div className="space-y-1">
+                  {suggestedDifficulties.map((d, i) => (
+                    <div
+                      key={`${d.competency}|${d.subcategory}|${i}`}
+                      className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 px-3 py-2 text-sm"
+                      data-testid="suggested-difficulty-item"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <span className="text-zinc-800">{d.description}</span>
+                        <span className="ml-2 text-xs text-zinc-400">
+                          {d.competency}{d.subcategory ? ` / ${d.subcategory}` : ''} · {d.severity}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSuggestedDifficulties(prev => prev.filter((_, j) => j !== i))}
+                        className="shrink-0 text-zinc-400 hover:text-zinc-700 text-base leading-none"
+                        aria-label="Remove difficulty"
+                        data-testid="remove-suggested-difficulty"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Topic tags */}
             <div className="space-y-1">
               <Label className="text-sm">
@@ -392,6 +668,45 @@ export function SessionLogDialog({
               </Label>
               <TopicTagsInput value={topicTags} onChange={setTopicTags} />
             </div>
+
+            {/* Mentioned difficulties */}
+            {activeDifficulties.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm">
+                  Difficulties observed this session
+                  <span className="text-zinc-400 font-normal ml-1">(optional)</span>
+                </Label>
+                <div className="space-y-1">
+                  {activeDifficulties.map((d) => {
+                    const key = `${d.competency}|${d.subcategory}`
+                    const checked = mentionedDifficultyKeys.has(key)
+                    return (
+                      <label
+                        key={d.id}
+                        className="flex items-center gap-2 text-sm cursor-pointer"
+                        data-testid={`mentioned-difficulty-${d.competency}-${d.subcategory}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setMentionedDifficultyKeys(prev => {
+                              const next = new Set(prev)
+                              if (checked) next.delete(key)
+                              else next.add(key)
+                              return next
+                            })
+                          }}
+                          className="rounded border-zinc-300"
+                        />
+                        <span className="text-zinc-700">{d.description}</span>
+                        <span className="text-xs text-zinc-400">({d.competency}{d.subcategory ? ` / ${d.subcategory}` : ''})</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Level reassessment toggle */}
             <div className="space-y-2 rounded-lg border border-zinc-200 p-3">
@@ -460,7 +775,14 @@ export function SessionLogDialog({
                 </Label>
                 <Select
                   value={selectedLessonId ?? ''}
-                  onValueChange={(v) => setSelectedLessonId(v ?? '')}
+                  onValueChange={(v) => {
+                    const id = v ?? ''
+                    setSelectedLessonId(id)
+                    const lesson = studentLessons.find(l => l.id === id)
+                    if (lesson && !plannedContent) {
+                      setPlannedContent(buildPlannedContent(lesson.title, lesson.objectives))
+                    }
+                  }}
                 >
                   <SelectTrigger
                     id="linked-lesson"
@@ -485,16 +807,36 @@ export function SessionLogDialog({
             <DialogFooter>
               <Button
                 type="submit"
-                disabled={isPending}
+                disabled={isPending || isExtracting}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 data-testid="submit-session-log"
               >
-                {isPending ? 'Saving...' : isEditMode ? 'Save changes' : 'Log session'}
+                {isPending ? 'Saving...' : draftSessionId ? 'Confirm' : isEditMode ? 'Save changes' : 'Log session'}
               </Button>
             </DialogFooter>
           </form>
         )}
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
+      <AlertDialogContent size="sm" data-testid="discard-confirm-dialog">
+        <AlertDialogHeader>
+          <AlertDialogTitle>You have unsaved changes</AlertDialogTitle>
+          <AlertDialogDescription>Discard them?</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel data-testid="keep-editing-btn">Keep editing</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            data-testid="discard-btn"
+            onClick={() => { setShowDiscardConfirm(false); onOpenChange(false) }}
+          >
+            Discard
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }

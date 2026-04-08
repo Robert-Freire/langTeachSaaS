@@ -122,3 +122,32 @@ These are structural issues for the **Pedagogical Quality** sprint to address:
 | CQ-RC1 | Ricardo C1 PT: True/False item 3 states rule as absolute, contradicting Presentation nuance on indicativo | Added coherence constraint requiring trueFalse items to match Presentation nuance | #431 | Yes, merged this sprint |
 | CQ-SA2 | Sophie A2.2 FR: Full irregular indefinido paradigm, perfecto/indefinido distinction, and imperfect continuous introduced in Practice with no Presentation coverage | Added grammar scope non-introduction constraint to exercises prompt | #431 | Yes, merged this sprint |
 | CQ-WB1 | Sprint Reviewer B1: WarmUp roleB model phrase contains B2-level conditional perfect (habría dicho) | Added CEFR level constraint to WarmUp conversation prompt for all role phrases | #431 | Yes, merged this sprint |
+| B-EX | 5/9 personas: Exercise JSON truncated at B2+ or with multiple exercise types (JSON cut off mid-stream) | Exercises prompt changed from Haiku 4096 to Sonnet 8192 | #437 (PR #<M>) | Yes, merged this sprint |
+| B-EXAM | Ana Exam Prep: WarmUp, WrapUp, Production return HTTP 400 from /api/generate/free-text/stream | FullLessonGenerateButton EXAM_PREP_SECTION_TASK_MAP changed WarmUp/WrapUp from free-text to conversation, Production from free-text to exercises | #437 via PR #429 | Yes, merged this sprint |
+| B-RC | Carmen R&C: Presentation generates grammar block instead of reading passage; no reading text in lesson | FullLessonGenerateButton READING_COMPREHENSION_SECTION_TASK_MAP added, Presentation mapped to reading block type | #437 via PR #429 | Yes, merged this sprint |
+
+---
+
+## From: #432 - Block-level weakness injection (2026-04-07)
+
+### Fixed (verify these)
+
+| ID | Finding | Fix | Issue | Deployed? |
+|----|---------|-----|-------|-----------|
+| GAP-432-1 | Nadia B2 AR: article gender agreement and written accent marks weaknesses not addressed in any Practice exercise (weakness guidance only in lesson plan prompt, not block prompts) | Block-level weakness injection added to exercises, error-correction, guided-writing, and conversation prompts via `BuildWeaknessTargetingForSection`; STUDENT ERROR PROFILE block added to lesson plan prompt; practice.json `weaknessTargetingGuidance` strengthened to MANDATORY with coherence gate | #432 | Yes, merged this sprint |
+| GAP-432-2 | Ricardo C1 PT: false cognate vigilance weakness not addressed in Practice (same root cause) | Same fix as GAP-432-1. Note: for C1 grammar-focused lessons where the weakness is lexical (false cognates) and the lesson topic provides no natural vocabulary context, the model correctly omits the exercise per the coherence gate. This is expected behavior. | #432 | Yes, merged this sprint |
+
+### Known limitations (don't re-flag)
+
+| ID | Finding | Reason |
+|----|---------|--------|
+| LIM-432-1 | Ricardo C1: false cognate weakness not surfaced in subjunctive grammar lesson | Lexical weakness (false cognate vigilance) has no natural context in a pure grammar lesson on concessive/conditional clauses. Coherence gate correctly suppresses injection. Weakness taxonomy typed injection (#586) PR #594, deployed 2026-04-07. |
+| LIM-432-2 | Nadia B2: written accent marks weakness not directly addressed | B2 debate conversation lesson on subjunctive does not naturally produce an orthographic accent-mark drill. Coherence gate applies. Weakness taxonomy typed injection (#586) PR #594, deployed 2026-04-07. |
+
+### Positive findings (protect these)
+
+| Finding | Persona |
+|---------|---------|
+| Nadia B2 AR: cuyo relative pronoun exercise explicitly addresses gender/number agreement (the documented weakness) | Nadia B2.1 |
+| Weakness injection block appears early in exercises prompt (not buried after format constraints) | All personas with weaknesses |
+| STUDENT ERROR PROFILE in lesson plan correctly enumerates top 2 weaknesses | All personas with weaknesses |

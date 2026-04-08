@@ -186,7 +186,7 @@ public class GenerateController : ControllerBase
             StudentNativeLanguage: student?.NativeLanguage,
             StudentInterests: student?.Interests.ToArray(),
             StudentGoals: student?.LearningGoals.ToArray(),
-            StudentWeaknesses: student?.Weaknesses.ToArray(),
+            StudentWeaknesses: student?.Weaknesses.Select(w => new StudentWeakness(w.Description, w.WeaknessType)).ToArray(),
             ExistingNotes: request.ExistingNotes,
             Direction: request.Direction,
             MaterialFileNames: materialFileNames,
@@ -346,7 +346,7 @@ public class GenerateController : ControllerBase
             StudentNativeLanguage: student?.NativeLanguage,
             StudentInterests: student?.Interests.ToArray(),
             StudentGoals: student?.LearningGoals.ToArray(),
-            StudentWeaknesses: student?.Weaknesses.ToArray(),
+            StudentWeaknesses: student?.Weaknesses.Select(w => new StudentWeakness(w.Description, w.WeaknessType)).ToArray(),
             ExistingNotes: request.ExistingNotes,
             Direction: request.Direction,
             MaterialFileNames: materialFileNames,
@@ -454,6 +454,7 @@ public class GenerateController : ControllerBase
 
     private static DifficultyDto[]? TopDifficulties(StudentDto? student) =>
         student?.Difficulties
+            .Where(d => string.Equals(d.Status, "Active", StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(d => d.Severity switch { "high" => 3, "medium" => 2, _ => 1 })
             .Take(3)
             .ToArray();

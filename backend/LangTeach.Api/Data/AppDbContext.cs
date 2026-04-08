@@ -20,6 +20,9 @@ public class AppDbContext : DbContext
     public DbSet<Material> Materials => Set<Material>();
     public DbSet<GenerationUsage> GenerationUsages => Set<GenerationUsage>();
     public DbSet<SessionLog> SessionLogs => Set<SessionLog>();
+    public DbSet<VoiceNote> VoiceNotes => Set<VoiceNote>();
+    public DbSet<CourseSuggestion> CourseSuggestions => Set<CourseSuggestion>();
+    public DbSet<TelegramLink> TelegramLinks => Set<TelegramLink>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -185,6 +188,7 @@ public class AppDbContext : DbContext
             e.HasKey(sl => sl.Id);
             e.HasIndex(sl => new { sl.StudentId, sl.SessionDate });
             e.HasIndex(sl => new { sl.TeacherId, sl.IsDeleted });
+            e.HasIndex(sl => sl.Status).HasDatabaseName("IX_SessionLogs_Status");
             e.HasOne(sl => sl.Student)
              .WithMany(s => s.SessionLogs)
              .HasForeignKey(sl => sl.StudentId)
@@ -202,6 +206,35 @@ public class AppDbContext : DbContext
              .HasDefaultValue(HomeworkStatus.NotApplicable);
             e.Property(sl => sl.IsDeleted).HasDefaultValue(false);
             e.Property(sl => sl.TopicTags).HasDefaultValue("[]");
+        });
+
+        // VoiceNote — cascade delete from Teacher
+        modelBuilder.Entity<VoiceNote>(e =>
+        {
+            e.HasKey(v => v.Id);
+            e.HasIndex(v => new { v.TeacherId, v.CreatedAt });
+            e.HasOne(v => v.Teacher)
+             .WithMany()
+             .HasForeignKey(v => v.TeacherId)
+             .OnDelete(DeleteBehavior.Cascade);
+            // TranscribedAt: null = not transcribed, non-null = transcription complete (timestamp provides timing)
+        });
+
+        // CourseSuggestion — cascade delete from Course, no-action from CurriculumEntry (nullable)
+        modelBuilder.Entity<CourseSuggestion>(e =>
+        {
+            e.HasKey(cs => cs.Id);
+            e.HasIndex(cs => cs.CourseId);
+            e.HasOne(cs => cs.Course)
+             .WithMany()
+             .HasForeignKey(cs => cs.CourseId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(cs => cs.CurriculumEntry)
+             .WithMany()
+             .HasForeignKey(cs => cs.CurriculumEntryId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.Property(cs => cs.Status).HasDefaultValue("pending");
         });
 
         // LessonContentBlock — cascade delete from Lesson, no-action from LessonSection (nullable)
@@ -223,6 +256,17 @@ public class AppDbContext : DbContext
              .HasConversion(
                  v => v.ToKebabCase(),
                  v => ContentBlockTypeExtensions.FromKebabCase(v));
+        });
+
+        // TelegramLink — cascade delete from Teacher, ChatId is PK (bigint, assigned by Telegram, not auto-generated)
+        modelBuilder.Entity<TelegramLink>(e =>
+        {
+            e.HasKey(t => t.ChatId);
+            e.Property(t => t.ChatId).ValueGeneratedNever();
+            e.HasOne<Teacher>()
+             .WithMany()
+             .HasForeignKey(t => t.TeacherId)
+             .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

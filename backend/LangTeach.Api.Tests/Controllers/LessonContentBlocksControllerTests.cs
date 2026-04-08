@@ -311,4 +311,112 @@ public class LessonContentBlocksControllerTests
         reset.IsEdited.Should().BeFalse();
         reset.GeneratedContent.Should().Be("Original AI content.");
     }
+
+    // --- Exercises malformed JSON validation (#558) ---
+
+    [Fact]
+    public async Task Post_ExercisesWithMalformedJson_Returns400()
+    {
+        var auth0Id = "auth0|cb-exercises-malformed-json";
+        var email = "cb-exercises-malformed-json@example.com";
+        var (lessonId, _) = await SeedTeacherLessonAndSection(auth0Id, email);
+        var client = _factory.CreateAuthenticatedClient(auth0Id, email);
+
+        var request = new SaveContentBlockRequest
+        {
+            BlockType = ContentBlockType.Exercises,
+            GeneratedContent = "this is not json {{{",
+        };
+
+        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", request, TestJsonOptions.Default);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            because: "exercises with malformed JSON must be rejected at write time (#558)");
+    }
+
+    // --- Exercises sourcePassage validation (#422 AC6) ---
+
+    [Fact]
+    public async Task Post_ExercisesWithEmptySourcePassage_Returns400()
+    {
+        var auth0Id = "auth0|cb-exercises-no-source";
+        var email = "cb-exercises-no-source@example.com";
+        var (lessonId, _) = await SeedTeacherLessonAndSection(auth0Id, email);
+        var client = _factory.CreateAuthenticatedClient(auth0Id, email);
+
+        var invalidContent = "{\"trueFalse\":[{\"statement\":\"The verb is correct.\",\"isTrue\":true,\"justification\":\"It is.\",\"sourcePassage\":\"\"}]}";
+        var request = new SaveContentBlockRequest
+        {
+            BlockType = ContentBlockType.Exercises,
+            GeneratedContent = invalidContent,
+        };
+
+        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", request, TestJsonOptions.Default);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            because: "exercises with empty sourcePassage in trueFalse items are invalid (#422)");
+    }
+
+    [Fact]
+    public async Task Post_ExercisesWithMissingSourcePassage_Returns400()
+    {
+        var auth0Id = "auth0|cb-exercises-missing-source";
+        var email = "cb-exercises-missing-source@example.com";
+        var (lessonId, _) = await SeedTeacherLessonAndSection(auth0Id, email);
+        var client = _factory.CreateAuthenticatedClient(auth0Id, email);
+
+        var invalidContent = "{\"trueFalse\":[{\"statement\":\"The verb is correct.\",\"isTrue\":true,\"justification\":\"It is.\"}]}";
+        var request = new SaveContentBlockRequest
+        {
+            BlockType = ContentBlockType.Exercises,
+            GeneratedContent = invalidContent,
+        };
+
+        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", request, TestJsonOptions.Default);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            because: "exercises with missing sourcePassage in trueFalse items are invalid (#422)");
+    }
+
+    [Fact]
+    public async Task Post_ExercisesWithValidSourcePassage_Returns201()
+    {
+        var auth0Id = "auth0|cb-exercises-valid-source";
+        var email = "cb-exercises-valid-source@example.com";
+        var (lessonId, _) = await SeedTeacherLessonAndSection(auth0Id, email);
+        var client = _factory.CreateAuthenticatedClient(auth0Id, email);
+
+        var validContent = "{\"trueFalse\":[{\"statement\":\"The verb is correct.\",\"isTrue\":true,\"justification\":\"It is.\",\"sourcePassage\":\"El verbo esta en presente.\"}]}";
+        var request = new SaveContentBlockRequest
+        {
+            BlockType = ContentBlockType.Exercises,
+            GeneratedContent = validContent,
+        };
+
+        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", request, TestJsonOptions.Default);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created,
+            because: "exercises with valid sourcePassage should be accepted (#422)");
+    }
+
+    [Fact]
+    public async Task Post_ExercisesWithoutTrueFalse_Returns201()
+    {
+        var auth0Id = "auth0|cb-exercises-no-truefalse";
+        var email = "cb-exercises-no-truefalse@example.com";
+        var (lessonId, _) = await SeedTeacherLessonAndSection(auth0Id, email);
+        var client = _factory.CreateAuthenticatedClient(auth0Id, email);
+
+        var validContent = "{\"fillInBlank\":[{\"sentence\":\"___ es un libro.\",\"answer\":\"Este\",\"hint\":\"\",\"explanation\":\"Demonstrative pronoun.\"}]}";
+        var request = new SaveContentBlockRequest
+        {
+            BlockType = ContentBlockType.Exercises,
+            GeneratedContent = validContent,
+        };
+
+        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/content-blocks", request, TestJsonOptions.Default);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created,
+            because: "exercises without trueFalse section are not subject to sourcePassage validation (#422)");
+    }
 }

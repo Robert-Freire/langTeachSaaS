@@ -371,6 +371,94 @@ public class LessonsControllerTests
         lesson!.StudentName.Should().Be("Alice Johnson");
     }
 
+    [Fact]
+    public async Task ListLessons_WithStudentId_ReturnsOnlyStudentLessons()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var teacher = new Teacher
+        {
+            Id = Guid.NewGuid(),
+            Auth0UserId = "auth0|lesson-studentfilter",
+            Email = "lesson-studentfilter@example.com",
+            DisplayName = "Student Filter Test",
+            IsApproved = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Teachers.Add(teacher);
+
+        var studentA = new Student
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            Name = "Alice",
+            LearningLanguage = "English",
+            CefrLevel = "A1",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        var studentB = new Student
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            Name = "Bob",
+            LearningLanguage = "English",
+            CefrLevel = "B1",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Students.AddRange(studentA, studentB);
+        await db.SaveChangesAsync();
+
+        var client = _factory.CreateAuthenticatedClient("auth0|lesson-studentfilter", "lesson-studentfilter@example.com");
+
+        var lessonA = await CreateLessonWithStudentAsync(client, "Lesson for Alice", studentA.Id);
+        var lessonB = await CreateLessonWithStudentAsync(client, "Lesson for Bob", studentB.Id);
+        var lessonNone = await CreateLessonAsync(client, "Unassigned Lesson");
+
+        var response = await client.GetAsync($"/api/lessons?studentId={studentA.Id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<PagedResult<LessonDto>>();
+        result!.Items.Should().Contain(l => l.Id == lessonA.Id);
+        result.Items.Should().NotContain(l => l.Id == lessonB.Id);
+        result.Items.Should().NotContain(l => l.Id == lessonNone.Id);
+    }
+
+    [Fact]
+    public async Task ListLessons_WithoutStudentId_ReturnsAllLessons()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|lesson-nofilter", "lesson-nofilter@example.com");
+
+        var lesson1 = await CreateLessonAsync(client, "No-filter Lesson 1");
+        var lesson2 = await CreateLessonAsync(client, "No-filter Lesson 2");
+
+        var response = await client.GetAsync("/api/lessons");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<PagedResult<LessonDto>>();
+        result!.Items.Should().Contain(l => l.Id == lesson1.Id);
+        result.Items.Should().Contain(l => l.Id == lesson2.Id);
+    }
+
+    private static async Task<LessonDto> CreateLessonWithStudentAsync(HttpClient client, string title, Guid studentId)
+    {
+        var request = new CreateLessonRequest
+        {
+            Title = title,
+            Language = "English",
+            CefrLevel = "B1",
+            Topic = "Test topic",
+            DurationMinutes = 60,
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/lessons", request);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<LessonDto>())!;
+    }
+
     private static async Task<LessonDto> CreateLessonAsync(
         HttpClient client,
         string title,

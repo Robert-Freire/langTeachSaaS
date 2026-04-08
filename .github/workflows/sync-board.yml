@@ -1,0 +1,88 @@
+name: Sync issue to project board
+
+# Automatically adds milestoned issues to the LangTeach Roadmap board
+# and keeps their Status field in sync with qa:ready / assignee state.
+#
+# Requires: GH_PROJECT_TOKEN secret (classic PAT with `project` scope).
+# Does NOT handle `closed` events — task-merged.py owns that transition.
+
+on:
+  issues:
+    types:
+      - milestoned
+      - labeled
+      - unlabeled
+      - assigned
+      - unassigned
+      - reopened
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    # Skip if issue has no milestone
+    if: github.event.issue.milestone != null
+
+    steps:
+      - name: Compute target status
+        id: status
+        env:
+          STATE: ${{ github.event.issue.state }}
+          LABELS_JSON: ${{ toJson(github.event.issue.labels) }}
+          ASSIGNEES_JSON: ${{ toJson(github.event.issue.assignees) }}
+        run: |
+          python3 - <<'EOF'
+          import os, json
+
+          state = os.environ["STATE"]
+          labels = [l["name"] for l in json.loads(os.environ["LABELS_JSON"])]
+          assignees = json.loads(os.environ["ASSIGNEES_JSON"])
+
+          if state == "closed":
+              status = "ready-to-test"
+          elif assignees:
+              status = "in-progress"
+          elif "qa:ready" in labels:
+              status = "ready"
+          else:
+              status = "backlog"
+
+          print(f"status={status}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"status={status}\n")
+          EOF
+
+      - name: Add to board and set status
+        env:
+          GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          TARGET_STATUS: ${{ steps.status.outputs.status }}
+        run: |
+          PROJECT_OWNER="Robert-Freire"
+          PROJECT_NUMBER="2"
+          PROJECT_ID="PVT_kwHOAF1Pks4BSLsS"
+          STATUS_FIELD_ID="PVTSSF_lAHOAF1Pks4BSLsSzg_ysiA"
+
+          declare -A STATUS_IDS=(
+            [backlog]="7cba4571"
+            [ready]="eec9fa45"
+            [in-progress]="47fc9ee4"
+            [ready-to-test]="530fcec2"
+            [done]="61f69a4c"
+          )
+
+          OPTION_ID="${STATUS_IDS[$TARGET_STATUS]}"
+
+          echo "Adding $ISSUE_URL to board..."
+          ITEM_ID=$(gh project item-add "$PROJECT_NUMBER" \
+            --owner "$PROJECT_OWNER" \
+            --url "$ISSUE_URL" \
+            --format json | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+
+          echo "Setting status to $TARGET_STATUS (item $ITEM_ID)..."
+          gh project item-edit \
+            --project-id "$PROJECT_ID" \
+            --id "$ITEM_ID" \
+            --field-id "$STATUS_FIELD_ID" \
+            --single-select-option-id "$OPTION_ID"
+
+          echo "Done: $ISSUE_URL -> $TARGET_STATUS"

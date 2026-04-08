@@ -2,6 +2,7 @@ using System.Text.Json;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Services;
@@ -9,10 +10,12 @@ namespace LangTeach.Api.Services;
 public class SessionLogService : ISessionLogService
 {
     private readonly AppDbContext _db;
+    private readonly IDifficultyTrendService _trendService;
     private readonly ILogger<SessionLogService> _logger;
 
     private static readonly HashSet<string> ValidSkills = new(StringComparer.OrdinalIgnoreCase)
         { "Speaking", "Writing", "Reading", "Listening" };
+
 
     // TODO: source CEFR sub-levels from config if the set ever changes
     private static readonly HashSet<string> ValidCefrSubLevels = new(StringComparer.OrdinalIgnoreCase)
@@ -21,9 +24,13 @@ public class SessionLogService : ISessionLogService
     private static readonly JsonSerializerOptions JsonOptions =
         new() { PropertyNameCaseInsensitive = true };
 
-    public SessionLogService(AppDbContext db, ILogger<SessionLogService> logger)
+    private static readonly JsonSerializerOptions CamelCaseOptions =
+        new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    public SessionLogService(AppDbContext db, IDifficultyTrendService trendService, ILogger<SessionLogService> logger)
     {
         _db = db;
+        _trendService = trendService;
         _logger = logger;
     }
 
@@ -61,6 +68,14 @@ public class SessionLogService : ISessionLogService
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
 
+        if (!Enum.IsDefined(request.Status))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid Status value: {(int)request.Status}");
+
+        if (request.Status == SessionLogStatus.Draft && request.IsCancelled)
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                "Draft sessions cannot be cancelled.");
+
         ValidateReassessment(request.LevelReassessmentSkill, request.LevelReassessmentLevel);
 
         var student = await _db.Students
@@ -81,6 +96,7 @@ public class SessionLogService : ISessionLogService
         }
 
         var now = DateTime.UtcNow;
+        var sanitizedDifficulties = SanitizeSuggestedDifficulties(request.SuggestedDifficulties, _logger);
         var entity = new SessionLog
         {
             Id = Guid.NewGuid(),
@@ -97,7 +113,10 @@ public class SessionLogService : ISessionLogService
             LevelReassessmentLevel = request.LevelReassessmentLevel,
             LinkedLessonId = request.LinkedLessonId,
             TopicTags = request.TopicTags ?? "[]",
+            MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs),
+            SuggestedDifficulties = SerializeSuggestedDifficulties(sanitizedDifficulties),
             IsCancelled = request.IsCancelled,
+            Status = request.Status,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -107,9 +126,16 @@ public class SessionLogService : ISessionLogService
         if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
             PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);
 
+        if (request.Status == SessionLogStatus.Confirmed && sanitizedDifficulties.Count > 0)
+            UpsertDifficulties(student, sanitizedDifficulties, _logger);
+
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Created SessionLog {SessionLogId} for Student {StudentId}", entity.Id, studentId);
+
+        try { await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken); }
+        catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session create", studentId); }
+
         return ToDto(entity);
     }
 
@@ -118,6 +144,14 @@ public class SessionLogService : ISessionLogService
         if (!Enum.IsDefined(request.PreviousHomeworkStatus))
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
+
+        if (!Enum.IsDefined(request.Status))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid Status value: {(int)request.Status}");
+
+        if (request.Status == SessionLogStatus.Draft && request.IsCancelled)
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                "Draft sessions cannot be cancelled.");
 
         ValidateReassessment(request.LevelReassessmentSkill, request.LevelReassessmentLevel);
 
@@ -138,6 +172,8 @@ public class SessionLogService : ISessionLogService
                 throw new KeyNotFoundException($"Lesson {request.LinkedLessonId.Value} not found.");
         }
 
+        var sanitizedDifficulties = SanitizeSuggestedDifficulties(request.SuggestedDifficulties, _logger);
+
         entity.SessionDate = request.SessionDate;
         entity.PlannedContent = request.PlannedContent;
         entity.ActualContent = request.ActualContent;
@@ -149,22 +185,41 @@ public class SessionLogService : ISessionLogService
         entity.LevelReassessmentLevel = request.LevelReassessmentLevel;
         entity.LinkedLessonId = request.LinkedLessonId;
         entity.TopicTags = request.TopicTags ?? "[]";
+        entity.MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs);
+        entity.SuggestedDifficulties = SerializeSuggestedDifficulties(sanitizedDifficulties);
         entity.IsCancelled = request.IsCancelled;
+        entity.Status = request.Status;
         entity.UpdatedAt = DateTime.UtcNow;
+
+        Student? studentForUpdate = null;
 
         if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
         {
-            var student = await _db.Students
+            studentForUpdate = await _db.Students
                 .Where(s => s.Id == studentId && s.TeacherId == teacherId)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (student is not null)
-                PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);
+            if (studentForUpdate is not null)
+                PropagateReassessment(studentForUpdate, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);
+        }
+
+        if (request.Status == SessionLogStatus.Confirmed && sanitizedDifficulties.Count > 0)
+        {
+            studentForUpdate ??= await _db.Students
+                .Where(s => s.Id == studentId && s.TeacherId == teacherId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (studentForUpdate is not null)
+                UpsertDifficulties(studentForUpdate, sanitizedDifficulties, _logger);
         }
 
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Updated SessionLog {SessionLogId}", sessionId);
+
+        try { await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken); }
+        catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session update", studentId); }
+
         return ToDto(entity);
     }
 
@@ -182,6 +237,10 @@ public class SessionLogService : ISessionLogService
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Soft-deleted SessionLog {SessionLogId}", sessionId);
+
+        try { await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken); }
+        catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session delete", studentId); }
+
         return true;
     }
 
@@ -225,28 +284,34 @@ public class SessionLogService : ISessionLogService
             throw new KeyNotFoundException($"Student {studentId} not found.");
 
         var totalSessions = await _db.SessionLogs
-            .CountAsync(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled, cancellationToken);
+            .CountAsync(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.Status == SessionLogStatus.Confirmed, cancellationToken);
 
-        var mostRecent = await _db.SessionLogs
-            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue)
+        var recentSessions = await _db.SessionLogs
+            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.Status == SessionLogStatus.Confirmed && sl.SessionDate.HasValue)
             .OrderByDescending(sl => sl.SessionDate)
-            .FirstOrDefaultAsync(cancellationToken);
+            .Take(3)
+            .ToListAsync(cancellationToken);
 
         string? lastSessionDate = null;
         int? daysSinceLastSession = null;
         var openActionItems = new List<string>();
 
-        if (mostRecent is not null)
+        if (recentSessions.Count > 0)
         {
+            var mostRecent = recentSessions[0];
             lastSessionDate = mostRecent.SessionDate!.Value.ToString("yyyy-MM-dd");
             daysSinceLastSession = (int)(DateTime.UtcNow.Date - mostRecent.SessionDate.Value.Date).TotalDays;
-            if (!string.IsNullOrWhiteSpace(mostRecent.NextSessionTopics))
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var session in recentSessions)
             {
-                openActionItems = mostRecent.NextSessionTopics
-                    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(l => l.Trim())
-                    .Where(l => l.Length > 0)
-                    .ToList();
+                if (string.IsNullOrWhiteSpace(session.NextSessionTopics)) continue;
+                foreach (var line in session.NextSessionTopics.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var item = line.Trim();
+                    if (item.Length > 0 && seen.Add(item))
+                        openActionItems.Add(item);
+                }
             }
         }
 
@@ -263,8 +328,7 @@ public class SessionLogService : ISessionLogService
             _logger.LogWarning(ex, "Student {StudentId} has corrupt SkillLevelOverrides", studentId);
         }
 
-        var levelReassessmentPending = skillOverrides.Any(kv =>
-            !string.Equals(kv.Value, student.CefrLevel, StringComparison.OrdinalIgnoreCase));
+        var levelReassessmentPending = SkillLevelHelper.IsReassessmentPending(skillOverrides, student.CefrLevel);
 
         return new StudentSessionSummaryDto(
             totalSessions,
@@ -279,6 +343,7 @@ public class SessionLogService : ISessionLogService
     private static SessionLogDto ToDto(SessionLog sl) => new(
         sl.Id,
         sl.StudentId,
+        sl.TeacherId,
         sl.SessionDate,
         sl.PlannedContent,
         sl.ActualContent,
@@ -293,6 +358,72 @@ public class SessionLogService : ISessionLogService
         sl.CreatedAt,
         sl.UpdatedAt,
         sl.TopicTags,
-        sl.IsCancelled
+        sl.IsCancelled,
+        sl.Status,
+        sl.Status.ToString(),
+        sl.MentionedDifficultyPairs,
+        sl.SuggestedDifficulties
     );
+
+    private static string SerializePairs(List<DifficultyPairDto>? pairs) =>
+        pairs is null or { Count: 0 } ? "[]" : JsonStorageHelper.Serialize(pairs);
+
+    // Serialize with camelCase so the raw JSON column matches the API response casing the frontend expects.
+    private static string SerializeSuggestedDifficulties(List<SuggestedDifficultyDto> items) =>
+        items.Count == 0 ? "[]" : JsonSerializer.Serialize(items, CamelCaseOptions);
+
+    // Filter out entries with invalid competency/severity before storing or upserting,
+    // so the SessionLog column never contains data that would silently break on rehydration.
+    private static List<SuggestedDifficultyDto> SanitizeSuggestedDifficulties(
+        List<SuggestedDifficultyDto>? items, ILogger logger)
+    {
+        if (items is null or { Count: 0 }) return [];
+        var result = new List<SuggestedDifficultyDto>(items.Count);
+        foreach (var item in items)
+        {
+            if (!DifficultyConstants.ValidCompetencies.Contains(item.Competency) ||
+                !DifficultyConstants.ValidSeverities.Contains(item.Severity))
+            {
+                logger.LogWarning("Dropping suggested difficulty with invalid fields: Competency={Competency}, Severity={Severity}", item.Competency, item.Severity);
+                continue;
+            }
+            result.Add(item);
+        }
+        return result;
+    }
+
+    private static void UpsertDifficulties(Student student, List<SuggestedDifficultyDto> suggested, ILogger logger)
+    {
+        var existing = JsonStorageHelper.DeserializeList<DifficultyDto>(student.Difficulties);
+        foreach (var s in suggested)
+        {
+            if (!DifficultyConstants.ValidCompetencies.Contains(s.Competency) || !DifficultyConstants.ValidSeverities.Contains(s.Severity))
+            {
+                logger.LogWarning("Skipping suggested difficulty with invalid fields: Competency={Competency}, Severity={Severity}", s.Competency, s.Severity);
+                continue;
+            }
+            var match = existing.FirstOrDefault(d =>
+                string.Equals(d.Competency, s.Competency, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(d.Subcategory, s.Subcategory, StringComparison.OrdinalIgnoreCase));
+            if (match is not null)
+            {
+                var idx = existing.IndexOf(match);
+                existing[idx] = match with { Description = s.Description, Severity = s.Severity, Status = "Active" };
+            }
+            else
+            {
+                existing.Add(new DifficultyDto(
+                    Id: Guid.NewGuid().ToString(),
+                    Description: s.Description,
+                    Competency: s.Competency,
+                    Subcategory: s.Subcategory,
+                    Severity: s.Severity,
+                    Trend: "stable",
+                    Status: "Active"
+                ));
+            }
+        }
+        student.Difficulties = JsonStorageHelper.Serialize(existing);
+        student.UpdatedAt = DateTime.UtcNow;
+    }
 }

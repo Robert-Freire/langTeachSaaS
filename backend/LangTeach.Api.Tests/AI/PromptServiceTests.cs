@@ -65,7 +65,7 @@ public class PromptServiceTests
             StudentNativeLanguage = "Portuguese",
             StudentInterests = ["cooking", "travel"],
             StudentGoals = ["speak fluently"],
-            StudentWeaknesses = ["articles"]
+            StudentWeaknesses = [new StudentWeakness("articles")]
         };
 
         var req = _sut.BuildVocabularyPrompt(ctx);
@@ -246,8 +246,8 @@ public class PromptServiceTests
         => _sut.BuildGrammarPrompt(BaseCtx()).MaxTokens.Should().Be(3000);
 
     [Fact]
-    public void ExercisesPrompt_HasMaxTokens4096()
-        => _sut.BuildExercisesPrompt(BaseCtx()).MaxTokens.Should().Be(4096);
+    public void ExercisesPrompt_HasMaxTokens8192()
+        => _sut.BuildExercisesPrompt(BaseCtx()).MaxTokens.Should().Be(8192);
 
     [Fact]
     public void ConversationPrompt_HasMaxTokens3000()
@@ -314,8 +314,8 @@ public class PromptServiceTests
         _sut.BuildGrammarPrompt(BaseCtx()).Model.Should().Be(ClaudeModel.Sonnet);
 
     [Fact]
-    public void HaikuUsed_ForExercises() =>
-        _sut.BuildExercisesPrompt(BaseCtx()).Model.Should().Be(ClaudeModel.Haiku);
+    public void SonnetUsed_ForExercises() =>
+        _sut.BuildExercisesPrompt(BaseCtx()).Model.Should().Be(ClaudeModel.Sonnet);
 
     [Fact]
     public void HaikuUsed_ForConversation() =>
@@ -361,18 +361,18 @@ public class PromptServiceTests
         {
             StudentDifficulties =
             [
-                new DifficultyDto("d1", "grammar", "ser/estar in past tense", "high", "stable"),
-                new DifficultyDto("d2", "vocabulary", "false cognates with English", "medium", "improving"),
-                new DifficultyDto("d3", "pronunciation", "vowel reduction", "low", "stable"),
+                new DifficultyDto("d1", "Confuses ser/estar in past tense", "Grammar", "ser/estar", "high", "stable", "Active"),
+                new DifficultyDto("d2", "Uses false cognates from English", "Vocabulary", "false cognates", "medium", "stable", "Active"),
+                new DifficultyDto("d3", "Reduces vowel quality", "Pronunciation", "vowel quality", "low", "stable", "Active"),
             ]
         };
 
         var req = _sut.BuildExercisesPrompt(ctx);
 
         req.SystemPrompt.Should().Contain("Known difficulties");
-        req.SystemPrompt.Should().Contain("[high] grammar: ser/estar in past tense");
-        req.SystemPrompt.Should().Contain("[medium] vocabulary: false cognates with English");
-        req.SystemPrompt.Should().Contain("[low] pronunciation: vowel reduction");
+        req.SystemPrompt.Should().Contain("[high] Grammar: Confuses ser/estar in past tense");
+        req.SystemPrompt.Should().Contain("[medium] Vocabulary: Uses false cognates from English");
+        req.SystemPrompt.Should().Contain("[low] Pronunciation: Reduces vowel quality");
         req.SystemPrompt.Should().Contain("target these difficulty patterns");
     }
 
@@ -403,7 +403,7 @@ public class PromptServiceTests
         {
             StudentDifficulties =
             [
-                new DifficultyDto("d1", "grammar", "articles", "high", "stable"),
+                new DifficultyDto("d1", "Struggles with article usage", "Grammar", "articles", "high", "stable", "Active"),
             ]
         };
 
@@ -644,7 +644,8 @@ public class PromptServiceTests
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("Ludic activities are inappropriate in reading comprehension lessons");
+        req.UserPrompt.Should().Contain("Written and analytical exercises only.",
+            because: "restriction reasons now use positive framing (#422)");
     }
 
     [Fact]
@@ -917,7 +918,7 @@ public class PromptServiceTests
     [Fact]
     public void CurriculumSystemPrompt_IncludesWeaknesses_WhenStudentWeaknessesProvided()
     {
-        var ctx = BaseCurriculumCtx() with { StudentWeaknesses = ["ser vs estar", "subjunctive mood"] };
+        var ctx = BaseCurriculumCtx() with { StudentWeaknesses = [new StudentWeakness("ser vs estar"), new StudentWeakness("subjunctive mood")] };
 
         var req = _sut.BuildCurriculumPrompt(ctx);
 
@@ -933,16 +934,16 @@ public class PromptServiceTests
         {
             StudentDifficulties =
             [
-                new DifficultyDto("1", "grammar", "past tense", "high", "stable"),
-                new DifficultyDto("2", "vocabulary", "false cognates", "medium", "improving"),
+                new DifficultyDto("1", "Issues with past tense selection", "Grammar", "past tense", "high", "stable", "Active"),
+                new DifficultyDto("2", "Uses false cognates with English", "Vocabulary", "false cognates", "medium", "stable", "Active"),
             ]
         };
 
         var req = _sut.BuildCurriculumPrompt(ctx);
 
         req.SystemPrompt.Should().Contain("Documented difficulties");
-        req.SystemPrompt.Should().Contain("grammar: past tense");
-        req.SystemPrompt.Should().Contain("vocabulary: false cognates");
+        req.SystemPrompt.Should().Contain("Grammar: Issues with past tense selection");
+        req.SystemPrompt.Should().Contain("Vocabulary: Uses false cognates with English");
     }
 
     [Fact]
@@ -1040,7 +1041,7 @@ public class PromptServiceTests
     {
         var ctx = BaseCurriculumCtx("Marco") with
         {
-            StudentWeaknesses = ["ser/estar distinction", "false cognates"],
+            StudentWeaknesses = [new StudentWeakness("ser/estar distinction"), new StudentWeakness("false cognates")],
         };
 
         var req = _sut.BuildCurriculumPrompt(ctx);
@@ -1191,6 +1192,21 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void CurriculumUserPrompt_InjectsNeverSubstituteWithGlobPattern_WhenRolePlayRejected()
+    {
+        // style-substitutions.json role-play entry has neverSubstituteWith: ["EE-*"].
+        // PromptService must include the raw glob in the prompt so the AI interprets it correctly.
+        var ctx = BaseGeneralCtx(teacherNotes: "Student hates role-play. Prefers written exercises.");
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Never substitute with",
+            because: "role-play substitution entry has neverSubstituteWith constraints that must appear in the prompt");
+        req.UserPrompt.Should().Contain("EE-*",
+            because: "the neverSubstituteWith glob pattern must be preserved verbatim so the AI excludes all EE-type IDs");
+    }
+
+    [Fact]
     public void CurriculumUserPrompt_OmitsStyleSubstitutionGuidance_WhenTeacherNotesHaveNoMatchingKeyword()
     {
         var ctx = BaseGeneralCtx(teacherNotes: "Student relocating to Barcelona. Loves sports.");
@@ -1286,7 +1302,7 @@ public class PromptServiceTests
     [Fact]
     public void LessonPlanPrompt_InjectsDifficultyTargeting_WhenWeaknessesPresent()
     {
-        var ctx = BaseCtx("Ana") with { StudentWeaknesses = ["articles", "ser vs estar"] };
+        var ctx = BaseCtx("Ana") with { StudentWeaknesses = [new StudentWeakness("articles"), new StudentWeakness("ser vs estar")] };
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
@@ -1305,17 +1321,39 @@ public class PromptServiceTests
     [Fact]
     public void LessonPlanPrompt_WeaknessBlock_ContainsSectionSpecificGuidanceFromConfig()
     {
-        var ctx = BaseCtx() with { StudentWeaknesses = ["subjunctive"] };
+        var ctx = BaseCtx() with { StudentWeaknesses = [new StudentWeakness("subjunctive")] };
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
         // Verify section-specific labels and guidance are assembled from config
-        req.UserPrompt.Should().Contain("Practice:", because: "practice has weaknessTargetingGuidance in config");
-        req.UserPrompt.Should().Contain("Production:", because: "production has weaknessTargetingGuidance in config");
-        req.UserPrompt.Should().Contain("WrapUp:", because: "wrapup has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().Contain("Practice (grammatical):", because: "practice has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().Contain("Production (grammatical):", because: "production has weaknessTargetingGuidance in config");
+        req.UserPrompt.Should().Contain("WrapUp (grammatical):", because: "wrapup has weaknessTargetingGuidance in config");
         req.UserPrompt.Should().NotContain("WarmUp:", because: "warmup does not participate in weakness targeting");
         req.UserPrompt.Should().NotContain("Presentation:", because: "presentation does not participate in weakness targeting");
         req.UserPrompt.Should().Contain("subjunctive", because: "weakness text must be interpolated into the practice guidance");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_WeaknessesGroupedByType_InErrorProfile()
+    {
+        var ctx = BaseCtx() with
+        {
+            StudentWeaknesses =
+            [
+                new StudentWeakness("ser/estar confusion", "grammatical"),
+                new StudentWeakness("false cognates", "lexical"),
+            ]
+        };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Grammatical weaknesses:",
+            because: "error profile must include a grammatical type header");
+        req.UserPrompt.Should().Contain("Lexical weaknesses:",
+            because: "error profile must include a lexical type header");
+        req.UserPrompt.Should().Contain("ser/estar confusion");
+        req.UserPrompt.Should().Contain("false cognates");
     }
 
     [Fact]
@@ -2526,53 +2564,89 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public void SessionHistory_Gap1To2Days_CorrectInstruction()
+    public void SessionHistory_Gap1To2Days_CorrectInstructionInLessonPlan()
     {
+        // Issue #422 (AC9): gap instruction moved from system prompt to LessonPlanUserPrompt only.
         var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 1) };
 
-        var req = _sut.BuildVocabularyPrompt(ctx);
+        var lessonPlan = _sut.BuildLessonPlanPrompt(ctx);
+        var vocabulary = _sut.BuildVocabularyPrompt(ctx);
 
-        req.SystemPrompt.Should().Contain("Build directly on previous session.");
+        lessonPlan.UserPrompt.Should().Contain("Build directly on previous session.");
+        vocabulary.SystemPrompt.Should().NotContain("Build directly on previous session.",
+            because: "gap instruction must not appear in per-block system prompts (#422)");
     }
 
     [Fact]
-    public void SessionHistory_Gap3To7Days_CorrectInstruction()
+    public void SessionHistory_Gap3To7Days_CorrectInstructionInLessonPlan()
     {
+        // Issue #422 (AC9): gap instruction moved from system prompt to LessonPlanUserPrompt only.
         var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 5) };
 
-        var req = _sut.BuildVocabularyPrompt(ctx);
+        var lessonPlan = _sut.BuildLessonPlanPrompt(ctx);
+        var vocabulary = _sut.BuildVocabularyPrompt(ctx);
 
-        req.SystemPrompt.Should().Contain("brief warm-up");
+        lessonPlan.UserPrompt.Should().Contain("brief warm-up");
+        vocabulary.SystemPrompt.Should().NotContain("brief warm-up",
+            because: "gap instruction must not appear in per-block system prompts (#422)");
     }
 
     [Fact]
-    public void SessionHistory_Gap8To14Days_CorrectInstruction()
+    public void SessionHistory_Gap8To14Days_CorrectInstructionInLessonPlan()
     {
+        // Issue #422 (AC9): gap instruction moved from system prompt to LessonPlanUserPrompt only.
         var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 10) };
 
-        var req = _sut.BuildVocabularyPrompt(ctx);
+        var lessonPlan = _sut.BuildLessonPlanPrompt(ctx);
+        var vocabulary = _sut.BuildVocabularyPrompt(ctx);
 
-        req.SystemPrompt.Should().Contain("dedicated review activity");
+        lessonPlan.UserPrompt.Should().Contain("dedicated review activity");
+        vocabulary.SystemPrompt.Should().NotContain("dedicated review activity",
+            because: "gap instruction must not appear in per-block system prompts (#422)");
     }
 
     [Fact]
-    public void SessionHistory_Gap15PlusDays_CorrectInstruction()
+    public void SessionHistory_Gap15PlusDays_CorrectInstructionInLessonPlan()
     {
+        // Issue #422 (AC9): gap instruction moved from system prompt to LessonPlanUserPrompt only.
         var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 20) };
 
-        var req = _sut.BuildVocabularyPrompt(ctx);
+        var lessonPlan = _sut.BuildLessonPlanPrompt(ctx);
+        var vocabulary = _sut.BuildVocabularyPrompt(ctx);
 
-        req.SystemPrompt.Should().Contain("diagnostic mini-activity");
+        lessonPlan.UserPrompt.Should().Contain("diagnostic mini-activity");
+        vocabulary.SystemPrompt.Should().NotContain("diagnostic mini-activity",
+            because: "gap instruction must not appear in per-block system prompts (#422)");
     }
 
     [Fact]
     public void SessionHistory_Gap0Days_TreatedAsBand1()
     {
+        // Issue #422 (AC9): gap instruction in LessonPlanUserPrompt only; band 0 treated as band 1.
         var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: 0) };
 
-        var req = _sut.BuildVocabularyPrompt(ctx);
+        var lessonPlan = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.SystemPrompt.Should().Contain("Build directly on previous session.");
+        lessonPlan.UserPrompt.Should().Contain("Build directly on previous session.");
+    }
+
+    [Theory]
+    [InlineData(2, "Build directly on previous session.")]
+    [InlineData(3, "brief warm-up")]
+    [InlineData(7, "brief warm-up")]
+    [InlineData(8, "dedicated review activity")]
+    [InlineData(14, "dedicated review activity")]
+    [InlineData(15, "diagnostic mini-activity")]
+    public void SessionGapPolicy_BucketBoundaries_AllFourBandsResolved(int daysSince, string expectedFragment)
+    {
+        // Issue #560: gap instruction is now driven by session-gap-policy.json config.
+        // Verifies that the real loaded policy maps all boundary values to the correct band.
+        var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(daysSince: daysSince) };
+
+        var lessonPlan = _sut.BuildLessonPlanPrompt(ctx);
+
+        lessonPlan.UserPrompt.Should().Contain(expectedFragment,
+            because: $"{daysSince} days since last session should match the correct bucket");
     }
 
     [Fact]
@@ -2692,13 +2766,16 @@ public class PromptServiceTests
     // --- True/False coherence constraints (#431) ---
 
     [Fact]
-    public void ExercisesPrompt_TrueFalse_RequiresNonEmptySourcePassage()
+    public void ExercisesPrompt_TrueFalse_SourcePassageEnforcedBySchemaNotPrompt()
     {
-        // Issue #431: True/False items without source text are invalid. The prompt must mandate non-empty sourcePassage.
+        // Issue #422 (AC6): The CRITICAL sourcePassage instruction was removed from the prompt.
+        // Enforcement now lives in the JSON schema (required + minLength:1) and backend validator.
         var req = _sut.BuildExercisesPrompt(BaseCtx());
 
-        req.UserPrompt.Should().Contain("sourcePassage field MUST be non-empty",
-            because: "trueFalse items without an anchoring sourcePassage are pedagogically invalid (#431)");
+        req.UserPrompt.Should().NotContain("sourcePassage field MUST be non-empty",
+            because: "sourcePassage enforcement moved to schema + backend validator (#422)");
+        req.UserPrompt.Should().Contain("sourcePassage",
+            because: "the JSON template still includes the sourcePassage field so AI knows it exists");
     }
 
     [Fact]
@@ -2712,27 +2789,374 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public void ExercisesPrompt_GrammarScope_IncludesNoIntroductionConstraint()
+    public void ExercisesPrompt_GrammarScope_IsPresent()
     {
-        // Issue #431: Practice must not introduce grammar structures beyond the Grammar Scope block.
-        // Use A2 which has a non-empty grammar scope in the config.
+        // Issue #431: Practice scope is defined by the GRAMMAR SCOPE block.
+        // Issue #422 (AC7): The tautological CRITICAL wrapper was removed; the block itself is the authority.
         var ctx = BaseCtx() with { CefrLevel = "A2" };
         var req = _sut.BuildExercisesPrompt(ctx);
 
         req.UserPrompt.Should().Contain("GRAMMAR SCOPE",
-            because: "A2 has a grammar scope and the block must be present");
-        req.UserPrompt.Should().Contain("MUST only use the grammar structures listed in the GRAMMAR SCOPE",
-            because: "the non-introduction constraint must follow the grammar scope block (#431)");
+            because: "A2 has a grammar scope and the block must be present (#431)");
+        req.UserPrompt.Should().NotContain("CRITICAL: Practice exercises MUST only use",
+            because: "the CRITICAL tautological wrapper was removed — the GRAMMAR SCOPE block is self-authoritative (#422)");
     }
 
     [Fact]
-    public void ConversationUserPrompt_WarmUp_RolePhrasesCEFRConstraint()
+    public void ConversationUserPrompt_WarmUp_RolePhrasesCEFRConstraint_RemovedFromPrompt()
     {
-        // Issue #431: WarmUp model phrases used structures above B1 (habría dicho). The prompt must enforce level-appropriate grammar.
+        // Issue #422 (AC8): The redundant CRITICAL level constraint was removed from BuildSectionConversationPrompt.
+        // The system prompt already establishes the CEFR level and the inline instruction covers it.
         var ctx = BaseCtx() with { SectionType = "WarmUp", CefrLevel = "B1" };
         var req = _sut.BuildConversationPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("roleAPhrases and roleBPhrases must use only B1-appropriate grammar",
-            because: "WarmUp role phrases must not exceed the stated CEFR level (#431)");
+        req.UserPrompt.Should().NotContain("roleAPhrases and roleBPhrases must use only B1-appropriate grammar",
+            because: "CEFR constraint consolidated to system prompt; per-field CRITICAL removed (#422)");
+    }
+
+    // --- Prompt consistency pass (#422) ---
+
+    [Fact]
+    public void CurriculumSystemPrompt_DoesNotContainJsonOnlyInstruction()
+    {
+        // Issue #422 (AC1): Duplicate JSON-only instruction removed from CurriculumSystemPrompt.
+        // CurriculumUserPrompt already ends with "Output ONLY the JSON array."
+        var ctx = new CurriculumContext(
+            Language: "Spanish",
+            SessionCount: 10,
+            TargetCefrLevel: "B1",
+            Mode: "general",
+            StudentName: null,
+            StudentNativeLanguage: null,
+            StudentInterests: null,
+            StudentGoals: null,
+            StudentWeaknesses: null,
+            StudentDifficulties: null,
+            TeacherNotes: null,
+            TemplateUnits: null,
+            TargetExam: null,
+            ExamDate: null
+        );
+
+        var req = _sut.BuildCurriculumPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("You output ONLY valid JSON arrays",
+            because: "duplicate JSON-only instruction removed from system prompt (#422)");
+        req.UserPrompt.Should().Contain("Output ONLY the JSON array",
+            because: "the single JSON-only instruction remains in user prompt");
+    }
+
+    [Fact]
+    public void GrammarPrompt_IncludesTemplateGuidance_WhenTemplateAndSectionMatch()
+    {
+        // Issue #422 (AC4): BuildTemplateGuidanceBlock now called in GrammarUserPrompt.
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Grammar Focus",
+            SectionType = "Practice",
+            CefrLevel = "B1"
+        };
+
+        var req = _sut.BuildGrammarPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION REQUIREMENT",
+            because: "Grammar Focus:practice has an overrideGuidance that should appear in the grammar prompt (#422)");
+    }
+
+    [Fact]
+    public void VocabularyPrompt_IncludesTemplateGuidance_WhenTemplateAndSectionMatch()
+    {
+        // Issue #422 (AC4): BuildTemplateGuidanceBlock now called in VocabularyUserPrompt.
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Thematic Vocabulary",
+            SectionType = "Presentation",
+            CefrLevel = "B1"
+        };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION REQUIREMENT",
+            because: "Thematic Vocabulary:presentation has overrideGuidance that should appear in the vocabulary prompt (#422)");
+    }
+
+    [Fact]
+    public void ReadingPrompt_IncludesTemplateGuidance_WhenTemplateAndSectionMatch()
+    {
+        // Issue #422 (AC4): BuildTemplateGuidanceBlock now called in ReadingUserPrompt.
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Reading & Comprehension",
+            SectionType = "Presentation",
+            CefrLevel = "B1"
+        };
+
+        var req = _sut.BuildReadingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION REQUIREMENT",
+            because: "Reading & Comprehension:presentation has overrideGuidance that should appear in the reading prompt (#422)");
+    }
+
+    [Fact]
+    public void HomeworkPrompt_IncludesTemplateGuidance_WhenTemplateAndSectionMatch()
+    {
+        // Issue #422 (AC4): BuildTemplateGuidanceBlock now called in HomeworkUserPrompt.
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Grammar Focus",
+            SectionType = "Presentation",
+            CefrLevel = "B1"
+        };
+
+        var req = _sut.BuildHomeworkPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION REQUIREMENT",
+            because: "Grammar Focus:presentation has overrideGuidance that should appear in the homework prompt (#422)");
+    }
+
+    [Fact]
+    public void GuidedWritingPrompt_IncludesTemplateGuidance_WhenTemplateAndSectionMatch()
+    {
+        // Issue #422 (AC4): BuildTemplateGuidanceBlock now called in GuidedWritingUserPrompt.
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Writing Skills",
+            SectionType = "Production",
+            CefrLevel = "B1"
+        };
+
+        var req = _sut.BuildGuidedWritingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION REQUIREMENT",
+            because: "Writing Skills:production has overrideGuidance that should appear in the guided-writing prompt (#422)");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_IncludesTemplateGuidance_WhenTemplateAndSectionMatch()
+    {
+        // Issue #422 (AC4): BuildTemplateGuidanceBlock now called in ErrorCorrectionUserPrompt.
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Grammar Focus",
+            SectionType = "Practice",
+            CefrLevel = "B1"
+        };
+
+        var req = _sut.BuildErrorCorrectionPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION REQUIREMENT",
+            because: "Grammar Focus:practice has overrideGuidance that should appear in the error-correction prompt (#422)");
+    }
+
+    [Fact]
+    public void ConversationPrompt_WarmUp_IncludesTemplateGuidance_WhenTemplateMatches()
+    {
+        // Issue #422 (AC4): BuildTemplateGuidanceBlock now called in BuildSectionConversationPrompt.
+        var ctx = BaseCtx() with
+        {
+            TemplateName = "Grammar Focus",
+            SectionType = "WarmUp",
+            CefrLevel = "B1"
+        };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("SECTION REQUIREMENT",
+            because: "Grammar Focus:warmUp has overrideGuidance that should appear in the warmUp conversation prompt (#422)");
+    }
+
+    [Fact]
+    public void GapInstruction_AppearsInLessonPlanPrompt_NotInOtherPrompts()
+    {
+        // Issue #422 (AC9): Gap instruction moved from system prompt to LessonPlanUserPrompt only.
+        var history = new SessionHistoryContext(
+            RecentSessions: [],
+            DaysSinceLastSession: 10,
+            OpenActionItems: null,
+            PendingHomework: null,
+            LastHomeworkStatus: null,
+            CoveredTopics: [],
+            SkillLevelOverrides: new Dictionary<string, string>(),
+            LearningStyleNotes: null
+        );
+        var ctx = BaseCtx() with { SessionHistory = history };
+
+        var lessonPlan = _sut.BuildLessonPlanPrompt(ctx);
+        var exercises  = _sut.BuildExercisesPrompt(ctx);
+        var grammar    = _sut.BuildGrammarPrompt(ctx);
+
+        lessonPlan.UserPrompt.Should().Contain("SESSION GAP INSTRUCTION",
+            because: "gap instruction belongs in the lesson plan prompt only (#422)");
+        exercises.SystemPrompt.Should().NotContain("dedicated review activity",
+            because: "gap instruction must not appear in per-block system prompts (#422)");
+        grammar.SystemPrompt.Should().NotContain("dedicated review activity",
+            because: "gap instruction must not appear in per-block system prompts (#422)");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_CultureSocietyPractice_NoSoftNegative()
+    {
+        // Issue #422 (AC3): "Avoid purely mechanical grammar drills" replaced with positive description.
+        var ctx = BaseCtx() with { TemplateName = "Culture & Society" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("Avoid purely mechanical grammar drills",
+            because: "soft negative replaced with positive task description in culture-society:practice (#422)");
+        req.UserPrompt.Should().Contain("communicative and analytical activities",
+            because: "culture-society:practice now uses positive framing (#422)");
+    }
+
+    [Fact]
+    public void LessonPlanPrompt_GrammarFocusWarmUp_NoDiscoveryAmbiguity()
+    {
+        // Issue #422 (AC5): "not practice or discovery" rephrased to "not practice" only.
+        var ctx = BaseCtx() with { TemplateName = "Grammar Focus" };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("not practice or discovery",
+            because: "'or discovery' ambiguity removed from grammar-focus warmUp override (#422)");
+        req.UserPrompt.Should().Contain("not practice",
+            because: "activation scope still explicitly excludes practice (#422)");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_A1_NoSentenceTransformationNegative()
+    {
+        // Issue #422 (AC10): A1 practice guidance no longer states the exclusion redundant with validExerciseTypes.
+        var ctx = BaseCtx() with { CefrLevel = "A1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("Do not include sentence transformation or error correction",
+            because: "redundant negative removed from A1 practice guidance — validExerciseTypes already excludes them (#422)");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_B1_NoRelyOnJustOneType()
+    {
+        // Issue #422 (AC11): B1 practice guidance "do not rely on just one type" removed — already enforced by minExerciseVariety.
+        var ctx = BaseCtx() with { CefrLevel = "B1" };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("do not rely on just one type",
+            because: "redundant negative removed from B1 practice guidance — minExerciseVariety already enforces variety (#422)");
+    }
+
+    // --- Block-level weakness targeting (#432) ---
+
+    [Fact]
+    public void LessonPlanPrompt_WithWeaknesses_IncludesStudentErrorProfile()
+    {
+        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("article gender agreement"), new StudentWeakness("written accent marks")] };
+
+        var req = _sut.BuildLessonPlanPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("STUDENT ERROR PROFILE",
+            because: "lesson plan must include a structured error profile block listing the student's top weaknesses (#432)");
+        req.UserPrompt.Should().Contain("article gender agreement");
+        req.UserPrompt.Should().Contain("written accent marks");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_WithWeaknesses_IncludesWeaknessTargeting()
+    {
+        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("article gender agreement"), new StudentWeakness("written accent marks")] };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("STUDENT WEAKNESS TARGETING",
+            because: "exercises prompt must inject block-level weakness guidance so individual exercises target documented weaknesses (#432)");
+        req.UserPrompt.Should().Contain("article gender agreement");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_WithoutWeaknesses_DoesNotIncludeWeaknessTargeting()
+    {
+        var ctx = BaseCtx("Maria") with { StudentWeaknesses = null };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().NotContain("STUDENT WEAKNESS TARGETING",
+            because: "weakness targeting block must be absent when no weaknesses are documented");
+    }
+
+    [Fact]
+    public void ErrorCorrectionPrompt_WithWeaknesses_IncludesWeaknessTargeting()
+    {
+        var ctx = BaseCtx("Ricardo") with { StudentWeaknesses = [new StudentWeakness("false cognate vigilance")] };
+
+        var req = _sut.BuildErrorCorrectionPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("STUDENT WEAKNESS TARGETING",
+            because: "error-correction prompt must inject block-level weakness guidance (#432)");
+        req.UserPrompt.Should().Contain("false cognate vigilance");
+    }
+
+    [Fact]
+    public void GuidedWritingPrompt_WithWeaknesses_IncludesWeaknessTargeting()
+    {
+        var ctx = BaseCtx("Ricardo") with { StudentWeaknesses = [new StudentWeakness("false cognate vigilance")] };
+
+        var req = _sut.BuildGuidedWritingPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("STUDENT WEAKNESS TARGETING",
+            because: "guided-writing prompt must inject block-level weakness guidance (#432)");
+        req.UserPrompt.Should().Contain("false cognate vigilance");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_GrammaticalWeakness_UsesGrammaticalGuidance()
+    {
+        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("ser/estar confusion", "grammatical")] };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("MANDATORY",
+            because: "grammatical weaknesses in practice sections must use MANDATORY guidance");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_LexicalWeakness_UsesLexicalGuidance()
+    {
+        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("false cognates", "lexical")] };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("STUDENT WEAKNESS TARGETING",
+            because: "lexical weakness must inject a guidance block");
+        req.UserPrompt.Should().NotContain("MANDATORY",
+            because: "lexical guidance is conditional, not mandatory");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_OrthographicWeakness_UsesOrthographicGuidance()
+    {
+        var ctx = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("accent marks on stressed vowels", "orthographic")] };
+
+        var req = _sut.BuildExercisesPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("STUDENT WEAKNESS TARGETING",
+            because: "orthographic weakness must inject a guidance block");
+        req.UserPrompt.Should().NotContain("MANDATORY",
+            because: "orthographic guidance is conditional, not mandatory");
+    }
+
+    [Fact]
+    public void ExercisesPrompt_UnknownWeaknessType_FallsBackToGrammaticalGuidance()
+    {
+        var ctxUnknown = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("some issue", "unknown-type")] };
+        var ctxGrammatical = BaseCtx("Nadia") with { StudentWeaknesses = [new StudentWeakness("some issue", "grammatical")] };
+
+        var unknownPrompt = _sut.BuildExercisesPrompt(ctxUnknown).UserPrompt;
+        var grammaticalPrompt = _sut.BuildExercisesPrompt(ctxGrammatical).UserPrompt;
+
+        unknownPrompt.Should().Contain("STUDENT WEAKNESS TARGETING",
+            because: "unknown type should fall back to grammatical guidance and still inject a block");
+        unknownPrompt.Should().Contain("MANDATORY",
+            because: "the fallback is grammatical guidance which is MANDATORY");
     }
 }
+

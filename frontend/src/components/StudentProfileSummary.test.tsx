@@ -24,9 +24,9 @@ const FULL_STUDENT: Student = {
   nativeLanguage: 'Italian',
   interests: ['football', 'cooking'],
   learningGoals: ['get a job in Barcelona'],
-  weaknesses: ['ser vs estar'],
+  weaknesses: [{ description: 'ser vs estar', weaknessType: 'grammatical' as const }],
   difficulties: [
-    { id: 'x', category: 'grammar', item: 'subjunctive', severity: 'high', trend: 'stable' },
+    { id: 'x', description: 'subjunctive', competency: 'Grammar', subcategory: '', severity: 'high', trend: 'stable', status: 'Active' },
   ],
 }
 

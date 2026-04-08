@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FluentAssertions;
 using LangTeach.Api.AI;
 using LangTeach.Api.Data.Models;
@@ -356,8 +357,8 @@ public class CurriculumGenerationServiceTests
     {
         var personalizationJson = """
             [
-                {"orderIndex":1,"topic":"Marco at the registration office","contextDescription":"Marco tells the clerk his name and phone number at a Barcelona registration office.","personalizationNotes":"Extra ser/estar practice. No role-play, written exercises only."},
-                {"orderIndex":2,"topic":"Marco counts the seats at Camp Nou","contextDescription":"Marco uses numbers to count seats and prices at Camp Nou.","personalizationNotes":"Reinforce false cognates with Italian numbers."}
+                {"orderIndex":1,"topic":"Marco at the registration office","contextDescription":{"setting":"Barcelona registration office","scenario":"Marco tells the clerk his name and phone number."},"personalizationNotes":{"emphasisAreas":["ser/estar practice"],"constraints":["no role-play, written exercises only"],"l1Notes":[]}},
+                {"orderIndex":2,"topic":"Marco counts the seats at Camp Nou","contextDescription":{"setting":"Camp Nou","scenario":"Marco uses numbers to count seats and prices."},"personalizationNotes":{"emphasisAreas":[],"constraints":[],"l1Notes":["false cognates with Italian numbers"]}}
             ]
             """;
         var claude = new ConfigurableClaudeClient(personalizationJson);
@@ -372,10 +373,19 @@ public class CurriculumGenerationServiceTests
 
         var (entries, _) = await sut.GenerateAsync(ctx);
 
-        entries[0].ContextDescription.Should().Be("Marco tells the clerk his name and phone number at a Barcelona registration office.");
-        entries[0].PersonalizationNotes.Should().Contain("ser/estar");
-        entries[1].ContextDescription.Should().Be("Marco uses numbers to count seats and prices at Camp Nou.");
-        entries[1].PersonalizationNotes.Should().Contain("false cognates");
+        var ctx0 = JsonSerializer.Deserialize<ContextDescriptionData>(entries[0].ContextDescription!, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        ctx0!.Setting.Should().Contain("Barcelona registration office");
+        ctx0.Scenario.Should().Contain("tells the clerk");
+
+        var notes0 = JsonSerializer.Deserialize<PersonalizationNotesData>(entries[0].PersonalizationNotes!, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        notes0!.EmphasisAreas.Should().ContainMatch("*ser/estar*");
+        notes0.Constraints.Should().ContainMatch("*role-play*");
+
+        var ctx1 = JsonSerializer.Deserialize<ContextDescriptionData>(entries[1].ContextDescription!, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        ctx1!.Setting.Should().Contain("Camp Nou");
+
+        var notes1 = JsonSerializer.Deserialize<PersonalizationNotesData>(entries[1].PersonalizationNotes!, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        notes1!.L1Notes.Should().ContainMatch("*false cognates*");
     }
 
     [Fact]
@@ -384,8 +394,8 @@ public class CurriculumGenerationServiceTests
         // AI response where weakness emphasis ("ser/estar") appears in BOTH session notes
         var personalizationJson = """
             [
-                {"orderIndex":1,"topic":"Marco greets at the office","contextDescription":"Marco introduces himself at a Barcelona office.","personalizationNotes":"ser/estar focus: Marco uses 'soy' (not 'estoy') to introduce himself."},
-                {"orderIndex":2,"topic":"Marco discusses his work","contextDescription":"Marco talks about his job and daily routines.","personalizationNotes":"ser/estar revisited: describing permanent (ser) vs. temporary (estar) states."}
+                {"orderIndex":1,"topic":"Marco greets at the office","contextDescription":{"setting":"Barcelona office","scenario":"Marco introduces himself at a Barcelona office."},"personalizationNotes":{"emphasisAreas":["ser/estar focus: uses 'soy' not 'estoy'"],"constraints":[],"l1Notes":[]}},
+                {"orderIndex":2,"topic":"Marco discusses his work","contextDescription":{"setting":"Workplace","scenario":"Marco talks about his job and daily routines."},"personalizationNotes":{"emphasisAreas":["ser/estar revisited: permanent vs. temporary states"],"constraints":[],"l1Notes":[]}}
             ]
             """;
         var claude = new ConfigurableClaudeClient(personalizationJson);
@@ -398,13 +408,16 @@ public class CurriculumGenerationServiceTests
             StudentInterests: null, StudentGoals: null,
             TemplateLevel: "A1.1",
             TemplateUnits: null,
-            StudentWeaknesses: ["ser/estar distinction"]);
+            StudentWeaknesses: [new StudentWeakness("ser/estar distinction")]);
 
         var (entries, _) = await sut.GenerateAsync(ctx);
 
-        // Weakness emphasis should appear in PersonalizationNotes for BOTH entries
-        entries[0].PersonalizationNotes.Should().Contain("ser/estar");
-        entries[1].PersonalizationNotes.Should().Contain("ser/estar");
+        // Weakness emphasis should appear in PersonalizationNotes.EmphasisAreas for BOTH entries
+        var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var n0 = JsonSerializer.Deserialize<PersonalizationNotesData>(entries[0].PersonalizationNotes!, opts);
+        var n1 = JsonSerializer.Deserialize<PersonalizationNotesData>(entries[1].PersonalizationNotes!, opts);
+        n0!.EmphasisAreas.Should().ContainMatch("*ser/estar*");
+        n1!.EmphasisAreas.Should().ContainMatch("*ser/estar*");
     }
 
     [Fact]
@@ -418,8 +431,8 @@ public class CurriculumGenerationServiceTests
             """;
         var personalizationJson = """
             [
-                {"orderIndex":1,"topic":"Marco greets the team","contextDescription":"Marco introduces himself to his football team.","personalizationNotes":"Ser/estar focus for Italian speaker."},
-                {"orderIndex":2,"topic":"Marco counts goals","contextDescription":"Marco counts goals and match scores.","personalizationNotes":"Numbers in sports context."}
+                {"orderIndex":1,"topic":"Marco greets the team","contextDescription":{"setting":"Football team","scenario":"Marco introduces himself to his football team."},"personalizationNotes":{"emphasisAreas":["ser/estar focus for Italian speaker"],"constraints":[],"l1Notes":[]}},
+                {"orderIndex":2,"topic":"Marco counts goals","contextDescription":{"setting":"Football stadium","scenario":"Marco counts goals and match scores."},"personalizationNotes":{"emphasisAreas":["numbers in sports context"],"constraints":[],"l1Notes":[]}}
             ]
             """;
         var claude = new SequentialClaudeClient(freeGenJson, personalizationJson);
@@ -446,7 +459,7 @@ public class CurriculumGenerationServiceTests
             """;
         var personalizationJson = """
             [
-                {"orderIndex":1,"topic":"Marco greets the team","contextDescription":"Marco introduces himself to his football team in Barcelona.","personalizationNotes":"Ser/estar for Italian speaker."}
+                {"orderIndex":1,"topic":"Marco greets the team","contextDescription":{"setting":"Football team in Barcelona","scenario":"Marco introduces himself to his football team in Barcelona."},"personalizationNotes":{"emphasisAreas":["ser/estar for Italian speaker"],"constraints":[],"l1Notes":[]}}
             ]
             """;
         var claude = new SequentialClaudeClient(freeGenJson, personalizationJson);
@@ -460,7 +473,102 @@ public class CurriculumGenerationServiceTests
 
         var (entries, _) = await sut.GenerateAsync(ctx);
 
-        entries[0].ContextDescription.Should().Be("Marco introduces himself to his football team in Barcelona.");
-        entries[0].PersonalizationNotes.Should().Contain("Ser/estar");
+        var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var ctx0 = JsonSerializer.Deserialize<ContextDescriptionData>(entries[0].ContextDescription!, opts);
+        ctx0!.Setting.Should().Contain("Barcelona");
+        ctx0.Scenario.Should().Contain("introduces himself");
+
+        var notes0 = JsonSerializer.Deserialize<PersonalizationNotesData>(entries[0].PersonalizationNotes!, opts);
+        notes0!.EmphasisAreas.Should().ContainMatch("*ser/estar*");
+    }
+
+    // -------------------------------------------------------------------------
+    // StripFences: markdown-fenced responses are accepted
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task FreePath_FenceWrappedJson_IsDeserializedCorrectly()
+    {
+        var fencedJson = """
+            ```json
+            [
+                {"orderIndex":1,"topic":"Greetings","grammarFocus":"ser/estar","competencies":["speaking"],"lessonType":"Communicative"}
+            ]
+            ```
+            """;
+        var sut = BuildService(new FakeTemplateService(), new ConfigurableClaudeClient(fencedJson));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 1,
+            TargetCefrLevel: null, TargetExam: null, ExamDate: null,
+            StudentName: null, StudentNativeLanguage: null,
+            StudentInterests: null, StudentGoals: null);
+
+        var (entries, _) = await sut.GenerateAsync(ctx);
+
+        entries.Should().HaveCount(1);
+        entries[0].Topic.Should().Be("Greetings");
+    }
+
+    [Fact]
+    public async Task FreePath_NonJsonResponse_ThrowsCurriculumGenerationException()
+    {
+        var sut = BuildService(new FakeTemplateService(), new ConfigurableClaudeClient("Sorry, I cannot generate that."));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 1,
+            TargetCefrLevel: null, TargetExam: null, ExamDate: null,
+            StudentName: null, StudentNativeLanguage: null,
+            StudentInterests: null, StudentGoals: null);
+
+        await sut.Invoking(s => s.GenerateAsync(ctx))
+            .Should().ThrowAsync<CurriculumGenerationException>();
+    }
+
+    [Fact]
+    public async Task TemplatePath_PersonalizationFenceWrappedJson_IsAppliedCorrectly()
+    {
+        var fencedPersonalization = """
+            ```json
+            [{"orderIndex":1,"topic":"Marco meets his football team"},{"orderIndex":2,"topic":"Marco explains why he loves football"}]
+            ```
+            """;
+        var sut = BuildService(
+            new FakeTemplateService(FakeTemplates.TwoUnitTemplate()),
+            new ConfigurableClaudeClient(fencedPersonalization));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 2,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: "Marco", StudentNativeLanguage: "Italian",
+            StudentInterests: ["football"], StudentGoals: null,
+            TemplateLevel: "A1.1");
+
+        var (entries, _) = await sut.GenerateAsync(ctx);
+
+        entries[0].Topic.Should().Be("Marco meets his football team");
+        entries[1].Topic.Should().Be("Marco explains why he loves football");
+    }
+
+    [Fact]
+    public async Task TemplatePath_PersonalizationNonJsonResponse_KeepsOriginalTopics()
+    {
+        var sut = BuildService(
+            new FakeTemplateService(FakeTemplates.TwoUnitTemplate()),
+            new ConfigurableClaudeClient("Sorry, I cannot generate personalization."));
+
+        var ctx = new CurriculumContext(
+            Language: "Spanish", Mode: "general", SessionCount: 2,
+            TargetCefrLevel: "A1", TargetExam: null, ExamDate: null,
+            StudentName: "Marco", StudentNativeLanguage: "Italian",
+            StudentInterests: null, StudentGoals: null,
+            TemplateLevel: "A1.1");
+
+        // Should not throw; original template entries are preserved
+        var (entries, _) = await sut.GenerateAsync(ctx);
+
+        entries.Should().HaveCount(2);
+        entries[0].TemplateUnitRef.Should().Be("Nosotros");
+        entries[1].TemplateUnitRef.Should().Be("Quiero aprender español");
     }
 }

@@ -2,7 +2,11 @@
 
 ## Start
 
-Create `sprint/<slug>` from `main`. Update "Current milestone" view filter on the Roadmap board in GitHub UI. New sprint issues use `./scripts/add-to-board.sh <url> <status>`.
+Create `sprint/<slug>` from `main`. Update "Current milestone" view filter on the Roadmap board in GitHub UI. Then run the full milestone sync to add all pre-created sprint issues to the board:
+```bash
+./scripts/sync-board-milestone.sh "<milestone-name>"
+```
+After that, new issues added to the milestone are synced automatically by the `sync-board.yml` GitHub Actions workflow (requires `GH_PROJECT_TOKEN` secret).
 
 ## During sprint
 

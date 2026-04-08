@@ -400,7 +400,7 @@ describe('GeneratePanel - replace on insert', () => {
 describe('GeneratePanel - difficulty targeting', () => {
   it('includes targetedDifficulties in generationParams when saving', async () => {
     const difficulties = [
-      { category: 'grammar', item: 'ser/estar', severity: 'high' },
+      { competency: 'Grammar', description: 'Confuses ser/estar', severity: 'high' },
     ]
     const newBlock = makeBlock({ id: 'new-block' })
     vi.mocked(generateApi.saveContentBlock).mockResolvedValue(newBlock)
@@ -436,7 +436,7 @@ describe('GeneratePanel - difficulty targeting', () => {
 
   it('shows difficulty badges in generated preview', () => {
     const difficulties = [
-      { category: 'grammar', item: 'articles', severity: 'medium' },
+      { competency: 'Grammar', description: 'Struggles with articles', severity: 'medium' },
     ]
 
     mockUseGenerate.mockReturnValue({
@@ -456,7 +456,7 @@ describe('GeneratePanel - difficulty targeting', () => {
     )
 
     expect(screen.getByTestId('targeted-difficulties')).toBeInTheDocument()
-    expect(screen.getByText('[grammar]')).toBeInTheDocument()
+    expect(screen.getByText('[Grammar]')).toBeInTheDocument()
   })
 })
 

@@ -9,6 +9,11 @@ services:
       - "10000:10000"
     volumes:
       - azurite-data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "const s=require('net').connect(10000,'127.0.0.1');s.on('connect',()=>process.exit(0));s.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),2000);"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -39,6 +44,10 @@ services:
       Auth0__Domain: "${AUTH0_DOMAIN}"
       Auth0__Audience: "${AUTH0_AUDIENCE}"
       Claude__ApiKey: "${CLAUDE_API_KEY}"
+      AzureSpeech__ApiKey: "${AZURE_SPEECH_API_KEY}"
+      AzureSpeech__Region: "${AZURE_SPEECH_REGION}"
+      Telegram__BotToken: "${TELEGRAM_BOT_TOKEN}"
+      Telegram__WebhookSecret: "${TELEGRAM_WEBHOOK_SECRET}"
       AzureBlobStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
     healthcheck:
       test: curl -sf http://localhost:5000/health || exit 1
@@ -49,7 +58,7 @@ services:
       sqlserver:
         condition: service_healthy
       azurite:
-        condition: service_started
+        condition: service_healthy
 
   frontend:
     build:

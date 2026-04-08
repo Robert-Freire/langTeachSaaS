@@ -85,7 +85,7 @@ public class PromptServiceIntegrationTests
             StudentNativeLanguage: "Portuguese",
             StudentInterests: ["football", "sports"],
             StudentGoals: ["improve everyday conversation"],
-            StudentWeaknesses: ["articles"],
+            StudentWeaknesses: [new StudentWeakness("articles")],
             ExistingNotes: null
         );
 
@@ -117,7 +117,7 @@ public class PromptServiceIntegrationTests
             StudentNativeLanguage: "English",
             StudentInterests: ["cooking", "travel"],
             StudentGoals: ["pass DELE B2"],
-            StudentWeaknesses: ["subjunctive", "ser vs estar"],
+            StudentWeaknesses: [new StudentWeakness("subjunctive"), new StudentWeakness("ser vs estar")],
             ExistingNotes: null
         );
 
@@ -150,7 +150,7 @@ public class PromptServiceIntegrationTests
             StudentNativeLanguage: "Japanese",
             StudentInterests: ["anime", "manga", "gaming"],
             StudentGoals: ["speak naturally with friends"],
-            StudentWeaknesses: ["articles", "phrasal verbs"],
+            StudentWeaknesses: [new StudentWeakness("articles"), new StudentWeakness("phrasal verbs")],
             ExistingNotes: null
         );
 

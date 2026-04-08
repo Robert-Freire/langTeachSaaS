@@ -345,16 +345,38 @@ public class CourseService : ICourseService
             TemplateLevel: string.IsNullOrWhiteSpace(req.TemplateLevel) ? null : req.TemplateLevel,
             TemplateUnits: null,
             StudentWeaknesses: student is not null
-                ? JsonStorageHelper.DeserializeList<string>(student.Weaknesses).ToArray()
+                ? JsonStorageHelper.DeserializeListWithStringFallback<StudentWeaknessDto>(
+                    student.Weaknesses,
+                    s => new StudentWeaknessDto(s, "grammatical"))
+                    .Select(w => new StudentWeakness(w.Description, w.WeaknessType)).ToArray()
                 : null,
             StudentDifficulties: student is not null
-                ? JsonStorageHelper.DeserializeList<DifficultyDto>(student.Difficulties).ToArray()
+                ? JsonStorageHelper.DeserializeList<DifficultyDto>(student.Difficulties)
+                    .Where(d => string.Equals(d.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                    .ToArray()
                 : null,
             TeacherNotes: req.TeacherNotes
         );
 
     private static CurriculumEntryDto MapEntryToDto(CurriculumEntry e) =>
-        new(e.Id, e.OrderIndex, e.Topic, e.GrammarFocus, e.Competencies, e.LessonType, e.LessonId, e.Status, e.TemplateUnitRef, e.CompetencyFocus, e.ContextDescription, e.PersonalizationNotes, e.VocabularyThemes);
+        new(
+            e.Id,
+            e.OrderIndex,
+            e.Topic,
+            e.GrammarFocus,
+            e.Competencies,
+            e.LessonType,
+            e.LessonId,
+            e.Status,
+            e.TemplateUnitRef,
+            e.CompetencyFocus,
+            JsonStorageHelper.DeserializeWithFallback<ContextDescriptionData>(
+                e.ContextDescription,
+                text => new ContextDescriptionData { Setting = string.Empty, Scenario = text }),
+            JsonStorageHelper.DeserializeWithFallback<PersonalizationNotesData>(
+                e.PersonalizationNotes,
+                text => new PersonalizationNotesData { EmphasisAreas = [text] }),
+            e.VocabularyThemes);
 
     private static CourseDto MapToDto(Course c, List<CurriculumWarning>? warnings = null, List<string>? dismissedKeys = null) =>
         new(

@@ -55,9 +55,11 @@ test('homework type renders editor and student view', async ({ browser }) => {
     await wrapupSection.blur()
     await expect(page.getByTestId('saved-indicator')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
-    // Generate homework via WrapUp section (defaults to homework task type)
+    // Generate homework via WrapUp section
     await page.getByTestId('generate-btn-wrapup').click()
     await expect(page.getByTestId('generate-panel')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+    // Wait for content-type rules to load so task type is resolved before generating
+    await expect(page.getByTestId('task-type-loading')).not.toBeVisible({ timeout: UI_TIMEOUT })
     await page.getByTestId('generate-btn').click()
 
     // Wait for streaming and insert

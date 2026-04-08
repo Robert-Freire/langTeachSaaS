@@ -1,11 +1,18 @@
 import { apiClient } from '../lib/apiClient'
 
+export interface StudentWeaknessItem {
+  description: string
+  weaknessType: 'grammatical' | 'lexical' | 'orthographic'
+}
+
 export interface Difficulty {
   id: string
-  category: string
-  item: string
+  description: string
+  competency: string
+  subcategory: string
   severity: string
   trend: string
+  status: string
 }
 
 export interface Student {
@@ -17,7 +24,7 @@ export interface Student {
   notes: string | null
   nativeLanguage: string | null
   learningGoals: string[]
-  weaknesses: string[]
+  weaknesses: StudentWeaknessItem[]
   difficulties: Difficulty[]
   createdAt: string
   updatedAt: string
@@ -38,7 +45,7 @@ export interface StudentFormData {
   notes?: string | null
   nativeLanguage?: string | null
   learningGoals: string[]
-  weaknesses: string[]
+  weaknesses: StudentWeaknessItem[]
   difficulties: Difficulty[]
 }
 
@@ -80,6 +87,9 @@ export interface LessonHistoryEntry {
   homeworkAssigned: string | null
   areasToImprove: string | null
   nextLessonIdeas: string | null
+  emotionalSignals: string | null
+  followingSessionHomeworkStatus: number | null
+  followingSessionHomeworkStatusName: string | null
 }
 
 export async function getLessonHistory(studentId: string): Promise<LessonHistoryEntry[]> {

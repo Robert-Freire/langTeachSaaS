@@ -28,6 +28,44 @@ internal static class JsonStorageHelper
 
     public static string Serialize<T>(List<T> list) => JsonSerializer.Serialize(list);
 
+    public static string Serialize<T>(T value) => JsonSerializer.Serialize(value);
+
+    /// <summary>
+    /// Deserializes a JSON string into a typed object.
+    /// Returns null on null or empty input.
+    /// Falls back to <paramref name="legacyCoerce"/> when the string is not valid JSON or cannot be deserialized.
+    /// </summary>
+    public static T? DeserializeWithFallback<T>(string? json, Func<string, T> legacyCoerce) where T : class
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+        try { return JsonSerializer.Deserialize<T>(json, CaseInsensitive); }
+        catch (JsonException) { return legacyCoerce(json); }
+    }
+
+    /// <summary>
+    /// Deserializes a JSON column that may contain either a <c>List&lt;T&gt;</c> (new format)
+    /// or a <c>List&lt;string&gt;</c> (legacy format), converting legacy strings via
+    /// <paramref name="legacyMap"/>. Returns an empty list on null/empty/unparseable input.
+    /// </summary>
+    public static List<T> DeserializeListWithStringFallback<T>(string? json, Func<string, T> legacyMap)
+    {
+        if (string.IsNullOrEmpty(json)) return [];
+        try
+        {
+            var typed = JsonSerializer.Deserialize<List<T>>(json, CaseInsensitive) ?? [];
+            return typed;
+        }
+        catch (JsonException)
+        {
+            try
+            {
+                var strings = JsonSerializer.Deserialize<List<string>>(json, CaseInsensitive) ?? [];
+                return strings.Select(legacyMap).ToList();
+            }
+            catch (JsonException) { return []; }
+        }
+    }
+
     /// <summary>
     /// Reads a top-level string property from a JSON object.
     /// Returns null on null/empty input, missing key, non-string value, or parse error.

@@ -149,7 +149,7 @@ public class StudentsControllerTests
             CefrLevel = "B1",
             NativeLanguage = "Portuguese",
             LearningGoals = ["travel", "conversation"],
-            Weaknesses = ["past tenses", "articles"],
+            Weaknesses = [new StudentWeaknessDto("past tenses", "grammatical"), new StudentWeaknessDto("articles", "lexical")],
         };
 
         var response = await client.PostAsJsonAsync("/api/students", request);
@@ -158,7 +158,10 @@ public class StudentsControllerTests
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
         student!.NativeLanguage.Should().Be("Portuguese");
         student.LearningGoals.Should().BeEquivalentTo(["travel", "conversation"]);
-        student.Weaknesses.Should().BeEquivalentTo(["past tenses", "articles"]);
+        student.Weaknesses.Should().BeEquivalentTo([
+            new StudentWeaknessDto("past tenses", "grammatical"),
+            new StudentWeaknessDto("articles", "lexical"),
+        ]);
     }
 
     [Fact]
@@ -196,7 +199,7 @@ public class StudentsControllerTests
             CefrLevel = created.CefrLevel,
             NativeLanguage = "German",
             LearningGoals = ["business"],
-            Weaknesses = ["word order"],
+            Weaknesses = [new StudentWeaknessDto("word order", "grammatical")],
         };
 
         var response = await client.PutAsJsonAsync($"/api/students/{created.Id}", updateRequest);
@@ -205,7 +208,7 @@ public class StudentsControllerTests
         var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
         updated!.NativeLanguage.Should().Be("German");
         updated.LearningGoals.Should().BeEquivalentTo(["business"]);
-        updated.Weaknesses.Should().BeEquivalentTo(["word order"]);
+        updated.Weaknesses.Should().BeEquivalentTo([new StudentWeaknessDto("word order", "grammatical")]);
     }
 
     [Fact]
@@ -258,8 +261,8 @@ public class StudentsControllerTests
             CefrLevel = "B1",
             Difficulties =
             [
-                new DifficultyDto("d1", "grammar", "ser/estar in past tense", "high", "stable"),
-                new DifficultyDto("d2", "pronunciation", "rolled /r/", "medium", "improving"),
+                new DifficultyDto("d1", "Confuses ser/estar in past tense", "Grammar", "ser/estar", "high", "stable", "Active"),
+                new DifficultyDto("d2", "Difficulty with rolled /r/", "Pronunciation", "/r/", "medium", "stable", "Active"),
             ],
         };
 
@@ -268,11 +271,11 @@ public class StudentsControllerTests
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
         student!.Difficulties.Should().HaveCount(2);
-        student.Difficulties[0].Category.Should().Be("grammar");
-        student.Difficulties[0].Item.Should().Be("ser/estar in past tense");
+        student.Difficulties[0].Competency.Should().Be("Grammar");
+        student.Difficulties[0].Description.Should().Be("Confuses ser/estar in past tense");
         student.Difficulties[0].Severity.Should().Be("high");
-        student.Difficulties[0].Trend.Should().Be("stable");
-        student.Difficulties[1].Category.Should().Be("pronunciation");
+        student.Difficulties[0].Status.Should().Be("Active");
+        student.Difficulties[1].Competency.Should().Be("Pronunciation");
     }
 
     [Fact]
@@ -289,7 +292,7 @@ public class StudentsControllerTests
             CefrLevel = created.CefrLevel,
             Difficulties =
             [
-                new DifficultyDto("d1", "vocabulary", "academic register", "low", "declining"),
+                new DifficultyDto("d1", "Lacks academic register vocabulary", "Vocabulary", "academic register", "low", "stable", "Active"),
             ],
         };
 
@@ -298,8 +301,8 @@ public class StudentsControllerTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
         updated!.Difficulties.Should().HaveCount(1);
-        updated.Difficulties[0].Category.Should().Be("vocabulary");
-        updated.Difficulties[0].Item.Should().Be("academic register");
+        updated.Difficulties[0].Competency.Should().Be("Vocabulary");
+        updated.Difficulties[0].Description.Should().Be("Lacks academic register vocabulary");
 
         // Update again to remove all difficulties
         var clearRequest = new UpdateStudentRequest
@@ -328,7 +331,7 @@ public class StudentsControllerTests
             CefrLevel = "A1",
             Difficulties =
             [
-                new DifficultyDto("d1", "invalid-category", "some item", "high", "stable"),
+                new DifficultyDto("d1", "some description", "invalid-category", "", "high", "stable", "Active"),
             ],
         };
 
@@ -349,7 +352,7 @@ public class StudentsControllerTests
             CefrLevel = "A1",
             Difficulties =
             [
-                new DifficultyDto("d1", "grammar", "some item", "extreme", "stable"),
+                new DifficultyDto("d1", "some description", "Grammar", "", "extreme", "stable", "Active"),
             ],
         };
 

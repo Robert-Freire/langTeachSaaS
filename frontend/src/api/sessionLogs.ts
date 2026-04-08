@@ -23,6 +23,26 @@ export interface SessionLog {
   createdAt: string
   updatedAt: string
   isCancelled: boolean
+  status: number
+  statusName: 'Draft' | 'Confirmed'
+  mentionedDifficultyPairs: string
+  suggestedDifficulties: string
+}
+
+export interface SuggestedDifficulty {
+  description: string
+  competency: string
+  subcategory: string
+  severity: string
+}
+
+export interface ExtractedReflection {
+  whatWasCovered: string | null
+  areasToImprove: string | null
+  emotionalSignals: string | null
+  homeworkAssigned: string | null
+  nextLessonIdeas: string | null
+  suggestedDifficulties: SuggestedDifficulty[]
 }
 
 export interface CreateSessionLogRequest {
@@ -38,6 +58,9 @@ export interface CreateSessionLogRequest {
   linkedLessonId?: string | null
   topicTags?: string | null
   isCancelled?: boolean
+  status?: 'Draft' | 'Confirmed'
+  mentionedDifficultyPairs?: { Competency: string; Subcategory: string }[]
+  suggestedDifficulties?: SuggestedDifficulty[]
 }
 
 export type UpdateSessionLogRequest = CreateSessionLogRequest
@@ -95,4 +118,15 @@ export async function updateSession(
 
 export async function deleteSession(studentId: string, sessionId: string): Promise<void> {
   await apiClient.delete(`/api/students/${studentId}/sessions/${sessionId}`)
+}
+
+export async function extractSessionReflection(
+  studentId: string,
+  text: string,
+): Promise<ExtractedReflection> {
+  const res = await apiClient.post<ExtractedReflection>(
+    `/api/students/${studentId}/sessions/extract`,
+    { text },
+  )
+  return res.data
 }

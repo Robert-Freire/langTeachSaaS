@@ -325,6 +325,60 @@ public class LessonNotesControllerTests
     }
 
     [Fact]
+    public async Task ExtractNotes_ReturnsExtractedFields()
+    {
+        // In Testing environment, StubReflectionExtractionService is registered automatically.
+        // It returns fixed "[Extracted]..." values regardless of input.
+        var (client, lessonId, _) = await SeedLessonWithStudent(
+            "auth0|notes-extract", "notes-extract@example.com");
+
+        var request = new ExtractReflectionRequest { Text = "We covered past tense today. Student got confused on irregulars but was very enthusiastic." };
+        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/notes/extract", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dto = await response.Content.ReadFromJsonAsync<ExtractedReflectionDto>();
+        dto!.WhatWasCovered.Should().Be("[Extracted] What was covered");
+        dto.AreasToImprove.Should().Be("[Extracted] Areas to improve");
+        dto.EmotionalSignals.Should().Be("[Extracted] Emotional signals");
+        dto.HomeworkAssigned.Should().Be("[Extracted] Homework assigned");
+        dto.NextLessonIdeas.Should().Be("[Extracted] Next lesson ideas");
+    }
+
+    [Fact]
+    public async Task ExtractNotes_RequiresText()
+    {
+        var (client, lessonId, _) = await SeedLessonWithStudent(
+            "auth0|notes-extract-empty", "notes-extract-empty@example.com");
+
+        var request = new { text = "" };
+        var response = await client.PostAsJsonAsync($"/api/lessons/{lessonId}/notes/extract", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PutNotes_IncludesEmotionalSignals()
+    {
+        var (client, lessonId, _) = await SeedLessonWithStudent(
+            "auth0|notes-emotional", "notes-emotional@example.com");
+
+        var request = new SaveLessonNotesRequest
+        {
+            WhatWasCovered = "Ser vs Estar",
+            EmotionalSignals = "Student was frustrated but persevered",
+        };
+
+        var putResponse = await client.PutAsJsonAsync($"/api/lessons/{lessonId}/notes", request);
+        putResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dto = await putResponse.Content.ReadFromJsonAsync<LessonNotesDto>();
+        dto!.EmotionalSignals.Should().Be("Student was frustrated but persevered");
+
+        var getResponse = await client.GetAsync($"/api/lessons/{lessonId}/notes");
+        var getDto = await getResponse.Content.ReadFromJsonAsync<LessonNotesDto>();
+        getDto!.EmotionalSignals.Should().Be("Student was frustrated but persevered");
+    }
+
+    [Fact]
     public async Task CrossTeacherIsolation_CannotAccessOtherTeacherNotes()
     {
         var (_, lessonId, _) = await SeedLessonWithStudent(
@@ -338,5 +392,156 @@ public class LessonNotesControllerTests
         var clientB = _factory.CreateAuthenticatedClient("auth0|notes-teacher-b", "notes-teacher-b@example.com");
         var getResponse = await clientB.GetAsync($"/api/lessons/{lessonId}/notes");
         getResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task LessonHistory_ShowsFollowingSessionHomeworkStatus_WhenPresent()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var teacher = new Teacher
+        {
+            Id = Guid.NewGuid(),
+            Auth0UserId = "auth0|hw-status-present",
+            Email = "hw-status-present@example.com",
+            DisplayName = "HW Status Teacher",
+            IsApproved = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Teachers.Add(teacher);
+
+        var student = new Student
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            Name = "HW Status Student",
+            LearningLanguage = "Spanish",
+            CefrLevel = "A1",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Students.Add(student);
+
+        var lessonDate = DateTime.UtcNow.AddDays(-5);
+        var lesson = new Lesson
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            StudentId = student.Id,
+            Title = "Lesson With Homework",
+            Language = "Spanish",
+            CefrLevel = "A1",
+            Topic = "Greetings",
+            DurationMinutes = 45,
+            ScheduledAt = lessonDate,
+            CreatedAt = lessonDate,
+            UpdatedAt = lessonDate,
+        };
+        db.Lessons.Add(lesson);
+
+        db.LessonNotes.Add(new LessonNote
+        {
+            Id = Guid.NewGuid(),
+            LessonId = lesson.Id,
+            StudentId = student.Id,
+            TeacherId = teacher.Id,
+            HomeworkAssigned = "Read chapter 1",
+            CreatedAt = lessonDate,
+            UpdatedAt = lessonDate,
+        });
+
+        // Following session records that homework was done
+        db.SessionLogs.Add(new SessionLog
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            StudentId = student.Id,
+            SessionDate = lessonDate.AddDays(3),
+            PreviousHomeworkStatus = HomeworkStatus.Done,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        });
+
+        await db.SaveChangesAsync();
+
+        var client = _factory.CreateAuthenticatedClient("auth0|hw-status-present", "hw-status-present@example.com");
+        var response = await client.GetAsync($"/api/students/{student.Id}/lesson-history");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var entries = await response.Content.ReadFromJsonAsync<List<LessonHistoryEntryDto>>();
+        entries.Should().HaveCount(1);
+        entries![0].FollowingSessionHomeworkStatus.Should().Be(HomeworkStatus.Done);
+        entries[0].FollowingSessionHomeworkStatusName.Should().Be("Done");
+    }
+
+    [Fact]
+    public async Task LessonHistory_FollowingSessionHomeworkStatus_IsNull_WhenNoFollowingSession()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var teacher = new Teacher
+        {
+            Id = Guid.NewGuid(),
+            Auth0UserId = "auth0|hw-status-absent",
+            Email = "hw-status-absent@example.com",
+            DisplayName = "HW Absent Teacher",
+            IsApproved = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Teachers.Add(teacher);
+
+        var student = new Student
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            Name = "HW Absent Student",
+            LearningLanguage = "Spanish",
+            CefrLevel = "A1",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Students.Add(student);
+
+        var lesson = new Lesson
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            StudentId = student.Id,
+            Title = "Lesson No Follow-up",
+            Language = "Spanish",
+            CefrLevel = "A1",
+            Topic = "Numbers",
+            DurationMinutes = 45,
+            ScheduledAt = DateTime.UtcNow.AddDays(-2),
+            CreatedAt = DateTime.UtcNow.AddDays(-2),
+            UpdatedAt = DateTime.UtcNow.AddDays(-2),
+        };
+        db.Lessons.Add(lesson);
+
+        db.LessonNotes.Add(new LessonNote
+        {
+            Id = Guid.NewGuid(),
+            LessonId = lesson.Id,
+            StudentId = student.Id,
+            TeacherId = teacher.Id,
+            HomeworkAssigned = "Vocab list",
+            CreatedAt = DateTime.UtcNow.AddDays(-2),
+            UpdatedAt = DateTime.UtcNow.AddDays(-2),
+        });
+
+        await db.SaveChangesAsync();
+
+        var client = _factory.CreateAuthenticatedClient("auth0|hw-status-absent", "hw-status-absent@example.com");
+        var response = await client.GetAsync($"/api/students/{student.Id}/lesson-history");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var entries = await response.Content.ReadFromJsonAsync<List<LessonHistoryEntryDto>>();
+        entries.Should().HaveCount(1);
+        entries![0].FollowingSessionHomeworkStatus.Should().BeNull();
+        entries[0].FollowingSessionHomeworkStatusName.Should().BeNull();
     }
 }

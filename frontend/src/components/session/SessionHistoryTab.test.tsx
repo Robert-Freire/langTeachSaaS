@@ -45,6 +45,10 @@ const SESSION_BASE: sessionLogsApi.SessionLog = {
   createdAt: '2026-03-30T10:00:00Z',
   updatedAt: '2026-03-30T10:00:00Z',
   isCancelled: false,
+  status: 0,
+  statusName: 'Confirmed' as const,
+  mentionedDifficultyPairs: '[]',
+  suggestedDifficulties: '[]',
 }
 
 function wrapper() {
@@ -90,12 +94,16 @@ describe('SessionHistoryTab', () => {
     expect(await screen.findAllByTestId('session-entry')).toHaveLength(1)
   })
 
-  it('shows inline preview with truncated planned and actual content', async () => {
+  it('shows inline preview with word-boundary-truncated planned and actual content', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
-    expect(screen.getByText(/Preterito indefinido intro/)).toBeInTheDocument()
-    expect(screen.getByText(/Covered basics and exercises/)).toBeInTheDocument()
+    const plannedEl = screen.getByText(/Preterito indefinido intro/)
+    const actualEl = screen.getByText(/Covered basics and exercises/)
+    expect(plannedEl).toBeInTheDocument()
+    expect(actualEl).toBeInTheDocument()
+    expect(plannedEl.closest('p')).toHaveClass('line-clamp-1')
+    expect(actualEl.closest('p')).toHaveClass('line-clamp-1')
   })
 
   it('hides planned and actual preview when expanded to avoid duplication', async () => {
@@ -210,11 +218,42 @@ describe('SessionHistoryTab', () => {
     })
   })
 
-  it('shows notes count when generalNotes and nextSessionTopics are set', async () => {
+  it('shows separate action item and note counts when both are set', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
-    expect(screen.getByText(/2 notes/)).toBeInTheDocument()
+    expect(screen.getByTestId('action-item-count')).toHaveTextContent('1 action item')
+    expect(screen.getByTestId('general-note-count')).toHaveTextContent('1 note')
+  })
+
+  it('shows only action item count when nextSessionTopics is set and generalNotes is null', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, generalNotes: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('action-item-count')).toHaveTextContent('1 action item')
+    expect(screen.queryByTestId('general-note-count')).not.toBeInTheDocument()
+  })
+
+  it('shows only general note count when generalNotes is set and nextSessionTopics is null', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, nextSessionTopics: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('general-note-count')).toHaveTextContent('1 note')
+    expect(screen.queryByTestId('action-item-count')).not.toBeInTheDocument()
+  })
+
+  it('shows no count indicators when both generalNotes and nextSessionTopics are null', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, generalNotes: null, nextSessionTopics: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.queryByTestId('action-item-count')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('general-note-count')).not.toBeInTheDocument()
   })
 
   it('shows relative time label: "today" for same-day session', async () => {
@@ -253,5 +292,109 @@ describe('SessionHistoryTab', () => {
     wrapper()
     await screen.findByTestId('session-entry')
     expect(screen.queryByTestId('cancelled-badge')).not.toBeInTheDocument()
+  })
+
+  it('shows "Pending review" badge for a Draft session', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, status: 1, statusName: 'Draft' as const },
+    ])
+    wrapper()
+    expect(await screen.findByTestId('draft-badge')).toBeInTheDocument()
+    expect(screen.getByTestId('draft-badge')).toHaveTextContent('Pending review')
+  })
+
+  it('does not show "Pending review" badge for a Confirmed session', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.queryByTestId('draft-badge')).not.toBeInTheDocument()
+  })
+
+  it('action item badge contains a chevron icon for expand affordance', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    const badge = screen.getByTestId('action-item-count')
+    expect(badge.querySelector('svg')).not.toBeNull()
+  })
+
+  it('general note badge contains a chevron icon for expand affordance', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    const badge = screen.getByTestId('general-note-count')
+    expect(badge.querySelector('svg')).not.toBeNull()
+  })
+
+  it('shows next session topics preview line in collapsed state when nextSessionTopics is set', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    const preview = screen.getByTestId('next-session-topics-preview')
+    expect(preview).toBeInTheDocument()
+    expect(preview).toHaveTextContent('Next:')
+    expect(preview).toHaveTextContent('Review irregular verbs')
+  })
+
+  it('does not show next session topics preview when nextSessionTopics is null', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, nextSessionTopics: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.queryByTestId('next-session-topics-preview')).not.toBeInTheDocument()
+  })
+
+  it('shows next session topics section with amber styling in expanded state', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const section = screen.getByTestId('next-session-topics-section')
+    expect(section).toBeInTheDocument()
+    expect(section).toHaveTextContent('Planned for next class')
+    expect(section).toHaveTextContent('Review irregular verbs')
+  })
+
+  it('does not show next session topics section when nextSessionTopics is null', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, nextSessionTopics: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    expect(screen.queryByTestId('next-session-topics-section')).not.toBeInTheDocument()
+  })
+
+  it('shows "Start next session" button in expanded view when nextSessionTopics is non-empty', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    expect(screen.getByTestId('start-next-session-button')).toBeInTheDocument()
+  })
+
+  it('does not show "Start next session" button when nextSessionTopics is null', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, nextSessionTopics: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    expect(screen.queryByTestId('start-next-session-button')).not.toBeInTheDocument()
+  })
+
+  it('clicking "Start next session" opens Log Session dialog with planned content pre-filled', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    fireEvent.click(screen.getByTestId('start-next-session-button'))
+    await waitFor(() => {
+      expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument()
+      expect(screen.getByText('Log Session')).toBeInTheDocument()
+    })
+    const plannedField = screen.getByTestId('planned-content') as HTMLTextAreaElement
+    expect(plannedField.value).toBe('Review irregular verbs')
   })
 })

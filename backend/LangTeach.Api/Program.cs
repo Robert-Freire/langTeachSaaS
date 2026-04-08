@@ -55,6 +55,10 @@ if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("
             "Auth0:Audience",
             "Claude:ApiKey",
             "AzureBlobStorage:ConnectionString",
+            "AzureSpeech:ApiKey",
+            "AzureSpeech:Region",
+            "Telegram:BotToken",
+            "Telegram:WebhookSecret",
         ]);
 }
 
@@ -119,11 +123,18 @@ builder.Services.AddHttpClient("Claude", (sp, client) =>
     client.DefaultRequestHeaders.Add("x-api-key", opts.ApiKey);
     client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
 });
+builder.Services.AddHttpClient("AzureSpeech", client =>
+{
+    var apiKey = builder.Configuration["AzureSpeech:ApiKey"] ?? "";
+    client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", apiKey);
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
 builder.Services.AddScoped<IClaudeClient, ClaudeApiClient>();
 builder.Services.AddSingleton<ISectionProfileService, SectionProfileService>();
 builder.Services.AddSingleton<IPedagogyConfigService, PedagogyConfigService>();
 builder.Services.AddSingleton<IContentSchemaService, ContentSchemaService>();
 builder.Services.AddSingleton<IGrammarValidationService, GrammarValidationService>();
+builder.Services.AddSingleton<IContentValidationService, ContentValidationService>();
 builder.Services.AddScoped<IPromptService, PromptService>();
 
 builder.Services.AddOptions<GenerationLimitsOptions>()
@@ -149,9 +160,30 @@ builder.Services.AddSingleton(_ =>
 builder.Services.AddSingleton<BlobStorageService>();
 builder.Services.AddSingleton<IBlobStorageService>(sp => sp.GetRequiredService<BlobStorageService>());
 builder.Services.AddScoped<IMaterialService, MaterialService>();
+
+builder.Services.Configure<AzureSpeechOptions>(builder.Configuration.GetSection(AzureSpeechOptions.SectionName));
+
+if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddScoped<ITranscriptionService, StubTranscriptionService>();
+else
+    builder.Services.AddScoped<ITranscriptionService, AzureSpeechTranscriptionService>();
+
+builder.Services.AddSingleton<VoiceNoteBlobStorage>();
+builder.Services.AddSingleton<IVoiceNoteBlobStorage>(sp => sp.GetRequiredService<VoiceNoteBlobStorage>());
+builder.Services.AddScoped<IVoiceNoteService, VoiceNoteService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<ILessonNoteService, LessonNoteService>();
+if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddScoped<IReflectionExtractionService, StubReflectionExtractionService>();
+else
+    builder.Services.AddScoped<IReflectionExtractionService, ReflectionExtractionService>();
+if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddScoped<IReplanSuggestionService, StubReplanSuggestionService>();
+else
+    builder.Services.AddScoped<IReplanSuggestionService, ReplanSuggestionService>();
+builder.Services.AddScoped<IDifficultyTrendService, DifficultyTrendService>();
 builder.Services.AddScoped<ISessionLogService, SessionLogService>();
+builder.Services.AddScoped<IProgressService, ProgressService>();
 builder.Services.AddScoped<ISessionHistoryService, SessionHistoryService>();
 builder.Services.AddScoped<ICurriculumGenerationService, CurriculumGenerationService>();
 builder.Services.AddScoped<ICurriculumValidationService, CurriculumValidationService>();
@@ -160,6 +192,20 @@ builder.Services.AddSingleton<ISessionMappingService, SessionMappingService>();
 
 QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddScoped<IPdfExportService, PdfExportService>();
+
+builder.Services.AddMemoryCache();
+builder.Services.Configure<TelegramOptions>(builder.Configuration.GetSection(TelegramOptions.SectionName));
+builder.Services.AddHttpClient("Telegram", client =>
+{
+    client.BaseAddress = new Uri("https://api.telegram.org/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddSingleton<ITelegramStateStore, TelegramStateStore>();
+if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddScoped<ITelegramBotService, StubTelegramBotService>();
+else
+    builder.Services.AddScoped<ITelegramBotService, TelegramBotService>();
+builder.Services.AddScoped<ITelegramConversationService, TelegramConversationService>();
 
 var app = builder.Build();
 
@@ -185,6 +231,10 @@ using (var scope = app.Services.CreateScope())
     var blobService = scope.ServiceProvider.GetService<BlobStorageService>();
     if (blobService is not null)
         await blobService.InitializeAsync();
+
+    var voiceNoteBlobStorage = scope.ServiceProvider.GetService<VoiceNoteBlobStorage>();
+    if (voiceNoteBlobStorage is not null)
+        await voiceNoteBlobStorage.InitializeAsync();
 }
 
 // Demo seeder: dotnet run -- --seed <auth0-user-id|email>

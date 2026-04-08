@@ -2,8 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, ChevronsUpDown, Check, Plus, Trash2 } from 'lucide-react'
-import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty } from '../api/students'
-import { LEARNING_GOALS, getWeaknessesForLanguage, getLanguageSpecificWeaknessValues, DIFFICULTY_CATEGORIES, SEVERITY_LEVELS, TREND_OPTIONS } from '../lib/studentOptions'
+import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem } from '../api/students'
+import { LEARNING_GOALS, COMPETENCY_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -189,7 +189,7 @@ export default function StudentForm() {
   const [interestInput, setInterestInput] = useState('')
   const [nativeLanguage, setNativeLanguage] = useState<string>('')
   const [learningGoals, setLearningGoals] = useState<string[]>([])
-  const [weaknesses, setWeaknesses] = useState<string[]>([])
+  const [weaknesses, setWeaknesses] = useState<StudentWeaknessItem[]>([])
   const [difficulties, setDifficulties] = useState<Difficulty[]>([])
   const [notes, setNotes] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -221,10 +221,10 @@ export default function StudentForm() {
   const { mutate, isPending } = useMutation({
     mutationFn: (data: StudentFormData) =>
       isEdit ? updateStudent(id!, data) : createStudent(data),
-    onSuccess: () => {
+    onSuccess: (student) => {
       logger.info('StudentForm', isEdit ? 'student updated' : 'student created')
       queryClient.invalidateQueries({ queryKey: ['students'] })
-      navigate('/students')
+      navigate(`/students/${student.id}`)
     },
     onError: (err) => logger.error('StudentForm', 'save failed', err),
   })
@@ -251,13 +251,27 @@ export default function StudentForm() {
     setInterests((prev) => prev.filter((i) => i !== interest))
   }
 
+  function addWeakness() {
+    setWeaknesses((prev) => [...prev, { description: '', weaknessType: 'grammatical' as const }])
+  }
+
+  function updateWeakness(index: number, field: keyof StudentWeaknessItem, value: string) {
+    setWeaknesses((prev) =>
+      prev.map((w, i) => (i === index ? { ...w, [field]: value } : w))
+    )
+  }
+
+  function removeWeakness(index: number) {
+    setWeaknesses((prev) => prev.filter((_, i) => i !== index))
+  }
+
   function addDifficulty() {
     const id = typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
     setDifficulties((prev) => [
       ...prev,
-      { id, category: '', item: '', severity: '', trend: '' },
+      { id, description: '', competency: '', subcategory: '', severity: 'medium', trend: 'stable', status: 'Active' },
     ])
   }
 
@@ -287,8 +301,9 @@ export default function StudentForm() {
       ? [...interests, interestInput.trim()]
       : interests
     const validDifficulties = difficulties.filter(
-      (d) => d.category && d.item.trim() && d.severity && d.trend
+      (d) => d.competency && d.description.trim()
     )
+    const validWeaknesses = weaknesses.filter((w) => w.description.trim())
     mutate({
       name: name.trim(),
       learningLanguage: language,
@@ -296,7 +311,7 @@ export default function StudentForm() {
       interests: finalInterests,
       nativeLanguage: nativeLanguage || null,
       learningGoals,
-      weaknesses,
+      weaknesses: validWeaknesses,
       difficulties: validDifficulties,
       notes: notes.trim() || undefined,
     })
@@ -401,8 +416,6 @@ export default function StudentForm() {
                 <Label>Learning Language <span className="text-red-500">*</span></Label>
                 <Select value={language} onValueChange={(v) => {
                   if (!v) return
-                  const stale = getLanguageSpecificWeaknessValues(language)
-                  setWeaknesses((prev) => prev.filter((w) => !stale.has(w)))
                   setLanguage(v)
                 }}>
                   <SelectTrigger data-testid="student-language">
@@ -513,17 +526,72 @@ export default function StudentForm() {
             </div>
 
             {/* Weaknesses */}
-            <div className="space-y-1.5">
-              <Label>Areas to Improve</Label>
-              <MultiSelect
-                options={getWeaknessesForLanguage(language)}
-                selected={weaknesses}
-                onChange={setWeaknesses}
-                placeholder="Select or type areas..."
-                triggerId="weaknesses-trigger"
-                chipTestId="weakness-chip"
-                maxLength={200}
-              />
+            <div className="space-y-3 pt-2 border-t border-zinc-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Areas to Improve</Label>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Free-text description with category (grammatical, lexical, orthographic).
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addWeakness}
+                  data-testid="add-weakness"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add
+                </Button>
+              </div>
+
+              {weaknesses.map((w, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col sm:flex-row gap-2 sm:items-start"
+                  data-testid="weakness-row"
+                >
+                  <Input
+                    value={w.description}
+                    onChange={(e) => updateWeakness(i, 'description', e.target.value)}
+                    placeholder="e.g. Confuses ser/estar"
+                    maxLength={200}
+                    className="flex-1"
+                    data-testid="weakness-description"
+                  />
+                  <Select
+                    value={w.weaknessType}
+                    onValueChange={(v) => v && updateWeakness(i, 'weaknessType', v)}
+                  >
+                    <SelectTrigger data-testid="weakness-type" className="w-[160px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="grammatical">Grammatical</SelectItem>
+                      <SelectItem value="lexical">Lexical</SelectItem>
+                      <SelectItem value="orthographic">Orthographic</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeWeakness(i)}
+                    className="text-zinc-400 hover:text-red-600 h-9 w-9"
+                    data-testid="remove-weakness"
+                    aria-label="Remove weakness"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+
+              {weaknesses.length === 0 && (
+                <p className="text-xs text-zinc-400 italic" data-testid="weaknesses-empty">
+                  No areas to improve tracked yet.
+                </p>
+              )}
             </div>
 
             {/* Structured Difficulties */}
@@ -550,64 +618,59 @@ export default function StudentForm() {
               {difficulties.map((d) => (
                 <div
                   key={d.id}
-                  className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_2fr_1fr_1fr_auto] sm:gap-2 sm:items-start"
+                  className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_auto_1fr_auto_auto] sm:gap-2 sm:items-start"
                   data-testid="difficulty-row"
                 >
                   <Input
-                    value={d.item}
-                    onChange={(e) => updateDifficulty(d.id, 'item', e.target.value)}
-                    placeholder="e.g. ser/estar in past tense"
-                    maxLength={200}
-                    className="sm:order-2"
-                    data-testid="difficulty-item"
+                    value={d.description}
+                    onChange={(e) => updateDifficulty(d.id, 'description', e.target.value)}
+                    placeholder="e.g. Confuses ser/estar in past tense"
+                    maxLength={500}
+                    className="sm:col-span-1"
+                    data-testid="difficulty-description"
                   />
 
-                  <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 sm:contents">
-                    <Select value={d.category || undefined} onValueChange={(v) => v && updateDifficulty(d.id, 'category', v)}>
-                      <SelectTrigger data-testid="difficulty-category" className="sm:order-1">
-                        <SelectValue placeholder="Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DIFFICULTY_CATEGORIES.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <Select value={d.competency || undefined} onValueChange={(v) => v && updateDifficulty(d.id, 'competency', v)}>
+                    <SelectTrigger data-testid="difficulty-competency" className="w-[140px]">
+                      <SelectValue placeholder="Competency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COMPETENCY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                    <Select value={d.severity || undefined} onValueChange={(v) => v && updateDifficulty(d.id, 'severity', v)}>
-                      <SelectTrigger data-testid="difficulty-severity" className="sm:order-3">
-                        <SelectValue placeholder="Severity" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SEVERITY_LEVELS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <Input
+                    value={d.subcategory}
+                    onChange={(e) => updateDifficulty(d.id, 'subcategory', e.target.value)}
+                    placeholder="Subcategory (e.g. ser/estar)"
+                    maxLength={200}
+                    data-testid="difficulty-subcategory"
+                  />
 
-                    <Select value={d.trend || undefined} onValueChange={(v) => v && updateDifficulty(d.id, 'trend', v)}>
-                      <SelectTrigger data-testid="difficulty-trend" className="sm:order-4">
-                        <SelectValue placeholder="Trend" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TREND_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <Button
+                    type="button"
+                    variant={d.status === 'Covered' ? 'secondary' : 'outline'}
+                    size="sm"
+                    onClick={() => updateDifficulty(d.id, 'status', d.status === 'Covered' ? 'Active' : 'Covered')}
+                    data-testid="difficulty-status"
+                    className="whitespace-nowrap"
+                  >
+                    {d.status === 'Covered' ? 'Covered' : 'Active'}
+                  </Button>
 
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeDifficulty(d.id)}
-                      className="text-zinc-400 hover:text-red-600 h-9 w-9 sm:order-5"
-                      data-testid="remove-difficulty"
-                      aria-label="Remove difficulty"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeDifficulty(d.id)}
+                    className="text-zinc-400 hover:text-red-600 h-9 w-9"
+                    data-testid="remove-difficulty"
+                    aria-label="Remove difficulty"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
 

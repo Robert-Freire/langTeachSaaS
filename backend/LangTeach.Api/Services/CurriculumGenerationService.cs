@@ -2,6 +2,7 @@ using System.Text.Json;
 using LangTeach.Api.AI;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 
 namespace LangTeach.Api.Services;
 
@@ -106,11 +107,15 @@ public class CurriculumGenerationService : ICurriculumGenerationService
         var aiRequest = _prompts.BuildCurriculumPrompt(ctx);
         var aiResponse = await _claude.CompleteAsync(aiRequest, ct);
 
+        var strippedAiContent = ContentJsonHelper.StripFences(aiResponse.Content);
+        if (strippedAiContent is null)
+            throw new CurriculumGenerationException("AI response is not valid JSON.");
+
         List<AiEntryDto>? aiEntries;
         try
         {
             aiEntries = JsonSerializer.Deserialize<List<AiEntryDto>>(
-                aiResponse.Content.Trim(),
+                strippedAiContent,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
         catch (JsonException ex)
@@ -179,11 +184,18 @@ public class CurriculumGenerationService : ICurriculumGenerationService
 
     private void ApplyPersonalization(List<CurriculumEntry> skeletons, string aiContent)
     {
+        var strippedPersonalization = ContentJsonHelper.StripFences(aiContent);
+        if (strippedPersonalization is null)
+        {
+            _logger.LogWarning("AI personalization response is not valid JSON; keeping original topics.");
+            return;
+        }
+
         List<PersonalizationDto>? personalization;
         try
         {
             personalization = JsonSerializer.Deserialize<List<PersonalizationDto>>(
-                aiContent.Trim(),
+                strippedPersonalization,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
         catch (JsonException ex)
@@ -216,10 +228,10 @@ public class CurriculumGenerationService : ICurriculumGenerationService
 
             if (!string.IsNullOrWhiteSpace(p.Topic))
                 skeleton.Topic = p.Topic!;
-            if (!string.IsNullOrWhiteSpace(p.ContextDescription))
-                skeleton.ContextDescription = p.ContextDescription;
-            if (!string.IsNullOrWhiteSpace(p.PersonalizationNotes))
-                skeleton.PersonalizationNotes = p.PersonalizationNotes;
+            if (p.ContextDescription is not null)
+                skeleton.ContextDescription = JsonStorageHelper.Serialize(p.ContextDescription);
+            if (p.PersonalizationNotes is not null)
+                skeleton.PersonalizationNotes = JsonStorageHelper.Serialize(p.PersonalizationNotes);
         }
     }
 
@@ -236,8 +248,8 @@ public class CurriculumGenerationService : ICurriculumGenerationService
     private record PersonalizationDto(
         int OrderIndex,
         string? Topic,
-        string? ContextDescription,
-        string? PersonalizationNotes
+        ContextDescriptionData? ContextDescription,
+        PersonalizationNotesData? PersonalizationNotes
     );
 }
 

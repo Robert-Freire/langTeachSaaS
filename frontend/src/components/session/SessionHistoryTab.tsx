@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronUp, Trash2, Pencil, ExternalLink, FileText, BookOpen } from 'lucide-react'
+import { ChevronDown, ChevronUp, Trash2, Pencil, ExternalLink, BookOpen, CalendarDays, PlayCircle } from 'lucide-react'
 import { SessionSummaryHeader } from './SessionSummaryHeader'
 import { SessionLogDialog } from './SessionLogDialog'
 import { logger } from '../../lib/logger'
 import { Link } from 'react-router-dom'
 import { listSessions, deleteSession, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
 import { formatDate, relativeTime } from '../../utils/formatDate'
+import { HOMEWORK_STATUS_STYLES } from '../../utils/homeworkStatusStyles'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -26,12 +27,6 @@ interface SessionHistoryTabProps {
   studentId: string
 }
 
-const HOMEWORK_STATUS_STYLES: Record<string, string> = {
-  Done: 'bg-green-50 text-green-700 border-green-200',
-  Partial: 'bg-amber-50 text-amber-700 border-amber-200',
-  NotDone: 'bg-red-50 text-red-700 border-red-200',
-  NotApplicable: 'bg-zinc-100 text-zinc-500 border-zinc-200',
-}
 
 const HOMEWORK_STATUS_LABELS: Record<string, string> = {
   Done: 'HW: Done',
@@ -55,21 +50,16 @@ function tagCategoryClass(category?: string): string {
   return 'bg-zinc-100 text-zinc-600 border-zinc-200'
 }
 
-function notesCount(session: SessionLog): number {
-  let count = 0
-  if (session.generalNotes) count++
-  if (session.nextSessionTopics) count++
-  return count
-}
-
 function SessionEntry({
   session,
   studentId,
   onEdit,
+  onStartNextSession,
 }: {
   session: SessionLog
   studentId: string
   onEdit: (session: SessionLog) => void
+  onStartNextSession: (session: SessionLog) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -90,7 +80,8 @@ function SessionEntry({
   })
 
   const topicTags = parseTopicTags(session.topicTags)
-  const notes = notesCount(session)
+  const hasActionItem = Boolean(session.nextSessionTopics)
+  const hasNote = Boolean(session.generalNotes)
   const hwStatus = session.previousHomeworkStatusName
 
   return (
@@ -124,33 +115,65 @@ function SessionEntry({
                   Cancelled
                 </Badge>
               )}
-              {notes > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
-                  <FileText className="h-3 w-3" />
-                  {notes} {notes === 1 ? 'note' : 'notes'}
+              {session.statusName === 'Draft' && (
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-amber-50 text-amber-700 border-amber-300"
+                  data-testid="draft-badge"
+                >
+                  Pending review
+                </Badge>
+              )}
+              {hasActionItem && (
+                <span className="inline-flex items-center gap-1 text-xs text-amber-600" data-testid="action-item-count">
+                  <span className="bg-amber-400 rounded-full w-1.5 h-1.5 shrink-0" />
+                  1 action item
+                  {expanded ? (
+                    <ChevronUp className="h-3 w-3 shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 shrink-0" />
+                  )}
+                </span>
+              )}
+              {hasNote && (
+                <span className="inline-flex items-center gap-1 text-xs text-zinc-400" data-testid="general-note-count">
+                  <span className="bg-zinc-300 rounded-full w-1.5 h-1.5 shrink-0" />
+                  1 note
+                  {expanded ? (
+                    <ChevronUp className="h-3 w-3 shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 shrink-0" />
+                  )}
                 </span>
               )}
             </div>
 
             {/* Planned and actual — hidden when expanded to avoid duplication with detail section */}
             {!expanded && session.plannedContent && (
-              <p className="text-xs text-zinc-500 truncate">
+              <p className="text-xs text-zinc-500 line-clamp-1">
                 <span className="font-medium text-zinc-700">Planned:</span>{' '}
                 {session.plannedContent}
               </p>
             )}
 
             {!expanded && session.actualContent && (
-              <p className="text-xs text-zinc-600 truncate">
+              <p className="text-xs text-zinc-600 line-clamp-1">
                 <span className="font-medium text-zinc-700">Done:</span>{' '}
                 {session.actualContent}
+              </p>
+            )}
+
+            {!expanded && session.nextSessionTopics && (
+              <p className="text-xs text-amber-700 line-clamp-1" data-testid="next-session-topics-preview">
+                <span className="font-medium">Next:</span>{' '}
+                {session.nextSessionTopics}
               </p>
             )}
 
             {/* Homework + status badges */}
             <div className="flex flex-wrap gap-1.5 items-center">
               {session.homeworkAssigned && (
-                <span className="text-xs text-zinc-500 truncate max-w-[160px]">
+                <span className="text-xs text-zinc-500 line-clamp-1 max-w-[160px]">
                   HW: {session.homeworkAssigned}
                 </span>
               )}
@@ -204,9 +227,15 @@ function SessionEntry({
           )}
 
           {session.nextSessionTopics && (
-            <div>
-              <p className="text-xs font-medium text-zinc-500 mb-0.5">Topics for next session</p>
-              <p className="text-sm text-zinc-800 whitespace-pre-wrap">{session.nextSessionTopics}</p>
+            <div
+              className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2"
+              data-testid="next-session-topics-section"
+            >
+              <p className="text-xs font-medium text-amber-700 mb-0.5 flex items-center gap-1">
+                <CalendarDays className="h-3 w-3" />
+                Planned for next class
+              </p>
+              <p className="text-sm text-amber-900 whitespace-pre-wrap">{session.nextSessionTopics}</p>
             </div>
           )}
 
@@ -260,6 +289,18 @@ function SessionEntry({
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-1">
+            {session.nextSessionTopics && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onStartNextSession(session)}
+                data-testid="start-next-session-button"
+                className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+              >
+                <PlayCircle className="h-3.5 w-3.5 mr-1" />
+                Start next session
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -319,6 +360,8 @@ function SessionEntry({
 export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
   const [editSession, setEditSession] = useState<SessionLog | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [startNextSource, setStartNextSource] = useState<SessionLog | null>(null)
+  const [startNextDialogOpen, setStartNextDialogOpen] = useState(false)
 
   function handleEdit(session: SessionLog) {
     setEditSession(session)
@@ -328,6 +371,16 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
   function handleEditDialogChange(open: boolean) {
     setEditDialogOpen(open)
     if (!open) setEditSession(null)
+  }
+
+  function handleStartNextSession(session: SessionLog) {
+    setStartNextSource(session)
+    setStartNextDialogOpen(true)
+  }
+
+  function handleStartNextDialogChange(open: boolean) {
+    setStartNextDialogOpen(open)
+    if (!open) setStartNextSource(null)
   }
 
   const { data: sessions, isLoading, isError, refetch } = useQuery({
@@ -392,7 +445,7 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
       <SessionSummaryHeader studentId={studentId} />
       <div className="space-y-3" data-testid="session-history-list">
         {sortedSessions.map((session) => (
-          <SessionEntry key={session.id} session={session} studentId={studentId} onEdit={handleEdit} />
+          <SessionEntry key={session.id} session={session} studentId={studentId} onEdit={handleEdit} onStartNextSession={handleStartNextSession} />
         ))}
       </div>
       <SessionLogDialog
@@ -400,6 +453,12 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
         open={editDialogOpen}
         onOpenChange={handleEditDialogChange}
         initialSession={editSession}
+      />
+      <SessionLogDialog
+        studentId={studentId}
+        open={startNextDialogOpen}
+        onOpenChange={handleStartNextDialogChange}
+        initialPlannedContent={startNextSource?.nextSessionTopics ?? null}
       />
     </div>
   )

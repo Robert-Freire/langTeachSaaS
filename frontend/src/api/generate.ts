@@ -17,8 +17,8 @@ export interface GenerateRequest {
 }
 
 export interface TargetedDifficulty {
-  category: string
-  item: string
+  competency: string
+  description: string
   severity: string
 }
 

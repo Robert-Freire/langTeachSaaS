@@ -251,22 +251,22 @@ export async function extractLessonContent(
 ): Promise<LessonContent> {
   const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5175'
 
-  // Navigate to lesson editor and intercept the lesson data response
-  const [lessonResponse] = await Promise.all([
+  // Navigate to lesson editor and intercept both the lesson metadata and content-blocks responses.
+  // Both waitForResponse listeners must be registered before page.goto fires to avoid a race
+  // condition where the response arrives before the listener is active.
+  const [lessonResponse, blocksResponse] = await Promise.all([
     page.waitForResponse(
       resp => resp.url().includes(`/api/lessons/${lessonId}`) && !resp.url().includes('/content-blocks') && resp.status() === 200 && resp.request().resourceType() === 'xhr',
+      { timeout: 30000 }
+    ),
+    page.waitForResponse(
+      resp => resp.url().includes(`/api/lessons/${lessonId}/content-blocks`) && resp.status() === 200 && resp.request().resourceType() === 'xhr',
       { timeout: 30000 }
     ),
     page.goto(`${baseURL}/lessons/${lessonId}`),
   ])
 
   const lessonData = await lessonResponse.json()
-
-  // Fetch content blocks separately (not included in the lesson GET response)
-  const blocksResponse = await page.waitForResponse(
-    resp => resp.url().includes(`/api/lessons/${lessonId}/content-blocks`) && resp.status() === 200 && resp.request().resourceType() === 'xhr',
-    { timeout: 30000 }
-  )
   const blocksData: Array<{ lessonSectionId: string | null; blockType: string; generatedContent: string; editedContent: string | null }> = await blocksResponse.json()
 
   // Group blocks by section ID

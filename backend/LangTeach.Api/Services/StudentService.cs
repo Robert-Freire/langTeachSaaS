@@ -16,9 +16,9 @@ public class StudentService : IStudentService
         "Portuguese", "Mandarin", "Japanese", "Arabic", "Catalan", "Other"
     ];
 
-    private static readonly HashSet<string> AllowedDifficultyCategories =
+    private static readonly HashSet<string> AllowedCompetencies =
     [
-        "grammar", "vocabulary", "pronunciation", "writing", "comprehension"
+        "Grammar", "Vocabulary", "Pronunciation", "Fluency", "Discourse"
     ];
 
     private static readonly HashSet<string> AllowedSeverityLevels =
@@ -26,10 +26,13 @@ public class StudentService : IStudentService
         "low", "medium", "high"
     ];
 
-    private static readonly HashSet<string> AllowedTrends =
+    private static readonly HashSet<string> AllowedStatuses =
     [
-        "improving", "stable", "declining"
+        "Active", "Covered"
     ];
+
+    private static readonly HashSet<string> AllowedWeaknessTypes =
+        new(StringComparer.OrdinalIgnoreCase) { "grammatical", "lexical", "orthographic" };
 
     private readonly AppDbContext _db;
     private readonly ILogger<StudentService> _logger;
@@ -80,7 +83,10 @@ public class StudentService : IStudentService
     public async Task<StudentDto> CreateAsync(Guid teacherId, CreateStudentRequest request, CancellationToken cancellationToken = default)
     {
         ValidateNativeLanguage(request.NativeLanguage);
+        var normalizedWeaknessesCreate = NormalizeWeaknesses(request.Weaknesses);
+        ValidateWeaknesses(normalizedWeaknessesCreate);
         ValidateDifficulties(request.Difficulties);
+        var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
 
         var student = new Student
         {
@@ -92,8 +98,8 @@ public class StudentService : IStudentService
             Interests = Serialize(request.Interests),
             NativeLanguage = request.NativeLanguage,
             LearningGoals = Serialize(request.LearningGoals),
-            Weaknesses = Serialize(request.Weaknesses),
-            Difficulties = Serialize(request.Difficulties),
+            Weaknesses = Serialize(normalizedWeaknessesCreate),
+            Difficulties = Serialize(normalizedDifficulties),
             Notes = request.Notes,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
@@ -116,7 +122,10 @@ public class StudentService : IStudentService
             return null;
 
         ValidateNativeLanguage(request.NativeLanguage);
+        var normalizedWeaknessesUpdate = NormalizeWeaknesses(request.Weaknesses);
+        ValidateWeaknesses(normalizedWeaknessesUpdate);
         ValidateDifficulties(request.Difficulties);
+        var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
 
         student.Name = request.Name;
         student.LearningLanguage = request.LearningLanguage;
@@ -124,8 +133,8 @@ public class StudentService : IStudentService
         student.Interests = Serialize(request.Interests);
         student.NativeLanguage = request.NativeLanguage;
         student.LearningGoals = Serialize(request.LearningGoals);
-        student.Weaknesses = Serialize(request.Weaknesses);
-        student.Difficulties = Serialize(request.Difficulties);
+        student.Weaknesses = Serialize(normalizedWeaknessesUpdate);
+        student.Difficulties = Serialize(normalizedDifficulties);
         student.Notes = request.Notes;
         student.UpdatedAt = DateTime.UtcNow;
 
@@ -162,11 +171,27 @@ public class StudentService : IStudentService
         s.Notes,
         s.NativeLanguage,
         JsonStorageHelper.DeserializeList<string>(s.LearningGoals),
-        JsonStorageHelper.DeserializeList<string>(s.Weaknesses),
+        JsonStorageHelper.DeserializeListWithStringFallback<StudentWeaknessDto>(
+            s.Weaknesses,
+            str => new StudentWeaknessDto(str, "grammatical")),
         JsonStorageHelper.DeserializeList<DifficultyDto>(s.Difficulties),
         s.CreatedAt,
         s.UpdatedAt
     );
+
+    private static List<StudentWeaknessDto> NormalizeWeaknesses(List<StudentWeaknessDto> weaknesses) =>
+        weaknesses.Select(w => w with { WeaknessType = (w.WeaknessType ?? string.Empty).ToLowerInvariant() }).ToList();
+
+    private static void ValidateWeaknesses(List<StudentWeaknessDto> weaknesses)
+    {
+        foreach (var w in weaknesses)
+        {
+            if (string.IsNullOrWhiteSpace(w.Description) || w.Description.Length > 200)
+                throw new ValidationException("Each weakness description must be between 1 and 200 characters.");
+            if (string.IsNullOrWhiteSpace(w.WeaknessType) || !AllowedWeaknessTypes.Contains(w.WeaknessType))
+                throw new ValidationException($"WeaknessType '{w.WeaknessType}' is not valid. Allowed: {string.Join(", ", AllowedWeaknessTypes)}.");
+        }
+    }
 
     private static void ValidateNativeLanguage(string? nativeLanguage)
     {
@@ -180,16 +205,24 @@ public class StudentService : IStudentService
         {
             if (string.IsNullOrWhiteSpace(d.Id) || d.Id.Length > 100)
                 throw new ValidationException("Each difficulty must have an id (max 100 characters).");
-            if (string.IsNullOrWhiteSpace(d.Item) || d.Item.Length > 200)
-                throw new ValidationException("Each difficulty item must be between 1 and 200 characters.");
-            if (string.IsNullOrWhiteSpace(d.Category) || !AllowedDifficultyCategories.Contains(d.Category))
-                throw new ValidationException($"Difficulty category '{d.Category}' is not valid. Allowed: {string.Join(", ", AllowedDifficultyCategories)}.");
+            if (string.IsNullOrWhiteSpace(d.Description) || d.Description.Length > 500)
+                throw new ValidationException("Each difficulty description must be between 1 and 500 characters.");
+            if (string.IsNullOrWhiteSpace(d.Competency) || !AllowedCompetencies.Contains(d.Competency))
+                throw new ValidationException($"Difficulty competency '{d.Competency}' is not valid. Allowed: {string.Join(", ", AllowedCompetencies)}.");
+            if (d.Subcategory is { Length: > 200 })
+                throw new ValidationException("Difficulty subcategory must be at most 200 characters.");
             if (string.IsNullOrWhiteSpace(d.Severity) || !AllowedSeverityLevels.Contains(d.Severity))
                 throw new ValidationException($"Difficulty severity '{d.Severity}' is not valid. Allowed: {string.Join(", ", AllowedSeverityLevels)}.");
-            if (string.IsNullOrWhiteSpace(d.Trend) || !AllowedTrends.Contains(d.Trend))
-                throw new ValidationException($"Difficulty trend '{d.Trend}' is not valid. Allowed: {string.Join(", ", AllowedTrends)}.");
+            if (string.IsNullOrWhiteSpace(d.Status) || !AllowedStatuses.Contains(d.Status))
+                throw new ValidationException($"Difficulty status '{d.Status}' is not valid. Allowed: {string.Join(", ", AllowedStatuses)}.");
+            // Trend is system-computed; any submitted value is silently accepted and will be overwritten by DifficultyTrendService.
         }
     }
+
+    // Trend is system-computed by DifficultyTrendService. Reset any client-supplied value to "stable"
+    // so the server is always authoritative after the next session log confirm.
+    private static List<DifficultyDto> NormalizeSystemFields(List<DifficultyDto> difficulties) =>
+        difficulties.Select(d => d with { Trend = "stable" }).ToList();
 
     private static string Serialize<T>(List<T> list) =>
         JsonStorageHelper.Serialize(list);

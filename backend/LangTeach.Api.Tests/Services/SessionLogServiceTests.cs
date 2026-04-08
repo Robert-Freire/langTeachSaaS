@@ -22,7 +22,7 @@ public class SessionLogServiceTests : IDisposable
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _db = new AppDbContext(options);
-        _sut = new SessionLogService(_db, NullLogger<SessionLogService>.Instance);
+        _sut = new SessionLogService(_db, new NullDifficultyTrendService(), NullLogger<SessionLogService>.Instance);
 
         _db.Teachers.Add(new Teacher
         {
@@ -75,6 +75,7 @@ public class SessionLogServiceTests : IDisposable
 
         result.Id.Should().NotBeEmpty();
         result.StudentId.Should().Be(_studentId);
+        result.TeacherId.Should().Be(_teacherId);
         result.SessionDate.Should().Be(request.SessionDate);
         result.PlannedContent.Should().Be("Review past tense");
         result.ActualContent.Should().Be("Covered regular verbs only");
@@ -659,6 +660,87 @@ public class SessionLogServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetSummary_AggregatesTopicsFromLast3Sessions()
+    {
+        var baseDate = new DateTime(2026, 3, 30, 0, 0, 0, DateTimeKind.Utc);
+        _db.SessionLogs.AddRange(
+            new SessionLog { Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId, SessionDate = baseDate, PreviousHomeworkStatus = HomeworkStatus.NotApplicable, NextSessionTopics = "Topic A", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+            new SessionLog { Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId, SessionDate = baseDate.AddDays(-1), PreviousHomeworkStatus = HomeworkStatus.NotApplicable, NextSessionTopics = "Topic B", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+            new SessionLog { Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId, SessionDate = baseDate.AddDays(-2), PreviousHomeworkStatus = HomeworkStatus.NotApplicable, NextSessionTopics = "Topic C", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
+        );
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.GetSummaryAsync(_teacherId, _studentId);
+
+        result.OpenActionItems.Should().Contain("Topic A");
+        result.OpenActionItems.Should().Contain("Topic B");
+        result.OpenActionItems.Should().Contain("Topic C");
+        result.OpenActionItems.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task GetSummary_DeduplicatesTopicsCaseInsensitive()
+    {
+        var baseDate = new DateTime(2026, 3, 30, 0, 0, 0, DateTimeKind.Utc);
+        _db.SessionLogs.AddRange(
+            new SessionLog { Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId, SessionDate = baseDate, PreviousHomeworkStatus = HomeworkStatus.NotApplicable, NextSessionTopics = "Repasar subjuntivo", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+            new SessionLog { Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId, SessionDate = baseDate.AddDays(-1), PreviousHomeworkStatus = HomeworkStatus.NotApplicable, NextSessionTopics = "repasar subjuntivo", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
+        );
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.GetSummaryAsync(_teacherId, _studentId);
+
+        result.OpenActionItems.Should().HaveCount(1);
+        result.OpenActionItems[0].Should().Be("Repasar subjuntivo");
+    }
+
+    [Fact]
+    public async Task GetSummary_EmptyMiddleSession_DoesNotEraseEarlierTopics()
+    {
+        var baseDate = new DateTime(2026, 3, 30, 0, 0, 0, DateTimeKind.Utc);
+        _db.SessionLogs.AddRange(
+            new SessionLog { Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId, SessionDate = baseDate, PreviousHomeworkStatus = HomeworkStatus.NotApplicable, NextSessionTopics = null, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+            new SessionLog { Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId, SessionDate = baseDate.AddDays(-1), PreviousHomeworkStatus = HomeworkStatus.NotApplicable, NextSessionTopics = "Old topic", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
+        );
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.GetSummaryAsync(_teacherId, _studentId);
+
+        result.OpenActionItems.Should().BeEquivalentTo(new[] { "Old topic" });
+    }
+
+    [Fact]
+    public async Task GetSummary_TopicsOrderedMostRecentFirst()
+    {
+        var baseDate = new DateTime(2026, 3, 30, 0, 0, 0, DateTimeKind.Utc);
+        _db.SessionLogs.AddRange(
+            new SessionLog { Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId, SessionDate = baseDate, PreviousHomeworkStatus = HomeworkStatus.NotApplicable, NextSessionTopics = "Recent topic", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+            new SessionLog { Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId, SessionDate = baseDate.AddDays(-1), PreviousHomeworkStatus = HomeworkStatus.NotApplicable, NextSessionTopics = "Older topic", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
+        );
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.GetSummaryAsync(_teacherId, _studentId);
+
+        result.OpenActionItems[0].Should().Be("Recent topic");
+        result.OpenActionItems[1].Should().Be("Older topic");
+    }
+
+    [Fact]
+    public async Task GetSummary_MultilineTopicsInMultipleSessionsAggregatedCorrectly()
+    {
+        var baseDate = new DateTime(2026, 3, 30, 0, 0, 0, DateTimeKind.Utc);
+        _db.SessionLogs.AddRange(
+            new SessionLog { Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId, SessionDate = baseDate, PreviousHomeworkStatus = HomeworkStatus.NotApplicable, NextSessionTopics = "Line A1\nLine A2", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+            new SessionLog { Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId, SessionDate = baseDate.AddDays(-1), PreviousHomeworkStatus = HomeworkStatus.NotApplicable, NextSessionTopics = "Line B1\nLine A1", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
+        );
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.GetSummaryAsync(_teacherId, _studentId);
+
+        result.OpenActionItems.Should().BeEquivalentTo(new[] { "Line A1", "Line A2", "Line B1" });
+    }
+
+    [Fact]
     public async Task CreateAsync_SetsIsCancelledFromRequest()
     {
         var request = BaseRequest();
@@ -694,4 +776,10 @@ public class SessionLogServiceTests : IDisposable
         result.Should().NotBeNull();
         result!.IsCancelled.Should().BeTrue();
     }
+}
+
+file class NullDifficultyTrendService : IDifficultyTrendService
+{
+    public Task RecomputeAsync(Guid teacherId, Guid studentId, CancellationToken ct = default)
+        => Task.CompletedTask;
 }

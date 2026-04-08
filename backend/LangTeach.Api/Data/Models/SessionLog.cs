@@ -17,7 +17,14 @@ public class SessionLog
     public Guid? LinkedLessonId { get; set; }
     public bool IsDeleted { get; set; }
     public bool IsCancelled { get; set; }
+    // Lifecycle: IsDeleted=true means soft-deleted (all other fields ignored).
+    // IsCancelled=true + Status=Confirmed = teacher-confirmed cancellation.
+    // Status=Draft = auto-saved from voice extraction, awaiting teacher confirmation.
+    // Status=Draft + IsCancelled=true is not a valid combination.
+    public SessionLogStatus Status { get; set; } = SessionLogStatus.Confirmed;
     public string TopicTags { get; set; } = "[]";
+    public string MentionedDifficultyPairs { get; set; } = "[]";
+    public string SuggestedDifficulties { get; set; } = "[]";
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

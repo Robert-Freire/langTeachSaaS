@@ -64,9 +64,9 @@ test('lesson notes: save from editor and view in student history', async ({ brow
   // Verify saved indicator appears
   await expect(page.getByTestId('notes-saved-indicator')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
-  // Navigate to student edit page
-  await page.goto(`/students/${student.id}/edit`)
-  await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
+  // Navigate to student detail page (LessonHistoryCard is on the overview tab)
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Verify Lesson History section shows the entry
   const historyCard = page.getByTestId('lesson-history-card')

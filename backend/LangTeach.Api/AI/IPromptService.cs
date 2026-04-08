@@ -3,6 +3,12 @@ using LangTeach.Api.DTOs;
 
 namespace LangTeach.Api.AI;
 
+/// <summary>
+/// A student weakness with a category type used to route to the correct prompt guidance.
+/// Default type is "grammatical" so existing weaknesses without an explicit type are handled correctly.
+/// </summary>
+public record StudentWeakness(string Description, string WeaknessType = "grammatical");
+
 public interface IPromptService
 {
     ClaudeRequest BuildLessonPlanPrompt(GenerationContext ctx);
@@ -30,7 +36,7 @@ public record CurriculumContext(
     string? StudentNativeLanguage,
     string[]? StudentInterests,
     string[]? StudentGoals,
-    string[]? StudentWeaknesses = null,
+    StudentWeakness[]? StudentWeaknesses = null,
     DifficultyDto[]? StudentDifficulties = null,
     string? TemplateLevel = null,
     IReadOnlyList<TemplateUnitContext>? TemplateUnits = null,
@@ -78,7 +84,7 @@ public record GenerationContext(
     string? StudentNativeLanguage,
     string[]? StudentInterests,
     string[]? StudentGoals,
-    string[]? StudentWeaknesses,
+    StudentWeakness[]? StudentWeaknesses,
     string? ExistingNotes,
     string? LessonSummary = null,
     string? Direction = null,

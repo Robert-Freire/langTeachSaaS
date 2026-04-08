@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, NotebookPen, BookOpen } from 'lucide-react'
-import { getStudent } from '../api/students'
+import { getStudent, updateStudent } from '../api/students'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -12,6 +12,7 @@ import { StudentProfileSummary } from '@/components/StudentProfileSummary'
 import { StudentProfileOverview } from '@/components/student/StudentProfileOverview'
 import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
+import { ProgressDashboard } from '@/components/student/ProgressDashboard'
 import { SessionLogDialog } from '@/components/session/SessionLogDialog'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { SessionSummaryHeader } from '@/components/session/SessionSummaryHeader'
@@ -20,12 +21,41 @@ import { parseNotes } from '@/components/student/studentNoteUtils'
 export default function StudentDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const defaultTab = searchParams.get('tab') ?? 'overview'
   const [logSessionOpen, setLogSessionOpen] = useState(false)
 
   const { data: student, isLoading, isError } = useQuery({
     queryKey: ['student', id],
     queryFn: () => getStudent(id!),
     enabled: !!id,
+  })
+
+  const { mutate: toggleDifficultyStatus } = useMutation({
+    mutationFn: (vars: { difficultyId: string; status: 'Active' | 'Covered' }) => {
+      if (!student) throw new Error('Student not loaded')
+      const updated = student.difficulties.map((d) =>
+        d.id === vars.difficultyId ? { ...d, status: vars.status } : d
+      )
+      return updateStudent(id!, {
+        name: student.name,
+        learningLanguage: student.learningLanguage,
+        cefrLevel: student.cefrLevel,
+        interests: student.interests,
+        nativeLanguage: student.nativeLanguage,
+        learningGoals: student.learningGoals,
+        weaknesses: student.weaknesses,
+        difficulties: updated,
+        notes: student.notes,
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student', id] })
+    },
+    onError: (err) => {
+      console.error('Failed to update difficulty status', err)
+    },
   })
 
   if (isLoading) {
@@ -91,15 +121,21 @@ export default function StudentDetail() {
       </div>
 
       {/* Tabbed content */}
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue={defaultTab}>
         <TabsList>
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="history" data-testid="tab-history">History</TabsTrigger>
+          <TabsTrigger value="progress" data-testid="tab-progress">Progress</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="pt-6 space-y-6">
           <SessionSummaryHeader studentId={student.id} />
-          <StudentProfileOverview student={student} />
+          <StudentProfileOverview
+            student={student}
+            onToggleDifficultyStatus={(difficultyId, status) =>
+              toggleDifficultyStatus({ difficultyId, status })
+            }
+          />
           <StudentProfileSummary
             student={student}
             hasRichNotes={parseNotes(student.notes) !== null}
@@ -121,6 +157,10 @@ export default function StudentDetail() {
 
         <TabsContent value="history">
           <SessionHistoryTab studentId={student.id} />
+        </TabsContent>
+
+        <TabsContent value="progress" className="pt-6">
+          <ProgressDashboard studentId={student.id} />
         </TabsContent>
       </Tabs>
 
