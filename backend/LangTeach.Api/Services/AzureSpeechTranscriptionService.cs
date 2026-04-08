@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
@@ -6,9 +7,8 @@ namespace LangTeach.Api.Services;
 
 /// <summary>
 /// Transcription service backed by Azure AI Speech (Speech-to-Text) REST API.
-/// Supports the real-time recognition endpoint (max 60 seconds of audio per request).
-/// For teacher voice notes this is sufficient; longer notes should be split into segments.
-/// Supported audio formats: audio/wav, audio/webm;codecs=opus, audio/ogg;codecs=opus.
+/// Audio is converted to PCM WAV (16kHz mono) via ffmpeg before sending, which is
+/// the most reliably supported format for the Azure Speech simple recognition endpoint.
 /// </summary>
 public class AzureSpeechTranscriptionService(
     IHttpClientFactory httpClientFactory,
@@ -22,14 +22,16 @@ public class AzureSpeechTranscriptionService(
     {
         var client = httpClientFactory.CreateClient("AzureSpeech");
 
-        var content = new StreamContent(audio);
-        content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        var wavStream = await ConvertToWavAsync(audio, ct);
+
+        var content = new StreamContent(wavStream);
+        content.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
 
         var url = $"https://{_opts.Region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1" +
                   $"?language={Uri.EscapeDataString(_opts.Language)}&format=simple";
 
-        logger.LogInformation("Sending audio to Azure Speech for transcription. FileName={FileName} Language={Language}",
-            fileName, _opts.Language);
+        logger.LogInformation("Sending audio to Azure Speech for transcription. FileName={FileName} Language={Language} WavBytes={Bytes}",
+            fileName, _opts.Language, wavStream.Length);
 
         using var response = await client.PostAsync(url, content, ct);
 
@@ -40,6 +42,7 @@ public class AzureSpeechTranscriptionService(
         }
 
         var body = await response.Content.ReadAsStringAsync(ct);
+        logger.LogInformation("Azure Speech raw response: {Body}", body);
         using var doc = JsonDocument.Parse(body);
 
         var status = doc.RootElement.TryGetProperty("RecognitionStatus", out var s) ? s.GetString() : null;
@@ -52,5 +55,42 @@ public class AzureSpeechTranscriptionService(
         var text = doc.RootElement.TryGetProperty("DisplayText", out var t) ? t.GetString() ?? string.Empty : string.Empty;
         logger.LogInformation("Transcription complete. Length={Length}", text.Length);
         return text;
+    }
+
+    private async Task<MemoryStream> ConvertToWavAsync(Stream input, CancellationToken ct)
+    {
+        var psi = new ProcessStartInfo("ffmpeg")
+        {
+            Arguments = "-i pipe:0 -ar 16000 -ac 1 -f wav pipe:1",
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+
+        using var process = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start ffmpeg");
+
+        var writeTask = Task.Run(async () =>
+        {
+            await input.CopyToAsync(process.StandardInput.BaseStream, ct);
+            process.StandardInput.Close();
+        }, ct);
+
+        var wav = new MemoryStream();
+        var readTask = process.StandardOutput.BaseStream.CopyToAsync(wav, ct);
+
+        await Task.WhenAll(writeTask, readTask);
+        await process.WaitForExitAsync(ct);
+
+        if (process.ExitCode != 0)
+        {
+            var err = await process.StandardError.ReadToEndAsync(ct);
+            logger.LogError("ffmpeg conversion failed. ExitCode={ExitCode} Stderr={Stderr}", process.ExitCode, err);
+            throw new InvalidOperationException("Audio conversion failed.");
+        }
+
+        wav.Position = 0;
+        return wav;
     }
 }
