@@ -777,7 +777,7 @@ test('start next session button pre-populates planned content from NextSessionTo
   // Navigate to student page, go to Sessions tab
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
-  await page.getByRole('tab', { name: /sessions/i }).click()
+  await page.getByRole('tab', { name: /history/i }).click()
 
   // Expand the session entry
   await expect(page.getByTestId('session-entry')).toBeVisible({ timeout: 10000 })
@@ -808,7 +808,7 @@ test('start next session button pre-populates planned content from NextSessionTo
   // Original session's NextSessionTopics should not be modified — reload and check
   await page.reload()
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
-  await page.getByRole('tab', { name: /sessions/i }).click()
+  await page.getByRole('tab', { name: /history/i }).click()
   // Two sessions should now be present
   await expect(page.getByTestId('session-entry')).toHaveCount(2, { timeout: 10000 })
   // Original session still shows its NextSessionTopics preview
