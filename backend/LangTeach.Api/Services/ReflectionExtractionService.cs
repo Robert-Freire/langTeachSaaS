@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 
 namespace LangTeach.Api.Services;
 
@@ -64,7 +65,8 @@ public class ReflectionExtractionService : IReflectionExtractionService
     {
         try
         {
-            using var doc = JsonDocument.Parse(json.Trim());
+            var cleaned = ContentJsonHelper.StripFences(json) ?? string.Empty;
+            using var doc = JsonDocument.Parse(cleaned);
             var root = doc.RootElement;
 
             return new ExtractedReflectionDto(
@@ -79,6 +81,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to parse reflection extraction JSON (length: {Length})", json?.Length ?? 0);
+        _logger.LogDebug("Unparseable Claude response: {Json}", json);
             return new ExtractedReflectionDto(null, null, null, null, null, []);
         }
     }
