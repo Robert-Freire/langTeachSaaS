@@ -24,6 +24,13 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | #188 | low | `CreateSessionLogRequest.SuggestedDifficulties` has no count cap; a buggy client could post hundreds of entries and bloat Student.Difficulties. | Deferred: teacher-only single-tenant app; no public API surface at this stage. |
 | #188 | low | Competency/severity vocabulary lives in DifficultyConstants, AI prompt, and DifficultyDto consumers. Adding a 6th competency requires 3 updates. | Deferred: set is stable by design; over-engineering to centralise further. |
 
+## PR #582 (start next session button) - 2026-04-08
+
+| PR | Severity | Finding | Decision |
+|----|----------|---------|----------|
+| #582 | low | Arch: new e2e test in session-log.spec.ts inlines student creation; sibling spec (session-log-voice.spec.ts) extracts a `createStudent` helper. All existing tests in session-log.spec.ts already inline; fixing only the new test would be inconsistent within the file. | Deferred: extract helper for all tests in session-log.spec.ts as a refactor follow-up. |
+| #582 | info | Review: button visible for whitespace-only `nextSessionTopics` string (truthy but blank). Same pattern as existing `hasActionItem` check. | Deferred: consistent with existing code; a `.trim()` guard can be added alongside #581 cleanup. |
+
 ## PR #546 (sessions/extract endpoint) - 2026-04-06
 
 | PR | Severity | Finding | Decision |
