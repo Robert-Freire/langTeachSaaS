@@ -365,4 +365,36 @@ describe('SessionHistoryTab', () => {
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
     expect(screen.queryByTestId('next-session-topics-section')).not.toBeInTheDocument()
   })
+
+  it('shows "Start next session" button in expanded view when nextSessionTopics is non-empty', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    expect(screen.getByTestId('start-next-session-button')).toBeInTheDocument()
+  })
+
+  it('does not show "Start next session" button when nextSessionTopics is null', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, nextSessionTopics: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    expect(screen.queryByTestId('start-next-session-button')).not.toBeInTheDocument()
+  })
+
+  it('clicking "Start next session" opens Log Session dialog with planned content pre-filled', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    fireEvent.click(screen.getByTestId('start-next-session-button'))
+    await waitFor(() => {
+      expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument()
+      expect(screen.getByText('Log Session')).toBeInTheDocument()
+    })
+    const plannedField = screen.getByTestId('planned-content') as HTMLTextAreaElement
+    expect(plannedField.value).toBe('Review irregular verbs')
+  })
 })

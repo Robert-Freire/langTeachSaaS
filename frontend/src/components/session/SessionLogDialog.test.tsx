@@ -973,4 +973,58 @@ describe('SessionLogDialog', () => {
       expect(screen.queryByTestId('discard-confirm-dialog')).not.toBeInTheDocument()
     })
   })
+
+  describe('initialPlannedContent pre-fill (start next session)', () => {
+    beforeEach(() => {
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+    })
+
+    it('pre-fills planned content when initialPlannedContent is provided', async () => {
+      wrapper(
+        <SessionLogDialog
+          studentId={STUDENT_ID}
+          open={true}
+          onOpenChange={vi.fn()}
+          initialPlannedContent="Review irregular verbs"
+        />
+      )
+      await waitFor(() => expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument())
+      const plannedField = screen.getByTestId('planned-content') as HTMLTextAreaElement
+      expect(plannedField.value).toBe('Review irregular verbs')
+    })
+
+    it('does not consider form dirty when only initialPlannedContent is set and unchanged', async () => {
+      const onOpenChange = vi.fn()
+      wrapper(
+        <SessionLogDialog
+          studentId={STUDENT_ID}
+          open={true}
+          onOpenChange={onOpenChange}
+          initialPlannedContent="Review irregular verbs"
+        />
+      )
+      await waitFor(() => expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument())
+
+      // Escape without changing anything
+      await userEvent.keyboard('{Escape}')
+
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+      expect(screen.queryByTestId('discard-confirm-dialog')).not.toBeInTheDocument()
+    })
+
+    it('teacher can modify the pre-filled planned content', async () => {
+      wrapper(
+        <SessionLogDialog
+          studentId={STUDENT_ID}
+          open={true}
+          onOpenChange={vi.fn()}
+          initialPlannedContent="Review irregular verbs"
+        />
+      )
+      await waitFor(() => expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument())
+      const plannedField = screen.getByTestId('planned-content') as HTMLTextAreaElement
+      fireEvent.change(plannedField, { target: { value: 'Review irregular verbs + ser/estar' } })
+      expect(plannedField.value).toBe('Review irregular verbs + ser/estar')
+    })
+  })
 })
