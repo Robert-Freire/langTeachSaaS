@@ -42,7 +42,7 @@ public class AzureSpeechTranscriptionService(
         }
 
         var body = await response.Content.ReadAsStringAsync(ct);
-        logger.LogInformation("Azure Speech raw response: {Body}", body);
+        logger.LogDebug("Azure Speech raw response: {Body}", body);
         using var doc = JsonDocument.Parse(body);
 
         var status = doc.RootElement.TryGetProperty("RecognitionStatus", out var s) ? s.GetString() : null;
@@ -71,26 +71,44 @@ public class AzureSpeechTranscriptionService(
 
         using var process = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start ffmpeg");
 
-        var writeTask = Task.Run(async () =>
+        try
         {
-            await input.CopyToAsync(process.StandardInput.BaseStream, ct);
-            process.StandardInput.Close();
-        }, ct);
+            var writeTask = Task.Run(async () =>
+            {
+                await input.CopyToAsync(process.StandardInput.BaseStream, ct);
+                process.StandardInput.Close();
+            }, ct);
 
-        var wav = new MemoryStream();
-        var readTask = process.StandardOutput.BaseStream.CopyToAsync(wav, ct);
+            var wav = new MemoryStream();
+            // Drain stdout and stderr concurrently to prevent buffer deadlock.
+            var readStdoutTask = process.StandardOutput.BaseStream.CopyToAsync(wav, ct);
+            var stderrBuilder = new System.Text.StringBuilder();
+            var readStderrTask = Task.Run(async () =>
+            {
+                var line = await process.StandardError.ReadLineAsync(ct);
+                while (line is not null)
+                {
+                    stderrBuilder.AppendLine(line);
+                    line = await process.StandardError.ReadLineAsync(ct);
+                }
+            }, ct);
 
-        await Task.WhenAll(writeTask, readTask);
-        await process.WaitForExitAsync(ct);
+            await Task.WhenAll(writeTask, readStdoutTask, readStderrTask);
+            await process.WaitForExitAsync(ct);
 
-        if (process.ExitCode != 0)
-        {
-            var err = await process.StandardError.ReadToEndAsync(ct);
-            logger.LogError("ffmpeg conversion failed. ExitCode={ExitCode} Stderr={Stderr}", process.ExitCode, err);
-            throw new InvalidOperationException("Audio conversion failed.");
+            if (process.ExitCode != 0)
+            {
+                logger.LogError("ffmpeg conversion failed. ExitCode={ExitCode} Stderr={Stderr}", process.ExitCode, stderrBuilder.ToString());
+                throw new InvalidOperationException("Audio conversion failed.");
+            }
+
+            wav.Position = 0;
+            return wav;
         }
-
-        wav.Position = 0;
-        return wav;
+        catch
+        {
+            process.Kill(entireProcessTree: true);
+            throw;
+        }
     }
 }

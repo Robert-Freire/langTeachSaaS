@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 
 namespace LangTeach.Api.Services;
 
@@ -64,15 +65,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
     {
         try
         {
-            // Claude sometimes wraps output in markdown code fences despite instructions.
-            var cleaned = json.Trim();
-            if (cleaned.StartsWith("```"))
-            {
-                var firstNewline = cleaned.IndexOf('\n');
-                var lastFence = cleaned.LastIndexOf("```");
-                if (firstNewline > 0 && lastFence > firstNewline)
-                    cleaned = cleaned[(firstNewline + 1)..lastFence].Trim();
-            }
+            var cleaned = ContentJsonHelper.StripFences(json) ?? string.Empty;
             using var doc = JsonDocument.Parse(cleaned);
             var root = doc.RootElement;
 
@@ -87,7 +80,8 @@ public class ReflectionExtractionService : IReflectionExtractionService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to parse reflection extraction JSON (length: {Length}): {Json}", json?.Length ?? 0, json);
+            _logger.LogWarning(ex, "Failed to parse reflection extraction JSON (length: {Length})", json?.Length ?? 0);
+        _logger.LogDebug("Unparseable Claude response: {Json}", json);
             return new ExtractedReflectionDto(null, null, null, null, null, []);
         }
     }
