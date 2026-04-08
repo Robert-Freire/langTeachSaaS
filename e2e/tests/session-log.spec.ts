@@ -507,6 +507,15 @@ test('summary header appears on history tab after logging a session', async ({ b
   await expect(page.getByTestId('session-summary-action-items-list')).toBeVisible()
   await expect(page.getByTestId('session-summary-action-items-list')).toContainText('Work on para/por')
 
+  // Session card should show nextSessionTopics collapsed preview and expanded section
+  await expect(page.getByTestId('next-session-topics-preview')).toBeVisible()
+  await expect(page.getByTestId('next-session-topics-preview')).toContainText('Work on para/por')
+
+  await page.getByTestId('session-entry-toggle').click()
+  await expect(page.getByTestId('next-session-topics-section')).toBeVisible()
+  await expect(page.getByTestId('next-session-topics-section')).toContainText('Planned for next class')
+  await expect(page.getByTestId('next-session-topics-section')).toContainText('Work on para/por')
+
   await context.close()
 })
 
