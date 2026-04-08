@@ -224,7 +224,7 @@ describe('CourseNew wizard', () => {
         learningLanguage: 'Spanish', interests: ['football'],
         notes: null, nativeLanguage: 'Italian',
         learningGoals: ['get a job in Barcelona'],
-        weaknesses: ['ser vs estar'],
+        weaknesses: [{ description: 'ser vs estar', weaknessType: 'grammatical' as const }],
         difficulties: [{ id: 'x', description: 'subjunctive', competency: 'Grammar', subcategory: '', severity: 'high', trend: 'stable', status: 'Active' }],
         createdAt: '2026-01-01', updatedAt: '2026-01-01',
       }],

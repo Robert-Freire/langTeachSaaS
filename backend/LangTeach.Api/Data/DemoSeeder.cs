@@ -156,7 +156,7 @@ public static class DemoSeeder
 
         var students = new List<Student>
         {
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", Notes = VisualTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", Notes = VisualTag, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", CreatedAt = now, UpdatedAt = now },
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Visual", LearningLanguage = "English", CefrLevel = "A2", Notes = VisualTag, CreatedAt = now, UpdatedAt = now },
         };
         db.Students.AddRange(students);
