@@ -325,4 +325,44 @@ describe('SessionHistoryTab', () => {
     const badge = screen.getByTestId('general-note-count')
     expect(badge.querySelector('svg')).not.toBeNull()
   })
+
+  it('shows next session topics preview line in collapsed state when nextSessionTopics is set', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    const preview = screen.getByTestId('next-session-topics-preview')
+    expect(preview).toBeInTheDocument()
+    expect(preview).toHaveTextContent('Next:')
+    expect(preview).toHaveTextContent('Review irregular verbs')
+  })
+
+  it('does not show next session topics preview when nextSessionTopics is null', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, nextSessionTopics: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.queryByTestId('next-session-topics-preview')).not.toBeInTheDocument()
+  })
+
+  it('shows next session topics section with amber styling in expanded state', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const section = screen.getByTestId('next-session-topics-section')
+    expect(section).toBeInTheDocument()
+    expect(section).toHaveTextContent('Planned for next class')
+    expect(section).toHaveTextContent('Review irregular verbs')
+  })
+
+  it('does not show next session topics section when nextSessionTopics is null', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, nextSessionTopics: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    expect(screen.queryByTestId('next-session-topics-section')).not.toBeInTheDocument()
+  })
 })
