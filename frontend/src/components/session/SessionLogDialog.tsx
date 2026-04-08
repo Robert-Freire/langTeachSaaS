@@ -369,10 +369,13 @@ export function SessionLogDialog({
       plannedContent !== autoPlannedContent ||
       actualContent !== '' ||
       homeworkAssigned !== '' ||
+      prevHomeworkStatus !== 'NotApplicable' ||
       nextSessionTopics !== '' ||
       generalNotes !== '' ||
       topicTags.length > 0 ||
       isCancelled ||
+      reassessmentEnabled ||
+      selectedLessonId !== (linkedLessonId ?? '') ||
       mentionedDifficultyKeys.size > 0 ||
       suggestedDifficulties.length > 0
     )
