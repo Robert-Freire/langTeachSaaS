@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronUp, Trash2, Pencil, ExternalLink, BookOpen, CalendarDays } from 'lucide-react'
+import { ChevronDown, ChevronUp, Trash2, Pencil, ExternalLink, BookOpen, CalendarDays, PlayCircle } from 'lucide-react'
 import { SessionSummaryHeader } from './SessionSummaryHeader'
 import { SessionLogDialog } from './SessionLogDialog'
 import { logger } from '../../lib/logger'
@@ -54,10 +54,12 @@ function SessionEntry({
   session,
   studentId,
   onEdit,
+  onStartNextSession,
 }: {
   session: SessionLog
   studentId: string
   onEdit: (session: SessionLog) => void
+  onStartNextSession: (session: SessionLog) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -287,6 +289,18 @@ function SessionEntry({
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-1">
+            {session.nextSessionTopics && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onStartNextSession(session)}
+                data-testid="start-next-session-button"
+                className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+              >
+                <PlayCircle className="h-3.5 w-3.5 mr-1" />
+                Start next session
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -346,6 +360,8 @@ function SessionEntry({
 export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
   const [editSession, setEditSession] = useState<SessionLog | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [startNextSource, setStartNextSource] = useState<SessionLog | null>(null)
+  const [startNextDialogOpen, setStartNextDialogOpen] = useState(false)
 
   function handleEdit(session: SessionLog) {
     setEditSession(session)
@@ -355,6 +371,16 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
   function handleEditDialogChange(open: boolean) {
     setEditDialogOpen(open)
     if (!open) setEditSession(null)
+  }
+
+  function handleStartNextSession(session: SessionLog) {
+    setStartNextSource(session)
+    setStartNextDialogOpen(true)
+  }
+
+  function handleStartNextDialogChange(open: boolean) {
+    setStartNextDialogOpen(open)
+    if (!open) setStartNextSource(null)
   }
 
   const { data: sessions, isLoading, isError, refetch } = useQuery({
@@ -419,7 +445,7 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
       <SessionSummaryHeader studentId={studentId} />
       <div className="space-y-3" data-testid="session-history-list">
         {sortedSessions.map((session) => (
-          <SessionEntry key={session.id} session={session} studentId={studentId} onEdit={handleEdit} />
+          <SessionEntry key={session.id} session={session} studentId={studentId} onEdit={handleEdit} onStartNextSession={handleStartNextSession} />
         ))}
       </div>
       <SessionLogDialog
@@ -427,6 +453,12 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
         open={editDialogOpen}
         onOpenChange={handleEditDialogChange}
         initialSession={editSession}
+      />
+      <SessionLogDialog
+        studentId={studentId}
+        open={startNextDialogOpen}
+        onOpenChange={handleStartNextDialogChange}
+        initialPlannedContent={startNextSource?.nextSessionTopics ?? null}
       />
     </div>
   )
