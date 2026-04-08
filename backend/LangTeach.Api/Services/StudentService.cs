@@ -83,7 +83,8 @@ public class StudentService : IStudentService
     public async Task<StudentDto> CreateAsync(Guid teacherId, CreateStudentRequest request, CancellationToken cancellationToken = default)
     {
         ValidateNativeLanguage(request.NativeLanguage);
-        ValidateWeaknesses(request.Weaknesses);
+        var normalizedWeaknessesCreate = NormalizeWeaknesses(request.Weaknesses);
+        ValidateWeaknesses(normalizedWeaknessesCreate);
         ValidateDifficulties(request.Difficulties);
         var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
 
@@ -97,7 +98,7 @@ public class StudentService : IStudentService
             Interests = Serialize(request.Interests),
             NativeLanguage = request.NativeLanguage,
             LearningGoals = Serialize(request.LearningGoals),
-            Weaknesses = Serialize(request.Weaknesses),
+            Weaknesses = Serialize(normalizedWeaknessesCreate),
             Difficulties = Serialize(normalizedDifficulties),
             Notes = request.Notes,
             CreatedAt = DateTime.UtcNow,
@@ -121,7 +122,8 @@ public class StudentService : IStudentService
             return null;
 
         ValidateNativeLanguage(request.NativeLanguage);
-        ValidateWeaknesses(request.Weaknesses);
+        var normalizedWeaknessesUpdate = NormalizeWeaknesses(request.Weaknesses);
+        ValidateWeaknesses(normalizedWeaknessesUpdate);
         ValidateDifficulties(request.Difficulties);
         var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
 
@@ -131,7 +133,7 @@ public class StudentService : IStudentService
         student.Interests = Serialize(request.Interests);
         student.NativeLanguage = request.NativeLanguage;
         student.LearningGoals = Serialize(request.LearningGoals);
-        student.Weaknesses = Serialize(request.Weaknesses);
+        student.Weaknesses = Serialize(normalizedWeaknessesUpdate);
         student.Difficulties = Serialize(normalizedDifficulties);
         student.Notes = request.Notes;
         student.UpdatedAt = DateTime.UtcNow;
@@ -176,6 +178,9 @@ public class StudentService : IStudentService
         s.CreatedAt,
         s.UpdatedAt
     );
+
+    private static List<StudentWeaknessDto> NormalizeWeaknesses(List<StudentWeaknessDto> weaknesses) =>
+        weaknesses.Select(w => w with { WeaknessType = (w.WeaknessType ?? string.Empty).ToLowerInvariant() }).ToList();
 
     private static void ValidateWeaknesses(List<StudentWeaknessDto> weaknesses)
     {
