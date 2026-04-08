@@ -138,8 +138,12 @@ test('full student CRUD flow', async ({ browser }) => {
   // Save
   await page.getByRole('button', { name: 'Save Student' }).click()
 
-  // Should redirect to list and show the new student
-  await expect(page).toHaveURL('/students', { timeout: 10000 })
+  // Should redirect to student profile page
+  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
+
+  // Navigate to list to verify the new student appears
+  await page.goto('/students')
+  await expect(page.locator('h1')).toHaveText('Students', { timeout: 10000 })
 
   // Find the student card using the per-row testid (scoped by student ID)
   const studentCard = page.locator('[data-testid^="student-row-"]').filter({
@@ -173,8 +177,11 @@ test('full student CRUD flow', async ({ browser }) => {
 
   await page.getByRole('button', { name: 'Update Student' }).click()
 
-  // Back on list — should show updated level
-  await expect(page).toHaveURL('/students', { timeout: 10000 })
+  // Should redirect to student profile page
+  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
+
+  // Navigate to list to verify updated level
+  await page.goto('/students')
   const updatedCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -191,9 +198,12 @@ test('full student CRUD flow', async ({ browser }) => {
   await expect(page.getByTestId('difficulty-row')).not.toBeVisible()
 
   await page.getByRole('button', { name: 'Update Student' }).click()
-  await expect(page).toHaveURL('/students', { timeout: 10000 })
 
-  // Verify difficulty is gone by re-entering edit
+  // Should redirect to student profile page
+  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
+
+  // Navigate to list to re-enter edit for verification
+  await page.goto('/students')
   const finalCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -275,9 +285,10 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
 
   // Save
   await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL('/students', { timeout: 10000 })
+  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
 
-  // Navigate to edit and verify persistence
+  // Navigate to list to verify persistence
+  await page.goto('/students')
   const studentCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -322,9 +333,10 @@ test('"Create Course" button on student edit page navigates to CourseNew with st
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'B2' }).click()
   await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL('/students', { timeout: 10000 })
+  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
 
-  // Navigate to edit page via edit button
+  // Navigate to list then to edit page
+  await page.goto('/students')
   const studentCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -372,14 +384,9 @@ test('student detail overview shows profile fields and New lesson CTA', async ({
   await page.getByTestId('student-native-language').click()
   await page.getByRole('option', { name: 'Portuguese' }).click()
   await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL('/students', { timeout: 10000 })
 
-  // Navigate to student detail
-  const studentCard = page.locator('[data-testid^="student-row-"]').filter({
-    has: page.getByTestId('student-name').filter({ hasText: studentName })
-  })
-  await expect(studentCard).toBeVisible({ timeout: 10000 })
-  await studentCard.getByTestId('student-name').click()
+  // Should redirect directly to student profile page
+  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
 
   // Overview tab should be active by default
   await expect(page.getByTestId('tab-overview')).toBeVisible({ timeout: 10000 })

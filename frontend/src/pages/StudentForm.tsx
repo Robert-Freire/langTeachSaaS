@@ -221,10 +221,10 @@ export default function StudentForm() {
   const { mutate, isPending } = useMutation({
     mutationFn: (data: StudentFormData) =>
       isEdit ? updateStudent(id!, data) : createStudent(data),
-    onSuccess: () => {
+    onSuccess: (student) => {
       logger.info('StudentForm', isEdit ? 'student updated' : 'student created')
       queryClient.invalidateQueries({ queryKey: ['students'] })
-      navigate('/students')
+      navigate(`/students/${student.id}`)
     },
     onError: (err) => logger.error('StudentForm', 'save failed', err),
   })
