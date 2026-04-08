@@ -740,6 +740,85 @@ test('unsaved-changes guard: Keep editing returns to the form', async ({ browser
   await context.close()
 })
 
+test('start next session button pre-populates planned content from NextSessionTopics', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Start Next Session Test ${Date.now()}`
+  const createRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: studentName,
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+    },
+  })
+  expect(createRes.ok()).toBeTruthy()
+  const student = await createRes.json()
+
+  // Create a session with NextSessionTopics set
+  const sessionRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      sessionDate: '2026-04-01',
+      plannedContent: 'Preterito indefinido',
+      actualContent: 'Covered basics',
+      nextSessionTopics: 'Review irregular verbs',
+      previousHomeworkStatus: 'NotApplicable',
+      status: 'Confirmed',
+    },
+  })
+  expect(sessionRes.ok()).toBeTruthy()
+
+  // Navigate to student page, go to Sessions tab
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await page.getByRole('tab', { name: /sessions/i }).click()
+
+  // Expand the session entry
+  await expect(page.getByTestId('session-entry')).toBeVisible({ timeout: 10000 })
+  await page.getByTestId('session-entry-toggle').click()
+  await expect(page.getByTestId('session-entry-detail')).toBeVisible({ timeout: 5000 })
+
+  // "Start next session" button should be visible
+  await expect(page.getByTestId('start-next-session-button')).toBeVisible({ timeout: 5000 })
+
+  // Click it
+  await page.getByTestId('start-next-session-button').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+
+  // Dialog should be in create mode (title "Log Session")
+  await expect(page.getByText('Log Session')).toBeVisible()
+
+  // PlannedContent should be pre-filled with NextSessionTopics value
+  await expect(page.getByTestId('planned-content')).toHaveValue('Review irregular verbs')
+
+  // Teacher can modify it
+  await page.getByTestId('planned-content').fill('Review irregular verbs + ser/estar')
+
+  // Save the new session
+  await page.getByTestId('actual-content').fill('Covered irregular verbs')
+  await page.getByTestId('submit-session-log').click()
+  await expect(page.getByTestId('session-log-success')).toBeVisible({ timeout: 10000 })
+
+  // Original session's NextSessionTopics should not be modified — reload and check
+  await page.reload()
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await page.getByRole('tab', { name: /sessions/i }).click()
+  // Two sessions should now be present
+  await expect(page.getByTestId('session-entry')).toHaveCount(2, { timeout: 10000 })
+  // Original session still shows its NextSessionTopics preview
+  const previews = page.getByTestId('next-session-topics-preview')
+  await expect(previews).toHaveCount(1)
+  await expect(previews).toHaveText(/Review irregular verbs/)
+
+  await context.close()
+})
+
 test('unsaved-changes guard: empty form closes without confirmation', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()

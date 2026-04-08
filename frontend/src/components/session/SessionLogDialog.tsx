@@ -72,6 +72,7 @@ export interface SessionLogDialogProps {
   lessonTitle?: string | null
   lessonObjectives?: string | null
   initialSession?: SessionLog | null
+  initialPlannedContent?: string | null
 }
 
 export function SessionLogDialog({
@@ -82,6 +83,7 @@ export function SessionLogDialog({
   lessonTitle,
   lessonObjectives,
   initialSession,
+  initialPlannedContent,
 }: SessionLogDialogProps) {
   const isEditMode = initialSession != null
   const queryClient = useQueryClient()
@@ -177,6 +179,15 @@ export function SessionLogDialog({
       setSelectedLessonId(linkedLessonId)
     }
   }, [open, initialSession, linkedLessonId, lessonTitle, lessonObjectives])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Pre-populate planned content from a prior session's NextSessionTopics (create mode, no linked lesson)
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (open && !initialSession && !linkedLessonId && initialPlannedContent) {
+      setPlannedContent(initialPlannedContent)
+    }
+  }, [open, initialSession, linkedLessonId, initialPlannedContent])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Reset form when dialog closes
@@ -345,7 +356,9 @@ export function SessionLogDialog({
 
   const autoPlannedContent = !initialSession && linkedLessonId && lessonObjectives
     ? buildPlannedContent(lessonTitle, lessonObjectives)
-    : ''
+    : (!initialSession && !linkedLessonId && initialPlannedContent)
+      ? initialPlannedContent
+      : ''
 
   const isDirty = isEditMode
     ? (
