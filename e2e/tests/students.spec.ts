@@ -38,35 +38,58 @@ test('shows not-found message for invalid student edit URL', async ({ browser })
   await context.close()
 })
 
-test('weakness options are filtered by target language', async ({ browser }) => {
+test('creates student with lexical weakness and verifies round-trip', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
+
+  const studentName = `Lexical Weakness Test ${Date.now()}`
 
   await page.goto('/students/new')
   await expect(page.locator('h1')).toHaveText('Add Student', { timeout: 10000 })
 
-  // Select English as learning language
-  await page.getByTestId('student-language').click()
-  await page.getByRole('option', { name: 'English' }).click()
-
-  // Open weaknesses dropdown and verify English-specific options appear
-  await page.getByTestId('weaknesses-trigger').click()
-  await expect(page.getByRole('option', { name: 'Phrasal Verbs' })).toBeVisible({ timeout: 5000 })
-  await expect(page.getByRole('option', { name: 'Past Tenses' })).toBeVisible()
-  // Spanish-specific option should not appear
-  await expect(page.getByRole('option', { name: 'Ser/Estar' })).not.toBeVisible()
-  await page.keyboard.press('Escape')
-
-  // Switch to Spanish
+  await page.getByTestId('student-name').fill(studentName)
   await page.getByTestId('student-language').click()
   await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B1' }).click()
 
-  // Open weaknesses dropdown and verify Spanish-specific options appear
-  await page.getByTestId('weaknesses-trigger').click()
-  await expect(page.getByRole('option', { name: 'Ser/Estar' })).toBeVisible({ timeout: 5000 })
-  await expect(page.getByRole('option', { name: 'Past Tenses' })).toBeVisible()
-  // English-specific option should not appear
-  await expect(page.getByRole('option', { name: 'Phrasal Verbs' })).not.toBeVisible()
+  // Add a weakness row with lexical type
+  await page.getByTestId('add-weakness').click()
+  await page.getByTestId('weakness-description').fill('Vocabulary gaps for travel')
+  await page.getByTestId('weakness-type').click()
+  await page.getByRole('option', { name: 'Lexical' }).click()
+
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL('/students', { timeout: 10000 })
+
+  // Find the student card and navigate to edit
+  const studentCard = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await expect(studentCard).toBeVisible({ timeout: 10000 })
+  await studentCard.getByTestId('edit-student').click()
+  await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: 10000 })
+
+  // Verify weakness round-tripped correctly
+  const descInput = page.getByTestId('weakness-description')
+  await expect(descInput).toHaveValue('Vocabulary gaps for travel', { timeout: 5000 })
+  const typeSelect = page.getByTestId('weakness-type')
+  await expect(typeSelect).toContainText('Lexical', { timeout: 5000 })
+
+  // Cleanup
+  await page.getByRole('button', { name: 'Cancel' }).click()
+  await expect(page).toHaveURL('/students', { timeout: 10000 })
+  const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await deleteCard.getByTestId('delete-student').click()
+  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
+  await page.getByTestId('confirm-delete').click()
+  await expect(
+    page.locator('[data-testid^="student-row-"]').filter({
+      has: page.getByTestId('student-name').filter({ hasText: studentName })
+    })
+  ).not.toBeVisible({ timeout: 10000 })
 
   await context.close()
 })
@@ -113,10 +136,9 @@ test('full student CRUD flow', async ({ browser }) => {
   await page.getByRole('option', { name: 'Travel' }).click()
   await page.keyboard.press('Escape')
 
-  // Select a weakness (Ser/Estar is Spanish-specific, verifying language filtering)
-  await page.getByTestId('weaknesses-trigger').click()
-  await page.getByRole('option', { name: 'Ser/Estar' }).click()
-  await page.keyboard.press('Escape')
+  // Add a weakness using the row-based compound input
+  await page.getByTestId('add-weakness').click()
+  await page.getByTestId('weakness-description').fill('Ser/Estar')
 
   // Add a structured difficulty
   const addDiffBtn = page.getByTestId('add-difficulty')
@@ -157,7 +179,7 @@ test('full student CRUD flow', async ({ browser }) => {
 
   // Confirm enrichment fields round-trip correctly
   await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'Travel' })).toBeVisible()
-  await expect(page.getByTestId('weakness-chip').filter({ hasText: 'Ser/Estar' })).toBeVisible()
+  await expect(page.getByTestId('weakness-description')).toHaveValue('Ser/Estar')
 
   // Verify difficulty persisted
   const editDiffRow = page.getByTestId('difficulty-row')
@@ -268,10 +290,9 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
   await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'Travel' })).toBeVisible()
   await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'pass DELE B2 in June' })).toBeVisible()
 
-  // Add a custom weakness
-  await addCustomEntry('weaknesses-trigger', 'irregular verb conjugation')
-
-  await expect(page.getByTestId('weakness-chip').filter({ hasText: 'irregular verb conjugation' })).toBeVisible()
+  // Add a weakness using the row-based input
+  await page.getByTestId('add-weakness').click()
+  await page.getByTestId('weakness-description').fill('irregular verb conjugation')
 
   // Save
   await page.getByRole('button', { name: 'Save Student' }).click()
@@ -288,7 +309,7 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
   // Verify predefined and custom goals persisted
   await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'Travel' })).toBeVisible()
   await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'pass DELE B2 in June' })).toBeVisible()
-  await expect(page.getByTestId('weakness-chip').filter({ hasText: 'irregular verb conjugation' })).toBeVisible()
+  await expect(page.getByTestId('weakness-description')).toHaveValue('irregular verb conjugation')
 
   // Clean up: go back and delete the student
   await page.getByRole('button', { name: 'Cancel' }).click()

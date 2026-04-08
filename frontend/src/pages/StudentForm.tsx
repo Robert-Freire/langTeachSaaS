@@ -2,8 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, ChevronsUpDown, Check, Plus, Trash2 } from 'lucide-react'
-import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty } from '../api/students'
-import { LEARNING_GOALS, getWeaknessesForLanguage, getLanguageSpecificWeaknessValues, COMPETENCY_OPTIONS } from '../lib/studentOptions'
+import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem } from '../api/students'
+import { LEARNING_GOALS, COMPETENCY_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -189,7 +189,7 @@ export default function StudentForm() {
   const [interestInput, setInterestInput] = useState('')
   const [nativeLanguage, setNativeLanguage] = useState<string>('')
   const [learningGoals, setLearningGoals] = useState<string[]>([])
-  const [weaknesses, setWeaknesses] = useState<string[]>([])
+  const [weaknesses, setWeaknesses] = useState<StudentWeaknessItem[]>([])
   const [difficulties, setDifficulties] = useState<Difficulty[]>([])
   const [notes, setNotes] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -251,6 +251,20 @@ export default function StudentForm() {
     setInterests((prev) => prev.filter((i) => i !== interest))
   }
 
+  function addWeakness() {
+    setWeaknesses((prev) => [...prev, { description: '', weaknessType: 'grammatical' as const }])
+  }
+
+  function updateWeakness(index: number, field: keyof StudentWeaknessItem, value: string) {
+    setWeaknesses((prev) =>
+      prev.map((w, i) => (i === index ? { ...w, [field]: value } : w))
+    )
+  }
+
+  function removeWeakness(index: number) {
+    setWeaknesses((prev) => prev.filter((_, i) => i !== index))
+  }
+
   function addDifficulty() {
     const id = typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID()
@@ -289,6 +303,7 @@ export default function StudentForm() {
     const validDifficulties = difficulties.filter(
       (d) => d.competency && d.description.trim()
     )
+    const validWeaknesses = weaknesses.filter((w) => w.description.trim())
     mutate({
       name: name.trim(),
       learningLanguage: language,
@@ -296,7 +311,7 @@ export default function StudentForm() {
       interests: finalInterests,
       nativeLanguage: nativeLanguage || null,
       learningGoals,
-      weaknesses,
+      weaknesses: validWeaknesses,
       difficulties: validDifficulties,
       notes: notes.trim() || undefined,
     })
@@ -401,8 +416,6 @@ export default function StudentForm() {
                 <Label>Learning Language <span className="text-red-500">*</span></Label>
                 <Select value={language} onValueChange={(v) => {
                   if (!v) return
-                  const stale = getLanguageSpecificWeaknessValues(language)
-                  setWeaknesses((prev) => prev.filter((w) => !stale.has(w)))
                   setLanguage(v)
                 }}>
                   <SelectTrigger data-testid="student-language">
@@ -513,17 +526,72 @@ export default function StudentForm() {
             </div>
 
             {/* Weaknesses */}
-            <div className="space-y-1.5">
-              <Label>Areas to Improve</Label>
-              <MultiSelect
-                options={getWeaknessesForLanguage(language)}
-                selected={weaknesses}
-                onChange={setWeaknesses}
-                placeholder="Select or type areas..."
-                triggerId="weaknesses-trigger"
-                chipTestId="weakness-chip"
-                maxLength={200}
-              />
+            <div className="space-y-3 pt-2 border-t border-zinc-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Areas to Improve</Label>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Free-text description with category (grammatical, lexical, orthographic).
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addWeakness}
+                  data-testid="add-weakness"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add
+                </Button>
+              </div>
+
+              {weaknesses.map((w, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col sm:flex-row gap-2 sm:items-start"
+                  data-testid="weakness-row"
+                >
+                  <Input
+                    value={w.description}
+                    onChange={(e) => updateWeakness(i, 'description', e.target.value)}
+                    placeholder="e.g. Confuses ser/estar"
+                    maxLength={200}
+                    className="flex-1"
+                    data-testid="weakness-description"
+                  />
+                  <Select
+                    value={w.weaknessType}
+                    onValueChange={(v) => v && updateWeakness(i, 'weaknessType', v)}
+                  >
+                    <SelectTrigger data-testid="weakness-type" className="w-[160px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="grammatical">Grammatical</SelectItem>
+                      <SelectItem value="lexical">Lexical</SelectItem>
+                      <SelectItem value="orthographic">Orthographic</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeWeakness(i)}
+                    className="text-zinc-400 hover:text-red-600 h-9 w-9"
+                    data-testid="remove-weakness"
+                    aria-label="Remove weakness"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+
+              {weaknesses.length === 0 && (
+                <p className="text-xs text-zinc-400 italic" data-testid="weaknesses-empty">
+                  No areas to improve tracked yet.
+                </p>
+              )}
             </div>
 
             {/* Structured Difficulties */}

@@ -27,8 +27,7 @@ public class UpdateStudentRequest
     public List<string> LearningGoals { get; set; } = [];
 
     [MaxCollectionCount(30)]
-    [MaxStringLengthEach(200)]
-    public List<string> Weaknesses { get; set; } = [];
+    public List<StudentWeaknessDto> Weaknesses { get; set; } = [];
 
     [MaxCollectionCount(50)]
     public List<DifficultyDto> Difficulties { get; set; } = [];
