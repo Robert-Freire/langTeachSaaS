@@ -139,7 +139,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await page.getByRole('button', { name: 'Save Student' }).click()
 
   // Should redirect to student profile page
-  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
 
   // Navigate to list to verify the new student appears
   await page.goto('/students')
@@ -178,7 +178,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await page.getByRole('button', { name: 'Update Student' }).click()
 
   // Should redirect to student profile page
-  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
 
   // Navigate to list to verify updated level
   await page.goto('/students')
@@ -200,7 +200,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await page.getByRole('button', { name: 'Update Student' }).click()
 
   // Should redirect to student profile page
-  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
 
   // Navigate to list to re-enter edit for verification
   await page.goto('/students')
@@ -285,7 +285,7 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
 
   // Save
   await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
 
   // Navigate to list to verify persistence
   await page.goto('/students')
@@ -333,7 +333,7 @@ test('"Create Course" button on student edit page navigates to CourseNew with st
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'B2' }).click()
   await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
 
   // Navigate to list then to edit page
   await page.goto('/students')
@@ -386,7 +386,7 @@ test('student detail overview shows profile fields and New lesson CTA', async ({
   await page.getByRole('button', { name: 'Save Student' }).click()
 
   // Should redirect directly to student profile page
-  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
 
   // Overview tab should be active by default
   await expect(page.getByTestId('tab-overview')).toBeVisible({ timeout: 10000 })
