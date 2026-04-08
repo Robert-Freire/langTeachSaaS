@@ -4,6 +4,10 @@ import { CheckCircle2, Loader2 } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -101,7 +105,9 @@ export function SessionLogDialog({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [success, setSuccess] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const editSnapshotRef = useRef<Record<string, string | boolean>>({})
 
   // Voice extraction state
   const [isExtracting, setIsExtracting] = useState(false)
@@ -113,19 +119,38 @@ export function SessionLogDialog({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open && initialSession) {
-      setSessionDate(initialSession.sessionDate ? initialSession.sessionDate.split('T')[0] : '')
-      setPlannedContent(initialSession.plannedContent ?? '')
-      setActualContent(initialSession.actualContent ?? '')
-      setHomeworkAssigned(initialSession.homeworkAssigned ?? '')
-      setPrevHomeworkStatus(initialSession.previousHomeworkStatusName ?? 'NotApplicable')
-      setNextSessionTopics(initialSession.nextSessionTopics ?? '')
-      setGeneralNotes(initialSession.generalNotes ?? '')
-      setTopicTags(parseTopicTags(initialSession.topicTags))
-      setReassessmentEnabled(!!initialSession.levelReassessmentSkill)
-      setReassessmentSkill(initialSession.levelReassessmentSkill ?? '')
-      setReassessmentLevel(initialSession.levelReassessmentLevel ?? '')
-      setSelectedLessonId(initialSession.linkedLessonId ?? '')
-      setIsCancelled(initialSession.isCancelled ?? false)
+      const date = initialSession.sessionDate ? initialSession.sessionDate.split('T')[0] : ''
+      const planned = initialSession.plannedContent ?? ''
+      const actual = initialSession.actualContent ?? ''
+      const homework = initialSession.homeworkAssigned ?? ''
+      const prevHw = initialSession.previousHomeworkStatusName ?? 'NotApplicable'
+      const nextTopics = initialSession.nextSessionTopics ?? ''
+      const notes = initialSession.generalNotes ?? ''
+      const cancelled = initialSession.isCancelled ?? false
+      const raEnabled = !!initialSession.levelReassessmentSkill
+      const raSkill = initialSession.levelReassessmentSkill ?? ''
+      const raLevel = initialSession.levelReassessmentLevel ?? ''
+      const linkedLesson = initialSession.linkedLessonId ?? ''
+      const rawTopicTags = initialSession.topicTags ?? '[]'
+      let mentionedKeysHash = ''
+      try {
+        const pairs = JSON.parse(initialSession.mentionedDifficultyPairs || '[]') as { Competency: string; Subcategory: string }[]
+        mentionedKeysHash = pairs.map(p => `${p.Competency}|${p.Subcategory}`).sort().join(',')
+      } catch { /* empty */ }
+      editSnapshotRef.current = { date, planned, actual, homework, prevHw, nextTopics, notes, cancelled, raEnabled, raSkill, raLevel, linkedLesson, rawTopicTags, mentionedKeysHash }
+      setSessionDate(date)
+      setPlannedContent(planned)
+      setActualContent(actual)
+      setHomeworkAssigned(homework)
+      setPrevHomeworkStatus(prevHw)
+      setNextSessionTopics(nextTopics)
+      setGeneralNotes(notes)
+      setTopicTags(parseTopicTags(rawTopicTags))
+      setReassessmentEnabled(raEnabled)
+      setReassessmentSkill(raSkill)
+      setReassessmentLevel(raLevel)
+      setSelectedLessonId(linkedLesson)
+      setIsCancelled(cancelled)
       try {
         const pairs = JSON.parse(initialSession.mentionedDifficultyPairs || '[]') as { Competency: string; Subcategory: string }[]
         setMentionedDifficultyKeys(new Set(pairs.map(p => `${p.Competency}|${p.Subcategory}`)))
@@ -176,6 +201,8 @@ export function SessionLogDialog({
       setErrors({})
       setSuccess(false)
       setSubmitError(null)
+      setShowDiscardConfirm(false)
+      editSnapshotRef.current = {}
       voiceRunRef.current += 1
       setIsExtracting(false)
       setDraftSessionId(null)
@@ -316,6 +343,46 @@ export function SessionLogDialog({
     }
   }
 
+  const autoPlannedContent = !initialSession && linkedLessonId && lessonObjectives
+    ? buildPlannedContent(lessonTitle, lessonObjectives)
+    : ''
+
+  const isDirty = isEditMode
+    ? (
+      sessionDate !== (editSnapshotRef.current.date ?? '') ||
+      plannedContent !== (editSnapshotRef.current.planned ?? '') ||
+      actualContent !== (editSnapshotRef.current.actual ?? '') ||
+      homeworkAssigned !== (editSnapshotRef.current.homework ?? '') ||
+      prevHomeworkStatus !== (editSnapshotRef.current.prevHw ?? 'NotApplicable') ||
+      nextSessionTopics !== (editSnapshotRef.current.nextTopics ?? '') ||
+      generalNotes !== (editSnapshotRef.current.notes ?? '') ||
+      isCancelled !== (editSnapshotRef.current.cancelled ?? false) ||
+      reassessmentEnabled !== (editSnapshotRef.current.raEnabled ?? false) ||
+      reassessmentSkill !== (editSnapshotRef.current.raSkill ?? '') ||
+      reassessmentLevel !== (editSnapshotRef.current.raLevel ?? '') ||
+      selectedLessonId !== (editSnapshotRef.current.linkedLesson ?? '') ||
+      serializeTopicTags(topicTags) !== (editSnapshotRef.current.rawTopicTags ?? '[]') ||
+      [...mentionedDifficultyKeys].sort().join(',') !== (editSnapshotRef.current.mentionedKeysHash ?? '')
+    )
+    : (
+      sessionDate !== '' ||
+      plannedContent !== autoPlannedContent ||
+      actualContent !== '' ||
+      homeworkAssigned !== '' ||
+      nextSessionTopics !== '' ||
+      generalNotes !== '' ||
+      topicTags.length > 0 ||
+      isCancelled ||
+      mentionedDifficultyKeys.size > 0 ||
+      suggestedDifficulties.length > 0
+    )
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (nextOpen) { onOpenChange(true); return }
+    if (isDirty && !success) { setShowDiscardConfirm(true); return }
+    onOpenChange(false)
+  }
+
   function validate(): boolean {
     const errs: Record<string, string> = {}
     if (!plannedContent && !actualContent) {
@@ -345,7 +412,8 @@ export function SessionLogDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="max-w-2xl max-h-[90vh] overflow-y-auto"
         data-testid="session-log-dialog"
@@ -734,5 +802,25 @@ export function SessionLogDialog({
         )}
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
+      <AlertDialogContent size="sm" data-testid="discard-confirm-dialog">
+        <AlertDialogHeader>
+          <AlertDialogTitle>You have unsaved changes</AlertDialogTitle>
+          <AlertDialogDescription>Discard them?</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel data-testid="keep-editing-btn">Keep editing</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            data-testid="discard-btn"
+            onClick={() => { setShowDiscardConfirm(false); onOpenChange(false) }}
+          >
+            Discard
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }

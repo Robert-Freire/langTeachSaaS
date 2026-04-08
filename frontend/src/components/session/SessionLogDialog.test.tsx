@@ -882,4 +882,95 @@ describe('SessionLogDialog', () => {
       })
     })
   })
+
+  describe('unsaved-changes guard', () => {
+    beforeEach(() => {
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+    })
+
+    it('closes immediately without confirmation when form is empty', async () => {
+      const onOpenChange = vi.fn()
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={onOpenChange} />)
+      await waitFor(() => expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument())
+
+      // Simulate clicking outside (Dialog calls onOpenChange(false))
+      fireEvent.click(document.body)
+
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+      expect(screen.queryByTestId('discard-confirm-dialog')).not.toBeInTheDocument()
+    })
+
+    it('shows confirmation dialog when user has typed data and closes is requested', async () => {
+      const onOpenChange = vi.fn()
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={onOpenChange} />)
+      await waitFor(() => expect(screen.getByTestId('actual-content')).toBeInTheDocument())
+
+      fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'We covered ser vs estar.' } })
+
+      // Trigger the dialog's onOpenChange(false) via the exposed handler
+      // We simulate this by calling the Dialog's onOpenChange prop — achieved by pressing Escape
+      await userEvent.keyboard('{Escape}')
+
+      await waitFor(() => expect(screen.getByTestId('discard-confirm-dialog')).toBeInTheDocument())
+      expect(onOpenChange).not.toHaveBeenCalledWith(false)
+    })
+
+    it('Discard button closes the form without saving', async () => {
+      const onOpenChange = vi.fn()
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={onOpenChange} />)
+      await waitFor(() => expect(screen.getByTestId('actual-content')).toBeInTheDocument())
+
+      fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Some content.' } })
+      await userEvent.keyboard('{Escape}')
+      await waitFor(() => expect(screen.getByTestId('discard-confirm-dialog')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('discard-btn'))
+
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+      expect(vi.mocked(sessionLogsApi.createSession)).not.toHaveBeenCalled()
+    })
+
+    it('Keep editing button dismisses the confirmation and returns to form', async () => {
+      const onOpenChange = vi.fn()
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={onOpenChange} />)
+      await waitFor(() => expect(screen.getByTestId('actual-content')).toBeInTheDocument())
+
+      fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Some content.' } })
+      await userEvent.keyboard('{Escape}')
+      await waitFor(() => expect(screen.getByTestId('discard-confirm-dialog')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('keep-editing-btn'))
+
+      await waitFor(() => expect(screen.queryByTestId('discard-confirm-dialog')).not.toBeInTheDocument())
+      expect(onOpenChange).not.toHaveBeenCalledWith(false)
+      expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument()
+    })
+
+    it('shows confirmation in edit mode when a field is changed', async () => {
+      const onOpenChange = vi.fn()
+      wrapper(
+        <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={onOpenChange} initialSession={SAMPLE_SESSION} />
+      )
+      await waitFor(() => expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument())
+
+      fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Changed content.' } })
+      await userEvent.keyboard('{Escape}')
+
+      await waitFor(() => expect(screen.getByTestId('discard-confirm-dialog')).toBeInTheDocument())
+    })
+
+    it('closes without confirmation in edit mode when no changes made', async () => {
+      const onOpenChange = vi.fn()
+      wrapper(
+        <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={onOpenChange} initialSession={SAMPLE_SESSION} />
+      )
+      await waitFor(() => expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument())
+
+      // Press Escape without changing anything
+      await userEvent.keyboard('{Escape}')
+
+      expect(onOpenChange).toHaveBeenCalledWith(false)
+      expect(screen.queryByTestId('discard-confirm-dialog')).not.toBeInTheDocument()
+    })
+  })
 })
