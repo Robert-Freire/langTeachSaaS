@@ -14,14 +14,15 @@ Key queries:
 - Must-haves: `gh issue list --milestone "<milestone-name>" --label "P1:must" --state open`
 - Ready to pick up: `gh issue list --milestone "<milestone-name>" --label "qa:ready" --state open`
 
-**Active sprint branch:** `sprint/adaptive-replanning`
+**Active sprint branch:** `sprint/ui-redesign-student-polish`
 Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Workflow" section.
 
 ## Milestone Sequence (newest first)
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| Adaptive Replanning | ACTIVE 2026-04-05 | milestone #8, sprint/adaptive-replanning |
+| UI Redesign & Student Profile Polish | ACTIVE 2026-04-08 | milestone #16, sprint/ui-redesign-student-polish |
+| Adaptive Replanning | CLOSED 2026-04-08 | 22/22 done, merged to main |
 | Post-Class Tracking | CLOSED 2026-04-04 | 23/23 done, merged to main |
 | Pedagogical Quality | CLOSED 2026-04-02 | 35/35 done, merged to main |
 | Student-Aware Curriculum | CLOSED 2026-03-29 | merged to main |
@@ -32,8 +33,8 @@ Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Wor
 
 ## Upcoming Milestones (not yet started)
 
+- Listening Comprehension: after UI Redesign
 - Solo Whiteboard: after Listening Comprehension
-- Adaptive Replanning: after Post-Class Tracking (audio input, auto-difficulty, course replanning)
 - Group Classes: FUTURE
 - Phase 2B: Production (caching, usage limits, CI pipeline)
 - Phase 3: Growth (student portal, evaluation, content library, payments)
