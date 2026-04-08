@@ -17,12 +17,17 @@ public class AzureSpeechTranscriptionService(
     : ITranscriptionService
 {
     private readonly AzureSpeechOptions _opts = options.Value;
+    // Azure Speech simple endpoint supports max 60 s. At 16 kHz/16-bit mono that
+    // is ~1.92 MB of PCM. Cap at 10 MB to catch runaway conversions early.
+    private const int MaxWavBytes = 10 * 1024 * 1024;
 
     public async Task<string> TranscribeAsync(Stream audio, string fileName, string contentType, CancellationToken ct = default)
     {
         var client = httpClientFactory.CreateClient("AzureSpeech");
 
         var wavStream = await ConvertToWavAsync(audio, ct);
+        if (wavStream.Length > MaxWavBytes)
+            throw new InvalidOperationException($"Converted audio exceeds maximum allowed size ({MaxWavBytes / (1024 * 1024)} MB). Shorten the recording.");
 
         var content = new StreamContent(wavStream);
         content.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
@@ -42,7 +47,6 @@ public class AzureSpeechTranscriptionService(
         }
 
         var body = await response.Content.ReadAsStringAsync(ct);
-        logger.LogDebug("Azure Speech raw response: {Body}", body);
         using var doc = JsonDocument.Parse(body);
 
         var status = doc.RootElement.TryGetProperty("RecognitionStatus", out var s) ? s.GetString() : null;
