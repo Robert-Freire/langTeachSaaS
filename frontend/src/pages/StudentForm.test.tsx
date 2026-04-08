@@ -89,6 +89,7 @@ describe('StudentForm', () => {
     })
     mockGetStudents.mockResolvedValue({ items: [], totalCount: 0 })
     mockCreateStudent.mockResolvedValue({ id: 'new-id' })
+    mockUpdateStudent.mockResolvedValue({ id: 'stu-1' })
   })
 
   it('renders Back link to students list', () => {
@@ -134,6 +135,36 @@ describe('StudentForm', () => {
     renderNew()
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(mockNavigate).toHaveBeenCalledWith('/students')
+  })
+
+  it('after creating a student, redirects to student profile page', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderNew()
+
+    await user.type(screen.getByTestId('student-name'), 'New Student')
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+    await user.click(screen.getByTestId('student-cefr'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+
+    await vi.waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/students/new-id')
+    })
+  })
+
+  it('after updating a student, redirects to student profile page', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderEdit()
+
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    await user.click(screen.getByRole('button', { name: 'Update Student' }))
+
+    await vi.waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/students/stu-1')
+    })
   })
 
   it('shows "Student not found" when getStudent rejects', async () => {

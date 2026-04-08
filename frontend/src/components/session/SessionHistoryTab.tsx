@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronUp, Trash2, Pencil, ExternalLink, BookOpen } from 'lucide-react'
+import { ChevronDown, ChevronUp, Trash2, Pencil, ExternalLink, BookOpen, CalendarDays } from 'lucide-react'
 import { SessionSummaryHeader } from './SessionSummaryHeader'
 import { SessionLogDialog } from './SessionLogDialog'
 import { logger } from '../../lib/logger'
@@ -161,6 +161,13 @@ function SessionEntry({
               </p>
             )}
 
+            {!expanded && session.nextSessionTopics && (
+              <p className="text-xs text-amber-700 line-clamp-1" data-testid="next-session-topics-preview">
+                <span className="font-medium">Next:</span>{' '}
+                {session.nextSessionTopics}
+              </p>
+            )}
+
             {/* Homework + status badges */}
             <div className="flex flex-wrap gap-1.5 items-center">
               {session.homeworkAssigned && (
@@ -218,9 +225,15 @@ function SessionEntry({
           )}
 
           {session.nextSessionTopics && (
-            <div>
-              <p className="text-xs font-medium text-zinc-500 mb-0.5">Topics for next session</p>
-              <p className="text-sm text-zinc-800 whitespace-pre-wrap">{session.nextSessionTopics}</p>
+            <div
+              className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2"
+              data-testid="next-session-topics-section"
+            >
+              <p className="text-xs font-medium text-amber-700 mb-0.5 flex items-center gap-1">
+                <CalendarDays className="h-3 w-3" />
+                Planned for next class
+              </p>
+              <p className="text-sm text-amber-900 whitespace-pre-wrap">{session.nextSessionTopics}</p>
             </div>
           )}
 

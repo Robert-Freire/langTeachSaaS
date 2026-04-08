@@ -12,6 +12,12 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 |----|----------|---------|----------|
 | #188 | low | `UpsertDifficulties` matches on competency+subcategory case-insensitively but stores the AI-supplied casing. Re-extract with different casing creates duplicate. | Deferred: AI output is normalised by the prompt; edge case only arises if AI drifts casing. |
 | #188 | low | `ValidCompetencies`/`ValidSeverities` in `ReflectionExtractionService` duplicate the sets in `SessionLogService`. Consider shared constants. | Deferred: both sets are small and rarely change; shared constants are premature abstraction here. |
+
+## PR #580 (session log unsaved-changes guard) - 2026-04-08
+
+| PR | Severity | Finding | Decision |
+|----|----------|---------|----------|
+| #580 | low | `AlertDialogContent size="sm"` is the first use of the size prop, diverging from `FullLessonGenerateButton.tsx` which uses no size. | Deferred: both are valid; size prop is intentional to keep confirm dialog compact. |
 | #188 | low | `UpsertDifficulties` uses `existing.IndexOf(match)` (O(n)) to get the index for record update. | Deferred: lists are typically <10 items; premature optimisation. |
 | #188 | info | `JsonDocument` disposal: reviewer flagged lack of `using`; actually `using var doc` is present at line 73. Dismissed (false positive). | Dismissed: code is correct. |
 | #188 | info | Draft->Confirmed transition using previously stored `SuggestedDifficulties` column will not re-upsert unless the confirm payload includes them again. | By design: the form sends the current teacher-edited list on confirm. |

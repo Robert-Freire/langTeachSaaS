@@ -507,6 +507,15 @@ test('summary header appears on history tab after logging a session', async ({ b
   await expect(page.getByTestId('session-summary-action-items-list')).toBeVisible()
   await expect(page.getByTestId('session-summary-action-items-list')).toContainText('Work on para/por')
 
+  // Session card should show nextSessionTopics collapsed preview and expanded section
+  await expect(page.getByTestId('next-session-topics-preview')).toBeVisible()
+  await expect(page.getByTestId('next-session-topics-preview')).toContainText('Work on para/por')
+
+  await page.getByTestId('session-entry-toggle').click()
+  await expect(page.getByTestId('next-session-topics-section')).toBeVisible()
+  await expect(page.getByTestId('next-session-topics-section')).toContainText('Planned for next class')
+  await expect(page.getByTestId('next-session-topics-section')).toContainText('Work on para/por')
+
   await context.close()
 })
 
@@ -646,6 +655,123 @@ test('lesson dropdown in session log shows only lessons for the selected student
   // Student A's lesson should be visible; Student B's lesson should not
   await expect(page.getByRole('option', { name: `Lesson for A ${ts}` })).toBeVisible()
   await expect(page.getByRole('option', { name: `Lesson for B ${ts}` })).not.toBeVisible()
+
+  await context.close()
+})
+
+test('unsaved-changes guard: clicking outside with data shows discard confirmation', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Guard Test Student ${Date.now()}`
+  const createRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: studentName,
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+    },
+  })
+  expect(createRes.ok()).toBeTruthy()
+  const student = await createRes.json()
+
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+
+  await page.getByTestId('log-session-button').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+
+  // Enter some data to make the form dirty
+  await page.getByTestId('actual-content').fill('We covered the present tense.')
+
+  // Click outside the dialog (top-left corner of viewport)
+  await page.mouse.click(10, 10)
+
+  // Discard confirmation should appear
+  await expect(page.getByTestId('discard-confirm-dialog')).toBeVisible({ timeout: 5000 })
+
+  // Click Discard — form should close
+  await page.getByTestId('discard-btn').click()
+  await expect(page.getByTestId('session-log-dialog')).not.toBeVisible({ timeout: 5000 })
+
+  await context.close()
+})
+
+test('unsaved-changes guard: Keep editing returns to the form', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Guard Keep Test ${Date.now()}`
+  const createRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: studentName,
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+    },
+  })
+  expect(createRes.ok()).toBeTruthy()
+  const student = await createRes.json()
+
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+
+  await page.getByTestId('log-session-button').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+
+  await page.getByTestId('actual-content').fill('Some notes.')
+  await page.mouse.click(10, 10)
+  await expect(page.getByTestId('discard-confirm-dialog')).toBeVisible({ timeout: 5000 })
+
+  await page.getByTestId('keep-editing-btn').click()
+
+  // Form stays open with data intact
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('actual-content')).toHaveValue('Some notes.')
+
+  await context.close()
+})
+
+test('unsaved-changes guard: empty form closes without confirmation', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Guard Empty Test ${Date.now()}`
+  const createRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      name: studentName,
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+    },
+  })
+  expect(createRes.ok()).toBeTruthy()
+  const student = await createRes.json()
+
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+
+  await page.getByTestId('log-session-button').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+
+  // Click outside without entering data
+  await page.mouse.click(10, 10)
+
+  // Dialog closes immediately, no confirmation
+  await expect(page.getByTestId('session-log-dialog')).not.toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('discard-confirm-dialog')).not.toBeVisible()
 
   await context.close()
 })
