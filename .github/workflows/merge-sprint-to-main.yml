@@ -18,13 +18,14 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
 
 jobs:
   validate:
     name: Validate sprint branch
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       SPRINT_BRANCH: ${{ inputs.sprint_branch }}
     steps:
@@ -91,6 +92,9 @@ jobs:
     needs: validate
     if: ${{ inputs.dry_run == false }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     env:
       SPRINT_BRANCH: ${{ inputs.sprint_branch }}
     steps:
