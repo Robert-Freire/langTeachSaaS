@@ -41,7 +41,7 @@ describe('TelegramCard', () => {
     const btn = await screen.findByTestId('telegram-connect-btn')
     fireEvent.click(btn)
     expect(await screen.findByTestId('telegram-code')).toHaveTextContent('ABCD1234')
-    expect(screen.getByText(/@LangTeachBot/)).toBeInTheDocument()
+    expect(screen.getByText(/@langteach13_bot/)).toBeInTheDocument()
   })
 
   it('Cancel button returns to idle state without calling DELETE', async () => {

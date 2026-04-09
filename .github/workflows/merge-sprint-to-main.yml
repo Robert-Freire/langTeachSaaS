@@ -19,6 +19,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   validate:
@@ -111,3 +112,13 @@ jobs:
 
       - name: Push main
         run: git push origin main
+
+      - name: Trigger Backend CI/CD on main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run backend.yml --ref main
+
+      - name: Trigger Frontend CI/CD on main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run frontend.yml --ref main
