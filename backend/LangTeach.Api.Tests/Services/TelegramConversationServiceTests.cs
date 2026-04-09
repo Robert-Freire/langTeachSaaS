@@ -16,6 +16,7 @@ public class TelegramConversationServiceTests : IDisposable
     private readonly TelegramStateStore _stateStore;
     private readonly StubTelegramBotService _botService;
     private readonly StubTranscriptionService _transcriptionService;
+    private readonly FakeReflectionExtractionService _extractionService;
     private readonly TelegramConversationService _sut;
     private readonly IMemoryCache _cache;
 
@@ -33,6 +34,7 @@ public class TelegramConversationServiceTests : IDisposable
         _stateStore = new TelegramStateStore(_cache);
         _botService = new StubTelegramBotService();
         _transcriptionService = new StubTranscriptionService();
+        _extractionService = new FakeReflectionExtractionService();
 
         var difficultyService = new DifficultyTrendService(_db, NullLogger<DifficultyTrendService>.Instance);
         var sessionLogService = new SessionLogService(_db, difficultyService, NullLogger<SessionLogService>.Instance);
@@ -45,6 +47,7 @@ public class TelegramConversationServiceTests : IDisposable
             _transcriptionService,
             sessionLogService,
             studentService,
+            _extractionService,
             NullLogger<TelegramConversationService>.Instance);
     }
 
@@ -265,7 +268,7 @@ public class TelegramConversationServiceTests : IDisposable
         var studentService = new StudentService(_db, NullLogger<StudentService>.Instance);
         var sut = new TelegramConversationService(
             _db, _stateStore, _botService, throwingTranscription,
-            sessionLogService, studentService,
+            sessionLogService, studentService, _extractionService,
             NullLogger<TelegramConversationService>.Instance);
 
         await sut.HandleUpdateAsync(VoiceUpdate(_chatId), CancellationToken.None);
@@ -274,9 +277,83 @@ public class TelegramConversationServiceTests : IDisposable
         _stateStore.GetConversationState(_chatId).Should().BeNull();
     }
 
+    // --- Structured field extraction ---
+
+    [Fact]
+    public async Task TextMessage_MatchedStudent_MapsExtractedFieldsOntoSessionLog()
+    {
+        LinkTeacher();
+        var student = await CreateStudentAsync("Marco");
+
+        _extractionService.Result = new ExtractedReflectionDto(
+            WhatWasCovered: "ser vs estar",
+            AreasToImprove: "needs more practice with preterite",
+            EmotionalSignals: "engaged",
+            HomeworkAssigned: "complete exercises 3 and 4",
+            NextLessonIdeas: "past tenses review",
+            SuggestedDifficulties: new List<SuggestedDifficultyDto>
+            {
+                new("confuses ser and estar", "Grammar", "Copulas", "Medium")
+            });
+
+        await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco worked on ser/estar today"), CancellationToken.None);
+
+        var log = await _db.SessionLogs.SingleAsync(s => s.StudentId == student.Id);
+        log.ActualContent.Should().Be("ser vs estar");
+        log.HomeworkAssigned.Should().Be("complete exercises 3 and 4");
+        log.NextSessionTopics.Should().Be("past tenses review");
+        log.GeneralNotes.Should().Be("needs more practice with preterite\nengaged");
+        _extractionService.LastInput.Should().Be("Marco worked on ser/estar today");
+    }
+
+    [Fact]
+    public async Task TextMessage_ExtractionFailure_FallsBackToRawGeneralNotes()
+    {
+        LinkTeacher();
+        var student = await CreateStudentAsync("Marco");
+
+        _extractionService.ThrowOnNext = new InvalidOperationException("AI unavailable");
+
+        await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco did great today"), CancellationToken.None);
+
+        var log = await _db.SessionLogs.SingleAsync(s => s.StudentId == student.Id);
+        log.GeneralNotes.Should().Be("Marco did great today");
+        log.ActualContent.Should().BeNull();
+        log.HomeworkAssigned.Should().BeNull();
+        log.NextSessionTopics.Should().BeNull();
+        _botService.LastSentMessage.Should().Contain("Logged for Marco");
+    }
+
     private class ThrowingTranscriptionService : ITranscriptionService
     {
         public Task<string> TranscribeAsync(Stream audio, string fileName, string contentType, CancellationToken ct = default)
             => throw new InvalidOperationException("Transcription service unavailable");
+    }
+
+    private class FakeReflectionExtractionService : IReflectionExtractionService
+    {
+        public ExtractedReflectionDto? Result { get; set; }
+        public Exception? ThrowOnNext { get; set; }
+        public string? LastInput { get; private set; }
+
+        public Task<ExtractedReflectionDto> ExtractAsync(string text, CancellationToken ct = default)
+        {
+            LastInput = text;
+            if (ThrowOnNext is not null)
+            {
+                var ex = ThrowOnNext;
+                ThrowOnNext = null;
+                throw ex;
+            }
+            // Default: echo input into AreasToImprove so existing tests asserting GeneralNotes == raw text keep passing.
+            var result = Result ?? new ExtractedReflectionDto(
+                WhatWasCovered: null,
+                AreasToImprove: text,
+                EmotionalSignals: null,
+                HomeworkAssigned: null,
+                NextLessonIdeas: null,
+                SuggestedDifficulties: new List<SuggestedDifficultyDto>());
+            return Task.FromResult(result);
+        }
     }
 }
