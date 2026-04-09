@@ -15,6 +15,7 @@ public class TelegramConversationService : ITelegramConversationService
     private readonly ITranscriptionService _transcriptionService;
     private readonly ISessionLogService _sessionLogService;
     private readonly IStudentService _studentService;
+    private readonly IReflectionExtractionService _extractionService;
     private readonly ILogger<TelegramConversationService> _logger;
 
     public TelegramConversationService(
@@ -24,6 +25,7 @@ public class TelegramConversationService : ITelegramConversationService
         ITranscriptionService transcriptionService,
         ISessionLogService sessionLogService,
         IStudentService studentService,
+        IReflectionExtractionService extractionService,
         ILogger<TelegramConversationService> logger)
     {
         _db = db;
@@ -32,6 +34,7 @@ public class TelegramConversationService : ITelegramConversationService
         _transcriptionService = transcriptionService;
         _sessionLogService = sessionLogService;
         _studentService = studentService;
+        _extractionService = extractionService;
         _logger = logger;
     }
 
@@ -187,11 +190,7 @@ public class TelegramConversationService : ITelegramConversationService
         long chatId, Guid teacherId, Guid studentId, string studentName,
         string notes, CancellationToken ct)
     {
-        var request = new CreateSessionLogRequest
-        {
-            SessionDate = DateTime.UtcNow.Date,
-            GeneralNotes = notes
-        };
+        var request = await BuildSessionLogRequestAsync(chatId, teacherId, studentId, notes, ct);
 
         await _sessionLogService.CreateAsync(teacherId, studentId, request, ct);
         _logger.LogInformation("TelegramBot created session log for TeacherId={TeacherId} StudentId={StudentId}", teacherId, studentId);
@@ -199,6 +198,53 @@ public class TelegramConversationService : ITelegramConversationService
         await _botService.SendMessageAsync(chatId,
             $"Logged for {studentName}. Summary saved.",
             ct);
+    }
+
+    private async Task<CreateSessionLogRequest> BuildSessionLogRequestAsync(
+        long chatId, Guid teacherId, Guid studentId, string notes, CancellationToken ct)
+    {
+        ExtractedReflectionDto? extracted = null;
+        try
+        {
+            extracted = await _extractionService.ExtractAsync(notes, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "TelegramBot reflection extraction failed; falling back to GeneralNotes. ChatId={ChatId} TeacherId={TeacherId} StudentId={StudentId}",
+                chatId, teacherId, studentId);
+        }
+
+        if (extracted is null)
+        {
+            return new CreateSessionLogRequest
+            {
+                SessionDate = DateTime.UtcNow.Date,
+                GeneralNotes = notes
+            };
+        }
+
+        // Mirror of SessionLogDialog.tsx:316-346 — join AreasToImprove + EmotionalSignals into GeneralNotes,
+        // map the rest onto their structured fields.
+        var generalNotes = string.Join("\n",
+            new[] { extracted.AreasToImprove, extracted.EmotionalSignals }
+                .Where(s => !string.IsNullOrWhiteSpace(s)));
+
+        return new CreateSessionLogRequest
+        {
+            SessionDate = DateTime.UtcNow.Date,
+            ActualContent = extracted.WhatWasCovered,
+            HomeworkAssigned = extracted.HomeworkAssigned,
+            NextSessionTopics = extracted.NextLessonIdeas,
+            GeneralNotes = string.IsNullOrEmpty(generalNotes) ? null : generalNotes,
+            SuggestedDifficulties = extracted.SuggestedDifficulties.Count > 0
+                ? extracted.SuggestedDifficulties
+                : null
+        };
     }
 
     public async Task<TelegramStatusResponse> GetLinkStatusAsync(Guid teacherId, CancellationToken ct)

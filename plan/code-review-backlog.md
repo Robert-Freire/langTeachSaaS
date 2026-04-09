@@ -6,6 +6,12 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-04-08 during Adaptive Replanning sprint close. All entries deleted (low/info severity, all already deferred with sound reasoning) or batched into #603-#609.*
 
+## #623 — 2026-04-09
+
+| Reviewer | Severity | Note |
+|---|---|---|
+| architecture-reviewer | minor | `FakeReflectionExtractionService` is a private inner class in `TelegramConversationServiceTests`; project convention is top-level stub files in `Services/` folder (`StubReflectionExtractionService.cs`, `StubTelegramBotService.cs`, etc.). Single-class scope for now; extract if another test class needs it. |
+
 ## #620 — 2026-04-09
 
 | Reviewer | Severity | Note |
