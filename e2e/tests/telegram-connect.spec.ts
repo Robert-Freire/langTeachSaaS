@@ -176,7 +176,7 @@ test('clicking Connect Telegram shows code and instructions', async ({ browser }
   await page.getByTestId('telegram-connect-btn').click()
 
   await expect(page.getByTestId('telegram-code')).toBeVisible({ timeout: UI_TIMEOUT })
-  const botHandle = process.env.VITE_TELEGRAM_BOT_HANDLE ?? '@LangTeachBot'
+  const botHandle = process.env.VITE_TELEGRAM_BOT_HANDLE ?? '@langteach13_bot'
   await expect(page.getByText(new RegExp(botHandle.replace('@', '\\@')))).toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()

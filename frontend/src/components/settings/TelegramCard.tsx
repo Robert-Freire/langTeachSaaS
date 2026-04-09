@@ -9,7 +9,7 @@ import { logger } from '@/lib/logger'
 
 const POLL_INTERVAL_MS = 3000
 const POLL_TIMEOUT_MS = 5 * 60 * 1000
-const BOT_HANDLE = import.meta.env.VITE_TELEGRAM_BOT_HANDLE ?? '@LangTeachBot'
+const BOT_HANDLE = import.meta.env.VITE_TELEGRAM_BOT_HANDLE ?? '@langteach13_bot'
 
 export function TelegramCard() {
   const queryClient = useQueryClient()
