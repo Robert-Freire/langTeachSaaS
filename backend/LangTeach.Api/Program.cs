@@ -195,9 +195,10 @@ builder.Services.AddScoped<IPdfExportService, PdfExportService>();
 
 builder.Services.AddMemoryCache();
 builder.Services.Configure<TelegramOptions>(builder.Configuration.GetSection(TelegramOptions.SectionName));
-builder.Services.AddHttpClient("Telegram", client =>
+builder.Services.AddHttpClient("Telegram", (sp, client) =>
 {
-    client.BaseAddress = new Uri("https://api.telegram.org/");
+    var token = sp.GetRequiredService<IOptions<TelegramOptions>>().Value.BotToken;
+    client.BaseAddress = new Uri($"https://api.telegram.org/bot{token}/");
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 builder.Services.AddSingleton<ITelegramStateStore, TelegramStateStore>();

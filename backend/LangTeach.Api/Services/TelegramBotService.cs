@@ -20,7 +20,7 @@ public class TelegramBotService : ITelegramBotService
         var client = _httpClientFactory.CreateClient("Telegram");
         var payload = new { chat_id = chatId, text };
         var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-        var response = await client.PostAsync($"bot{_token}/sendMessage", content, ct);
+        var response = await client.PostAsync("sendMessage", content, ct);
         response.EnsureSuccessStatusCode();
     }
 
@@ -28,8 +28,8 @@ public class TelegramBotService : ITelegramBotService
     {
         var client = _httpClientFactory.CreateClient("Telegram");
 
-        // Step 1: resolve file path
-        var fileInfoResponse = await client.GetAsync($"bot{_token}/getFile?file_id={Uri.EscapeDataString(fileId)}", ct);
+        // Step 1: resolve file path (relative to BaseAddress https://api.telegram.org/bot{token}/)
+        var fileInfoResponse = await client.GetAsync($"getFile?file_id={Uri.EscapeDataString(fileId)}", ct);
         fileInfoResponse.EnsureSuccessStatusCode();
 
         var json = await fileInfoResponse.Content.ReadAsStringAsync(ct);
@@ -40,8 +40,9 @@ public class TelegramBotService : ITelegramBotService
             .GetString()
             ?? throw new InvalidOperationException("Telegram getFile returned no file_path.");
 
-        // Step 2: download file bytes
-        var fileResponse = await client.GetAsync($"file/bot{_token}/{filePath}", ct);
+        // Step 2: download file bytes. File downloads live under /file/bot{token}/, a different
+        // base path than the bot API, so we build an absolute Uri (which bypasses BaseAddress).
+        var fileResponse = await client.GetAsync(new Uri($"https://api.telegram.org/file/bot{_token}/{filePath}"), ct);
         fileResponse.EnsureSuccessStatusCode();
 
         var ms = new MemoryStream();
