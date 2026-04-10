@@ -15,7 +15,7 @@ function makeSession(overrides: Partial<NextSession> = {}): NextSession {
     lastSessionNotes: 'Struggles with ser/estar',
     lastSessionDate: new Date(Date.now() - 7 * 86400000).toISOString(),
     homeworkAssigned: 'Exercises page 42',
-    previousHomeworkStatus: '1',
+    previousHomeworkStatus: '3',
     ...overrides,
   }
 }

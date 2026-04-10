@@ -36,10 +36,10 @@ function formatLastSessionDate(dateStr: string): string {
 }
 
 function homeworkStatusLabel(status: string | null): { label: string; color: string } {
-  if (!status || status === '0' || status === 'Unknown') return { label: 'No record', color: 'text-zinc-400' }
-  if (status === '1' || status === 'Done') return { label: 'Completed', color: 'text-emerald-600' }
+  if (!status || status === '0' || status === 'Unknown' || status === 'NotApplicable') return { label: 'No record', color: 'text-zinc-400' }
+  if (status === '3' || status === 'Done') return { label: 'Completed', color: 'text-emerald-600' }
   if (status === '2' || status === 'Partial') return { label: 'Partial', color: 'text-amber-600' }
-  if (status === '3' || status === 'NotDone') return { label: 'Not done', color: 'text-red-600' }
+  if (status === '1' || status === 'NotDone') return { label: 'Not done', color: 'text-red-600' }
   return { label: status, color: 'text-zinc-500' }
 }
 

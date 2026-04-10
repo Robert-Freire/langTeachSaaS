@@ -74,7 +74,7 @@ export function StudentRoster({ students }: StudentRosterProps) {
                     {formatDate(student.nextSessionDate)}
                   </td>
                   <td className="px-3 py-2.5 text-right hidden md:table-cell">
-                    {student.pendingTodos.length > 0 && (
+                    {(student.pendingTodos?.length ?? 0) > 0 && (
                       <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[0.6875rem] font-bold text-amber-700">
                         {student.pendingTodos.length}
                       </span>

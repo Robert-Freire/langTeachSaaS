@@ -27,7 +27,7 @@ function makeDashboard(overrides: Partial<DashboardData> = {}): DashboardData {
       lastSessionNotes: 'Good progress',
       lastSessionDate: new Date(Date.now() - 7 * 86400000).toISOString(),
       homeworkAssigned: 'Page 42',
-      previousHomeworkStatus: '1',
+      previousHomeworkStatus: '3',
     },
     todaySessions: [
       {
