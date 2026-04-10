@@ -96,7 +96,7 @@ export default function AppShell() {
     : '?'
 
   return (
-    <div className="flex h-screen overflow-hidden bg-zinc-50">
+    <div className="flex h-screen overflow-hidden bg-[#FBF8FF]">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-64 flex-col bg-[#F4F2FD]">
         <SidebarContent user={user} initials={initials} logout={logout} location={location} />

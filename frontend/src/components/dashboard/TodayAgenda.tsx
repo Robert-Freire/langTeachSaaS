@@ -13,7 +13,7 @@ function formatTime(dateStr: string): string {
 
 export function TodayAgenda({ sessions, nextSessionId }: TodayAgendaProps) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-[0_12px_40px_rgba(26,27,34,0.06)]" data-testid="zone2-today-agenda">
+    <div className="rounded-2xl bg-white p-5 shadow-[0_12px_40px_rgba(26,27,34,0.06)] ring-1 ring-[#C7C4D8]/20" data-testid="zone2-today-agenda">
       <h3 className="font-manrope text-[1.25rem] font-bold text-[#1A1B22] mb-4">Today's Agenda</h3>
 
       {sessions.length === 0 ? (

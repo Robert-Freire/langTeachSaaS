@@ -47,7 +47,7 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
   if (!session) {
     return (
       <div
-        className="rounded-2xl bg-white p-8 shadow-[0_12px_40px_rgba(26,27,34,0.06)] flex flex-col items-center justify-center min-h-[160px] text-center"
+        className="rounded-2xl bg-white p-8 shadow-[0_12px_40px_rgba(26,27,34,0.06)] ring-1 ring-[#C7C4D8]/20 flex flex-col items-center justify-center min-h-[160px] text-center"
         data-testid="zone1-empty"
       >
         <p className="font-manrope text-[1.75rem] font-bold text-[#1A1B22]">No sessions scheduled</p>
@@ -60,7 +60,7 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
 
   return (
     <div
-      className="rounded-2xl bg-white p-6 shadow-[0_12px_40px_rgba(26,27,34,0.06)]"
+      className="rounded-2xl bg-white p-6 shadow-[0_12px_40px_rgba(26,27,34,0.06)] ring-1 ring-[#C7C4D8]/20"
       data-testid="zone1-next-session"
     >
       {/* Header row */}

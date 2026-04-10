@@ -22,7 +22,7 @@ export function StudentRoster({ students }: StudentRosterProps) {
     .slice(0, 10)
 
   return (
-    <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(26,27,34,0.06)] overflow-hidden" data-testid="zone3-student-roster">
+    <div className="rounded-2xl bg-white shadow-[0_12px_40px_rgba(26,27,34,0.06)] ring-1 ring-[#C7C4D8]/20 overflow-hidden" data-testid="zone3-student-roster">
       <div className="px-6 pt-5 pb-3">
         <h3 className="font-manrope text-[1.25rem] font-bold text-[#1A1B22]">Students</h3>
       </div>
