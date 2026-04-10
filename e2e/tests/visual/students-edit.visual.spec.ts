@@ -19,7 +19,7 @@ test.beforeAll(async ({ browser }) => {
   expect(res.ok()).toBeTruthy()
   const body = await res.json()
   const students = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
-  const visual = students.find((s: { notes?: string; id: string }) => s.notes === '[visual-seed]')
+  const visual = students.find((s: { personalNotes?: string; id: string }) => s.personalNotes === '[visual-seed]')
   if (!visual) throw new Error('No [visual-seed] student found. Run start-visual-stack.sh first.')
   studentId = visual.id
 
