@@ -139,7 +139,7 @@ export default function StudentDetail() {
           />
           <StudentProfileSummary
             student={student}
-            hasRichNotes={parseNotes(student.personalNotes) !== null}
+            hasRichNotes={parseNotes(student.personalNotes) !== null || parseNotes(student.teachingNotes) !== null}
           />
           <Button
             variant="outline"
