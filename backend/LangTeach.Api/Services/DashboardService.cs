@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LangTeach.Api.Data;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Services;
@@ -9,9 +10,6 @@ public class DashboardService : IDashboardService
 {
     private readonly AppDbContext _db;
     private readonly ILogger<DashboardService> _logger;
-
-    private static readonly JsonSerializerOptions JsonOptions =
-        new() { PropertyNameCaseInsensitive = true };
 
     public DashboardService(AppDbContext db, ILogger<DashboardService> logger)
     {
@@ -117,38 +115,12 @@ public class DashboardService : IDashboardService
             StudentId: r.Id,
             Name: r.Name,
             CefrLevel: r.CefrLevel,
-            NativeLanguages: DeserializeStringList(r.NativeLanguages),
+            NativeLanguages: JsonStorageHelper.DeserializeList<string>(r.NativeLanguages),
             IsActive: r.IsActive,
             LastSessionDate: r.LastSessionDate,
             NextSessionDate: r.NextSessionDate,
             TotalSessions: r.TotalSessions,
-            TeachingTodosCount: CountJsonArray(r.TeachingTodos)
+            TeachingTodosCount: JsonStorageHelper.DeserializeList<JsonElement>(r.TeachingTodos).Count
         )).ToList();
-    }
-
-    private List<string> DeserializeStringList(string json)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<List<string>>(json, JsonOptions) ?? [];
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogWarning(ex, "Failed to deserialize string list from JSON: {Json}", json);
-            return [];
-        }
-    }
-
-    private int CountJsonArray(string json)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<List<JsonElement>>(json, JsonOptions)?.Count ?? 0;
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogWarning(ex, "Failed to count JSON array: {Json}", json);
-            return 0;
-        }
     }
 }
