@@ -213,6 +213,24 @@ public class DashboardServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetAsync_ActiveStudents_ReturnsPendingTodos()
+    {
+        _db.Students.First(s => s.Id == _studentId).TeachingTodos =
+            "[{\"id\":\"t1\",\"text\":\"Focus on subjunctive\",\"createdAt\":\"2026-04-01T10:00:00Z\",\"status\":\"pending\",\"sourceSessionLogId\":null,\"coveredInSessionLogId\":null}," +
+            "{\"id\":\"t2\",\"text\":\"Review homework\",\"createdAt\":\"2026-04-02T10:00:00Z\",\"status\":\"covered\",\"sourceSessionLogId\":null,\"coveredInSessionLogId\":null}]";
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        var student = result.ActiveStudents[0];
+        student.TeachingTodosCount.Should().Be(2);
+        student.PendingTodos.Should().HaveCount(1);
+        student.PendingTodos[0].Id.Should().Be("t1");
+        student.PendingTodos[0].Text.Should().Be("Focus on subjunctive");
+        student.PendingTodos[0].Status.Should().Be("pending");
+    }
+
+    [Fact]
     public async Task GetAsync_InactiveStudents_ExcludedFromActiveStudents()
     {
         var inactiveId = Guid.NewGuid();

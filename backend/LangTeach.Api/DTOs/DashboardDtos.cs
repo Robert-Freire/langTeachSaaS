@@ -32,7 +32,8 @@ public record ActiveStudentDto(
     DateTime? LastSessionDate,
     DateTime? NextSessionDate,
     int TotalSessions,
-    int TeachingTodosCount
+    int TeachingTodosCount,
+    List<TeachingTodoDto> PendingTodos
 );
 
 public record DashboardDto(
