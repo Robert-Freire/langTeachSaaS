@@ -87,7 +87,7 @@ test('@visual session log dialog - reassessment toggle on', async ({ browser }) 
   await context.close()
 })
 
-test('@visual student detail overview - with sessions', async ({ browser }) => {
+test('@visual student detail sessions tab - with sessions', async ({ browser }) => {
   fs.mkdirSync('screenshots', { recursive: true })
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
@@ -96,8 +96,9 @@ test('@visual student detail overview - with sessions', async ({ browser }) => {
 
   await page.goto(`/students/${studentWithSessionsId}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
-  await expect(page.getByTestId('session-summary-header')).toBeVisible({ timeout: UI_TIMEOUT })
-  await page.screenshot({ path: 'screenshots/student-detail-overview-sessions.png', fullPage: true })
+  await page.getByTestId('tab-sessions').click()
+  await expect(page.getByTestId('session-summary-header').or(page.locator('[data-testid="session-history-list"]'))).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.screenshot({ path: 'screenshots/student-detail-sessions-tab.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()

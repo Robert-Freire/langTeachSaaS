@@ -175,7 +175,7 @@ describe('CourseNew wizard', () => {
         id: 'student-1', name: 'Ana', cefrLevel: 'A1',
         learningLanguage: 'English', interests: [], personalNotes: null, teachingNotes: null,
         nativeLanguages: [], learningGoals: [], weaknesses: [],
-        difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01',
+        difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01', birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null, officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false, rate: null, spokenLanguages: [], teachingTodos: [],
       }],
       totalCount: 1,
       page: 1,
@@ -226,7 +226,7 @@ describe('CourseNew wizard', () => {
         learningGoals: ['get a job in Barcelona'],
         weaknesses: [{ description: 'ser vs estar', weaknessType: 'grammatical' as const }],
         difficulties: [{ id: 'x', description: 'subjunctive', competency: 'Grammar', subcategory: '', severity: 'high', trend: 'stable', status: 'Active' }],
-        createdAt: '2026-01-01', updatedAt: '2026-01-01',
+        createdAt: '2026-01-01', updatedAt: '2026-01-01', birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null, officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false, rate: null, spokenLanguages: [], teachingTodos: [],
       }],
       totalCount: 1, page: 1, pageSize: 100,
     }
@@ -260,7 +260,7 @@ describe('CourseNew wizard', () => {
   })
 
   it('renders teacher notes textarea when a student is selected', async () => {
-    const STUDENT = { items: [{ id: 's1', name: 'Marco', cefrLevel: 'A1', learningLanguage: 'Spanish', interests: [], personalNotes: null, teachingNotes: null, nativeLanguages: [], learningGoals: [], weaknesses: [], difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01' }], totalCount: 1, page: 1, pageSize: 100 }
+    const STUDENT = { items: [{ id: 's1', name: 'Marco', cefrLevel: 'A1', learningLanguage: 'Spanish', interests: [], personalNotes: null, teachingNotes: null, nativeLanguages: [], learningGoals: [], weaknesses: [], difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01', birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null, officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false, rate: null, spokenLanguages: [], teachingTodos: [] }], totalCount: 1, page: 1, pageSize: 100 }
     vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT)
     const user = userEvent.setup()
     wrapper(<CourseNew />)
@@ -279,7 +279,7 @@ describe('CourseNew wizard', () => {
   })
 
   it('includes teacher notes in the create course request', async () => {
-    const STUDENT = { items: [{ id: 's1', name: 'Marco', cefrLevel: 'A1', learningLanguage: 'Spanish', interests: [], personalNotes: null, teachingNotes: null, nativeLanguages: [], learningGoals: [], weaknesses: [], difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01' }], totalCount: 1, page: 1, pageSize: 100 }
+    const STUDENT = { items: [{ id: 's1', name: 'Marco', cefrLevel: 'A1', learningLanguage: 'Spanish', interests: [], personalNotes: null, teachingNotes: null, nativeLanguages: [], learningGoals: [], weaknesses: [], difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01', birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null, officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false, rate: null, spokenLanguages: [], teachingTodos: [] }], totalCount: 1, page: 1, pageSize: 100 }
     vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT)
     const user = userEvent.setup()
     const mockCreate = vi.fn().mockResolvedValue({ id: 'course-1' })
@@ -387,7 +387,7 @@ describe('CourseNew wizard', () => {
       id: 'student-1', name: 'Marco', cefrLevel: 'B1',
       learningLanguage: 'Spanish', interests: [], personalNotes: null, teachingNotes: null,
       nativeLanguages: [], learningGoals: [], weaknesses: [],
-      difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01',
+      difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01', birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null, officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false, rate: null, spokenLanguages: [], teachingTodos: [],
     }
 
     it('shows student name as read-only text when ?studentId param is present', async () => {

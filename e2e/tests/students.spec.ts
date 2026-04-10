@@ -411,11 +411,11 @@ test('"Create Course" button on student edit page navigates to CourseNew with st
   await context.close()
 })
 
-test('student detail overview shows profile fields and New lesson CTA', async ({ browser }) => {
+test('student detail shows 3 tabs and profile content', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  const studentName = `Overview Test ${Date.now()}`
+  const studentName = `Profile Tab Test ${Date.now()}`
 
   // Create a student with native language set
   await page.goto('/students/new')
@@ -429,41 +429,33 @@ test('student detail overview shows profile fields and New lesson CTA', async ({
   await page.getByRole('option', { name: 'Portuguese' }).click()
   await page.getByRole('button', { name: 'Save Student' }).click()
 
-  // Should redirect directly to student profile page
+  // Should redirect directly to student detail page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
 
-  // Overview tab should be active by default
-  await expect(page.getByTestId('tab-overview')).toBeVisible({ timeout: 10000 })
+  // Profile tab should be active by default
+  await expect(page.getByTestId('tab-profile')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('tab-sessions')).toBeVisible()
+  await expect(page.getByTestId('tab-progress')).toBeVisible()
 
-  // Teaching Context card should be visible
-  await expect(page.getByTestId('student-profile-overview')).toBeVisible({ timeout: 10000 })
-  await expect(page.getByText('Teaching Context')).toBeVisible()
+  // Profile tab content should be visible
+  await expect(page.getByTestId('student-profile-tab')).toBeVisible({ timeout: 10000 })
 
-  // Native language should appear in the overview
-  await expect(page.getByTestId('overview-native-language')).toContainText('Portuguese', { timeout: 5000 })
+  // CEFR badge and header actions should be visible
+  await expect(page.getByTestId('cefr-badge')).toBeVisible()
+  await expect(page.getByTestId('edit-profile-link')).toBeVisible()
+  await expect(page.getByTestId('log-session-button')).toBeVisible()
 
-  // "New lesson" CTA button should be visible
-  const newLessonBtn = page.getByTestId('create-lesson-cta')
-  await expect(newLessonBtn).toBeVisible()
+  // Switch to Sessions tab
+  await page.getByTestId('tab-sessions').click()
+  await expect(page.getByTestId('session-history-empty').or(page.locator('[data-testid="session-history-list"]'))).toBeVisible({ timeout: 10000 })
 
-  // Capture student ID for URL assertion
-  const detailUrl = page.url()
-  const studentId = detailUrl.match(/\/students\/([^/]+)/)?.[1]
-  expect(studentId).toBeTruthy()
+  // Switch to Progress tab
+  await page.getByTestId('tab-progress').click()
+  await expect(page.getByTestId('progress-no-course').or(page.locator('[data-testid="progress-loading"]'))).toBeVisible({ timeout: 10000 })
 
-  // Click "New lesson" and verify navigation to template selection step
-  await newLessonBtn.click()
-  await expect(page).toHaveURL(`/lessons/new?studentId=${studentId}`, { timeout: 10000 })
-
-  // Select a template to advance to the lesson details form (step 2)
-  await expect(page.getByTestId('template-grid')).toBeVisible({ timeout: 10000 })
-  await page.getByTestId('template-conversation').click()
-  await expect(page.locator('h1')).toHaveText('Lesson Details', { timeout: 10000 })
-
-  // Student should be pre-selected in the student select trigger
-  const selectStudent = page.getByTestId('select-student')
-  await expect(selectStudent).toBeVisible({ timeout: 10000 })
-  await expect(selectStudent).toContainText(studentName)
+  // Switch back to Profile tab
+  await page.getByTestId('tab-profile').click()
+  await expect(page.getByTestId('student-profile-tab')).toBeVisible({ timeout: 10000 })
 
   // Cleanup: go back and delete student
   await page.goto('/students')

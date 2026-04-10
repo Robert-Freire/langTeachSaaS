@@ -18,6 +18,10 @@ const BASE_STUDENT: Student = {
   difficulties: [],
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
+  birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
+  countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
+  officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
+  rate: null, spokenLanguages: [], teachingTodos: [],
 }
 
 function renderOverview(student: Partial<Student> = {}) {

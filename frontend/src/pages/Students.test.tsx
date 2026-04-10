@@ -36,6 +36,10 @@ function makeStudent(overrides: Partial<studentsApi.Student> = {}): studentsApi.
     difficulties: [],
     createdAt: '',
     updatedAt: '',
+    birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
+    countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
+    officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
+    rate: null, spokenLanguages: [], teachingTodos: [],
     ...overrides,
   }
 }
