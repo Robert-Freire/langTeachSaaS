@@ -23,9 +23,7 @@ import { MultiSelect } from '@/components/MultiSelect'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
 import { PageHeader } from '@/components/PageHeader'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
-import { LANGUAGES, NATIVE_LANGUAGES } from '@/lib/languages'
-
-const NATIVE_LANGUAGE_OPTIONS = NATIVE_LANGUAGES.map((lang) => ({ value: lang, label: lang }))
+import { LANGUAGES, NATIVE_LANGUAGE_OPTIONS } from '@/lib/languages'
 
 export default function StudentForm() {
   const navigate = useNavigate()

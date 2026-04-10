@@ -13,9 +13,7 @@ import {
 } from '@/components/ui/select'
 import { MultiSelect } from '@/components/MultiSelect'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
-import { LANGUAGES, NATIVE_LANGUAGES } from '@/lib/languages'
-
-const NATIVE_LANGUAGE_OPTIONS = NATIVE_LANGUAGES.map((lang) => ({ value: lang, label: lang }))
+import { LANGUAGES, NATIVE_LANGUAGE_OPTIONS } from '@/lib/languages'
 
 interface OnboardingStep2Props {
   onNext: (student: Student) => void
