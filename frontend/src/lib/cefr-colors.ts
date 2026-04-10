@@ -12,6 +12,27 @@ export function getCefrGap(level1: string | undefined, level2: string | undefine
 }
 
 /**
+ * Returns Tailwind classes for Stitch-style square CEFR badges (rounded-md, no border).
+ * Use with `rounded-md font-bold text-[0.6875rem] uppercase tracking-[0.05em]`.
+ * A=sky (passive/learning), B=indigo (growing), C=slate-dark (mastery/professional).
+ */
+export function getCefrStitchBadgeClasses(level: string): string {
+  switch (level) {
+    case 'A1':
+    case 'A2':
+      return 'bg-sky-100 text-sky-800'
+    case 'B1':
+    case 'B2':
+      return 'bg-indigo-100 text-indigo-800'
+    case 'C1':
+    case 'C2':
+      return 'bg-slate-800 text-white'
+    default:
+      return 'bg-indigo-100 text-indigo-800'
+  }
+}
+
+/**
  * Returns Tailwind classes for CEFR level badges, color-coded by proficiency group.
  */
 export function getCefrBadgeClasses(level: string): string {
