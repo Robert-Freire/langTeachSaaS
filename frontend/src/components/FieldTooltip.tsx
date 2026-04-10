@@ -1,6 +1,9 @@
+// Uses @base-ui/react primitives directly (not the shared ui/tooltip wrapper)
+// because the shared wrapper bakes in a dark background and arrow that cannot
+// be cleanly overridden for the Stitch white-bg tooltip style this component needs.
 import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip'
 import { Info } from 'lucide-react'
-import { getFieldTooltip } from '@/data/field-tooltips'
+import { getFieldTooltip } from '@/lib/field-tooltips'
 
 interface FieldTooltipProps {
   fieldKey: string
