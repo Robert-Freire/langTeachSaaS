@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace LangTeach.Api.DTOs;
 
 public record TeachingTodoDto(
@@ -8,6 +10,10 @@ public record TeachingTodoDto(
     string Status,
     string? CoveredInSessionLogId);
 
-public record CreateTeachingTodoDto(string Text, string? SourceSessionLogId);
+public record CreateTeachingTodoDto(
+    [MaxLength(500)] string Text,
+    string? SourceSessionLogId);
 
-public record UpdateTeachingTodoDto(string Status, string? CoveredInSessionLogId);
+public record UpdateTeachingTodoDto(
+    [Required] string Status,
+    string? CoveredInSessionLogId);
