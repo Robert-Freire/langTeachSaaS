@@ -377,8 +377,13 @@ public class StudentService : IStudentService
     {
         if (todos.Count > 50)
             throw new ValidationException("TeachingTodos cannot contain more than 50 entries.");
+        var seenIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var t in todos)
         {
+            if (string.IsNullOrWhiteSpace(t.Id) || t.Id.Length > 100)
+                throw new ValidationException("Each teaching todo must have an Id (max 100 characters).");
+            if (!seenIds.Add(t.Id))
+                throw new ValidationException($"Duplicate teaching todo Id '{t.Id}'.");
             if (string.IsNullOrWhiteSpace(t.Text) || t.Text.Length > 500)
                 throw new ValidationException("Each teaching todo Text must be between 1 and 500 characters.");
             if (string.IsNullOrWhiteSpace(t.Status) || !AllowedTodoStatuses.Contains(t.Status))
