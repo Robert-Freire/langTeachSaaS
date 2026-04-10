@@ -228,5 +228,7 @@ export const fieldTooltips: Record<string, FieldTooltipEntry> = {
 
 /** Look up a tooltip entry by field key. Returns undefined if not found. */
 export function getFieldTooltip(fieldKey: string): FieldTooltipEntry | undefined {
-  return fieldTooltips[fieldKey]
+  return Object.prototype.hasOwnProperty.call(fieldTooltips, fieldKey)
+    ? fieldTooltips[fieldKey]
+    : undefined
 }
