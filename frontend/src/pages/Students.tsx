@@ -273,9 +273,9 @@ export default function Students() {
                       {signals.length === 0 && !isFormer ? (
                         <span className="text-zinc-300 text-sm">—</span>
                       ) : (
-                        signals.map((sig, i) => (
+                        signals.map((sig) => (
                           <span
-                            key={i}
+                            key={sig.label}
                             className={cn(
                               'inline-flex items-center px-1.5 py-0.5 rounded-md text-[0.6875rem] font-medium',
                               sig.variant === 'amber'
@@ -335,13 +335,6 @@ export default function Students() {
               })}
             </div>
           )}
-        </div>
-      )}
-
-      {/* Loading indicator for background dashboard fetch */}
-      {isStudentsLoading && (
-        <div className="flex justify-center py-4">
-          <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
         </div>
       )}
 
