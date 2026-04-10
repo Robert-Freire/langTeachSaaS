@@ -88,4 +88,77 @@ public class StudentServiceTests : IDisposable
 
         result.NativeLanguage.Should().Be(language);
     }
+
+    [Fact]
+    public async Task CreateAsync_ShortTermObjectives_RoundTrip()
+    {
+        var objectives = new List<ShortTermObjectiveDto>
+        {
+            new("o1", "Pass B2 exam", new DateOnly(2026, 6, 30)),
+            new("o2", "Read a novel in Spanish", null),
+        };
+        var request = BaseRequest();
+        request.ShortTermObjectives = objectives;
+
+        var result = await _sut.CreateAsync(_teacherId, request);
+
+        result.ShortTermObjectives.Should().HaveCount(2);
+        result.ShortTermObjectives[0].Id.Should().Be("o1");
+        result.ShortTermObjectives[0].Text.Should().Be("Pass B2 exam");
+        result.ShortTermObjectives[0].TargetDate.Should().Be(new DateOnly(2026, 6, 30));
+        result.ShortTermObjectives[1].Id.Should().Be("o2");
+        result.ShortTermObjectives[1].TargetDate.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ClearsShortTermObjectives()
+    {
+        var createRequest = BaseRequest();
+        createRequest.ShortTermObjectives = [new("o1", "Initial objective", null)];
+        var created = await _sut.CreateAsync(_teacherId, createRequest);
+
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.CefrLevel,
+            ShortTermObjectives = [],
+        };
+        var updated = await _sut.UpdateAsync(_teacherId, created.Id, updateRequest);
+
+        updated!.ShortTermObjectives.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CreateAsync_SpokenLanguages_RoundTrip()
+    {
+        var request = BaseRequest();
+        request.SpokenLanguages = ["French", "Italian"];
+
+        var result = await _sut.CreateAsync(_teacherId, request);
+
+        result.SpokenLanguages.Should().BeEquivalentTo(["French", "Italian"]);
+    }
+
+    [Fact]
+    public async Task CreateAsync_BirthYearOutOfRange_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.BirthYear = 1900;
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_BirthYearFuture_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.BirthYear = DateTime.UtcNow.Year + 1;
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
 }
