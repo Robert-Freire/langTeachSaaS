@@ -183,12 +183,12 @@ export function StudentProfileTab({ student, onToggleDifficultyStatus }: Props) 
                   return (
                     <div
                       key={d.id}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                      className={`flex flex-wrap items-start gap-2 px-3 py-2 rounded-lg text-sm ${
                         index % 2 === 0 ? 'bg-zinc-50/80' : ''
                       }`}
                       data-testid="difficulty-row"
                     >
-                      <span className={`flex-1 min-w-0 ${isCovered ? 'line-through text-zinc-400' : 'text-[#1A1B22]'}`}>
+                      <span className={`basis-full sm:basis-auto sm:flex-1 min-w-0 ${isCovered ? 'line-through text-zinc-400' : 'text-[#1A1B22]'}`}>
                         {d.description}
                         {d.subcategory && (
                           <span className="text-zinc-400 text-xs ml-1">({d.subcategory})</span>

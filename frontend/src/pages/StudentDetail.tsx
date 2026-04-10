@@ -147,10 +147,15 @@ export default function StudentDetail() {
                   </span>
                 )}
 
+                {/* Learning language */}
+                <span className="text-[0.6875rem] uppercase tracking-[0.05em] text-zinc-500 font-medium">
+                  {student.learningLanguage}
+                </span>
+
                 {/* Native languages */}
                 {student.nativeLanguages.length > 0 && (
-                  <span className="text-[0.6875rem] uppercase tracking-[0.05em] text-zinc-500 font-medium">
-                    {student.nativeLanguages.join(', ')}
+                  <span className="text-[0.6875rem] uppercase tracking-[0.05em] text-zinc-400 font-medium">
+                    Native: {student.nativeLanguages.join(', ')}
                   </span>
                 )}
               </div>
