@@ -50,6 +50,7 @@
 - [State sprint branch name at merge green light](feedback_sprint_merge_branch_name.md) — always say the branch name (e.g. sprint/post-class-tracking) when approving merge
 
 ## Reference
+- [Azure resources (dev)](reference_azure_resources.md) — vault `kv-lt-dev-5ba22u`, RG `rg-langteach-dev`, full resource table
 - [Token usage tracking](reference_token_usage_tracking.md) — check ~/.claude/logs/usage-log.jsonl; snippets in ~/.claude/usage-guide.md
 - [Audio transcription method](reference_audio_transcription.md) — local transcription: Whisper + ffmpeg
 - [Gmail bot account access](reference_gmail_bot_access.md) — IMAP/SMTP for robert.freire.bot@gmail.com; use curl

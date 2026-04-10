@@ -39,7 +39,7 @@ Use this first to establish a consistent visual language across all screens.
 > - A section of unscheduled lesson drafts that need scheduling
 > - A courses overview showing progress bars for active courses
 >
-> The teacher has students learning Spanish, English, and German at various CEFR levels. Make it feel like a productive teaching command center, not an LMS.
+> The teacher has students learning Spanish various CEFR levels. Make it feel like a productive teaching command center, not an LMS.
 
 **Current screenshot:**
 
