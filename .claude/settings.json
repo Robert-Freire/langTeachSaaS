@@ -8,10 +8,8 @@
       "WebSearch(*)",
       "WebFetch(*)",
       "NotebookEdit(*)",
-      "Write(path:C:/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
-      "Write(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
-      "Edit(path:C:/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
-      "Edit(path:/c/ws/PersonalOS/03_Workspace/langTeachSaaS/**)",
+      "Write(*)",
+      "Edit(*)",
       "mcp__github__*"
     ]
   },
