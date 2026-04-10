@@ -338,6 +338,271 @@ else Sophy decides.
    chronological list grouped by day, rows mirroring the dashboard's
    "Today" column style.
 
+---
+
+## 5. Stitch prompt — Students list (`/students`)
+
+Paste the shared context block (section 1), then paste this prompt.
+
+~~~
+TASK: Design the Students list screen.
+
+DESIGN LANGUAGE: Use the same Stitch "Academic Atelier" style as the
+dashboard mockup. Key rules:
+- Tonal layering: page canvas #FBF8FF, main content area #FFFFFF, sidebar
+  #F4F2FD. NO 1px solid borders to section content. Depth comes from
+  background color shifts and ambient shadows only.
+- Typography: Manrope for display/headline text, Inter for UI/body.
+  Section headers in Headline-MD (Manrope, 1.75rem). Table headers in
+  Label-SM (Inter, 0.6875rem, uppercase, 0.05em tracking). Body text
+  in Body-MD (Inter, 0.875rem).
+- CEFR badges: square format with md (0.375rem) corners, NOT pills.
+  A-levels: blue-100/blue-700. B-levels: indigo-100/indigo-700.
+  C-levels: slate-800/white.
+- Primary color: indigo (#3525CD). Buttons use gradient from #3525CD to
+  #4F46E5 at 135deg.
+- No divider lines between table/list rows. Use 16px vertical gap or
+  hover background shift instead.
+- Row hover: surface-container-highest with lg (0.5rem) corner radius.
+- Ambient shadows for elevated cards: blur 40px, y 12px, 6% opacity
+  using #1A1B22.
+- Never use pure black (#000000). Text color: #1A1B22.
+
+LAYOUT:
+
+HEADER AREA
+  Left: page title "Students" in Headline-MD (Manrope).
+  Subtitle: student count "12 active students" in Body-MD, zinc-500.
+  Right: primary button "Add Student" with gradient background.
+
+TOOLBAR
+  Row below header:
+  - Search input (surface-container-lowest fill, ghost border at 20%
+    opacity, placeholder "Search by name..."). On focus, ambient shadow
+    increases slightly.
+  - CEFR level filter dropdown: "All levels", A1, A2, B1, B2, C1, C2.
+  - Status filter: "All", "Active", "Former".
+  - Sort dropdown: "Sort by: next session" (default). Options: next
+    session, last session, name, level.
+
+TABLE
+  Full width on surface-container-lowest (#FFFFFF) card, with ambient
+  shadow. No header row border. Column headers in Label-SM uppercase.
+
+  Columns:
+    STUDENT | LEVEL | NATIVE LANGUAGE | LAST SESSION | NEXT SESSION | SIGNALS
+
+  "STUDENT" column: avatar circle (initials, indigo-100 bg) + name in
+  Title-SM (Inter, 1rem, medium). One line per student.
+
+  "LEVEL" column: square CEFR badge per the color rules above.
+
+  "NATIVE LANGUAGE" column: Body-MD text. If multiple, show first with
+  "+1" indicator.
+
+  "LAST SESSION" column: relative time in English. "4d ago", "yesterday",
+  "today", "12d ago". If none: em-dash.
+
+  "NEXT SESSION" column: relative date/time. "Today 10:30", "Thu 12:00",
+  "Mon 09:00". If none: em-dash.
+
+  "SIGNALS" column: small badges where relevant:
+    - Rona Díaz:      amber badge "Canceled 2x"
+    - Matteo Russo:   amber badge "Review pending"
+    - Bruno Almeida:  red-subtle badge "Inactive 12d"
+    - Paula Moretti:  indigo-subtle badge "New"
+    - all others:     (empty)
+
+  Use all 12 students from the cohort in the shared context block.
+
+  Row click: navigates to student detail (just design intent, no actual
+  routing needed in the component).
+
+  Row hover: background shifts to surface-container-highest (#E8E5F5)
+  with lg corner radius. No border on hover.
+
+FOOTER
+  Below table: centered text "Showing 12 of 24 students" in Body-MD
+  zinc-500, with a ghost button "Load more".
+
+SIDEBAR: same Stitch sidebar as the dashboard mockup. "Students" nav
+item is active (left indigo border bar). Include "LANGUAGE CURATOR"
+subtitle, nav order: Dashboard, Students, Courses, Lessons, Settings.
+User card at bottom with "JR" avatar, "Jordi R.", "TEACHER" label.
+
+EMPTY STATE (for reference, secondary component):
+  When the teacher has no students yet: centered on page, Display-LG
+  (Manrope, 3.5rem) text "Your students will appear here", Body-MD
+  subtitle, primary gradient button "Add your first student".
+
+OUTPUT: a single React component file using shadcn/ui components, fully
+self-contained, with all cohort data hardcoded as const arrays at the
+top. Include the Stitch sidebar.
+~~~
+
+---
+
+## 6. Stitch prompt — Student detail (`/students/:id`)
+
+Paste the shared context block (section 1), then paste this prompt.
+
+~~~
+TASK: Design the Student detail screen for Matteo Russo (C1.1, Italian).
+Use the richest student from the cohort so all sections have content.
+
+DESIGN LANGUAGE: Same Stitch "Academic Atelier" rules as the Students
+list (see that prompt for the full spec). Key reminders:
+- Tonal layering, no 1px borders, ambient shadows.
+- Manrope headlines, Inter body, Label-SM uppercase metadata.
+- Square CEFR badges. Indigo primary gradient buttons.
+- No divider lines. Depth via background shifts.
+- Text color #1A1B22, never pure black.
+
+LAYOUT:
+
+HEADER CARD (full width, surface-container-lowest, ambient shadow)
+  Left side:
+  - Large avatar circle (initials "MR", indigo-100 bg, 64px).
+  - Name: "Matteo Russo" in Headline-MD (Manrope, 1.75rem).
+  - Below name, row of metadata in Label-SM uppercase:
+    CEFR badge "C1.1" (dark/slate style) + "ITALIAN" + "FILM STUDENT"
+    + "SESSION #14"
+  - Below metadata: "Next session: Today, 10:30" in Body-MD, indigo text.
+  Right side:
+  - Ghost button "Edit Profile"
+  - Primary gradient button "Start Session"
+
+TAB BAR (below header, no border)
+  Three tabs: "Profile" | "Sessions" | "Progress"
+  Active tab: indigo bottom indicator (3px), indigo text.
+  Inactive tab: zinc-500 text, hover shifts to zinc-700.
+  Tab bar sits on page canvas (#FBF8FF), not inside a card.
+
+--- TAB 1: PROFILE (default active) ---
+
+Two-column layout on surface-container-lowest card with ambient shadow.
+
+LEFT COLUMN (wider, ~60%):
+
+  Section: "ABOUT" (Label-SM header)
+  Key-value pairs, each on its own line:
+  - Country of origin: Italy
+  - City: Rome
+  - Lives in: Barcelona
+  - Birth year: 1998
+  - Reason for studying: "Vive en Barcelona, necesita el castellano
+    para el día a día y para la carrera de cine"
+
+  Section: "LANGUAGES" (Label-SM header)
+  - Native: Italian
+  - Spoken: English (B2), French (A2)
+  - Learning: Spanish (C1.1)
+
+  Section: "PERSONAL NOTES" (Label-SM header)
+  Body-MD text in Spanish:
+  "Muy motivado, cinéfilo. Le gusta debatir sobre cine europeo.
+  A veces se frustra con el subjuntivo pero trabaja duro."
+
+  Section: "TEACHING NOTES" (Label-SM header)
+  Body-MD text in Spanish:
+  "Nivel alto pero con lagunas en subordinadas concesivas y uso de
+  por/para en contextos abstractos. Buena producción oral, necesita
+  pulir registro formal escrito."
+
+RIGHT COLUMN (~40%):
+
+  Section: "LEARNING GOALS" (Label-SM header)
+  Editable list (each item is a chip or list row):
+  - "Dominar el subjuntivo en todas sus formas"
+  - "Mejorar registro formal escrito"
+  - "Preparar DELE C1"
+
+  Section: "SHORT-TERM OBJECTIVES" (Label-SM header)
+  Each item: text + optional target date in zinc-500:
+  - "Redacción formal semanal" — target: May 2026
+  - "Completar ejercicios de por/para" — target: Apr 15
+
+  Section: "DIFFICULTIES" (Label-SM header)
+  Compact table (no borders, tonal row alternation):
+    AREA | DETAIL | SEVERITY
+  - Grammar | "Subjuntivo en concesivas" | amber badge "Frequent"
+  - Grammar | "Por/para en abstractos" | zinc badge "Occasional"
+  - Writing | "Registro formal" | amber badge "Frequent"
+
+  Section: "TEACHING TODOS" (Label-SM header)
+  List with status indicators:
+  - Pending (indigo dot): "Enviar ejercicios de por/para"
+  - Pending (indigo dot): "Corregir redacción 'mi ciudad ideal'"
+  - Covered (green dot, strikethrough): "Explicar diferencia
+    indicativo/subjuntivo en temporales"
+
+  Section: "COMMERCIAL" (Label-SM header)
+  - Status: active (green badge "Active")
+  - Type: zinc badge "Private"
+  - Rate: "25 EUR/h"
+
+--- TAB 2: SESSIONS (not active, but design the content) ---
+
+Section: "SESSION TIMELINE" (Label-SM header)
+
+Vertical timeline, most recent first. Each session is a card on
+surface-container-lowest (slightly elevated from the tab background).
+No connecting lines between cards. Use vertical gap (24px) to separate.
+
+Session card structure:
+  Top row: date "Apr 5, 2026 · 10:30" in Label-SM + status badge
+  ("Completed" green, "Scheduled" indigo, "Canceled" amber, "Draft" zinc).
+  Content area (Body-MD, Spanish):
+  - "Subjuntivo en concesivas, le costó. Trabajamos con textos
+    periodísticos para contextualizar."
+  - "Deberes asignados: redacción 'mi ciudad ideal'"
+  - "Homework status: pendiente de corrección"
+  Topics row: vocabulary chips with secondary-fixed-dim background,
+  full roundedness: "subjuntivo" "concesivas" "por/para" "registro formal"
+
+Show 4 session cards for Matteo:
+1. Apr 5 (Completed): notes above
+2. Apr 1 (Completed): "Repasamos por/para. Ejercicio contrastivo con
+   italiano. Buena sesión, mucha participación."
+3. Mar 28 (Completed): "Texto argumentativo: ventajas del cine europeo
+   vs Hollywood. Corregimos registro. Avanza bien."
+4. Mar 25 (Canceled): "Canceló por examen en la universidad."
+
+Below timeline: ghost button "Load earlier sessions".
+
+Section: "TEACHING TODOS" (same as Profile tab right column, repeated
+here for context during session review).
+
+--- TAB 3: PROGRESS (not active, design placeholder) ---
+
+Section: "SKILL OVERVIEW" (Label-SM header)
+Horizontal bar chart or table showing skill levels:
+  SKILL | LEVEL | TREND
+  - Reading | C1 | green arrow up
+  - Writing | B2 | amber arrow right (plateau)
+  - Speaking | C1 | green arrow up
+  - Listening | C1 | green arrow up
+  - Grammar | B2 | amber arrow right
+  - Interaction | C1 | green arrow up
+
+Section: "COVERAGE" (Label-SM header)
+  Placeholder text: "Topic coverage analysis from session history"
+  (This section will be populated from the progress dashboard #190)
+
+Section: "PACING" (Label-SM header)
+  Badge: "On track" green or "Behind" amber.
+  Subtitle: "14 sessions over 3 months, avg 1.2/week"
+
+SIDEBAR: same Stitch sidebar. "Students" nav item is active.
+
+OUTPUT: a single React component file using shadcn/ui components, fully
+self-contained, with all Matteo's data hardcoded at the top. Include
+the Stitch sidebar. Design all 3 tab contents (Profile active by
+default, Sessions and Progress accessible via tab click).
+~~~
+
+---
+
 ### Execution order (my recommendation)
 
 1. **v0 generates the dashboard** (Robert's job). Iterate until the
