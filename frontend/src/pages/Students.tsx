@@ -369,7 +369,7 @@ interface Signal {
   variant: 'amber' | 'zinc'
 }
 
-function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal[] {
+function buildSignals(_student: Student, dash: ActiveStudent | undefined): Signal[] {
   const signals: Signal[] = []
 
   if (dash && !dash.isActive) {
