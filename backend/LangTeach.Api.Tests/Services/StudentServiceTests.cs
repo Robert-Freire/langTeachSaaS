@@ -240,4 +240,124 @@ public class StudentServiceTests : IDisposable
 
         await act.Should().ThrowAsync<ValidationException>();
     }
+
+    // TeachingTodos tests
+
+    private static TeachingTodoDto MakeTodo(string id, string text = "Work on ser/estar", string status = "pending") =>
+        new(id, text, DateTime.UtcNow, null, status, null);
+
+    [Fact]
+    public async Task TeachingTodos_JsonRoundTrip_Succeeds()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.CefrLevel,
+            TeachingTodos = [MakeTodo("todo-1", "Repasar pretérito"), MakeTodo("todo-2", "Artículo determinado")],
+        };
+
+        var updated = await _sut.UpdateAsync(_teacherId, created.Id, updateRequest);
+
+        updated!.TeachingTodos.Should().HaveCount(2);
+        updated.TeachingTodos[0].Id.Should().Be("todo-1");
+        updated.TeachingTodos[0].Text.Should().Be("Repasar pretérito");
+        updated.TeachingTodos[1].Id.Should().Be("todo-2");
+    }
+
+    [Fact]
+    public async Task TeachingTodos_StatusTransition_Covered_Succeeds()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        await _sut.UpdateAsync(_teacherId, created.Id, new UpdateStudentRequest
+        {
+            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
+            TeachingTodos = [MakeTodo("todo-1")],
+        });
+
+        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1", new UpdateTeachingTodoDto("covered", null));
+
+        result!.TeachingTodos.Single().Status.Should().Be("covered");
+    }
+
+    [Fact]
+    public async Task TeachingTodos_StatusTransition_Dismissed_Succeeds()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        await _sut.UpdateAsync(_teacherId, created.Id, new UpdateStudentRequest
+        {
+            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
+            TeachingTodos = [MakeTodo("todo-1")],
+        });
+
+        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1", new UpdateTeachingTodoDto("dismissed", null));
+
+        result!.TeachingTodos.Single().Status.Should().Be("dismissed");
+    }
+
+    [Fact]
+    public async Task TeachingTodos_MaxEnforced_ThrowsValidation()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        var todos = Enumerable.Range(1, 51).Select(i => MakeTodo($"t{i}", $"Todo {i}")).ToList();
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
+            TeachingTodos = todos,
+        };
+
+        var act = () => _sut.UpdateAsync(_teacherId, created.Id, updateRequest);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task TeachingTodos_InvalidStatus_ThrowsValidation()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
+            TeachingTodos = [MakeTodo("todo-1", "Some text", "invalid-status")],
+        };
+
+        var act = () => _sut.UpdateAsync(_teacherId, created.Id, updateRequest);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task UpdateTeachingTodoAsync_UnknownTodoId_ReturnsNull()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+
+        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "nonexistent-id", new UpdateTeachingTodoDto("covered", null));
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task AppendTeachingTodoAsync_WrongTeacher_ReturnsNull()
+    {
+        var otherTeacherId = Guid.NewGuid();
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+
+        var result = await _sut.AppendTeachingTodoAsync(otherTeacherId, created.Id, new CreateTeachingTodoDto("Some text", null));
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task AppendTeachingTodoAsync_AppendsEntryWithPendingStatus()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+
+        var result = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Trabajar ser/estar", null));
+
+        result!.TeachingTodos.Should().HaveCount(1);
+        result.TeachingTodos[0].Text.Should().Be("Trabajar ser/estar");
+        result.TeachingTodos[0].Status.Should().Be("pending");
+        result.TeachingTodos[0].Id.Should().NotBeNullOrEmpty();
+    }
 }

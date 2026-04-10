@@ -46,7 +46,7 @@ public static class DemoSeeder
 
         var students = new List<Student>
         {
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Souza",        LearningLanguage = "English", CefrLevel = "B2", Interests = """["travel","cooking"]""",    PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Souza",        LearningLanguage = "English", CefrLevel = "B2", Interests = """["travel","cooking"]""",    PersonalNotes = DemoTag, TeachingTodos = """[{"id":"a1b2c3d4-0000-0000-0000-000000000001","text":"Trabajar la diferencia entre artículo determinado e indeterminado","createdAt":"2026-04-09T10:00:00Z","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null},{"id":"a1b2c3d4-0000-0000-0000-000000000002","text":"Repasar pretérito en narraciones personales","createdAt":"2026-04-09T10:05:00Z","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null}]""", CreatedAt = now, UpdatedAt = now },
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Rossi",      LearningLanguage = "English", CefrLevel = "A2", Interests = """["football","music"]""",    PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Yuki Tanaka",      LearningLanguage = "English", CefrLevel = "B1", Interests = """["technology","anime"]""",  PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Fatima Al-Hassan", LearningLanguage = "English", CefrLevel = "C1", Interests = """["literature","history"]""", PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },

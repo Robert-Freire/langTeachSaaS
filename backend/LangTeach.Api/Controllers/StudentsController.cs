@@ -127,6 +127,48 @@ public class StudentsController : ControllerBase
         return Ok(history);
     }
 
+    [HttpPost("{id:guid}/teaching-todos")]
+    public async Task<IActionResult> AppendTeachingTodo(Guid id, [FromBody] CreateTeachingTodoDto request, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        try
+        {
+            var student = await _studentService.AppendTeachingTodoAsync(teacherId, id, request, cancellationToken);
+            if (student is null)
+            {
+                _logger.LogWarning("POST /api/students/{StudentId}/teaching-todos not found or forbidden. TeacherId={TeacherId}", id, teacherId);
+                return NotFound();
+            }
+            return Ok(student);
+        }
+        catch (System.ComponentModel.DataAnnotations.ValidationException ex)
+        {
+            return ValidationProblem(ex.Message);
+        }
+    }
+
+    [HttpPatch("{id:guid}/teaching-todos/{todoId}")]
+    public async Task<IActionResult> UpdateTeachingTodo(Guid id, string todoId, [FromBody] UpdateTeachingTodoDto request, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        try
+        {
+            var student = await _studentService.UpdateTeachingTodoAsync(teacherId, id, todoId, request, cancellationToken);
+            if (student is null)
+            {
+                _logger.LogWarning("PATCH /api/students/{StudentId}/teaching-todos/{TodoId} not found or forbidden. TeacherId={TeacherId}", id, todoId, teacherId);
+                return NotFound();
+            }
+            return Ok(student);
+        }
+        catch (System.ComponentModel.DataAnnotations.ValidationException ex)
+        {
+            return ValidationProblem(ex.Message);
+        }
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
