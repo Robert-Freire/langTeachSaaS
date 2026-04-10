@@ -241,8 +241,14 @@ public class StudentService : IStudentService
 
     private static void ValidateNativeLanguages(List<string> nativeLanguages)
     {
+        if (nativeLanguages is null)
+            throw new ValidationException("NativeLanguages is required.");
+
         foreach (var lang in nativeLanguages)
         {
+            if (string.IsNullOrWhiteSpace(lang))
+                throw new ValidationException("NativeLanguages cannot contain empty values.");
+
             if (!AllowedNativeLanguages.Contains(lang))
                 throw new ValidationException($"NativeLanguage '{lang}' is not in the allowed list.");
         }
