@@ -166,14 +166,14 @@ describe('StudentDetail', () => {
     expect(screen.getByTestId('official-cefr-badge')).toHaveTextContent('Official: A2')
   })
 
-  it('does not show official CEFR badge when same as teacher level', async () => {
+  it('shows official CEFR badge even when same as teacher level', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...MOCK_STUDENT,
       officialCefrLevel: 'B1',
     })
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.queryByTestId('official-cefr-badge')).not.toBeInTheDocument()
+    expect(screen.getByTestId('official-cefr-badge')).toHaveTextContent('Official: B1')
   })
 })
 

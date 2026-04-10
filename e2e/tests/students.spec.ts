@@ -445,13 +445,13 @@ test('student detail shows 3 tabs and profile content', async ({ browser }) => {
   await expect(page.getByTestId('edit-profile-link')).toBeVisible()
   await expect(page.getByTestId('log-session-button')).toBeVisible()
 
-  // Switch to Sessions tab
+  // Switch to Sessions tab (new student has no sessions)
   await page.getByTestId('tab-sessions').click()
-  await expect(page.getByTestId('session-history-empty').or(page.locator('[data-testid="session-history-list"]'))).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-history-empty')).toBeVisible({ timeout: 10000 })
 
-  // Switch to Progress tab
+  // Switch to Progress tab (new student has no course)
   await page.getByTestId('tab-progress').click()
-  await expect(page.getByTestId('progress-no-course').or(page.locator('[data-testid="progress-loading"]'))).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('progress-no-course')).toBeVisible({ timeout: 10000 })
 
   // Switch back to Profile tab
   await page.getByTestId('tab-profile').click()

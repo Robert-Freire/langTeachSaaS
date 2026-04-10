@@ -97,7 +97,7 @@ test('@visual student detail sessions tab - with sessions', async ({ browser }) 
   await page.goto(`/students/${studentWithSessionsId}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
   await page.getByTestId('tab-sessions').click()
-  await expect(page.getByTestId('session-summary-header').or(page.locator('[data-testid="session-history-list"]'))).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/student-detail-sessions-tab.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)

@@ -162,7 +162,7 @@ export function StudentProfileTab({ student, onToggleDifficultyStatus }: Props) 
                     {obj.text}
                     {obj.targetDate && (
                       <span className="ml-2 text-xs text-zinc-400">
-                        Target: {new Date(obj.targetDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        Target: {new Date(obj.targetDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                       </span>
                     )}
                   </li>

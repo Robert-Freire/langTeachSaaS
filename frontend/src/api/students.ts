@@ -84,6 +84,20 @@ export interface StudentFormData {
   learningGoals: string[]
   weaknesses: StudentWeaknessItem[]
   difficulties: Difficulty[]
+  birthYear?: number | null
+  profession?: string | null
+  countryOfOrigin?: string | null
+  cityOfOrigin?: string | null
+  countryOfResidence?: string | null
+  cityOfResidence?: string | null
+  reasonForStudying?: string | null
+  officialCefrLevel?: string | null
+  shortTermObjectives?: ShortTermObjective[]
+  isActive?: boolean
+  isCorporate?: boolean
+  rate?: string | null
+  spokenLanguages?: string[]
+  teachingTodos?: TeachingTodo[]
 }
 
 export async function getStudents(params?: {

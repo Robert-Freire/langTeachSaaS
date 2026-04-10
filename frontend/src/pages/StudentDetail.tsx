@@ -54,6 +54,20 @@ export default function StudentDetail() {
         difficulties: updated,
         personalNotes: student.personalNotes,
         teachingNotes: student.teachingNotes,
+        birthYear: student.birthYear,
+        profession: student.profession,
+        countryOfOrigin: student.countryOfOrigin,
+        cityOfOrigin: student.cityOfOrigin,
+        countryOfResidence: student.countryOfResidence,
+        cityOfResidence: student.cityOfResidence,
+        reasonForStudying: student.reasonForStudying,
+        officialCefrLevel: student.officialCefrLevel,
+        shortTermObjectives: student.shortTermObjectives,
+        isActive: student.isActive,
+        isCorporate: student.isCorporate,
+        rate: student.rate,
+        spokenLanguages: student.spokenLanguages,
+        teachingTodos: student.teachingTodos,
       })
     },
     onSuccess: () => {
@@ -137,8 +151,8 @@ export default function StudentDetail() {
                   {student.cefrLevel}
                 </span>
 
-                {/* Official CEFR level if different */}
-                {student.officialCefrLevel && student.officialCefrLevel !== student.cefrLevel && (
+                {/* Official CEFR level */}
+                {student.officialCefrLevel && (
                   <span
                     className={`inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] ${getCefrStitchBadgeClasses(student.officialCefrLevel.substring(0, 2))}`}
                     data-testid="official-cefr-badge"
@@ -220,17 +234,15 @@ export default function StudentDetail() {
       {activeTab === 'sessions' && (
         <div className="space-y-6">
           <SessionHistoryTab studentId={student.id} />
-          {student.teachingTodos.length > 0 && (
-            <div
-              className="bg-white rounded-2xl p-6"
-              style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
-            >
-              <h3 className="text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-zinc-500 mb-3">
-                Teaching Todos
-              </h3>
-              <TeachingTodosCard todos={student.teachingTodos} />
-            </div>
-          )}
+          <div
+            className="bg-white rounded-2xl p-6"
+            style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
+          >
+            <h3 className="text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-zinc-500 mb-3">
+              Teaching Todos
+            </h3>
+            <TeachingTodosCard todos={student.teachingTodos} />
+          </div>
         </div>
       )}
 
