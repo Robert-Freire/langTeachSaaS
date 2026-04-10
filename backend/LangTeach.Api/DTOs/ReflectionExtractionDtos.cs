@@ -22,5 +22,6 @@ public record ExtractedReflectionDto(
     string? EmotionalSignals,
     string? HomeworkAssigned,
     string? NextLessonIdeas,
+    string? SessionDate,
     List<SuggestedDifficultyDto> SuggestedDifficulties
 );

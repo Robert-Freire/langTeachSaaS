@@ -11,6 +11,7 @@ public class StubReflectionExtractionService : IReflectionExtractionService
             EmotionalSignals: "[Extracted] Emotional signals",
             HomeworkAssigned: "[Extracted] Homework assigned",
             NextLessonIdeas: "[Extracted] Next lesson ideas",
+            SessionDate: null,
             SuggestedDifficulties: []
         ));
 }
