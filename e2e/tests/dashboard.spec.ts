@@ -23,6 +23,10 @@ test('dashboard renders with seeded data', async ({ browser }) => {
     const zone1 = page.locator('[data-testid="zone1-next-session"], [data-testid="zone1-empty"]')
     await expect(zone1.first()).toBeVisible({ timeout: UI_TIMEOUT })
 
+    // Zone 2: both agenda and followups present
+    await expect(page.getByTestId('zone2-today-agenda')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByTestId('zone2-pending-followups')).toBeVisible({ timeout: UI_TIMEOUT })
+
     // Zone 3: student roster present
     await expect(page.getByTestId('zone3-student-roster')).toBeVisible({ timeout: UI_TIMEOUT })
   } finally {

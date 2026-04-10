@@ -10,7 +10,7 @@ import { StudentRoster } from '@/components/dashboard/StudentRoster'
 const SLOW_THRESHOLD_MS = 5000
 
 export default function Dashboard() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboard'],
     queryFn: getDashboard,
   })
@@ -21,6 +21,15 @@ export default function Dashboard() {
     const timer = setTimeout(() => setSlowTimerFired(true), SLOW_THRESHOLD_MS)
     return () => clearTimeout(timer)
   }, [isLoading])
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3 text-center">
+        <p className="font-manrope text-[1.75rem] font-bold text-[#1A1B22]">Could not load dashboard</p>
+        <p className="text-sm text-zinc-500 font-inter">Check your connection and try refreshing the page.</p>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (

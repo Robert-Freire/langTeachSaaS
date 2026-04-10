@@ -14,6 +14,7 @@ interface PendingRow {
 
 function ageBadge(createdAt: string): { label: string; className: string } {
   const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000)
+  if (days === 0) return { label: 'new', className: 'bg-emerald-100 text-emerald-700' }
   if (days <= 3) return { label: `${days}d`, className: 'bg-emerald-100 text-emerald-700' }
   if (days <= 7) return { label: `${days}d`, className: 'bg-amber-100 text-amber-700' }
   return { label: `${days}d`, className: 'bg-red-100 text-red-700' }
