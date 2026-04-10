@@ -20,6 +20,13 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | architecture-reviewer | minor | `TelegramBotServiceTests.cs` uses static `BuildService` factory instead of constructor + `IDisposable` (sibling pattern in `VoiceNoteServiceTests`/`TelegramConversationServiceTests`). Matches the closer reference `ClaudeApiClientUnitTests.cs`, which also uses a static `BuildClient` factory for HttpClient-based service tests. No cleanup needed. |
 
 
+## #643 — 2026-04-10
+
+| Reviewer | Severity | Note |
+|---|---|---|
+| review | info | `SeedAnaVisualSessionLogAsync` is called after the early-return `SaveChangesAsync`; any unsaved tracked changes before that line would be committed by the helper's own `SaveChangesAsync`. Verified safe: no mutations precede the call in the early-return path. |
+| architecture-reviewer | info | New helper method diverges from Diego Seed's inline guard style. Helper is the correct choice because Ana Visual belongs to a different method scope. |
+
 ## #627 — 2026-04-10
 
 | Reviewer | Severity | Note |
