@@ -1,4 +1,3 @@
-using System.Text.Json;
 using LangTeach.Api.Data;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Helpers;
@@ -111,16 +110,22 @@ public class DashboardService : IDashboardService
             })
             .ToListAsync(cancellationToken);
 
-        return rows.Select(r => new ActiveStudentDto(
-            StudentId: r.Id,
-            Name: r.Name,
-            CefrLevel: r.CefrLevel,
-            NativeLanguages: JsonStorageHelper.DeserializeList<string>(r.NativeLanguages),
-            IsActive: r.IsActive,
-            LastSessionDate: r.LastSessionDate,
-            NextSessionDate: r.NextSessionDate,
-            TotalSessions: r.TotalSessions,
-            TeachingTodosCount: JsonStorageHelper.DeserializeList<JsonElement>(r.TeachingTodos).Count
-        )).ToList();
+        return rows.Select(r =>
+        {
+            var allTodos = JsonStorageHelper.DeserializeList<TeachingTodoDto>(r.TeachingTodos);
+            var pendingTodos = allTodos.Where(t => t.Status == "pending").ToList();
+            return new ActiveStudentDto(
+                StudentId: r.Id,
+                Name: r.Name,
+                CefrLevel: r.CefrLevel,
+                NativeLanguages: JsonStorageHelper.DeserializeList<string>(r.NativeLanguages),
+                IsActive: r.IsActive,
+                LastSessionDate: r.LastSessionDate,
+                NextSessionDate: r.NextSessionDate,
+                TotalSessions: r.TotalSessions,
+                TeachingTodosCount: allTodos.Count,
+                PendingTodos: pendingTodos
+            );
+        }).ToList();
     }
 }
