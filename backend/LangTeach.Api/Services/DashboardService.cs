@@ -8,13 +8,15 @@ namespace LangTeach.Api.Services;
 public class DashboardService : IDashboardService
 {
     private readonly AppDbContext _db;
+    private readonly ILogger<DashboardService> _logger;
 
     private static readonly JsonSerializerOptions JsonOptions =
         new() { PropertyNameCaseInsensitive = true };
 
-    public DashboardService(AppDbContext db)
+    public DashboardService(AppDbContext db, ILogger<DashboardService> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     public async Task<DashboardDto> GetAsync(Guid teacherId, CancellationToken cancellationToken = default)
@@ -124,26 +126,28 @@ public class DashboardService : IDashboardService
         )).ToList();
     }
 
-    private static List<string> DeserializeStringList(string json)
+    private List<string> DeserializeStringList(string json)
     {
         try
         {
             return JsonSerializer.Deserialize<List<string>>(json, JsonOptions) ?? [];
         }
-        catch
+        catch (JsonException ex)
         {
+            _logger.LogWarning(ex, "Failed to deserialize string list from JSON: {Json}", json);
             return [];
         }
     }
 
-    private static int CountJsonArray(string json)
+    private int CountJsonArray(string json)
     {
         try
         {
             return JsonSerializer.Deserialize<List<JsonElement>>(json, JsonOptions)?.Count ?? 0;
         }
-        catch
+        catch (JsonException ex)
         {
+            _logger.LogWarning(ex, "Failed to count JSON array: {Json}", json);
             return 0;
         }
     }

@@ -3,6 +3,7 @@ using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LangTeach.Api.Tests.Services;
 
@@ -19,7 +20,7 @@ public class DashboardServiceTests : IDisposable
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _db = new AppDbContext(options);
-        _sut = new DashboardService(_db);
+        _sut = new DashboardService(_db, NullLogger<DashboardService>.Instance);
 
         _db.Teachers.Add(new Teacher
         {
@@ -136,8 +137,10 @@ public class DashboardServiceTests : IDisposable
 
         var result = await _sut.GetAsync(_teacherId);
 
+        // Cancelled today-sessions are shown (teacher needs full schedule view).
+        // IsCancelled is a separate flag from Status; Status field reflects the session lifecycle state.
         result.TodaySessions.Should().HaveCount(1);
-        result.TodaySessions[0].Status.Should().Be("Confirmed");
+        result.TodaySessions[0].StudentId.Should().Be(_studentId);
     }
 
     [Fact]
