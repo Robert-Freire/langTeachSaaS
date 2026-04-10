@@ -28,8 +28,9 @@ function formatRelativeDate(dateStr: string | null | undefined): string {
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return '—'
   const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const targetDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const diffDays = Math.round((today.getTime() - targetDay.getTime()) / (1000 * 60 * 60 * 24))
   if (diffDays === 0) return 'Today'
   if (diffDays === 1) return 'Yesterday'
   if (diffDays > 0) return `${diffDays}d ago`

@@ -24,6 +24,7 @@ test('students list loads and renders the table with student rows', async ({ bro
   // Name, level badge, and native language cell are present
   await expect(firstRow.getByTestId('student-name')).toBeVisible()
   await expect(firstRow.getByTestId('student-level')).toBeVisible()
+  await expect(firstRow.getByTestId('native-language-chip')).toBeVisible()
 
   await context.close()
 })
