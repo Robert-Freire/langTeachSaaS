@@ -10,12 +10,20 @@ test.beforeAll(async ({ browser }) => {
   await ctx.close()
 })
 
-test('students list loads and renders the table', async ({ browser }) => {
+test('students list loads and renders the table with student rows', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
   await page.goto('/students')
   await expect(page.locator('h1')).toHaveText('Students', { timeout: 15000 })
+
+  // Table renders with at least one student row (seeded by setupMockTeacher)
+  const firstRow = page.locator('[data-testid^="student-row-"]').first()
+  await expect(firstRow).toBeVisible({ timeout: 10000 })
+
+  // Name, level badge, and native language cell are present
+  await expect(firstRow.getByTestId('student-name')).toBeVisible()
+  await expect(firstRow.getByTestId('student-level')).toBeVisible()
 
   await context.close()
 })
