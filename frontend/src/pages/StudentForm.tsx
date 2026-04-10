@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
+import { FieldTooltip } from '@/components/FieldTooltip'
 import { PageHeader } from '@/components/PageHeader'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { LANGUAGES, NATIVE_LANGUAGE_OPTIONS } from '@/lib/languages'
@@ -249,7 +250,7 @@ export default function StudentForm() {
           <CardContent className="space-y-4">
             {/* Name */}
             <div className="space-y-1.5">
-              <Label htmlFor="name">Name <span className="text-red-500">*</span></Label>
+              <Label htmlFor="name" className="inline-flex items-center gap-1">Name <span className="text-red-500">*</span> <FieldTooltip fieldKey="name" /></Label>
               <Input
                 id="name"
                 value={name}
@@ -265,7 +266,7 @@ export default function StudentForm() {
             {/* Language + CEFR Level side-by-side */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
               <div className="space-y-1.5">
-                <Label>Learning Language <span className="text-red-500">*</span></Label>
+                <Label className="inline-flex items-center gap-1">Learning Language <span className="text-red-500">*</span> <FieldTooltip fieldKey="learningLanguage" /></Label>
                 <Select value={language} onValueChange={(v) => {
                   if (!v) return
                   setLanguage(v)
@@ -283,7 +284,7 @@ export default function StudentForm() {
               </div>
 
               <div className="space-y-1.5">
-                <Label>CEFR Level <span className="text-red-500">*</span></Label>
+                <Label className="inline-flex items-center gap-1">CEFR Level <span className="text-red-500">*</span> <FieldTooltip fieldKey="cefrLevel" /></Label>
                 <Select value={cefrLevel} onValueChange={(v) => v && setCefrLevel(v)}>
                   <SelectTrigger data-testid="student-cefr">
                     <SelectValue placeholder="Select a level" />
@@ -302,7 +303,7 @@ export default function StudentForm() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Interests</CardTitle>
+            <CardTitle className="text-base inline-flex items-center gap-1">Interests <FieldTooltip fieldKey="interests" /></CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div
@@ -349,7 +350,7 @@ export default function StudentForm() {
 
             {/* Native Languages */}
             <div className="space-y-1.5">
-              <Label>Native Languages</Label>
+              <Label className="inline-flex items-center gap-1">Native Languages <FieldTooltip fieldKey="nativeLanguages" /></Label>
               <MultiSelect
                 options={NATIVE_LANGUAGE_OPTIONS}
                 selected={nativeLanguages}
@@ -364,7 +365,7 @@ export default function StudentForm() {
 
             {/* Learning Goals */}
             <div className="space-y-1.5">
-              <Label>Learning Goals</Label>
+              <Label className="inline-flex items-center gap-1">Learning Goals <FieldTooltip fieldKey="learningGoals" /></Label>
               <MultiSelect
                 options={LEARNING_GOALS}
                 selected={learningGoals}
@@ -380,7 +381,7 @@ export default function StudentForm() {
             <div className="space-y-3 pt-2 border-t border-zinc-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Areas to Improve</Label>
+                  <Label className="inline-flex items-center gap-1">Areas to Improve <FieldTooltip fieldKey="weaknesses" /></Label>
                   <p className="text-xs text-zinc-400 mt-0.5">
                     Free-text description with category (grammatical, lexical, orthographic).
                   </p>
@@ -449,7 +450,7 @@ export default function StudentForm() {
             <div className="space-y-3 pt-2 border-t border-zinc-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Specific Difficulties</Label>
+                  <Label className="inline-flex items-center gap-1">Specific Difficulties <FieldTooltip fieldKey="difficulties" /></Label>
                   <p className="text-xs text-zinc-400 mt-0.5">
                     Track granular issues for targeted exercise generation.
                   </p>
@@ -540,7 +541,7 @@ export default function StudentForm() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Personal notes</Label>
+              <Label className="inline-flex items-center gap-1">Personal notes <FieldTooltip fieldKey="personalNotes" /></Label>
               <p className="text-xs text-zinc-400">About the student as a person (sensitivities, context, life situation).</p>
               <Textarea
                 value={personalNotes}
@@ -553,7 +554,7 @@ export default function StudentForm() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Teaching notes</Label>
+              <Label className="inline-flex items-center gap-1">Teaching notes <FieldTooltip fieldKey="teachingNotes" /></Label>
               <p className="text-xs text-zinc-400">How this student learns, what works in class, teaching observations.</p>
               <Textarea
                 value={teachingNotes}
