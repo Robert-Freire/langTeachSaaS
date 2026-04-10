@@ -78,6 +78,30 @@ describe('AppShell', () => {
     expect(allDashboardLinks.length).toBeGreaterThanOrEqual(2)
   })
 
+  it('renders nav items in correct order: Dashboard, Students, Courses, Lessons, Settings', () => {
+    renderShell()
+    const links = document.querySelector('aside')?.querySelectorAll('a')
+    const labels = Array.from(links ?? []).map(a => a.textContent?.trim())
+    expect(labels).toEqual(['Dashboard', 'Students', 'Courses', 'Lessons', 'Settings'])
+  })
+
+  it('does not render a My Profile nav item', () => {
+    renderShell()
+    expect(screen.queryByText('My Profile')).not.toBeInTheDocument()
+  })
+
+  it('renders LANGUAGE CURATOR subtitle below logo', () => {
+    renderShell()
+    const subtitles = screen.getAllByText(/language curator/i)
+    expect(subtitles.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('renders Teacher label in user card', () => {
+    renderShell()
+    const teacherLabels = screen.getAllByText(/^teacher$/i)
+    expect(teacherLabels.length).toBeGreaterThanOrEqual(1)
+  })
+
   it('renders the mobile top bar with logo text', () => {
     renderShell()
     const logoTexts = screen.getAllByText('LangTeach')
