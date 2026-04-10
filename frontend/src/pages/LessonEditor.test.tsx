@@ -32,10 +32,10 @@ const mockLessonFull = {
   templateId: null,
   sections: [
     { id: 'sec-1', sectionType: 'WarmUp', orderIndex: 0, notes: 'Opener', materials: [] },
-    { id: 'sec-2', sectionType: 'Presentation', orderIndex: 1, personalNotes: null, teachingNotes: null, materials: [] },
-    { id: 'sec-3', sectionType: 'Practice', orderIndex: 2, personalNotes: null, teachingNotes: null, materials: [] },
-    { id: 'sec-4', sectionType: 'Production', orderIndex: 3, personalNotes: null, teachingNotes: null, materials: [] },
-    { id: 'sec-5', sectionType: 'WrapUp', orderIndex: 4, personalNotes: null, teachingNotes: null, materials: [] },
+    { id: 'sec-2', sectionType: 'Presentation', orderIndex: 1, notes: null, materials: [] },
+    { id: 'sec-3', sectionType: 'Practice', orderIndex: 2, notes: null, materials: [] },
+    { id: 'sec-4', sectionType: 'Production', orderIndex: 3, notes: null, materials: [] },
+    { id: 'sec-5', sectionType: 'WrapUp', orderIndex: 4, notes: null, materials: [] },
   ],
   createdAt: '2026-03-10T10:00:00Z',
   updatedAt: '2026-03-10T10:00:00Z',
@@ -49,8 +49,8 @@ const mockLessonPartial = {
   title: 'Conversation Lesson',
   sections: [
     { id: 'sec-a', sectionType: 'WarmUp', orderIndex: 0, notes: 'Hello', materials: [] },
-    { id: 'sec-b', sectionType: 'Practice', orderIndex: 1, personalNotes: null, teachingNotes: null, materials: [] },
-    { id: 'sec-c', sectionType: 'Production', orderIndex: 2, personalNotes: null, teachingNotes: null, materials: [] },
+    { id: 'sec-b', sectionType: 'Practice', orderIndex: 1, notes: null, materials: [] },
+    { id: 'sec-c', sectionType: 'Production', orderIndex: 2, notes: null, materials: [] },
   ],
 }
 
@@ -248,7 +248,7 @@ describe('LessonEditor', () => {
         ...mockLessonPartial,
         sections: [
           ...mockLessonPartial.sections,
-          { id: 'sec-new', sectionType: 'Presentation', orderIndex: 1, personalNotes: null, teachingNotes: null, materials: [] },
+          { id: 'sec-new', sectionType: 'Presentation', orderIndex: 1, notes: null, materials: [] },
         ],
       })
 

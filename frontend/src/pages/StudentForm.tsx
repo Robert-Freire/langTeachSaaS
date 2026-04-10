@@ -503,7 +503,7 @@ export default function StudentForm() {
               <Label>Native Language</Label>
               <Select
                 value={nativeLanguages[0] ?? 'none'}
-                onValueChange={(v) => setNativeLanguages(v === 'none' ? [] : [v])}
+                onValueChange={(v) => setNativeLanguages(!v || v === 'none' ? [] : [v])}
               >
                 <SelectTrigger className="max-w-sm" data-testid="student-native-language">
                   <SelectValue placeholder="Select native language (optional)" />
