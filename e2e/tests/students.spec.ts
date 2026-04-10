@@ -153,6 +153,7 @@ test('full student CRUD flow', async ({ browser }) => {
   // Select native language
   await page.getByTestId('student-native-language').click()
   await page.getByRole('option', { name: 'Portuguese' }).click()
+  await page.keyboard.press('Escape')
 
   // Select a learning goal
   await page.getByTestId('learning-goals-trigger').click()
@@ -427,6 +428,7 @@ test('student detail shows 3 tabs and profile content', async ({ browser }) => {
   await page.getByRole('option', { name: 'B1' }).click()
   await page.getByTestId('student-native-language').click()
   await page.getByRole('option', { name: 'Portuguese' }).click()
+  await page.keyboard.press('Escape')
   await page.getByRole('button', { name: 'Save Student' }).click()
 
   // Should redirect directly to student detail page

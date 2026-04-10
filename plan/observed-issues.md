@@ -11,5 +11,6 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #639 | 2026-04-10 | low | StudentProfileOverview.tsx is now dead code (superseded by StudentProfileTab). Should be deleted along with its test file. |
 | #639 | 2026-04-10 | low | ui/tabs.tsx (shadcn Tabs component) is no longer imported anywhere. All tab UIs now use custom button-based tabs. Could be removed. |
 | #639 | 2026-04-10 | low | toggleDifficultyStatus mutation onError only logs to console with no user-visible feedback. Pre-existing behavior from original StudentDetail. |
+| #630 | 2026-04-10 | low | session-history.visual.spec.ts tab locator uses `/history/i` but tab was renamed to "Sessions" in a prior PR. Blocks onboarding visual spec dependency. |
 
 *Cleared 2026-04-08 during Adaptive Replanning sprint close. Actionable entries batched into #603 (DemoSeeder difficulties), #604 (StudentForm partial rows), #605 (VoiceNote MaxLength + AudioRecorder), #606 (exercises block cap), #607 (ExcelImporter date validation), #608 (trend thresholds config), #609 (e2e test hygiene). Remaining entries deleted (acceptable limitations, pre-existing patterns, or covered by previously filed issues).*

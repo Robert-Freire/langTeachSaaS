@@ -33,7 +33,7 @@ export function StudentProfileSummary({ student, hasRichNotes = false }: Props) 
                 }
                 <span className={populated ? 'text-zinc-600' : 'text-zinc-400'}>{label}</span>
                 {key === 'nativeLanguages' && student.nativeLanguages.length > 0 && (
-                  <span className="text-zinc-500">({student.nativeLanguages[0]})</span>
+                  <span className="text-zinc-500">({student.nativeLanguages.join(', ')})</span>
                 )}
               </div>
             )
