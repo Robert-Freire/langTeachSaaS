@@ -29,6 +29,7 @@ public class Student
 
     // Plan fields
     public string ShortTermObjectives { get; set; } = "[]";
+    public string TeachingTodos { get; set; } = "[]";
 
     // Commercial fields
     public bool IsActive { get; set; } = true;

@@ -31,5 +31,7 @@ public record StudentDto(
     bool IsCorporate,
     string? Rate,
     // Language fields
-    List<string> SpokenLanguages
+    List<string> SpokenLanguages,
+    // Teaching fields
+    List<TeachingTodoDto> TeachingTodos
 );

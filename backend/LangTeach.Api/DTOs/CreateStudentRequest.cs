@@ -80,4 +80,8 @@ public class CreateStudentRequest
     [MaxCollectionCount(20)]
     [MaxStringLengthEach(64)]
     public List<string> SpokenLanguages { get; set; } = [];
+
+    // Teaching fields
+    [MaxCollectionCount(50)]
+    public List<TeachingTodoDto> TeachingTodos { get; set; } = [];
 }

@@ -31,6 +31,11 @@ public class StudentService : IStudentService
         "Active", "Covered"
     ];
 
+    private static readonly HashSet<string> AllowedTodoStatuses =
+    [
+        "pending", "covered", "dismissed"
+    ];
+
     private static readonly HashSet<string> AllowedWeaknessTypes =
         new(StringComparer.OrdinalIgnoreCase) { "grammatical", "lexical", "orthographic" };
 
@@ -89,6 +94,7 @@ public class StudentService : IStudentService
         var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
         ValidateBirthYear(request.BirthYear);
         ValidateShortTermObjectives(request.ShortTermObjectives);
+        ValidateTeachingTodos(request.TeachingTodos);
 
         var student = new Student
         {
@@ -113,6 +119,7 @@ public class StudentService : IStudentService
             ReasonForStudying = request.ReasonForStudying,
             OfficialCefrLevel = request.OfficialCefrLevel,
             ShortTermObjectives = Serialize(request.ShortTermObjectives),
+            TeachingTodos = Serialize(request.TeachingTodos),
             IsActive = request.IsActive,
             IsCorporate = request.IsCorporate,
             Rate = request.Rate,
@@ -144,6 +151,7 @@ public class StudentService : IStudentService
         var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
         ValidateBirthYear(request.BirthYear);
         ValidateShortTermObjectives(request.ShortTermObjectives);
+        ValidateTeachingTodos(request.TeachingTodos);
 
         student.Name = request.Name;
         student.LearningLanguage = request.LearningLanguage;
@@ -164,6 +172,7 @@ public class StudentService : IStudentService
         student.ReasonForStudying = request.ReasonForStudying;
         student.OfficialCefrLevel = request.OfficialCefrLevel;
         student.ShortTermObjectives = Serialize(request.ShortTermObjectives);
+        student.TeachingTodos = Serialize(request.TeachingTodos);
         student.IsActive = request.IsActive;
         student.IsCorporate = request.IsCorporate;
         student.Rate = request.Rate;
@@ -222,7 +231,8 @@ public class StudentService : IStudentService
         s.IsActive,
         s.IsCorporate,
         s.Rate,
-        JsonStorageHelper.DeserializeList<string>(s.SpokenLanguages)
+        JsonStorageHelper.DeserializeList<string>(s.SpokenLanguages),
+        JsonStorageHelper.DeserializeList<TeachingTodoDto>(s.TeachingTodos)
     );
 
     private static List<StudentWeaknessDto> NormalizeWeaknesses(List<StudentWeaknessDto> weaknesses) =>
@@ -299,6 +309,87 @@ public class StudentService : IStudentService
     // so the server is always authoritative after the next session log confirm.
     private static List<DifficultyDto> NormalizeSystemFields(List<DifficultyDto> difficulties) =>
         difficulties.Select(d => d with { Trend = "stable" }).ToList();
+
+    public async Task<StudentDto?> AppendTeachingTodoAsync(Guid teacherId, Guid studentId, CreateTeachingTodoDto request, CancellationToken cancellationToken = default)
+    {
+        var student = await _db.Students
+            .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
+
+        if (student is null)
+            return null;
+
+        var todos = JsonStorageHelper.DeserializeList<TeachingTodoDto>(student.TeachingTodos);
+
+        if (todos.Count >= 50)
+            throw new ValidationException("Cannot have more than 50 teaching todos.");
+
+        if (string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > 500)
+            throw new ValidationException("Todo text must be between 1 and 500 characters.");
+
+        var newTodo = new TeachingTodoDto(
+            Guid.NewGuid().ToString(),
+            request.Text,
+            DateTime.UtcNow,
+            request.SourceSessionLogId,
+            "pending",
+            null);
+
+        todos.Add(newTodo);
+        student.TeachingTodos = Serialize(todos);
+        student.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Teaching todo appended. TeacherId={TeacherId} StudentId={StudentId} TodoId={TodoId}",
+            teacherId, student.Id, newTodo.Id);
+
+        return MapToDto(student);
+    }
+
+    public async Task<StudentDto?> UpdateTeachingTodoAsync(Guid teacherId, Guid studentId, string todoId, UpdateTeachingTodoDto request, CancellationToken cancellationToken = default)
+    {
+        var student = await _db.Students
+            .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
+
+        if (student is null)
+            return null;
+
+        if (!AllowedTodoStatuses.Contains(request.Status))
+            throw new ValidationException($"Todo status '{request.Status}' is not valid. Allowed: {string.Join(", ", AllowedTodoStatuses)}.");
+
+        var todos = JsonStorageHelper.DeserializeList<TeachingTodoDto>(student.TeachingTodos);
+        var index = todos.FindIndex(t => t.Id == todoId);
+
+        if (index < 0)
+            return null;
+
+        todos[index] = todos[index] with { Status = request.Status, CoveredInSessionLogId = request.CoveredInSessionLogId };
+        student.TeachingTodos = Serialize(todos);
+        student.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Teaching todo updated. TeacherId={TeacherId} StudentId={StudentId} TodoId={TodoId} Status={Status}",
+            teacherId, student.Id, todoId, request.Status);
+
+        return MapToDto(student);
+    }
+
+    private static void ValidateTeachingTodos(List<TeachingTodoDto> todos)
+    {
+        if (todos.Count > 50)
+            throw new ValidationException("TeachingTodos cannot contain more than 50 entries.");
+        var seenIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var t in todos)
+        {
+            if (string.IsNullOrWhiteSpace(t.Id) || t.Id.Length > 100)
+                throw new ValidationException("Each teaching todo must have an Id (max 100 characters).");
+            if (!seenIds.Add(t.Id))
+                throw new ValidationException($"Duplicate teaching todo Id '{t.Id}'.");
+            if (string.IsNullOrWhiteSpace(t.Text) || t.Text.Length > 500)
+                throw new ValidationException("Each teaching todo Text must be between 1 and 500 characters.");
+            if (string.IsNullOrWhiteSpace(t.Status) || !AllowedTodoStatuses.Contains(t.Status))
+                throw new ValidationException($"Teaching todo status '{t.Status}' is not valid. Allowed: {string.Join(", ", AllowedTodoStatuses)}.");
+        }
+    }
 
     private static string Serialize<T>(List<T> list) =>
         JsonStorageHelper.Serialize(list);
