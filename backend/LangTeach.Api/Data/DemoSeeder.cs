@@ -132,6 +132,7 @@ public static class DemoSeeder
         if (studentsSeeded && coursesSeeded)
         {
             await db.SaveChangesAsync(); // persist any approval/onboarding updates
+            await EnsureAnaVisualDifficultiesAsync(db, teacher.Id, logger);
             await SeedScenarioStudentsAsync(db, teacher.Id, logger);
             await SeedAnaVisualSessionLogAsync(db, teacher.Id, logger);
             logger.LogInformation("Visual seed data already exists for teacher {Email}; scenario students refreshed.", teacher.Email);
@@ -157,7 +158,7 @@ public static class DemoSeeder
 
         var students = new List<Student>
         {
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", PersonalNotes = VisualTag, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", Difficulties = """[{"id":"av1","description":"Separable vs inseparable phrasal verbs","competency":"Grammar","subcategory":"Phrasal verbs","severity":"medium","status":"Active","trend":"stable"},{"id":"av2","description":"Travel collocations","competency":"Vocabulary","subcategory":"Travel","severity":"low","status":"Active","trend":"improving"},{"id":"av3","description":"Word stress in multi-syllable words","competency":"Pronunciation","subcategory":"Word stress","severity":"medium","status":"Active","trend":"stable"}]""", CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", PersonalNotes = VisualTag, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", Difficulties = AnaVisualDifficulties, CreatedAt = now, UpdatedAt = now },
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Visual", LearningLanguage = "English", CefrLevel = "A2", PersonalNotes = VisualTag, CreatedAt = now, UpdatedAt = now },
         };
         db.Students.AddRange(students);
@@ -420,6 +421,21 @@ public static class DemoSeeder
         }
 
         logger.LogInformation("Scenario students seeded (Ana Seed, Marco Seed, Clara Seed, Diego Seed).");
+    }
+
+    private const string AnaVisualDifficulties =
+        """[{"id":"av1","description":"Separable vs inseparable phrasal verbs","competency":"Grammar","subcategory":"Phrasal verbs","severity":"medium","status":"Active","trend":"stable"},{"id":"av2","description":"Travel collocations","competency":"Vocabulary","subcategory":"Travel","severity":"low","status":"Active","trend":"improving"},{"id":"av3","description":"Word stress in multi-syllable words","competency":"Pronunciation","subcategory":"Word stress","severity":"medium","status":"Active","trend":"stable"}]""";
+
+    private static async Task EnsureAnaVisualDifficultiesAsync(AppDbContext db, Guid teacherId, ILogger logger)
+    {
+        var anaVisual = await db.Students.FirstOrDefaultAsync(
+            s => s.TeacherId == teacherId && s.Name == "Ana Visual" && !s.IsDeleted);
+        if (anaVisual is null || anaVisual.Difficulties == AnaVisualDifficulties) return;
+
+        anaVisual.Difficulties = AnaVisualDifficulties;
+        anaVisual.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        logger.LogInformation("Ana Visual difficulties backfilled.");
     }
 
     private static async Task SeedAnaVisualSessionLogAsync(AppDbContext db, Guid teacherId, ILogger logger)
