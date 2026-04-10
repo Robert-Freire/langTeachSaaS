@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Loader2, Pencil, Search, Trash2, UserPlus, Users } from 'lucide-react'
+import { Pencil, Search, Trash2, UserPlus, Users } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { getStudents, deleteStudent, type Student } from '../api/students'
 import { getDashboard, type ActiveStudent } from '../api/dashboard'
