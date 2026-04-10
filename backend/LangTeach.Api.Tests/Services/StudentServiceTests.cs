@@ -90,6 +90,50 @@ public class StudentServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetByIdAsync_ReturnsNewProfileFields()
+    {
+        var request = BaseRequest();
+        request.BirthYear = 1990;
+        request.Profession = "Engineer";
+        request.CountryOfOrigin = "Brazil";
+        request.CountryOfResidence = "Spain";
+        request.IsActive = true;
+        request.IsCorporate = true;
+        request.Rate = "25 euros";
+        request.SpokenLanguages = ["French"];
+        var created = await _sut.CreateAsync(_teacherId, request);
+
+        var result = await _sut.GetByIdAsync(_teacherId, created.Id);
+
+        result.Should().NotBeNull();
+        result!.BirthYear.Should().Be(1990);
+        result.Profession.Should().Be("Engineer");
+        result.CountryOfOrigin.Should().Be("Brazil");
+        result.CountryOfResidence.Should().Be("Spain");
+        result.IsActive.Should().BeTrue();
+        result.IsCorporate.Should().BeTrue();
+        result.Rate.Should().Be("25 euros");
+        result.SpokenLanguages.Should().BeEquivalentTo(["French"]);
+    }
+
+    [Fact]
+    public async Task ListAsync_ReturnsIsActiveIsCorporateRate()
+    {
+        var request = BaseRequest();
+        request.IsActive = false;
+        request.IsCorporate = true;
+        request.Rate = "40 euros";
+        await _sut.CreateAsync(_teacherId, request);
+
+        var result = await _sut.ListAsync(_teacherId, new LangTeach.Api.DTOs.StudentListQuery());
+
+        var student = result.Items.Single();
+        student.IsActive.Should().BeFalse();
+        student.IsCorporate.Should().BeTrue();
+        student.Rate.Should().Be("40 euros");
+    }
+
+    [Fact]
     public async Task CreateAsync_ShortTermObjectives_RoundTrip()
     {
         var objectives = new List<ShortTermObjectiveDto>
