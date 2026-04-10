@@ -7,6 +7,7 @@ import * as studentsApi from '../api/students'
 
 vi.mock('../api/students', () => ({
   getStudent: vi.fn(),
+  updateStudent: vi.fn(),
 }))
 
 vi.mock('../api/sessionLogs', () => ({
@@ -20,30 +21,17 @@ vi.mock('../api/lessons', () => ({
   getLessons: vi.fn().mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 }),
 }))
 
-vi.mock('../components/student/LessonHistoryCard', () => ({
-  LessonHistoryCard: () => <div data-testid="lesson-history-card" />,
-}))
-
-vi.mock('../components/student/StudentCoursesCard', () => ({
-  StudentCoursesCard: () => <div data-testid="student-courses-card" />,
-}))
-
-vi.mock('../components/StudentProfileSummary', () => ({
-  StudentProfileSummary: () => <div data-testid="student-profile-summary" />,
-}))
-
-vi.mock('../components/student/StudentProfileOverview', () => ({
-  StudentProfileOverview: () => <div data-testid="student-profile-overview" />,
-}))
-
 vi.mock('../components/session/SessionHistoryTab', () => ({
   SessionHistoryTab: () => <div data-testid="session-history-tab" />,
 }))
 
-vi.mock('../components/session/SessionSummaryHeader', () => ({
-  SessionSummaryHeader: ({ studentId }: { studentId: string }) => (
-    <div data-testid="session-summary-header" data-student-id={studentId} />
-  ),
+vi.mock('../components/session/SessionLogDialog', () => ({
+  SessionLogDialog: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="session-log-dialog" /> : null,
+}))
+
+vi.mock('../components/student/ProgressDashboard', () => ({
+  ProgressDashboard: () => <div data-testid="progress-dashboard" />,
 }))
 
 const MOCK_STUDENT: studentsApi.Student = {
@@ -51,14 +39,33 @@ const MOCK_STUDENT: studentsApi.Student = {
   name: 'Ana Garcia',
   learningLanguage: 'Spanish',
   cefrLevel: 'B1',
-  interests: [],
-  personalNotes: null, teachingNotes: null,
+  interests: ['travel', 'cooking'],
+  personalNotes: null,
+  teachingNotes: null,
   nativeLanguages: ['English'],
-  learningGoals: [],
+  learningGoals: ['Travel', 'DELE B1'],
   weaknesses: [],
   difficulties: [],
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
+  birthYear: 1995,
+  profession: 'Designer',
+  countryOfOrigin: 'United Kingdom',
+  cityOfOrigin: 'London',
+  countryOfResidence: 'Spain',
+  cityOfResidence: 'Barcelona',
+  reasonForStudying: 'Moved to Barcelona for work',
+  officialCefrLevel: null,
+  shortTermObjectives: [
+    { id: 'obj-1', text: 'Complete DELE B1 exam prep', targetDate: '2026-06-01' },
+  ],
+  isActive: true,
+  isCorporate: false,
+  rate: '30 EUR/h',
+  spokenLanguages: ['French'],
+  teachingTodos: [
+    { id: 'todo-1', text: 'Send homework exercises', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Pending', coveredInSessionLogId: null },
+  ],
 }
 
 function wrapper(studentId = 'student-1') {
@@ -69,7 +76,7 @@ function wrapper(studentId = 'student-1') {
         <Routes>
           <Route path="/students/:id" element={<StudentDetail />} />
           <Route path="/students" element={<div>Students list</div>} />
-          <Route path="/lessons/new" element={<div data-testid="lesson-new-page">Lesson new</div>} />
+          <Route path="/students/:id/edit" element={<div data-testid="edit-page">Edit</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -86,12 +93,12 @@ describe('StudentDetail', () => {
     expect(await screen.findByTestId('student-detail-name')).toHaveTextContent('Ana Garcia')
   })
 
-  it('shows Log session button', async () => {
+  it('shows Log Session button', async () => {
     wrapper()
     expect(await screen.findByTestId('log-session-button')).toBeInTheDocument()
   })
 
-  it('opens session log dialog when Log session is clicked', async () => {
+  it('opens session log dialog when Log Session is clicked', async () => {
     wrapper()
     await screen.findByTestId('log-session-button')
     fireEvent.click(screen.getByTestId('log-session-button'))
@@ -104,46 +111,140 @@ describe('StudentDetail', () => {
     expect(await screen.findByText('Student not found.')).toBeInTheDocument()
   })
 
-  it('renders Overview and History tabs', async () => {
+  it('renders Profile, Sessions, and Progress tabs', async () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.getByTestId('tab-overview')).toBeInTheDocument()
-    expect(screen.getByTestId('tab-history')).toBeInTheDocument()
+    expect(screen.getByTestId('tab-profile')).toBeInTheDocument()
+    expect(screen.getByTestId('tab-sessions')).toBeInTheDocument()
+    expect(screen.getByTestId('tab-progress')).toBeInTheDocument()
   })
 
-  it('shows overview content by default', async () => {
+  it('shows Profile tab content by default', async () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.getByTestId('session-summary-header')).toBeInTheDocument()
-    expect(screen.getByTestId('student-profile-overview')).toBeInTheDocument()
-    expect(screen.getByTestId('student-profile-summary')).toBeInTheDocument()
+    expect(screen.getByTestId('student-profile-tab')).toBeInTheDocument()
     expect(screen.queryByTestId('session-history-tab')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('progress-dashboard')).not.toBeInTheDocument()
   })
 
-  it('passes correct studentId to session summary header', async () => {
+  it('switches to Sessions tab on click', async () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.getByTestId('session-summary-header')).toHaveAttribute('data-student-id', 'student-1')
-  })
-
-  it('shows "New lesson" CTA button on overview', async () => {
-    wrapper()
-    await screen.findByTestId('student-detail-name')
-    expect(screen.getByTestId('create-lesson-cta')).toBeInTheDocument()
-  })
-
-  it('"New lesson" CTA navigates to lesson creation with student pre-selected', async () => {
-    wrapper()
-    await screen.findByTestId('student-detail-name')
-    fireEvent.click(screen.getByTestId('create-lesson-cta'))
-    expect(await screen.findByTestId('lesson-new-page')).toBeInTheDocument()
-  })
-
-  it('switches to History tab on click', async () => {
-    wrapper()
-    await screen.findByTestId('student-detail-name')
-    fireEvent.click(screen.getByTestId('tab-history'))
+    fireEvent.click(screen.getByTestId('tab-sessions'))
     expect(screen.getByTestId('session-history-tab')).toBeInTheDocument()
-    expect(screen.queryByTestId('student-profile-summary')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('student-profile-tab')).not.toBeInTheDocument()
+  })
+
+  it('switches to Progress tab on click', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    fireEvent.click(screen.getByTestId('tab-progress'))
+    expect(screen.getByTestId('progress-dashboard')).toBeInTheDocument()
+    expect(screen.queryByTestId('student-profile-tab')).not.toBeInTheDocument()
+  })
+
+  it('shows CEFR badge in header', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('cefr-badge')).toHaveTextContent('B1')
+  })
+
+  it('shows Edit and Log Session quick actions', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('edit-profile-link')).toBeInTheDocument()
+    expect(screen.getByTestId('log-session-button')).toBeInTheDocument()
+  })
+
+  it('shows official CEFR badge when different from teacher level', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...MOCK_STUDENT,
+      officialCefrLevel: 'A2',
+    })
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('official-cefr-badge')).toHaveTextContent('Official: A2')
+  })
+
+  it('shows official CEFR badge even when same as teacher level', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...MOCK_STUDENT,
+      officialCefrLevel: 'B1',
+    })
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('official-cefr-badge')).toHaveTextContent('Official: B1')
+  })
+})
+
+describe('StudentDetail - Profile tab sections', () => {
+  beforeEach(() => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue(MOCK_STUDENT)
+  })
+
+  it('renders About section with identity fields', async () => {
+    wrapper()
+    await screen.findByTestId('profile-about')
+    expect(screen.getByText('London, United Kingdom')).toBeInTheDocument()
+    expect(screen.getByText('Barcelona, Spain')).toBeInTheDocument()
+    expect(screen.getByText('1995')).toBeInTheDocument()
+    expect(screen.getByText('Designer')).toBeInTheDocument()
+    expect(screen.getByText('Moved to Barcelona for work')).toBeInTheDocument()
+  })
+
+  it('renders Languages section', async () => {
+    wrapper()
+    const section = await screen.findByTestId('profile-languages')
+    expect(section).toHaveTextContent('English')
+    expect(section).toHaveTextContent('French')
+    expect(section).toHaveTextContent('Spanish (B1)')
+  })
+
+  it('renders Learning Goals section', async () => {
+    wrapper()
+    await screen.findByTestId('profile-learning-goals')
+    expect(screen.getByText('Travel')).toBeInTheDocument()
+    expect(screen.getByText('DELE B1')).toBeInTheDocument()
+  })
+
+  it('renders Short-Term Objectives section', async () => {
+    wrapper()
+    await screen.findByTestId('profile-objectives')
+    expect(screen.getByText('Complete DELE B1 exam prep')).toBeInTheDocument()
+  })
+
+  it('renders Teaching Todos section', async () => {
+    wrapper()
+    await screen.findByTestId('profile-teaching-todos')
+    expect(screen.getByText('Send homework exercises')).toBeInTheDocument()
+  })
+
+  it('renders Commercial section with active status', async () => {
+    wrapper()
+    await screen.findByTestId('profile-commercial')
+    expect(screen.getByTestId('active-status-badge')).toHaveTextContent('Active')
+    expect(screen.getByText('30 EUR/h')).toBeInTheDocument()
+  })
+
+  it('shows empty states when no profile data', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...MOCK_STUDENT,
+      birthYear: null,
+      profession: null,
+      countryOfOrigin: null,
+      cityOfOrigin: null,
+      countryOfResidence: null,
+      cityOfResidence: null,
+      reasonForStudying: null,
+      learningGoals: [],
+      shortTermObjectives: [],
+      teachingTodos: [],
+    })
+    wrapper()
+    await screen.findByTestId('profile-about')
+    expect(screen.getByText('No identity details added yet')).toBeInTheDocument()
+    expect(screen.getByText('No learning goals set')).toBeInTheDocument()
+    expect(screen.getByText('No objectives set')).toBeInTheDocument()
+    expect(screen.getByText('No teaching todos yet')).toBeInTheDocument()
   })
 })

@@ -1,29 +1,34 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, NotebookPen, BookOpen } from 'lucide-react'
+import { ArrowLeft, NotebookPen, Pencil } from 'lucide-react'
 import { getStudent, updateStudent } from '../api/students'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { getCefrBadgeClasses } from '@/lib/cefr-colors'
-import { StudentProfileSummary } from '@/components/StudentProfileSummary'
-import { StudentProfileOverview } from '@/components/student/StudentProfileOverview'
-import { LessonHistoryCard } from '@/components/student/LessonHistoryCard'
-import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
-import { ProgressDashboard } from '@/components/student/ProgressDashboard'
-import { SessionLogDialog } from '@/components/session/SessionLogDialog'
+import { getCefrStitchBadgeClasses } from '@/lib/cefr-colors'
+import { StudentProfileTab } from '@/components/student/StudentProfileTab'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
-import { SessionSummaryHeader } from '@/components/session/SessionSummaryHeader'
-import { parseNotes } from '@/components/student/studentNoteUtils'
+import { ProgressDashboard } from '@/components/student/ProgressDashboard'
+import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
+import { SessionLogDialog } from '@/components/session/SessionLogDialog'
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
 
 export default function StudentDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
-  const defaultTab = searchParams.get('tab') ?? 'overview'
+  const defaultTab = searchParams.get('tab') ?? 'profile'
+  const [activeTab, setActiveTab] = useState(defaultTab)
   const [logSessionOpen, setLogSessionOpen] = useState(false)
 
   const { data: student, isLoading, isError } = useQuery({
@@ -49,6 +54,20 @@ export default function StudentDetail() {
         difficulties: updated,
         personalNotes: student.personalNotes,
         teachingNotes: student.teachingNotes,
+        birthYear: student.birthYear,
+        profession: student.profession,
+        countryOfOrigin: student.countryOfOrigin,
+        cityOfOrigin: student.cityOfOrigin,
+        countryOfResidence: student.countryOfResidence,
+        cityOfResidence: student.cityOfResidence,
+        reasonForStudying: student.reasonForStudying,
+        officialCefrLevel: student.officialCefrLevel,
+        shortTermObjectives: student.shortTermObjectives,
+        isActive: student.isActive,
+        isCorporate: student.isCorporate,
+        rate: student.rate,
+        spokenLanguages: student.spokenLanguages,
+        teachingTodos: student.teachingTodos,
       })
     },
     onSuccess: () => {
@@ -65,10 +84,10 @@ export default function StudentDetail() {
         <div className="flex items-center gap-3">
           <Skeleton className="h-6 w-6" />
           <Skeleton className="h-7 w-40" />
-          <Skeleton className="h-6 w-12 rounded-full" />
+          <Skeleton className="h-6 w-12 rounded-md" />
         </div>
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-24 w-full rounded-2xl" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
       </div>
     )
   }
@@ -76,7 +95,7 @@ export default function StudentDetail() {
   if (isError || !student) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <p className="text-sm text-zinc-500">Student not found.</p>
+        <p className="font-manrope text-[1.75rem] font-bold text-[#1A1B22]">Student not found.</p>
         <Button variant="outline" size="sm" onClick={() => navigate('/students')}>
           Go back
         </Button>
@@ -84,86 +103,152 @@ export default function StudentDetail() {
     )
   }
 
+  const tabs = [
+    { key: 'profile', label: 'Profile' },
+    { key: 'sessions', label: 'Sessions' },
+    { key: 'progress', label: 'Progress' },
+  ]
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3 flex-wrap">
-          <Link
-            to="/students"
-            className="text-zinc-400 hover:text-zinc-600 transition-colors"
-            aria-label="Back to students"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <h1 className="text-xl font-semibold text-zinc-900" data-testid="student-detail-name">
-            {student.name}
-          </h1>
-          <Badge
-            variant="outline"
-            className={`text-xs ${getCefrBadgeClasses(student.cefrLevel)}`}
-          >
-            {student.cefrLevel}
-          </Badge>
-          <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
-            {student.learningLanguage}
-          </Badge>
-        </div>
+      {/* Header card */}
+      <div
+        className="bg-white rounded-2xl p-5 lg:p-6"
+        style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <Link
+              to="/students"
+              className="text-zinc-400 hover:text-zinc-600 transition-colors shrink-0"
+              aria-label="Back to students"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
 
-        <Button
-          onClick={() => setLogSessionOpen(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
-          size="sm"
-          data-testid="log-session-button"
-        >
-          <NotebookPen className="h-4 w-4 mr-1.5" />
-          Log session
-        </Button>
+            {/* Avatar */}
+            <div className="h-14 w-14 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+              <span className="text-indigo-700 font-bold text-lg">
+                {getInitials(student.name)}
+              </span>
+            </div>
+
+            <div className="min-w-0">
+              <h1
+                className="font-manrope text-[1.75rem] font-bold text-[#1A1B22] leading-tight truncate"
+                data-testid="student-detail-name"
+              >
+                {student.name}
+              </h1>
+
+              {/* Metadata row */}
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {/* Teacher CEFR level */}
+                <span
+                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] ${getCefrStitchBadgeClasses(student.cefrLevel.substring(0, 2))}`}
+                  data-testid="cefr-badge"
+                >
+                  {student.cefrLevel}
+                </span>
+
+                {/* Official CEFR level */}
+                {student.officialCefrLevel && (
+                  <span
+                    className={`inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] ${getCefrStitchBadgeClasses(student.officialCefrLevel.substring(0, 2))}`}
+                    data-testid="official-cefr-badge"
+                  >
+                    Official: {student.officialCefrLevel}
+                  </span>
+                )}
+
+                {/* Learning language */}
+                <span className="text-[0.6875rem] uppercase tracking-[0.05em] text-zinc-500 font-medium">
+                  {student.learningLanguage}
+                </span>
+
+                {/* Native languages */}
+                {student.nativeLanguages.length > 0 && (
+                  <span className="text-[0.6875rem] uppercase tracking-[0.05em] text-zinc-400 font-medium">
+                    Native: {student.nativeLanguages.join(', ')}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              to={`/students/${student.id}/edit`}
+              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-[#1A1B22] hover:bg-[#F4F2FD] transition-colors"
+              data-testid="edit-profile-link"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </Link>
+            <Button
+              onClick={() => setLogSessionOpen(true)}
+              className="rounded-xl text-white text-sm font-medium"
+              style={{ background: 'linear-gradient(135deg, #3525CD, #4F46E5)' }}
+              size="sm"
+              data-testid="log-session-button"
+            >
+              <NotebookPen className="h-4 w-4 mr-1.5" />
+              Log Session
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* Tabbed content */}
-      <Tabs defaultValue={defaultTab}>
-        <TabsList>
-          <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
-          <TabsTrigger value="history" data-testid="tab-history">History</TabsTrigger>
-          <TabsTrigger value="progress" data-testid="tab-progress">Progress</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="pt-6 space-y-6">
-          <SessionSummaryHeader studentId={student.id} />
-          <StudentProfileOverview
-            student={student}
-            onToggleDifficultyStatus={(difficultyId, status) =>
-              toggleDifficultyStatus({ difficultyId, status })
-            }
-          />
-          <StudentProfileSummary
-            student={student}
-            hasRichNotes={parseNotes(student.personalNotes) !== null || parseNotes(student.teachingNotes) !== null}
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/lessons/new?studentId=${student.id}`)}
-            data-testid="create-lesson-cta"
+      {/* Tab bar */}
+      <div className="flex gap-1" role="tablist">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            role="tab"
+            aria-selected={activeTab === tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === tab.key
+                ? 'text-indigo-700 bg-white'
+                : 'text-zinc-500 hover:text-zinc-700 hover:bg-white/50'
+            }`}
+            style={activeTab === tab.key ? { boxShadow: '0 1px 3px rgba(26, 27, 34, 0.08)' } : undefined}
+            data-testid={`tab-${tab.key}`}
           >
-            <BookOpen className="h-4 w-4 mr-1.5" />
-            New lesson
-          </Button>
-          <div className="grid gap-6 lg:grid-cols-2">
-            <LessonHistoryCard studentId={student.id} />
-            <StudentCoursesCard studentId={student.id} />
-          </div>
-        </TabsContent>
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        <TabsContent value="history">
+      {/* Tab content */}
+      {activeTab === 'profile' && (
+        <StudentProfileTab
+          student={student}
+          onToggleDifficultyStatus={(difficultyId, status) =>
+            toggleDifficultyStatus({ difficultyId, status })
+          }
+        />
+      )}
+
+      {activeTab === 'sessions' && (
+        <div className="space-y-6">
           <SessionHistoryTab studentId={student.id} />
-        </TabsContent>
+          <div
+            className="bg-white rounded-2xl p-6"
+            style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
+          >
+            <h3 className="text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-zinc-500 mb-3">
+              Teaching Todos
+            </h3>
+            <TeachingTodosCard todos={student.teachingTodos} />
+          </div>
+        </div>
+      )}
 
-        <TabsContent value="progress" className="pt-6">
-          <ProgressDashboard studentId={student.id} />
-        </TabsContent>
-      </Tabs>
+      {activeTab === 'progress' && (
+        <ProgressDashboard studentId={student.id} />
+      )}
 
       {/* Session log dialog */}
       <SessionLogDialog

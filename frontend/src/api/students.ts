@@ -15,6 +15,21 @@ export interface Difficulty {
   status: string
 }
 
+export interface ShortTermObjective {
+  id: string
+  text: string
+  targetDate: string | null
+}
+
+export interface TeachingTodo {
+  id: string
+  text: string
+  createdAt: string
+  sourceSessionLogId: string | null
+  status: string
+  coveredInSessionLogId: string | null
+}
+
 export interface Student {
   id: string
   name: string
@@ -29,6 +44,26 @@ export interface Student {
   difficulties: Difficulty[]
   createdAt: string
   updatedAt: string
+  // Identity fields
+  birthYear: number | null
+  profession: string | null
+  countryOfOrigin: string | null
+  cityOfOrigin: string | null
+  countryOfResidence: string | null
+  cityOfResidence: string | null
+  reasonForStudying: string | null
+  // Level fields
+  officialCefrLevel: string | null
+  // Plan fields
+  shortTermObjectives: ShortTermObjective[]
+  // Commercial fields
+  isActive: boolean
+  isCorporate: boolean
+  rate: string | null
+  // Language fields
+  spokenLanguages: string[]
+  // Teaching fields
+  teachingTodos: TeachingTodo[]
 }
 
 export interface StudentListResponse {
@@ -49,6 +84,20 @@ export interface StudentFormData {
   learningGoals: string[]
   weaknesses: StudentWeaknessItem[]
   difficulties: Difficulty[]
+  birthYear?: number | null
+  profession?: string | null
+  countryOfOrigin?: string | null
+  cityOfOrigin?: string | null
+  countryOfResidence?: string | null
+  cityOfResidence?: string | null
+  reasonForStudying?: string | null
+  officialCefrLevel?: string | null
+  shortTermObjectives?: ShortTermObjective[]
+  isActive?: boolean
+  isCorporate?: boolean
+  rate?: string | null
+  spokenLanguages?: string[]
+  teachingTodos?: TeachingTodo[]
 }
 
 export async function getStudents(params?: {
