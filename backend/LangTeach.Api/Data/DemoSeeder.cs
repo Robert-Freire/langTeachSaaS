@@ -237,16 +237,26 @@ public static class DemoSeeder
         // Ana Seed — rich-profile scenario
         await UpsertStudentAsync(db, teacherId, new Student
         {
-            TeacherId        = teacherId,
-            Name             = "Ana Seed",
-            LearningLanguage = "English",
-            CefrLevel        = "B1",
-            NativeLanguages  = """["Portuguese"]""",
-            LearningGoals    = """["Improve conversational fluency","Prepare for job interviews in English"]""",
-            Interests        = """["literature","travel","photography"]""",
-            Difficulties     = """["False friends with Portuguese","Subjunctive mood"]""",
-            Weaknesses       = """["Listening to fast native speech","Idiomatic expressions"]""",
-            PersonalNotes    = "[scenario-seed]",
+            TeacherId          = teacherId,
+            Name               = "Ana Seed",
+            LearningLanguage   = "English",
+            CefrLevel          = "B1",
+            NativeLanguages    = """["Portuguese"]""",
+            LearningGoals      = """["Improve conversational fluency","Prepare for job interviews in English"]""",
+            Interests          = """["literature","travel","photography"]""",
+            Difficulties       = """["False friends with Portuguese","Subjunctive mood"]""",
+            Weaknesses         = """["Listening to fast native speech","Idiomatic expressions"]""",
+            PersonalNotes      = "[scenario-seed]",
+            BirthYear          = 1992,
+            Profession         = "Marketing Manager",
+            CountryOfOrigin    = "Brazil",
+            CityOfOrigin       = "São Paulo",
+            CountryOfResidence = "Spain",
+            CityOfResidence    = "Barcelona",
+            ReasonForStudying  = "Career advancement and relocation to an English-speaking country",
+            IsActive           = true,
+            SpokenLanguages    = """["Portuguese","Spanish"]""",
+            ShortTermObjectives = """[{"id":"o1","text":"Pass B2 Cambridge exam","targetDate":"2026-06-30"},{"id":"o2","text":"Prepare for job interview in English","targetDate":null}]""",
         }, now);
 
         // Marco Seed — excel-imported scenario
@@ -282,16 +292,25 @@ public static class DemoSeeder
         // Diego Seed — with-history scenario
         var diego = await UpsertStudentAsync(db, teacherId, new Student
         {
-            TeacherId        = teacherId,
-            Name             = "Diego Seed",
-            LearningLanguage = "English",
-            CefrLevel        = "B2",
-            NativeLanguages  = """["Spanish"]""",
-            LearningGoals    = """["Achieve C1 certification","Improve academic writing"]""",
-            Interests        = """["history","cinema","chess"]""",
-            Difficulties     = """[{"id":"d1","description":"Third conditional structures","competency":"Grammar","subcategory":"Conditionals","severity":"medium","status":"Active","trend":"stable"},{"id":"d2","description":"Academic vocabulary range","competency":"Vocabulary","subcategory":"Academic","severity":"high","status":"Active","trend":"worsening"},{"id":"d3","description":"Reading speed","competency":"Reading","subcategory":"Comprehension","severity":"low","status":"Covered","trend":"improving"}]""",
-            Weaknesses       = "[]",
-            PersonalNotes    = "[scenario-seed]",
+            TeacherId           = teacherId,
+            Name                = "Diego Seed",
+            LearningLanguage    = "English",
+            CefrLevel           = "B2",
+            NativeLanguages     = """["Spanish"]""",
+            LearningGoals       = """["Achieve C1 certification","Improve academic writing"]""",
+            Interests           = """["history","cinema","chess"]""",
+            Difficulties        = """[{"id":"d1","description":"Third conditional structures","competency":"Grammar","subcategory":"Conditionals","severity":"medium","status":"Active","trend":"stable"},{"id":"d2","description":"Academic vocabulary range","competency":"Vocabulary","subcategory":"Academic","severity":"high","status":"Active","trend":"worsening"},{"id":"d3","description":"Reading speed","competency":"Reading","subcategory":"Comprehension","severity":"low","status":"Covered","trend":"improving"}]""",
+            Weaknesses          = "[]",
+            PersonalNotes       = "[scenario-seed]",
+            BirthYear           = 1988,
+            Profession          = "University Professor",
+            CountryOfOrigin     = "Argentina",
+            CountryOfResidence  = "Spain",
+            IsActive            = true,
+            IsCorporate         = true,
+            Rate                = "30 euros",
+            SpokenLanguages     = """["French"]""",
+            ShortTermObjectives = """[{"id":"o1","text":"Complete C1 exam preparation course","targetDate":"2026-09-01"}]""",
         }, now);
 
         // Flush all upserted student updates before checking session logs
@@ -408,16 +427,29 @@ public static class DemoSeeder
 
         if (existing is not null)
         {
-            existing.LearningLanguage = incoming.LearningLanguage;
-            existing.CefrLevel        = incoming.CefrLevel;
-            existing.NativeLanguages  = incoming.NativeLanguages;
-            existing.LearningGoals    = incoming.LearningGoals;
-            existing.Interests        = incoming.Interests;
-            existing.Difficulties     = incoming.Difficulties;
-            existing.Weaknesses       = incoming.Weaknesses;
-            existing.PersonalNotes    = incoming.PersonalNotes;
-            existing.TeachingNotes    = incoming.TeachingNotes;
-            existing.UpdatedAt        = now;
+            existing.LearningLanguage      = incoming.LearningLanguage;
+            existing.CefrLevel             = incoming.CefrLevel;
+            existing.NativeLanguages       = incoming.NativeLanguages;
+            existing.LearningGoals         = incoming.LearningGoals;
+            existing.Interests             = incoming.Interests;
+            existing.Difficulties          = incoming.Difficulties;
+            existing.Weaknesses            = incoming.Weaknesses;
+            existing.PersonalNotes         = incoming.PersonalNotes;
+            existing.TeachingNotes         = incoming.TeachingNotes;
+            existing.BirthYear             = incoming.BirthYear;
+            existing.Profession            = incoming.Profession;
+            existing.CountryOfOrigin       = incoming.CountryOfOrigin;
+            existing.CityOfOrigin          = incoming.CityOfOrigin;
+            existing.CountryOfResidence    = incoming.CountryOfResidence;
+            existing.CityOfResidence       = incoming.CityOfResidence;
+            existing.ReasonForStudying     = incoming.ReasonForStudying;
+            existing.OfficialCefrLevel     = incoming.OfficialCefrLevel;
+            existing.ShortTermObjectives   = incoming.ShortTermObjectives;
+            existing.IsActive              = incoming.IsActive;
+            existing.IsCorporate           = incoming.IsCorporate;
+            existing.Rate                  = incoming.Rate;
+            existing.SpokenLanguages       = incoming.SpokenLanguages;
+            existing.UpdatedAt             = now;
             return existing;
         }
 

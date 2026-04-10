@@ -88,4 +88,156 @@ public class StudentServiceTests : IDisposable
 
         result.NativeLanguages.Should().BeEquivalentTo([language]);
     }
+
+    [Fact]
+    public async Task GetByIdAsync_ReturnsNewProfileFields()
+    {
+        var request = BaseRequest();
+        request.BirthYear = 1990;
+        request.Profession = "Engineer";
+        request.CountryOfOrigin = "Brazil";
+        request.CountryOfResidence = "Spain";
+        request.IsActive = true;
+        request.IsCorporate = true;
+        request.Rate = "25 euros";
+        request.SpokenLanguages = ["French"];
+        var created = await _sut.CreateAsync(_teacherId, request);
+
+        var result = await _sut.GetByIdAsync(_teacherId, created.Id);
+
+        result.Should().NotBeNull();
+        result!.BirthYear.Should().Be(1990);
+        result.Profession.Should().Be("Engineer");
+        result.CountryOfOrigin.Should().Be("Brazil");
+        result.CountryOfResidence.Should().Be("Spain");
+        result.IsActive.Should().BeTrue();
+        result.IsCorporate.Should().BeTrue();
+        result.Rate.Should().Be("25 euros");
+        result.SpokenLanguages.Should().BeEquivalentTo(["French"]);
+    }
+
+    [Fact]
+    public async Task ListAsync_ReturnsIsActiveIsCorporateRate()
+    {
+        var request = BaseRequest();
+        request.IsActive = false;
+        request.IsCorporate = true;
+        request.Rate = "40 euros";
+        await _sut.CreateAsync(_teacherId, request);
+
+        var result = await _sut.ListAsync(_teacherId, new LangTeach.Api.DTOs.StudentListQuery());
+
+        var student = result.Items.Single();
+        student.IsActive.Should().BeFalse();
+        student.IsCorporate.Should().BeTrue();
+        student.Rate.Should().Be("40 euros");
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShortTermObjectives_RoundTrip()
+    {
+        var objectives = new List<ShortTermObjectiveDto>
+        {
+            new("o1", "Pass B2 exam", new DateOnly(2026, 6, 30)),
+            new("o2", "Read a novel in Spanish", null),
+        };
+        var request = BaseRequest();
+        request.ShortTermObjectives = objectives;
+
+        var result = await _sut.CreateAsync(_teacherId, request);
+
+        result.ShortTermObjectives.Should().HaveCount(2);
+        result.ShortTermObjectives[0].Id.Should().Be("o1");
+        result.ShortTermObjectives[0].Text.Should().Be("Pass B2 exam");
+        result.ShortTermObjectives[0].TargetDate.Should().Be(new DateOnly(2026, 6, 30));
+        result.ShortTermObjectives[1].Id.Should().Be("o2");
+        result.ShortTermObjectives[1].TargetDate.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ClearsShortTermObjectives()
+    {
+        var createRequest = BaseRequest();
+        createRequest.ShortTermObjectives = [new("o1", "Initial objective", null)];
+        var created = await _sut.CreateAsync(_teacherId, createRequest);
+
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.CefrLevel,
+            ShortTermObjectives = [],
+        };
+        var updated = await _sut.UpdateAsync(_teacherId, created.Id, updateRequest);
+
+        updated!.ShortTermObjectives.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CreateAsync_SpokenLanguages_RoundTrip()
+    {
+        var request = BaseRequest();
+        request.SpokenLanguages = ["French", "Italian"];
+
+        var result = await _sut.CreateAsync(_teacherId, request);
+
+        result.SpokenLanguages.Should().BeEquivalentTo(["French", "Italian"]);
+    }
+
+    [Fact]
+    public async Task CreateAsync_BirthYearOutOfRange_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.BirthYear = 1900;
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_BirthYearFuture_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.BirthYear = DateTime.UtcNow.Year + 1;
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShortTermObjective_EmptyId_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.ShortTermObjectives = [new("", "Some text", null)];
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShortTermObjective_TextTooLong_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.ShortTermObjectives = [new("o1", new string('x', 201), null)];
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShortTermObjectives_ExceedsCap_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.ShortTermObjectives = Enumerable.Range(1, 11)
+            .Select(i => new ShortTermObjectiveDto($"o{i}", $"Objective {i}", null))
+            .ToList();
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
 }

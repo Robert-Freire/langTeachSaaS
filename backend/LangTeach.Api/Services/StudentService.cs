@@ -87,6 +87,8 @@ public class StudentService : IStudentService
         ValidateWeaknesses(normalizedWeaknessesCreate);
         ValidateDifficulties(request.Difficulties);
         var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
+        ValidateBirthYear(request.BirthYear);
+        ValidateShortTermObjectives(request.ShortTermObjectives);
 
         var student = new Student
         {
@@ -102,6 +104,19 @@ public class StudentService : IStudentService
             Difficulties = Serialize(normalizedDifficulties),
             PersonalNotes = request.PersonalNotes,
             TeachingNotes = request.TeachingNotes,
+            BirthYear = request.BirthYear,
+            Profession = request.Profession,
+            CountryOfOrigin = request.CountryOfOrigin,
+            CityOfOrigin = request.CityOfOrigin,
+            CountryOfResidence = request.CountryOfResidence,
+            CityOfResidence = request.CityOfResidence,
+            ReasonForStudying = request.ReasonForStudying,
+            OfficialCefrLevel = request.OfficialCefrLevel,
+            ShortTermObjectives = Serialize(request.ShortTermObjectives),
+            IsActive = request.IsActive,
+            IsCorporate = request.IsCorporate,
+            Rate = request.Rate,
+            SpokenLanguages = Serialize(request.SpokenLanguages),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
@@ -127,6 +142,8 @@ public class StudentService : IStudentService
         ValidateWeaknesses(normalizedWeaknessesUpdate);
         ValidateDifficulties(request.Difficulties);
         var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
+        ValidateBirthYear(request.BirthYear);
+        ValidateShortTermObjectives(request.ShortTermObjectives);
 
         student.Name = request.Name;
         student.LearningLanguage = request.LearningLanguage;
@@ -138,6 +155,19 @@ public class StudentService : IStudentService
         student.Difficulties = Serialize(normalizedDifficulties);
         student.PersonalNotes = request.PersonalNotes;
         student.TeachingNotes = request.TeachingNotes;
+        student.BirthYear = request.BirthYear;
+        student.Profession = request.Profession;
+        student.CountryOfOrigin = request.CountryOfOrigin;
+        student.CityOfOrigin = request.CityOfOrigin;
+        student.CountryOfResidence = request.CountryOfResidence;
+        student.CityOfResidence = request.CityOfResidence;
+        student.ReasonForStudying = request.ReasonForStudying;
+        student.OfficialCefrLevel = request.OfficialCefrLevel;
+        student.ShortTermObjectives = Serialize(request.ShortTermObjectives);
+        student.IsActive = request.IsActive;
+        student.IsCorporate = request.IsCorporate;
+        student.Rate = request.Rate;
+        student.SpokenLanguages = Serialize(request.SpokenLanguages);
         student.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -179,7 +209,20 @@ public class StudentService : IStudentService
             str => new StudentWeaknessDto(str, "grammatical")),
         JsonStorageHelper.DeserializeList<DifficultyDto>(s.Difficulties),
         s.CreatedAt,
-        s.UpdatedAt
+        s.UpdatedAt,
+        s.BirthYear,
+        s.Profession,
+        s.CountryOfOrigin,
+        s.CityOfOrigin,
+        s.CountryOfResidence,
+        s.CityOfResidence,
+        s.ReasonForStudying,
+        s.OfficialCefrLevel,
+        JsonStorageHelper.DeserializeList<ShortTermObjectiveDto>(s.ShortTermObjectives),
+        s.IsActive,
+        s.IsCorporate,
+        s.Rate,
+        JsonStorageHelper.DeserializeList<string>(s.SpokenLanguages)
     );
 
     private static List<StudentWeaknessDto> NormalizeWeaknesses(List<StudentWeaknessDto> weaknesses) =>
@@ -202,6 +245,27 @@ public class StudentService : IStudentService
         {
             if (!AllowedNativeLanguages.Contains(lang))
                 throw new ValidationException($"NativeLanguage '{lang}' is not in the allowed list.");
+        }
+    }
+
+    private static void ValidateBirthYear(int? birthYear)
+    {
+        if (birthYear is null) return;
+        var currentYear = DateTime.UtcNow.Year;
+        if (birthYear < 1920 || birthYear > currentYear)
+            throw new ValidationException($"BirthYear must be between 1920 and {currentYear}.");
+    }
+
+    private static void ValidateShortTermObjectives(List<ShortTermObjectiveDto> objectives)
+    {
+        if (objectives.Count > 10)
+            throw new ValidationException("ShortTermObjectives cannot contain more than 10 entries.");
+        foreach (var o in objectives)
+        {
+            if (string.IsNullOrWhiteSpace(o.Id) || o.Id.Length > 50)
+                throw new ValidationException("Each ShortTermObjective must have an Id (max 50 characters).");
+            if (string.IsNullOrWhiteSpace(o.Text) || o.Text.Length > 200)
+                throw new ValidationException("Each ShortTermObjective Text must be between 1 and 200 characters.");
         }
     }
 
