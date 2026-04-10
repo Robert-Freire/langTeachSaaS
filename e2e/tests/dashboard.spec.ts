@@ -160,6 +160,7 @@ test('sidebar nav links navigate to correct routes', async ({ browser }) => {
   // Nav -> Settings
   await nav.getByRole('link', { name: 'Settings', exact: true }).click()
   await expect(page).toHaveURL('/settings', { timeout: UI_TIMEOUT })
+  await expect(page.locator('h1')).toHaveText('My Profile', { timeout: UI_TIMEOUT })
 
   // Nav -> Dashboard
   await nav.getByRole('link', { name: 'Dashboard', exact: true }).click()
