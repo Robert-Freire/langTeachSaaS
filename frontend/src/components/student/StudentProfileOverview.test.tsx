@@ -11,8 +11,8 @@ const BASE_STUDENT: Student = {
   learningLanguage: 'Spanish',
   cefrLevel: 'B1',
   interests: [],
-  notes: null,
-  nativeLanguage: null,
+  personalNotes: null, teachingNotes: null,
+  nativeLanguages: [],
   learningGoals: [],
   weaknesses: [],
   difficulties: [],
@@ -98,12 +98,12 @@ describe('StudentProfileOverview', () => {
   })
 
   it('shows "Not specified" when native language is null', () => {
-    renderOverview({ nativeLanguage: null })
+    renderOverview({ nativeLanguages: [] })
     expect(screen.getByTestId('overview-native-language')).toHaveTextContent('Not specified')
   })
 
   it('shows native language when set', () => {
-    renderOverview({ nativeLanguage: 'Portuguese' })
+    renderOverview({ nativeLanguages: ['Portuguese'] })
     expect(screen.getByTestId('overview-native-language')).toHaveTextContent('Portuguese')
   })
 
@@ -130,21 +130,27 @@ describe('StudentProfileOverview', () => {
     expect(screen.getByText('(grammatical)')).toBeInTheDocument()
   })
 
-  it('renders notes stripping Excel import prefix', () => {
-    renderOverview({ notes: '[Excel import 2026-03-01] Has great pronunciation.' })
-    expect(screen.getByTestId('overview-notes')).toHaveTextContent('Has great pronunciation.')
+  it('renders personal notes stripping Excel import prefix', () => {
+    renderOverview({ personalNotes: '[Excel import 2026-03-01] Has great pronunciation.' })
+    expect(screen.getByTestId('overview-personal-notes')).toHaveTextContent('Has great pronunciation.')
     expect(screen.queryByText(/Excel import/)).not.toBeInTheDocument()
   })
 
-  it('renders Preply/Student info as labeled subsections', () => {
-    renderOverview({ notes: 'Preply test: B1 score. Student info: Engineer background.' })
+  it('renders Preply/Student info as labeled subsections in personal notes', () => {
+    renderOverview({ personalNotes: 'Preply test: B1 score. Student info: Engineer background.' })
     expect(screen.getByText('Assessment notes')).toBeInTheDocument()
     expect(screen.getByText('Background')).toBeInTheDocument()
   })
 
-  it('does not render notes section when notes is null', () => {
-    renderOverview({ notes: null })
-    expect(screen.queryByTestId('overview-notes')).not.toBeInTheDocument()
+  it('renders teaching notes when set', () => {
+    renderOverview({ teachingNotes: 'Works well with inductive methods.' })
+    expect(screen.getByTestId('overview-teaching-notes')).toHaveTextContent('Works well with inductive methods.')
+  })
+
+  it('does not render notes sections when both are null', () => {
+    renderOverview({ personalNotes: null, teachingNotes: null })
+    expect(screen.queryByTestId('overview-personal-notes')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('overview-teaching-notes')).not.toBeInTheDocument()
   })
 
   it('renders Edit profile link to edit URL', () => {

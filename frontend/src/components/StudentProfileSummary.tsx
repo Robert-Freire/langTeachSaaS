@@ -32,8 +32,8 @@ export function StudentProfileSummary({ student, hasRichNotes = false }: Props) 
                   : <Circle className="h-3 w-3 text-zinc-300 shrink-0" />
                 }
                 <span className={populated ? 'text-zinc-600' : 'text-zinc-400'}>{label}</span>
-                {key === 'nativeLanguage' && student.nativeLanguage && (
-                  <span className="text-zinc-500">({student.nativeLanguage})</span>
+                {key === 'nativeLanguages' && student.nativeLanguages.length > 0 && (
+                  <span className="text-zinc-500">({student.nativeLanguages[0]})</span>
                 )}
               </div>
             )

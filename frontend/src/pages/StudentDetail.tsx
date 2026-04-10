@@ -43,11 +43,12 @@ export default function StudentDetail() {
         learningLanguage: student.learningLanguage,
         cefrLevel: student.cefrLevel,
         interests: student.interests,
-        nativeLanguage: student.nativeLanguage,
+        nativeLanguages: student.nativeLanguages,
         learningGoals: student.learningGoals,
         weaknesses: student.weaknesses,
         difficulties: updated,
-        notes: student.notes,
+        personalNotes: student.personalNotes,
+        teachingNotes: student.teachingNotes,
       })
     },
     onSuccess: () => {
@@ -138,7 +139,7 @@ export default function StudentDetail() {
           />
           <StudentProfileSummary
             student={student}
-            hasRichNotes={parseNotes(student.notes) !== null}
+            hasRichNotes={parseNotes(student.personalNotes) !== null}
           />
           <Button
             variant="outline"

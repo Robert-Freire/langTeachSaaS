@@ -21,8 +21,9 @@ export interface Student {
   learningLanguage: string
   cefrLevel: string
   interests: string[]
-  notes: string | null
-  nativeLanguage: string | null
+  personalNotes: string | null
+  teachingNotes: string | null
+  nativeLanguages: string[]
   learningGoals: string[]
   weaknesses: StudentWeaknessItem[]
   difficulties: Difficulty[]
@@ -42,8 +43,9 @@ export interface StudentFormData {
   learningLanguage: string
   cefrLevel: string
   interests: string[]
-  notes?: string | null
-  nativeLanguage?: string | null
+  personalNotes?: string | null
+  teachingNotes?: string | null
+  nativeLanguages?: string[]
   learningGoals: string[]
   weaknesses: StudentWeaknessItem[]
   difficulties: Difficulty[]

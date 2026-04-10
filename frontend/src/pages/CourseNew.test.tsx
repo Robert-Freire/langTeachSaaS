@@ -173,8 +173,8 @@ describe('CourseNew wizard', () => {
     const STUDENTS_WITH_LEVEL = {
       items: [{
         id: 'student-1', name: 'Ana', cefrLevel: 'A1',
-        learningLanguage: 'English', interests: [], notes: null,
-        nativeLanguage: null, learningGoals: [], weaknesses: [],
+        learningLanguage: 'English', interests: [], personalNotes: null, teachingNotes: null,
+        nativeLanguages: [], learningGoals: [], weaknesses: [],
         difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01',
       }],
       totalCount: 1,
@@ -222,7 +222,7 @@ describe('CourseNew wizard', () => {
       items: [{
         id: 'student-1', name: 'Marco', cefrLevel: 'A1',
         learningLanguage: 'Spanish', interests: ['football'],
-        notes: null, nativeLanguage: 'Italian',
+        personalNotes: null, teachingNotes: null, nativeLanguages: ['Italian'],
         learningGoals: ['get a job in Barcelona'],
         weaknesses: [{ description: 'ser vs estar', weaknessType: 'grammatical' as const }],
         difficulties: [{ id: 'x', description: 'subjunctive', competency: 'Grammar', subcategory: '', severity: 'high', trend: 'stable', status: 'Active' }],
@@ -260,7 +260,7 @@ describe('CourseNew wizard', () => {
   })
 
   it('renders teacher notes textarea when a student is selected', async () => {
-    const STUDENT = { items: [{ id: 's1', name: 'Marco', cefrLevel: 'A1', learningLanguage: 'Spanish', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01' }], totalCount: 1, page: 1, pageSize: 100 }
+    const STUDENT = { items: [{ id: 's1', name: 'Marco', cefrLevel: 'A1', learningLanguage: 'Spanish', interests: [], personalNotes: null, teachingNotes: null, nativeLanguages: [], learningGoals: [], weaknesses: [], difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01' }], totalCount: 1, page: 1, pageSize: 100 }
     vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT)
     const user = userEvent.setup()
     wrapper(<CourseNew />)
@@ -279,7 +279,7 @@ describe('CourseNew wizard', () => {
   })
 
   it('includes teacher notes in the create course request', async () => {
-    const STUDENT = { items: [{ id: 's1', name: 'Marco', cefrLevel: 'A1', learningLanguage: 'Spanish', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01' }], totalCount: 1, page: 1, pageSize: 100 }
+    const STUDENT = { items: [{ id: 's1', name: 'Marco', cefrLevel: 'A1', learningLanguage: 'Spanish', interests: [], personalNotes: null, teachingNotes: null, nativeLanguages: [], learningGoals: [], weaknesses: [], difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01' }], totalCount: 1, page: 1, pageSize: 100 }
     vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT)
     const user = userEvent.setup()
     const mockCreate = vi.fn().mockResolvedValue({ id: 'course-1' })
@@ -385,8 +385,8 @@ describe('CourseNew wizard', () => {
   describe('locked student via ?studentId param', () => {
     const MARCO = {
       id: 'student-1', name: 'Marco', cefrLevel: 'B1',
-      learningLanguage: 'Spanish', interests: [], notes: null,
-      nativeLanguage: null, learningGoals: [], weaknesses: [],
+      learningLanguage: 'Spanish', interests: [], personalNotes: null, teachingNotes: null,
+      nativeLanguages: [], learningGoals: [], weaknesses: [],
       difficulties: [], createdAt: '2026-01-01', updatedAt: '2026-01-01',
     }
 

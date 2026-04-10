@@ -81,11 +81,11 @@ describe('StudentForm', () => {
       learningLanguage: 'Spanish',
       cefrLevel: 'B1',
       interests: [],
-      nativeLanguage: null,
+      nativeLanguages: [],
       learningGoals: [],
       weaknesses: [] as { description: string; weaknessType: string }[],
       difficulties: [],
-      notes: '',
+      personalNotes: null, teachingNotes: null,
     })
     mockGetStudents.mockResolvedValue({ items: [], totalCount: 0 })
     mockCreateStudent.mockResolvedValue({ id: 'new-id' })
@@ -225,14 +225,14 @@ describe('StudentForm', () => {
       learningLanguage: 'Spanish',
       cefrLevel: 'B1',
       interests: [],
-      nativeLanguage: null,
+      nativeLanguages: [],
       learningGoals: [],
       weaknesses: [],
       difficulties: [
         { id: 'd1', description: 'Confuses ser/estar', competency: 'Grammar', subcategory: 'ser/estar', severity: 'high', trend: 'stable', status: 'Active' },
         { id: 'd2', description: 'Difficulty with rolled r', competency: 'Pronunciation', subcategory: '/r/', severity: 'low', trend: 'stable', status: 'Active' },
       ],
-      notes: '',
+      personalNotes: null, teachingNotes: null,
     })
 
     renderEdit()
@@ -321,11 +321,11 @@ describe('StudentForm', () => {
       learningLanguage: 'Spanish',
       cefrLevel: 'B1',
       interests: [],
-      nativeLanguage: null,
+      nativeLanguages: [],
       learningGoals: ['travel', 'pass DELE B2 exam'],
       weaknesses: [],
       difficulties: [],
-      notes: '',
+      personalNotes: null, teachingNotes: null,
     })
 
     renderEdit()
@@ -426,14 +426,14 @@ describe('StudentForm', () => {
       learningLanguage: 'Spanish',
       cefrLevel: 'B1',
       interests: [],
-      nativeLanguage: null,
+      nativeLanguages: [],
       learningGoals: [],
       weaknesses: [
         { description: 'ser/estar confusion', weaknessType: 'grammatical' },
         { description: 'limited travel vocabulary', weaknessType: 'lexical' },
       ],
       difficulties: [],
-      notes: '',
+      personalNotes: null, teachingNotes: null,
     })
 
     renderEdit()
@@ -464,11 +464,11 @@ describe('StudentForm', () => {
       learningLanguage: 'Spanish',
       cefrLevel: '',
       interests: [],
-      nativeLanguage: null,
+      nativeLanguages: [],
       learningGoals: [],
       weaknesses: [],
       difficulties: [],
-      notes: '',
+      personalNotes: null, teachingNotes: null,
     })
     renderEdit()
     const btn = await screen.findByTestId('create-course-btn')

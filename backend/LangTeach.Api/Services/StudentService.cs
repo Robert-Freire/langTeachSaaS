@@ -82,7 +82,7 @@ public class StudentService : IStudentService
 
     public async Task<StudentDto> CreateAsync(Guid teacherId, CreateStudentRequest request, CancellationToken cancellationToken = default)
     {
-        ValidateNativeLanguage(request.NativeLanguage);
+        ValidateNativeLanguages(request.NativeLanguages);
         var normalizedWeaknessesCreate = NormalizeWeaknesses(request.Weaknesses);
         ValidateWeaknesses(normalizedWeaknessesCreate);
         ValidateDifficulties(request.Difficulties);
@@ -96,11 +96,12 @@ public class StudentService : IStudentService
             LearningLanguage = request.LearningLanguage,
             CefrLevel = request.CefrLevel,
             Interests = Serialize(request.Interests),
-            NativeLanguage = request.NativeLanguage,
+            NativeLanguages = Serialize(request.NativeLanguages),
             LearningGoals = Serialize(request.LearningGoals),
             Weaknesses = Serialize(normalizedWeaknessesCreate),
             Difficulties = Serialize(normalizedDifficulties),
-            Notes = request.Notes,
+            PersonalNotes = request.PersonalNotes,
+            TeachingNotes = request.TeachingNotes,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
@@ -121,7 +122,7 @@ public class StudentService : IStudentService
         if (student is null)
             return null;
 
-        ValidateNativeLanguage(request.NativeLanguage);
+        ValidateNativeLanguages(request.NativeLanguages);
         var normalizedWeaknessesUpdate = NormalizeWeaknesses(request.Weaknesses);
         ValidateWeaknesses(normalizedWeaknessesUpdate);
         ValidateDifficulties(request.Difficulties);
@@ -131,11 +132,12 @@ public class StudentService : IStudentService
         student.LearningLanguage = request.LearningLanguage;
         student.CefrLevel = request.CefrLevel;
         student.Interests = Serialize(request.Interests);
-        student.NativeLanguage = request.NativeLanguage;
+        student.NativeLanguages = Serialize(request.NativeLanguages);
         student.LearningGoals = Serialize(request.LearningGoals);
         student.Weaknesses = Serialize(normalizedWeaknessesUpdate);
         student.Difficulties = Serialize(normalizedDifficulties);
-        student.Notes = request.Notes;
+        student.PersonalNotes = request.PersonalNotes;
+        student.TeachingNotes = request.TeachingNotes;
         student.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -168,8 +170,9 @@ public class StudentService : IStudentService
         s.LearningLanguage,
         s.CefrLevel,
         JsonStorageHelper.DeserializeList<string>(s.Interests),
-        s.Notes,
-        s.NativeLanguage,
+        s.PersonalNotes,
+        s.TeachingNotes,
+        JsonStorageHelper.DeserializeList<string>(s.NativeLanguages),
         JsonStorageHelper.DeserializeList<string>(s.LearningGoals),
         JsonStorageHelper.DeserializeListWithStringFallback<StudentWeaknessDto>(
             s.Weaknesses,
@@ -193,10 +196,13 @@ public class StudentService : IStudentService
         }
     }
 
-    private static void ValidateNativeLanguage(string? nativeLanguage)
+    private static void ValidateNativeLanguages(List<string> nativeLanguages)
     {
-        if (nativeLanguage is not null && !AllowedNativeLanguages.Contains(nativeLanguage))
-            throw new ValidationException($"NativeLanguage '{nativeLanguage}' is not in the allowed list.");
+        foreach (var lang in nativeLanguages)
+        {
+            if (!AllowedNativeLanguages.Contains(lang))
+                throw new ValidationException($"NativeLanguage '{lang}' is not in the allowed list.");
+        }
     }
 
     private static void ValidateDifficulties(List<DifficultyDto> difficulties)

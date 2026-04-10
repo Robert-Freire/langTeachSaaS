@@ -40,7 +40,7 @@ public class StudentsControllerTests
             LearningLanguage = "Spanish",
             CefrLevel = "B2",
             Interests = ["travel", "music"],
-            Notes = "Prefers morning sessions.",
+            PersonalNotes = "Prefers morning sessions.",
         };
 
         var response = await client.PostAsJsonAsync("/api/students", request);
@@ -51,7 +51,7 @@ public class StudentsControllerTests
         student.LearningLanguage.Should().Be("Spanish");
         student.CefrLevel.Should().Be("B2");
         student.Interests.Should().BeEquivalentTo(["travel", "music"]);
-        student.Notes.Should().Be("Prefers morning sessions.");
+        student.PersonalNotes.Should().Be("Prefers morning sessions.");
         response.Headers.Location.Should().NotBeNull();
     }
 
@@ -147,7 +147,7 @@ public class StudentsControllerTests
             Name = "Maria Silva",
             LearningLanguage = "Spanish",
             CefrLevel = "B1",
-            NativeLanguage = "Portuguese",
+            NativeLanguages = ["Portuguese"],
             LearningGoals = ["travel", "conversation"],
             Weaknesses = [new StudentWeaknessDto("past tenses", "grammatical"), new StudentWeaknessDto("articles", "lexical")],
         };
@@ -156,7 +156,7 @@ public class StudentsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
-        student!.NativeLanguage.Should().Be("Portuguese");
+        student!.NativeLanguages.Should().BeEquivalentTo(["Portuguese"]);
         student.LearningGoals.Should().BeEquivalentTo(["travel", "conversation"]);
         student.Weaknesses.Should().BeEquivalentTo([
             new StudentWeaknessDto("past tenses", "grammatical"),
@@ -180,7 +180,7 @@ public class StudentsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
-        student!.NativeLanguage.Should().BeNull();
+        student!.NativeLanguages.Should().BeEmpty();
         student.LearningGoals.Should().BeEmpty();
         student.Weaknesses.Should().BeEmpty();
     }
@@ -197,7 +197,7 @@ public class StudentsControllerTests
             Name = created.Name,
             LearningLanguage = created.LearningLanguage,
             CefrLevel = created.CefrLevel,
-            NativeLanguage = "German",
+            NativeLanguages = ["German"],
             LearningGoals = ["business"],
             Weaknesses = [new StudentWeaknessDto("word order", "grammatical")],
         };
@@ -206,7 +206,7 @@ public class StudentsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
-        updated!.NativeLanguage.Should().Be("German");
+        updated!.NativeLanguages.Should().BeEquivalentTo(["German"]);
         updated.LearningGoals.Should().BeEquivalentTo(["business"]);
         updated.Weaknesses.Should().BeEquivalentTo([new StudentWeaknessDto("word order", "grammatical")]);
     }
@@ -221,7 +221,7 @@ public class StudentsControllerTests
             Name = "Test Student",
             LearningLanguage = "English",
             CefrLevel = "B1",
-            NativeLanguage = "Klingon",
+            NativeLanguages = ["Klingon"],
         };
 
         var response = await client.PostAsJsonAsync("/api/students", request);
@@ -241,7 +241,7 @@ public class StudentsControllerTests
             Name = created.Name,
             LearningLanguage = created.LearningLanguage,
             CefrLevel = created.CefrLevel,
-            NativeLanguage = "Klingon",
+            NativeLanguages = ["Klingon"],
         };
 
         var response = await client.PutAsJsonAsync($"/api/students/{created.Id}", updateRequest);

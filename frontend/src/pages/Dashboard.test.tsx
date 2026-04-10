@@ -69,7 +69,7 @@ describe('Dashboard', () => {
     vi.clearAllMocks()
     mockGetStudents.mockResolvedValue({
       items: [
-        { id: 's1', name: 'Alice', learningLanguage: 'English', cefrLevel: 'B1', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], createdAt: '', updatedAt: '' },
+        { id: 's1', name: 'Alice', learningLanguage: 'English', cefrLevel: 'B1', interests: [], personalNotes: null, teachingNotes: null, nativeLanguages: [], learningGoals: [], weaknesses: [], createdAt: '', updatedAt: '' },
       ],
       totalCount: 1,
     })
