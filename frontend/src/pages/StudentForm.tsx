@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, ChevronsUpDown, Check, Plus, Trash2 } from 'lucide-react'
+import { X, Plus, Trash2 } from 'lucide-react'
 import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem } from '../api/students'
 import { LEARNING_GOALS, COMPETENCY_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
@@ -17,164 +17,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
+import { MultiSelect } from '@/components/MultiSelect'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
 import { PageHeader } from '@/components/PageHeader'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
-import { LANGUAGES } from '@/lib/languages'
+import { LANGUAGES, NATIVE_LANGUAGES } from '@/lib/languages'
 
-function MultiSelect({
-  options,
-  selected,
-  onChange,
-  placeholder,
-  triggerId,
-  chipTestId,
-  maxLength,
-}: {
-  options: { value: string; label: string }[]
-  selected: string[]
-  onChange: (values: string[]) => void
-  placeholder: string
-  triggerId: string
-  chipTestId: string
-  maxLength?: number
-}) {
-  const [open, setOpen] = useState(false)
-  const [inputValue, setInputValue] = useState('')
-
-  function toggle(value: string) {
-    onChange(
-      selected.includes(value)
-        ? selected.filter((v) => v !== value)
-        : [...selected, value]
-    )
-  }
-
-  function remove(value: string, e: React.MouseEvent) {
-    e.stopPropagation()
-    onChange(selected.filter((v) => v !== value))
-  }
-
-  function addCustom() {
-    const trimmed = inputValue.trim()
-    if (!trimmed) return
-    const limited = maxLength ? trimmed.slice(0, maxLength) : trimmed
-    if (!selected.includes(limited)) {
-      onChange([...selected, limited])
-    }
-    setInputValue('')
-  }
-
-  const trimmedInput = inputValue.trim()
-  const customValue = maxLength ? trimmedInput.slice(0, maxLength) : trimmedInput
-  const matchesPredefined = trimmedInput.length > 0 && options.some(
-    (o) => o.label.toLowerCase() === trimmedInput.toLowerCase()
-  )
-  const alreadySelected = selected.includes(customValue)
-  const showAddCustom = trimmedInput.length > 0 && !matchesPredefined && !alreadySelected
-  const filteredOptions = options.filter((o) =>
-    !trimmedInput || o.label.toLowerCase().includes(trimmedInput.toLowerCase())
-  )
-
-  return (
-    <div className="relative z-[1] space-y-2">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          type="button"
-          data-testid={triggerId}
-          className="flex w-full max-w-sm items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-50"
-        >
-          {selected.length === 0 ? placeholder : `${selected.length} selected`}
-          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-        </PopoverTrigger>
-        <PopoverContent className="w-64 max-w-[calc(100vw-2rem)] p-0 z-[60]" align="start" side="bottom">
-          <Command shouldFilter={false}>
-            <CommandInput
-              placeholder="Search or type custom..."
-              value={inputValue}
-              onValueChange={setInputValue}
-            />
-            <CommandList>
-              {!showAddCustom && filteredOptions.length === 0 && (
-                <CommandEmpty>No options found.</CommandEmpty>
-              )}
-              <CommandGroup>
-                {filteredOptions.map((opt) => (
-                    <CommandItem
-                      key={opt.value}
-                      value={opt.value}
-                      onSelect={() => toggle(opt.value)}
-                    >
-                      <Check
-                        className={cn(
-                          'mr-2 h-4 w-4',
-                          selected.includes(opt.value) ? 'opacity-100' : 'opacity-0'
-                        )}
-                      />
-                      {opt.label}
-                    </CommandItem>
-                  ))}
-              </CommandGroup>
-              {showAddCustom && (
-                <CommandGroup>
-                  <CommandItem
-                    value={`custom:${trimmedInput}`}
-                    onSelect={addCustom}
-                    data-testid="add-custom-entry"
-                  >
-                    <Plus className="mr-2 h-4 w-4 text-indigo-500" />
-                    Add &ldquo;{trimmedInput}&rdquo;
-                  </CommandItem>
-                </CommandGroup>
-              )}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-
-      {selected.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
-          {selected.map((value) => {
-            const label = options.find((o) => o.value === value)?.label ?? value
-            return (
-              <span
-                key={value}
-                className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded px-2 py-0.5"
-                data-testid={chipTestId}
-              >
-                {label}
-                <button
-                  type="button"
-                  onClick={(e) => remove(value, e)}
-                  className="text-indigo-400 hover:text-indigo-700 p-0.5 -mr-0.5"
-                  aria-label={`Remove ${label}`}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </span>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
+const NATIVE_LANGUAGE_OPTIONS = NATIVE_LANGUAGES.map((lang) => ({ value: lang, label: lang }))
 
 export default function StudentForm() {
   const navigate = useNavigate()
@@ -210,7 +61,7 @@ export default function StudentForm() {
       setLanguage(existing.learningLanguage)
       setCefrLevel(existing.cefrLevel)
       setInterests(existing.interests)
-      setNativeLanguages(existing.nativeLanguages.length > 0 ? [existing.nativeLanguages[0]] : [])
+      setNativeLanguages(existing.nativeLanguages)
       setLearningGoals(existing.learningGoals)
       setWeaknesses(existing.weaknesses)
       setDifficulties(existing.difficulties ?? [])
@@ -498,23 +349,19 @@ export default function StudentForm() {
           </CardHeader>
           <CardContent className="space-y-4">
 
-            {/* Native Language */}
+            {/* Native Languages */}
             <div className="space-y-1.5">
-              <Label>Native Language</Label>
-              <Select
-                value={nativeLanguages[0] ?? 'none'}
-                onValueChange={(v) => setNativeLanguages(!v || v === 'none' ? [] : [v])}
-              >
-                <SelectTrigger className="max-w-sm" data-testid="student-native-language">
-                  <SelectValue placeholder="Select native language (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not specified</SelectItem>
-                  {LANGUAGES.map((lang) => (
-                    <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Native Languages</Label>
+              <MultiSelect
+                options={NATIVE_LANGUAGE_OPTIONS}
+                selected={nativeLanguages}
+                onChange={setNativeLanguages}
+                placeholder="Select native languages (optional)"
+                triggerId="student-native-language"
+                chipTestId="native-lang-chip"
+                maxItems={5}
+                allowCustom={false}
+              />
             </div>
 
             {/* Learning Goals */}

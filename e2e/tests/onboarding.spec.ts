@@ -174,6 +174,7 @@ test.describe.serial('Onboarding wizard', () => {
     await page.getByRole('option', { name: 'A2' }).click()
     await page.getByTestId('onboarding-native-language').click()
     await page.getByRole('option', { name: 'Catalan' }).click()
+    await page.keyboard.press('Escape')
     await page.getByTestId('onboarding-next').click()
 
     // Step 2 should complete successfully — verify step 3 is shown

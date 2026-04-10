@@ -457,6 +457,31 @@ describe('StudentForm', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/courses/new?studentId=stu-1')
   })
 
+  it('loads all native languages in edit mode (no data loss)', async () => {
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1',
+      name: 'Ana',
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      nativeLanguages: ['Portuguese', 'English', 'Catalan'],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+      personalNotes: null, teachingNotes: null,
+    })
+
+    renderEdit()
+
+    await screen.findByRole('heading', { name: 'Edit Student' })
+
+    const chips = await screen.findAllByTestId('native-lang-chip')
+    expect(chips).toHaveLength(3)
+    expect(chips[0]).toHaveTextContent('Portuguese')
+    expect(chips[1]).toHaveTextContent('English')
+    expect(chips[2]).toHaveTextContent('Catalan')
+  })
+
   it('"Create Course" button is disabled when student is missing CEFR level', async () => {
     mockGetStudent.mockResolvedValue({
       id: 'stu-1',
