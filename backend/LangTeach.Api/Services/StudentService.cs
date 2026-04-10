@@ -252,6 +252,8 @@ public class StudentService : IStudentService
 
     private static void ValidateShortTermObjectives(List<ShortTermObjectiveDto> objectives)
     {
+        if (objectives.Count > 10)
+            throw new ValidationException("ShortTermObjectives cannot contain more than 10 entries.");
         foreach (var o in objectives)
         {
             if (string.IsNullOrWhiteSpace(o.Id) || o.Id.Length > 50)

@@ -227,4 +227,17 @@ public class StudentServiceTests : IDisposable
 
         await act.Should().ThrowAsync<ValidationException>();
     }
+
+    [Fact]
+    public async Task CreateAsync_ShortTermObjectives_ExceedsCap_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.ShortTermObjectives = Enumerable.Range(1, 11)
+            .Select(i => new ShortTermObjectiveDto($"o{i}", $"Objective {i}", null))
+            .ToList();
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
 }
