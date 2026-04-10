@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MultiSelect } from '@/components/MultiSelect'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { LANGUAGES, NATIVE_LANGUAGE_OPTIONS } from '@/lib/languages'
 
