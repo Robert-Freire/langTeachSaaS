@@ -18,7 +18,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 }
 
 function FieldValue({ label, value }: { label: string; value: string | number | null | undefined }) {
-  if (!value) return null
+  if (value == null || value === '') return null
   return (
     <div className="flex items-baseline gap-2 py-1">
       <span className="text-xs text-zinc-400 shrink-0 w-28">{label}</span>
@@ -93,8 +93,8 @@ export function StudentProfileTab({ student, onToggleDifficultyStatus }: Props) 
             <SectionHeader>Personal Notes</SectionHeader>
             {parsedPersonalNotes ? (
               <div className="space-y-2">
-                {parsedPersonalNotes.sections.map((section) => (
-                  <div key={section.label || 'personal-notes'}>
+                {parsedPersonalNotes.sections.map((section, i) => (
+                  <div key={`pn-${i}-${section.label}`}>
                     {section.label && (
                       <p className="text-xs font-medium text-zinc-500 mb-0.5">{section.label}</p>
                     )}
@@ -114,8 +114,8 @@ export function StudentProfileTab({ student, onToggleDifficultyStatus }: Props) 
             <SectionHeader>Teaching Notes</SectionHeader>
             {parsedTeachingNotes ? (
               <div className="space-y-2">
-                {parsedTeachingNotes.sections.map((section) => (
-                  <div key={section.label || 'teaching-notes'}>
+                {parsedTeachingNotes.sections.map((section, i) => (
+                  <div key={`tn-${i}-${section.label}`}>
                     {section.label && (
                       <p className="text-xs font-medium text-zinc-500 mb-0.5">{section.label}</p>
                     )}
