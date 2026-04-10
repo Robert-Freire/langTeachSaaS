@@ -133,6 +133,7 @@ public static class DemoSeeder
         {
             await db.SaveChangesAsync(); // persist any approval/onboarding updates
             await SeedScenarioStudentsAsync(db, teacher.Id, logger);
+            await SeedAnaVisualSessionLogAsync(db, teacher.Id, logger);
             logger.LogInformation("Visual seed data already exists for teacher {Email}; scenario students refreshed.", teacher.Email);
             return true;
         }
@@ -156,7 +157,7 @@ public static class DemoSeeder
 
         var students = new List<Student>
         {
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", PersonalNotes = VisualTag, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", PersonalNotes = VisualTag, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", Difficulties = """[{"id":"av1","description":"Separable vs inseparable phrasal verbs","competency":"Grammar","subcategory":"Phrasal verbs","severity":"medium","status":"Active","trend":"stable"},{"id":"av2","description":"Travel collocations","competency":"Vocabulary","subcategory":"Travel","severity":"low","status":"Active","trend":"improving"},{"id":"av3","description":"Word stress in multi-syllable words","competency":"Pronunciation","subcategory":"Word stress","severity":"medium","status":"Active","trend":"stable"}]""", CreatedAt = now, UpdatedAt = now },
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Visual", LearningLanguage = "English", CefrLevel = "A2", PersonalNotes = VisualTag, CreatedAt = now, UpdatedAt = now },
         };
         db.Students.AddRange(students);
@@ -226,6 +227,7 @@ public static class DemoSeeder
             students.Count, entries.Count);
 
         await SeedScenarioStudentsAsync(db, teacher.Id, logger);
+        await SeedAnaVisualSessionLogAsync(db, teacher.Id, logger);
 
         return true;
     }
@@ -418,6 +420,39 @@ public static class DemoSeeder
         }
 
         logger.LogInformation("Scenario students seeded (Ana Seed, Marco Seed, Clara Seed, Diego Seed).");
+    }
+
+    private static async Task SeedAnaVisualSessionLogAsync(AppDbContext db, Guid teacherId, ILogger logger)
+    {
+        var anaVisual = await db.Students.FirstOrDefaultAsync(
+            s => s.TeacherId == teacherId && s.Name == "Ana Visual" && !s.IsDeleted);
+        if (anaVisual is null) return;
+
+        var logExists = await db.SessionLogs.AnyAsync(s => s.StudentId == anaVisual.Id && !s.IsDeleted);
+        if (logExists) return;
+
+        var now = DateTime.UtcNow;
+        db.SessionLogs.Add(new SessionLog
+        {
+            Id                       = Guid.NewGuid(),
+            StudentId                = anaVisual.Id,
+            TeacherId                = teacherId,
+            SessionDate              = now.AddDays(-7),
+            PlannedContent           = "Phrasal verbs in travel contexts and reading comprehension.",
+            ActualContent            = "Practised 12 travel phrasal verbs; read a passage about airport experiences.",
+            HomeworkAssigned         = "Write a short paragraph using at least 5 phrasal verbs from today.",
+            PreviousHomeworkStatus   = HomeworkStatus.Done,
+            NextSessionTopics        = "Collocations with travel vocabulary",
+            GeneralNotes             = "Student struggles with separable vs inseparable phrasal verbs. Good effort overall.",
+            TopicTags                = """["vocabulary","phrasal verbs"]""",
+            MentionedDifficultyPairs = """[{"competency":"Grammar","subcategory":"Phrasal verbs"},{"competency":"Vocabulary","subcategory":"Travel"}]""",
+            SuggestedDifficulties    = """[{"description":"Confuses separable and inseparable phrasal verbs","competency":"Grammar","subcategory":"Phrasal verbs","severity":"medium"}]""",
+            IsDeleted                = false,
+            CreatedAt                = now.AddDays(-7),
+            UpdatedAt                = now.AddDays(-7),
+        });
+        await db.SaveChangesAsync();
+        logger.LogInformation("Ana Visual session log seeded.");
     }
 
     private static async Task<Student> UpsertStudentAsync(AppDbContext db, Guid teacherId, Student incoming, DateTime now)
