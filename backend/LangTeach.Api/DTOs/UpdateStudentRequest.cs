@@ -36,6 +36,7 @@ public class UpdateStudentRequest
     public string? Notes { get; set; }
 
     // Identity fields
+    [Range(1920, 2100)]
     public int? BirthYear { get; set; }
 
     [MaxLength(128)]

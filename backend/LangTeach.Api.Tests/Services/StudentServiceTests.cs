@@ -205,4 +205,26 @@ public class StudentServiceTests : IDisposable
 
         await act.Should().ThrowAsync<ValidationException>();
     }
+
+    [Fact]
+    public async Task CreateAsync_ShortTermObjective_EmptyId_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.ShortTermObjectives = [new("", "Some text", null)];
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShortTermObjective_TextTooLong_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.ShortTermObjectives = [new("o1", new string('x', 201), null)];
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
 }

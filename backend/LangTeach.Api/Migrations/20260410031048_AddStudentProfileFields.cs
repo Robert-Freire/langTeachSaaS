@@ -45,7 +45,7 @@ namespace LangTeach.Api.Migrations
                 table: "Students",
                 type: "bit",
                 nullable: false,
-                defaultValue: false);
+                defaultValue: true);
 
             migrationBuilder.AddColumn<bool>(
                 name: "IsCorporate",
