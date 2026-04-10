@@ -20,6 +20,7 @@ import CourseNew from './pages/CourseNew'
 import CourseDetail from './pages/CourseDetail'
 import StudentDetail from './pages/StudentDetail'
 import Onboarding from './pages/Onboarding'
+import DashboardV2Mockup from './pages/DashboardV2Mockup'
 
 const queryClient = new QueryClient()
 
@@ -44,6 +45,7 @@ export default function App() {
           <AuthSetup>
             <Routes>
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+              <Route path="/dashboard-v2" element={<ProtectedRoute><DashboardV2Mockup /></ProtectedRoute>} />
               <Route element={<ProtectedRoute><OnboardingGuard /></ProtectedRoute>}>
                 <Route element={<AppShell />}>
                   <Route path="/" element={<Dashboard />} />
