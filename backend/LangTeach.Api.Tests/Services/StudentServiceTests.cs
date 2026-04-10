@@ -38,34 +38,34 @@ public class StudentServiceTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private static CreateStudentRequest BaseRequest(string? nativeLanguage = null) => new()
+    private static CreateStudentRequest BaseRequest(List<string>? nativeLanguages = null) => new()
     {
         Name = "Test Student",
         LearningLanguage = "Spanish",
         CefrLevel = "B1",
-        NativeLanguage = nativeLanguage,
+        NativeLanguages = nativeLanguages ?? [],
     };
 
     [Fact]
     public async Task CreateAsync_CatalanNativeLanguage_Succeeds()
     {
-        var result = await _sut.CreateAsync(_teacherId, BaseRequest("Catalan"));
+        var result = await _sut.CreateAsync(_teacherId, BaseRequest(["Catalan"]));
 
-        result.NativeLanguage.Should().Be("Catalan");
+        result.NativeLanguages.Should().BeEquivalentTo(["Catalan"]);
     }
 
     [Fact]
-    public async Task CreateAsync_NullNativeLanguage_Succeeds()
+    public async Task CreateAsync_EmptyNativeLanguages_Succeeds()
     {
-        var result = await _sut.CreateAsync(_teacherId, BaseRequest(null));
+        var result = await _sut.CreateAsync(_teacherId, BaseRequest([]));
 
-        result.NativeLanguage.Should().BeNull();
+        result.NativeLanguages.Should().BeEmpty();
     }
 
     [Fact]
     public async Task CreateAsync_UnknownNativeLanguage_ThrowsValidationException()
     {
-        var act = () => _sut.CreateAsync(_teacherId, BaseRequest("Klingon"));
+        var act = () => _sut.CreateAsync(_teacherId, BaseRequest(["Klingon"]));
 
         await act.Should().ThrowAsync<ValidationException>();
     }
@@ -84,9 +84,9 @@ public class StudentServiceTests : IDisposable
     [InlineData("Other")]
     public async Task CreateAsync_AllNativeLanguages_AreAccepted(string language)
     {
-        var result = await _sut.CreateAsync(_teacherId, BaseRequest(language));
+        var result = await _sut.CreateAsync(_teacherId, BaseRequest([language]));
 
-        result.NativeLanguage.Should().Be(language);
+        result.NativeLanguages.Should().BeEquivalentTo([language]);
     }
 
     [Fact]

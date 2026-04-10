@@ -63,7 +63,7 @@ export default function OnboardingStep2({ onNext, onBack, onSkip }: OnboardingSt
       learningGoals: [],
       weaknesses: [],
       difficulties: [],
-      nativeLanguage: nativeLanguage || null,
+      nativeLanguages: nativeLanguage ? [nativeLanguage] : [],
     })
   }
 

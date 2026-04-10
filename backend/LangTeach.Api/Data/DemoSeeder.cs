@@ -33,7 +33,7 @@ public static class DemoSeeder
             logger.LogInformation("Approved teacher {Email}.", teacher.Email);
         }
 
-        var alreadySeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.Notes == DemoTag);
+        var alreadySeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.PersonalNotes == DemoTag);
         if (alreadySeeded)
         {
             logger.LogInformation("Demo data already exists for teacher {Email} — skipping.", teacher.Email);
@@ -46,11 +46,11 @@ public static class DemoSeeder
 
         var students = new List<Student>
         {
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Souza",        LearningLanguage = "English", CefrLevel = "B2", Interests = """["travel","cooking"]""",    Notes = DemoTag, CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Rossi",      LearningLanguage = "English", CefrLevel = "A2", Interests = """["football","music"]""",    Notes = DemoTag, CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Yuki Tanaka",      LearningLanguage = "English", CefrLevel = "B1", Interests = """["technology","anime"]""",  Notes = DemoTag, CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Fatima Al-Hassan", LearningLanguage = "English", CefrLevel = "C1", Interests = """["literature","history"]""", Notes = DemoTag, CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Carlos Mendez",    LearningLanguage = "English", CefrLevel = "A1", Interests = """["business","travel"]""",   Notes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Souza",        LearningLanguage = "English", CefrLevel = "B2", Interests = """["travel","cooking"]""",    PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Rossi",      LearningLanguage = "English", CefrLevel = "A2", Interests = """["football","music"]""",    PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Yuki Tanaka",      LearningLanguage = "English", CefrLevel = "B1", Interests = """["technology","anime"]""",  PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Fatima Al-Hassan", LearningLanguage = "English", CefrLevel = "C1", Interests = """["literature","history"]""", PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Carlos Mendez",    LearningLanguage = "English", CefrLevel = "A1", Interests = """["business","travel"]""",   PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
         };
 
         db.Students.AddRange(students);
@@ -126,7 +126,7 @@ public static class DemoSeeder
             logger.LogInformation("Approved teacher {Email}.", teacher.Email);
         }
 
-        var studentsSeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.Notes == VisualTag);
+        var studentsSeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.PersonalNotes == VisualTag);
         var coursesSeeded  = await db.Courses.AnyAsync(c => c.TeacherId == teacher.Id && c.Description == VisualTag);
 
         if (studentsSeeded && coursesSeeded)
@@ -141,7 +141,7 @@ public static class DemoSeeder
         if (studentsSeeded || coursesSeeded)
         {
             logger.LogInformation("Partial visual seed detected for teacher {Email}, cleaning up.", teacher.Email);
-            var partialStudents = await db.Students.Where(s => s.TeacherId == teacher.Id && s.Notes == VisualTag).ToListAsync();
+            var partialStudents = await db.Students.Where(s => s.TeacherId == teacher.Id && s.PersonalNotes == VisualTag).ToListAsync();
             db.Students.RemoveRange(partialStudents);
             var partialCourses = await db.Courses.Where(c => c.TeacherId == teacher.Id && c.Description == VisualTag).ToListAsync();
             db.Courses.RemoveRange(partialCourses);
@@ -156,8 +156,8 @@ public static class DemoSeeder
 
         var students = new List<Student>
         {
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", Notes = VisualTag, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Visual", LearningLanguage = "English", CefrLevel = "A2", Notes = VisualTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", PersonalNotes = VisualTag, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Visual", LearningLanguage = "English", CefrLevel = "A2", PersonalNotes = VisualTag, CreatedAt = now, UpdatedAt = now },
         };
         db.Students.AddRange(students);
 
@@ -241,12 +241,12 @@ public static class DemoSeeder
             Name               = "Ana Seed",
             LearningLanguage   = "English",
             CefrLevel          = "B1",
-            NativeLanguage     = "Portuguese",
+            NativeLanguages    = """["Portuguese"]""",
             LearningGoals      = """["Improve conversational fluency","Prepare for job interviews in English"]""",
             Interests          = """["literature","travel","photography"]""",
             Difficulties       = """["False friends with Portuguese","Subjunctive mood"]""",
             Weaknesses         = """["Listening to fast native speech","Idiomatic expressions"]""",
-            Notes              = "[scenario-seed]",
+            PersonalNotes      = "[scenario-seed]",
             BirthYear          = 1992,
             Profession         = "Marketing Manager",
             CountryOfOrigin    = "Brazil",
@@ -266,12 +266,12 @@ public static class DemoSeeder
             Name             = "Marco Seed",
             LearningLanguage = "English",
             CefrLevel        = "A2",
-            NativeLanguage   = null,
+            NativeLanguages  = "[]",
             LearningGoals    = "[]",
             Interests        = "[]",
             Difficulties     = "[]",
             Weaknesses       = "[]",
-            Notes            = "[Excel import 2026-01-15]\nCurrent level: A2\nObjectives: Business English, travel vocabulary\nDifficulties: Pronunciation, articles",
+            PersonalNotes    = "[Excel import 2026-01-15]\nCurrent level: A2\nObjectives: Business English, travel vocabulary\nDifficulties: Pronunciation, articles",
         }, now);
 
         // Clara Seed — minimal scenario
@@ -281,12 +281,12 @@ public static class DemoSeeder
             Name             = "Clara Seed",
             LearningLanguage = "Spanish",
             CefrLevel        = "A1",
-            NativeLanguage   = null,
+            NativeLanguages  = "[]",
             LearningGoals    = "[]",
             Interests        = "[]",
             Difficulties     = "[]",
             Weaknesses       = "[]",
-            Notes            = null,
+            PersonalNotes    = null,
         }, now);
 
         // Diego Seed — with-history scenario
@@ -296,12 +296,12 @@ public static class DemoSeeder
             Name                = "Diego Seed",
             LearningLanguage    = "English",
             CefrLevel           = "B2",
-            NativeLanguage      = "Spanish",
+            NativeLanguages     = """["Spanish"]""",
             LearningGoals       = """["Achieve C1 certification","Improve academic writing"]""",
             Interests           = """["history","cinema","chess"]""",
             Difficulties        = """[{"id":"d1","description":"Third conditional structures","competency":"Grammar","subcategory":"Conditionals","severity":"medium","status":"Active","trend":"stable"},{"id":"d2","description":"Academic vocabulary range","competency":"Vocabulary","subcategory":"Academic","severity":"high","status":"Active","trend":"worsening"},{"id":"d3","description":"Reading speed","competency":"Reading","subcategory":"Comprehension","severity":"low","status":"Covered","trend":"improving"}]""",
             Weaknesses          = "[]",
-            Notes               = "[scenario-seed]",
+            PersonalNotes       = "[scenario-seed]",
             BirthYear           = 1988,
             Profession          = "University Professor",
             CountryOfOrigin     = "Argentina",
@@ -429,12 +429,13 @@ public static class DemoSeeder
         {
             existing.LearningLanguage      = incoming.LearningLanguage;
             existing.CefrLevel             = incoming.CefrLevel;
-            existing.NativeLanguage        = incoming.NativeLanguage;
+            existing.NativeLanguages       = incoming.NativeLanguages;
             existing.LearningGoals         = incoming.LearningGoals;
             existing.Interests             = incoming.Interests;
             existing.Difficulties          = incoming.Difficulties;
             existing.Weaknesses            = incoming.Weaknesses;
-            existing.Notes                 = incoming.Notes;
+            existing.PersonalNotes         = incoming.PersonalNotes;
+            existing.TeachingNotes         = incoming.TeachingNotes;
             existing.BirthYear             = incoming.BirthYear;
             existing.Profession            = incoming.Profession;
             existing.CountryOfOrigin       = incoming.CountryOfOrigin;

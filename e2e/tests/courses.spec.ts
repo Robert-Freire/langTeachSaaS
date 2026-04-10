@@ -303,7 +303,7 @@ test('generate lesson from curriculum entry navigates to LessonNew pre-filled', 
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        items: [{ id: STUDENT_ID, name: 'Ana', learningLanguage: 'English', cefrLevel: 'B2', interests: [], notes: null, nativeLanguage: null, learningGoals: [], weaknesses: [], difficulties: [], createdAt: '', updatedAt: '' }],
+        items: [{ id: STUDENT_ID, name: 'Ana', learningLanguage: 'English', cefrLevel: 'B2', interests: [], personalNotes: null, teachingNotes: null, nativeLanguages: [], learningGoals: [], weaknesses: [], difficulties: [], createdAt: '', updatedAt: '' }],
         totalCount: 1,
       }),
     })

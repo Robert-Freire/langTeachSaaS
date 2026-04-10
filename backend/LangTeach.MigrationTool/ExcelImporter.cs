@@ -254,7 +254,7 @@ internal sealed class ExcelImporter
     private async Task<bool> AppendStudentNotesAsync(Student student, string preply, string info)
     {
         // Idempotency: do not append if already imported
-        if (student.Notes?.Contains("Preply test:") == true || student.Notes?.Contains("Student info:") == true)
+        if (student.PersonalNotes?.Contains("Preply test:") == true || student.PersonalNotes?.Contains("Student info:") == true)
             return false;
 
         var parts = new List<string>();
@@ -273,7 +273,7 @@ internal sealed class ExcelImporter
 
         if (!_dryRun)
         {
-            student.Notes = (student.Notes ?? string.Empty) + appendBlock;
+            student.PersonalNotes = (student.PersonalNotes ?? string.Empty) + appendBlock;
             student.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
             return true;

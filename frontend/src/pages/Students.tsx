@@ -172,15 +172,15 @@ export default function Students() {
                     >
                       {student.name}
                     </Link>
-                    {student.nativeLanguage && (
+                    {student.nativeLanguages.length > 0 && (
                       <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200" data-testid="native-language-chip">
-                        Native: {student.nativeLanguage}
+                        Native: {student.nativeLanguages[0]}
                       </Badge>
                     )}
                     <Badge variant="outline" className={`text-xs ${getCefrBadgeClasses(student.cefrLevel)}`} data-testid="student-level">
                       {student.cefrLevel}
                     </Badge>
-                    {!student.nativeLanguage && (
+                    {student.nativeLanguages.length === 0 && (
                       <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
                         {student.learningLanguage}
                       </Badge>
@@ -199,8 +199,8 @@ export default function Students() {
                       <span className="text-xs text-zinc-400">+{student.interests.length - 3} more</span>
                     )}
                   </div>
-                  {student.notes && (
-                    <p className="text-xs text-zinc-400 mt-1 truncate">{student.notes}</p>
+                  {student.personalNotes && (
+                    <p className="text-xs text-zinc-400 mt-1 truncate">{student.personalNotes}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-1 ml-2 sm:ml-4 shrink-0">

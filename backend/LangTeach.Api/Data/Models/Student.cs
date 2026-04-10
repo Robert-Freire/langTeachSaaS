@@ -8,11 +8,12 @@ public class Student
     public string LearningLanguage { get; set; } = string.Empty;
     public string CefrLevel { get; set; } = string.Empty;
     public string Interests { get; set; } = "[]";
-    public string? NativeLanguage { get; set; }
+    public string NativeLanguages { get; set; } = "[]";
     public string LearningGoals { get; set; } = "[]";
     public string Weaknesses { get; set; } = "[]";
     public string Difficulties { get; set; } = "[]";
-    public string? Notes { get; set; }
+    public string? PersonalNotes { get; set; }
+    public string? TeachingNotes { get; set; }
     public string SkillLevelOverrides { get; set; } = "{}";
     // Identity fields
     public int? BirthYear { get; set; }

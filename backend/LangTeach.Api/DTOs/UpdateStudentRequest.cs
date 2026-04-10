@@ -18,9 +18,11 @@ public class UpdateStudentRequest
     [MaxStringLengthEach(100)]
     public List<string> Interests { get; set; } = [];
 
-    // Validated server-side against StudentService.AllowedNativeLanguages.
+    // Each element validated server-side against StudentService.AllowedNativeLanguages.
     // Must stay in sync with NATIVE_LANGUAGES in frontend/src/lib/languages.ts.
-    public string? NativeLanguage { get; set; }
+    [MaxCollectionCount(5)]
+    [MaxStringLengthEach(50)]
+    public List<string> NativeLanguages { get; set; } = [];
 
     [MaxCollectionCount(20)]
     [MaxStringLengthEach(100)]
@@ -33,7 +35,10 @@ public class UpdateStudentRequest
     public List<DifficultyDto> Difficulties { get; set; } = [];
 
     [MaxLength(2000)]
-    public string? Notes { get; set; }
+    public string? PersonalNotes { get; set; }
+
+    [MaxLength(2000)]
+    public string? TeachingNotes { get; set; }
 
     // Identity fields
     public int? BirthYear { get; set; }

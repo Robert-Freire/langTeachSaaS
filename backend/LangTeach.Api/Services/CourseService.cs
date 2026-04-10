@@ -335,7 +335,9 @@ public class CourseService : ICourseService
             TargetExam: req.TargetExam,
             ExamDate: req.ExamDate,
             StudentName: student?.Name,
-            StudentNativeLanguage: student?.NativeLanguage,
+            StudentNativeLanguage: student is not null
+                ? JsonStorageHelper.DeserializeList<string>(student.NativeLanguages).FirstOrDefault()
+                : null,
             StudentInterests: student is not null
                 ? JsonStorageHelper.DeserializeList<string>(student.Interests).ToArray()
                 : null,

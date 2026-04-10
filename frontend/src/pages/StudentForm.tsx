@@ -187,11 +187,12 @@ export default function StudentForm() {
   const [cefrLevel, setCefrLevel] = useState('')
   const [interests, setInterests] = useState<string[]>([])
   const [interestInput, setInterestInput] = useState('')
-  const [nativeLanguage, setNativeLanguage] = useState<string>('')
+  const [nativeLanguages, setNativeLanguages] = useState<string[]>([])
   const [learningGoals, setLearningGoals] = useState<string[]>([])
   const [weaknesses, setWeaknesses] = useState<StudentWeaknessItem[]>([])
   const [difficulties, setDifficulties] = useState<Difficulty[]>([])
-  const [notes, setNotes] = useState('')
+  const [personalNotes, setPersonalNotes] = useState('')
+  const [teachingNotes, setTeachingNotes] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const interestInputRef = useRef<HTMLInputElement>(null)
 
@@ -209,11 +210,12 @@ export default function StudentForm() {
       setLanguage(existing.learningLanguage)
       setCefrLevel(existing.cefrLevel)
       setInterests(existing.interests)
-      setNativeLanguage(existing.nativeLanguage ?? '')
+      setNativeLanguages(existing.nativeLanguages.length > 0 ? [existing.nativeLanguages[0]] : [])
       setLearningGoals(existing.learningGoals)
       setWeaknesses(existing.weaknesses)
       setDifficulties(existing.difficulties ?? [])
-      setNotes(existing.notes ?? '')
+      setPersonalNotes(existing.personalNotes ?? '')
+      setTeachingNotes(existing.teachingNotes ?? '')
     }
   }, [existing])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -309,11 +311,12 @@ export default function StudentForm() {
       learningLanguage: language,
       cefrLevel,
       interests: finalInterests,
-      nativeLanguage: nativeLanguage || null,
+      nativeLanguages,
       learningGoals,
       weaknesses: validWeaknesses,
       difficulties: validDifficulties,
-      notes: notes.trim() || undefined,
+      personalNotes: personalNotes.trim() || null,
+      teachingNotes: teachingNotes.trim() || null,
     })
   }
 
@@ -498,7 +501,10 @@ export default function StudentForm() {
             {/* Native Language */}
             <div className="space-y-1.5">
               <Label>Native Language</Label>
-              <Select value={nativeLanguage || 'none'} onValueChange={(v) => setNativeLanguage(v === 'none' ? '' : (v ?? ''))}>
+              <Select
+                value={nativeLanguages[0] ?? 'none'}
+                onValueChange={(v) => setNativeLanguages(!v || v === 'none' ? [] : [v])}
+              >
                 <SelectTrigger className="max-w-sm" data-testid="student-native-language">
                   <SelectValue placeholder="Select native language (optional)" />
                 </SelectTrigger>
@@ -688,15 +694,32 @@ export default function StudentForm() {
             <CardTitle className="text-base">Notes</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional notes about this student..."
-              maxLength={2000}
-              rows={4}
-              className="max-w-sm resize-none"
-              data-testid="student-notes"
-            />
+            <div className="space-y-1.5">
+              <Label>Personal notes</Label>
+              <p className="text-xs text-zinc-400">About the student as a person (sensitivities, context, life situation).</p>
+              <Textarea
+                value={personalNotes}
+                onChange={(e) => setPersonalNotes(e.target.value)}
+                placeholder="Optional personal notes..."
+                maxLength={2000}
+                rows={3}
+                className="max-w-sm resize-none"
+                data-testid="student-personal-notes"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Teaching notes</Label>
+              <p className="text-xs text-zinc-400">How this student learns, what works in class, teaching observations.</p>
+              <Textarea
+                value={teachingNotes}
+                onChange={(e) => setTeachingNotes(e.target.value)}
+                placeholder="Optional teaching notes..."
+                maxLength={2000}
+                rows={3}
+                className="max-w-sm resize-none"
+                data-testid="student-teaching-notes"
+              />
+            </div>
           </CardContent>
         </Card>
       </form>

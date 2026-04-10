@@ -250,7 +250,7 @@ public class CoursesControllerTemplateTests
                 Id = Guid.NewGuid(),
                 TeacherId = teacher.Id,
                 Name = "Marco",
-                NativeLanguage = "Italian",
+                NativeLanguages = """["Italian"]""",
                 Interests = "[]",
                 LearningGoals = "[]",
                 CreatedAt = DateTime.UtcNow,

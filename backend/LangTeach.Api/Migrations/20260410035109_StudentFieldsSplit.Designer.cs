@@ -4,6 +4,7 @@ using LangTeach.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LangTeach.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260410035109_StudentFieldsSplit")]
+    partial class StudentFieldsSplit
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -564,23 +567,8 @@ namespace LangTeach.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("BirthYear")
-                        .HasColumnType("int");
-
                     b.Property<string>("CefrLevel")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CityOfOrigin")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CityOfResidence")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CountryOfOrigin")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CountryOfResidence")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
@@ -593,12 +581,6 @@ namespace LangTeach.Api.Migrations
                     b.Property<string>("Interests")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsCorporate")
-                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
@@ -624,31 +606,11 @@ namespace LangTeach.Api.Migrations
                     b.Property<string>("PersonalNotes")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("OfficialCefrLevel")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Profession")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Rate")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ReasonForStudying")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ShortTermObjectives")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("SkillLevelOverrides")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("nvarchar(max)")
                         .HasDefaultValue("{}");
-
-                    b.Property<string>("SpokenLanguages")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("TeacherId")
                         .HasColumnType("uniqueidentifier");

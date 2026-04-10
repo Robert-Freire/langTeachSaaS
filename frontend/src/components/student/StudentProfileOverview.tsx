@@ -37,7 +37,8 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
 }
 
 export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Props) {
-  const parsedNotes = parseNotes(student.notes)
+  const parsedPersonalNotes = parseNotes(student.personalNotes)
+  const parsedTeachingNotes = parseNotes(student.teachingNotes)
 
   return (
     <Card className="border-zinc-200" data-testid="student-profile-overview">
@@ -58,7 +59,9 @@ export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Pr
         <dl className="space-y-4">
           <FieldRow label="Native language">
             <span className="text-sm text-zinc-800" data-testid="overview-native-language">
-              {student.nativeLanguage || <span className="text-zinc-400 italic">Not specified</span>}
+              {student.nativeLanguages.length > 0
+                ? student.nativeLanguages.join(', ')
+                : <span className="text-zinc-400 italic">Not specified</span>}
             </span>
           </FieldRow>
 
@@ -151,11 +154,26 @@ export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Pr
             </FieldRow>
           )}
 
-          {parsedNotes && (
-            <FieldRow label="Notes">
-              <div className="space-y-3" data-testid="overview-notes">
-                {parsedNotes.sections.map((section) => (
-                  <div key={section.label || 'notes'}>
+          {parsedPersonalNotes && (
+            <FieldRow label="Personal notes">
+              <div className="space-y-3" data-testid="overview-personal-notes">
+                {parsedPersonalNotes.sections.map((section) => (
+                  <div key={section.label || 'personal-notes'}>
+                    {section.label && (
+                      <p className="text-xs font-medium text-zinc-500 mb-0.5">{section.label}</p>
+                    )}
+                    <p className="text-sm text-zinc-700 whitespace-pre-wrap">{section.text}</p>
+                  </div>
+                ))}
+              </div>
+            </FieldRow>
+          )}
+
+          {parsedTeachingNotes && (
+            <FieldRow label="Teaching notes">
+              <div className="space-y-3" data-testid="overview-teaching-notes">
+                {parsedTeachingNotes.sections.map((section) => (
+                  <div key={section.label || 'teaching-notes'}>
                     {section.label && (
                       <p className="text-xs font-medium text-zinc-500 mb-0.5">{section.label}</p>
                     )}
