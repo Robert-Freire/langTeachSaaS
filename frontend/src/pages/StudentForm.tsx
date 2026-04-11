@@ -332,8 +332,9 @@ export default function StudentForm() {
                   type="number"
                   value={birthYear ?? ''}
                   onChange={(e) => {
-                    const parsed = parseInt(e.target.value, 10)
-                    setBirthYear(e.target.value && !isNaN(parsed) ? parsed : null)
+                    const raw = e.target.value
+                    const num = Number(raw)
+                    setBirthYear(raw && !isNaN(num) && Number.isInteger(num) ? num : null)
                   }}
                   placeholder="e.g. 1990"
                   min={1900}
