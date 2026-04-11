@@ -281,6 +281,26 @@ public class ReflectionExtractionServiceTests
     }
 
     [Fact]
+    public void ParseResponse_SessionDateIsNullWhenNotIsoFormat()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "whatWasCovered": null,
+              "areasToImprove": null,
+              "emotionalSignals": null,
+              "homeworkAssigned": null,
+              "nextLessonIdeas": null,
+              "sessionDate": "martes pasado"
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionDate.Should().BeNull();
+    }
+
+    [Fact]
     public void ParseResponse_SessionDateIsNullWhenExplicitlyNull()
     {
         var sut = CreateSut("{}");

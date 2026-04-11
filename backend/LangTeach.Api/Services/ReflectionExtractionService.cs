@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
@@ -79,7 +80,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 EmotionalSignals: GetStringOrNull(root, "emotionalSignals"),
                 HomeworkAssigned: GetStringOrNull(root, "homeworkAssigned"),
                 NextLessonIdeas: GetStringOrNull(root, "nextLessonIdeas"),
-                SessionDate: GetStringOrNull(root, "sessionDate"),
+                SessionDate: GetIsoDateOrNull(root, "sessionDate"),
                 SuggestedDifficulties: ParseSuggestedDifficulties(root)
             );
         }
@@ -129,5 +130,20 @@ public class ReflectionExtractionService : IReflectionExtractionService
             return string.IsNullOrWhiteSpace(value) ? null : value;
         }
         return null;
+    }
+
+    private static string? GetIsoDateOrNull(JsonElement root, string key)
+    {
+        var raw = GetStringOrNull(root, key);
+        if (raw is null) return null;
+
+        return DateOnly.TryParseExact(
+            raw,
+            "yyyy-MM-dd",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None,
+            out var parsed)
+            ? parsed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+            : null;
     }
 }
