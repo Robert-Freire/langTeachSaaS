@@ -264,10 +264,11 @@ export function SessionLogDialog({
     queryFn: () => getFollowups(studentId),
     enabled: open,
   })
-  // Merge server followups with locally-added ones (avoid duplicates by id)
+  // Merge server followups with locally-added ones; respect status overrides from local toggles
+  const localStatusMap = new Map(localFollowups.map(lf => [lf.id, lf.status]))
   const pendingFollowups = [
-    ...serverFollowups.filter(f => f.status === 'pending'),
-    ...localFollowups.filter(lf => !serverFollowups.some(sf => sf.id === lf.id)),
+    ...serverFollowups.filter(f => (localStatusMap.get(f.id) ?? f.status) === 'pending'),
+    ...localFollowups.filter(lf => !serverFollowups.some(sf => sf.id === lf.id) && lf.status === 'pending'),
   ]
 
   async function handleAddFollowup() {

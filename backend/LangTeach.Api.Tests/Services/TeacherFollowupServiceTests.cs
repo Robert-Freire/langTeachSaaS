@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using FluentAssertions;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
@@ -160,5 +161,29 @@ public class TeacherFollowupServiceTests : IDisposable
         pending.Should().HaveCount(1);
         pending[0].Text.Should().Be("Pending one");
         pending[0].Status.Should().Be("pending");
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithOtherTeachersStudentId_ThrowsValidationException()
+    {
+        var otherStudent = Guid.NewGuid();
+        _db.Students.Add(new Student
+        {
+            Id = otherStudent,
+            TeacherId = _otherTeacherId,
+            Name = "Other Teacher Student",
+            LearningLanguage = "Spanish",
+            CefrLevel = "A1",
+            NativeLanguages = "[\"English\"]",
+            TeachingTodos = "[]",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        });
+        _db.SaveChanges();
+
+        var act = () => _sut.CreateAsync(_teacherId, new CreateTeacherFollowupRequest("Test", otherStudent, null, null), default);
+
+        await act.Should().ThrowAsync<ValidationException>();
     }
 }

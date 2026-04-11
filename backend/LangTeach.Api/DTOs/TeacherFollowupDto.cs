@@ -14,7 +14,10 @@ public record TeacherFollowupDto(
     string? SourceSessionLogId);
 
 public record CreateTeacherFollowupRequest(
-    [MaxLength(500)] string Text,
+    [Required]
+    [MaxLength(500)]
+    [RegularExpression(@".*\S.*", ErrorMessage = "Text cannot be blank.")]
+    string Text,
     Guid? StudentId,
     DateOnly? DueDate,
     Guid? SourceSessionLogId);

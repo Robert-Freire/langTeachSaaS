@@ -36,10 +36,16 @@ public class TeacherFollowupsController : ControllerBase
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
 
         List<TeacherFollowupDto> result;
-        if (studentId is not null && Guid.TryParse(studentId, out var sid))
+        if (studentId is not null)
+        {
+            if (!Guid.TryParse(studentId, out var sid))
+                return ValidationProblem("studentId must be a valid GUID.");
             result = await _followupService.GetByStudentAsync(teacherId, sid, cancellationToken);
+        }
         else
+        {
             result = await _followupService.GetAllAsync(teacherId, cancellationToken);
+        }
 
         return Ok(result);
     }

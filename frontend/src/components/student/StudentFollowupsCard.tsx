@@ -67,6 +67,7 @@ export function StudentFollowupsCard({ followups, studentId, onFollowupChange }:
             return (
               <div key={f.id} className="flex items-start gap-2 group">
                 <button
+                  type="button"
                   onClick={() => handleToggle(f)}
                   aria-label="Mark done"
                   data-testid={`followup-toggle-${f.id}`}
@@ -81,6 +82,7 @@ export function StudentFollowupsCard({ followups, studentId, onFollowupChange }:
                   )}
                 </div>
                 <button
+                  type="button"
                   onClick={() => handleToggle(f)}
                   className="shrink-0 text-[0.6875rem] font-semibold text-zinc-400 hover:text-emerald-600 transition-colors opacity-0 group-hover:opacity-100"
                   data-testid={`followup-done-btn-${f.id}`}
@@ -113,6 +115,7 @@ export function StudentFollowupsCard({ followups, studentId, onFollowupChange }:
           disabled={createMutation.isPending}
         />
         <button
+          type="button"
           onClick={handleAdd}
           disabled={createMutation.isPending || !newText.trim()}
           className="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-40 transition-colors"

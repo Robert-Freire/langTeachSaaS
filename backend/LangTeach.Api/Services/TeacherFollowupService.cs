@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
@@ -38,6 +39,24 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
 
     public async Task<TeacherFollowupDto> CreateAsync(Guid teacherId, CreateTeacherFollowupRequest request, CancellationToken cancellationToken)
     {
+        string? studentName = null;
+        if (request.StudentId.HasValue)
+        {
+            studentName = await db.Students
+                .Where(s => s.Id == request.StudentId.Value && s.TeacherId == teacherId)
+                .Select(s => s.Name)
+                .FirstOrDefaultAsync(cancellationToken)
+                ?? throw new ValidationException("Student not found.");
+        }
+
+        if (request.SourceSessionLogId.HasValue)
+        {
+            var sessionExists = await db.SessionLogs
+                .AnyAsync(sl => sl.Id == request.SourceSessionLogId.Value && sl.TeacherId == teacherId, cancellationToken);
+            if (!sessionExists)
+                throw new ValidationException("Session log not found.");
+        }
+
         var followup = new TeacherFollowup
         {
             Id = Guid.NewGuid(),
@@ -52,15 +71,6 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
 
         db.TeacherFollowups.Add(followup);
         await db.SaveChangesAsync(cancellationToken);
-
-        string? studentName = null;
-        if (request.StudentId.HasValue)
-        {
-            studentName = await db.Students
-                .Where(s => s.Id == request.StudentId.Value)
-                .Select(s => s.Name)
-                .FirstOrDefaultAsync(cancellationToken);
-        }
 
         return ToDto(followup, studentName);
     }
