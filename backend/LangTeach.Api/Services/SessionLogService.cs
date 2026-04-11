@@ -400,7 +400,7 @@ public class SessionLogService : ISessionLogService
 
     internal static string GenerateTitle(string? plannedContent, string? actualContent, DateTime? sessionDate)
     {
-        var content = actualContent ?? plannedContent;
+        var content = !string.IsNullOrWhiteSpace(actualContent) ? actualContent : plannedContent;
         if (!string.IsNullOrWhiteSpace(content))
         {
             var firstLine = content.Split('\n', StringSplitOptions.RemoveEmptyEntries)[0].Trim();
