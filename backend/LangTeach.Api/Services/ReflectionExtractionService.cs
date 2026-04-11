@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
@@ -10,15 +11,21 @@ public class ReflectionExtractionService : IReflectionExtractionService
     private readonly IClaudeClient _claude;
     private readonly ILogger<ReflectionExtractionService> _logger;
 
-    private const string SystemPrompt = """
+    internal static string BuildSystemPrompt(DateOnly today) => $"""
         You are a tool that helps language teachers structure their post-class notes.
         Extract structured information from a teacher's free-form reflection text.
+
+        IMPORTANT: Preserve the original language of the teacher's text. Do not translate any field value into another language.
+
+        Today's date is {today:yyyy-MM-dd}.
+
         Respond ONLY with a valid JSON object using these exact keys:
         - whatWasCovered: string or null
         - areasToImprove: string or null (narrative summary of student difficulties and struggles — prose, not a list)
         - emotionalSignals: string or null (student attitude, mood, motivation, engagement signals)
         - homeworkAssigned: string or null
         - nextLessonIdeas: string or null
+        - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) resolved from today's date and any date reference the teacher mentions ("hoy"/"today" = today, "ayer"/"yesterday" = yesterday, "el martes pasado" = last Tuesday, etc.); null if no date is mentioned
         - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
 
         For suggestedDifficulties, each object must have:
@@ -41,7 +48,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
     public async Task<ExtractedReflectionDto> ExtractAsync(string text, CancellationToken ct = default)
     {
         var request = new ClaudeRequest(
-            SystemPrompt: SystemPrompt,
+            SystemPrompt: BuildSystemPrompt(DateOnly.FromDateTime(DateTime.UtcNow)),
             UserPrompt: text,
             Model: ClaudeModel.Haiku,
             MaxTokens: 1024
@@ -55,7 +62,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Claude API call failed during reflection extraction");
-            return new ExtractedReflectionDto(null, null, null, null, null, []);
+            return new ExtractedReflectionDto(null, null, null, null, null, null, []);
         }
 
         return ParseResponse(response.Content);
@@ -75,6 +82,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 EmotionalSignals: GetStringOrNull(root, "emotionalSignals"),
                 HomeworkAssigned: GetStringOrNull(root, "homeworkAssigned"),
                 NextLessonIdeas: GetStringOrNull(root, "nextLessonIdeas"),
+                SessionDate: GetIsoDateOrNull(root, "sessionDate"),
                 SuggestedDifficulties: ParseSuggestedDifficulties(root)
             );
         }
@@ -82,7 +90,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
         {
             _logger.LogWarning(ex, "Failed to parse reflection extraction JSON (length: {Length})", json?.Length ?? 0);
         _logger.LogDebug("Unparseable Claude response: {Json}", json);
-            return new ExtractedReflectionDto(null, null, null, null, null, []);
+            return new ExtractedReflectionDto(null, null, null, null, null, null, []);
         }
     }
 
@@ -124,5 +132,20 @@ public class ReflectionExtractionService : IReflectionExtractionService
             return string.IsNullOrWhiteSpace(value) ? null : value;
         }
         return null;
+    }
+
+    private static string? GetIsoDateOrNull(JsonElement root, string key)
+    {
+        var raw = GetStringOrNull(root, key);
+        if (raw is null) return null;
+
+        return DateOnly.TryParseExact(
+            raw,
+            "yyyy-MM-dd",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None,
+            out var parsed)
+            ? parsed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+            : null;
     }
 }
