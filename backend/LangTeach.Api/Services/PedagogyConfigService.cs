@@ -120,6 +120,9 @@ public class PedagogyConfigService : IPedagogyConfigService
 
         // Load difficulty taxonomy
         var taxonomy = LoadJson<DifficultyTaxonomyFile>(assembly, "LangTeach.Api.Pedagogy.difficulty-taxonomy.json");
+        if (taxonomy.Competencies is not { Length: > 0 } || taxonomy.Severities is not { Length: > 0 })
+            throw new InvalidOperationException(
+                "PedagogyConfigService: difficulty-taxonomy.json must define at least one competency and one severity.");
         _difficultyCompetencies = taxonomy.Competencies.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
         _difficultySeverities = taxonomy.Severities.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 

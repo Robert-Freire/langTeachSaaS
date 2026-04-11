@@ -1497,36 +1497,36 @@ public class PromptService : IPromptService
             """;
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Course: {ctx.CourseName}");
-        sb.AppendLine($"Language: {ctx.Language}");
-        sb.AppendLine($"Target level: {ctx.TargetCefrLevel ?? "not set"}");
-        sb.AppendLine($"Student: {ctx.StudentName ?? "unknown"}");
+        sb.AppendLine($"Course: {InputSanitizer.Sanitize(ctx.CourseName)}");
+        sb.AppendLine($"Language: {InputSanitizer.Sanitize(ctx.Language)}");
+        sb.AppendLine($"Target level: {InputSanitizer.Sanitize(ctx.TargetCefrLevel ?? "not set")}");
+        sb.AppendLine($"Student: {InputSanitizer.Sanitize(ctx.StudentName ?? "unknown")}");
         sb.AppendLine();
 
         if (ctx.Difficulties.Count > 0)
         {
             sb.AppendLine("Student difficulties on record:");
             foreach (var d in ctx.Difficulties)
-                sb.AppendLine($"- {d}");
+                sb.AppendLine($"- {InputSanitizer.Sanitize(d)}");
             sb.AppendLine();
         }
 
         sb.AppendLine("What has been taught so far (with lesson notes):");
         foreach (var e in ctx.TaughtEntries)
         {
-            sb.Append($"- {e.Topic}");
-            if (!string.IsNullOrWhiteSpace(e.GrammarFocus)) sb.Append($" (grammar: {e.GrammarFocus})");
+            sb.Append($"- {InputSanitizer.Sanitize(e.Topic)}");
+            if (!string.IsNullOrWhiteSpace(e.GrammarFocus)) sb.Append($" (grammar: {InputSanitizer.Sanitize(e.GrammarFocus)})");
             sb.AppendLine();
-            if (!string.IsNullOrWhiteSpace(e.WhatWasCovered)) sb.AppendLine($"  Covered: {e.WhatWasCovered}");
-            if (!string.IsNullOrWhiteSpace(e.AreasToImprove)) sb.AppendLine($"  Areas to improve: {e.AreasToImprove}");
+            if (!string.IsNullOrWhiteSpace(e.WhatWasCovered)) sb.AppendLine($"  Covered: {InputSanitizer.Sanitize(e.WhatWasCovered)}");
+            if (!string.IsNullOrWhiteSpace(e.AreasToImprove)) sb.AppendLine($"  Areas to improve: {InputSanitizer.Sanitize(e.AreasToImprove)}");
         }
         sb.AppendLine();
 
         sb.AppendLine("Upcoming planned lessons (these can be adjusted):");
         foreach (var e in ctx.PlannedEntries)
         {
-            sb.Append($"- [ID: {e.Id}] Session {e.OrderIndex + 1}: {e.Topic}");
-            if (!string.IsNullOrWhiteSpace(e.GrammarFocus)) sb.Append($" (grammar: {e.GrammarFocus})");
+            sb.Append($"- [ID: {e.Id}] Session {e.OrderIndex + 1}: {InputSanitizer.Sanitize(e.Topic)}");
+            if (!string.IsNullOrWhiteSpace(e.GrammarFocus)) sb.Append($" (grammar: {InputSanitizer.Sanitize(e.GrammarFocus)})");
             sb.AppendLine();
         }
         sb.AppendLine();
