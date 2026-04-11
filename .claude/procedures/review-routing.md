@@ -17,6 +17,8 @@ gh issue view <N> --json labels --jq '.labels[].name'
 | Issue has `review:sophy` label | Sophy | `sophy` |
 | Diff touches `**/Models/*.cs`, `**/Dtos/*.cs`, `**/Data/*.cs`, `**/Migrations/*.cs`, `data/**/*.json`, `**/contentTypes.ts`, or adds new entities/tables/FKs | Sophy | `sophy` |
 | Diff touches `**/PromptService.cs`, prompt builders, or generation services (including hardcoded conditionals on language/level/template) | Sophy | `sophy` |
+| Diff adds or modifies a file that references `ClaudeRequest`, `IClaudeClient`, or contains an inline `SystemPrompt` constant (i.e., prompt construction outside PromptService) | Sophy | `sophy` |
+| Diff touches `**/DifficultyConstants.cs` or files that define domain taxonomy enums/sets (competencies, severities, content types) | Sophy | `sophy` |
 | Diff touches `data/pedagogy/*.json`, `data/section-profiles/*.json`, `data/pedagogy/cefr-level-rules/*.json` | Isaac | `pedagogy-reviewer` |
 
 **IMPORTANT: Sophy and Arch are different agents.** Do not confuse them.
@@ -27,7 +29,7 @@ gh issue view <N> --json labels --jq '.labels[].name'
 
 ### Sophy prompt
 
-> Review this PR diff for data model soundness and prompt architecture: <paste relevant diff>. Check for: unstated assumptions, missing entity relationships, config-vs-code violations, over-engineering, conflicts with existing patterns, redundant or contradictory prompt instructions, negative bloat. Verdict: APPROVE / NEEDS CLARIFICATION. Final response under 1500 characters.
+> Review this PR diff for data model soundness and prompt architecture: <paste relevant diff>. Check for: unstated assumptions, missing entity relationships, config-vs-code violations, over-engineering, conflicts with existing patterns, redundant or contradictory prompt instructions, negative bloat, prompt construction outside PromptService (any service injecting IClaudeClient and building its own SystemPrompt is a layer violation), and domain taxonomy hardcoded in C# that belongs in JSON config. Verdict: APPROVE / NEEDS CLARIFICATION. Final response under 1500 characters.
 
 ### Isaac prompt
 

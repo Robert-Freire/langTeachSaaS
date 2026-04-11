@@ -70,7 +70,7 @@ LangTeach is a SaaS for language teachers. A teacher creates students, plans cou
 
 1. **Controllers** never contain business logic. They map HTTP to service calls and handle auth context extraction.
 2. **Services** own business logic and data access. A service may call other services but not controllers.
-3. **AI Layer** (PromptService + ClaudeApiClient) is the only code that builds prompts or calls Claude. No service or controller constructs prompt text directly.
+3. **AI Layer** (PromptService + ClaudeApiClient) is the only code that builds prompts or calls Claude. No service or controller constructs prompt text directly. **Smell:** a service that injects `IClaudeClient` and defines its own `SystemPrompt` string is bypassing this layer. The correct pattern is `CurriculumGenerationService`, which delegates prompt construction to PromptService and only calls `IClaudeClient` for the HTTP round-trip.
 4. **Pedagogy Config services** are singletons loaded once at startup. They are read-only after initialization. PromptService depends on them; they depend on nothing except embedded JSON resources.
 5. **Data Layer** is accessed only through services, never from controllers directly.
 
