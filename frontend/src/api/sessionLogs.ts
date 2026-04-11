@@ -42,6 +42,7 @@ export interface ExtractedReflection {
   emotionalSignals: string | null
   homeworkAssigned: string | null
   nextLessonIdeas: string | null
+  sessionDate?: string | null
   suggestedDifficulties: SuggestedDifficulty[]
 }
 
