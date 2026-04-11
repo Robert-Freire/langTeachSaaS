@@ -116,6 +116,8 @@ export function SessionLogDialog({
   const [draftSessionId, setDraftSessionId] = useState<string | null>(null)
   const [extractionFailed, setExtractionFailed] = useState(false)
   const voiceRunRef = useRef(0)
+  const sessionDateRef = useRef(sessionDate)
+  useEffect(() => { sessionDateRef.current = sessionDate }, [sessionDate])
 
   // Pre-populate fields when editing an existing session
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -325,11 +327,13 @@ export function SessionLogDialog({
       setNextSessionTopics(extracted.nextLessonIdeas ?? '')
       setGeneralNotes(notes)
       setSuggestedDifficulties(extracted.suggestedDifficulties ?? [])
+      if (!sessionDateRef.current && extracted.sessionDate) setSessionDate(extracted.sessionDate)
       /* eslint-enable react-hooks/set-state-in-effect */
       if (runId !== voiceRunRef.current) return
       // Auto-save as Draft using full current form state + extracted fields
+      const resolvedDate = sessionDateRef.current || extracted.sessionDate || null
       const draft = await createSession(studentId, {
-        sessionDate: sessionDate || null,
+        sessionDate: resolvedDate,
         plannedContent: plannedContent || null,
         actualContent: extracted.whatWasCovered ?? null,
         homeworkAssigned: extracted.homeworkAssigned ?? null,

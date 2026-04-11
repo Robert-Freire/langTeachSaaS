@@ -3173,13 +3173,17 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public void BuildReflectionExtractionPrompt_InjectsTodayForRelativeDateResolution()
+    public void BuildReflectionExtractionPrompt_InjectsDayOfWeekAndRelativeDateInstructions()
     {
-        var today = new DateOnly(2026, 4, 11);
+        var today = new DateOnly(2026, 4, 11); // Saturday
         var request = _sut.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(today, "teacher notes"));
 
+        request.SystemPrompt.Should().Contain("Saturday");
+        request.SystemPrompt.Should().Contain("2026-04-11");
         request.SystemPrompt.Should().Contain("hoy");
         request.SystemPrompt.Should().Contain("ayer");
+        request.SystemPrompt.Should().Contain("el pasado lunes");
+        request.SystemPrompt.Should().Contain("el lunes pasado");
     }
 
     [Fact]
