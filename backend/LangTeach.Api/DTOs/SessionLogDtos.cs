@@ -73,10 +73,13 @@ public class CreateSessionLogRequest
     public List<SuggestedDifficultyDto>? SuggestedDifficulties { get; set; }
 
     // Voice note traceability -- written to VoiceNoteApplication when provided.
-    // VoiceNoteId is null for Telegram (no VoiceNote entity). No MaxLength because
-    // transcriptions and raw Claude JSON can be arbitrarily large.
+    // VoiceNoteId is null for Telegram (no VoiceNote entity).
     public Guid? VoiceNoteId { get; set; }
+
+    [MaxLength(100000)]
     public string? VoiceNoteTranscription { get; set; }
+
+    [MaxLength(100000)]
     public string? RawExtractionJson { get; set; }
 }
 

@@ -1,11 +1,5 @@
 namespace LangTeach.Api.Data.Models;
 
-public enum ApplicationType
-{
-    Create,
-    Update
-}
-
 public class VoiceNoteApplication
 {
     public Guid Id { get; set; }
