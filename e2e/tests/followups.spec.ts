@@ -48,12 +48,10 @@ test('followup happy path: create, appear on dashboard, mark done', async ({ bro
     await expect(page.getByTestId('zone2-pending-followups')).toBeVisible({ timeout: UI_TIMEOUT })
     await expect(page.getByText(followupText)).toBeVisible({ timeout: UI_TIMEOUT })
 
-    // Step 4: Mark as done from the dashboard (click the amber dot)
-    const followupRows = page.locator(`[data-testid^="followup-dot-"]`)
-    // Find the row with our followup text
-    const ourRow = page.locator('[data-testid="zone2-pending-followups"]').locator(`text="${followupText}"`).locator('..')
-    const dot = ourRow.locator('[aria-label="Mark done"]').first()
-    await dot.click()
+    // Step 4: Mark as done from the dashboard - find the dot next to our followup text
+    const panel = page.getByTestId('zone2-pending-followups')
+    const followupRow = panel.locator('div').filter({ hasText: followupText }).first()
+    await followupRow.getByLabel('Mark done').click()
 
     // Followup disappears from pending list (or panel shows "All caught up" if no other followups)
     await expect(page.getByText(followupText)).not.toBeVisible({ timeout: UI_TIMEOUT })

@@ -26,8 +26,7 @@ public class DashboardService : IDashboardService
         var nextSession = await GetNextSessionAsync(teacherId, now, cancellationToken);
         var todaySessions = await GetTodaySessionsAsync(teacherId, today, cancellationToken);
         var activeStudents = await GetActiveStudentsAsync(teacherId, now, cancellationToken);
-        var allFollowups = await _followupService.GetAllAsync(teacherId, cancellationToken);
-        var pendingFollowups = allFollowups.Where(f => f.Status == "pending").ToList();
+        var pendingFollowups = await _followupService.GetPendingAsync(teacherId, cancellationToken);
 
         return new DashboardDto(nextSession, todaySessions, activeStudents, pendingFollowups);
     }

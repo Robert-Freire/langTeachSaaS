@@ -15,9 +15,11 @@ public record TeacherFollowupDto(
 
 public record CreateTeacherFollowupRequest(
     [MaxLength(500)] string Text,
-    string? StudentId,
+    Guid? StudentId,
     DateOnly? DueDate,
-    string? SourceSessionLogId);
+    Guid? SourceSessionLogId);
 
 public record UpdateTeacherFollowupRequest(
-    [Required] string Status);
+    [Required]
+    [RegularExpression("^(pending|done)$", ErrorMessage = "Status must be 'pending' or 'done'.")]
+    string Status);

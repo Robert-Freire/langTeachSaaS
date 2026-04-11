@@ -12,10 +12,6 @@ function daysAgo(createdAt: string): number {
   return Math.floor(Math.max(0, Date.now() - new Date(createdAt).getTime()) / 86400000)
 }
 
-function overdueDays(createdAt: string): number {
-  return daysAgo(createdAt)
-}
-
 export function StudentFollowupsCard({ followups, studentId, onFollowupChange }: StudentFollowupsCardProps) {
   const [newText, setNewText] = useState('')
   const [adding, setAdding] = useState(false)
@@ -36,8 +32,12 @@ export function StudentFollowupsCard({ followups, studentId, onFollowupChange }:
 
   async function handleToggle(f: TeacherFollowup) {
     const next = f.status === 'pending' ? 'done' : 'pending'
-    await updateFollowupStatus(f.id, next)
-    onFollowupChange()
+    try {
+      await updateFollowupStatus(f.id, next)
+      onFollowupChange()
+    } catch {
+      // API failure - leave UI unchanged
+    }
   }
 
   const pending = followups.filter(f => f.status === 'pending')
@@ -59,7 +59,7 @@ export function StudentFollowupsCard({ followups, studentId, onFollowupChange }:
       ) : (
         <div className="space-y-1.5">
           {pending.map(f => {
-            const days = overdueDays(f.createdAt)
+            const days = daysAgo(f.createdAt)
             const isOverdue = days > 7
             return (
               <div key={f.id} className="flex items-start gap-2 group">

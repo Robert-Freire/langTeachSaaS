@@ -226,6 +226,8 @@ export function SessionLogDialog({
       setIsExtracting(false)
       setDraftSessionId(null)
       setExtractionFailed(false)
+      setLocalFollowups([])
+      setNewFollowupText('')
     }
   }, [open, linkedLessonId])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -269,15 +271,23 @@ export function SessionLogDialog({
   async function handleAddFollowup() {
     const text = newFollowupText.trim()
     if (!text) return
-    const created = await createFollowup({ text, studentId, sourceSessionLogId: draftSessionId ?? undefined })
-    setLocalFollowups(prev => [...prev, created])
-    setNewFollowupText('')
+    try {
+      const created = await createFollowup({ text, studentId, sourceSessionLogId: draftSessionId ?? undefined })
+      setLocalFollowups(prev => [...prev, created])
+      setNewFollowupText('')
+    } catch {
+      // API failure - leave input intact so user can retry
+    }
   }
 
   async function handleToggleFollowup(f: TeacherFollowup) {
     const next = f.status === 'pending' ? 'done' : 'pending'
-    await updateFollowupStatus(f.id, next)
-    setLocalFollowups(prev => prev.map(lf => lf.id === f.id ? { ...lf, status: next } : lf))
+    try {
+      await updateFollowupStatus(f.id, next)
+      setLocalFollowups(prev => prev.map(lf => lf.id === f.id ? { ...lf, status: next } : lf))
+    } catch {
+      // API failure - leave UI unchanged
+    }
   }
 
   const { mutate: submitLog, isPending } = useMutation({

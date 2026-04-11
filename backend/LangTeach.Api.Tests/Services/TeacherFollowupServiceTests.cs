@@ -48,7 +48,7 @@ public class TeacherFollowupServiceTests : IDisposable
     [Fact]
     public async Task CreateAsync_AddsFollowup_ReturnableViaGetAll()
     {
-        var request = new CreateTeacherFollowupRequest("Enviar ejercicio de gustar", _studentId.ToString(), null, null);
+        var request = new CreateTeacherFollowupRequest("Enviar ejercicio de gustar", _studentId, null, null);
 
         var created = await _sut.CreateAsync(_teacherId, request, default);
 
@@ -82,8 +82,8 @@ public class TeacherFollowupServiceTests : IDisposable
         });
         _db.SaveChanges();
 
-        await _sut.CreateAsync(_teacherId, new CreateTeacherFollowupRequest("Followup for Ewan", _studentId.ToString(), null, null), default);
-        await _sut.CreateAsync(_teacherId, new CreateTeacherFollowupRequest("Followup for Bruno", otherStudentId.ToString(), null, null), default);
+        await _sut.CreateAsync(_teacherId, new CreateTeacherFollowupRequest("Followup for Ewan", _studentId, null, null), default);
+        await _sut.CreateAsync(_teacherId, new CreateTeacherFollowupRequest("Followup for Bruno", otherStudentId, null, null), default);
 
         var result = await _sut.GetByStudentAsync(_teacherId, _studentId, default);
 
@@ -146,5 +146,19 @@ public class TeacherFollowupServiceTests : IDisposable
         var result = await _sut.UpdateStatusAsync(_otherTeacherId, Guid.Parse(created.Id), new UpdateTeacherFollowupRequest("done"), default);
 
         result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetPendingAsync_ReturnsOnlyPendingFollowups()
+    {
+        var created = await _sut.CreateAsync(_teacherId, new CreateTeacherFollowupRequest("Pending one", null, null, null), default);
+        await _sut.CreateAsync(_teacherId, new CreateTeacherFollowupRequest("Done one", null, null, null), default);
+        await _sut.UpdateStatusAsync(_teacherId, Guid.Parse((await _sut.GetAllAsync(_teacherId, default))[1].Id), new UpdateTeacherFollowupRequest("done"), default);
+
+        var pending = await _sut.GetPendingAsync(_teacherId, default);
+
+        pending.Should().HaveCount(1);
+        pending[0].Text.Should().Be("Pending one");
+        pending[0].Status.Should().Be("pending");
     }
 }

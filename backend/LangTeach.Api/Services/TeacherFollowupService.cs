@@ -17,6 +17,16 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<List<TeacherFollowupDto>> GetPendingAsync(Guid teacherId, CancellationToken cancellationToken)
+    {
+        return await db.TeacherFollowups
+            .Where(f => f.TeacherId == teacherId && f.Status == "pending")
+            .Include(f => f.Student)
+            .OrderBy(f => f.CreatedAt)
+            .Select(f => ToDto(f, f.Student != null ? f.Student.Name : null))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<List<TeacherFollowupDto>> GetByStudentAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken)
     {
         return await db.TeacherFollowups
@@ -28,29 +38,26 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
 
     public async Task<TeacherFollowupDto> CreateAsync(Guid teacherId, CreateTeacherFollowupRequest request, CancellationToken cancellationToken)
     {
-        Guid? studentId = request.StudentId is not null ? Guid.Parse(request.StudentId) : null;
-        Guid? sourceSessionLogId = request.SourceSessionLogId is not null ? Guid.Parse(request.SourceSessionLogId) : null;
-
         var followup = new TeacherFollowup
         {
             Id = Guid.NewGuid(),
             TeacherId = teacherId,
-            StudentId = studentId,
+            StudentId = request.StudentId,
             Text = request.Text,
             Status = "pending",
             CreatedAt = DateTime.UtcNow,
             DueDate = request.DueDate,
-            SourceSessionLogId = sourceSessionLogId,
+            SourceSessionLogId = request.SourceSessionLogId,
         };
 
         db.TeacherFollowups.Add(followup);
         await db.SaveChangesAsync(cancellationToken);
 
         string? studentName = null;
-        if (studentId.HasValue)
+        if (request.StudentId.HasValue)
         {
             studentName = await db.Students
-                .Where(s => s.Id == studentId.Value)
+                .Where(s => s.Id == request.StudentId.Value)
                 .Select(s => s.Name)
                 .FirstOrDefaultAsync(cancellationToken);
         }
@@ -86,8 +93,7 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
     }
 
     private static TeacherFollowupDto ToDto(TeacherFollowup f, string? studentName) =>
-        new(
-            f.Id.ToString(),
+        new(f.Id.ToString(),
             f.StudentId?.ToString(),
             studentName,
             f.Text,
