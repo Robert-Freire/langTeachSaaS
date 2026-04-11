@@ -1,11 +1,25 @@
-import { Link } from 'react-router-dom'
-import { Pencil } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
+import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { cn } from '@/lib/utils'
 import type { Student } from '@/api/students'
 import { parseNotes } from './studentNoteUtils'
+
+const SKILL_ORDER = ['Reading', 'Writing', 'Speaking', 'Listening']
+const CEFR_WIDTH: Record<string, string> = {
+  A1: 'w-1/6', A2: 'w-2/6', B1: 'w-3/6', B2: 'w-4/6', C1: 'w-5/6', C2: 'w-full',
+}
+
+const LANG_TO_CODE: Record<string, string> = {
+  English: 'EN', Spanish: 'ES', French: 'FR', German: 'DE',
+  Italian: 'IT', Portuguese: 'PT', Mandarin: 'ZH', Japanese: 'JA',
+  Arabic: 'AR', Catalan: 'CA', Other: '??',
+}
+
+function langCode(lang: string): string {
+  return LANG_TO_CODE[lang] ?? lang.slice(0, 2).toUpperCase()
+}
 
 interface Props {
   student: Student
@@ -43,27 +57,45 @@ export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Pr
   return (
     <Card className="border-zinc-200" data-testid="student-profile-overview">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Teaching Context</CardTitle>
-          <Link
-            to={`/students/${student.id}/edit`}
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
-            data-testid="edit-profile-link"
-          >
-            <Pencil className="h-3.5 w-3.5 mr-1.5" />
-            Edit profile
-          </Link>
-        </div>
+        <CardTitle className="text-base">Pedagogical Profile</CardTitle>
       </CardHeader>
       <CardContent>
         <dl className="space-y-4">
-          <FieldRow label="Native language">
-            <span className="text-sm text-zinc-800" data-testid="overview-native-language">
-              {student.nativeLanguages.length > 0
-                ? student.nativeLanguages.join(', ')
-                : <span className="text-zinc-400 italic">Not specified</span>}
-            </span>
-          </FieldRow>
+          {/* Skill bars */}
+          {SKILL_ORDER.some((s) => student.skillLevelOverrides?.[s]) && (
+            <FieldRow label="Skill overrides">
+              <div className="space-y-2" data-testid="overview-skill-bars">
+                {SKILL_ORDER.filter((s) => student.skillLevelOverrides?.[s]).map((skill) => {
+                  const level = student.skillLevelOverrides[skill]
+                  return (
+                    <div key={skill} className="flex items-center gap-2">
+                      <span className="text-xs text-zinc-400 w-16 shrink-0">{skill}</span>
+                      <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                        <div className={cn('h-full rounded-full bg-indigo-400', CEFR_WIDTH[level] ?? 'w-0')} />
+                      </div>
+                      <CefrBadge level={level} data-testid={`overview-skill-badge-${skill.toLowerCase()}`} />
+                    </div>
+                  )
+                })}
+              </div>
+            </FieldRow>
+          )}
+
+          {/* Native languages as tags */}
+          {student.nativeLanguages.length > 0 && (
+            <FieldRow label="Native languages">
+              <div className="flex flex-wrap gap-1.5" data-testid="overview-native-language">
+                {student.nativeLanguages.map((lang) => (
+                  <span key={lang} className="inline-flex items-center gap-1 text-sm text-zinc-700">
+                    {lang}
+                    <span className="inline-flex items-center justify-center rounded px-1 py-0.5 text-[0.625rem] font-bold uppercase bg-zinc-100 text-zinc-500">
+                      {langCode(lang)}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            </FieldRow>
+          )}
 
           <FieldRow label="Learning goals">
             <ChipList items={student.learningGoals} emptyText="None specified" />

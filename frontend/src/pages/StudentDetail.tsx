@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { StudentProfileTab } from '@/components/student/StudentProfileTab'
+import { StudentProfileOverview } from '@/components/student/StudentProfileOverview'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
 import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
@@ -27,7 +28,7 @@ export default function StudentDetail() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
-  const defaultTab = searchParams.get('tab') ?? 'profile'
+  const defaultTab = searchParams.get('tab') ?? 'overview'
   const [activeTab, setActiveTab] = useState(defaultTab)
   const [logSessionOpen, setLogSessionOpen] = useState(false)
 
@@ -67,6 +68,7 @@ export default function StudentDetail() {
         isCorporate: student.isCorporate,
         rate: student.rate,
         spokenLanguages: student.spokenLanguages,
+        skillLevelOverrides: student.skillLevelOverrides,
         teachingTodos: student.teachingTodos,
       })
     },
@@ -104,6 +106,7 @@ export default function StudentDetail() {
   }
 
   const tabs = [
+    { key: 'overview', label: 'Overview' },
     { key: 'profile', label: 'Profile' },
     { key: 'sessions', label: 'Sessions' },
     { key: 'progress', label: 'Progress' },
@@ -215,6 +218,15 @@ export default function StudentDetail() {
       </div>
 
       {/* Tab content */}
+      {activeTab === 'overview' && (
+        <StudentProfileOverview
+          student={student}
+          onToggleDifficultyStatus={(difficultyId, status) =>
+            toggleDifficultyStatus({ difficultyId, status })
+          }
+        />
+      )}
+
       {activeTab === 'profile' && (
         <StudentProfileTab
           student={student}

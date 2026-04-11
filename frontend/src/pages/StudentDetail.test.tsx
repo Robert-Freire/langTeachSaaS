@@ -63,6 +63,7 @@ const MOCK_STUDENT: studentsApi.Student = {
   isCorporate: false,
   rate: '30 EUR/h',
   spokenLanguages: ['French'],
+  skillLevelOverrides: {},
   teachingTodos: [
     { id: 'todo-1', text: 'Send homework exercises', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Pending', coveredInSessionLogId: null },
   ],
@@ -111,20 +112,30 @@ describe('StudentDetail', () => {
     expect(await screen.findByText('Student not found.')).toBeInTheDocument()
   })
 
-  it('renders Profile, Sessions, and Progress tabs', async () => {
+  it('renders Overview, Profile, Sessions, and Progress tabs', async () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('tab-overview')).toBeInTheDocument()
     expect(screen.getByTestId('tab-profile')).toBeInTheDocument()
     expect(screen.getByTestId('tab-sessions')).toBeInTheDocument()
     expect(screen.getByTestId('tab-progress')).toBeInTheDocument()
   })
 
-  it('shows Profile tab content by default', async () => {
+  it('shows Overview tab content by default', async () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.getByTestId('student-profile-tab')).toBeInTheDocument()
+    expect(screen.getByTestId('student-profile-overview')).toBeInTheDocument()
+    expect(screen.queryByTestId('student-profile-tab')).not.toBeInTheDocument()
     expect(screen.queryByTestId('session-history-tab')).not.toBeInTheDocument()
     expect(screen.queryByTestId('progress-dashboard')).not.toBeInTheDocument()
+  })
+
+  it('switches to Profile tab on click', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    fireEvent.click(screen.getByTestId('tab-profile'))
+    expect(screen.getByTestId('student-profile-tab')).toBeInTheDocument()
+    expect(screen.queryByTestId('student-profile-overview')).not.toBeInTheDocument()
   })
 
   it('switches to Sessions tab on click', async () => {
@@ -182,8 +193,14 @@ describe('StudentDetail - Profile tab sections', () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue(MOCK_STUDENT)
   })
 
-  it('renders About section with identity fields', async () => {
+  async function openProfileTab() {
     wrapper()
+    await screen.findByTestId('student-detail-name')
+    fireEvent.click(screen.getByTestId('tab-profile'))
+  }
+
+  it('renders About section with identity fields', async () => {
+    await openProfileTab()
     await screen.findByTestId('profile-about')
     expect(screen.getByText('London, United Kingdom')).toBeInTheDocument()
     expect(screen.getByText('Barcelona, Spain')).toBeInTheDocument()
@@ -192,35 +209,36 @@ describe('StudentDetail - Profile tab sections', () => {
     expect(screen.getByText('Moved to Barcelona for work')).toBeInTheDocument()
   })
 
-  it('renders Languages section', async () => {
-    wrapper()
-    const section = await screen.findByTestId('profile-languages')
+  it('renders Language Ecosystem section', async () => {
+    await openProfileTab()
+    const section = await screen.findByTestId('profile-language-ecosystem')
     expect(section).toHaveTextContent('English')
     expect(section).toHaveTextContent('French')
-    expect(section).toHaveTextContent('Spanish (B1)')
+    expect(section).toHaveTextContent('Spanish')
+    expect(section).toHaveTextContent('B1')
   })
 
   it('renders Learning Goals section', async () => {
-    wrapper()
+    await openProfileTab()
     await screen.findByTestId('profile-learning-goals')
     expect(screen.getByText('Travel')).toBeInTheDocument()
     expect(screen.getByText('DELE B1')).toBeInTheDocument()
   })
 
   it('renders Short-Term Objectives section', async () => {
-    wrapper()
+    await openProfileTab()
     await screen.findByTestId('profile-objectives')
     expect(screen.getByText('Complete DELE B1 exam prep')).toBeInTheDocument()
   })
 
   it('renders Teaching Todos section', async () => {
-    wrapper()
+    await openProfileTab()
     await screen.findByTestId('profile-teaching-todos')
     expect(screen.getByText('Send homework exercises')).toBeInTheDocument()
   })
 
   it('renders Commercial section with active status', async () => {
-    wrapper()
+    await openProfileTab()
     await screen.findByTestId('profile-commercial')
     expect(screen.getByTestId('active-status-badge')).toHaveTextContent('Active')
     expect(screen.getByText('30 EUR/h')).toBeInTheDocument()
@@ -240,7 +258,7 @@ describe('StudentDetail - Profile tab sections', () => {
       shortTermObjectives: [],
       teachingTodos: [],
     })
-    wrapper()
+    await openProfileTab()
     await screen.findByTestId('profile-about')
     expect(screen.getByText('No identity details added yet')).toBeInTheDocument()
     expect(screen.getByText('No learning goals set')).toBeInTheDocument()

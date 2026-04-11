@@ -187,6 +187,62 @@ public class StudentServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateAsync_SkillLevelOverrides_RoundTrip()
+    {
+        var request = BaseRequest();
+        request.SkillLevelOverrides = new Dictionary<string, string>
+        {
+            { "Reading", "B2" },
+            { "Listening", "A2" },
+        };
+
+        var result = await _sut.CreateAsync(_teacherId, request);
+
+        result.SkillLevelOverrides.Should().ContainKey("Reading").WhoseValue.Should().Be("B2");
+        result.SkillLevelOverrides.Should().ContainKey("Listening").WhoseValue.Should().Be("A2");
+        result.SkillLevelOverrides.Should().NotContainKey("Writing");
+    }
+
+    [Fact]
+    public async Task CreateAsync_SkillLevelOverrides_InvalidKey_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.SkillLevelOverrides = new Dictionary<string, string> { { "Pronunciation", "B1" } };
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>().WithMessage("*Pronunciation*");
+    }
+
+    [Fact]
+    public async Task CreateAsync_SkillLevelOverrides_InvalidValue_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.SkillLevelOverrides = new Dictionary<string, string> { { "Reading", "X1" } };
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>().WithMessage("*X1*");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_SkillLevelOverrides_RoundTrip()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        var update = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.CefrLevel,
+            SkillLevelOverrides = new Dictionary<string, string> { { "Speaking", "C1" } },
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, created.Id, update);
+
+        result!.SkillLevelOverrides.Should().ContainKey("Speaking").WhoseValue.Should().Be("C1");
+    }
+
+    [Fact]
     public async Task CreateAsync_BirthYearOutOfRange_ThrowsValidationException()
     {
         var request = BaseRequest();

@@ -1,8 +1,21 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import type { Student } from '@/api/students'
 import { parseNotes } from './studentNoteUtils'
 import { TeachingTodosCard } from './TeachingTodosCard'
+
+const LANG_TO_CODE: Record<string, string> = {
+  English: 'EN', Spanish: 'ES', French: 'FR', German: 'DE',
+  Italian: 'IT', Portuguese: 'PT', Mandarin: 'ZH', Japanese: 'JA',
+  Arabic: 'AR', Catalan: 'CA', Other: '??',
+}
+
+function langCode(lang: string): string {
+  return LANG_TO_CODE[lang] ?? lang.slice(0, 2).toUpperCase()
+}
+
+const SKILL_ORDER = ['Reading', 'Writing', 'Speaking', 'Listening']
 
 interface Props {
   student: Student
@@ -67,24 +80,70 @@ export function StudentProfileTab({ student, onToggleDifficultyStatus }: Props) 
             )}
           </section>
 
-          {/* Languages */}
-          <section data-testid="profile-languages">
-            <SectionHeader>Languages</SectionHeader>
-            <div>
-              <FieldValue
-                label="Native"
-                value={student.nativeLanguages.length > 0 ? student.nativeLanguages.join(', ') : null}
-              />
-              {student.spokenLanguages.length > 0 && (
-                <FieldValue label="Spoken" value={student.spokenLanguages.join(', ')} />
+          {/* Language Ecosystem */}
+          <section data-testid="profile-language-ecosystem">
+            <SectionHeader>Language Ecosystem</SectionHeader>
+            <div className="space-y-2">
+              {student.nativeLanguages.length > 0 && (
+                <div className="flex items-baseline gap-2 py-1">
+                  <span className="text-xs text-zinc-400 shrink-0 w-28">Native</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {student.nativeLanguages.map((lang) => (
+                      <span key={lang} className="inline-flex items-center gap-1 text-sm text-[#1A1B22]">
+                        {lang}
+                        <span className="inline-flex items-center justify-center rounded px-1 py-0.5 text-[0.625rem] font-bold uppercase bg-zinc-100 text-zinc-500">
+                          {langCode(lang)}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
-              <FieldValue
-                label="Learning"
-                value={`${student.learningLanguage} (${student.cefrLevel})`}
-              />
+              {student.spokenLanguages.length > 0 && (
+                <FieldValue label="Spoken Languages" value={student.spokenLanguages.join(', ')} />
+              )}
+              <div className="flex items-baseline gap-2 py-1">
+                <span className="text-xs text-zinc-400 shrink-0 w-28">Learning</span>
+                <span className="text-sm text-[#1A1B22] flex items-center gap-2">
+                  {student.learningLanguage}
+                  <CefrBadge level={student.cefrLevel} />
+                </span>
+              </div>
+              {student.officialCefrLevel && (
+                <div className="flex items-baseline gap-2 py-1">
+                  <span className="text-xs text-zinc-400 shrink-0 w-28">Levels</span>
+                  <span className="text-sm text-[#1A1B22] flex items-center gap-3">
+                    <span className="flex items-center gap-1">
+                      <span className="text-xs text-zinc-500">Teacher's Assessment:</span>
+                      <CefrBadge level={student.cefrLevel} />
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="text-xs text-zinc-500">Official:</span>
+                      <CefrBadge level={student.officialCefrLevel} />
+                    </span>
+                  </span>
+                </div>
+              )}
+              {student.nativeLanguages.length === 0 && student.spokenLanguages.length === 0 && (
+                <EmptyState text="No language details added yet" />
+              )}
             </div>
-            {student.nativeLanguages.length === 0 && student.spokenLanguages.length === 0 && (
-              <EmptyState text="No language details added yet" />
+          </section>
+
+          {/* Skill Assessment */}
+          <section data-testid="profile-skill-assessment">
+            <SectionHeader>Skill Assessment</SectionHeader>
+            {Object.keys(student.skillLevelOverrides ?? {}).length > 0 ? (
+              <div className="space-y-1.5">
+                {SKILL_ORDER.filter((s) => student.skillLevelOverrides?.[s]).map((skill) => (
+                  <div key={skill} className="flex items-center gap-3 py-0.5">
+                    <span className="text-xs text-zinc-400 w-20 shrink-0">{skill}</span>
+                    <CefrBadge level={student.skillLevelOverrides[skill]} data-testid={`skill-badge-${skill.toLowerCase()}`} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState text="No skill overrides set" />
             )}
           </section>
 

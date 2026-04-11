@@ -33,5 +33,7 @@ public record StudentDto(
     // Language fields
     List<string> SpokenLanguages,
     // Teaching fields
-    List<TeachingTodoDto> TeachingTodos
+    List<TeachingTodoDto> TeachingTodos,
+    // Skill override fields
+    Dictionary<string, string> SkillLevelOverrides
 );

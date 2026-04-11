@@ -21,7 +21,7 @@ const BASE_STUDENT: Student = {
   birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
   countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
   officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
-  rate: null, spokenLanguages: [], teachingTodos: [],
+  rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
 }
 
 function renderOverview(student: Partial<Student> = {}) {
@@ -96,19 +96,35 @@ describe('parseNotes', () => {
 })
 
 describe('StudentProfileOverview', () => {
-  it('renders "Teaching Context" card title', () => {
+  it('renders "Pedagogical Profile" card title', () => {
     renderOverview()
-    expect(screen.getByText('Teaching Context')).toBeInTheDocument()
+    expect(screen.getByText('Pedagogical Profile')).toBeInTheDocument()
   })
 
-  it('shows "Not specified" when native language is null', () => {
+  it('does not show native language section when empty', () => {
     renderOverview({ nativeLanguages: [] })
-    expect(screen.getByTestId('overview-native-language')).toHaveTextContent('Not specified')
+    expect(screen.queryByTestId('overview-native-language')).not.toBeInTheDocument()
   })
 
-  it('shows native language when set', () => {
+  it('shows native language tags with code badge when set', () => {
     renderOverview({ nativeLanguages: ['Portuguese'] })
-    expect(screen.getByTestId('overview-native-language')).toHaveTextContent('Portuguese')
+    const el = screen.getByTestId('overview-native-language')
+    expect(el).toHaveTextContent('Portuguese')
+    expect(el).toHaveTextContent('PT')
+  })
+
+  it('shows skill bars when overrides are set', () => {
+    renderOverview({ skillLevelOverrides: { Reading: 'B1', Writing: 'A2' } })
+    const bars = screen.getByTestId('overview-skill-bars')
+    expect(bars).toHaveTextContent('Reading')
+    expect(bars).toHaveTextContent('B1')
+    expect(bars).toHaveTextContent('Writing')
+    expect(bars).toHaveTextContent('A2')
+  })
+
+  it('does not show skill bars section when no overrides', () => {
+    renderOverview({ skillLevelOverrides: {} })
+    expect(screen.queryByTestId('overview-skill-bars')).not.toBeInTheDocument()
   })
 
   it('renders learning goals as chips', () => {
@@ -157,11 +173,6 @@ describe('StudentProfileOverview', () => {
     expect(screen.queryByTestId('overview-teaching-notes')).not.toBeInTheDocument()
   })
 
-  it('renders Edit profile link to edit URL', () => {
-    renderOverview()
-    const link = screen.getByTestId('edit-profile-link')
-    expect(link).toHaveAttribute('href', '/students/student-1/edit')
-  })
 
   it('renders difficulties with competency and severity badges', () => {
     renderOverview({

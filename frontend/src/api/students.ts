@@ -64,6 +64,8 @@ export interface Student {
   spokenLanguages: string[]
   // Teaching fields
   teachingTodos: TeachingTodo[]
+  // Skill override fields
+  skillLevelOverrides: Record<string, string>
 }
 
 export interface StudentListResponse {
@@ -98,6 +100,7 @@ export interface StudentFormData {
   rate?: string | null
   spokenLanguages?: string[]
   teachingTodos?: TeachingTodo[]
+  skillLevelOverrides?: Record<string, string>
 }
 
 export async function getStudents(params?: {
