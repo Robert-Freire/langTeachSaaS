@@ -566,8 +566,11 @@ describe('StudentForm', () => {
     await user.click(await screen.findByRole('option', { name: 'Spanish' }))
     await user.click(screen.getByTestId('student-cefr'))
     await user.click(await screen.findByRole('option', { name: 'B1' }))
+    await user.type(screen.getByTestId('student-birth-year'), '1990')
     await user.type(screen.getByTestId('student-profession'), 'Engineer')
+    await user.type(screen.getByTestId('student-country-origin'), 'Portugal')
     await user.type(screen.getByTestId('student-city-origin'), 'Porto')
+    await user.type(screen.getByTestId('student-country-residence'), 'Spain')
     await user.type(screen.getByTestId('student-city-residence'), 'Madrid')
 
     await user.click(screen.getByRole('button', { name: 'Save Student' }))
@@ -575,8 +578,11 @@ describe('StudentForm', () => {
     await vi.waitFor(() => {
       expect(mockCreateStudent).toHaveBeenCalledWith(
         expect.objectContaining({
+          birthYear: 1990,
           profession: 'Engineer',
+          countryOfOrigin: 'Portugal',
           cityOfOrigin: 'Porto',
+          countryOfResidence: 'Spain',
           cityOfResidence: 'Madrid',
         }),
       )
