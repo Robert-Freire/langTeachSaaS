@@ -141,6 +141,16 @@ export default function StudentDetail() {
                 {student.name}
               </h1>
 
+              {/* Profession */}
+              {student.profession && (
+                <p
+                  className="text-sm text-zinc-500 mt-0.5 truncate"
+                  data-testid="student-header-profession"
+                >
+                  {student.profession}
+                </p>
+              )}
+
               {/* Metadata row */}
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 {/* Teacher CEFR level */}
@@ -163,6 +173,16 @@ export default function StudentDetail() {
                 {student.nativeLanguages.length > 0 && (
                   <span className="text-[0.6875rem] uppercase tracking-[0.05em] text-zinc-400 font-medium">
                     Native: {student.nativeLanguages.join(', ')}
+                  </span>
+                )}
+
+                {/* Origin / Residence compact */}
+                {(student.cityOfOrigin || student.cityOfResidence) && (
+                  <span
+                    className="text-[0.6875rem] text-zinc-400 font-medium"
+                    data-testid="student-header-location"
+                  >
+                    {[student.cityOfOrigin, student.cityOfResidence].filter(Boolean).join(' / ')}
                   </span>
                 )}
               </div>
