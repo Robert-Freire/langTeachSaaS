@@ -15,6 +15,8 @@ public class SessionLog
     public string? LevelReassessmentSkill { get; set; }
     public string? LevelReassessmentLevel { get; set; }
     public Guid? LinkedLessonId { get; set; }
+    public Guid? VoiceNoteId { get; set; }
+    public string? RawExtractionJson { get; set; }
     public bool IsDeleted { get; set; }
     public bool IsCancelled { get; set; }
     // Lifecycle: IsDeleted=true means soft-deleted (all other fields ignored).
@@ -31,4 +33,5 @@ public class SessionLog
     public Student Student { get; set; } = null!;
     public Teacher Teacher { get; set; } = null!;
     public Lesson? LinkedLesson { get; set; }
+    public VoiceNote? VoiceNote { get; set; }
 }

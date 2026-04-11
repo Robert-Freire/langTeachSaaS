@@ -330,4 +330,15 @@ public class ReflectionExtractionServiceTests
 
         result.SessionDate.Should().BeNull();
     }
+
+    [Fact]
+    public async Task ExtractAsync_SetsRawJson_FromClaudeResponse()
+    {
+        const string rawResponse = """{"whatWasCovered":"ser vs estar","sessionDate":null,"suggestedDifficulties":[]}""";
+        var sut = CreateSut(rawResponse);
+
+        var result = await sut.ExtractAsync("notes text");
+
+        result.RawJson.Should().Be(rawResponse);
+    }
 }

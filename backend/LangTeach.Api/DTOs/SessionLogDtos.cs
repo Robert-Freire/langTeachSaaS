@@ -71,6 +71,9 @@ public class CreateSessionLogRequest
 
     public List<DifficultyPairDto>? MentionedDifficultyPairs { get; set; }
     public List<SuggestedDifficultyDto>? SuggestedDifficulties { get; set; }
+
+    public Guid? VoiceNoteId { get; set; }
+    public string? RawExtractionJson { get; set; }
 }
 
 public record StudentSessionSummaryDto(

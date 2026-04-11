@@ -776,6 +776,95 @@ public class SessionLogServiceTests : IDisposable
         result.Should().NotBeNull();
         result!.IsCancelled.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task CreateAsync_WithVoiceNoteId_PersistsVoiceNoteId()
+    {
+        var voiceNoteId = Guid.NewGuid();
+        _db.VoiceNotes.Add(new VoiceNote
+        {
+            Id = voiceNoteId,
+            TeacherId = _teacherId,
+            BlobPath = "teachers/test/audio.webm",
+            OriginalFileName = "audio.webm",
+            ContentType = "audio/webm",
+            SizeBytes = 1024,
+            DurationSeconds = 10,
+            CreatedAt = DateTime.UtcNow,
+        });
+        _db.SaveChanges();
+
+        var request = new CreateSessionLogRequest
+        {
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            VoiceNoteId = voiceNoteId,
+        };
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+
+        result.Should().NotBeNull();
+        var stored = await _db.SessionLogs.FindAsync(result.Id);
+        stored!.VoiceNoteId.Should().Be(voiceNoteId);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithRawExtractionJson_PersistsRawJson()
+    {
+        const string rawJson = """{"whatWasCovered":"ser vs estar","sessionDate":"2026-04-10"}""";
+
+        var request = new CreateSessionLogRequest
+        {
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            RawExtractionJson = rawJson,
+        };
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+
+        var stored = await _db.SessionLogs.FindAsync(result.Id);
+        stored!.RawExtractionJson.Should().Be(rawJson);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithoutVoiceNoteFields_BothNull()
+    {
+        var request = new CreateSessionLogRequest
+        {
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+        };
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+
+        var stored = await _db.SessionLogs.FindAsync(result.Id);
+        stored!.VoiceNoteId.Should().BeNull();
+        stored.RawExtractionJson.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithVoiceNoteIdFromOtherTeacher_Throws()
+    {
+        var voiceNoteId = Guid.NewGuid();
+        _db.VoiceNotes.Add(new VoiceNote
+        {
+            Id = voiceNoteId,
+            TeacherId = _otherTeacherId,
+            BlobPath = "teachers/other/audio.webm",
+            OriginalFileName = "audio.webm",
+            ContentType = "audio/webm",
+            SizeBytes = 1024,
+            DurationSeconds = 10,
+            CreatedAt = DateTime.UtcNow,
+        });
+        _db.SaveChanges();
+
+        var request = new CreateSessionLogRequest
+        {
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            VoiceNoteId = voiceNoteId,
+        };
+
+        await _sut.Invoking(s => s.CreateAsync(_teacherId, _studentId, request))
+            .Should().ThrowAsync<KeyNotFoundException>();
+    }
 }
 
 file class NullDifficultyTrendService : IDifficultyTrendService

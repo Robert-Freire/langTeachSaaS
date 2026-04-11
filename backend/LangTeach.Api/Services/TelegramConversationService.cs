@@ -243,7 +243,8 @@ public class TelegramConversationService : ITelegramConversationService
             GeneralNotes = string.IsNullOrEmpty(generalNotes) ? null : generalNotes,
             SuggestedDifficulties = extracted.SuggestedDifficulties.Count > 0
                 ? extracted.SuggestedDifficulties
-                : null
+                : null,
+            RawExtractionJson = extracted.RawJson
         };
     }
 

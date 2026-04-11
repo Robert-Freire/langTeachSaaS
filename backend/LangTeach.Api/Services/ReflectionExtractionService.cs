@@ -65,7 +65,8 @@ public class ReflectionExtractionService : IReflectionExtractionService
             return new ExtractedReflectionDto(null, null, null, null, null, null, []);
         }
 
-        return ParseResponse(response.Content);
+        var dto = ParseResponse(response.Content);
+        return dto with { RawJson = response.Content };
     }
 
     internal ExtractedReflectionDto ParseResponse(string json)
@@ -90,7 +91,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
         {
             _logger.LogWarning(ex, "Failed to parse reflection extraction JSON (length: {Length})", json?.Length ?? 0);
         _logger.LogDebug("Unparseable Claude response: {Json}", json);
-            return new ExtractedReflectionDto(null, null, null, null, null, null, []);
+            return new ExtractedReflectionDto(null, null, null, null, null, null, [], RawJson: null);
         }
     }
 

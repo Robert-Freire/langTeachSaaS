@@ -23,5 +23,6 @@ public record ExtractedReflectionDto(
     string? HomeworkAssigned,
     string? NextLessonIdeas,
     string? SessionDate,
-    List<SuggestedDifficultyDto> SuggestedDifficulties
+    List<SuggestedDifficultyDto> SuggestedDifficulties,
+    string? RawJson = null
 );

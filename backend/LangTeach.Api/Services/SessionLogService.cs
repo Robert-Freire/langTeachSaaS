@@ -95,6 +95,16 @@ public class SessionLogService : ISessionLogService
                 throw new KeyNotFoundException($"Lesson {request.LinkedLessonId.Value} not found.");
         }
 
+        if (request.VoiceNoteId.HasValue)
+        {
+            var voiceNoteExists = await _db.VoiceNotes.AnyAsync(
+                v => v.Id == request.VoiceNoteId.Value && v.TeacherId == teacherId,
+                cancellationToken);
+
+            if (!voiceNoteExists)
+                throw new KeyNotFoundException($"VoiceNote {request.VoiceNoteId.Value} not found.");
+        }
+
         var now = DateTime.UtcNow;
         var sanitizedDifficulties = SanitizeSuggestedDifficulties(request.SuggestedDifficulties, _logger);
         var entity = new SessionLog
@@ -112,6 +122,8 @@ public class SessionLogService : ISessionLogService
             LevelReassessmentSkill = request.LevelReassessmentSkill,
             LevelReassessmentLevel = request.LevelReassessmentLevel,
             LinkedLessonId = request.LinkedLessonId,
+            VoiceNoteId = request.VoiceNoteId,
+            RawExtractionJson = request.RawExtractionJson,
             TopicTags = request.TopicTags ?? "[]",
             MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs),
             SuggestedDifficulties = SerializeSuggestedDifficulties(sanitizedDifficulties),

@@ -202,6 +202,11 @@ public class AppDbContext : DbContext
              .HasForeignKey(sl => sl.LinkedLessonId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(sl => sl.VoiceNote)
+             .WithMany()
+             .HasForeignKey(sl => sl.VoiceNoteId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.SetNull);
             e.Property(sl => sl.PreviousHomeworkStatus)
              .HasDefaultValue(HomeworkStatus.NotApplicable);
             e.Property(sl => sl.IsDeleted).HasDefaultValue(false);
