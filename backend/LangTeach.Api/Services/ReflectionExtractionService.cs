@@ -27,7 +27,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
 
     public async Task<ExtractedReflectionDto> ExtractAsync(string text, CancellationToken ct = default)
     {
-        var request = _prompts.BuildReflectionExtractionPrompt(DateOnly.FromDateTime(DateTime.UtcNow), text);
+        var request = _prompts.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(DateOnly.FromDateTime(DateTime.UtcNow), text));
 
         ClaudeResponse response;
         try

@@ -3165,7 +3165,7 @@ public class PromptServiceTests
     public void BuildReflectionExtractionPrompt_ContainsLanguagePreservationInstruction()
     {
         var today = new DateOnly(2026, 4, 11);
-        var request = _sut.BuildReflectionExtractionPrompt(today, "teacher notes");
+        var request = _sut.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(today, "teacher notes"));
 
         request.SystemPrompt.Should().Contain("translate");
         request.SystemPrompt.Should().Contain("sessionDate");
@@ -3176,7 +3176,7 @@ public class PromptServiceTests
     public void BuildReflectionExtractionPrompt_InjectsTodayForRelativeDateResolution()
     {
         var today = new DateOnly(2026, 4, 11);
-        var request = _sut.BuildReflectionExtractionPrompt(today, "teacher notes");
+        var request = _sut.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(today, "teacher notes"));
 
         request.SystemPrompt.Should().Contain("hoy");
         request.SystemPrompt.Should().Contain("ayer");
@@ -3188,7 +3188,7 @@ public class PromptServiceTests
         var today = new DateOnly(2026, 4, 11);
         const string teacherText = "We covered past tense today.";
 
-        var request = _sut.BuildReflectionExtractionPrompt(today, teacherText);
+        var request = _sut.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(today, teacherText));
 
         request.Model.Should().Be(ClaudeModel.Haiku);
         request.UserPrompt.Should().Be(teacherText);

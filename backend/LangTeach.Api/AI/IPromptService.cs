@@ -23,7 +23,7 @@ public interface IPromptService
     ClaudeRequest BuildErrorCorrectionPrompt(GenerationContext ctx);
     ClaudeRequest BuildNoticingTaskPrompt(GenerationContext ctx);
     ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx);
-    ClaudeRequest BuildReflectionExtractionPrompt(DateOnly today, string teacherText);
+    ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx);
     ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx);
     ClaudeRequest BuildCurriculumValidationPrompt(CurriculumValidationContext ctx);
 }
@@ -76,6 +76,8 @@ public record SessionHistoryContext(
     IReadOnlyDictionary<string, string> SkillLevelOverrides,
     string? LearningStyleNotes
 );
+
+public record ReflectionExtractionContext(DateOnly Today, string TeacherText);
 
 public record TaughtEntryContext(string Topic, string? GrammarFocus, string? WhatWasCovered, string? AreasToImprove);
 public record PlannedEntryContext(Guid Id, int OrderIndex, string Topic, string? GrammarFocus);

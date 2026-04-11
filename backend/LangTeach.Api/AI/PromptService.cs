@@ -1439,8 +1439,10 @@ public class PromptService : IPromptService
 
     // --- Reflection extraction ---
 
-    public ClaudeRequest BuildReflectionExtractionPrompt(DateOnly today, string teacherText)
+    public ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx)
     {
+        var today = ctx.Today;
+        var teacherText = ctx.TeacherText;
         var system = $"""
             You are a tool that helps language teachers structure their post-class notes.
             Extract structured information from a teacher's free-form reflection text.

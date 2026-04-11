@@ -32,7 +32,7 @@ internal sealed class FakePromptService : IPromptService
         return Dummy();
     }
 
-    public ClaudeRequest BuildReflectionExtractionPrompt(DateOnly today, string teacherText) => Dummy();
+    public ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx) => Dummy();
     public ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx) => Dummy();
     public ClaudeRequest BuildCurriculumValidationPrompt(CurriculumValidationContext ctx) => Dummy();
 
