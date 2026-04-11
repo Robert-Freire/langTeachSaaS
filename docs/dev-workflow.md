@@ -202,6 +202,16 @@ The [Claude in Chrome extension](https://chromewebstore.google.com/detail/bjfgam
 
 The Bash tool runs in Git Bash on Windows. Git Bash automatically translates Unix absolute paths to Windows paths (e.g., `/opt/bin/tool` becomes `C:/Program Files/Git/opt/bin/tool`). This breaks `docker exec` commands with paths meant for inside containers. Fix: prefix with `MSYS_NO_PATHCONV=1`.
 
+## Syncing Azure Data to Local Dev
+
+To import Jordi's real teacher data (students, session logs, voice notes) into your local Docker SQL, remapped to your local teacher account:
+
+```powershell
+python scripts/copy-azure-teacher.py --teacher-email "jordim.freire@gmail.com" --target-email "robert.freire@gmail.com" --clean
+```
+
+Requires: `pip install pyodbc`, `az login`, ODBC Driver 18, Docker SQL running (`docker compose up sqlserver`). Use `--dry-run` to preview without writing.
+
 ## Gate Summary
 
 | Gate | Tool | Pass Condition |
