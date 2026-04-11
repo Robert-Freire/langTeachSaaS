@@ -10,7 +10,8 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { getCefrStitchBadgeClasses, CEFR_LEVELS } from '@/lib/cefr-colors'
+import { CEFR_LEVELS } from '@/lib/cefr-colors'
+import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { cn } from '@/lib/utils'
 import {
   AlertDialog,
@@ -239,15 +240,7 @@ export default function Students() {
                     </span>
 
                     {/* CEFR badge */}
-                    <span
-                      data-testid="student-level"
-                      className={cn(
-                        'inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[0.6875rem] font-bold uppercase tracking-[0.05em] w-fit',
-                        getCefrStitchBadgeClasses(student.cefrLevel)
-                      )}
-                    >
-                      {student.cefrLevel}
-                    </span>
+                    <CefrBadge level={student.cefrLevel} data-testid="student-level" />
 
                     {/* Native language */}
                     <span

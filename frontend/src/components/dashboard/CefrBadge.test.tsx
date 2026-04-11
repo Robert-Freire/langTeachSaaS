@@ -22,4 +22,9 @@ describe('CefrBadge', () => {
     const { container } = render(<CefrBadge level="C1" />)
     expect(container.firstChild).toHaveClass('bg-[#F8E9D6]', 'text-[#7E3000]')
   })
+
+  it('forwards data-testid to the span', () => {
+    render(<CefrBadge level="B1" data-testid="my-badge" />)
+    expect(screen.getByTestId('my-badge')).toBeInTheDocument()
+  })
 })
