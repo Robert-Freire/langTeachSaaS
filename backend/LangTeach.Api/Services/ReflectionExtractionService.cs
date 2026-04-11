@@ -17,7 +17,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
 
         IMPORTANT: Preserve the original language of the teacher's text. Do not translate any field value into another language.
 
-        Today's date is {today:yyyy-MM-dd}.
+        Today is {today.DayOfWeek}, {today:yyyy-MM-dd}.
 
         Respond ONLY with a valid JSON object using these exact keys:
         - whatWasCovered: string or null
@@ -25,7 +25,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
         - emotionalSignals: string or null (student attitude, mood, motivation, engagement signals)
         - homeworkAssigned: string or null
         - nextLessonIdeas: string or null
-        - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) resolved from today's date and any date reference the teacher mentions ("hoy"/"today" = today, "ayer"/"yesterday" = yesterday, "el martes pasado" = last Tuesday, etc.); null if no date is mentioned
+        - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) of the session being described. Resolve date references using today's date and day of week: "hoy"/"today" = today, "ayer"/"yesterday" = yesterday, "el lunes pasado"/"el pasado lunes" = the most recent Monday before today (not the Monday of this week if today is Monday), "el martes pasado"/"el pasado martes" = the most recent Tuesday before today, and so on for any weekday. Always pick the last occurrence of the named weekday strictly before today. Null if no date is mentioned.
         - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
 
         For suggestedDifficulties, each object must have:

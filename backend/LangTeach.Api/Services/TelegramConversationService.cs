@@ -236,7 +236,7 @@ public class TelegramConversationService : ITelegramConversationService
 
         return new CreateSessionLogRequest
         {
-            SessionDate = DateTime.UtcNow.Date,
+            SessionDate = ParseSessionDate(extracted.SessionDate),
             ActualContent = extracted.WhatWasCovered,
             HomeworkAssigned = extracted.HomeworkAssigned,
             NextSessionTopics = extracted.NextLessonIdeas,
@@ -302,5 +302,16 @@ public class TelegramConversationService : ITelegramConversationService
         await _botService.SendMessageAsync(chatId,
             "Connected! You can now send voice notes or text to log session notes. I'll ask which student after each message.",
             ct);
+    }
+
+    private static DateTime ParseSessionDate(string? isoDate)
+    {
+        if (isoDate is not null &&
+            DateOnly.TryParseExact(isoDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var parsed))
+        {
+            return parsed.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        }
+        return DateTime.UtcNow.Date;
     }
 }

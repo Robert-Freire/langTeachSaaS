@@ -245,13 +245,17 @@ public class ReflectionExtractionServiceTests
     }
 
     [Fact]
-    public void BuildSystemPrompt_InjectsTodayForRelativeDateResolution()
+    public void BuildSystemPrompt_InjectsDayOfWeekAndDate()
     {
-        var today = new DateOnly(2026, 4, 11);
+        var today = new DateOnly(2026, 4, 11); // Saturday
         var prompt = ReflectionExtractionService.BuildSystemPrompt(today);
 
+        prompt.Should().Contain("Saturday");
+        prompt.Should().Contain("2026-04-11");
         prompt.Should().Contain("hoy");
         prompt.Should().Contain("ayer");
+        prompt.Should().Contain("el pasado lunes");
+        prompt.Should().Contain("el lunes pasado");
     }
 
     [Fact]
