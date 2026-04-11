@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import type { TeacherFollowup } from '@/api/followups'
 import { createFollowup, updateFollowupStatus } from '@/api/followups'
 
@@ -14,30 +15,32 @@ function daysAgo(createdAt: string): number {
 
 export function StudentFollowupsCard({ followups, studentId, onFollowupChange }: StudentFollowupsCardProps) {
   const [newText, setNewText] = useState('')
-  const [adding, setAdding] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  async function handleAdd() {
-    const text = newText.trim()
-    if (!text) return
-    setAdding(true)
-    try {
-      await createFollowup({ text, studentId })
+  const createMutation = useMutation({
+    mutationFn: (text: string) => createFollowup({ text, studentId }),
+    onSuccess: () => {
       setNewText('')
       onFollowupChange()
-    } finally {
-      setAdding(false)
-    }
+    },
+  })
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'pending' | 'done' }) =>
+      updateFollowupStatus(id, status),
+    onSuccess: () => onFollowupChange(),
+  })
+
+  function handleAdd() {
+    const text = newText.trim()
+    if (!text || createMutation.isPending) return
+    createMutation.mutate(text)
   }
 
-  async function handleToggle(f: TeacherFollowup) {
+  function handleToggle(f: TeacherFollowup) {
+    if (toggleMutation.isPending) return
     const next = f.status === 'pending' ? 'done' : 'pending'
-    try {
-      await updateFollowupStatus(f.id, next)
-      onFollowupChange()
-    } catch {
-      // API failure - leave UI unchanged
-    }
+    toggleMutation.mutate({ id: f.id, status: next })
   }
 
   const pending = followups.filter(f => f.status === 'pending')
@@ -107,11 +110,11 @@ export function StudentFollowupsCard({ followups, studentId, onFollowupChange }:
           placeholder="Add followup..."
           className="flex-1 rounded-md border border-zinc-200 bg-amber-50 px-3 py-1.5 text-sm text-[#1A1B22] placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-amber-400"
           data-testid="followup-input"
-          disabled={adding}
+          disabled={createMutation.isPending}
         />
         <button
           onClick={handleAdd}
-          disabled={adding || !newText.trim()}
+          disabled={createMutation.isPending || !newText.trim()}
           className="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-40 transition-colors"
           data-testid="followup-add-btn"
         >

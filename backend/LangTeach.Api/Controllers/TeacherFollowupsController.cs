@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
@@ -48,11 +49,16 @@ public class TeacherFollowupsController : ControllerBase
     {
         if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-
-        var dto = await _followupService.CreateAsync(teacherId, request, cancellationToken);
-
-        _logger.LogInformation("POST /api/teacher-followups Id={Id} TeacherId={TeacherId}", dto.Id, teacherId);
-        return CreatedAtAction(nameof(Get), new { }, dto);
+        try
+        {
+            var dto = await _followupService.CreateAsync(teacherId, request, cancellationToken);
+            _logger.LogInformation("POST /api/teacher-followups Id={Id} TeacherId={TeacherId}", dto.Id, teacherId);
+            return CreatedAtAction(nameof(Get), new { }, dto);
+        }
+        catch (ValidationException ex)
+        {
+            return ValidationProblem(ex.Message);
+        }
     }
 
     [HttpPatch("{id}")]

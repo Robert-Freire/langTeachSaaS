@@ -115,6 +115,7 @@ export function SessionLogDialog({
 
   // Followup state
   const [newFollowupText, setNewFollowupText] = useState('')
+  const [isAddingFollowup, setIsAddingFollowup] = useState(false)
   const [localFollowups, setLocalFollowups] = useState<TeacherFollowup[]>([])
 
   // Voice extraction state
@@ -228,6 +229,7 @@ export function SessionLogDialog({
       setExtractionFailed(false)
       setLocalFollowups([])
       setNewFollowupText('')
+      setIsAddingFollowup(false)
     }
   }, [open, linkedLessonId])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -270,13 +272,16 @@ export function SessionLogDialog({
 
   async function handleAddFollowup() {
     const text = newFollowupText.trim()
-    if (!text) return
+    if (!text || isAddingFollowup) return
+    setIsAddingFollowup(true)
     try {
       const created = await createFollowup({ text, studentId, sourceSessionLogId: draftSessionId ?? undefined })
       setLocalFollowups(prev => [...prev, created])
       setNewFollowupText('')
     } catch {
       // API failure - leave input intact so user can retry
+    } finally {
+      setIsAddingFollowup(false)
     }
   }
 
@@ -885,7 +890,7 @@ export function SessionLogDialog({
                 <Button
                   type="button"
                   onClick={handleAddFollowup}
-                  disabled={!newFollowupText.trim()}
+                  disabled={!newFollowupText.trim() || isAddingFollowup}
                   size="sm"
                   className="bg-amber-500 hover:bg-amber-600 text-white"
                   data-testid="session-followup-add-btn"

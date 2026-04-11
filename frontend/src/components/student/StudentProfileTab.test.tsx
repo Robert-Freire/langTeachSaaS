@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StudentProfileTab } from './StudentProfileTab'
 import type { Student } from '@/api/students'
 import type { TeacherFollowup } from '@/api/followups'
@@ -68,10 +69,13 @@ const EMPTY_STUDENT: Student = {
 }
 
 function renderProfile(student: Student, onToggle?: (id: string, status: 'Active' | 'Covered') => void) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return render(
-    <MemoryRouter>
-      <StudentProfileTab student={student} onToggleDifficultyStatus={onToggle} />
-    </MemoryRouter>
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>
+        <StudentProfileTab student={student} onToggleDifficultyStatus={onToggle} />
+      </MemoryRouter>
+    </QueryClientProvider>
   )
 }
 
@@ -205,10 +209,13 @@ describe('StudentProfileTab', () => {
     })
 
     it('renders a passed followup item', () => {
+      const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
       render(
-        <MemoryRouter>
-          <StudentProfileTab student={FULL_STUDENT} followups={[FOLLOWUP]} onFollowupChange={vi.fn()} />
-        </MemoryRouter>
+        <QueryClientProvider client={qc}>
+          <MemoryRouter>
+            <StudentProfileTab student={FULL_STUDENT} followups={[FOLLOWUP]} onFollowupChange={vi.fn()} />
+          </MemoryRouter>
+        </QueryClientProvider>
       )
       expect(screen.getByText('Enviar ejercicio de subjuntivo')).toBeInTheDocument()
     })
