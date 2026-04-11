@@ -63,6 +63,7 @@ public class ReflectionExtractionServiceTests
         result.EmotionalSignals.Should().Be("Very engaged");
         result.HomeworkAssigned.Should().Be("Exercises 1-5");
         result.NextLessonIdeas.Should().Be("Present perfect");
+        result.SessionDate.Should().BeNull();
         result.SuggestedDifficulties.Should().BeEmpty();
     }
 
@@ -229,5 +230,93 @@ public class ReflectionExtractionServiceTests
 
         result.WhatWasCovered.Should().BeNull();
         result.AreasToImprove.Should().BeNull();
+        result.SessionDate.Should().BeNull();
+    }
+
+    [Fact]
+    public void SystemPrompt_ContainsLanguagePreservationInstruction()
+    {
+        // Verify the prompt instructs Claude not to translate teacher input.
+        // Uses reflection to access the private const for a compile-time-safe smoke check.
+        var promptField = typeof(ReflectionExtractionService)
+            .GetField("SystemPrompt", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        var prompt = (string?)promptField?.GetValue(null);
+
+        prompt.Should().NotBeNull();
+        prompt.Should().Contain("translate", Exactly.Once());
+        prompt.Should().Contain("sessionDate");
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsSessionDate()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "whatWasCovered": "los condicionales",
+              "areasToImprove": null,
+              "emotionalSignals": null,
+              "homeworkAssigned": null,
+              "nextLessonIdeas": null,
+              "sessionDate": "2026-04-08",
+              "suggestedDifficulties": []
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionDate.Should().Be("2026-04-08");
+        result.WhatWasCovered.Should().Be("los condicionales");
+    }
+
+    [Fact]
+    public void ParseResponse_SessionDateIsNullWhenAbsent()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"whatWasCovered": "Vocabulary", "areasToImprove": null, "emotionalSignals": null, "homeworkAssigned": null, "nextLessonIdeas": null}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionDate.Should().BeNull();
+    }
+
+    [Fact]
+    public void ParseResponse_SessionDateIsNullWhenNotIsoFormat()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "whatWasCovered": null,
+              "areasToImprove": null,
+              "emotionalSignals": null,
+              "homeworkAssigned": null,
+              "nextLessonIdeas": null,
+              "sessionDate": "martes pasado"
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionDate.Should().BeNull();
+    }
+
+    [Fact]
+    public void ParseResponse_SessionDateIsNullWhenExplicitlyNull()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "whatWasCovered": null,
+              "areasToImprove": null,
+              "emotionalSignals": null,
+              "homeworkAssigned": null,
+              "nextLessonIdeas": null,
+              "sessionDate": null
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionDate.Should().BeNull();
     }
 }

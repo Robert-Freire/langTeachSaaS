@@ -291,6 +291,7 @@ public class TelegramConversationServiceTests : IDisposable
             EmotionalSignals: "engaged",
             HomeworkAssigned: "complete exercises 3 and 4",
             NextLessonIdeas: "past tenses review",
+            SessionDate: null,
             SuggestedDifficulties: new List<SuggestedDifficultyDto>
             {
                 new("confuses ser and estar", "Grammar", "Copulas", "Medium")
@@ -352,6 +353,7 @@ public class TelegramConversationServiceTests : IDisposable
                 EmotionalSignals: null,
                 HomeworkAssigned: null,
                 NextLessonIdeas: null,
+                SessionDate: null,
                 SuggestedDifficulties: new List<SuggestedDifficultyDto>());
             return Task.FromResult(result);
         }
