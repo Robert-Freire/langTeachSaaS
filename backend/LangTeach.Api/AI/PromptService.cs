@@ -1443,6 +1443,8 @@ public class PromptService : IPromptService
     {
         var today = ctx.Today;
         var teacherText = ctx.TeacherText;
+        var competencies = string.Join(", ", _pedagogy.GetValidDifficultyCompetencies().OrderBy(x => x));
+        var severities = string.Join(" | ", _pedagogy.GetValidDifficultySeverities().OrderBy(x => x));
         var system = $"""
             You are a tool that helps language teachers structure their post-class notes.
             Extract structured information from a teacher's free-form reflection text.
@@ -1462,9 +1464,9 @@ public class PromptService : IPromptService
 
             For suggestedDifficulties, each object must have:
             - description: full sentence describing the difficulty, extracted verbatim from the teacher's language
-            - competency: one of Grammar, Vocabulary, Pronunciation, Fluency, Discourse
+            - competency: one of {competencies}
             - subcategory: specific item (e.g. "ser/estar", "subjunctive", "past tense"), free text
-            - severity: low | medium | high (infer from language: "mucho"/"siempre"/"constantemente" -> high, "a veces"/"sometimes" -> medium, "un poco"/"slightly" -> low; default medium)
+            - severity: {severities} (infer from language: "mucho"/"siempre"/"constantemente" -> high, "a veces"/"sometimes" -> medium, "un poco"/"slightly" -> low; default medium)
 
             Only include difficulties explicitly mentioned. Do not invent. Use null for scalar fields that cannot be inferred.
             Keep each value concise (under 200 words).

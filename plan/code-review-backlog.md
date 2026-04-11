@@ -6,6 +6,12 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-04-08 during Adaptive Replanning sprint close. All entries deleted (low/info severity, all already deferred with sound reasoning) or batched into #603-#609.*
 
+## #653 — 2026-04-11
+
+| Reviewer | Severity | Note |
+|---|---|---|
+| architecture-reviewer | minor | `SessionLogService.SanitizeSuggestedDifficulties` and `UpsertDifficulties` each independently call `_pedagogy.GetValidDifficultyCompetencies/Severities()` once and hoist to locals. Pattern is correct (no per-loop overhead). Could be reduced to one call by passing sets as parameters, but would add complexity for negligible gain. |
+
 ## #623 — 2026-04-09
 
 | Reviewer | Severity | Note |
