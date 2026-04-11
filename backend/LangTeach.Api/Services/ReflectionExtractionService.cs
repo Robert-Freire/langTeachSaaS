@@ -11,11 +11,13 @@ public class ReflectionExtractionService : IReflectionExtractionService
     private readonly IClaudeClient _claude;
     private readonly ILogger<ReflectionExtractionService> _logger;
 
-    private const string SystemPrompt = """
+    internal static string BuildSystemPrompt(DateOnly today) => $"""
         You are a tool that helps language teachers structure their post-class notes.
         Extract structured information from a teacher's free-form reflection text.
 
         IMPORTANT: Preserve the original language of the teacher's text. Do not translate any field value into another language.
+
+        Today's date is {today:yyyy-MM-dd}.
 
         Respond ONLY with a valid JSON object using these exact keys:
         - whatWasCovered: string or null
@@ -23,7 +25,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
         - emotionalSignals: string or null (student attitude, mood, motivation, engagement signals)
         - homeworkAssigned: string or null
         - nextLessonIdeas: string or null
-        - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) if the teacher mentions a specific session date or a resolvable relative reference ("ayer", "el martes pasado", "last Tuesday"); null if no date is mentioned or the reference cannot be resolved to a specific date
+        - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) resolved from today's date and any date reference the teacher mentions ("hoy"/"today" = today, "ayer"/"yesterday" = yesterday, "el martes pasado" = last Tuesday, etc.); null if no date is mentioned
         - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
 
         For suggestedDifficulties, each object must have:
@@ -46,7 +48,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
     public async Task<ExtractedReflectionDto> ExtractAsync(string text, CancellationToken ct = default)
     {
         var request = new ClaudeRequest(
-            SystemPrompt: SystemPrompt,
+            SystemPrompt: BuildSystemPrompt(DateOnly.FromDateTime(DateTime.UtcNow)),
             UserPrompt: text,
             Model: ClaudeModel.Haiku,
             MaxTokens: 1024

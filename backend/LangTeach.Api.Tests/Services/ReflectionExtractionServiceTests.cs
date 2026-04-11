@@ -234,17 +234,24 @@ public class ReflectionExtractionServiceTests
     }
 
     [Fact]
-    public void SystemPrompt_ContainsLanguagePreservationInstruction()
+    public void BuildSystemPrompt_ContainsLanguagePreservationInstruction()
     {
-        // Verify the prompt instructs Claude not to translate teacher input.
-        // Uses reflection to access the private const for a compile-time-safe smoke check.
-        var promptField = typeof(ReflectionExtractionService)
-            .GetField("SystemPrompt", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        var prompt = (string?)promptField?.GetValue(null);
+        var today = new DateOnly(2026, 4, 11);
+        var prompt = ReflectionExtractionService.BuildSystemPrompt(today);
 
-        prompt.Should().NotBeNull();
-        prompt.Should().Contain("translate", Exactly.Once());
+        prompt.Should().Contain("translate");
         prompt.Should().Contain("sessionDate");
+        prompt.Should().Contain("2026-04-11");
+    }
+
+    [Fact]
+    public void BuildSystemPrompt_InjectsTodayForRelativeDateResolution()
+    {
+        var today = new DateOnly(2026, 4, 11);
+        var prompt = ReflectionExtractionService.BuildSystemPrompt(today);
+
+        prompt.Should().Contain("hoy");
+        prompt.Should().Contain("ayer");
     }
 
     [Fact]
