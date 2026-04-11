@@ -323,7 +323,20 @@ public class ReflectionExtractionServiceTests
 
         var result = sut.ParseResponse(json);
 
+        // RawExtractionJson stores the fence-stripped (cleaned) content, which equals json when no fences present
         result.RawExtractionJson.Should().Be(json);
+    }
+
+    [Fact]
+    public void ParseResponse_StripsFencesBeforeStoringRawExtractionJson()
+    {
+        var sut = CreateSut("{}");
+        var fenced = "```json\n{\"whatWasCovered\":\"ser vs estar\"}\n```";
+        var expected = "{\"whatWasCovered\":\"ser vs estar\"}";
+
+        var result = sut.ParseResponse(fenced);
+
+        result.RawExtractionJson.Should().Be(expected);
     }
 
     [Fact]

@@ -827,6 +827,34 @@ public class SessionLogServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateAsync_VoiceNoteIdBelongsToOtherTeacher_ThrowsKeyNotFoundException()
+    {
+        var otherVoiceNoteId = Guid.NewGuid();
+        _db.VoiceNotes.Add(new VoiceNote
+        {
+            Id = otherVoiceNoteId,
+            TeacherId = _otherTeacherId,
+            BlobPath = "teachers/other/file.webm",
+            OriginalFileName = "file.webm",
+            ContentType = "audio/webm",
+            SizeBytes = 512,
+            DurationSeconds = 0,
+            CreatedAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+
+        var request = new CreateSessionLogRequest
+        {
+            SessionDate = new DateTime(2026, 4, 1, 10, 0, 0, DateTimeKind.Utc),
+            PreviousHomeworkStatus = HomeworkStatus.Done,
+            VoiceNoteId = otherVoiceNoteId
+        };
+
+        var act = () => _sut.CreateAsync(_teacherId, _studentId, request);
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    [Fact]
     public async Task CreateAsync_TelegramFlow_WritesVoiceNoteApplicationWithNullVoiceNoteId()
     {
         var request = new CreateSessionLogRequest

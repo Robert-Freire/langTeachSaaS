@@ -59,7 +59,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 NextLessonIdeas: GetStringOrNull(root, "nextLessonIdeas"),
                 SessionDate: GetIsoDateOrNull(root, "sessionDate"),
                 SuggestedDifficulties: ParseSuggestedDifficulties(root),
-                RawExtractionJson: json
+                RawExtractionJson: cleaned
             );
         }
         catch (Exception ex)
