@@ -39,5 +39,6 @@ public record ActiveStudentDto(
 public record DashboardDto(
     NextSessionDto? NextSession,
     List<TodaySessionDto> TodaySessions,
-    List<ActiveStudentDto> ActiveStudents
+    List<ActiveStudentDto> ActiveStudents,
+    List<TeacherFollowupDto> PendingFollowups
 );

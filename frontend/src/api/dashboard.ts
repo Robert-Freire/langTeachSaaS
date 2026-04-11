@@ -1,4 +1,5 @@
 import { apiClient } from '../lib/apiClient'
+import type { TeacherFollowup } from './followups'
 
 export interface PendingTodo {
   id: string
@@ -49,7 +50,10 @@ export interface DashboardData {
   nextSession: NextSession | null
   todaySessions: TodaySession[]
   activeStudents: ActiveStudent[]
+  pendingFollowups: TeacherFollowup[]
 }
+
+export type { TeacherFollowup }
 
 export async function getDashboard(): Promise<DashboardData> {
   const res = await apiClient.get<DashboardData>('/api/dashboard')

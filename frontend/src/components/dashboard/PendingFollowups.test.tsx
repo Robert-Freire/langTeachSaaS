@@ -1,53 +1,57 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { PendingFollowups } from './PendingFollowups'
-import type { ActiveStudent } from '@/api/dashboard'
+import type { TeacherFollowup } from '@/api/followups'
 
-function makeStudent(overrides: Partial<ActiveStudent> = {}): ActiveStudent {
+vi.mock('@/api/followups', async () => {
+  const actual = await vi.importActual<typeof import('@/api/followups')>('@/api/followups')
+  return { ...actual, updateFollowupStatus: vi.fn().mockResolvedValue({}) }
+})
+
+function makeFollowup(overrides: Partial<TeacherFollowup> = {}): TeacherFollowup {
   return {
+    id: 'f1',
     studentId: 'student-1',
-    name: 'Ana García',
-    cefrLevel: 'B1',
-    nativeLanguages: ['English'],
-    isActive: true,
-    lastSessionDate: null,
-    nextSessionDate: null,
-    totalSessions: 0,
-    teachingTodosCount: 0,
-    pendingTodos: [],
+    studentName: 'Ana García',
+    text: 'Enviar ejercicio',
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    dueDate: null,
+    completedAt: null,
+    sourceSessionLogId: null,
     ...overrides,
   }
 }
 
 describe('PendingFollowups', () => {
-  it('shows all caught up when no pending todos', () => {
-    render(<PendingFollowups students={[makeStudent()]} />)
+  it('shows all caught up when no followups', () => {
+    render(<PendingFollowups followups={[]} />)
     expect(screen.getByText(/All caught up/)).toBeInTheDocument()
   })
 
-  it('renders pending todo text and student name', () => {
-    const student = makeStudent({
-      pendingTodos: [
-        { id: 't1', text: 'Review ser/estar', createdAt: new Date().toISOString(), status: 'pending', sourceSessionLogId: null, coveredInSessionLogId: null },
-      ],
-    })
-    render(<PendingFollowups students={[student]} />)
-    expect(screen.getByText('Review ser/estar')).toBeInTheDocument()
+  it('renders followup text and student name', () => {
+    render(<PendingFollowups followups={[makeFollowup()]} />)
+    expect(screen.getByText('Enviar ejercicio')).toBeInTheDocument()
     expect(screen.getByText('Ana García')).toBeInTheDocument()
   })
 
   it('renders zone2-pending-followups testid', () => {
-    render(<PendingFollowups students={[]} />)
+    render(<PendingFollowups followups={[]} />)
     expect(screen.getByTestId('zone2-pending-followups')).toBeInTheDocument()
   })
 
-  it('shows todos from multiple students', () => {
-    const students = [
-      makeStudent({ name: 'Ana', pendingTodos: [{ id: 't1', text: 'Todo A', createdAt: new Date().toISOString(), status: 'pending', sourceSessionLogId: null, coveredInSessionLogId: null }] }),
-      makeStudent({ studentId: 'student-2', name: 'Marco', pendingTodos: [{ id: 't2', text: 'Todo B', createdAt: new Date().toISOString(), status: 'pending', sourceSessionLogId: null, coveredInSessionLogId: null }] }),
+  it('shows followups from multiple students', () => {
+    const followups = [
+      makeFollowup({ id: 'f1', studentName: 'Ana', text: 'Todo A' }),
+      makeFollowup({ id: 'f2', studentName: 'Marco', text: 'Todo B' }),
     ]
-    render(<PendingFollowups students={students} />)
+    render(<PendingFollowups followups={followups} />)
     expect(screen.getByText('Todo A')).toBeInTheDocument()
     expect(screen.getByText('Todo B')).toBeInTheDocument()
+  })
+
+  it('renders mark-done button for each followup', () => {
+    render(<PendingFollowups followups={[makeFollowup({ id: 'f1' })]} />)
+    expect(screen.getByTestId('followup-dot-f1')).toBeInTheDocument()
   })
 })
