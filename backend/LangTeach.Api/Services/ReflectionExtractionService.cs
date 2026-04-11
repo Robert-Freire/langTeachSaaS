@@ -76,6 +76,9 @@ public class ReflectionExtractionService : IReflectionExtractionService
         if (!root.TryGetProperty("suggestedDifficulties", out var arr) || arr.ValueKind != JsonValueKind.Array)
             return result;
 
+        var validCompetencies = _pedagogy.GetValidDifficultyCompetencies();
+        var validSeverities = _pedagogy.GetValidDifficultySeverities();
+
         foreach (var item in arr.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.Object) continue;
@@ -86,7 +89,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
             var severity = GetStringOrNull(item, "severity")?.Trim();
 
             if (description is null || competency is null || severity is null) continue;
-            if (!_pedagogy.GetValidDifficultyCompetencies().Contains(competency) || !_pedagogy.GetValidDifficultySeverities().Contains(severity))
+            if (!validCompetencies.Contains(competency) || !validSeverities.Contains(severity))
             {
                 _logger.LogWarning("Skipping suggested difficulty with invalid fields: Competency={Competency}, Severity={Severity}", competency, severity);
                 continue;
