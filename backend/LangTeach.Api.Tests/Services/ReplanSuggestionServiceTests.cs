@@ -133,7 +133,7 @@ public class ReplanSuggestionServiceTests : IDisposable
     }
 
     private ReplanSuggestionService CreateSut(string aiResponse) =>
-        new(_db, new FakeReplanClaudeClient(aiResponse), NullLogger<ReplanSuggestionService>.Instance);
+        new(_db, new FakeReplanClaudeClient(aiResponse), new FakePromptService(), NullLogger<ReplanSuggestionService>.Instance);
 
     // --- ParseSuggestions unit tests ---
 

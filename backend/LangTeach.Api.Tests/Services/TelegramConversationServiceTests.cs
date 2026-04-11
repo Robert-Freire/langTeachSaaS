@@ -37,7 +37,9 @@ public class TelegramConversationServiceTests : IDisposable
         _extractionService = new FakeReflectionExtractionService();
 
         var difficultyService = new DifficultyTrendService(_db, NullLogger<DifficultyTrendService>.Instance);
-        var sessionLogService = new SessionLogService(_db, difficultyService, NullLogger<SessionLogService>.Instance);
+        var profileSvc = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogySvc = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, profileSvc);
+        var sessionLogService = new SessionLogService(_db, difficultyService, pedagogySvc, NullLogger<SessionLogService>.Instance);
         var studentService = new StudentService(_db, NullLogger<StudentService>.Instance);
 
         _sut = new TelegramConversationService(
@@ -264,7 +266,9 @@ public class TelegramConversationServiceTests : IDisposable
         // Create a conversation service that uses a throwing transcription service
         var throwingTranscription = new ThrowingTranscriptionService();
         var difficultyService = new DifficultyTrendService(_db, NullLogger<DifficultyTrendService>.Instance);
-        var sessionLogService = new SessionLogService(_db, difficultyService, NullLogger<SessionLogService>.Instance);
+        var profileSvc = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogySvc = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, profileSvc);
+        var sessionLogService = new SessionLogService(_db, difficultyService, pedagogySvc, NullLogger<SessionLogService>.Instance);
         var studentService = new StudentService(_db, NullLogger<StudentService>.Instance);
         var sut = new TelegramConversationService(
             _db, _stateStore, _botService, throwingTranscription,

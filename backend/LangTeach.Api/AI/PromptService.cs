@@ -1436,4 +1436,124 @@ public class PromptService : IPromptService
     }
 
     private static string CefrCodeToSkillName(string code) => LangTeach.Api.DTOs.CefrSkillCodes.ToSkillName(code);
+
+    // --- Reflection extraction ---
+
+    public ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx)
+    {
+        var today = ctx.Today;
+        var teacherText = ctx.TeacherText;
+        var competencies = string.Join(", ", _pedagogy.GetValidDifficultyCompetencies().OrderBy(x => x));
+        var severities = string.Join(" | ", _pedagogy.GetValidDifficultySeverities().OrderBy(x => x));
+        var system = $"""
+            You are a tool that helps language teachers structure their post-class notes.
+            Extract structured information from a teacher's free-form reflection text.
+
+            IMPORTANT: Preserve the original language of the teacher's text. Do not translate any field value into another language.
+
+            Today is {today.DayOfWeek}, {today:yyyy-MM-dd}.
+
+            Respond ONLY with a valid JSON object using these exact keys:
+            - whatWasCovered: string or null
+            - areasToImprove: string or null (narrative summary of student difficulties and struggles — prose, not a list)
+            - emotionalSignals: string or null (student attitude, mood, motivation, engagement signals)
+            - homeworkAssigned: string or null
+            - nextLessonIdeas: string or null
+            - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) of the session being described. Resolve date references using today's date and day of week: "hoy"/"today" = today, "ayer"/"yesterday" = yesterday, "el lunes pasado"/"el pasado lunes" = the most recent Monday before today (not the Monday of this week if today is Monday), "el martes pasado"/"el pasado martes" = the most recent Tuesday before today, and so on for any weekday. Always pick the last occurrence of the named weekday strictly before today. Null if no date is mentioned.
+            - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
+
+            For suggestedDifficulties, each object must have:
+            - description: full sentence describing the difficulty, extracted verbatim from the teacher's language
+            - competency: one of {competencies}
+            - subcategory: specific item (e.g. "ser/estar", "subjunctive", "past tense"), free text
+            - severity: {severities} (infer from language: "mucho"/"siempre"/"constantemente" -> high, "a veces"/"sometimes" -> medium, "un poco"/"slightly" -> low; default medium)
+
+            Only include difficulties explicitly mentioned. Do not invent. Use null for scalar fields that cannot be inferred.
+            Keep each value concise (under 200 words).
+            Respond with JSON only, no markdown, no explanation.
+            """;
+
+        return new ClaudeRequest(SystemPrompt: system, UserPrompt: teacherText, Model: ClaudeModel.Haiku, MaxTokens: 1024);
+    }
+
+    // --- Replan suggestion ---
+
+    public ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx)
+    {
+        const string system = """
+            You are an expert language teaching assistant helping a teacher adapt an upcoming course plan based on recent class data.
+            Your job is to identify gaps between what was taught and what is planned, and suggest specific adjustments.
+
+            Rules:
+            - Focus on high-impact changes: grammar gaps not yet addressed, student difficulties not covered by upcoming lessons
+            - Be specific: name the topic to change and what to add or adjust
+            - Keep reasoning concise (1-2 sentences referencing the actual evidence)
+            - Limit to 3-5 suggestions maximum; only suggest genuine improvements
+            - If the plan already addresses all known gaps, return fewer suggestions
+            - Respond ONLY with a valid JSON object using this exact structure:
+              {"suggestions":[{"curriculumEntryId":"<guid or null>","proposedChange":"<what to change>","reasoning":"<why, citing evidence>"}]}
+            - curriculumEntryId must be one of the planned entry IDs provided, or null for a general suggestion
+            - Respond with JSON only, no markdown, no explanation
+            """;
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Course: {InputSanitizer.Sanitize(ctx.CourseName)}");
+        sb.AppendLine($"Language: {InputSanitizer.Sanitize(ctx.Language)}");
+        sb.AppendLine($"Target level: {InputSanitizer.Sanitize(ctx.TargetCefrLevel ?? "not set")}");
+        sb.AppendLine($"Student: {InputSanitizer.Sanitize(ctx.StudentName ?? "unknown")}");
+        sb.AppendLine();
+
+        if (ctx.Difficulties.Count > 0)
+        {
+            sb.AppendLine("Student difficulties on record:");
+            foreach (var d in ctx.Difficulties)
+                sb.AppendLine($"- {InputSanitizer.Sanitize(d)}");
+            sb.AppendLine();
+        }
+
+        sb.AppendLine("What has been taught so far (with lesson notes):");
+        foreach (var e in ctx.TaughtEntries)
+        {
+            sb.Append($"- {InputSanitizer.Sanitize(e.Topic)}");
+            if (!string.IsNullOrWhiteSpace(e.GrammarFocus)) sb.Append($" (grammar: {InputSanitizer.Sanitize(e.GrammarFocus)})");
+            sb.AppendLine();
+            if (!string.IsNullOrWhiteSpace(e.WhatWasCovered)) sb.AppendLine($"  Covered: {InputSanitizer.Sanitize(e.WhatWasCovered)}");
+            if (!string.IsNullOrWhiteSpace(e.AreasToImprove)) sb.AppendLine($"  Areas to improve: {InputSanitizer.Sanitize(e.AreasToImprove)}");
+        }
+        sb.AppendLine();
+
+        sb.AppendLine("Upcoming planned lessons (these can be adjusted):");
+        foreach (var e in ctx.PlannedEntries)
+        {
+            sb.Append($"- [ID: {e.Id}] Session {e.OrderIndex + 1}: {InputSanitizer.Sanitize(e.Topic)}");
+            if (!string.IsNullOrWhiteSpace(e.GrammarFocus)) sb.Append($" (grammar: {InputSanitizer.Sanitize(e.GrammarFocus)})");
+            sb.AppendLine();
+        }
+        sb.AppendLine();
+
+        sb.AppendLine($"Suggest up to {ctx.MaxSuggestions} targeted adjustments to upcoming lessons based on gaps and student difficulties.");
+
+        return new ClaudeRequest(SystemPrompt: system, UserPrompt: sb.ToString(), Model: ClaudeModel.Haiku, MaxTokens: 2048);
+    }
+
+    // --- Curriculum validation ---
+
+    public ClaudeRequest BuildCurriculumValidationPrompt(CurriculumValidationContext ctx)
+    {
+        const string system = "You are a CEFR-level grammar expert. Evaluate whether grammar structures in a generated curriculum match the target level.";
+
+        var grammarList = string.Join("\n", ctx.AllowedGrammar.Select(g => $"- {g}"));
+        var entriesList = string.Join("\n", ctx.EntriesWithGrammar.Select(e =>
+            $"Session {e.OrderIndex}: {InputSanitizer.Sanitize(e.GrammarFocus)}"));
+        var jsonExample = """[ { "sessionIndex": <number>, "grammarFocus": "<exact string>", "flagReason": "<one sentence>", "suggestedLevel": "<CEFR level or null>" } ]""";
+
+        var user = $"Target level: {InputSanitizer.Sanitize(ctx.TargetLevel)}\n" +
+                   $"Grammar structures expected at this level (or below):\n{grammarList}\n\n" +
+                   $"Generated curriculum entries:\n{entriesList}\n\n" +
+                   $"Respond ONLY with a raw JSON array (no markdown, no code fences). " +
+                   $"For each entry where the grammar focus EXCEEDS the target level, include one object with this shape: {jsonExample}\n" +
+                   $"If all entries are level-appropriate, respond with [].";
+
+        return new ClaudeRequest(SystemPrompt: system, UserPrompt: user, Model: ClaudeModel.Sonnet, MaxTokens: 1000);
+    }
 }

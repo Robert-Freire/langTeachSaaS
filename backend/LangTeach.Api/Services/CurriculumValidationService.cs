@@ -2,6 +2,7 @@ using System.Text.Json;
 using LangTeach.Api.AI;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 
 namespace LangTeach.Api.Services;
 
@@ -11,11 +12,13 @@ public class CurriculumValidationService : ICurriculumValidationService
         new() { PropertyNameCaseInsensitive = true };
 
     private readonly IClaudeClient _claude;
+    private readonly IPromptService _prompts;
     private readonly ILogger<CurriculumValidationService> _logger;
 
-    public CurriculumValidationService(IClaudeClient claude, ILogger<CurriculumValidationService> logger)
+    public CurriculumValidationService(IClaudeClient claude, IPromptService prompts, ILogger<CurriculumValidationService> logger)
     {
         _claude = claude;
+        _prompts = prompts;
         _logger = logger;
     }
 
@@ -32,33 +35,17 @@ public class CurriculumValidationService : ICurriculumValidationService
         if (entriesWithGrammar.Count == 0 || allowedGrammar.Count == 0)
             return [];
 
-        var grammarList = string.Join("\n", allowedGrammar.Select(g => $"- {g}"));
-        var entriesList = string.Join("\n", entriesWithGrammar.Select(e =>
-            $"Session {e.OrderIndex}: {InputSanitizer.Sanitize(e.GrammarFocus)}"));
+        var ctx = new CurriculumValidationContext(
+            targetLevel,
+            allowedGrammar,
+            entriesWithGrammar.Select(e => (e.OrderIndex, e.GrammarFocus!)).ToList());
 
-        const string system = "You are a CEFR-level grammar expert. Evaluate whether grammar structures in a generated curriculum match the target level.";
-        var jsonExample = """[ { "sessionIndex": <number>, "grammarFocus": "<exact string>", "flagReason": "<one sentence>", "suggestedLevel": "<CEFR level or null>" } ]""";
-        var user = $"Target level: {InputSanitizer.Sanitize(targetLevel)}\n" +
-                   $"Grammar structures expected at this level (or below):\n{grammarList}\n\n" +
-                   $"Generated curriculum entries:\n{entriesList}\n\n" +
-                   $"Respond ONLY with a raw JSON array (no markdown, no code fences). " +
-                   $"For each entry where the grammar focus EXCEEDS the target level, include one object with this shape: {jsonExample}\n" +
-                   $"If all entries are level-appropriate, respond with [].";
-
-        var request = new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 1000);
+        var request = _prompts.BuildCurriculumValidationPrompt(ctx);
 
         try
         {
             var response = await _claude.CompleteAsync(request, ct);
-            var content = response.Content.Trim();
-
-            if (content.StartsWith("```"))
-            {
-                var start = content.IndexOf('\n') + 1;
-                var end = content.LastIndexOf("```");
-                if (end > start)
-                    content = content[start..end].Trim();
-            }
+            var content = ContentJsonHelper.StripFences(response.Content) ?? string.Empty;
 
             var warnings = JsonSerializer.Deserialize<List<ValidationWarningDto>>(
                 content,

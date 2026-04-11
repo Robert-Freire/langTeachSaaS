@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using LangTeach.Api.AI;
 
 namespace LangTeach.Api.Services;
@@ -135,6 +136,18 @@ public interface IPedagogyConfigService
     /// Returns an empty array if the field is absent from config (should not happen in production).
     /// </summary>
     string[] GetSectionCoherenceRules();
+
+    /// <summary>
+    /// Returns the valid difficulty competency names (e.g. Grammar, Vocabulary).
+    /// Case-insensitive matching is built into the returned set.
+    /// </summary>
+    FrozenSet<string> GetValidDifficultyCompetencies();
+
+    /// <summary>
+    /// Returns the valid difficulty severity values (low, medium, high).
+    /// Case-insensitive matching is built into the returned set.
+    /// </summary>
+    FrozenSet<string> GetValidDifficultySeverities();
 
     /// <summary>
     /// Returns session gap policy buckets in order. Iterate from first to last;

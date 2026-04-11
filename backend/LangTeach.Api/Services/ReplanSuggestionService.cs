@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using LangTeach.Api.AI;
 using LangTeach.Api.Data;
@@ -12,33 +11,20 @@ public class ReplanSuggestionService : IReplanSuggestionService
 {
     private readonly AppDbContext _db;
     private readonly IClaudeClient _claude;
+    private readonly IPromptService _prompts;
     private readonly ILogger<ReplanSuggestionService> _logger;
 
     private const int MaxSuggestions = 5;
 
-    private const string SystemPrompt = """
-        You are an expert language teaching assistant helping a teacher adapt an upcoming course plan based on recent class data.
-        Your job is to identify gaps between what was taught and what is planned, and suggest specific adjustments.
-
-        Rules:
-        - Focus on high-impact changes: grammar gaps not yet addressed, student difficulties not covered by upcoming lessons
-        - Be specific: name the topic to change and what to add or adjust
-        - Keep reasoning concise (1-2 sentences referencing the actual evidence)
-        - Limit to 3-5 suggestions maximum; only suggest genuine improvements
-        - If the plan already addresses all known gaps, return fewer suggestions
-        - Respond ONLY with a valid JSON object using this exact structure:
-          {"suggestions":[{"curriculumEntryId":"<guid or null>","proposedChange":"<what to change>","reasoning":"<why, citing evidence>"}]}
-        - curriculumEntryId must be one of the planned entry IDs provided, or null for a general suggestion
-        - Respond with JSON only, no markdown, no explanation
-        """;
-
     public ReplanSuggestionService(
         AppDbContext db,
         IClaudeClient claude,
+        IPromptService prompts,
         ILogger<ReplanSuggestionService> logger)
     {
         _db = db;
         _claude = claude;
+        _prompts = prompts;
         _logger = logger;
     }
 
@@ -101,16 +87,11 @@ public class ReplanSuggestionService : IReplanSuggestionService
             catch (JsonException) { /* malformed, skip */ }
         }
 
-        var userPrompt = BuildUserPrompt(
+        var promptContext = new ReplanSuggestionContext(
             course.Name, course.Language, course.TargetCefrLevel, course.Student?.Name,
-            taughtEntries, plannedEntries, difficulties);
+            taughtEntries, plannedEntries, difficulties, MaxSuggestions);
 
-        var request = new ClaudeRequest(
-            SystemPrompt: SystemPrompt,
-            UserPrompt: userPrompt,
-            Model: ClaudeModel.Haiku,
-            MaxTokens: 2048
-        );
+        var request = _prompts.BuildReplanSuggestionPrompt(promptContext);
 
         ClaudeResponse response;
         try
@@ -183,54 +164,6 @@ public class ReplanSuggestionService : IReplanSuggestionService
 
         await _db.SaveChangesAsync(ct);
         return ReplanSuggestionResponder.ToDto(suggestion);
-    }
-
-    private static string BuildUserPrompt(
-        string courseName,
-        string language,
-        string? targetCefrLevel,
-        string? studentName,
-        IEnumerable<TaughtEntryContext> taughtEntries,
-        IEnumerable<PlannedEntryContext> plannedEntries,
-        List<string> difficulties)
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine($"Course: {courseName}");
-        sb.AppendLine($"Language: {language}");
-        sb.AppendLine($"Target level: {targetCefrLevel ?? "not set"}");
-        sb.AppendLine($"Student: {studentName ?? "unknown"}");
-        sb.AppendLine();
-
-        if (difficulties.Count > 0)
-        {
-            sb.AppendLine("Student difficulties on record:");
-            foreach (var d in difficulties)
-                sb.AppendLine($"- {d}");
-            sb.AppendLine();
-        }
-
-        sb.AppendLine("What has been taught so far (with lesson notes):");
-        foreach (var e in taughtEntries)
-        {
-            sb.Append($"- {e.Topic}");
-            if (!string.IsNullOrWhiteSpace(e.GrammarFocus)) sb.Append($" (grammar: {e.GrammarFocus})");
-            sb.AppendLine();
-            if (!string.IsNullOrWhiteSpace(e.WhatWasCovered)) sb.AppendLine($"  Covered: {e.WhatWasCovered}");
-            if (!string.IsNullOrWhiteSpace(e.AreasToImprove)) sb.AppendLine($"  Areas to improve: {e.AreasToImprove}");
-        }
-        sb.AppendLine();
-
-        sb.AppendLine("Upcoming planned lessons (these can be adjusted):");
-        foreach (var e in plannedEntries)
-        {
-            sb.Append($"- [ID: {e.Id}] Session {e.OrderIndex + 1}: {e.Topic}");
-            if (!string.IsNullOrWhiteSpace(e.GrammarFocus)) sb.Append($" (grammar: {e.GrammarFocus})");
-            sb.AppendLine();
-        }
-        sb.AppendLine();
-
-        sb.AppendLine($"Suggest up to {MaxSuggestions} targeted adjustments to upcoming lessons based on gaps and student difficulties.");
-        return sb.ToString();
     }
 
     /// <summary>
@@ -313,9 +246,6 @@ public class ReplanSuggestionService : IReplanSuggestionService
     }
 
 }
-
-internal record TaughtEntryContext(string Topic, string? GrammarFocus, string? WhatWasCovered, string? AreasToImprove);
-internal record PlannedEntryContext(Guid Id, int OrderIndex, string Topic, string? GrammarFocus);
 
 /// <summary>
 /// Shared accept/dismiss logic used by both ReplanSuggestionService and StubReplanSuggestionService.
