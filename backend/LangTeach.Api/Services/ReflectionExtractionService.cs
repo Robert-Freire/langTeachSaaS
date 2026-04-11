@@ -37,7 +37,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Claude API call failed during reflection extraction");
-            return new ExtractedReflectionDto(null, null, null, null, null, null, [], null);
+            return new ExtractedReflectionDto(null, null, null, null, null, null, [], null, null);
         }
 
         return ParseResponse(response.Content);
@@ -59,14 +59,15 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 NextLessonIdeas: GetStringOrNull(root, "nextLessonIdeas"),
                 SessionDate: GetIsoDateOrNull(root, "sessionDate"),
                 SuggestedDifficulties: ParseSuggestedDifficulties(root),
-                RawExtractionJson: cleaned
+                RawExtractionJson: cleaned,
+                SessionTitle: GetStringOrNull(root, "sessionTitle")
             );
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to parse reflection extraction JSON (length: {Length})", json?.Length ?? 0);
-        _logger.LogDebug("Unparseable Claude response: {Json}", json);
-            return new ExtractedReflectionDto(null, null, null, null, null, null, [], null);
+            _logger.LogDebug("Unparseable Claude response: {Json}", json);
+            return new ExtractedReflectionDto(null, null, null, null, null, null, [], null, null);
         }
     }
 

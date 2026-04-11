@@ -13,6 +13,7 @@ public class StubReflectionExtractionService : IReflectionExtractionService
             NextLessonIdeas: "[Extracted] Next lesson ideas",
             SessionDate: null,
             SuggestedDifficulties: [],
-            RawExtractionJson: null
+            RawExtractionJson: null,
+            SessionTitle: null
         ));
 }

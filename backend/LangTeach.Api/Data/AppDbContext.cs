@@ -207,6 +207,7 @@ public class AppDbContext : DbContext
              .HasDefaultValue(HomeworkStatus.NotApplicable);
             e.Property(sl => sl.IsDeleted).HasDefaultValue(false);
             e.Property(sl => sl.TopicTags).HasDefaultValue("[]");
+            e.Property(sl => sl.Title).HasMaxLength(120);
         });
 
         // VoiceNote — cascade delete from Teacher

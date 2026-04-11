@@ -28,7 +28,9 @@ public record SessionLogDto(
     SessionLogStatus Status,
     string StatusName,
     string MentionedDifficultyPairs,
-    string SuggestedDifficulties
+    string SuggestedDifficulties,
+    int? Duration,
+    string? Title
 );
 
 public class CreateSessionLogRequest
@@ -71,6 +73,12 @@ public class CreateSessionLogRequest
 
     public List<DifficultyPairDto>? MentionedDifficultyPairs { get; set; }
     public List<SuggestedDifficultyDto>? SuggestedDifficulties { get; set; }
+
+    [Range(1, 1440)]
+    public int? Duration { get; set; }
+
+    [MaxLength(120)]
+    public string? Title { get; set; }
 
     // Voice note traceability -- written to VoiceNoteApplication when provided.
     // VoiceNoteId is null for Telegram (no VoiceNote entity).
@@ -136,4 +144,10 @@ public class UpdateSessionLogRequest
 
     public List<DifficultyPairDto>? MentionedDifficultyPairs { get; set; }
     public List<SuggestedDifficultyDto>? SuggestedDifficulties { get; set; }
+
+    [Range(1, 1440)]
+    public int? Duration { get; set; }
+
+    [MaxLength(120)]
+    public string? Title { get; set; }
 }
