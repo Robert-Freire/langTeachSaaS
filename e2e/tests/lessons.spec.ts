@@ -83,8 +83,16 @@ test('full lesson CRUD flow', async ({ browser }) => {
   await expect(page.locator(`[data-testid="lesson-title"]:text-is("${lessonTitle}")`)).toBeVisible({ timeout: 10000 })
   await expect(page.locator(`[data-testid="lesson-title"]:text-is("Copy of ${lessonTitle}")`)).toBeVisible({ timeout: 10000 })
 
-  // CEFR badge (Stitch CefrBadge component) should render the level on the list
-  await expect(page.getByTestId('cefr-badge').first()).toBeVisible({ timeout: 10000 })
+  // CEFR badges should be present on both the original and duplicated lesson rows
+  const originalRow = page
+    .locator('[data-testid^="lesson-row-"]')
+    .filter({ has: page.locator(`[data-testid="lesson-title"]:text-is("${lessonTitle}")`) })
+  const copyRow = page
+    .locator('[data-testid^="lesson-row-"]')
+    .filter({ has: page.locator(`[data-testid="lesson-title"]:text-is("Copy of ${lessonTitle}")`) })
+
+  await expect(originalRow.getByTestId('cefr-badge')).toBeVisible({ timeout: 10000 })
+  await expect(copyRow.getByTestId('cefr-badge')).toBeVisible({ timeout: 10000 })
 
   await context.close()
 })
