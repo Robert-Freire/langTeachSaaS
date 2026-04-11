@@ -224,7 +224,8 @@ public class TelegramConversationService : ITelegramConversationService
             return new CreateSessionLogRequest
             {
                 SessionDate = DateTime.UtcNow.Date,
-                GeneralNotes = notes
+                GeneralNotes = notes,
+                VoiceNoteTranscription = notes
             };
         }
 
@@ -243,7 +244,9 @@ public class TelegramConversationService : ITelegramConversationService
             GeneralNotes = string.IsNullOrEmpty(generalNotes) ? null : generalNotes,
             SuggestedDifficulties = extracted.SuggestedDifficulties.Count > 0
                 ? extracted.SuggestedDifficulties
-                : null
+                : null,
+            VoiceNoteTranscription = notes,
+            RawExtractionJson = extracted.RawExtractionJson
         };
     }
 

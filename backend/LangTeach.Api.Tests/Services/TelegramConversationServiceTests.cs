@@ -299,7 +299,8 @@ public class TelegramConversationServiceTests : IDisposable
             SuggestedDifficulties: new List<SuggestedDifficultyDto>
             {
                 new("confuses ser and estar", "Grammar", "Copulas", "Medium")
-            });
+            },
+            RawExtractionJson: null);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco worked on ser/estar today"), CancellationToken.None);
 
@@ -309,6 +310,32 @@ public class TelegramConversationServiceTests : IDisposable
         log.NextSessionTopics.Should().Be("past tenses review");
         log.GeneralNotes.Should().Be("needs more practice with preterite\nengaged");
         _extractionService.LastInput.Should().Be("Marco worked on ser/estar today");
+    }
+
+    [Fact]
+    public async Task TextMessage_MatchedStudent_WritesVoiceNoteApplicationRow()
+    {
+        LinkTeacher();
+        var student = await CreateStudentAsync("Marco");
+
+        _extractionService.Result = new ExtractedReflectionDto(
+            WhatWasCovered: "ser vs estar",
+            AreasToImprove: null,
+            EmotionalSignals: null,
+            HomeworkAssigned: null,
+            NextLessonIdeas: null,
+            SessionDate: null,
+            SuggestedDifficulties: new List<SuggestedDifficultyDto>(),
+            RawExtractionJson: "{\"whatWasCovered\":\"ser vs estar\"}");
+
+        await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco trabajamos ser vs estar"), CancellationToken.None);
+
+        var log = await _db.SessionLogs.SingleAsync(s => s.StudentId == student.Id);
+        var application = await _db.VoiceNoteApplications.SingleAsync(a => a.SessionLogId == log.Id);
+        application.VoiceNoteId.Should().BeNull();
+        application.Transcription.Should().Be("Marco trabajamos ser vs estar");
+        application.RawExtractionJson.Should().Be("{\"whatWasCovered\":\"ser vs estar\"}");
+        application.ApplicationType.Should().Be(ApplicationType.Create);
     }
 
     [Fact]
@@ -324,7 +351,8 @@ public class TelegramConversationServiceTests : IDisposable
             HomeworkAssigned: null,
             NextLessonIdeas: null,
             SessionDate: "2026-04-06",
-            SuggestedDifficulties: new List<SuggestedDifficultyDto>());
+            SuggestedDifficulties: new List<SuggestedDifficultyDto>(),
+            RawExtractionJson: null);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco el pasado lunes trabajamos los condicionales"), CancellationToken.None);
 
@@ -379,7 +407,8 @@ public class TelegramConversationServiceTests : IDisposable
                 HomeworkAssigned: null,
                 NextLessonIdeas: null,
                 SessionDate: null,
-                SuggestedDifficulties: new List<SuggestedDifficultyDto>());
+                SuggestedDifficulties: new List<SuggestedDifficultyDto>(),
+                RawExtractionJson: null);
             return Task.FromResult(result);
         }
     }

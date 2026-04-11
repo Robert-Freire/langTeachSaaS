@@ -125,6 +125,20 @@ public class SessionLogService : ISessionLogService
 
         _db.SessionLogs.Add(entity);
 
+        if (request.VoiceNoteId.HasValue || request.VoiceNoteTranscription is not null || request.RawExtractionJson is not null)
+        {
+            _db.VoiceNoteApplications.Add(new VoiceNoteApplication
+            {
+                Id = Guid.NewGuid(),
+                SessionLogId = entity.Id,
+                VoiceNoteId = request.VoiceNoteId,
+                Transcription = request.VoiceNoteTranscription,
+                RawExtractionJson = request.RawExtractionJson,
+                ApplicationType = ApplicationType.Create,
+                AppliedAt = now
+            });
+        }
+
         if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
             PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);
 

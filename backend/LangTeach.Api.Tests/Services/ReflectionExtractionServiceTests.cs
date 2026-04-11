@@ -314,4 +314,40 @@ public class ReflectionExtractionServiceTests
 
         result.SessionDate.Should().BeNull();
     }
+
+    [Fact]
+    public void ParseResponse_ReturnsRawExtractionJson()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"whatWasCovered":"ser vs estar"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.RawExtractionJson.Should().Be(json);
+    }
+
+    [Fact]
+    public void ParseResponse_InvalidJson_ReturnsNullRawExtractionJson()
+    {
+        var sut = CreateSut("{}");
+
+        var result = sut.ParseResponse("not valid json");
+
+        result.RawExtractionJson.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ExtractAsync_ClaudeApiSuccess_RawExtractionJsonMatchesResponse()
+    {
+        var rawJson = """{"whatWasCovered":"verbos irregulares"}""";
+        var sut = new ReflectionExtractionService(
+            new ReflectionClaudeClient(rawJson),
+            FakePrompts,
+            PedagogyService,
+            NullLogger<ReflectionExtractionService>.Instance);
+
+        var result = await sut.ExtractAsync("Hoy trabajamos los verbos", CancellationToken.None);
+
+        result.RawExtractionJson.Should().Be(rawJson);
+    }
 }

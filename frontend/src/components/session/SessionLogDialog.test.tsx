@@ -714,6 +714,30 @@ describe('SessionLogDialog', () => {
       })
     })
 
+    it('includes voiceNoteId, voiceNoteTranscription and rawExtractionJson in draft payload', async () => {
+      const EXTRACTED_WITH_RAW = {
+        ...EXTRACTED,
+        rawExtractionJson: '{"whatWasCovered":"Covered ser vs estar"}',
+      }
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue(EXTRACTED_WITH_RAW)
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          expect.objectContaining({
+            voiceNoteId: 'vn-1',
+            voiceNoteTranscription: 'We covered ser vs estar.',
+            rawExtractionJson: '{"whatWasCovered":"Covered ser vs estar"}',
+          }),
+        )
+      })
+    })
+
     it('auto-saves Draft and changes submit button to "Confirm"', async () => {
       wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
       await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())

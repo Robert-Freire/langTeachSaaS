@@ -71,6 +71,13 @@ public class CreateSessionLogRequest
 
     public List<DifficultyPairDto>? MentionedDifficultyPairs { get; set; }
     public List<SuggestedDifficultyDto>? SuggestedDifficulties { get; set; }
+
+    // Voice note traceability -- written to VoiceNoteApplication when provided.
+    // VoiceNoteId is null for Telegram (no VoiceNote entity). No MaxLength because
+    // transcriptions and raw Claude JSON can be arbitrarily large.
+    public Guid? VoiceNoteId { get; set; }
+    public string? VoiceNoteTranscription { get; set; }
+    public string? RawExtractionJson { get; set; }
 }
 
 public record StudentSessionSummaryDto(
