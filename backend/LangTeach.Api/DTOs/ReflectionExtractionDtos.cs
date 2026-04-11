@@ -24,5 +24,6 @@ public record ExtractedReflectionDto(
     string? NextLessonIdeas,
     string? SessionDate,
     List<SuggestedDifficultyDto> SuggestedDifficulties,
-    string? RawExtractionJson
+    string? RawExtractionJson,
+    string? SessionTitle
 );

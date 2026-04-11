@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
@@ -129,6 +130,8 @@ public class SessionLogService : ISessionLogService
             SuggestedDifficulties = SerializeSuggestedDifficulties(sanitizedDifficulties),
             IsCancelled = request.IsCancelled,
             Status = request.Status,
+            Duration = request.Duration,
+            Title = request.Title ?? GenerateTitle(request.PlannedContent, request.ActualContent, request.SessionDate),
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -215,6 +218,8 @@ public class SessionLogService : ISessionLogService
         entity.SuggestedDifficulties = SerializeSuggestedDifficulties(sanitizedDifficulties);
         entity.IsCancelled = request.IsCancelled;
         entity.Status = request.Status;
+        entity.Duration = request.Duration;
+        entity.Title = request.Title;
         entity.UpdatedAt = DateTime.UtcNow;
 
         Student? studentForUpdate = null;
@@ -388,8 +393,24 @@ public class SessionLogService : ISessionLogService
         sl.Status,
         sl.Status.ToString(),
         sl.MentionedDifficultyPairs,
-        sl.SuggestedDifficulties
+        sl.SuggestedDifficulties,
+        sl.Duration,
+        sl.Title
     );
+
+    internal static string GenerateTitle(string? plannedContent, string? actualContent, DateTime? sessionDate)
+    {
+        var content = !string.IsNullOrWhiteSpace(actualContent) ? actualContent : plannedContent;
+        if (!string.IsNullOrWhiteSpace(content))
+        {
+            var firstLine = content.Split('\n', StringSplitOptions.RemoveEmptyEntries)[0].Trim();
+            if (firstLine.Length <= 60) return firstLine;
+            var cut = firstLine.LastIndexOf(' ', 59);
+            return cut > 0 ? firstLine[..cut] : firstLine[..60];
+        }
+        var date = sessionDate?.ToString("MMM d", CultureInfo.InvariantCulture) ?? "unknown date";
+        return $"Session, {date}";
+    }
 
     private static string SerializePairs(List<DifficultyPairDto>? pairs) =>
         pairs is null or { Count: 0 } ? "[]" : JsonStorageHelper.Serialize(pairs);

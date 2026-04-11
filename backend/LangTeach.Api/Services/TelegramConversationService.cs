@@ -245,6 +245,7 @@ public class TelegramConversationService : ITelegramConversationService
             SuggestedDifficulties = extracted.SuggestedDifficulties.Count > 0
                 ? extracted.SuggestedDifficulties
                 : null,
+            Title = extracted.SessionTitle is { Length: > 120 } t ? t[..120] : extracted.SessionTitle,
             VoiceNoteTranscription = notes,
             RawExtractionJson = extracted.RawExtractionJson
         };

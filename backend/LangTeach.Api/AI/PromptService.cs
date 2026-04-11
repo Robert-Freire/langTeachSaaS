@@ -1460,6 +1460,7 @@ public class PromptService : IPromptService
             - homeworkAssigned: string or null
             - nextLessonIdeas: string or null
             - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) of the session being described. Resolve date references using today's date and day of week: "hoy"/"today" = today, "ayer"/"yesterday" = yesterday, "el lunes pasado"/"el pasado lunes" = the most recent Monday before today (not the Monday of this week if today is Monday), "el martes pasado"/"el pasado martes" = the most recent Tuesday before today, and so on for any weekday. Always pick the last occurrence of the named weekday strictly before today. Null if no date is mentioned.
+            - sessionTitle: string or null — a concise title (under 60 chars) for this session derived from what was covered. Examples: "Subjunctive in time clauses", "Pasado compuesto — revisión". Null if no content is mentioned.
             - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
 
             For suggestedDifficulties, each object must have:

@@ -873,6 +873,123 @@ public class SessionLogServiceTests : IDisposable
         application.Transcription.Should().Be("Marco hizo los deberes y repasamos el subjuntivo");
         application.ApplicationType.Should().Be(ApplicationType.Create);
     }
+
+    // --- Duration and Title ---
+
+    [Fact]
+    public async Task CreateAsync_WithDuration_PersistsDuration()
+    {
+        var request = BaseRequest();
+        request.Duration = 60;
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Duration.Should().Be(60);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithExplicitTitle_PreservesTitle()
+    {
+        var request = BaseRequest();
+        request.Title = "Subjunctive in Time Clauses";
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Title.Should().Be("Subjunctive in Time Clauses");
+    }
+
+    [Fact]
+    public async Task CreateAsync_NullTitle_WithActualContent_GeneratesTitleFromFirstLine()
+    {
+        var request = BaseRequest();
+        request.Title = null;
+        request.ActualContent = "Ser vs Estar: discussed key differences\nStudent struggled with copulas";
+        request.PlannedContent = null;
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Title.Should().Be("Ser vs Estar: discussed key differences");
+    }
+
+    [Fact]
+    public async Task CreateAsync_NullTitle_PrefersActualContentOverPlanned()
+    {
+        var request = BaseRequest();
+        request.Title = null;
+        request.ActualContent = "Actual topic";
+        request.PlannedContent = "Planned topic";
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Title.Should().Be("Actual topic");
+    }
+
+    [Fact]
+    public async Task CreateAsync_NullTitle_WithOnlyPlannedContent_GeneratesTitleFromPlanned()
+    {
+        var request = BaseRequest();
+        request.Title = null;
+        request.ActualContent = null;
+        request.PlannedContent = "Preterite tense review";
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Title.Should().Be("Preterite tense review");
+    }
+
+    [Fact]
+    public async Task CreateAsync_NullTitle_NoContent_WithDate_GeneratesDateFallback()
+    {
+        var request = BaseRequest();
+        request.Title = null;
+        request.ActualContent = null;
+        request.PlannedContent = null;
+        request.SessionDate = new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc);
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Title.Should().Be("Session, Apr 5");
+    }
+
+    [Fact]
+    public async Task CreateAsync_NullTitle_NoContent_NoDate_GeneratesUnknownDateFallback()
+    {
+        var request = BaseRequest();
+        request.Title = null;
+        request.ActualContent = null;
+        request.PlannedContent = null;
+        request.SessionDate = null;
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Title.Should().Be("Session, unknown date");
+    }
+
+    // --- GenerateTitle unit tests ---
+
+    [Theory]
+    [InlineData("Short title", null, "Short title")]
+    [InlineData("Multiline\nSecond line", null, "Multiline")]
+    public void GenerateTitle_ShortFirstLine_ReturnsAsIs(string planned, string? actual, string expected)
+    {
+        SessionLogService.GenerateTitle(planned, actual, null).Should().Be(expected);
+    }
+
+    [Fact]
+    public void GenerateTitle_LongFirstLine_TruncatesAtWordBoundary()
+    {
+        var longLine = "This is a very long session title that exceeds sixty characters in total length here";
+        // 60th char is within "characters", last space before 60 is before "characters"
+        var result = SessionLogService.GenerateTitle(longLine, null, null);
+        (result.Length <= 60).Should().BeTrue("title must fit in 60 chars");
+        result.Should().NotEndWith(" ");
+    }
+
+    [Fact]
+    public void GenerateTitle_NoContent_UsesSessionDateFallback()
+    {
+        var date = new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc);
+        SessionLogService.GenerateTitle(null, null, date).Should().Be("Session, Apr 5");
+    }
+
+    [Fact]
+    public void GenerateTitle_NoContent_NoDate_UsesUnknownDate()
+    {
+        SessionLogService.GenerateTitle(null, null, null).Should().Be("Session, unknown date");
+    }
 }
 
 file class NullDifficultyTrendService : IDifficultyTrendService

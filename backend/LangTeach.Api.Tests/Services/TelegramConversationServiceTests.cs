@@ -300,7 +300,8 @@ public class TelegramConversationServiceTests : IDisposable
             {
                 new("confuses ser and estar", "Grammar", "Copulas", "Medium")
             },
-            RawExtractionJson: null);
+            RawExtractionJson: null,
+            SessionTitle: null);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco worked on ser/estar today"), CancellationToken.None);
 
@@ -326,7 +327,8 @@ public class TelegramConversationServiceTests : IDisposable
             NextLessonIdeas: null,
             SessionDate: null,
             SuggestedDifficulties: new List<SuggestedDifficultyDto>(),
-            RawExtractionJson: "{\"whatWasCovered\":\"ser vs estar\"}");
+            RawExtractionJson: "{\"whatWasCovered\":\"ser vs estar\"}",
+            SessionTitle: null);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco trabajamos ser vs estar"), CancellationToken.None);
 
@@ -352,7 +354,8 @@ public class TelegramConversationServiceTests : IDisposable
             NextLessonIdeas: null,
             SessionDate: "2026-04-06",
             SuggestedDifficulties: new List<SuggestedDifficultyDto>(),
-            RawExtractionJson: null);
+            RawExtractionJson: null,
+            SessionTitle: null);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco el pasado lunes trabajamos los condicionales"), CancellationToken.None);
 
@@ -408,7 +411,8 @@ public class TelegramConversationServiceTests : IDisposable
                 NextLessonIdeas: null,
                 SessionDate: null,
                 SuggestedDifficulties: new List<SuggestedDifficultyDto>(),
-                RawExtractionJson: null);
+                RawExtractionJson: null,
+                SessionTitle: null);
             return Task.FromResult(result);
         }
     }

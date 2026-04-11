@@ -363,4 +363,37 @@ public class ReflectionExtractionServiceTests
 
         result.RawExtractionJson.Should().Be(rawJson);
     }
+
+    [Fact]
+    public void ParseResponse_ExtractsSessionTitle()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+                "whatWasCovered": "Preterite tense",
+                "areasToImprove": null,
+                "emotionalSignals": null,
+                "homeworkAssigned": null,
+                "nextLessonIdeas": null,
+                "sessionDate": null,
+                "sessionTitle": "Preterite vs Imperfect",
+                "suggestedDifficulties": []
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionTitle.Should().Be("Preterite vs Imperfect");
+    }
+
+    [Fact]
+    public void ParseResponse_SessionTitleIsNullWhenAbsent()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"whatWasCovered":"something","suggestedDifficulties":[]}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionTitle.Should().BeNull();
+    }
 }
