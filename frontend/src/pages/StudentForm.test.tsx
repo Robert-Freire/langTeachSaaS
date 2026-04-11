@@ -602,4 +602,111 @@ describe('StudentForm', () => {
     })
   })
 
+  it('renders Reason for Studying textarea', () => {
+    renderNew()
+    expect(screen.getByTestId('student-reason-for-studying')).toBeInTheDocument()
+  })
+
+  it('renders Teaching Goals card with Add Objective button', () => {
+    renderNew()
+    expect(screen.getByTestId('add-objective')).toBeInTheDocument()
+    expect(screen.getByTestId('objectives-empty')).toBeInTheDocument()
+  })
+
+  it('adds a short-term objective row on click', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderNew()
+
+    expect(screen.queryAllByTestId('objective-row')).toHaveLength(0)
+    await user.click(screen.getByTestId('add-objective'))
+    expect(screen.getAllByTestId('objective-row')).toHaveLength(1)
+    expect(screen.queryByTestId('objectives-empty')).not.toBeInTheDocument()
+  })
+
+  it('removes a short-term objective row', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderNew()
+
+    await user.click(screen.getByTestId('add-objective'))
+    expect(screen.getAllByTestId('objective-row')).toHaveLength(1)
+    await user.click(screen.getByTestId('remove-objective'))
+    expect(screen.queryAllByTestId('objective-row')).toHaveLength(0)
+  })
+
+  it('includes reasonForStudying in submission', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockCreateStudent.mockResolvedValue({ id: 'new-id' })
+    renderNew()
+
+    await user.type(screen.getByTestId('student-name'), 'Test Student')
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+    await user.click(screen.getByTestId('student-cefr'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+    await user.type(screen.getByTestId('student-reason-for-studying'), 'Moving to Spain')
+
+    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+
+    await vi.waitFor(() => {
+      expect(mockCreateStudent).toHaveBeenCalledWith(
+        expect.objectContaining({ reasonForStudying: 'Moving to Spain' }),
+      )
+    })
+  })
+
+  it('pre-populates reasonForStudying and objectives in edit mode', async () => {
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1',
+      name: 'Ana',
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      nativeLanguages: [],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+      personalNotes: null,
+      teachingNotes: null,
+      reasonForStudying: 'Loves Spanish culture',
+      shortTermObjectives: [
+        { id: 'obj-1', text: 'Pass DELE B1', targetDate: '2026-06-01' },
+      ],
+    })
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(screen.getByTestId('student-reason-for-studying')).toHaveValue('Loves Spanish culture')
+    const rows = await screen.findAllByTestId('objective-row')
+    expect(rows).toHaveLength(1)
+    expect(screen.getByTestId('objective-text-input')).toHaveValue('Pass DELE B1')
+  })
+
+  it('includes shortTermObjectives in submission (filtering empty text)', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockCreateStudent.mockResolvedValue({ id: 'new-id' })
+    renderNew()
+
+    await user.type(screen.getByTestId('student-name'), 'Test Student')
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+    await user.click(screen.getByTestId('student-cefr'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+
+    await user.click(screen.getByTestId('add-objective'))
+    await user.type(screen.getByTestId('objective-text-input'), 'Pass DELE B1')
+
+    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+
+    await vi.waitFor(() => {
+      expect(mockCreateStudent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          shortTermObjectives: [expect.objectContaining({ text: 'Pass DELE B1' })],
+        }),
+      )
+    })
+  })
+
 })

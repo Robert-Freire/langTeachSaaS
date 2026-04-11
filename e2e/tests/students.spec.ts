@@ -412,7 +412,7 @@ test('"Create Course" button on student edit page navigates to CourseNew with st
   await context.close()
 })
 
-test('student detail shows 3 tabs and profile content', async ({ browser }) => {
+test('student detail shows 4 tabs and overview content by default', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
@@ -434,12 +434,18 @@ test('student detail shows 3 tabs and profile content', async ({ browser }) => {
   // Should redirect directly to student detail page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
 
-  // Profile tab should be active by default
-  await expect(page.getByTestId('tab-profile')).toBeVisible({ timeout: 10000 })
+  // All 4 tabs should be visible
+  await expect(page.getByTestId('tab-overview')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('tab-profile')).toBeVisible()
   await expect(page.getByTestId('tab-sessions')).toBeVisible()
   await expect(page.getByTestId('tab-progress')).toBeVisible()
 
-  // Profile tab content should be visible
+  // Overview tab content should be visible by default
+  await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('primary-objective-card')).toBeVisible()
+
+  // Click Profile tab
+  await page.getByTestId('tab-profile').click()
   await expect(page.getByTestId('student-profile-tab')).toBeVisible({ timeout: 10000 })
 
   // CEFR badge and header actions should be visible
@@ -505,11 +511,12 @@ test('identity fields round-trip: save and verify in profile view and edit form'
   // Should redirect to student detail page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
 
-  // Profile tab: header shows profession and compact location
+  // Header shows profession and compact location (visible on all tabs)
   await expect(page.getByTestId('student-header-profession')).toHaveText('Architect', { timeout: 5000 })
   await expect(page.getByTestId('student-header-location')).toHaveText('Lisbon / Madrid', { timeout: 5000 })
 
-  // Profile tab: About section shows identity details
+  // Navigate to Profile tab to check identity details
+  await page.getByTestId('tab-profile').click()
   await expect(page.getByTestId('profile-about')).toBeVisible({ timeout: 5000 })
   await expect(page.getByText('Lisbon, Portugal')).toBeVisible()
   await expect(page.getByText('Madrid, Spain')).toBeVisible()
@@ -528,10 +535,75 @@ test('identity fields round-trip: save and verify in profile view and edit form'
   // Cleanup
   await page.getByRole('button', { name: 'Cancel' }).click()
   await expect(page).toHaveURL('/students', { timeout: 10000 })
-  const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
+  const deleteCardIdentity = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
-  await deleteCard.getByTestId('delete-student').click()
+  await deleteCardIdentity.getByTestId('delete-student').click()
+  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
+  await page.getByTestId('confirm-delete').click()
+  await expect(
+    page.locator('[data-testid^="student-row-"]').filter({
+      has: page.getByTestId('student-name').filter({ hasText: studentName })
+    })
+  ).not.toBeVisible({ timeout: 10000 })
+
+  await context.close()
+})
+
+test('motivation fields: reason for studying and objectives round-trip', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Motivation Test ${Date.now()}`
+  const reasonText = 'Moving to Spain for work next year'
+  const objectiveText = 'Pass DELE B2 exam'
+
+  // Create student with motivation fields
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: 10000 })
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B2' }).click()
+
+  // Fill reason for studying
+  await page.getByTestId('student-reason-for-studying').fill(reasonText)
+
+  // Add a short-term objective
+  await page.getByTestId('add-objective').click()
+  await page.getByTestId('objective-text-input').fill(objectiveText)
+
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
+
+  // Overview tab: primary objective card shows the objective
+  await expect(page.getByTestId('primary-objective-card')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('objective-text')).toHaveText(objectiveText)
+
+  // Profile tab: hero section shows reason for studying as a quote
+  await page.getByTestId('tab-profile').click()
+  await expect(page.getByTestId('profile-hero')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('reason-quote')).toContainText(reasonText)
+
+  // Profile tab: objectives section shows objective
+  await expect(page.getByTestId('profile-objectives')).toBeVisible()
+  await expect(page.getByText(objectiveText)).toBeVisible()
+
+  // Navigate to edit form and verify round-trip
+  await page.getByTestId('edit-profile-link').click()
+  await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: 10000 })
+  await expect(page.getByTestId('student-reason-for-studying')).toHaveValue(reasonText)
+  await expect(page.getByTestId('objective-row')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('objective-text-input')).toHaveValue(objectiveText)
+
+  // Cleanup
+  await page.getByRole('button', { name: 'Cancel' }).click()
+  await expect(page).toHaveURL('/students', { timeout: 10000 })
+  const deleteCardM = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await deleteCardM.getByTestId('delete-student').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
   await page.getByTestId('confirm-delete').click()
   await expect(

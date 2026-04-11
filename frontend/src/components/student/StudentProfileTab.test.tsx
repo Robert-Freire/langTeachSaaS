@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -10,6 +10,15 @@ vi.mock('@/api/followups', () => ({
   createFollowup: vi.fn(),
   updateFollowupStatus: vi.fn(),
 }))
+
+function dateOffset(days: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 
 const FULL_STUDENT: Student = {
   id: 'student-1',
@@ -60,6 +69,7 @@ const EMPTY_STUDENT: Student = {
   reasonForStudying: null,
   personalNotes: null,
   teachingNotes: null,
+  interests: [],
   nativeLanguages: [],
   learningGoals: [],
   spokenLanguages: [],
@@ -68,12 +78,26 @@ const EMPTY_STUDENT: Student = {
   teachingTodos: [],
 }
 
-function renderProfile(student: Student, onToggle?: (id: string, status: 'Active' | 'Covered') => void) {
+function renderProfile(
+  student: Student,
+  opts?: {
+    onToggle?: (id: string, status: 'Active' | 'Covered') => void
+    onSaveReason?: (value: string) => Promise<void>
+    onSaveInterests?: (value: string[]) => Promise<void>
+    followups?: TeacherFollowup[]
+  }
+) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
-        <StudentProfileTab student={student} onToggleDifficultyStatus={onToggle} />
+        <StudentProfileTab
+          student={student}
+          onToggleDifficultyStatus={opts?.onToggle}
+          onSaveReasonForStudying={opts?.onSaveReason}
+          onSaveInterests={opts?.onSaveInterests}
+          followups={opts?.followups}
+        />
       </MemoryRouter>
     </QueryClientProvider>
   )
@@ -85,19 +109,115 @@ describe('StudentProfileTab', () => {
     expect(screen.getByTestId('student-profile-tab')).toBeInTheDocument()
   })
 
-  describe('About section', () => {
+  describe('Hero section', () => {
+    it('renders the reason as a quote', () => {
+      renderProfile(FULL_STUDENT)
+      const quote = screen.getByTestId('reason-quote')
+      expect(quote).toHaveTextContent('Vive en Barcelona')
+    })
+
+    it('shows empty state when no reason', () => {
+      renderProfile(EMPTY_STUDENT)
+      expect(screen.getByTestId('reason-quote')).toHaveTextContent('No reason for studying added yet.')
+    })
+
+    it('shows interests beside the quote', () => {
+      renderProfile(FULL_STUDENT)
+      const heroInterests = screen.getByTestId('hero-interests')
+      expect(heroInterests).toBeInTheDocument()
+      const tags = screen.getAllByTestId('hero-interest-tag')
+      expect(tags.length).toBeGreaterThan(0)
+    })
+
+    it('does not show hero interests when no interests', () => {
+      renderProfile({ ...FULL_STUDENT, interests: [] })
+      expect(screen.queryByTestId('hero-interests')).not.toBeInTheDocument()
+    })
+
+    it('shows edit button when onSaveReasonForStudying is provided', () => {
+      renderProfile(FULL_STUDENT, { onSaveReason: vi.fn().mockResolvedValue(undefined) })
+      expect(screen.getByTestId('reason-edit-btn')).toBeInTheDocument()
+    })
+
+    it('does not show edit button when no callback', () => {
+      renderProfile(FULL_STUDENT)
+      expect(screen.queryByTestId('reason-edit-btn')).not.toBeInTheDocument()
+    })
+
+    it('switches to edit mode on pencil click', async () => {
+      const onSave = vi.fn().mockResolvedValue(undefined)
+      renderProfile(FULL_STUDENT, { onSaveReason: onSave })
+      fireEvent.click(screen.getByTestId('reason-edit-btn'))
+      expect(screen.getByTestId('reason-textarea')).toBeInTheDocument()
+    })
+
+    it('calls onSaveReasonForStudying on save', async () => {
+      const onSave = vi.fn().mockResolvedValue(undefined)
+      renderProfile(FULL_STUDENT, { onSaveReason: onSave })
+      fireEvent.click(screen.getByTestId('reason-edit-btn'))
+      const textarea = screen.getByTestId('reason-textarea')
+      fireEvent.change(textarea, { target: { value: 'New reason' } })
+      fireEvent.click(screen.getByTestId('reason-save-btn'))
+      await waitFor(() => expect(onSave).toHaveBeenCalledWith('New reason'))
+    })
+
+    it('cancels edit and restores original value', () => {
+      const onSave = vi.fn().mockResolvedValue(undefined)
+      renderProfile(FULL_STUDENT, { onSaveReason: onSave })
+      fireEvent.click(screen.getByTestId('reason-edit-btn'))
+      fireEvent.change(screen.getByTestId('reason-textarea'), { target: { value: 'Changed' } })
+      fireEvent.click(screen.getByTestId('reason-cancel-btn'))
+      expect(screen.getByTestId('reason-quote')).toHaveTextContent('Vive en Barcelona')
+    })
+  })
+
+  describe('Identity Details section', () => {
     it('shows identity fields when populated', () => {
       renderProfile(FULL_STUDENT)
       expect(screen.getByText('Rome, Italy')).toBeInTheDocument()
       expect(screen.getByText('Barcelona, Spain')).toBeInTheDocument()
       expect(screen.getByText(/^1998 \(\d+ years\)$/)).toBeInTheDocument()
       expect(screen.getByText('Film student')).toBeInTheDocument()
-      expect(screen.getByText('Vive en Barcelona')).toBeInTheDocument()
     })
 
     it('shows empty state when no identity data', () => {
       renderProfile(EMPTY_STUDENT)
       expect(screen.getByText('No identity details added yet')).toBeInTheDocument()
+    })
+  })
+
+  describe('Interests section (right column)', () => {
+    it('renders interest tags', () => {
+      renderProfile(FULL_STUDENT)
+      const section = screen.getByTestId('profile-interests')
+      expect(section).toBeInTheDocument()
+      const tags = screen.getAllByTestId('interest-tag')
+      expect(tags.some((t) => t.textContent === 'cinema')).toBe(true)
+    })
+
+    it('shows empty state when no interests', () => {
+      renderProfile(EMPTY_STUDENT)
+      expect(screen.getByText('No interests added yet')).toBeInTheDocument()
+    })
+
+    it('shows edit/add buttons when onSaveInterests provided', () => {
+      renderProfile(FULL_STUDENT, { onSaveInterests: vi.fn().mockResolvedValue(undefined) })
+      expect(screen.getByTestId('interests-edit-btn')).toBeInTheDocument()
+      expect(screen.getByTestId('interests-add-btn')).toBeInTheDocument()
+    })
+
+    it('enters edit mode and shows input', () => {
+      renderProfile(FULL_STUDENT, { onSaveInterests: vi.fn().mockResolvedValue(undefined) })
+      fireEvent.click(screen.getByTestId('interests-edit-btn'))
+      expect(screen.getByTestId('interests-input')).toBeInTheDocument()
+    })
+
+    it('calls onSaveInterests on save', async () => {
+      const onSave = vi.fn().mockResolvedValue(undefined)
+      renderProfile(FULL_STUDENT, { onSaveInterests: onSave })
+      fireEvent.click(screen.getByTestId('interests-edit-btn'))
+      fireEvent.click(screen.getByTestId('interests-save-btn'))
+      await waitFor(() => expect(onSave).toHaveBeenCalled())
     })
   })
 
@@ -124,12 +244,12 @@ describe('StudentProfileTab', () => {
     it('shows empty states for missing notes', () => {
       renderProfile(EMPTY_STUDENT)
       expect(screen.getByText('No personal notes')).toBeInTheDocument()
-      expect(screen.getByText('No teaching notes')).toBeInTheDocument()
+      expect(screen.getByText('No pedagogical observations')).toBeInTheDocument()
     })
   })
 
   describe('Learning Goals section', () => {
-    it('renders goals as chips', () => {
+    it('renders goals as bullet list items', () => {
       renderProfile(FULL_STUDENT)
       expect(screen.getByText('Dominar el subjuntivo')).toBeInTheDocument()
       expect(screen.getByText('Preparar DELE C1')).toBeInTheDocument()
@@ -152,6 +272,40 @@ describe('StudentProfileTab', () => {
       renderProfile(EMPTY_STUDENT)
       expect(screen.getByText('No objectives set')).toBeInTheDocument()
     })
+
+    it('shows OVERDUE label for past-due objective', () => {
+      const student = {
+        ...FULL_STUDENT,
+        shortTermObjectives: [
+          { id: 'obj-1', text: 'Overdue objective', targetDate: dateOffset(-5) },
+        ],
+      }
+      renderProfile(student)
+      expect(screen.getByTestId('objective-overdue-label')).toBeInTheDocument()
+    })
+
+    it('shows Critical label for objective within 6 weeks', () => {
+      const student = {
+        ...FULL_STUDENT,
+        shortTermObjectives: [
+          { id: 'obj-1', text: 'Critical objective', targetDate: dateOffset(20) },
+        ],
+      }
+      renderProfile(student)
+      expect(screen.getByTestId('objective-critical-label')).toBeInTheDocument()
+    })
+
+    it('does not show urgency labels for normal objectives', () => {
+      const student = {
+        ...FULL_STUDENT,
+        shortTermObjectives: [
+          { id: 'obj-1', text: 'Normal objective', targetDate: dateOffset(60) },
+        ],
+      }
+      renderProfile(student)
+      expect(screen.queryByTestId('objective-overdue-label')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('objective-critical-label')).not.toBeInTheDocument()
+    })
   })
 
   describe('Difficulties section', () => {
@@ -170,7 +324,7 @@ describe('StudentProfileTab', () => {
 
     it('calls onToggleDifficultyStatus when toggle button is clicked', () => {
       const onToggle = vi.fn()
-      renderProfile(FULL_STUDENT, onToggle)
+      renderProfile(FULL_STUDENT, { onToggle })
       const toggleBtn = screen.getByTestId('toggle-difficulty-status-d1')
       fireEvent.click(toggleBtn)
       expect(onToggle).toHaveBeenCalledWith('d1', 'Covered')
