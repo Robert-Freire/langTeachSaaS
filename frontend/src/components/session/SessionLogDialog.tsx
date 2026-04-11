@@ -347,6 +347,9 @@ export function SessionLogDialog({
         isCancelled,
         status: 'Draft',
         suggestedDifficulties: extracted.suggestedDifficulties?.length ? extracted.suggestedDifficulties : undefined,
+        voiceNoteId: voiceNote.id,
+        voiceNoteTranscription: voiceNote.transcription ?? undefined,
+        rawExtractionJson: extracted.rawExtractionJson ?? undefined,
       })
       if (runId !== voiceRunRef.current) return
       setDraftSessionId(draft.id)

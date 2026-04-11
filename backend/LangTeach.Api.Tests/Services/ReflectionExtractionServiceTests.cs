@@ -314,4 +314,53 @@ public class ReflectionExtractionServiceTests
 
         result.SessionDate.Should().BeNull();
     }
+
+    [Fact]
+    public void ParseResponse_ReturnsRawExtractionJson()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"whatWasCovered":"ser vs estar"}""";
+
+        var result = sut.ParseResponse(json);
+
+        // RawExtractionJson stores the fence-stripped (cleaned) content, which equals json when no fences present
+        result.RawExtractionJson.Should().Be(json);
+    }
+
+    [Fact]
+    public void ParseResponse_StripsFencesBeforeStoringRawExtractionJson()
+    {
+        var sut = CreateSut("{}");
+        var fenced = "```json\n{\"whatWasCovered\":\"ser vs estar\"}\n```";
+        var expected = "{\"whatWasCovered\":\"ser vs estar\"}";
+
+        var result = sut.ParseResponse(fenced);
+
+        result.RawExtractionJson.Should().Be(expected);
+    }
+
+    [Fact]
+    public void ParseResponse_InvalidJson_ReturnsNullRawExtractionJson()
+    {
+        var sut = CreateSut("{}");
+
+        var result = sut.ParseResponse("not valid json");
+
+        result.RawExtractionJson.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ExtractAsync_ClaudeApiSuccess_RawExtractionJsonMatchesResponse()
+    {
+        var rawJson = """{"whatWasCovered":"verbos irregulares"}""";
+        var sut = new ReflectionExtractionService(
+            new ReflectionClaudeClient(rawJson),
+            FakePrompts,
+            PedagogyService,
+            NullLogger<ReflectionExtractionService>.Instance);
+
+        var result = await sut.ExtractAsync("Hoy trabajamos los verbos", CancellationToken.None);
+
+        result.RawExtractionJson.Should().Be(rawJson);
+    }
 }

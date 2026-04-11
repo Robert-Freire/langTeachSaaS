@@ -12,6 +12,7 @@ public class StubReflectionExtractionService : IReflectionExtractionService
             HomeworkAssigned: "[Extracted] Homework assigned",
             NextLessonIdeas: "[Extracted] Next lesson ideas",
             SessionDate: null,
-            SuggestedDifficulties: []
+            SuggestedDifficulties: [],
+            RawExtractionJson: null
         ));
 }

@@ -97,6 +97,16 @@ public class SessionLogService : ISessionLogService
                 throw new KeyNotFoundException($"Lesson {request.LinkedLessonId.Value} not found.");
         }
 
+        if (request.VoiceNoteId.HasValue)
+        {
+            var voiceNoteExists = await _db.VoiceNotes.AnyAsync(
+                v => v.Id == request.VoiceNoteId.Value && v.TeacherId == teacherId,
+                cancellationToken);
+
+            if (!voiceNoteExists)
+                throw new KeyNotFoundException($"VoiceNote {request.VoiceNoteId.Value} not found.");
+        }
+
         var now = DateTime.UtcNow;
         var sanitizedDifficulties = SanitizeSuggestedDifficulties(request.SuggestedDifficulties, _logger);
         var entity = new SessionLog
@@ -124,6 +134,20 @@ public class SessionLogService : ISessionLogService
         };
 
         _db.SessionLogs.Add(entity);
+
+        if (request.VoiceNoteId.HasValue || request.VoiceNoteTranscription is not null || request.RawExtractionJson is not null)
+        {
+            _db.VoiceNoteApplications.Add(new VoiceNoteApplication
+            {
+                Id = Guid.NewGuid(),
+                SessionLogId = entity.Id,
+                VoiceNoteId = request.VoiceNoteId,
+                Transcription = request.VoiceNoteTranscription,
+                RawExtractionJson = request.RawExtractionJson,
+                ApplicationType = ApplicationType.Create,
+                AppliedAt = now
+            });
+        }
 
         if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
             PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);

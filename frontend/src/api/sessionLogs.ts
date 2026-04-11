@@ -44,6 +44,7 @@ export interface ExtractedReflection {
   nextLessonIdeas: string | null
   sessionDate?: string | null
   suggestedDifficulties: SuggestedDifficulty[]
+  rawExtractionJson?: string | null
 }
 
 export interface CreateSessionLogRequest {
@@ -62,6 +63,9 @@ export interface CreateSessionLogRequest {
   status?: 'Draft' | 'Confirmed'
   mentionedDifficultyPairs?: { Competency: string; Subcategory: string }[]
   suggestedDifficulties?: SuggestedDifficulty[]
+  voiceNoteId?: string
+  voiceNoteTranscription?: string
+  rawExtractionJson?: string
 }
 
 export type UpdateSessionLogRequest = CreateSessionLogRequest

@@ -6,6 +6,14 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-04-08 during Adaptive Replanning sprint close. All entries deleted (low/info severity, all already deferred with sound reasoning) or batched into #603-#609.*
 
+## #656 — 2026-04-11
+
+| Reviewer | Severity | Note |
+|---|---|---|
+| review | minor | `VoiceNoteApplication.RawExtractionJson` stores the raw Claude response before markdown-fence stripping, so it may contain ````json` fences. Field name implies clean JSON. Rename to `RawExtractionResponse` if it causes confusion in future tooling. |
+| sophy | minor | `SessionLogService` guard writes VoiceNoteApplication if any of three fields is non-null, so half-populated rows (e.g. only RawExtractionJson) are possible. In practice all callers provide at least Transcription; add explicit validation if partial rows become a problem. |
+| sophy | info | `ApplicationType.Update` is unused but retained as the issue AC explicitly requires it for the future update flow. Drop in a future sprint if Update is never wired. |
+
 ## #653 — 2026-04-11
 
 | Reviewer | Severity | Note |

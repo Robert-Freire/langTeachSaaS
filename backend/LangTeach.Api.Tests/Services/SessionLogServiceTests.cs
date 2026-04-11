@@ -778,6 +778,101 @@ public class SessionLogServiceTests : IDisposable
         result.Should().NotBeNull();
         result!.IsCancelled.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task CreateAsync_WithVoiceNoteFields_WritesVoiceNoteApplicationRow()
+    {
+        var voiceNoteId = Guid.NewGuid();
+        _db.VoiceNotes.Add(new VoiceNote
+        {
+            Id = voiceNoteId,
+            TeacherId = _teacherId,
+            BlobPath = "teachers/test/file.webm",
+            OriginalFileName = "file.webm",
+            ContentType = "audio/webm",
+            SizeBytes = 1024,
+            DurationSeconds = 0,
+            CreatedAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+
+        var request = new CreateSessionLogRequest
+        {
+            SessionDate = new DateTime(2026, 4, 1, 10, 0, 0, DateTimeKind.Utc),
+            PreviousHomeworkStatus = HomeworkStatus.Done,
+            VoiceNoteId = voiceNoteId,
+            VoiceNoteTranscription = "Hoy trabajamos los verbos irregulares",
+            RawExtractionJson = "{\"whatWasCovered\":\"verbos irregulares\"}"
+        };
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+
+        var application = await _db.VoiceNoteApplications
+            .SingleAsync(a => a.SessionLogId == result.Id);
+        application.VoiceNoteId.Should().Be(voiceNoteId);
+        application.Transcription.Should().Be("Hoy trabajamos los verbos irregulares");
+        application.RawExtractionJson.Should().Be("{\"whatWasCovered\":\"verbos irregulares\"}");
+        application.ApplicationType.Should().Be(ApplicationType.Create);
+        application.AppliedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithoutVoiceNoteFields_WritesNoVoiceNoteApplicationRow()
+    {
+        var result = await _sut.CreateAsync(_teacherId, _studentId, BaseRequest());
+
+        var count = await _db.VoiceNoteApplications
+            .CountAsync(a => a.SessionLogId == result.Id);
+        count.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task CreateAsync_VoiceNoteIdBelongsToOtherTeacher_ThrowsKeyNotFoundException()
+    {
+        var otherVoiceNoteId = Guid.NewGuid();
+        _db.VoiceNotes.Add(new VoiceNote
+        {
+            Id = otherVoiceNoteId,
+            TeacherId = _otherTeacherId,
+            BlobPath = "teachers/other/file.webm",
+            OriginalFileName = "file.webm",
+            ContentType = "audio/webm",
+            SizeBytes = 512,
+            DurationSeconds = 0,
+            CreatedAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+
+        var request = new CreateSessionLogRequest
+        {
+            SessionDate = new DateTime(2026, 4, 1, 10, 0, 0, DateTimeKind.Utc),
+            PreviousHomeworkStatus = HomeworkStatus.Done,
+            VoiceNoteId = otherVoiceNoteId
+        };
+
+        var act = () => _sut.CreateAsync(_teacherId, _studentId, request);
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_TelegramFlow_WritesVoiceNoteApplicationWithNullVoiceNoteId()
+    {
+        var request = new CreateSessionLogRequest
+        {
+            SessionDate = new DateTime(2026, 4, 1, 10, 0, 0, DateTimeKind.Utc),
+            PreviousHomeworkStatus = HomeworkStatus.Done,
+            VoiceNoteTranscription = "Marco hizo los deberes y repasamos el subjuntivo",
+            RawExtractionJson = "{\"whatWasCovered\":\"subjuntivo\"}"
+        };
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+
+        var application = await _db.VoiceNoteApplications
+            .SingleAsync(a => a.SessionLogId == result.Id);
+        application.VoiceNoteId.Should().BeNull();
+        application.Transcription.Should().Be("Marco hizo los deberes y repasamos el subjuntivo");
+        application.ApplicationType.Should().Be(ApplicationType.Create);
+    }
 }
 
 file class NullDifficultyTrendService : IDifficultyTrendService
