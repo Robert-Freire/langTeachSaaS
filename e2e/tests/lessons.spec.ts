@@ -84,7 +84,7 @@ test('full lesson CRUD flow', async ({ browser }) => {
   await expect(page.locator(`[data-testid="lesson-title"]:text-is("Copy of ${lessonTitle}")`)).toBeVisible({ timeout: 10000 })
 
   // CEFR badge (Stitch CefrBadge component) should render the level on the list
-  await expect(page.locator('span:text("B1")').first()).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('cefr-badge').first()).toBeVisible({ timeout: 10000 })
 
   await context.close()
 })

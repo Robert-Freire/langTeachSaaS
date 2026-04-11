@@ -247,7 +247,7 @@ export default function Lessons() {
                     <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
                       {lesson.language}
                     </Badge>
-                    <CefrBadge level={lesson.cefrLevel} />
+                    <CefrBadge level={lesson.cefrLevel} data-testid="cefr-badge" />
                     <Badge variant="outline" className={cn('text-xs', statusBadgeClass(lesson.status))} data-testid="lesson-status">
                       {lesson.status}
                     </Badge>
