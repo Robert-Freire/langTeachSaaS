@@ -6,6 +6,7 @@ Usage (PowerShell):
   python scripts/copy-azure-teacher.py --teacher-email "jordi@example.com"
   python scripts/copy-azure-teacher.py --teacher-email "jordi@example.com" --dry-run
   python scripts/copy-azure-teacher.py --teacher-email "jordi@example.com" --clean
+  python scripts/copy-azure-teacher.py --teacher-email "jordi@example.com" --target-email "me@example.com" --clean
 
 Requires:
   - pyodbc (pip install pyodbc)
@@ -54,13 +55,13 @@ def get_azure_connection_string():
 
 
 def parse_sqlserver_conn_string(conn_str):
-    """Parse a .NET-style SQL Server connection string into a dict."""
+    """Parse a .NET-style SQL Server connection string into a dict (case-insensitive keys)."""
     parts = {}
     for segment in conn_str.split(";"):
         segment = segment.strip()
         if "=" in segment:
             key, value = segment.split("=", 1)
-            parts[key.strip()] = value.strip()
+            parts[key.strip().lower()] = value.strip()
     return parts
 
 
@@ -69,10 +70,10 @@ def connect_azure():
     raw_conn = get_azure_connection_string()
     parts = parse_sqlserver_conn_string(raw_conn)
 
-    server = parts.get("Server", "")
-    database = parts.get("Initial Catalog", "")
-    user_id = parts.get("User ID", "")
-    password = parts.get("Password", "")
+    server = parts.get("server", "")
+    database = parts.get("initial catalog") or parts.get("database", "")
+    user_id = parts.get("user id") or parts.get("uid", "")
+    password = parts.get("password", "")
 
     conn_str = (
         f"DRIVER={{ODBC Driver 18 for SQL Server}};"
@@ -262,11 +263,14 @@ def print_summary(table_data):
     print()
 
 
-def delete_teacher_data(local_conn, teacher_id):
+def delete_teacher_data(local_conn, teacher_id, skip_tables=None):
     """Delete existing data for the teacher in reverse FK order."""
+    skip_tables = skip_tables or set()
     cursor = local_conn.cursor()
     # Delete in reverse order to respect FK constraints
     for config in reversed(TABLES_CONFIG):
+        if config["table"] in skip_tables:
+            continue
         params = config["delete_params"](teacher_id)
         try:
             cursor.execute(config["delete"], params)
@@ -274,8 +278,10 @@ def delete_teacher_data(local_conn, teacher_id):
             if deleted > 0:
                 print(f"  Deleted {deleted} rows from {config['table']}")
         except pyodbc.Error as e:
-            if "Invalid object name" not in str(e):
-                print(f"  Warning: could not delete from {config['table']}: {e}")
+            if "Invalid object name" in str(e):
+                continue
+            local_conn.rollback()
+            raise RuntimeError(f"Failed deleting from {config['table']}") from e
     local_conn.commit()
 
 
@@ -290,6 +296,24 @@ def get_target_columns(local_conn, table_name):
         return {row[0] for row in cursor.fetchall()}
     except pyodbc.Error:
         return set()
+
+
+def remap_teacher_id(table_name, columns, rows, source_teacher_id, target_teacher_id):
+    """Replace source TeacherId with target TeacherId in all rows."""
+    if "TeacherId" not in columns:
+        return rows
+    tid_index = columns.index("TeacherId")
+    remapped = []
+    for row in rows:
+        values = list(row)
+        if values[tid_index] == source_teacher_id:
+            values[tid_index] = target_teacher_id
+        remapped.append(values)
+    return remapped
+
+
+# Tables to skip when remapping to an existing local teacher
+SKIP_ON_REMAP = {"Teachers", "TeacherSettings"}
 
 
 def insert_rows(local_conn, table_name, source_columns, rows):
@@ -332,9 +356,9 @@ def insert_rows(local_conn, table_name, source_columns, rows):
             if "duplicate" in str(e).lower() or "violation of primary key" in str(e).lower():
                 skipped += 1
             else:
-                print(f"  Warning: {table_name} insert error: {e}")
-        except pyodbc.Error as e:
-            print(f"  Warning: {table_name} insert error: {e}")
+                raise
+        except pyodbc.Error:
+            raise
 
     if skipped:
         print(f"  Note: {skipped} duplicate rows skipped in {table_name}")
@@ -348,6 +372,7 @@ def main():
         epilog="Requires: pyodbc, az login (Key Vault access), ODBC Driver 18, Docker SQL running."
     )
     parser.add_argument("--teacher-email", required=True, help="Teacher's email address in Azure SQL")
+    parser.add_argument("--target-email", help="Local teacher email to assign imported data to (remaps TeacherId)")
     parser.add_argument("--dry-run", action="store_true", help="Show row counts without writing to local DB")
     parser.add_argument("--clean", action="store_true", help="Delete existing local data for this teacher before import")
     args = parser.parse_args()
@@ -390,16 +415,41 @@ def main():
         local_conn = connect_local()
         print("  Connected.")
 
-        # Step 6: Optionally clean existing data
-        if args.clean:
-            print("\nCleaning existing local data for this teacher...")
-            delete_teacher_data(local_conn, teacher_id)
+        # Step 6: Resolve target teacher for remapping
+        target_teacher_id = None
+        if args.target_email:
+            local_cursor = local_conn.cursor()
+            local_cursor.execute("SELECT Id FROM Teachers WHERE Email = ?", [args.target_email])
+            target_row = local_cursor.fetchone()
+            if not target_row:
+                print(f"ERROR: No local teacher found with email '{args.target_email}'")
+                sys.exit(1)
+            target_teacher_id = target_row[0]
+            print(f"  Remapping TeacherId: {teacher_id} -> {target_teacher_id} ({args.target_email})")
 
-        # Step 7: Insert data in FK order (commit after each table for FK integrity)
+        # Step 7: Optionally clean existing data
+        if args.clean:
+            print("\nCleaning existing local data...")
+            if target_teacher_id:
+                # When remapping: clean child data for both source and target,
+                # but never delete either teacher/settings row
+                delete_teacher_data(local_conn, teacher_id, skip_tables=SKIP_ON_REMAP)
+                delete_teacher_data(local_conn, target_teacher_id, skip_tables=SKIP_ON_REMAP)
+            else:
+                delete_teacher_data(local_conn, teacher_id)
+
+        # Step 8: Insert data in FK order (commit after each table for FK integrity)
         print("\nImporting data to local SQL...")
         for table_name, columns, rows in table_data:
             if not rows or columns is None:
                 continue
+            # Skip Teachers/TeacherSettings when remapping to an existing local teacher
+            if target_teacher_id and table_name in SKIP_ON_REMAP:
+                print(f"  {table_name}: skipped (using local teacher)")
+                continue
+            # Remap TeacherId if needed
+            if target_teacher_id and columns:
+                rows = remap_teacher_id(table_name, columns, rows, teacher_id, target_teacher_id)
             inserted = insert_rows(local_conn, table_name, columns, rows)
             local_conn.commit()
             print(f"  {table_name}: {inserted}/{len(rows)} rows inserted")
