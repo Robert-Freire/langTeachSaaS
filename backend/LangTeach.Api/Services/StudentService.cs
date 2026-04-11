@@ -16,16 +16,6 @@ public class StudentService : IStudentService
         "Portuguese", "Mandarin", "Japanese", "Arabic", "Catalan", "Other"
     ];
 
-    private static readonly HashSet<string> AllowedCompetencies =
-    [
-        "Grammar", "Vocabulary", "Pronunciation", "Fluency", "Discourse"
-    ];
-
-    private static readonly HashSet<string> AllowedSeverityLevels =
-    [
-        "low", "medium", "high"
-    ];
-
     private static readonly HashSet<string> AllowedStatuses =
     [
         "Active", "Covered"
@@ -41,11 +31,13 @@ public class StudentService : IStudentService
 
     private readonly AppDbContext _db;
     private readonly ILogger<StudentService> _logger;
+    private readonly IPedagogyConfigService _pedagogy;
 
-    public StudentService(AppDbContext db, ILogger<StudentService> logger)
+    public StudentService(AppDbContext db, ILogger<StudentService> logger, IPedagogyConfigService pedagogy)
     {
         _db = db;
         _logger = logger;
+        _pedagogy = pedagogy;
     }
 
     public async Task<PagedResult<StudentDto>> ListAsync(Guid teacherId, StudentListQuery query, CancellationToken cancellationToken = default)
@@ -285,20 +277,22 @@ public class StudentService : IStudentService
         }
     }
 
-    private static void ValidateDifficulties(List<DifficultyDto> difficulties)
+    private void ValidateDifficulties(List<DifficultyDto> difficulties)
     {
+        var validCompetencies = _pedagogy.GetValidDifficultyCompetencies();
+        var validSeverities = _pedagogy.GetValidDifficultySeverities();
         foreach (var d in difficulties)
         {
             if (string.IsNullOrWhiteSpace(d.Id) || d.Id.Length > 100)
                 throw new ValidationException("Each difficulty must have an id (max 100 characters).");
             if (string.IsNullOrWhiteSpace(d.Description) || d.Description.Length > 500)
                 throw new ValidationException("Each difficulty description must be between 1 and 500 characters.");
-            if (string.IsNullOrWhiteSpace(d.Competency) || !AllowedCompetencies.Contains(d.Competency))
-                throw new ValidationException($"Difficulty competency '{d.Competency}' is not valid. Allowed: {string.Join(", ", AllowedCompetencies)}.");
+            if (string.IsNullOrWhiteSpace(d.Competency) || !validCompetencies.Contains(d.Competency))
+                throw new ValidationException($"Difficulty competency '{d.Competency}' is not valid. Allowed: {string.Join(", ", validCompetencies.OrderBy(x => x))}.");
             if (d.Subcategory is { Length: > 200 })
                 throw new ValidationException("Difficulty subcategory must be at most 200 characters.");
-            if (string.IsNullOrWhiteSpace(d.Severity) || !AllowedSeverityLevels.Contains(d.Severity))
-                throw new ValidationException($"Difficulty severity '{d.Severity}' is not valid. Allowed: {string.Join(", ", AllowedSeverityLevels)}.");
+            if (string.IsNullOrWhiteSpace(d.Severity) || !validSeverities.Contains(d.Severity))
+                throw new ValidationException($"Difficulty severity '{d.Severity}' is not valid. Allowed: {string.Join(", ", validSeverities.OrderBy(x => x))}.");
             if (string.IsNullOrWhiteSpace(d.Status) || !AllowedStatuses.Contains(d.Status))
                 throw new ValidationException($"Difficulty status '{d.Status}' is not valid. Allowed: {string.Join(", ", AllowedStatuses)}.");
             // Trend is system-computed; any submitted value is silently accepted and will be overwritten by DifficultyTrendService.

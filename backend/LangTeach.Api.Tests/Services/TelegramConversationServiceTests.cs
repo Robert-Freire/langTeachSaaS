@@ -40,7 +40,7 @@ public class TelegramConversationServiceTests : IDisposable
         var profileSvc = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
         var pedagogySvc = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, profileSvc);
         var sessionLogService = new SessionLogService(_db, difficultyService, pedagogySvc, NullLogger<SessionLogService>.Instance);
-        var studentService = new StudentService(_db, NullLogger<StudentService>.Instance);
+        var studentService = new StudentService(_db, NullLogger<StudentService>.Instance, pedagogySvc);
 
         _sut = new TelegramConversationService(
             _db,
@@ -269,7 +269,7 @@ public class TelegramConversationServiceTests : IDisposable
         var profileSvc = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
         var pedagogySvc = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, profileSvc);
         var sessionLogService = new SessionLogService(_db, difficultyService, pedagogySvc, NullLogger<SessionLogService>.Instance);
-        var studentService = new StudentService(_db, NullLogger<StudentService>.Instance);
+        var studentService = new StudentService(_db, NullLogger<StudentService>.Instance, pedagogySvc);
         var sut = new TelegramConversationService(
             _db, _stateStore, _botService, throwingTranscription,
             sessionLogService, studentService, _extractionService,

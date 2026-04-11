@@ -19,12 +19,14 @@ export const COMPETENCY_OPTIONS: Option[] = [
   { value: 'Grammar', label: 'Grammar' },
   { value: 'Vocabulary', label: 'Vocabulary' },
   { value: 'Pronunciation', label: 'Pronunciation' },
-  { value: 'Fluency', label: 'Fluency' },
+  { value: 'Interaction', label: 'Interaction' },
   { value: 'Discourse', label: 'Discourse' },
+  { value: 'Mediation', label: 'Mediation' },
 ]
 
 export const SEVERITY_LEVELS: Option[] = [
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
   { value: 'high', label: 'High' },
+  { value: 'critical', label: 'Critical' },
 ]

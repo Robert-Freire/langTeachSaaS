@@ -144,7 +144,7 @@ public interface IPedagogyConfigService
     FrozenSet<string> GetValidDifficultyCompetencies();
 
     /// <summary>
-    /// Returns the valid difficulty severity values (low, medium, high).
+    /// Returns the valid difficulty severity values (low, medium, high, critical).
     /// Case-insensitive matching is built into the returned set.
     /// </summary>
     FrozenSet<string> GetValidDifficultySeverities();
