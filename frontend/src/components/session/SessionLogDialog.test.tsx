@@ -629,6 +629,7 @@ describe('SessionLogDialog', () => {
       emotionalSignals: 'Student was enthusiastic',
       homeworkAssigned: 'Exercise 4A',
       nextLessonIdeas: 'Review preterito',
+      sessionDate: '2026-04-11',
       suggestedDifficulties: [] as { description: string; competency: string; subcategory: string; severity: string }[],
     }
 
@@ -685,6 +686,31 @@ describe('SessionLogDialog', () => {
         expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Covered ser vs estar')
         expect((screen.getByTestId('homework-assigned') as HTMLInputElement).value).toBe('Exercise 4A')
         expect((screen.getByTestId('next-session-topics') as HTMLTextAreaElement).value).toBe('Review preterito')
+      })
+    })
+
+    it('pre-fills session date field from extracted sessionDate when form date is empty', async () => {
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('session-date-iso')).toHaveTextContent('2026-04-11')
+      })
+    })
+
+    it('includes extracted sessionDate in the draft payload', async () => {
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          expect.objectContaining({ sessionDate: '2026-04-11' }),
+        )
       })
     })
 

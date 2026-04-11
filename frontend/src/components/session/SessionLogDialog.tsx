@@ -325,11 +325,13 @@ export function SessionLogDialog({
       setNextSessionTopics(extracted.nextLessonIdeas ?? '')
       setGeneralNotes(notes)
       setSuggestedDifficulties(extracted.suggestedDifficulties ?? [])
+      if (!sessionDate && extracted.sessionDate) setSessionDate(extracted.sessionDate)
       /* eslint-enable react-hooks/set-state-in-effect */
       if (runId !== voiceRunRef.current) return
       // Auto-save as Draft using full current form state + extracted fields
+      const resolvedDate = sessionDate || extracted.sessionDate || null
       const draft = await createSession(studentId, {
-        sessionDate: sessionDate || null,
+        sessionDate: resolvedDate,
         plannedContent: plannedContent || null,
         actualContent: extracted.whatWasCovered ?? null,
         homeworkAssigned: extracted.homeworkAssigned ?? null,
