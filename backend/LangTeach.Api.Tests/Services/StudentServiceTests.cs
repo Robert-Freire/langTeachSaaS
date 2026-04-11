@@ -21,7 +21,9 @@ public class StudentServiceTests : IDisposable
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _db = new AppDbContext(options);
-        _sut = new StudentService(_db, NullLogger<StudentService>.Instance);
+        var profileSvc = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogySvc = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, profileSvc);
+        _sut = new StudentService(_db, NullLogger<StudentService>.Instance, pedagogySvc);
 
         _db.Teachers.Add(new Teacher
         {

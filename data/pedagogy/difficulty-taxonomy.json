@@ -1,4 +1,4 @@
 {
-  "competencies": ["Grammar", "Vocabulary", "Pronunciation", "Fluency", "Discourse"],
-  "severities": ["low", "medium", "high"]
+  "competencies": ["Grammar", "Vocabulary", "Pronunciation", "Interaction", "Discourse", "Mediation"],
+  "severities": ["low", "medium", "high", "critical"]
 }
