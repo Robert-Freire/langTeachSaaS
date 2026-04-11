@@ -21,6 +21,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
+import { StudentFollowupsCard } from '@/components/student/StudentFollowupsCard'
+import { getFollowups } from '@/api/followups'
 import { FieldTooltip } from '@/components/FieldTooltip'
 import { PageHeader } from '@/components/PageHeader'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
@@ -56,6 +58,12 @@ export default function StudentForm() {
     queryKey: ['students', id],
     queryFn: () => getStudent(id!),
     enabled: isEdit,
+  })
+
+  const { data: followups = [], refetch: refetchFollowups } = useQuery({
+    queryKey: ['followups', id],
+    queryFn: () => getFollowups(id!),
+    enabled: isEdit && !!id,
   })
 
   // Sync server student data to local form state
@@ -673,6 +681,21 @@ export default function StudentForm() {
           </CardContent>
         </Card>
       </form>
+
+      {isEdit && id && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Pending Followups</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StudentFollowupsCard
+              followups={followups}
+              studentId={id}
+              onFollowupChange={() => refetchFollowups()}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {isEdit && id && <StudentCoursesCard studentId={id} />}
     </div>

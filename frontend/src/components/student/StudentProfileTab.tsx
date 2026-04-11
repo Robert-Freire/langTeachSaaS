@@ -1,11 +1,15 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { Student } from '@/api/students'
+import type { TeacherFollowup } from '@/api/followups'
 import { parseNotes } from './studentNoteUtils'
 import { TeachingTodosCard } from './TeachingTodosCard'
+import { StudentFollowupsCard } from './StudentFollowupsCard'
 
 interface Props {
   student: Student
+  followups?: TeacherFollowup[]
+  onFollowupChange?: () => void
   onToggleDifficultyStatus?: (id: string, status: 'Active' | 'Covered') => void
 }
 
@@ -31,7 +35,7 @@ function EmptyState({ text }: { text: string }) {
   return <p className="text-sm text-zinc-400 italic">{text}</p>
 }
 
-export function StudentProfileTab({ student, onToggleDifficultyStatus }: Props) {
+export function StudentProfileTab({ student, followups = [], onFollowupChange, onToggleDifficultyStatus }: Props) {
   const parsedPersonalNotes = parseNotes(student.personalNotes)
   const parsedTeachingNotes = parseNotes(student.teachingNotes)
 
@@ -245,6 +249,15 @@ export function StudentProfileTab({ student, onToggleDifficultyStatus }: Props) 
           <section data-testid="profile-teaching-todos">
             <SectionHeader>Teaching Todos</SectionHeader>
             <TeachingTodosCard todos={student.teachingTodos} />
+          </section>
+
+          {/* Pending Followups */}
+          <section data-testid="profile-followups">
+            <StudentFollowupsCard
+              followups={followups}
+              studentId={student.id}
+              onFollowupChange={onFollowupChange ?? (() => {})}
+            />
           </section>
 
           {/* Commercial */}

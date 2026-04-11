@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { getFollowups, createFollowup, updateFollowupStatus } from '@/api/followups'
+import type { TeacherFollowup } from '@/api/followups'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -111,6 +113,11 @@ export function SessionLogDialog({
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const editSnapshotRef = useRef<Record<string, string | boolean>>({})
 
+  // Followup state
+  const [newFollowupText, setNewFollowupText] = useState('')
+  const [isAddingFollowup, setIsAddingFollowup] = useState(false)
+  const [localFollowups, setLocalFollowups] = useState<TeacherFollowup[]>([])
+
   // Voice extraction state
   const [isExtracting, setIsExtracting] = useState(false)
   const [draftSessionId, setDraftSessionId] = useState<string | null>(null)
@@ -220,6 +227,9 @@ export function SessionLogDialog({
       setIsExtracting(false)
       setDraftSessionId(null)
       setExtractionFailed(false)
+      setLocalFollowups([])
+      setNewFollowupText('')
+      setIsAddingFollowup(false)
     }
   }, [open, linkedLessonId])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -248,6 +258,43 @@ export function SessionLogDialog({
     enabled: open,
   })
   const activeDifficulties = studentData?.difficulties.filter(d => d.status === 'Active') ?? []
+
+  const { data: serverFollowups = [] } = useQuery({
+    queryKey: ['followups', studentId],
+    queryFn: () => getFollowups(studentId),
+    enabled: open,
+  })
+  // Merge server followups with locally-added ones; respect status overrides from local toggles
+  const localStatusMap = new Map(localFollowups.map(lf => [lf.id, lf.status]))
+  const pendingFollowups = [
+    ...serverFollowups.filter(f => (localStatusMap.get(f.id) ?? f.status) === 'pending'),
+    ...localFollowups.filter(lf => !serverFollowups.some(sf => sf.id === lf.id) && lf.status === 'pending'),
+  ]
+
+  async function handleAddFollowup() {
+    const text = newFollowupText.trim()
+    if (!text || isAddingFollowup) return
+    setIsAddingFollowup(true)
+    try {
+      const created = await createFollowup({ text, studentId, sourceSessionLogId: draftSessionId ?? undefined })
+      setLocalFollowups(prev => [...prev, created])
+      setNewFollowupText('')
+    } catch {
+      // API failure - leave input intact so user can retry
+    } finally {
+      setIsAddingFollowup(false)
+    }
+  }
+
+  async function handleToggleFollowup(f: TeacherFollowup) {
+    const next = f.status === 'pending' ? 'done' : 'pending'
+    try {
+      await updateFollowupStatus(f.id, next)
+      setLocalFollowups(prev => prev.map(lf => lf.id === f.id ? { ...lf, status: next } : lf))
+    } catch {
+      // API failure - leave UI unchanged
+    }
+  }
 
   const { mutate: submitLog, isPending } = useMutation({
     mutationFn: () => {
@@ -806,6 +853,60 @@ export function SessionLogDialog({
                 </Select>
               </div>
             )}
+
+            {/* Pending Followups context panel */}
+            {pendingFollowups.length > 0 && (
+              <div className="space-y-2" data-testid="session-pending-followups">
+                <Label className="text-sm font-medium">Pending Followups</Label>
+                <div className="space-y-1.5 rounded-md border border-amber-200 bg-amber-50/50 p-3">
+                  {pendingFollowups.map(f => (
+                    <div key={f.id} className="flex items-start gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleFollowup(f)}
+                        aria-label="Mark done"
+                        data-testid={`session-followup-toggle-${f.id}`}
+                        className="mt-0.5 shrink-0 w-3 h-3 rounded-full border-2 border-amber-400 bg-amber-100 hover:bg-amber-500 transition-colors"
+                      />
+                      <p className="text-sm text-[#1A1B22]">{f.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* New Followups quick-add */}
+            <div className="rounded-md bg-amber-50 p-3 space-y-2" data-testid="session-new-followup-section">
+              <Label className="text-sm font-medium">New Followups</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={newFollowupText}
+                  onChange={e => setNewFollowupText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddFollowup() } }}
+                  placeholder="Add a followup..."
+                  className="flex-1 text-sm bg-white"
+                  data-testid="session-followup-input"
+                />
+                <Button
+                  type="button"
+                  onClick={handleAddFollowup}
+                  disabled={!newFollowupText.trim() || isAddingFollowup}
+                  size="sm"
+                  className="bg-amber-500 hover:bg-amber-600 text-white"
+                  data-testid="session-followup-add-btn"
+                >
+                  Add
+                </Button>
+              </div>
+              {localFollowups.length > 0 && (
+                <div className="space-y-1">
+                  {localFollowups.map(f => (
+                    <p key={f.id} className="text-xs text-amber-800">+ {f.text}</p>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {submitError && (
               <p className="text-xs text-red-600" data-testid="session-log-error">{submitError}</p>

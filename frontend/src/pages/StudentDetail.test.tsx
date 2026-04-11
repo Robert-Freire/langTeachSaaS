@@ -5,6 +5,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import StudentDetail from './StudentDetail'
 import * as studentsApi from '../api/students'
 
+vi.mock('../api/followups', () => ({
+  getFollowups: vi.fn().mockResolvedValue([]),
+  createFollowup: vi.fn(),
+  updateFollowupStatus: vi.fn(),
+}))
+
 vi.mock('../api/students', () => ({
   getStudent: vi.fn(),
   updateStudent: vi.fn(),
@@ -15,6 +21,13 @@ vi.mock('../api/sessionLogs', () => ({
   createSession: vi.fn(),
   serializeTopicTags: vi.fn(() => '[]'),
   parseTopicTags: vi.fn(() => []),
+}))
+
+vi.mock('@/api/followups', () => ({
+  getFollowups: vi.fn().mockResolvedValue([]),
+  createFollowup: vi.fn(),
+  updateFollowupStatus: vi.fn(),
+  deleteFollowup: vi.fn(),
 }))
 
 vi.mock('../api/lessons', () => ({

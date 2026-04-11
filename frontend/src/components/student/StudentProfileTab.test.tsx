@@ -1,8 +1,15 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StudentProfileTab } from './StudentProfileTab'
 import type { Student } from '@/api/students'
+import type { TeacherFollowup } from '@/api/followups'
+
+vi.mock('@/api/followups', () => ({
+  createFollowup: vi.fn(),
+  updateFollowupStatus: vi.fn(),
+}))
 
 const FULL_STUDENT: Student = {
   id: 'student-1',
@@ -62,10 +69,13 @@ const EMPTY_STUDENT: Student = {
 }
 
 function renderProfile(student: Student, onToggle?: (id: string, status: 'Active' | 'Covered') => void) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return render(
-    <MemoryRouter>
-      <StudentProfileTab student={student} onToggleDifficultyStatus={onToggle} />
-    </MemoryRouter>
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>
+        <StudentProfileTab student={student} onToggleDifficultyStatus={onToggle} />
+      </MemoryRouter>
+    </QueryClientProvider>
   )
 }
 
@@ -177,6 +187,42 @@ describe('StudentProfileTab', () => {
       renderProfile(FULL_STUDENT)
       expect(screen.getByTestId('teaching-todos-list')).toBeInTheDocument()
       expect(screen.getByText('Enviar ejercicios de por/para')).toBeInTheDocument()
+    })
+  })
+
+  describe('Pending Followups section', () => {
+    const FOLLOWUP: TeacherFollowup = {
+      id: 'fu-1',
+      studentId: 'student-1',
+      studentName: 'Matteo Russo',
+      text: 'Enviar ejercicio de subjuntivo',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      dueDate: null,
+      completedAt: null,
+      sourceSessionLogId: null,
+    }
+
+    it('renders the followups section container', () => {
+      renderProfile(FULL_STUDENT)
+      expect(screen.getByTestId('profile-followups')).toBeInTheDocument()
+    })
+
+    it('renders a passed followup item', () => {
+      const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+      render(
+        <QueryClientProvider client={qc}>
+          <MemoryRouter>
+            <StudentProfileTab student={FULL_STUDENT} followups={[FOLLOWUP]} onFollowupChange={vi.fn()} />
+          </MemoryRouter>
+        </QueryClientProvider>
+      )
+      expect(screen.getByText('Enviar ejercicio de subjuntivo')).toBeInTheDocument()
+    })
+
+    it('renders empty state when no followups passed', () => {
+      renderProfile(FULL_STUDENT)
+      expect(screen.getByText(/No pending followups/)).toBeInTheDocument()
     })
   })
 

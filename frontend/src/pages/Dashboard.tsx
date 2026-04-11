@@ -55,6 +55,7 @@ export default function Dashboard() {
   const nextSession = data?.nextSession ?? null
   const todaySessions = data?.todaySessions ?? []
   const activeStudents = data?.activeStudents ?? []
+  const pendingFollowups = data?.pendingFollowups ?? []
 
   return (
     <div className="space-y-5">
@@ -74,7 +75,7 @@ export default function Dashboard() {
           sessions={todaySessions}
           nextSessionId={nextSession?.sessionLogId ?? null}
         />
-        <PendingFollowups students={activeStudents} />
+        <PendingFollowups followups={pendingFollowups} />
       </div>
 
       {/* Zone 3: Student Roster */}

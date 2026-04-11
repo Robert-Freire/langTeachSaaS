@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, NotebookPen, Pencil } from 'lucide-react'
 import { getStudent, updateStudent } from '../api/students'
+import { getFollowups } from '@/api/followups'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
@@ -36,6 +37,14 @@ export default function StudentDetail() {
     queryFn: () => getStudent(id!),
     enabled: !!id,
   })
+
+  const { data: followups = [], refetch: refetchFollowups } = useQuery({
+    queryKey: ['followups', id],
+    queryFn: () => getFollowups(id!),
+    enabled: !!id,
+  })
+
+  const onFollowupChange = useCallback(() => { refetchFollowups() }, [refetchFollowups])
 
   const { mutate: toggleDifficultyStatus } = useMutation({
     mutationFn: (vars: { difficultyId: string; status: 'Active' | 'Covered' }) => {
@@ -238,6 +247,8 @@ export default function StudentDetail() {
       {activeTab === 'profile' && (
         <StudentProfileTab
           student={student}
+          followups={followups}
+          onFollowupChange={onFollowupChange}
           onToggleDifficultyStatus={(difficultyId, status) =>
             toggleDifficultyStatus({ difficultyId, status })
           }

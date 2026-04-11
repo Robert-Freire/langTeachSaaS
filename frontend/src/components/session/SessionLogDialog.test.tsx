@@ -7,6 +7,16 @@ import { SessionLogDialog } from './SessionLogDialog'
 import * as sessionLogsApi from '../../api/sessionLogs'
 import type { SessionLog } from '../../api/sessionLogs'
 import * as lessonsApi from '../../api/lessons'
+import { createFollowup } from '../../api/followups'
+
+vi.mock('../../api/followups', () => ({
+  getFollowups: vi.fn().mockResolvedValue([]),
+  createFollowup: vi.fn().mockResolvedValue({
+    id: 'new-f', text: '', status: 'pending', createdAt: new Date().toISOString(),
+    studentId: 'student-1', studentName: null, dueDate: null, completedAt: null, sourceSessionLogId: null,
+  }),
+  updateFollowupStatus: vi.fn().mockResolvedValue({}),
+}))
 
 vi.mock('../../api/sessionLogs', () => ({
   listSessions: vi.fn(),
@@ -1075,6 +1085,34 @@ describe('SessionLogDialog', () => {
       const plannedField = screen.getByTestId('planned-content') as HTMLTextAreaElement
       fireEvent.change(plannedField, { target: { value: 'Review irregular verbs + ser/estar' } })
       expect(plannedField.value).toBe('Review irregular verbs + ser/estar')
+    })
+  })
+
+  describe('followup quick-add', () => {
+    beforeEach(() => {
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+      vi.mocked(lessonsApi.getLessons).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
+    })
+
+    it('renders the new followups quick-add section', async () => {
+      wrapper(
+        <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+      )
+      await waitFor(() => expect(screen.getByTestId('session-new-followup-section')).toBeInTheDocument())
+    })
+
+    it('calls createFollowup when add button clicked with text', async () => {
+      wrapper(
+        <SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />
+      )
+      await waitFor(() => expect(screen.getByTestId('session-followup-input')).toBeInTheDocument())
+      fireEvent.change(screen.getByTestId('session-followup-input'), { target: { value: 'Send homework' } })
+      fireEvent.click(screen.getByTestId('session-followup-add-btn'))
+      await waitFor(() =>
+        expect(vi.mocked(createFollowup)).toHaveBeenCalledWith(
+          expect.objectContaining({ text: 'Send homework', studentId: STUDENT_ID })
+        )
+      )
     })
   })
 })

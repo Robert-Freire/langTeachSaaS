@@ -4,6 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import StudentForm from './StudentForm'
 
+vi.mock('../api/followups', () => ({
+  getFollowups: vi.fn().mockResolvedValue([]),
+  createFollowup: vi.fn(),
+  updateFollowupStatus: vi.fn(),
+}))
+
 const mockGetStudent = vi.fn()
 const mockCreateStudent = vi.fn()
 const mockUpdateStudent = vi.fn()
@@ -26,6 +32,13 @@ vi.mock('../components/student/StudentCoursesCard', () => ({
 
 vi.mock('../components/student/LessonHistoryCard', () => ({
   LessonHistoryCard: () => <div data-testid="lesson-history-card" />,
+}))
+
+vi.mock('@/api/followups', () => ({
+  getFollowups: vi.fn().mockResolvedValue([]),
+  createFollowup: vi.fn(),
+  updateFollowupStatus: vi.fn(),
+  deleteFollowup: vi.fn(),
 }))
 
 vi.mock('../lib/studentOptions', () => ({
