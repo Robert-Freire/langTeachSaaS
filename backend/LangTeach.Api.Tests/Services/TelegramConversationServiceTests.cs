@@ -308,6 +308,27 @@ public class TelegramConversationServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task TextMessage_MatchedStudent_UsesExtractedSessionDate()
+    {
+        LinkTeacher();
+        var student = await CreateStudentAsync("Marco");
+
+        _extractionService.Result = new ExtractedReflectionDto(
+            WhatWasCovered: "condicionales",
+            AreasToImprove: null,
+            EmotionalSignals: null,
+            HomeworkAssigned: null,
+            NextLessonIdeas: null,
+            SessionDate: "2026-04-06",
+            SuggestedDifficulties: new List<SuggestedDifficultyDto>());
+
+        await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco el pasado lunes trabajamos los condicionales"), CancellationToken.None);
+
+        var log = await _db.SessionLogs.SingleAsync(s => s.StudentId == student.Id);
+        log.SessionDate.Should().Be(new DateTime(2026, 4, 6, 0, 0, 0, DateTimeKind.Utc));
+    }
+
+    [Fact]
     public async Task TextMessage_ExtractionFailure_FallsBackToRawGeneralNotes()
     {
         LinkTeacher();
