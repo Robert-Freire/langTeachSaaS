@@ -11,6 +11,7 @@ public class SessionLogService : ISessionLogService
 {
     private readonly AppDbContext _db;
     private readonly IDifficultyTrendService _trendService;
+    private readonly IPedagogyConfigService _pedagogy;
     private readonly ILogger<SessionLogService> _logger;
 
     private static readonly HashSet<string> ValidSkills = new(StringComparer.OrdinalIgnoreCase)
@@ -27,10 +28,11 @@ public class SessionLogService : ISessionLogService
     private static readonly JsonSerializerOptions CamelCaseOptions =
         new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public SessionLogService(AppDbContext db, IDifficultyTrendService trendService, ILogger<SessionLogService> logger)
+    public SessionLogService(AppDbContext db, IDifficultyTrendService trendService, IPedagogyConfigService pedagogy, ILogger<SessionLogService> logger)
     {
         _db = db;
         _trendService = trendService;
+        _pedagogy = pedagogy;
         _logger = logger;
     }
 
@@ -374,15 +376,17 @@ public class SessionLogService : ISessionLogService
 
     // Filter out entries with invalid competency/severity before storing or upserting,
     // so the SessionLog column never contains data that would silently break on rehydration.
-    private static List<SuggestedDifficultyDto> SanitizeSuggestedDifficulties(
+    private List<SuggestedDifficultyDto> SanitizeSuggestedDifficulties(
         List<SuggestedDifficultyDto>? items, ILogger logger)
     {
         if (items is null or { Count: 0 }) return [];
+        var validCompetencies = _pedagogy.GetValidDifficultyCompetencies();
+        var validSeverities = _pedagogy.GetValidDifficultySeverities();
         var result = new List<SuggestedDifficultyDto>(items.Count);
         foreach (var item in items)
         {
-            if (!DifficultyConstants.ValidCompetencies.Contains(item.Competency) ||
-                !DifficultyConstants.ValidSeverities.Contains(item.Severity))
+            if (!validCompetencies.Contains(item.Competency) ||
+                !validSeverities.Contains(item.Severity))
             {
                 logger.LogWarning("Dropping suggested difficulty with invalid fields: Competency={Competency}, Severity={Severity}", item.Competency, item.Severity);
                 continue;
@@ -392,12 +396,14 @@ public class SessionLogService : ISessionLogService
         return result;
     }
 
-    private static void UpsertDifficulties(Student student, List<SuggestedDifficultyDto> suggested, ILogger logger)
+    private void UpsertDifficulties(Student student, List<SuggestedDifficultyDto> suggested, ILogger logger)
     {
+        var validCompetencies = _pedagogy.GetValidDifficultyCompetencies();
+        var validSeverities = _pedagogy.GetValidDifficultySeverities();
         var existing = JsonStorageHelper.DeserializeList<DifficultyDto>(student.Difficulties);
         foreach (var s in suggested)
         {
-            if (!DifficultyConstants.ValidCompetencies.Contains(s.Competency) || !DifficultyConstants.ValidSeverities.Contains(s.Severity))
+            if (!validCompetencies.Contains(s.Competency) || !validSeverities.Contains(s.Severity))
             {
                 logger.LogWarning("Skipping suggested difficulty with invalid fields: Competency={Competency}, Severity={Severity}", s.Competency, s.Severity);
                 continue;

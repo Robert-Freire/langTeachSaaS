@@ -22,7 +22,9 @@ public class SessionLogServiceTests : IDisposable
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _db = new AppDbContext(options);
-        _sut = new SessionLogService(_db, new NullDifficultyTrendService(), NullLogger<SessionLogService>.Instance);
+        var profileService = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, profileService);
+        _sut = new SessionLogService(_db, new NullDifficultyTrendService(), pedagogy, NullLogger<SessionLogService>.Instance);
 
         _db.Teachers.Add(new Teacher
         {

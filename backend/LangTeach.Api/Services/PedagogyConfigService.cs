@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -23,6 +24,8 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly Dictionary<string, Dictionary<string, string>> _scopeConstraints;
     private readonly PracticeStagesFile _practiceStages;
     private readonly SessionGapPolicyFile _sessionGapPolicy;
+    private readonly FrozenSet<string> _difficultyCompetencies;
+    private readonly FrozenSet<string> _difficultySeverities;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -114,6 +117,11 @@ public class PedagogyConfigService : IPedagogyConfigService
 
         // Load session gap policy
         _sessionGapPolicy = LoadJson<SessionGapPolicyFile>(assembly, "LangTeach.Api.Pedagogy.session-gap-policy.json");
+
+        // Load difficulty taxonomy
+        var taxonomy = LoadJson<DifficultyTaxonomyFile>(assembly, "LangTeach.Api.Pedagogy.difficulty-taxonomy.json");
+        _difficultyCompetencies = taxonomy.Competencies.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+        _difficultySeverities = taxonomy.Severities.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
         // Validate cross-layer references — fail fast on dangling IDs
         ValidateCrossLayerRefs();
@@ -328,6 +336,10 @@ public class PedagogyConfigService : IPedagogyConfigService
     public string[] GetSectionCoherenceRules() => _courseRules.SectionCoherenceRules ?? [];
 
     public IReadOnlyList<SessionGapBucket> GetSessionGapPolicy() => _sessionGapPolicy.Buckets;
+
+    public FrozenSet<string> GetValidDifficultyCompetencies() => _difficultyCompetencies;
+
+    public FrozenSet<string> GetValidDifficultySeverities() => _difficultySeverities;
 
     public string? GetWeaknessTargetingGuidance(string sectionType, string weaknessType) =>
         _sectionProfileService.GetWeaknessTargetingGuidance(sectionType, weaknessType);

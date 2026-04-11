@@ -23,6 +23,9 @@ public interface IPromptService
     ClaudeRequest BuildErrorCorrectionPrompt(GenerationContext ctx);
     ClaudeRequest BuildNoticingTaskPrompt(GenerationContext ctx);
     ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx);
+    ClaudeRequest BuildReflectionExtractionPrompt(DateOnly today, string teacherText);
+    ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx);
+    ClaudeRequest BuildCurriculumValidationPrompt(CurriculumValidationContext ctx);
 }
 
 public record CurriculumContext(
@@ -72,6 +75,26 @@ public record SessionHistoryContext(
     IReadOnlyList<CoveredTopicEntry> CoveredTopics,
     IReadOnlyDictionary<string, string> SkillLevelOverrides,
     string? LearningStyleNotes
+);
+
+public record TaughtEntryContext(string Topic, string? GrammarFocus, string? WhatWasCovered, string? AreasToImprove);
+public record PlannedEntryContext(Guid Id, int OrderIndex, string Topic, string? GrammarFocus);
+
+public record ReplanSuggestionContext(
+    string CourseName,
+    string Language,
+    string? TargetCefrLevel,
+    string? StudentName,
+    IReadOnlyList<TaughtEntryContext> TaughtEntries,
+    IReadOnlyList<PlannedEntryContext> PlannedEntries,
+    IReadOnlyList<string> Difficulties,
+    int MaxSuggestions
+);
+
+public record CurriculumValidationContext(
+    string TargetLevel,
+    IReadOnlyList<string> AllowedGrammar,
+    IReadOnlyList<(int OrderIndex, string GrammarFocus)> EntriesWithGrammar
 );
 
 public record GenerationContext(

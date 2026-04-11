@@ -190,6 +190,8 @@ public record SessionGapPolicyFile(SessionGapBucket[] Buckets);
 /// </param>
 public record SessionGapBucket(int? MaxDays, string Instruction);
 
+public record DifficultyTaxonomyFile(string[] Competencies, string[] Severities);
+
 /// <summary>
 /// Canonical PPP section keys in lesson order.
 /// Single authoritative definition — referenced by PromptService, PedagogyConfigService, and SeedData.

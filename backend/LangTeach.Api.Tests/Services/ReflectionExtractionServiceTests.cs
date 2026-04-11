@@ -5,26 +5,25 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LangTeach.Api.Tests.Services;
 
-file sealed class ConfigurableClaudeClient : IClaudeClient
+// FakePromptService, ConfigurableClaudeClient are defined in CurriculumGenerationServiceTests.cs (internal scope)
+
+file sealed class ReflectionClaudeClient : IClaudeClient
 {
     private readonly Func<ClaudeRequest, ClaudeResponse>? _handler;
     private readonly Exception? _exception;
+    private readonly string? _fixedJson;
     public ClaudeRequest? LastRequest { get; private set; }
 
-    public ConfigurableClaudeClient(Func<ClaudeRequest, ClaudeResponse> handler)
-    {
-        _handler = handler;
-    }
-
-    public ConfigurableClaudeClient(Exception exception)
-    {
-        _exception = exception;
-    }
+    public ReflectionClaudeClient(Func<ClaudeRequest, ClaudeResponse> handler) => _handler = handler;
+    public ReflectionClaudeClient(Exception exception) => _exception = exception;
+    public ReflectionClaudeClient(string fixedJson) => _fixedJson = fixedJson;
 
     public Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default)
     {
         LastRequest = request;
         if (_exception is not null) throw _exception;
+        if (_fixedJson is not null)
+            return Task.FromResult(new ClaudeResponse(_fixedJson, "claude-haiku", 10, 20));
         return Task.FromResult(_handler!(request));
     }
 
@@ -37,9 +36,19 @@ file sealed class ConfigurableClaudeClient : IClaudeClient
 
 public class ReflectionExtractionServiceTests
 {
+    private static readonly ISectionProfileService ProfileService =
+        new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+
+    private static readonly IPedagogyConfigService PedagogyService =
+        new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, ProfileService);
+
+    private static readonly IPromptService FakePrompts = new FakePromptService();
+
     private static ReflectionExtractionService CreateSut(string fixedJson) =>
         new(
-            new ConfigurableClaudeClient(_ => new ClaudeResponse(fixedJson, "claude-haiku", 10, 20)),
+            new ReflectionClaudeClient(fixedJson),
+            FakePrompts,
+            PedagogyService,
             NullLogger<ReflectionExtractionService>.Instance);
 
     [Fact]
@@ -203,14 +212,14 @@ public class ReflectionExtractionServiceTests
     public async Task ExtractAsync_CallsClaudeWithHaikuModel()
     {
         ClaudeRequest? captured = null;
-        var client = new ConfigurableClaudeClient(r =>
+        var client = new ReflectionClaudeClient(r =>
         {
             captured = r;
             return new ClaudeResponse(
                 """{"whatWasCovered":"Vocab","areasToImprove":null,"emotionalSignals":null,"homeworkAssigned":null,"nextLessonIdeas":null}""",
                 "claude-haiku", 10, 20);
         });
-        var sut = new ReflectionExtractionService(client, NullLogger<ReflectionExtractionService>.Instance);
+        var sut = new ReflectionExtractionService(client, FakePrompts, PedagogyService, NullLogger<ReflectionExtractionService>.Instance);
 
         var result = await sut.ExtractAsync("We practiced vocabulary today.");
 
@@ -223,35 +232,14 @@ public class ReflectionExtractionServiceTests
     [Fact]
     public async Task ExtractAsync_WhenClaudeFails_ReturnsAllNulls()
     {
-        var client = new ConfigurableClaudeClient(new HttpRequestException("network error"));
-        var sut = new ReflectionExtractionService(client, NullLogger<ReflectionExtractionService>.Instance);
+        var client = new ReflectionClaudeClient(new HttpRequestException("network error"));
+        var sut = new ReflectionExtractionService(client, FakePrompts, PedagogyService, NullLogger<ReflectionExtractionService>.Instance);
 
         var result = await sut.ExtractAsync("some text");
 
         result.WhatWasCovered.Should().BeNull();
         result.AreasToImprove.Should().BeNull();
         result.SessionDate.Should().BeNull();
-    }
-
-    [Fact]
-    public void BuildSystemPrompt_ContainsLanguagePreservationInstruction()
-    {
-        var today = new DateOnly(2026, 4, 11);
-        var prompt = ReflectionExtractionService.BuildSystemPrompt(today);
-
-        prompt.Should().Contain("translate");
-        prompt.Should().Contain("sessionDate");
-        prompt.Should().Contain("2026-04-11");
-    }
-
-    [Fact]
-    public void BuildSystemPrompt_InjectsTodayForRelativeDateResolution()
-    {
-        var today = new DateOnly(2026, 4, 11);
-        var prompt = ReflectionExtractionService.BuildSystemPrompt(today);
-
-        prompt.Should().Contain("hoy");
-        prompt.Should().Contain("ayer");
     }
 
     [Fact]
