@@ -58,7 +58,12 @@ export function StudentProfileTab({ student, onToggleDifficultyStatus }: Props) 
               <div>
                 {origin && <FieldValue label="Origin" value={origin} />}
                 {location && <FieldValue label="Lives in" value={location} />}
-                <FieldValue label="Birth year" value={student.birthYear} />
+                {student.birthYear != null && (
+                  <FieldValue
+                    label="Birth year"
+                    value={`${student.birthYear} (${new Date().getFullYear() - student.birthYear} years)`}
+                  />
+                )}
                 <FieldValue label="Profession" value={student.profession} />
                 <FieldValue label="Reason" value={student.reasonForStudying} />
               </div>

@@ -43,6 +43,12 @@ export default function StudentForm() {
   const [difficulties, setDifficulties] = useState<Difficulty[]>([])
   const [personalNotes, setPersonalNotes] = useState('')
   const [teachingNotes, setTeachingNotes] = useState('')
+  const [birthYear, setBirthYear] = useState<number | null>(null)
+  const [profession, setProfession] = useState('')
+  const [countryOfOrigin, setCountryOfOrigin] = useState('')
+  const [cityOfOrigin, setCityOfOrigin] = useState('')
+  const [countryOfResidence, setCountryOfResidence] = useState('')
+  const [cityOfResidence, setCityOfResidence] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const interestInputRef = useRef<HTMLInputElement>(null)
 
@@ -66,6 +72,12 @@ export default function StudentForm() {
       setDifficulties(existing.difficulties ?? [])
       setPersonalNotes(existing.personalNotes ?? '')
       setTeachingNotes(existing.teachingNotes ?? '')
+      setBirthYear(existing.birthYear ?? null)
+      setProfession(existing.profession ?? '')
+      setCountryOfOrigin(existing.countryOfOrigin ?? '')
+      setCityOfOrigin(existing.cityOfOrigin ?? '')
+      setCountryOfResidence(existing.countryOfResidence ?? '')
+      setCityOfResidence(existing.cityOfResidence ?? '')
     }
   }, [existing])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -167,6 +179,12 @@ export default function StudentForm() {
       difficulties: validDifficulties,
       personalNotes: personalNotes.trim() || null,
       teachingNotes: teachingNotes.trim() || null,
+      birthYear: birthYear ?? null,
+      profession: profession.trim() || null,
+      countryOfOrigin: countryOfOrigin.trim() || null,
+      cityOfOrigin: cityOfOrigin.trim() || null,
+      countryOfResidence: countryOfResidence.trim() || null,
+      cityOfResidence: cityOfResidence.trim() || null,
     })
   }
 
@@ -296,6 +314,88 @@ export default function StudentForm() {
                   </SelectContent>
                 </Select>
                 {errors.cefrLevel && <p className="text-xs text-red-600">{errors.cefrLevel}</p>}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Personal Background</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
+              <div className="space-y-1.5">
+                <Label htmlFor="birth-year">Birth Year</Label>
+                <Input
+                  id="birth-year"
+                  type="number"
+                  value={birthYear ?? ''}
+                  onChange={(e) => setBirthYear(e.target.value ? parseInt(e.target.value, 10) : null)}
+                  placeholder="e.g. 1990"
+                  min={1900}
+                  max={new Date().getFullYear()}
+                  data-testid="student-birth-year"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="profession">Profession</Label>
+                <Input
+                  id="profession"
+                  value={profession}
+                  onChange={(e) => setProfession(e.target.value)}
+                  placeholder="e.g. Software engineer"
+                  maxLength={128}
+                  data-testid="student-profession"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
+              <div className="space-y-1.5">
+                <Label htmlFor="country-origin">Country of Origin</Label>
+                <Input
+                  id="country-origin"
+                  value={countryOfOrigin}
+                  onChange={(e) => setCountryOfOrigin(e.target.value)}
+                  placeholder="e.g. Portugal"
+                  maxLength={64}
+                  data-testid="student-country-origin"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="city-origin">City of Origin</Label>
+                <Input
+                  id="city-origin"
+                  value={cityOfOrigin}
+                  onChange={(e) => setCityOfOrigin(e.target.value)}
+                  placeholder="e.g. Lisbon"
+                  maxLength={64}
+                  data-testid="student-city-origin"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
+              <div className="space-y-1.5">
+                <Label htmlFor="country-residence">Country of Residence</Label>
+                <Input
+                  id="country-residence"
+                  value={countryOfResidence}
+                  onChange={(e) => setCountryOfResidence(e.target.value)}
+                  placeholder="e.g. Spain"
+                  maxLength={64}
+                  data-testid="student-country-residence"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="city-residence">City of Residence</Label>
+                <Input
+                  id="city-residence"
+                  value={cityOfResidence}
+                  onChange={(e) => setCityOfResidence(e.target.value)}
+                  placeholder="e.g. Madrid"
+                  maxLength={64}
+                  data-testid="student-city-residence"
+                />
               </div>
             </div>
           </CardContent>

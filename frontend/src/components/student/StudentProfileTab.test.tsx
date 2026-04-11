@@ -80,7 +80,7 @@ describe('StudentProfileTab', () => {
       renderProfile(FULL_STUDENT)
       expect(screen.getByText('Rome, Italy')).toBeInTheDocument()
       expect(screen.getByText('Barcelona, Spain')).toBeInTheDocument()
-      expect(screen.getByText('1998')).toBeInTheDocument()
+      expect(screen.getByText(/^1998 \(\d+ years\)$/)).toBeInTheDocument()
       expect(screen.getByText('Film student')).toBeInTheDocument()
       expect(screen.getByText('Vive en Barcelona')).toBeInTheDocument()
     })
