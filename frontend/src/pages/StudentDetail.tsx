@@ -5,7 +5,7 @@ import { ArrowLeft, NotebookPen, Pencil } from 'lucide-react'
 import { getStudent, updateStudent } from '../api/students'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { getCefrStitchBadgeClasses } from '@/lib/cefr-colors'
+import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { StudentProfileTab } from '@/components/student/StudentProfileTab'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
@@ -144,20 +144,13 @@ export default function StudentDetail() {
               {/* Metadata row */}
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 {/* Teacher CEFR level */}
-                <span
-                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] ${getCefrStitchBadgeClasses(student.cefrLevel.substring(0, 2))}`}
-                  data-testid="cefr-badge"
-                >
-                  {student.cefrLevel}
-                </span>
+                <CefrBadge level={student.cefrLevel} data-testid="cefr-badge" />
 
                 {/* Official CEFR level */}
                 {student.officialCefrLevel && (
-                  <span
-                    className={`inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] ${getCefrStitchBadgeClasses(student.officialCefrLevel.substring(0, 2))}`}
-                    data-testid="official-cefr-badge"
-                  >
-                    Official: {student.officialCefrLevel}
+                  <span data-testid="official-cefr-badge" className="inline-flex items-center gap-1">
+                    <span className="text-[0.6875rem] text-zinc-500 uppercase tracking-[0.05em]">Official: </span>
+                    <CefrBadge level={student.officialCefrLevel} />
                   </span>
                 )}
 

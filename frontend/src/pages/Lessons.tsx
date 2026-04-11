@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { getCefrBadgeClasses, CEFR_LEVELS } from '@/lib/cefr-colors'
+import { CEFR_LEVELS } from '@/lib/cefr-colors'
+import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { formatDate } from '../utils/formatDate'
 import { LANGUAGES } from '@/lib/languages'
 import { cn } from '@/lib/utils'
@@ -246,9 +247,7 @@ export default function Lessons() {
                     <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">
                       {lesson.language}
                     </Badge>
-                    <Badge variant="outline" className={`text-xs ${getCefrBadgeClasses(lesson.cefrLevel)}`}>
-                      {lesson.cefrLevel}
-                    </Badge>
+                    <CefrBadge level={lesson.cefrLevel} />
                     <Badge variant="outline" className={cn('text-xs', statusBadgeClass(lesson.status))} data-testid="lesson-status">
                       {lesson.status}
                     </Badge>

@@ -36,7 +36,8 @@ import { GeneratePanel } from '@/components/lesson/GeneratePanel'
 import { ContentBlock } from '@/components/lesson/ContentBlock'
 import { ExportButton } from '@/components/lesson/ExportButton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { getCefrBadgeClasses, CEFR_LEVELS } from '@/lib/cefr-colors'
+import { CEFR_LEVELS } from '@/lib/cefr-colors'
+import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { LANGUAGES } from '@/lib/languages'
 import { formatDateTime } from '../utils/formatDate'
 import { CefrMismatchWarning } from '@/components/CefrMismatchWarning'
@@ -608,7 +609,7 @@ export default function LessonEditor() {
 
         {/* Secondary metadata */}
         <div className="flex items-center gap-2 ml-auto flex-wrap">
-          <Badge variant="outline" className={`text-xs ${getCefrBadgeClasses(lesson.cefrLevel)}`}>{lesson.cefrLevel}</Badge>
+          <CefrBadge level={lesson.cefrLevel} />
           <Badge variant="outline" className="text-xs text-zinc-500 border-zinc-200">{lesson.language}</Badge>
           <span className="text-xs text-zinc-500">{lesson.topic}</span>
           <span className="text-xs text-zinc-400">{lesson.durationMinutes} min</span>

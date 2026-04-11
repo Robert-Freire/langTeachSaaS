@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 interface CefrBadgeProps {
   level: string
   className?: string
+  'data-testid'?: string
 }
 
 function cefrColors(level: string): string {
@@ -13,9 +14,10 @@ function cefrColors(level: string): string {
   return 'bg-zinc-100 text-zinc-700'
 }
 
-export function CefrBadge({ level, className }: CefrBadgeProps) {
+export function CefrBadge({ level, className, 'data-testid': dataTestId }: CefrBadgeProps) {
   return (
     <span
+      data-testid={dataTestId}
       className={cn(
         'inline-flex items-center justify-center rounded-md px-1.5 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] font-inter',
         cefrColors(level),
