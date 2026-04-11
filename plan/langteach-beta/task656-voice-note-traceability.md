@@ -116,3 +116,11 @@ Look at existing `SessionLogServiceTests` pattern (none exist yet) — use `InMe
 - No API endpoint changes for reading these fields (internal traceability only).
 - `UpdateSessionLogRequest` does not get these fields (immutable after creation).
 - No frontend changes.
+
+## Design decision: VoiceNoteId is null for Telegram-originated logs
+
+The Telegram flow (`TelegramConversationService`) calls `ExtractAsync` internally and creates a `SessionLog` from the extracted text. However, the Telegram bot never creates a `VoiceNote` entity -- audio messages are transcribed by Whisper externally before reaching the system; no blob storage upload occurs. Therefore `VoiceNoteId` is **intentionally null** for Telegram-originated session logs.
+
+This is the same pattern as `LinkedLessonId` -- not all session logs have a linked resource. The Telegram flow sets `RawExtractionJson` (since extraction does occur there) but cannot set `VoiceNoteId` without an upstream task to store Telegram audio as VoiceNote entities (tracked as an observation in `observed-issues.md`).
+
+`VoiceNoteId` is populated only in the web frontend flow where the teacher explicitly uploads a voice note (creating a VoiceNote entity), then creates a session log draft referencing that VoiceNoteId.

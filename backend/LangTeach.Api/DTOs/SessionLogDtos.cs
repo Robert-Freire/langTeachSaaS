@@ -73,6 +73,9 @@ public class CreateSessionLogRequest
     public List<SuggestedDifficultyDto>? SuggestedDifficulties { get; set; }
 
     public Guid? VoiceNoteId { get; set; }
+
+    // Stores raw Claude API response; nvarchar(max) in DB, capped here to prevent unbounded input
+    [MaxLength(50000)]
     public string? RawExtractionJson { get; set; }
 }
 

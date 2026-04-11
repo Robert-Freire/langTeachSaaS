@@ -35,3 +35,9 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | architecture-reviewer | minor | Same case-sensitivity note as above. |
 | Sophy | minor | Dual mutation path (PUT full-replace + POST/PATCH sub-resource) -- intentional per issue spec. Sophy asked to document intent. Both paths are valid: PUT for import/sync, POST/PATCH for incremental UI. |
 | Sophy | info | `UpdateTeachingTodoAsync` returns null for both student-not-found and todo-not-found; controller maps both to 404. Minor ambiguity for callers; consistent with existing not-found handling. |
+
+## #656 — 2026-04-11
+
+| Reviewer | Severity | Finding |
+|---|---|---|
+| review | minor | `RawJson` as optional trailing parameter on `ExtractedReflectionDto` positional record is fragile: future positional parameters added before it would shift meaning. Low risk right now (all callers use named args), but worth converting to a named property if the record grows. |
