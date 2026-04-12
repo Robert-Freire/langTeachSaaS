@@ -94,6 +94,7 @@ function wrapper(studentId = 'student-1') {
           <Route path="/students/:id" element={<StudentDetail />} />
           <Route path="/students" element={<div>Students list</div>} />
           <Route path="/students/:id/edit" element={<div data-testid="edit-page">Edit</div>} />
+          <Route path="/students/:id/log-session" element={<div data-testid="log-session-page">Log Session</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -115,11 +116,11 @@ describe('StudentDetail', () => {
     expect(await screen.findByTestId('log-session-button')).toBeInTheDocument()
   })
 
-  it('opens session log dialog when Log Session is clicked', async () => {
+  it('navigates to log-session page when Log Session is clicked', async () => {
     wrapper()
     await screen.findByTestId('log-session-button')
     fireEvent.click(screen.getByTestId('log-session-button'))
-    expect(await screen.findByTestId('session-log-dialog')).toBeInTheDocument()
+    expect(await screen.findByTestId('log-session-page')).toBeInTheDocument()
   })
 
   it('shows not found message for missing student', async () => {

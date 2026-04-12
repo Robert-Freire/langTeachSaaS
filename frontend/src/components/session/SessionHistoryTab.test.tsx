@@ -49,6 +49,7 @@ const SESSION_BASE: sessionLogsApi.SessionLog = {
   statusName: 'Confirmed' as const,
   mentionedDifficultyPairs: '[]',
   suggestedDifficulties: '[]',
+  duration: null,
 }
 
 function wrapper() {
