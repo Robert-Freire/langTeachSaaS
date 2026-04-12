@@ -9,7 +9,7 @@ import { StudentFollowupsCard } from './StudentFollowupsCard'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { getObjectiveUrgency, getDaysRemaining, formatDaysRemaining } from '@/lib/objectiveUrgency'
 import { SectionHeader } from './SectionHeader'
-import { formatMonthYear, formatDateLong, formatDateShort } from '@/utils/formatDate'
+import { formatMonthYear, formatDateLong } from '@/utils/formatDate'
 
 interface Props {
   student: Student
@@ -231,7 +231,8 @@ function RecentSessions({
         <div className="space-y-4">
           {recent.map((session, idx) => {
             const narrative = getSessionNarrative(session)
-            const tags = parseTopicTags(session.topicTags).slice(0, 3)
+            const rawTags = parseTopicTags(session.topicTags).slice(0, 3)
+            const tags = rawTags.map(t => (typeof t === 'string' ? { tag: t as string } : t))
 
             return (
               <div
