@@ -381,6 +381,37 @@ public class StudentsControllerTests
         student!.Difficulties.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task DeleteTeachingTodo_Succeeds()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|delete-todo-test", "delete-todo@example.com");
+        var student = await CreateStudentAsync(client, "Todo Delete Student");
+
+        var appendResponse = await client.PostAsJsonAsync(
+            $"/api/students/{student.Id}/teaching-todos",
+            new CreateTeachingTodoDto("Practicar subjuntivo", null));
+        appendResponse.EnsureSuccessStatusCode();
+        var withTodo = await appendResponse.Content.ReadFromJsonAsync<StudentDto>();
+        var todoId = withTodo!.TeachingTodos[0].Id;
+
+        var deleteResponse = await client.DeleteAsync($"/api/students/{student.Id}/teaching-todos/{todoId}");
+
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await deleteResponse.Content.ReadFromJsonAsync<StudentDto>();
+        result!.TeachingTodos.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteTeachingTodo_UnknownTodoId_ReturnsNotFound()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|delete-todo-notfound-test", "delete-todo-notfound@example.com");
+        var student = await CreateStudentAsync(client, "Todo Delete NotFound Student");
+
+        var response = await client.DeleteAsync($"/api/students/{student.Id}/teaching-todos/nonexistent-id");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     private static async Task<StudentDto> CreateStudentAsync(
         HttpClient client,
         string name,
