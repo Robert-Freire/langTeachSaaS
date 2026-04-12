@@ -169,6 +169,20 @@ public class StudentsController : ControllerBase
         }
     }
 
+    [HttpDelete("{id:guid}/teaching-todos/{todoId}")]
+    public async Task<IActionResult> DeleteTeachingTodo(Guid id, string todoId, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var student = await _studentService.DeleteTeachingTodoAsync(teacherId, id, todoId, cancellationToken);
+        if (student is null)
+        {
+            _logger.LogWarning("DELETE /api/students/{StudentId}/teaching-todos/{TodoId} not found or forbidden. TeacherId={TeacherId}", id, todoId, teacherId);
+            return NotFound();
+        }
+        return Ok(student);
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {

@@ -3,12 +3,13 @@ import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, NotebookPen, Pencil } from 'lucide-react'
 import { getStudent, updateStudent } from '../api/students'
+import { logger } from '../lib/logger'
 import { getFollowups } from '@/api/followups'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { StudentProfileTab } from '@/components/student/StudentProfileTab'
-import { StudentProfileOverview } from '@/components/student/StudentProfileOverview'
+import { StudentOverviewTab } from '@/components/student/StudentOverviewTab'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
 import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
@@ -47,45 +48,71 @@ export default function StudentDetail() {
 
   const onFollowupChange = useCallback(() => { refetchFollowups() }, [refetchFollowups])
 
+  function buildStudentPayload() {
+    if (!student) throw new Error('Student not loaded')
+    return {
+      name: student.name,
+      learningLanguage: student.learningLanguage,
+      cefrLevel: student.cefrLevel,
+      interests: student.interests,
+      nativeLanguages: student.nativeLanguages,
+      learningGoals: student.learningGoals,
+      weaknesses: student.weaknesses,
+      difficulties: student.difficulties,
+      personalNotes: student.personalNotes,
+      teachingNotes: student.teachingNotes,
+      birthYear: student.birthYear,
+      profession: student.profession,
+      countryOfOrigin: student.countryOfOrigin,
+      cityOfOrigin: student.cityOfOrigin,
+      countryOfResidence: student.countryOfResidence,
+      cityOfResidence: student.cityOfResidence,
+      reasonForStudying: student.reasonForStudying,
+      officialCefrLevel: student.officialCefrLevel,
+      shortTermObjectives: student.shortTermObjectives,
+      isActive: student.isActive,
+      isCorporate: student.isCorporate,
+      rate: student.rate,
+      spokenLanguages: student.spokenLanguages,
+      skillLevelOverrides: student.skillLevelOverrides,
+      teachingTodos: student.teachingTodos,
+    }
+  }
+
   const { mutate: toggleDifficultyStatus } = useMutation({
     mutationFn: (vars: { difficultyId: string; status: 'Active' | 'Covered' }) => {
-      if (!student) throw new Error('Student not loaded')
-      const updated = student.difficulties.map((d) =>
+      const updated = student!.difficulties.map((d) =>
         d.id === vars.difficultyId ? { ...d, status: vars.status } : d
       )
-      return updateStudent(id!, {
-        name: student.name,
-        learningLanguage: student.learningLanguage,
-        cefrLevel: student.cefrLevel,
-        interests: student.interests,
-        nativeLanguages: student.nativeLanguages,
-        learningGoals: student.learningGoals,
-        weaknesses: student.weaknesses,
-        difficulties: updated,
-        personalNotes: student.personalNotes,
-        teachingNotes: student.teachingNotes,
-        birthYear: student.birthYear,
-        profession: student.profession,
-        countryOfOrigin: student.countryOfOrigin,
-        cityOfOrigin: student.cityOfOrigin,
-        countryOfResidence: student.countryOfResidence,
-        cityOfResidence: student.cityOfResidence,
-        reasonForStudying: student.reasonForStudying,
-        officialCefrLevel: student.officialCefrLevel,
-        shortTermObjectives: student.shortTermObjectives,
-        isActive: student.isActive,
-        isCorporate: student.isCorporate,
-        rate: student.rate,
-        spokenLanguages: student.spokenLanguages,
-        skillLevelOverrides: student.skillLevelOverrides,
-        teachingTodos: student.teachingTodos,
-      })
+      return updateStudent(id!, { ...buildStudentPayload(), difficulties: updated })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student', id] })
     },
     onError: (err) => {
-      console.error('Failed to update difficulty status', err)
+      logger.error('StudentDetail', 'Failed to update difficulty status', err)
+    },
+  })
+
+  const { mutateAsync: saveReasonForStudying } = useMutation({
+    mutationFn: (value: string) =>
+      updateStudent(id!, { ...buildStudentPayload(), reasonForStudying: value || null }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student', id] })
+    },
+    onError: (err) => {
+      logger.error('StudentDetail', 'Failed to update reason for studying', err)
+    },
+  })
+
+  const { mutateAsync: saveInterests } = useMutation({
+    mutationFn: (value: string[]) =>
+      updateStudent(id!, { ...buildStudentPayload(), interests: value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student', id] })
+    },
+    onError: (err) => {
+      logger.error('StudentDetail', 'Failed to update interests', err)
     },
   })
 
@@ -248,11 +275,10 @@ export default function StudentDetail() {
 
       {/* Tab content */}
       {activeTab === 'overview' && (
-        <StudentProfileOverview
+        <StudentOverviewTab
           student={student}
-          onToggleDifficultyStatus={(difficultyId, status) =>
-            toggleDifficultyStatus({ difficultyId, status })
-          }
+          followups={followups}
+          onFollowupChange={onFollowupChange}
         />
       )}
 
@@ -264,6 +290,8 @@ export default function StudentDetail() {
           onToggleDifficultyStatus={(difficultyId, status) =>
             toggleDifficultyStatus({ difficultyId, status })
           }
+          onSaveReasonForStudying={(v) => saveReasonForStudying(v).then(() => {})}
+          onSaveInterests={(v) => saveInterests(v).then(() => {})}
         />
       )}
 

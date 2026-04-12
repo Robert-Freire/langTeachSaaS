@@ -368,13 +368,45 @@ public class StudentService : IStudentService
         if (index < 0)
             return null;
 
-        todos[index] = todos[index] with { Status = request.Status, CoveredInSessionLogId = request.CoveredInSessionLogId };
+        var updated = todos[index] with { Status = request.Status, CoveredInSessionLogId = request.CoveredInSessionLogId };
+        if (request.Text is not null)
+        {
+            if (string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > 500)
+                throw new ValidationException("Todo text must be between 1 and 500 characters.");
+            updated = updated with { Text = request.Text };
+        }
+        todos[index] = updated;
         student.TeachingTodos = Serialize(todos);
         student.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Teaching todo updated. TeacherId={TeacherId} StudentId={StudentId} TodoId={TodoId} Status={Status}",
             teacherId, student.Id, todoId, request.Status);
+
+        return MapToDto(student);
+    }
+
+    public async Task<StudentDto?> DeleteTeachingTodoAsync(Guid teacherId, Guid studentId, string todoId, CancellationToken cancellationToken = default)
+    {
+        var student = await _db.Students
+            .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
+
+        if (student is null)
+            return null;
+
+        var todos = JsonStorageHelper.DeserializeList<TeachingTodoDto>(student.TeachingTodos);
+        var index = todos.FindIndex(t => t.Id == todoId);
+
+        if (index < 0)
+            return null;
+
+        todos.RemoveAt(index);
+        student.TeachingTodos = Serialize(todos);
+        student.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Teaching todo deleted. TeacherId={TeacherId} StudentId={StudentId} TodoId={TodoId}",
+            teacherId, student.Id, todoId);
 
         return MapToDto(student);
     }

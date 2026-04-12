@@ -137,7 +137,7 @@ describe('StudentDetail', () => {
   it('shows Overview tab content by default', async () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.getByTestId('student-profile-overview')).toBeInTheDocument()
+    expect(screen.getByTestId('student-overview-tab')).toBeInTheDocument()
     expect(screen.queryByTestId('student-profile-tab')).not.toBeInTheDocument()
     expect(screen.queryByTestId('session-history-tab')).not.toBeInTheDocument()
     expect(screen.queryByTestId('progress-dashboard')).not.toBeInTheDocument()
@@ -148,7 +148,7 @@ describe('StudentDetail', () => {
     await screen.findByTestId('student-detail-name')
     fireEvent.click(screen.getByTestId('tab-profile'))
     expect(screen.getByTestId('student-profile-tab')).toBeInTheDocument()
-    expect(screen.queryByTestId('student-profile-overview')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('student-overview-tab')).not.toBeInTheDocument()
   })
 
   it('switches to Sessions tab on click', async () => {
@@ -234,6 +234,37 @@ describe('StudentDetail', () => {
   })
 })
 
+describe('StudentDetail - Overview tab', () => {
+  beforeEach(() => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue(MOCK_STUDENT)
+  })
+
+  it('renders primary objective card', async () => {
+    wrapper()
+    await screen.findByTestId('primary-objective-card')
+    expect(screen.getByTestId('objective-text')).toHaveTextContent('Complete DELE B1 exam prep')
+  })
+
+  it('shows days remaining for objective with future date', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...MOCK_STUDENT,
+      shortTermObjectives: [
+        { id: 'obj-1', text: 'Future objective', targetDate: '2030-01-01' },
+      ],
+    })
+    wrapper()
+    await screen.findByTestId('primary-objective-card')
+    expect(screen.getByTestId('days-remaining')).toHaveTextContent('days left')
+  })
+
+  it('shows empty state when no objectives', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...MOCK_STUDENT, shortTermObjectives: [] })
+    wrapper()
+    await screen.findByTestId('primary-objective-card')
+    expect(screen.getByText('No objectives set')).toBeInTheDocument()
+  })
+})
+
 describe('StudentDetail - Profile tab sections', () => {
   beforeEach(() => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue(MOCK_STUDENT)
@@ -245,14 +276,19 @@ describe('StudentDetail - Profile tab sections', () => {
     fireEvent.click(screen.getByTestId('tab-profile'))
   }
 
-  it('renders About section with identity fields', async () => {
+  it('renders hero section with reason for studying', async () => {
+    await openProfileTab()
+    await screen.findByTestId('profile-hero')
+    expect(screen.getByTestId('reason-quote')).toHaveTextContent('Moved to Barcelona for work')
+  })
+
+  it('renders Identity Details section with identity fields', async () => {
     await openProfileTab()
     await screen.findByTestId('profile-about')
     expect(screen.getByText('London, United Kingdom')).toBeInTheDocument()
     expect(screen.getByText('Barcelona, Spain')).toBeInTheDocument()
     expect(screen.getByText(/^1995 \(\d+ years\)$/)).toBeInTheDocument()
     expect(screen.getAllByText('Designer').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('Moved to Barcelona for work')).toBeInTheDocument()
   })
 
   it('renders Language Ecosystem section', async () => {
