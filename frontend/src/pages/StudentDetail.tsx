@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, NotebookPen, Pencil } from 'lucide-react'
 import { getStudent, updateStudent } from '../api/students'
+import { logger } from '../lib/logger'
 import { getFollowups } from '@/api/followups'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -88,7 +89,7 @@ export default function StudentDetail() {
       queryClient.invalidateQueries({ queryKey: ['student', id] })
     },
     onError: (err) => {
-      console.error('Failed to update difficulty status', err)
+      logger.error('StudentDetail', 'Failed to update difficulty status', err)
     },
   })
 
@@ -99,7 +100,7 @@ export default function StudentDetail() {
       queryClient.invalidateQueries({ queryKey: ['student', id] })
     },
     onError: (err) => {
-      console.error('Failed to update reason for studying', err)
+      logger.error('StudentDetail', 'Failed to update reason for studying', err)
     },
   })
 
@@ -110,7 +111,7 @@ export default function StudentDetail() {
       queryClient.invalidateQueries({ queryKey: ['student', id] })
     },
     onError: (err) => {
-      console.error('Failed to update interests', err)
+      logger.error('StudentDetail', 'Failed to update interests', err)
     },
   })
 
