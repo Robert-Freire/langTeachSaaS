@@ -370,10 +370,11 @@ describe('StudentProfileTab', () => {
       expect(section).toHaveTextContent('Status')
     })
 
-    it('renders difficulty area (competency) and description', () => {
+    it('renders difficulty area (competency) and subcategory', () => {
       renderProfile(FULL_STUDENT)
       expect(screen.getByText('Grammar')).toBeInTheDocument()
-      expect(screen.getByText('Subjuntivo en concesivas')).toBeInTheDocument()
+      // Subcategory column shows d.subcategory when present
+      expect(screen.getByText('subjuntivo')).toBeInTheDocument()
     })
 
     it('renders trend badge with capitalized value', () => {

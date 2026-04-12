@@ -440,7 +440,7 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
                           return (
                             <tr key={d.id} data-testid="difficulty-row" className="border-t border-zinc-50">
                               <td className="py-2 pr-4 text-[#1A1B22] align-top">{d.competency}</td>
-                              <td className="py-2 pr-4 text-[#1A1B22] align-top">{d.description}</td>
+                              <td className="py-2 pr-4 text-[#1A1B22] align-top">{d.subcategory || d.description}</td>
                               <td className="py-2 pr-4 align-top">
                                 <span className={`inline-block text-xs font-medium rounded px-1.5 py-0.5 ${trendColor}`}>
                                   {trendLabel}
