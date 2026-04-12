@@ -30,11 +30,19 @@ public class StudentService : IStudentService
     private static readonly HashSet<string> AllowedWeaknessTypes =
         new(StringComparer.OrdinalIgnoreCase) { "grammatical", "lexical", "orthographic" };
 
-    private static readonly HashSet<string> AllowedSkillKeys =
-        new(StringComparer.OrdinalIgnoreCase) { "Reading", "Writing", "Speaking", "Listening" };
+    private static readonly Dictionary<string, string> CanonicalSkillKeys =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Reading"] = "Reading", ["Writing"] = "Writing",
+            ["Speaking"] = "Speaking", ["Listening"] = "Listening",
+        };
 
-    private static readonly HashSet<string> AllowedCefrLevels =
-        new(StringComparer.OrdinalIgnoreCase) { "A1", "A2", "B1", "B2", "C1", "C2" };
+    private static readonly Dictionary<string, string> CanonicalCefrLevels =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["A1"] = "A1", ["A2"] = "A2", ["B1"] = "B1",
+            ["B2"] = "B2", ["C1"] = "C1", ["C2"] = "C2",
+        };
 
     private readonly AppDbContext _db;
     private readonly ILogger<StudentService> _logger;
@@ -94,7 +102,7 @@ public class StudentService : IStudentService
         ValidateBirthYear(request.BirthYear);
         ValidateShortTermObjectives(request.ShortTermObjectives);
         ValidateTeachingTodos(request.TeachingTodos);
-        ValidateSkillLevelOverrides(request.SkillLevelOverrides);
+        var normalizedSkillOverrides = NormalizeSkillLevelOverrides(request.SkillLevelOverrides);
 
         var student = new Student
         {
@@ -124,7 +132,7 @@ public class StudentService : IStudentService
             IsCorporate = request.IsCorporate,
             Rate = request.Rate,
             SpokenLanguages = Serialize(request.SpokenLanguages),
-            SkillLevelOverrides = JsonStorageHelper.Serialize(request.SkillLevelOverrides),
+            SkillLevelOverrides = JsonStorageHelper.Serialize(normalizedSkillOverrides),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
@@ -153,7 +161,7 @@ public class StudentService : IStudentService
         ValidateBirthYear(request.BirthYear);
         ValidateShortTermObjectives(request.ShortTermObjectives);
         ValidateTeachingTodos(request.TeachingTodos);
-        ValidateSkillLevelOverrides(request.SkillLevelOverrides);
+        var normalizedSkillOverrides = NormalizeSkillLevelOverrides(request.SkillLevelOverrides);
 
         student.Name = request.Name;
         student.LearningLanguage = request.LearningLanguage;
@@ -429,22 +437,30 @@ public class StudentService : IStudentService
         }
     }
 
-    private static void ValidateSkillLevelOverrides(Dictionary<string, string> overrides)
+    private static Dictionary<string, string> NormalizeSkillLevelOverrides(Dictionary<string, string> overrides)
     {
+        var normalized = new Dictionary<string, string>();
         foreach (var (key, value) in overrides)
         {
-            if (!AllowedSkillKeys.Contains(key))
-                throw new ValidationException($"SkillLevelOverrides key '{key}' is not valid. Allowed: {string.Join(", ", AllowedSkillKeys)}.");
-            if (!AllowedCefrLevels.Contains(value))
+            if (!CanonicalSkillKeys.TryGetValue(key, out var canonicalKey))
+                throw new ValidationException($"SkillLevelOverrides key '{key}' is not valid. Allowed: {string.Join(", ", CanonicalSkillKeys.Values)}.");
+            if (!CanonicalCefrLevels.TryGetValue(value, out var canonicalValue))
                 throw new ValidationException($"SkillLevelOverrides value '{value}' for key '{key}' is not a valid CEFR level. Allowed: A1, A2, B1, B2, C1, C2.");
+            normalized[canonicalKey] = canonicalValue;
         }
+        return normalized;
     }
 
     private static Dictionary<string, string> DeserializeSkillLevelOverrides(string? json)
     {
         if (string.IsNullOrEmpty(json)) return new();
-        try { return JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? new(); }
+        try
+        {
+            var raw = JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? new();
+            return NormalizeSkillLevelOverrides(raw);
+        }
         catch (JsonException) { return new(); }
+        catch (ValidationException) { return new(); }
     }
 
     private static string Serialize<T>(List<T> list) =>

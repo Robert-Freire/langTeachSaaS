@@ -526,7 +526,7 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
                 </div>
               )}
               {student.nativeLanguages.length === 0 && student.spokenLanguages.length === 0 && (
-                <EmptyState text="No language details added yet" />
+                <EmptyState text="No native or spoken languages added yet" />
               )}
             </div>
           </section>
