@@ -3321,7 +3321,7 @@ public class PromptServiceTests
         var request = _sut.BuildLessonPlanPrompt(ctx);
 
         request.SystemPrompt.Should().Contain("para vivir en Barcelona");
-        request.SystemPrompt.Should().Contain("Anchor vocabulary, topics, and examples to this motivation");
+        request.SystemPrompt.Should().Contain("Anchor vocabulary, topics, and examples to the student's stated study motivation");
     }
 
     [Fact]
@@ -3350,7 +3350,7 @@ public class PromptServiceTests
 
         request.SystemPrompt.Should().Contain("French");
         request.SystemPrompt.Should().Contain("Portuguese");
-        request.SystemPrompt.Should().Contain("cross-language awareness");
+        request.SystemPrompt.Should().Contain("cross-language awareness and cognates from the student's other languages");
     }
 
     [Fact]

@@ -433,6 +433,7 @@ public class PromptService : IPromptService
             if (ctx.StudentProfession is not null)
                 sb.AppendLine($"- Profession: {InputSanitizer.Sanitize(ctx.StudentProfession)}");
 
+            // Age is approximated from birth year (off by up to one year depending on birthday — acceptable for prompt personalization)
             if (ctx.StudentBirthYear is not null)
                 sb.AppendLine($"- Age: {DateTime.UtcNow.Year - ctx.StudentBirthYear.Value}");
 
@@ -459,17 +460,17 @@ public class PromptService : IPromptService
             sb.AppendLine($"Personalize content for this student. Reference their interests in examples.");
 
             if (ctx.StudentReasonForStudying is not null)
-                sb.AppendLine($"The student's reason for studying {language} is: {InputSanitizer.Sanitize(ctx.StudentReasonForStudying)}. Anchor vocabulary, topics, and examples to this motivation.");
+                sb.AppendLine($"Anchor vocabulary, topics, and examples to the student's stated study motivation.");
 
             if (ctx.StudentSpokenLanguages is { Length: > 0 })
             {
                 var spokenForPrompt = ctx.StudentSpokenLanguages.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0).ToArray();
                 if (spokenForPrompt.Length > 0)
-                    sb.AppendLine($"The student also speaks {string.Join(" and ", spokenForPrompt)}. Where relevant, leverage cross-language awareness and cognates.");
+                    sb.AppendLine("Where relevant, leverage cross-language awareness and cognates from the student's other languages.");
             }
 
             if (ctx.StudentProfession is not null)
-                sb.AppendLine($"The student's profession is {InputSanitizer.Sanitize(ctx.StudentProfession)}. Use domain-specific vocabulary and scenarios from this field where appropriate.");
+                sb.AppendLine("Use domain-specific vocabulary and scenarios from the student's professional field where appropriate.");
 
             if (ctx.StudentNativeLanguage is not null)
             {
