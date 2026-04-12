@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Plus, Trash2 } from 'lucide-react'
-import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem } from '../api/students'
+import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem, type ShortTermObjective } from '../api/students'
+import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
 import { LEARNING_GOALS, COMPETENCY_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
@@ -51,6 +52,8 @@ export default function StudentForm() {
   const [cityOfOrigin, setCityOfOrigin] = useState('')
   const [countryOfResidence, setCountryOfResidence] = useState('')
   const [cityOfResidence, setCityOfResidence] = useState('')
+  const [reasonForStudying, setReasonForStudying] = useState('')
+  const [shortTermObjectives, setShortTermObjectives] = useState<ShortTermObjective[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
   const interestInputRef = useRef<HTMLInputElement>(null)
 
@@ -86,6 +89,8 @@ export default function StudentForm() {
       setCityOfOrigin(existing.cityOfOrigin ?? '')
       setCountryOfResidence(existing.countryOfResidence ?? '')
       setCityOfResidence(existing.cityOfResidence ?? '')
+      setReasonForStudying(existing.reasonForStudying ?? '')
+      setShortTermObjectives(existing.shortTermObjectives ?? [])
     }
   }, [existing])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -157,6 +162,23 @@ export default function StudentForm() {
     setDifficulties((prev) => prev.filter((d) => d.id !== id))
   }
 
+  function addObjective() {
+    const newId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+    setShortTermObjectives((prev) => [...prev, { id: newId, text: '', targetDate: null }])
+  }
+
+  function updateObjective(id: string, field: 'text' | 'targetDate', value: string | null) {
+    setShortTermObjectives((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, [field]: value } : o))
+    )
+  }
+
+  function removeObjective(id: string) {
+    setShortTermObjectives((prev) => prev.filter((o) => o.id !== id))
+  }
+
   function validate(): boolean {
     const errs: Record<string, string> = {}
     if (!name.trim()) errs.name = 'Name is required'
@@ -193,6 +215,8 @@ export default function StudentForm() {
       cityOfOrigin: cityOfOrigin.trim() || null,
       countryOfResidence: countryOfResidence.trim() || null,
       cityOfResidence: cityOfResidence.trim() || null,
+      reasonForStudying: reasonForStudying.trim() || null,
+      shortTermObjectives: shortTermObjectives.filter((o) => o.text.trim()),
     })
   }
 
@@ -409,6 +433,27 @@ export default function StudentForm() {
                   data-testid="student-city-residence"
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Reason for Studying</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1.5">
+              <Label htmlFor="reason-for-studying">Reason for studying</Label>
+              <Textarea
+                id="reason-for-studying"
+                value={reasonForStudying}
+                onChange={(e) => setReasonForStudying(e.target.value)}
+                placeholder="e.g. Moving to Spain next year, loves the culture..."
+                maxLength={512}
+                rows={3}
+                className="max-w-sm resize-none"
+                data-testid="student-reason-for-studying"
+              />
             </div>
           </CardContent>
         </Card>
@@ -641,6 +686,85 @@ export default function StudentForm() {
               {difficulties.length === 0 && (
                 <p className="text-xs text-zinc-400 italic">
                   No specific difficulties tracked yet.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Teaching Goals</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Short-Term Objectives */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Short-Term Objectives</Label>
+                  <p className="text-xs text-zinc-400 mt-0.5">Specific goals with optional target dates (max 10).</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addObjective}
+                  disabled={shortTermObjectives.length >= 10}
+                  data-testid="add-objective"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add Objective
+                </Button>
+              </div>
+
+              {shortTermObjectives.map((obj) => {
+                const urgency = getObjectiveUrgency(obj.targetDate)
+                return (
+                  <div
+                    key={obj.id}
+                    className="flex flex-col sm:flex-row gap-2 sm:items-start"
+                    data-testid="objective-row"
+                  >
+                    <Input
+                      value={obj.text}
+                      onChange={(e) => updateObjective(obj.id, 'text', e.target.value)}
+                      placeholder="e.g. Pass DELE B1 exam"
+                      maxLength={500}
+                      className="flex-1"
+                      data-testid="objective-text-input"
+                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        value={obj.targetDate ?? ''}
+                        onChange={(e) => updateObjective(obj.id, 'targetDate', e.target.value || null)}
+                        className="h-9 rounded-md border border-zinc-200 bg-white px-3 py-1 text-sm text-[#1A1B22] focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                        data-testid="objective-date-input"
+                      />
+                      {urgency === 'critical' && obj.targetDate && (
+                        <span className="text-xs font-semibold text-orange-600 shrink-0" data-testid="objective-near-date-warning">
+                          NEAR DATE
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeObjective(obj.id)}
+                      className="text-zinc-400 hover:text-red-600 h-9 w-9 shrink-0"
+                      data-testid="remove-objective"
+                      aria-label="Remove objective"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )
+              })}
+
+              {shortTermObjectives.length === 0 && (
+                <p className="text-xs text-zinc-400 italic" data-testid="objectives-empty">
+                  No short-term objectives added yet.
                 </p>
               )}
             </div>
