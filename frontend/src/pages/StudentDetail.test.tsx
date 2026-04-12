@@ -269,6 +269,51 @@ describe('StudentDetail - Header badges', () => {
     await screen.findByTestId('student-detail-name')
     expect(screen.queryByTestId('next-session-pill')).not.toBeInTheDocument()
   })
+
+  it('shows next session pill when a future session exists', async () => {
+    const future = new Date()
+    future.setDate(future.getDate() + 7)
+    const { listSessions } = await import('../api/sessionLogs')
+    vi.mocked(listSessions).mockResolvedValueOnce([{
+      id: 'future-sess',
+      studentId: 'student-1',
+      sessionDate: future.toISOString(),
+      title: 'Upcoming class',
+      plannedContent: null,
+      actualContent: null,
+      homeworkAssigned: null,
+      previousHomeworkStatus: 0,
+      previousHomeworkStatusName: 'NotDone',
+      nextSessionTopics: null,
+      generalNotes: null,
+      levelReassessmentSkill: null,
+      levelReassessmentLevel: null,
+      linkedLessonId: null,
+      topicTags: '[]',
+      createdAt: future.toISOString(),
+      updatedAt: future.toISOString(),
+      isCancelled: false,
+      status: 0,
+      statusName: 'Draft',
+      mentionedDifficultyPairs: '[]',
+      suggestedDifficulties: '[]',
+      duration: 60,
+    }])
+    wrapper()
+    expect(await screen.findByTestId('next-session-pill')).toBeInTheDocument()
+  })
+
+  it('header badges persist after switching tabs', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    // Switch to Profile tab
+    fireEvent.click(screen.getByTestId('tab-profile'))
+    expect(screen.getByTestId('student-status-badge')).toBeInTheDocument()
+    expect(screen.getByTestId('student-detail-name')).toBeInTheDocument()
+    // Switch to Sessions tab
+    fireEvent.click(screen.getByTestId('tab-sessions'))
+    expect(screen.getByTestId('student-status-badge')).toBeInTheDocument()
+  })
 })
 
 describe('StudentDetail - Overview tab', () => {
