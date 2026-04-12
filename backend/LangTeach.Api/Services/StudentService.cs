@@ -33,7 +33,8 @@ public class StudentService : IStudentService
     private static readonly HashSet<string> AllowedSkillKeys =
         new(StringComparer.OrdinalIgnoreCase) { "Reading", "Writing", "Speaking", "Listening" };
 
-    private static readonly HashSet<string> AllowedCefrLevels = ["A1", "A2", "B1", "B2", "C1", "C2"];
+    private static readonly HashSet<string> AllowedCefrLevels =
+        new(StringComparer.OrdinalIgnoreCase) { "A1", "A2", "B1", "B2", "C1", "C2" };
 
     private readonly AppDbContext _db;
     private readonly ILogger<StudentService> _logger;

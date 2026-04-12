@@ -5,20 +5,11 @@ import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { cn } from '@/lib/utils'
 import type { Student } from '@/api/students'
 import { parseNotes } from './studentNoteUtils'
+import { langCode } from './langUtils'
 
 const SKILL_ORDER = ['Reading', 'Writing', 'Speaking', 'Listening']
 const CEFR_WIDTH: Record<string, string> = {
   A1: 'w-1/6', A2: 'w-2/6', B1: 'w-3/6', B2: 'w-4/6', C1: 'w-5/6', C2: 'w-full',
-}
-
-const LANG_TO_CODE: Record<string, string> = {
-  English: 'EN', Spanish: 'ES', French: 'FR', German: 'DE',
-  Italian: 'IT', Portuguese: 'PT', Mandarin: 'ZH', Japanese: 'JA',
-  Arabic: 'AR', Catalan: 'CA', Other: '??',
-}
-
-function langCode(lang: string): string {
-  return LANG_TO_CODE[lang] ?? lang.slice(0, 2).toUpperCase()
 }
 
 interface Props {
