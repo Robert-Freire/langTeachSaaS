@@ -852,3 +852,46 @@ test('log session page: create session from full-page form and redirect back', a
 
   await context.close()
 })
+
+test('overview tab: header badges, pedagogical profile, teaching notes panel visible', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const studentName = `OverviewSectionsTest_${Date.now()}`
+
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: 10000 })
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
+
+  // Header status badge should show Active + Private
+  await expect(page.getByTestId('student-status-badge')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('student-status-badge')).toContainText('Active')
+  await expect(page.getByTestId('student-status-badge')).toContainText('Private')
+
+  // Pedagogical Profile card present
+  await expect(page.getByTestId('pedagogical-profile-card')).toBeVisible({ timeout: 10000 })
+
+  // Recent sessions empty state (no sessions yet)
+  await expect(page.getByTestId('recent-sessions-empty')).toBeVisible({ timeout: 10000 })
+
+  // Teaching notes panel visible with Add Memory button
+  await expect(page.getByTestId('teaching-notes-panel')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('add-memory-btn')).toBeVisible()
+
+  // Cleanup
+  await page.goto('/students')
+  const overviewRow = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName }),
+  })
+  await overviewRow.getByTestId('delete-student').click()
+  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
+  await page.getByTestId('confirm-delete').click()
+  await expect(overviewRow).not.toBeVisible({ timeout: 10000 })
+
+  await context.close()
+})

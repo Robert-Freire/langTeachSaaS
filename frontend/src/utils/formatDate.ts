@@ -31,3 +31,13 @@ export function formatDateShort(iso: string): string {
 export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
+
+/** Month and year only: "Jan 2026" */
+export function formatMonthYear(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+}
+
+/** Long date with full weekday: "Thursday, March 21" */
+export function formatDateLong(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+}

@@ -87,6 +87,7 @@ const SAMPLE_SESSION: SessionLog = {
   mentionedDifficultyPairs: '[]',
   suggestedDifficulties: '[]',
   duration: null,
+  title: null,
 }
 
 function wrapper(ui: React.ReactElement) {
@@ -114,7 +115,7 @@ describe('SessionLogDialog', () => {
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         isCancelled: false, status: 0, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]',
-        suggestedDifficulties: '[]', duration: null,
+        suggestedDifficulties: '[]', duration: null, title: null,
       },
     ])
 
@@ -136,7 +137,7 @@ describe('SessionLogDialog', () => {
         levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null,
         topicTags: '[]', createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         isCancelled: false, status: 0, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]',
-        suggestedDifficulties: '[]', duration: null,
+        suggestedDifficulties: '[]', duration: null, title: null,
       },
     ])
 
@@ -431,7 +432,7 @@ describe('SessionLogDialog', () => {
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
           linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 0, statusName: 'Confirmed' as const,
           mentionedDifficultyPairs: '[]',
-          suggestedDifficulties: '[]', duration: null,
+          suggestedDifficulties: '[]', duration: null, title: null,
           createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         },
       ])
@@ -467,7 +468,7 @@ describe('SessionLogDialog', () => {
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
           linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 0, statusName: 'Confirmed' as const,
           mentionedDifficultyPairs: '[]',
-          suggestedDifficulties: '[]', duration: null,
+          suggestedDifficulties: '[]', duration: null, title: null,
           createdAt: '2026-03-30T10:00:00Z', updatedAt: '2026-03-30T10:00:00Z',
         },
       ])
@@ -489,7 +490,7 @@ describe('SessionLogDialog', () => {
           generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null,
           linkedLessonId: null, topicTags: '[]', isCancelled: false, status: 0, statusName: 'Confirmed' as const,
           mentionedDifficultyPairs: '[]',
-          suggestedDifficulties: '[]', duration: null,
+          suggestedDifficulties: '[]', duration: null, title: null,
           createdAt: '2026-03-01T10:00:00Z', updatedAt: '2026-03-01T10:00:00Z',
         },
       ])

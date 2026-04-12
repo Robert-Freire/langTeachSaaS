@@ -101,6 +101,7 @@ const SAMPLE_SESSION: SessionLog = {
   mentionedDifficultyPairs: '[]',
   suggestedDifficulties: '[]',
   duration: 60,
+  title: null,
 }
 
 function renderLogSession() {

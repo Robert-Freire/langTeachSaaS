@@ -50,6 +50,7 @@ const SESSION_BASE: sessionLogsApi.SessionLog = {
   mentionedDifficultyPairs: '[]',
   suggestedDifficulties: '[]',
   duration: null,
+  title: null,
 }
 
 function wrapper() {
