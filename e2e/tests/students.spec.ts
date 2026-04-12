@@ -1113,6 +1113,7 @@ test('partial difficulty row shows inline validation error and blocks save', asy
 
   // Attempt to save
   await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL('/students/new', { timeout: UI_TIMEOUT })
 
   // Inline error should appear
   await expect(page.getByTestId('difficulty-error')).toBeVisible({ timeout: UI_TIMEOUT })

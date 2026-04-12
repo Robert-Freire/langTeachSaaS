@@ -304,6 +304,14 @@ export default function StudentForm() {
     setErrors((prev) => {
       const key = `difficulty-${diffId}`
       if (!prev[key]) return prev
+      const current = difficulties.find((d) => d.id === diffId)
+      if (current) {
+        const nextRow = { ...current, [field]: value }
+        const hasDesc = nextRow.description.trim().length > 0
+        const hasCom = nextRow.competency.length > 0
+        const shouldClear = (hasDesc && hasCom) || (!hasDesc && !hasCom)
+        if (!shouldClear) return prev
+      }
       const next = { ...prev }
       delete next[key]
       return next
