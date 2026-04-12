@@ -468,9 +468,9 @@ test('student detail shows 4 tabs and overview content by default', async ({ bro
   await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('session-history-empty')).toBeVisible({ timeout: UI_TIMEOUT })
 
-  // Switch to Progress tab (new student has no course)
+  // Switch to Progress tab (new student has no sessions or skill overrides)
   await page.getByTestId('tab-progress').click()
-  await expect(page.getByTestId('progress-no-course')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('progress-tab-content')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Switch back to Profile tab
   await page.getByTestId('tab-profile').click()

@@ -36,7 +36,7 @@ test('@visual progress dashboard — Diego Seed', async ({ browser }) => {
 
   await page.goto(`/students/${diegoStudentId}?tab=progress`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
-  await expect(page.getByTestId('coverage-bar')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('progress-tab-content')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/progress-dashboard.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
