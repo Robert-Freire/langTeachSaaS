@@ -78,11 +78,18 @@ describe('AppShell', () => {
     expect(allDashboardLinks.length).toBeGreaterThanOrEqual(2)
   })
 
-  it('renders nav items in correct order: Dashboard, Students, Courses, Lessons, Settings', () => {
+  it('renders nav items in correct order: Dashboard, Students, Sessions, Courses, Lessons, Settings', () => {
     renderShell()
     const links = document.querySelector('aside')?.querySelectorAll('a')
     const labels = Array.from(links ?? []).map(a => a.textContent?.trim())
-    expect(labels).toEqual(['Dashboard', 'Students', 'Courses', 'Lessons', 'Settings'])
+    expect(labels).toEqual(['Dashboard', 'Students', 'Sessions', 'Courses', 'Lessons', 'Settings'])
+  })
+
+  it('renders Sessions nav item linking to /sessions', () => {
+    renderShell()
+    const sessionsLinks = screen.getAllByRole('link', { name: /^sessions$/i })
+    expect(sessionsLinks.length).toBeGreaterThanOrEqual(1)
+    expect(sessionsLinks[0]).toHaveAttribute('href', '/sessions')
   })
 
   it('does not render a My Profile nav item', () => {

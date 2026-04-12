@@ -1,4 +1,5 @@
 using LangTeach.Api.Data;
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
@@ -89,6 +90,71 @@ public class DashboardService : IDashboardService
             PlannedContent: sl.PlannedContent,
             Status: sl.Status.ToString()
         )).ToList();
+    }
+
+    public async Task<SessionsListDto> GetSessionsListAsync(Guid teacherId, Guid? studentId, CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var today = now.Date;
+        var recentCutoff = today.AddDays(-7);
+
+        IQueryable<SessionLog> baseQuery = _db.SessionLogs
+            .Where(sl => sl.TeacherId == teacherId
+                      && !sl.IsDeleted
+                      && sl.SessionDate.HasValue)
+            .Include(sl => sl.Student);
+
+        if (studentId.HasValue)
+            baseQuery = baseQuery.Where(sl => sl.StudentId == studentId.Value);
+
+        var upcoming = await baseQuery
+            .Where(sl => !sl.IsCancelled && sl.SessionDate!.Value > now)
+            .OrderBy(sl => sl.SessionDate)
+            .Select(sl => new SessionListItemDto(
+                sl.Id,
+                sl.StudentId,
+                sl.Student.Name,
+                sl.Student.CefrLevel,
+                sl.SessionDate!.Value,
+                sl.PlannedContent,
+                sl.IsCancelled ? "Cancelled" : sl.Status.ToString()))
+            .ToListAsync(cancellationToken);
+
+        var today_sessions = await baseQuery
+            .Where(sl => sl.SessionDate!.Value.Date == today)
+            .OrderBy(sl => sl.SessionDate)
+            .Select(sl => new SessionListItemDto(
+                sl.Id,
+                sl.StudentId,
+                sl.Student.Name,
+                sl.Student.CefrLevel,
+                sl.SessionDate!.Value,
+                sl.PlannedContent,
+                sl.IsCancelled ? "Cancelled" : sl.Status.ToString()))
+            .ToListAsync(cancellationToken);
+
+        var recent = await baseQuery
+            .Where(sl => !sl.IsCancelled
+                      && sl.SessionDate!.Value >= recentCutoff
+                      && sl.SessionDate!.Value.Date < today)
+            .OrderByDescending(sl => sl.SessionDate)
+            .Select(sl => new SessionListItemDto(
+                sl.Id,
+                sl.StudentId,
+                sl.Student.Name,
+                sl.Student.CefrLevel,
+                sl.SessionDate!.Value,
+                sl.PlannedContent,
+                sl.IsCancelled ? "Cancelled" : sl.Status.ToString()))
+            .ToListAsync(cancellationToken);
+
+        var students = await _db.Students
+            .Where(s => s.TeacherId == teacherId && !s.IsDeleted)
+            .OrderBy(s => s.Name)
+            .Select(s => new SessionFilterStudentDto(s.Id, s.Name, s.CefrLevel))
+            .ToListAsync(cancellationToken);
+
+        return new SessionsListDto(upcoming, today_sessions, recent, students);
     }
 
     private async Task<List<ActiveStudentDto>> GetActiveStudentsAsync(Guid teacherId, DateTime now, CancellationToken cancellationToken)

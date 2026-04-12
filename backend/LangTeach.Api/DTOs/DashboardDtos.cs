@@ -1,5 +1,24 @@
 namespace LangTeach.Api.DTOs;
 
+public record SessionListItemDto(
+    Guid SessionLogId,
+    Guid StudentId,
+    string StudentName,
+    string StudentCefrLevel,
+    DateTime SessionDate,
+    string? PlannedContent,
+    string Status
+);
+
+public record SessionFilterStudentDto(Guid StudentId, string Name, string CefrLevel);
+
+public record SessionsListDto(
+    List<SessionListItemDto> Upcoming,
+    List<SessionListItemDto> Today,
+    List<SessionListItemDto> Recent,
+    List<SessionFilterStudentDto> Students
+);
+
 public record NextSessionDto(
     Guid SessionLogId,
     Guid StudentId,

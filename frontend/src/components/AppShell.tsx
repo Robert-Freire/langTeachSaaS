@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
-import { LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Menu } from 'lucide-react'
+import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings, LogOut, Menu } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import LangTeachLogo from '@/components/LangTeachLogo'
@@ -12,6 +12,7 @@ import { UsageIndicator } from '@/components/UsageIndicator'
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/students', label: 'Students', icon: Users },
+  { to: '/sessions', label: 'Sessions', icon: CalendarDays },
   { to: '/courses', label: 'Courses', icon: GraduationCap },
   { to: '/lessons', label: 'Lessons', icon: BookOpen },
   { to: '/settings', label: 'Settings', icon: Settings },
