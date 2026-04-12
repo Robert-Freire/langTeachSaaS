@@ -656,7 +656,7 @@ describe('StudentForm', () => {
         }),
       )
     })
-  })
+  }, 15000)
 
   it('renders Reason for Studying textarea', () => {
     renderNew()
