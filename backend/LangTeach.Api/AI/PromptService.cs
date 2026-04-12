@@ -1445,6 +1445,21 @@ public class PromptService : IPromptService
         var teacherText = ctx.TeacherText;
         var competencies = string.Join(", ", _pedagogy.GetValidDifficultyCompetencies().OrderBy(x => x));
         var severities = string.Join(" | ", _pedagogy.GetValidDifficultySeverities().OrderBy(x => x));
+
+        var safeKnownDifficulties = ctx.KnownDifficulties?
+            .Select(InputSanitizer.Sanitize)
+            .Where(d => !string.IsNullOrWhiteSpace(d))
+            .ToArray();
+
+        var difficultiesSection = safeKnownDifficulties is { Length: > 0 }
+            ? $"""
+
+            Student's known difficulties (for difficultiesWorkedOn cross-referencing):
+            {string.Join("\n", safeKnownDifficulties.Select(d => $"- {d}"))}
+            Include in difficultiesWorkedOn any difficulty from this list that the teacher explicitly mentions working on in this session.
+            """
+            : string.Empty;
+
         var system = $"""
             You are a tool that helps language teachers structure their post-class notes.
             Extract structured information from a teacher's free-form reflection text.
@@ -1452,6 +1467,10 @@ public class PromptService : IPromptService
             IMPORTANT: Preserve the original language of the teacher's text. Do not translate any field value into another language.
 
             Today is {today.DayOfWeek}, {today:yyyy-MM-dd}.
+            {difficultiesSection}
+            TeachingTodo vs TeacherFollowup distinction:
+            - teachingTodos: pedagogical ideas the teacher intends to work on WITH the student in future sessions. Signal: "Tengo que trabajar X con el/ella", "Hay que practicar X".
+            - teacherFollowups: operational actions the teacher owes the student (send, share, confirm). Signal: "Le tengo que mandar/enviar/dar X", "Prometí enviar X".
 
             Respond ONLY with a valid JSON object using these exact keys:
             - whatWasCovered: string or null
@@ -1462,6 +1481,14 @@ public class PromptService : IPromptService
             - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) of the session being described. Resolve date references using today's date and day of week: "hoy"/"today" = today, "ayer"/"yesterday" = yesterday, "el lunes pasado"/"el pasado lunes" = the most recent Monday before today (not the Monday of this week if today is Monday), "el martes pasado"/"el pasado martes" = the most recent Tuesday before today, and so on for any weekday. Always pick the last occurrence of the named weekday strictly before today. Null if no date is mentioned.
             - sessionTitle: string or null — a concise title (under 60 chars) for this session derived from what was covered. Examples: "Subjunctive in time clauses", "Pasado compuesto — revisión". Null if no content is mentioned.
             - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
+            - topicTags: array of objects with "tag" (string) and "category" (string or null) — topics, grammar structures, vocabulary areas covered. Each tag as a concise noun phrase. Empty array if none mentioned.
+            - previousHomeworkStatus: "Done" | "Partial" | "NotDone" | null — whether the student completed homework from the previous session. Null if not mentioned.
+            - teachingTodos: array of strings — pedagogical ideas for future sessions (see distinction above). Empty array if none.
+            - teacherFollowups: array of strings — operational actions owed by the teacher (see distinction above). Empty array if none.
+            - levelReassessment: CEFR level string (e.g. "B1", "B2+") or null — if the teacher mentions reassessing or updating the student's level. Null if not mentioned.
+            - durationMinutes: integer or null — session duration in minutes. Null if not mentioned.
+            - isCancelled: true | false | null — true only if the session was cancelled or the student did not show up. Null if not mentioned.
+            - difficultiesWorkedOn: array of strings — copy verbatim from the student's known difficulties list any difficulty that was explicitly worked on in this session. Empty array if none or if no known difficulties were provided.
 
             For suggestedDifficulties, each object must have:
             - description: full sentence describing the difficulty, extracted verbatim from the teacher's language
@@ -1474,7 +1501,7 @@ public class PromptService : IPromptService
             Respond with JSON only, no markdown, no explanation.
             """;
 
-        return new ClaudeRequest(SystemPrompt: system, UserPrompt: teacherText, Model: ClaudeModel.Haiku, MaxTokens: 1024);
+        return new ClaudeRequest(SystemPrompt: system, UserPrompt: teacherText, Model: ClaudeModel.Haiku, MaxTokens: 2048);
     }
 
     // --- Replan suggestion ---

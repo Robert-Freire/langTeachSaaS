@@ -77,7 +77,7 @@ public record SessionHistoryContext(
     string? LearningStyleNotes
 );
 
-public record ReflectionExtractionContext(DateOnly Today, string TeacherText);
+public record ReflectionExtractionContext(DateOnly Today, string TeacherText, IReadOnlyList<string>? KnownDifficulties = null);
 
 public record TaughtEntryContext(string Topic, string? GrammarFocus, string? WhatWasCovered, string? AreasToImprove);
 public record PlannedEntryContext(Guid Id, int OrderIndex, string Topic, string? GrammarFocus);

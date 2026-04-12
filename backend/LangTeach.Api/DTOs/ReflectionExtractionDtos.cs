@@ -16,6 +16,8 @@ public record SuggestedDifficultyDto(
     string Severity
 );
 
+public record TopicTagDto(string Tag, string? Category);
+
 public record ExtractedReflectionDto(
     string? WhatWasCovered,
     string? AreasToImprove,
@@ -25,5 +27,13 @@ public record ExtractedReflectionDto(
     string? SessionDate,
     List<SuggestedDifficultyDto> SuggestedDifficulties,
     string? RawExtractionJson,
-    string? SessionTitle
+    string? SessionTitle,
+    List<TopicTagDto> TopicTags,
+    string? PreviousHomeworkStatus,
+    List<string> TeachingTodos,
+    List<string> TeacherFollowups,
+    string? LevelReassessment,
+    int? DurationMinutes,
+    bool? IsCancelled,
+    List<string> DifficultiesWorkedOn
 );

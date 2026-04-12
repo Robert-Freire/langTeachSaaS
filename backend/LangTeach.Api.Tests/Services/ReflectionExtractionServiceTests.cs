@@ -7,6 +7,12 @@ namespace LangTeach.Api.Tests.Services;
 
 // FakePromptService, ConfigurableClaudeClient are defined in CurriculumGenerationServiceTests.cs (internal scope)
 
+file sealed class NullContentSchemas : IContentSchemaService
+{
+    public static readonly NullContentSchemas Instance = new();
+    public string? GetSchema(string contentType) => null;
+}
+
 file sealed class ReflectionClaudeClient : IClaudeClient
 {
     private readonly Func<ClaudeRequest, ClaudeResponse>? _handler;
@@ -359,7 +365,7 @@ public class ReflectionExtractionServiceTests
             PedagogyService,
             NullLogger<ReflectionExtractionService>.Instance);
 
-        var result = await sut.ExtractAsync("Hoy trabajamos los verbos", CancellationToken.None);
+        var result = await sut.ExtractAsync("Hoy trabajamos los verbos", ct: CancellationToken.None);
 
         result.RawExtractionJson.Should().Be(rawJson);
     }
@@ -395,5 +401,174 @@ public class ReflectionExtractionServiceTests
         var result = sut.ParseResponse(json);
 
         result.SessionTitle.Should().BeNull();
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsTopicTags()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "topicTags": [
+                {"tag": "Subjuntivo presente", "category": "Grammar"},
+                {"tag": "Vocabulario de restaurante"}
+              ]
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.TopicTags.Should().HaveCount(2);
+        result.TopicTags[0].Tag.Should().Be("Subjuntivo presente");
+        result.TopicTags[0].Category.Should().Be("Grammar");
+        result.TopicTags[1].Tag.Should().Be("Vocabulario de restaurante");
+        result.TopicTags[1].Category.Should().BeNull();
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsTopicTags_EmptyWhenAbsent()
+    {
+        var sut = CreateSut("{}");
+        var result = sut.ParseResponse("""{"suggestedDifficulties":[]}""");
+        result.TopicTags.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("Done")]
+    [InlineData("Partial")]
+    [InlineData("NotDone")]
+    public void ParseResponse_ExtractsPreviousHomeworkStatus_ValidValues(string status)
+    {
+        var sut = CreateSut("{}");
+        var json = $$"""{"suggestedDifficulties":[],"previousHomeworkStatus":"{{status}}"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.PreviousHomeworkStatus.Should().Be(status);
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsPreviousHomeworkStatus_InvalidValue_ReturnsNull()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"suggestedDifficulties":[],"previousHomeworkStatus":"maybe"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.PreviousHomeworkStatus.Should().BeNull();
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsTeachingTodos()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "teachingTodos": ["Trabajar conectores adversativos", "Practicar el subjuntivo en concesivas"]
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.TeachingTodos.Should().BeEquivalentTo(["Trabajar conectores adversativos", "Practicar el subjuntivo en concesivas"]);
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsTeacherFollowups()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "teacherFollowups": ["Enviar el PDF de conectores", "Mandar el audio de la clase"]
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.TeacherFollowups.Should().BeEquivalentTo(["Enviar el PDF de conectores", "Mandar el audio de la clase"]);
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsLevelReassessmentDurationIsCancelled()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "levelReassessment": "B2",
+              "durationMinutes": 60,
+              "isCancelled": true
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.LevelReassessment.Should().Be("B2");
+        result.DurationMinutes.Should().Be(60);
+        result.IsCancelled.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("B1", "B1")]
+    [InlineData("A2+", "A2+")]
+    [InlineData("C1", "C1")]
+    [InlineData("Intermediate", null)]
+    [InlineData("B3", null)]
+    [InlineData("", null)]
+    public void ParseResponse_ValidatesCefrLevelReassessment(string input, string? expected)
+    {
+        var sut = CreateSut("{}");
+        var json = $$"""{"suggestedDifficulties":[],"levelReassessment":"{{input}}"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.LevelReassessment.Should().Be(expected);
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsDifficultiesWorkedOn()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "difficultiesWorkedOn": ["Subjuntivo en oraciones temporales", "Ser vs Estar"]
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.DifficultiesWorkedOn.Should().BeEquivalentTo(["Subjuntivo en oraciones temporales", "Ser vs Estar"]);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_PassesDifficultiesToContext()
+    {
+        var difficulties = new List<string> { "Subjuntivo en concesivas", "Ser vs Estar" };
+        ClaudeRequest? captured = null;
+        var client = new ReflectionClaudeClient(req =>
+        {
+            captured = req;
+            return new ClaudeResponse("""{"suggestedDifficulties":[],"topicTags":[],"teachingTodos":[],"teacherFollowups":[],"difficultiesWorkedOn":[]}""", "claude-haiku", 10, 50);
+        });
+        var realPrompts = new PromptService(
+            new SectionProfileService(NullLogger<SectionProfileService>.Instance),
+            PedagogyService,
+            NullLogger<PromptService>.Instance,
+            NullContentSchemas.Instance);
+        var sut = new ReflectionExtractionService(
+            client,
+            realPrompts,
+            PedagogyService,
+            NullLogger<ReflectionExtractionService>.Instance);
+
+        await sut.ExtractAsync("text", difficulties);
+
+        captured.Should().NotBeNull();
+        captured!.SystemPrompt.Should().Contain("Subjuntivo en concesivas");
+        captured.SystemPrompt.Should().Contain("Ser vs Estar");
     }
 }

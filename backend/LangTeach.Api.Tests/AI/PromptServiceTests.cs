@@ -3198,6 +3198,43 @@ public class PromptServiceTests
         request.UserPrompt.Should().Be(teacherText);
     }
 
+    [Fact]
+    public void BuildReflectionExtractionPrompt_ContainsNewFieldsInSchema()
+    {
+        var today = new DateOnly(2026, 4, 11);
+        var request = _sut.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(today, "notes"));
+
+        request.SystemPrompt.Should().Contain("topicTags");
+        request.SystemPrompt.Should().Contain("previousHomeworkStatus");
+        request.SystemPrompt.Should().Contain("teachingTodos");
+        request.SystemPrompt.Should().Contain("teacherFollowups");
+        request.SystemPrompt.Should().Contain("levelReassessment");
+        request.SystemPrompt.Should().Contain("durationMinutes");
+        request.SystemPrompt.Should().Contain("isCancelled");
+        request.SystemPrompt.Should().Contain("difficultiesWorkedOn");
+    }
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_IncludesKnownDifficulties_WhenProvided()
+    {
+        var today = new DateOnly(2026, 4, 11);
+        var difficulties = new List<string> { "Subjuntivo en concesivas", "Ser vs Estar" };
+        var request = _sut.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(today, "notes", difficulties));
+
+        request.SystemPrompt.Should().Contain("Subjuntivo en concesivas");
+        request.SystemPrompt.Should().Contain("Ser vs Estar");
+        request.SystemPrompt.Should().Contain("Student's known difficulties");
+    }
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_OmitsDifficultiesSection_WhenNone()
+    {
+        var today = new DateOnly(2026, 4, 11);
+        var request = _sut.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(today, "notes"));
+
+        request.SystemPrompt.Should().NotContain("Student's known difficulties");
+    }
+
     // --- BuildReplanSuggestionPrompt ---
 
     [Fact]
