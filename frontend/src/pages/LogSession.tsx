@@ -41,7 +41,8 @@ const CEFR_SUBLEVELS = [
 ]
 
 function todayISO(): string {
-  return new Date().toISOString().split('T')[0]
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
 
 function getInitials(name: string): string {
@@ -73,7 +74,7 @@ export default function LogSession() {
   const [durationChoice, setDurationChoice] = useState('60')
   const [durationOther, setDurationOther] = useState('')
   const [isCancelled, setIsCancelled] = useState(false)
-  const [prevHomeworkStatus, setPrevHomeworkStatus] = useState('NotApplicable')
+  const [prevHomeworkStatus, setPrevHomeworkStatus] = useState<string | null>(null)
   const [actualContent, setActualContent] = useState('')
   const [homeworkAssigned, setHomeworkAssigned] = useState('')
   const [nextSessionTopics, setNextSessionTopics] = useState('')
@@ -125,7 +126,7 @@ export default function LogSession() {
   })
 
   const studentLessons = lessonsData?.items ?? []
-  const prevSession = sessions[0] ?? null
+  const prevSession = sessions.find(s => !s.isCancelled) ?? null
   const sessionNumber = sessions.filter(s => !s.isCancelled).length + 1
   const pendingFollowups = allFollowups.filter(f => f.status === 'pending')
   const activeDifficulties = student?.difficulties.filter(d => d.status === 'Active') ?? []
@@ -155,6 +156,9 @@ export default function LogSession() {
     if (!isCancelled && !actualContent.trim()) {
       errs.actualContent = 'Please describe what happened in the session.'
     }
+    if (!isCancelled && showPrevHomework && prevHomeworkStatus === null) {
+      errs.prevHomeworkStatus = 'Please indicate whether the previous homework was done.'
+    }
     if (reassessmentEnabled && !reassessmentLevel.trim()) {
       errs.reassessmentLevel = 'Select a CEFR sub-level for reassessment.'
     }
@@ -182,7 +186,7 @@ export default function LogSession() {
         actualContent: isCancelled ? null : (actualContent || null),
         plannedContent: plannedForToday || null,
         homeworkAssigned: isCancelled ? null : (homeworkAssigned || null),
-        previousHomeworkStatus: prevHomeworkStatus,
+        previousHomeworkStatus: prevHomeworkStatus ?? 'NotApplicable',
         nextSessionTopics: isCancelled ? null : (nextSessionTopics || null),
         generalNotes: generalNotes || null,
         levelReassessmentSkill: reassessmentEnabled ? 'General' : null,
@@ -196,16 +200,19 @@ export default function LogSession() {
       })
 
       // Run all side effects in parallel (best-effort, do not block navigation)
-      await Promise.allSettled([
-        ...[...checkedTodoIds].map(todoId =>
-          updateTeachingTodo(id, todoId, { status: 'Covered', coveredInSessionLogId: session.id })
-        ),
-        ...[...checkedFollowupIds].map(followupId =>
-          updateFollowupStatus(followupId, 'done')
-        ),
-        ...newTodos.map(text => appendTeachingTodo(id, text)),
-        ...newFollowups.map(text => createFollowup({ text, studentId: id, sourceSessionLogId: session.id })),
-      ])
+      // Skip todo/followup mutations for cancelled sessions - the session never happened
+      if (!isCancelled) {
+        await Promise.allSettled([
+          ...[...checkedTodoIds].map(todoId =>
+            updateTeachingTodo(id, todoId, { status: 'Covered', coveredInSessionLogId: session.id })
+          ),
+          ...[...checkedFollowupIds].map(followupId =>
+            updateFollowupStatus(followupId, 'done')
+          ),
+          ...newTodos.map(text => appendTeachingTodo(id, text)),
+          ...newFollowups.map(text => createFollowup({ text, studentId: id, sourceSessionLogId: session.id })),
+        ])
+      }
 
       queryClient.invalidateQueries({ queryKey: ['sessions', id] })
       queryClient.invalidateQueries({ queryKey: ['student', id] })
@@ -745,12 +752,15 @@ export default function LogSession() {
               <Label htmlFor="linked-lesson" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                 Link to Lesson Plan (optional)
               </Label>
-              <Select value={selectedLessonId} onValueChange={(v) => setSelectedLessonId(v ?? selectedLessonId)}>
+              <Select
+                value={selectedLessonId || '__none__'}
+                onValueChange={(v) => setSelectedLessonId(v === '__none__' ? '' : (v ?? selectedLessonId))}
+              >
                 <SelectTrigger id="linked-lesson" className="text-sm bg-white" data-testid="linked-lesson">
                   <SelectValue placeholder="Search lessons..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="__none__">None</SelectItem>
                   {studentLessons.map(l => (
                     <SelectItem key={l.id} value={l.id}>{l.title}</SelectItem>
                   ))}

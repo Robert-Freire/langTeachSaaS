@@ -43,7 +43,8 @@ test('@visual log session page - empty state (no sessions)', async ({ browser })
 
   await page.goto(`/students/${emptyStudentId}/log-session`)
   await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
-  await expect(page.getByTestId('student-name')).toBeVisible({ timeout: UI_TIMEOUT })
+  // session-number is rendered after the sessions query resolves (shows "Session #1" for empty state)
+  await expect(page.getByTestId('session-number')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/log-session-empty.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
@@ -59,7 +60,8 @@ test('@visual log session page - with previous session context', async ({ browse
 
   await page.goto(`/students/${studentWithSessionsId}/log-session`)
   await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
-  await expect(page.getByTestId('student-name')).toBeVisible({ timeout: UI_TIMEOUT })
+  // session-number appears after sessions load; for Diego Seed this will show "Session #3"
+  await expect(page.getByTestId('session-number')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/log-session-with-context.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
@@ -75,7 +77,7 @@ test('@visual log session page - cancelled toggle', async ({ browser }) => {
 
   await page.goto(`/students/${emptyStudentId}/log-session`)
   await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
-  await expect(page.getByTestId('cancelled-toggle')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('session-number')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.getByTestId('cancelled-toggle').click()
   await expect(page.getByTestId('actual-content')).not.toBeVisible({ timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/log-session-cancelled.png', fullPage: true })
