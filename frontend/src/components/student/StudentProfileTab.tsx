@@ -14,7 +14,7 @@ interface Props {
   student: Student
   followups?: TeacherFollowup[]
   onFollowupChange?: () => void
-  onStudentChange?: () => void
+  onStudentChange: () => void
   onToggleDifficultyStatus?: (id: string, status: 'Active' | 'Covered') => void
   onSaveReasonForStudying?: (value: string) => Promise<void>
   onSaveInterests?: (value: string[]) => Promise<void>
@@ -593,7 +593,7 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
             <TeachingTodosCard
               todos={student.teachingTodos}
               studentId={student.id}
-              onStudentChange={onStudentChange ?? (() => {})}
+              onStudentChange={onStudentChange}
             />
           </section>
 

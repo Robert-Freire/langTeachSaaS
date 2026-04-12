@@ -166,6 +166,7 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
             const isDismissed = todo.status === 'Dismissed'
             const isInactive = isCovered || isDismissed
             const isEditing = editingId === todo.id
+            const isOptimistic = '_temp' in todo
 
             return (
               <li
@@ -176,7 +177,7 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
                 {/* Checkbox / status toggle */}
                 <button
                   type="button"
-                  onClick={() => handleToggle(todo)}
+                  onClick={() => !isOptimistic && handleToggle(todo)}
                   aria-label={isCovered ? 'Mark pending' : 'Mark covered'}
                   data-testid={`todo-toggle-${todo.id}`}
                   className={`mt-0.5 shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
@@ -211,8 +212,8 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
                     <span
                       className={`text-sm leading-snug ${
                         isInactive ? 'line-through text-zinc-400' : 'text-[#1A1B22]'
-                      } ${allowEdit ? 'cursor-text hover:text-indigo-700' : ''}`}
-                      onClick={() => allowEdit && startEdit(todo)}
+                      } ${allowEdit && !isOptimistic ? 'cursor-text hover:text-indigo-700' : ''}`}
+                      onClick={() => allowEdit && !isOptimistic && startEdit(todo)}
                       data-testid={`todo-text-${todo.id}`}
                     >
                       {todo.text}
@@ -223,8 +224,8 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
                   </span>
                 </div>
 
-                {/* Delete button (allowEdit only) */}
-                {allowEdit && !isEditing && (
+                {/* Delete button (allowEdit only, not for provisional optimistic items) */}
+                {allowEdit && !isEditing && !isOptimistic && (
                   <button
                     type="button"
                     onClick={() => deleteMutation.mutate(todo.id)}

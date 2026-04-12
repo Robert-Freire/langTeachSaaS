@@ -10,7 +10,7 @@ interface Props {
   student: Student
   followups?: TeacherFollowup[]
   onFollowupChange?: () => void
-  onStudentChange?: () => void
+  onStudentChange: () => void
 }
 
 
@@ -115,7 +115,7 @@ export function StudentOverviewTab({ student, followups = [], onFollowupChange, 
           <TeachingTodosCard
             todos={student.teachingTodos}
             studentId={student.id}
-            onStudentChange={onStudentChange ?? (() => {})}
+            onStudentChange={onStudentChange}
           />
         </div>
 

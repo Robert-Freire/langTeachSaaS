@@ -630,7 +630,7 @@ test('teaching todos: add, toggle covered, verify ordering on overview tab', asy
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'B1' }).click()
   await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
 
   // Verify we're on the overview tab (default)
   await expect(page.getByTestId('tab-overview')).toHaveAttribute('aria-selected', 'true', { timeout: 5000 })
@@ -654,16 +654,16 @@ test('teaching todos: add, toggle covered, verify ordering on overview tab', asy
   await page.getByTestId('todo-add-btn').click()
   await expect(page.getByTestId('teaching-todo-item')).toHaveCount(2, { timeout: 5000 })
 
-  // Mark the first todo as covered
-  const items = page.getByTestId('teaching-todo-item')
-  const firstItem = items.first()
-  const todoText = await firstItem.getByTestId(/^todo-text-/).textContent()
-  const todoId = (await firstItem.getByTestId(/^todo-toggle-/).getAttribute('data-testid'))?.replace('todo-toggle-', '')
+  // Mark the first todo as covered — capture id before any reorder so locators stay stable
+  const toggleTestId = await page.getByTestId('teaching-todo-item').first().getByTestId(/^todo-toggle-/).getAttribute('data-testid')
+  expect(toggleTestId).toBeTruthy()
+  const todoId = toggleTestId!.replace('todo-toggle-', '')
+  const todoText = await page.getByTestId(`todo-text-${todoId}`).textContent()
 
-  await firstItem.getByTestId(`todo-toggle-${todoId}`).click()
+  await page.getByTestId(`todo-toggle-${todoId}`).click()
 
   // Wait for covered state (strikethrough)
-  await expect(firstItem.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: 5000 })
+  await expect(page.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: 5000 })
 
   // Verify ordering: pending todo should appear before covered
   const reorderedItems = page.getByTestId('teaching-todo-item')

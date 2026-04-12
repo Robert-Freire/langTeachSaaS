@@ -79,7 +79,7 @@ export default function StudentForm() {
     queryFn: () => getStudent(id!),
     enabled: isEdit && !!id,
   })
-  const sidebarTodos = sidebarStudent?.teachingTodos ?? []
+  const sidebarTodos = sidebarStudent?.teachingTodos ?? existing?.teachingTodos ?? []
   const onSidebarTodoChange = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['student', id] })
   }, [queryClient, id])
