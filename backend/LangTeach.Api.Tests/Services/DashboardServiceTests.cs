@@ -285,4 +285,158 @@ public class DashboardServiceTests : IDisposable
 
         result.ActiveStudents[0].CancelledSessionsLast30Days.Should().Be(0);
     }
+
+    // GetSessionsListAsync tests
+
+    [Fact]
+    public async Task GetSessionsListAsync_NoSessions_ReturnsEmptySectionsAndStudentList()
+    {
+        var result = await _sut.GetSessionsListAsync(_teacherId, null);
+
+        result.Upcoming.Should().BeEmpty();
+        result.Today.Should().BeEmpty();
+        result.Recent.Should().BeEmpty();
+        result.Students.Should().HaveCount(1);
+        result.Students[0].Name.Should().Be("Ana García");
+    }
+
+    [Fact]
+    public async Task GetSessionsListAsync_FutureSession_AppearsInUpcoming()
+    {
+        var future = DateTime.UtcNow.AddDays(2);
+        _db.SessionLogs.Add(MakeSession(_studentId, future, plannedContent: "Subjunctive"));
+        _db.SaveChanges();
+
+        var result = await _sut.GetSessionsListAsync(_teacherId, null);
+
+        result.Upcoming.Should().HaveCount(1);
+        result.Upcoming[0].StudentId.Should().Be(_studentId);
+        result.Upcoming[0].StudentCefrLevel.Should().Be("B1");
+        result.Upcoming[0].PlannedContent.Should().Be("Subjunctive");
+        result.Upcoming[0].Status.Should().Be("Confirmed");
+        result.Today.Should().BeEmpty();
+        result.Recent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetSessionsListAsync_CancelledFutureSession_ExcludedFromUpcoming()
+    {
+        var future = DateTime.UtcNow.AddDays(2);
+        _db.SessionLogs.Add(MakeSession(_studentId, future, isCancelled: true));
+        _db.SaveChanges();
+
+        var result = await _sut.GetSessionsListAsync(_teacherId, null);
+
+        result.Upcoming.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetSessionsListAsync_TodaySession_AppearsInToday()
+    {
+        var todayMidMorning = DateTime.UtcNow.Date.AddHours(10);
+        _db.SessionLogs.Add(MakeSession(_studentId, todayMidMorning));
+        _db.SaveChanges();
+
+        var result = await _sut.GetSessionsListAsync(_teacherId, null);
+
+        result.Today.Should().HaveCount(1);
+        result.Today[0].StudentId.Should().Be(_studentId);
+        result.Upcoming.Should().BeEmpty();
+        result.Recent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetSessionsListAsync_LaterTodaySession_AppearsOnlyInToday_NotUpcoming()
+    {
+        // Sessions later today should be in Today, not Upcoming (buckets must be disjoint)
+        var laterToday = DateTime.UtcNow.Date.AddHours(22);
+        _db.SessionLogs.Add(MakeSession(_studentId, laterToday));
+        _db.SaveChanges();
+
+        var result = await _sut.GetSessionsListAsync(_teacherId, null);
+
+        result.Today.Should().HaveCount(1);
+        result.Upcoming.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetSessionsListAsync_SoftDeletedStudent_ExcludedFromSections()
+    {
+        var deletedStudentId = Guid.NewGuid();
+        _db.Students.Add(new Student
+        {
+            Id = deletedStudentId,
+            TeacherId = _teacherId,
+            Name = "Deleted Student",
+            LearningLanguage = "Spanish",
+            CefrLevel = "B2",
+            NativeLanguages = "[]",
+            TeachingTodos = "[]",
+            IsActive = false,
+            IsDeleted = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        });
+        _db.SessionLogs.Add(MakeSession(deletedStudentId, DateTime.UtcNow.AddDays(2)));
+        _db.SaveChanges();
+
+        var result = await _sut.GetSessionsListAsync(_teacherId, null);
+
+        result.Upcoming.Should().BeEmpty();
+        result.Students.Should().NotContain(s => s.Name == "Deleted Student");
+    }
+
+    [Fact]
+    public async Task GetSessionsListAsync_PastSessionWithin7Days_AppearsInRecent()
+    {
+        var recent = DateTime.UtcNow.AddDays(-3);
+        _db.SessionLogs.Add(MakeSession(_studentId, recent));
+        _db.SaveChanges();
+
+        var result = await _sut.GetSessionsListAsync(_teacherId, null);
+
+        result.Recent.Should().HaveCount(1);
+        result.Recent[0].StudentId.Should().Be(_studentId);
+        result.Upcoming.Should().BeEmpty();
+        result.Today.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetSessionsListAsync_SessionOlderThan7Days_ExcludedFromRecent()
+    {
+        var old = DateTime.UtcNow.AddDays(-10);
+        _db.SessionLogs.Add(MakeSession(_studentId, old));
+        _db.SaveChanges();
+
+        var result = await _sut.GetSessionsListAsync(_teacherId, null);
+
+        result.Recent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetSessionsListAsync_StudentIdFilter_NarrowsAllSections()
+    {
+        var otherId = Guid.NewGuid();
+        _db.Students.Add(new Student
+        {
+            Id = otherId,
+            TeacherId = _teacherId,
+            Name = "Other Student",
+            LearningLanguage = "Spanish",
+            CefrLevel = "A2",
+            NativeLanguages = "[]",
+            TeachingTodos = "[]",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        });
+        _db.SessionLogs.Add(MakeSession(_studentId, DateTime.UtcNow.AddDays(2)));
+        _db.SessionLogs.Add(MakeSession(otherId, DateTime.UtcNow.AddDays(3)));
+        _db.SaveChanges();
+
+        var result = await _sut.GetSessionsListAsync(_teacherId, _studentId);
+
+        result.Upcoming.Should().HaveCount(1);
+        result.Upcoming[0].StudentId.Should().Be(_studentId);
+    }
 }
