@@ -27,6 +27,7 @@ export interface SessionLog {
   statusName: 'Draft' | 'Confirmed'
   mentionedDifficultyPairs: string
   suggestedDifficulties: string
+  duration: number | null
 }
 
 export interface SuggestedDifficulty {
@@ -66,6 +67,7 @@ export interface CreateSessionLogRequest {
   voiceNoteId?: string
   voiceNoteTranscription?: string
   rawExtractionJson?: string
+  duration?: number | null
 }
 
 export type UpdateSessionLogRequest = CreateSessionLogRequest

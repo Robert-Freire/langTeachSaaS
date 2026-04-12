@@ -159,7 +159,7 @@ export async function appendTeachingTodo(studentId: string, text: string): Promi
 export async function updateTeachingTodo(
   studentId: string,
   todoId: string,
-  update: { status: string; text?: string }
+  update: { status: string; text?: string; coveredInSessionLogId?: string | null }
 ): Promise<Student> {
   const res = await apiClient.patch<Student>(`/api/students/${studentId}/teaching-todos/${todoId}`, update)
   return res.data
