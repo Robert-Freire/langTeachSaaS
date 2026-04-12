@@ -103,6 +103,7 @@ function renderProfile(
       <MemoryRouter>
         <StudentProfileTab
           student={student}
+          onStudentChange={() => {}}
           onToggleDifficultyStatus={opts?.onToggle}
           onSaveReasonForStudying={opts?.onSaveReason}
           onSaveInterests={opts?.onSaveInterests}
@@ -377,7 +378,7 @@ describe('StudentProfileTab', () => {
       render(
         <QueryClientProvider client={qc}>
           <MemoryRouter>
-            <StudentProfileTab student={FULL_STUDENT} followups={[FOLLOWUP]} onFollowupChange={vi.fn()} />
+            <StudentProfileTab student={FULL_STUDENT} followups={[FOLLOWUP]} onFollowupChange={vi.fn()} onStudentChange={() => {}} />
           </MemoryRouter>
         </QueryClientProvider>
       )
