@@ -30,7 +30,8 @@ public record SessionLogDto(
     string MentionedDifficultyPairs,
     string SuggestedDifficulties,
     int? Duration,
-    string? Title
+    string? Title,
+    bool HasVoiceNote
 );
 
 public class CreateSessionLogRequest

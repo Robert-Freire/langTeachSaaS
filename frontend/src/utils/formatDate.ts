@@ -41,3 +41,8 @@ export function formatMonthYear(iso: string): string {
 export function formatDateLong(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 }
+
+/** Month and day only: "Apr 5" */
+export function formatMonthDay(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}

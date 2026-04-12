@@ -41,7 +41,7 @@ test('@visual session history tab - collapsed entries', async ({ browser }) => {
 
   await page.goto(`/students/${diegoId}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByRole('tab', { name: /sessions/i }).click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
   await expect(page.getByTestId('session-entry').first()).toBeVisible()
 
@@ -58,7 +58,7 @@ test('@visual session history tab - expanded entry (no duplication)', async ({ b
 
   await page.goto(`/students/${diegoId}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByRole('tab', { name: /sessions/i }).click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Expand the first (most recent) session entry
@@ -119,7 +119,7 @@ test('@visual session history tab - edit dialog pre-populated', async ({ browser
 
   await page.goto(`/students/${diegoId}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByRole('tab', { name: /sessions/i }).click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Expand the first session entry and open edit dialog
