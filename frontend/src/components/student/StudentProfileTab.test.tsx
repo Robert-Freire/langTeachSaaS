@@ -11,6 +11,16 @@ vi.mock('@/api/followups', () => ({
   updateFollowupStatus: vi.fn(),
 }))
 
+vi.mock('@/api/students', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/api/students')>()
+  return {
+    ...actual,
+    appendTeachingTodo: vi.fn(),
+    updateTeachingTodo: vi.fn(),
+    deleteTeachingTodo: vi.fn(),
+  }
+})
+
 function dateOffset(days: number): string {
   const d = new Date()
   d.setDate(d.getDate() + days)
@@ -95,6 +105,7 @@ function renderProfile(
       <MemoryRouter>
         <StudentProfileTab
           student={student}
+          onStudentChange={() => {}}
           onToggleDifficultyStatus={opts?.onToggle}
           onSaveReasonForStudying={opts?.onSaveReason}
           onSaveInterests={opts?.onSaveInterests}
@@ -406,7 +417,7 @@ describe('StudentProfileTab', () => {
       render(
         <QueryClientProvider client={qc}>
           <MemoryRouter>
-            <StudentProfileTab student={FULL_STUDENT} followups={[FOLLOWUP]} onFollowupChange={vi.fn()} />
+            <StudentProfileTab student={FULL_STUDENT} followups={[FOLLOWUP]} onFollowupChange={vi.fn()} onStudentChange={() => {}} />
           </MemoryRouter>
         </QueryClientProvider>
       )

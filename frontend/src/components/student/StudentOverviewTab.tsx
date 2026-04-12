@@ -10,6 +10,7 @@ interface Props {
   student: Student
   followups?: TeacherFollowup[]
   onFollowupChange?: () => void
+  onStudentChange: () => void
 }
 
 
@@ -96,7 +97,7 @@ function PrimaryObjectiveCard({ student }: { student: Student }) {
   )
 }
 
-export function StudentOverviewTab({ student, followups = [], onFollowupChange }: Props) {
+export function StudentOverviewTab({ student, followups = [], onFollowupChange, onStudentChange }: Props) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6" data-testid="student-overview-tab">
       {/* Main column (3/5) */}
@@ -111,7 +112,11 @@ export function StudentOverviewTab({ student, followups = [], onFollowupChange }
           style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
         >
           <SectionHeader>Teaching Todos</SectionHeader>
-          <TeachingTodosCard todos={student.teachingTodos} />
+          <TeachingTodosCard
+            todos={student.teachingTodos}
+            studentId={student.id}
+            onStudentChange={onStudentChange}
+          />
         </div>
 
         <div

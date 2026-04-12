@@ -20,6 +20,9 @@ vi.mock('../api/students', () => ({
   createStudent: (...args: unknown[]) => mockCreateStudent(...args),
   updateStudent: (...args: unknown[]) => mockUpdateStudent(...args),
   getStudents: (...args: unknown[]) => mockGetStudents(...args),
+  appendTeachingTodo: vi.fn(),
+  updateTeachingTodo: vi.fn(),
+  deleteTeachingTodo: vi.fn(),
 }))
 
 vi.mock('../lib/logger', () => ({
@@ -709,4 +712,29 @@ describe('StudentForm', () => {
     })
   })
 
+  it('shows teaching todos sidebar in edit mode', async () => {
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
+      interests: [], nativeLanguages: [], learningGoals: [], weaknesses: [], difficulties: [],
+      personalNotes: null, teachingNotes: null,
+      teachingTodos: [
+        { id: 't1', text: 'Review subjunctive', status: 'Pending', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, coveredInSessionLogId: null },
+      ],
+      shortTermObjectives: [], spokenLanguages: [],
+      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
+      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
+      officialCefrLevel: null, isActive: true, isCorporate: false, rate: null,
+      createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+    })
+    renderEdit()
+    expect(await screen.findByTestId('sidebar-teaching-todos')).toBeInTheDocument()
+    expect(await screen.findByText('Review subjunctive')).toBeInTheDocument()
+    // Delete button visible (allowEdit=true on sidebar)
+    expect(screen.getByTestId('todo-delete-t1')).toBeInTheDocument()
+  })
+
+  it('does not show teaching todos sidebar in create mode', () => {
+    renderNew()
+    expect(screen.queryByTestId('form-sidebar')).not.toBeInTheDocument()
+  })
 })
