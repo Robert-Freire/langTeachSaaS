@@ -9,3 +9,10 @@ export const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', '
 export const NATIVE_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Catalan', 'Other'] as const
 
 export const NATIVE_LANGUAGE_OPTIONS = NATIVE_LANGUAGES.map((lang) => ({ value: lang, label: lang }))
+
+/** ISO 639-1 code for each known language name. Used for display badges. */
+export const LANG_TO_CODE: Record<string, string> = {
+  English: 'EN', Spanish: 'ES', French: 'FR', German: 'DE',
+  Italian: 'IT', Portuguese: 'PT', Mandarin: 'ZH', Japanese: 'JA',
+  Arabic: 'AR', Catalan: 'CA', Other: '??',
+}

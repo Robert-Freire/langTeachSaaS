@@ -124,7 +124,7 @@ public class StudentService : IStudentService
             IsCorporate = request.IsCorporate,
             Rate = request.Rate,
             SpokenLanguages = Serialize(request.SpokenLanguages),
-            SkillLevelOverrides = SerializeDictionary(request.SkillLevelOverrides),
+            SkillLevelOverrides = JsonStorageHelper.Serialize(request.SkillLevelOverrides),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
@@ -179,7 +179,7 @@ public class StudentService : IStudentService
         student.IsCorporate = request.IsCorporate;
         student.Rate = request.Rate;
         student.SpokenLanguages = Serialize(request.SpokenLanguages);
-        student.SkillLevelOverrides = SerializeDictionary(request.SkillLevelOverrides);
+        student.SkillLevelOverrides = JsonStorageHelper.Serialize(request.SkillLevelOverrides);
         student.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -407,9 +407,6 @@ public class StudentService : IStudentService
                 throw new ValidationException($"SkillLevelOverrides value '{value}' for key '{key}' is not a valid CEFR level. Allowed: A1, A2, B1, B2, C1, C2.");
         }
     }
-
-    private static string SerializeDictionary(Dictionary<string, string> dict) =>
-        JsonSerializer.Serialize(dict);
 
     private static Dictionary<string, string> DeserializeSkillLevelOverrides(string? json)
     {
