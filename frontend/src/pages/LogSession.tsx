@@ -472,7 +472,7 @@ export default function LogSession() {
       </aside>
 
       {/* ─── Right panel: Session Log Form ───────────────────────────── */}
-      <main className="flex-1 overflow-y-auto" data-testid="log-session-right-panel">
+      <main className="flex-1 overflow-y-auto min-h-0" data-testid="log-session-right-panel">
         <form onSubmit={handleSubmit} className="px-8 py-8 space-y-6 max-w-2xl">
           {/* Header */}
           <div className="flex items-center gap-3">
