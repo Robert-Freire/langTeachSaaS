@@ -16,6 +16,7 @@ import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { TopicTagsInput } from '@/components/session/TopicTagsInput'
 import { AudioRecorder } from '@/components/audio/AudioRecorder'
 import { getObjectiveUrgency, getDaysRemaining } from '@/lib/objectiveUrgency'
+import { formatDate as formatDateUtil } from '@/utils/formatDate'
 import { logger } from '@/lib/logger'
 
 const DURATION_OPTIONS = [
@@ -49,11 +50,7 @@ function getInitials(name: string): string {
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return '--'
-  try {
-    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-  } catch {
-    return '--'
-  }
+  return formatDateUtil(iso)
 }
 
 // Left panel section header

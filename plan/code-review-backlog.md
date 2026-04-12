@@ -6,6 +6,12 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-04-08 during Adaptive Replanning sprint close. All entries deleted (low/info severity, all already deferred with sound reasoning) or batched into #603-#609.*
 
+## #672 — 2026-04-12
+
+| Reviewer | Severity | Note |
+|---|---|---|
+| architecture-reviewer | minor | `getInitials` is a local function in both `LogSession.tsx` and `StudentDetail.tsx`. If a third page needs it, extract to `@/lib/nameUtils.ts`. Not worth the shared util for two callers. |
+
 ## #656 — 2026-04-11
 
 | Reviewer | Severity | Note |
