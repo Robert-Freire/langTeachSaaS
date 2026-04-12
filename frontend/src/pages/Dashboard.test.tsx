@@ -54,6 +54,7 @@ function makeDashboard(overrides: Partial<DashboardData> = {}): DashboardData {
         pendingTodos: [
           { id: 't1', text: 'Review ser/estar', createdAt: new Date().toISOString(), status: 'pending', sourceSessionLogId: null, coveredInSessionLogId: null },
         ],
+        cancelledSessionsLast30Days: 0,
       },
     ],
     pendingFollowups: [],

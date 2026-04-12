@@ -70,3 +70,10 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 **Severity:** Low  
 
 `d.description` (e.g. "Separable vs inseparable phrasal verbs") is not shown anywhere in the Focus Areas table. The Subcategory column now shows `d.subcategory || d.description`, so description is only visible when subcategory is empty. Consider adding a tooltip or secondary line in the Subcategory cell for the full description.
+
+## #675 — 2026-04-12
+
+| Reviewer | Severity | Note |
+|---|---|---|
+| architecture-reviewer | minor | `getInitials` is defined privately in Students.tsx, StudentDetail.tsx, and LogSession.tsx — three copies of the same two-word-initials helper. Should be extracted to `src/utils/initials.ts` in a cleanup pass. |
+| architecture-reviewer | minor | `formatRelativeDate` in Students.tsx reimplements day-relative logic already in `src/utils/formatDate.ts:relativeTime`. The time-of-day extension is new, but base logic should build on the shared util in a future refactor. |

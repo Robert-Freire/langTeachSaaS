@@ -44,6 +44,7 @@ export interface ActiveStudent {
   totalSessions: number
   teachingTodosCount: number
   pendingTodos: PendingTodo[]
+  cancelledSessionsLast30Days: number
 }
 
 export interface DashboardData {

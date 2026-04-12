@@ -16,6 +16,7 @@ function makeStudent(overrides: Partial<ActiveStudent> = {}): ActiveStudent {
     totalSessions: 5,
     teachingTodosCount: 0,
     pendingTodos: [],
+    cancelledSessionsLast30Days: 0,
     ...overrides,
   }
 }

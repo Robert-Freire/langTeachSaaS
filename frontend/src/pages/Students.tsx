@@ -24,7 +24,33 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
-function formatRelativeDate(dateStr: string | null | undefined): string {
+// ── Avatar helpers ──────────────────────────────────────────────────────────
+
+function getInitials(name: string): string {
+  const words = name.trim().split(/\s+/)
+  return words.slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
+}
+
+const AVATAR_PALETTES = [
+  'bg-indigo-100 text-indigo-700',
+  'bg-violet-100 text-violet-700',
+  'bg-sky-100 text-sky-700',
+  'bg-teal-100 text-teal-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-amber-100 text-amber-700',
+  'bg-rose-100 text-rose-700',
+  'bg-orange-100 text-orange-700',
+]
+
+function getAvatarColor(id: string): string {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
+  return AVATAR_PALETTES[hash % AVATAR_PALETTES.length]
+}
+
+// ── Date formatting ─────────────────────────────────────────────────────────
+
+function formatRelativeDate(dateStr: string | null | undefined, showTime = false): string {
   if (!dateStr) return '—'
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return '—'
@@ -32,15 +58,154 @@ function formatRelativeDate(dateStr: string | null | undefined): string {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const targetDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
   const diffDays = Math.round((today.getTime() - targetDay.getTime()) / (1000 * 60 * 60 * 24))
-  if (diffDays === 0) return 'Today'
+
+  if (diffDays === 0) {
+    if (showTime) {
+      const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      return `Today ${timeStr}`
+    }
+    return 'Today'
+  }
   if (diffDays === 1) return 'Yesterday'
   if (diffDays > 0) return `${diffDays}d ago`
+
+  // Future dates
   const futureDays = Math.abs(diffDays)
+  if (showTime) {
+    const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    if (futureDays === 1) return `Tomorrow ${timeStr}`
+    if (futureDays <= 6) {
+      const dayAbbr = date.toLocaleDateString('en-GB', { weekday: 'short' })
+      return `${dayAbbr} ${timeStr}`
+    }
+  }
   if (futureDays === 1) return 'Tomorrow'
   return `in ${futureDays}d`
 }
 
+// ── Signal badges ───────────────────────────────────────────────────────────
+
+type SignalVariant = 'amber' | 'zinc' | 'indigo' | 'red'
+
+interface Signal {
+  label: string
+  variant: SignalVariant
+}
+
+function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal[] {
+  if (!student.isActive) {
+    return [{ label: 'Former', variant: 'zinc' }]
+  }
+
+  if (!dash) return []
+
+  const signals: Signal[] = []
+  const now = Date.now()
+
+  const lastSessionMs = dash.lastSessionDate ? new Date(dash.lastSessionDate).getTime() : null
+  const lastSessionGapDays = lastSessionMs != null
+    ? Math.floor((now - lastSessionMs) / (1000 * 60 * 60 * 24))
+    : null
+
+  const hasNextSession = !!dash.nextSessionDate
+
+  // RETURNING: was inactive 30+ days and now has a scheduled next session
+  const isReturning = lastSessionGapDays != null && lastSessionGapDays >= 30 && hasNextSession
+  if (isReturning) {
+    signals.push({ label: 'RETURNING', variant: 'zinc' })
+  } else if (lastSessionGapDays != null && lastSessionGapDays >= 14) {
+    // Inactive Xd: last session 14+ days ago and no upcoming session (or < 30d gap)
+    signals.push({ label: `Inactive ${lastSessionGapDays}d`, variant: 'red' })
+  }
+
+  // Cancelled 2x
+  if (dash.cancelledSessionsLast30Days >= 2) {
+    signals.push({ label: 'Cancelled 2x', variant: 'amber' })
+  }
+
+  // NEW: created in last 14 days with fewer than 3 sessions
+  if (student.createdAt) {
+    const createdMs = new Date(student.createdAt).getTime()
+    const daysSinceCreation = Math.floor((now - createdMs) / (1000 * 60 * 60 * 24))
+    if (daysSinceCreation <= 14 && dash.totalSessions < 3) {
+      signals.push({ label: 'NEW', variant: 'indigo' })
+    }
+  }
+
+  // Exam prep: short-term objective with targetDate within 6 weeks
+  const sixWeeksMs = 6 * 7 * 24 * 60 * 60 * 1000
+  const hasExamPrep = student.shortTermObjectives.some(o => {
+    if (!o.targetDate) return false
+    const targetMs = new Date(o.targetDate).getTime()
+    const msUntil = targetMs - now
+    return msUntil >= 0 && msUntil <= sixWeeksMs
+  })
+  if (hasExamPrep) {
+    signals.push({ label: 'Exam prep', variant: 'indigo' })
+  }
+
+  // Review pending: has pending teaching todos
+  if (dash.pendingTodos.length > 0) {
+    signals.push({ label: 'Review pending', variant: 'indigo' })
+  }
+
+  return signals
+}
+
+const SIGNAL_VARIANT_CLASSES: Record<SignalVariant, string> = {
+  amber: 'bg-amber-50 text-amber-700',
+  zinc: 'bg-zinc-100 text-zinc-600',
+  indigo: 'bg-indigo-50 text-indigo-700',
+  red: 'bg-red-50 text-red-700',
+}
+
+// ── Sort ────────────────────────────────────────────────────────────────────
+
+type SortOption = 'nextSession' | 'lastSession' | 'name' | 'cefrLevel'
+
+function sortStudents(
+  students: Student[],
+  dashMap: Map<string, ActiveStudent>,
+  sortBy: SortOption
+): Student[] {
+  const sorted = [...students]
+  const cefrOrder = Object.fromEntries(CEFR_LEVELS.map((l, i) => [l, i]))
+
+  switch (sortBy) {
+    case 'nextSession':
+      return sorted.sort((a, b) => {
+        const aDate = dashMap.get(a.id)?.nextSessionDate
+        const bDate = dashMap.get(b.id)?.nextSessionDate
+        if (!aDate && !bDate) return 0
+        if (!aDate) return 1
+        if (!bDate) return -1
+        return new Date(aDate).getTime() - new Date(bDate).getTime()
+      })
+    case 'lastSession':
+      return sorted.sort((a, b) => {
+        const aDate = dashMap.get(a.id)?.lastSessionDate
+        const bDate = dashMap.get(b.id)?.lastSessionDate
+        if (!aDate && !bDate) return 0
+        if (!aDate) return 1
+        if (!bDate) return -1
+        return new Date(bDate).getTime() - new Date(aDate).getTime()
+      })
+    case 'name':
+      return sorted.sort((a, b) => a.name.localeCompare(b.name))
+    case 'cefrLevel':
+      return sorted.sort((a, b) => (cefrOrder[a.cefrLevel] ?? 99) - (cefrOrder[b.cefrLevel] ?? 99))
+  }
+}
+
+// ── Constants ───────────────────────────────────────────────────────────────
+
 const CEFR_FILTER_OPTIONS = ['All', ...CEFR_LEVELS] as const
+const PAGE_SIZE = 12
+
+const COL_CLASSES = 'grid-cols-[32px_minmax(160px,2fr)_80px_120px_110px_140px_1fr_56px]'
+const TABLE_HEADERS = ['', 'Name', 'Level', 'Native Language', 'Last Session', 'Next Session', 'Signals', ''] as const
+
+// ── Component ───────────────────────────────────────────────────────────────
 
 export default function Students() {
   const queryClient = useQueryClient()
@@ -49,6 +214,8 @@ export default function Students() {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [cefrFilter, setCefrFilter] = useState<string>('All')
+  const [sortBy, setSortBy] = useState<SortOption>('nextSession')
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   const {
     data: studentsData,
@@ -85,6 +252,7 @@ export default function Students() {
   )
 
   const allStudents = studentsData?.items ?? []
+  const activeCount = dashboardData?.activeStudents.length ?? allStudents.filter(s => s.isActive).length
 
   const filteredStudents = allStudents.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -92,30 +260,35 @@ export default function Students() {
     return matchesSearch && matchesCefr
   })
 
+  const sortedStudents = sortStudents(filteredStudents, dashboardMap, sortBy)
+  const visibleStudents = sortedStudents.slice(0, visibleCount)
+
   if (isStudentsLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <Skeleton className="h-7 w-32" />
-            <Skeleton className="h-4 w-48 mt-2" />
+            <Skeleton className="h-7 w-40" />
+            <Skeleton className="h-4 w-64 mt-2" />
           </div>
-          <Skeleton className="h-8 w-28" />
+          <Skeleton className="h-8 w-32" />
         </div>
         <div className="bg-white rounded-xl overflow-hidden">
-          <div className="grid grid-cols-6 gap-4 px-4 py-2 border-b border-zinc-100">
-            {['Name', 'Level', 'Native Language', 'Last Session', 'Next Session', 'Signals'].map(h => (
-              <Skeleton key={h} className="h-3 w-full" />
+          <div className={cn('grid gap-4 px-4 py-2 border-b border-zinc-100', COL_CLASSES)}>
+            {TABLE_HEADERS.map((_h, i) => (
+              <Skeleton key={i} className="h-3 w-full" />
             ))}
           </div>
           {[1, 2, 3].map(i => (
-            <div key={i} className="grid grid-cols-6 gap-4 px-4 py-3">
+            <div key={i} className={cn('grid gap-4 px-4 py-3', COL_CLASSES)}>
+              <Skeleton className="h-8 w-8 rounded-full" />
               <Skeleton className="h-4 w-28" />
               <Skeleton className="h-5 w-10 rounded-md" />
               <Skeleton className="h-4 w-20" />
               <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-20" />
               <Skeleton className="h-4 w-12" />
+              <div />
             </div>
           ))}
         </div>
@@ -134,12 +307,15 @@ export default function Students() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Students"
-        subtitle="Manage your student profiles."
+        title="Student Roster"
+        subtitle={`Managing ${activeCount} active language learner${activeCount === 1 ? '' : 's'} in your atelier.`}
         actions={
           <Link
             to="/students/new"
-            className={cn(buttonVariants(), 'bg-indigo-600 hover:bg-indigo-700 text-white')}
+            className={cn(
+              buttonVariants(),
+              'bg-gradient-to-br from-[#3525CD] to-[#4F46E5] hover:opacity-90 text-white border-0'
+            )}
           >
             <UserPlus className="h-4 w-4 mr-1.5" />
             Add Student
@@ -151,23 +327,15 @@ export default function Students() {
         <span className="text-sm text-red-600 font-medium" data-testid="delete-error">{deleteError}</span>
       )}
 
-      {/* Search and filter bar */}
+      {/* Search, filter and sort bar */}
       {allStudents.length > 0 && (
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-48 max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 pointer-events-none" />
-            <Input
-              placeholder="Search students..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="pl-8 h-8 text-sm bg-white border-zinc-200 focus-visible:ring-indigo-500"
-            />
-          </div>
+          {/* CEFR pills */}
           <div className="flex items-center gap-1">
             {CEFR_FILTER_OPTIONS.map(level => (
               <button
                 key={level}
-                onClick={() => setCefrFilter(level)}
+                onClick={() => { setCefrFilter(level); setVisibleCount(PAGE_SIZE) }}
                 className={cn(
                   'px-2.5 py-1 text-xs font-medium rounded-md transition-colors',
                   cefrFilter === level
@@ -178,6 +346,32 @@ export default function Students() {
                 {level}
               </button>
             ))}
+          </div>
+
+          {/* Search */}
+          <div className="relative flex-1 min-w-48 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 pointer-events-none" />
+            <Input
+              placeholder="Search students..."
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); setVisibleCount(PAGE_SIZE) }}
+              className="pl-8 h-8 text-sm bg-white border-zinc-200 focus-visible:ring-indigo-500"
+            />
+          </div>
+
+          {/* Sort dropdown */}
+          <div className="ml-auto">
+            <select
+              value={sortBy}
+              onChange={e => { setSortBy(e.target.value as SortOption); setVisibleCount(PAGE_SIZE) }}
+              aria-label="Sort students"
+              className="text-xs font-medium text-zinc-500 bg-white border border-zinc-200 rounded-md px-2.5 py-1.5 h-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+            >
+              <option value="nextSession">Sort: Next Session</option>
+              <option value="lastSession">Sort: Last Session</option>
+              <option value="name">Sort: Name</option>
+              <option value="cefrLevel">Sort: CEFR Level</option>
+            </select>
           </div>
         </div>
       )}
@@ -201,10 +395,10 @@ export default function Students() {
       {allStudents.length > 0 && (
         <div className="bg-white rounded-xl overflow-hidden">
           {/* Table header */}
-          <div className="grid grid-cols-[minmax(160px,2fr)_80px_120px_110px_110px_1fr_56px] gap-x-4 px-4 py-2.5">
-            {(['Name', 'Level', 'Native Language', 'Last Session', 'Next Session', 'Signals', ''] as const).map(h => (
+          <div className={cn('grid gap-x-4 px-4 py-2.5', COL_CLASSES)}>
+            {TABLE_HEADERS.map((h, i) => (
               <span
-                key={h}
+                key={i}
                 className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400"
               >
                 {h}
@@ -219,18 +413,33 @@ export default function Students() {
             </div>
           ) : (
             <div className="px-2 pb-2 space-y-0.5">
-              {filteredStudents.map(student => {
+              {visibleStudents.map(student => {
                 const dash = dashboardMap.get(student.id)
                 const signals = buildSignals(student, dash)
-                const isFormer = dash ? !dash.isActive : false
 
                 return (
                   <div
                     key={student.id}
                     data-testid={`student-row-${student.id}`}
                     onClick={() => navigate(`/students/${student.id}`)}
-                    className="grid grid-cols-[minmax(160px,2fr)_80px_120px_110px_110px_1fr_56px] gap-x-4 items-center px-2 py-2.5 rounded-lg cursor-pointer hover:bg-[#ECE8F6] transition-colors group"
+                    className={cn(
+                      'grid gap-x-4 items-center px-2 py-1.5 rounded-lg cursor-pointer transition-colors group',
+                      'hover:bg-[#E3E1EC]',
+                      COL_CLASSES
+                    )}
                   >
+                    {/* Avatar */}
+                    <div
+                      className={cn(
+                        'flex-none w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold',
+                        getAvatarColor(student.id)
+                      )}
+                      aria-hidden="true"
+                      data-testid="student-avatar"
+                    >
+                      {getInitials(student.name)}
+                    </div>
+
                     {/* Name */}
                     <span
                       data-testid="student-name"
@@ -259,12 +468,12 @@ export default function Students() {
 
                     {/* Next session */}
                     <span className="text-sm text-zinc-500">
-                      {formatRelativeDate(dash?.nextSessionDate)}
+                      {formatRelativeDate(dash?.nextSessionDate, true)}
                     </span>
 
                     {/* Signals */}
                     <div className="flex items-center gap-1 flex-wrap">
-                      {signals.length === 0 && !isFormer ? (
+                      {signals.length === 0 ? (
                         <span className="text-zinc-300 text-sm">—</span>
                       ) : (
                         signals.map((sig) => (
@@ -272,9 +481,7 @@ export default function Students() {
                             key={sig.label}
                             className={cn(
                               'inline-flex items-center px-1.5 py-0.5 rounded-md text-[0.6875rem] font-medium',
-                              sig.variant === 'amber'
-                                ? 'bg-amber-50 text-amber-700'
-                                : 'bg-zinc-100 text-zinc-600'
+                              SIGNAL_VARIANT_CLASSES[sig.variant]
                             )}
                           >
                             {sig.label}
@@ -329,6 +536,25 @@ export default function Students() {
               })}
             </div>
           )}
+
+          {/* Pagination footer */}
+          {sortedStudents.length > 0 && (
+            <div className="px-4 py-3 flex items-center justify-between border-t border-zinc-50">
+              <span className="text-xs text-zinc-400">
+                Showing {Math.min(visibleCount, sortedStudents.length)} of {sortedStudents.length} student{sortedStudents.length === 1 ? '' : 's'}
+              </span>
+              {visibleCount < sortedStudents.length && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
+                  data-testid="load-more"
+                >
+                  Load more
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -356,35 +582,4 @@ export default function Students() {
       </AlertDialog>
     </div>
   )
-}
-
-interface Signal {
-  label: string
-  variant: 'amber' | 'zinc'
-}
-
-function buildSignals(_student: Student, dash: ActiveStudent | undefined): Signal[] {
-  const signals: Signal[] = []
-
-  if (dash && !dash.isActive) {
-    signals.push({ label: 'Former', variant: 'zinc' })
-    return signals
-  }
-
-  if (dash?.isActive && dash.lastSessionDate) {
-    const diffMs = Date.now() - new Date(dash.lastSessionDate).getTime()
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-    if (diffDays >= 14) {
-      signals.push({ label: `${diffDays}d gap`, variant: 'amber' })
-    }
-  }
-
-  if (dash && dash.teachingTodosCount > 0) {
-    signals.push({
-      label: `${dash.teachingTodosCount} followup${dash.teachingTodosCount > 1 ? 's' : ''}`,
-      variant: 'zinc',
-    })
-  }
-
-  return signals
 }

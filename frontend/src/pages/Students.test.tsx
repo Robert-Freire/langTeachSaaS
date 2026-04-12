@@ -21,6 +21,9 @@ vi.mock('../lib/logger', () => ({
 
 const emptyDashboard = { nextSession: null, todaySessions: [], activeStudents: [], pendingFollowups: [] }
 
+// Default createdAt is 30 days ago to avoid triggering the NEW signal badge
+const DEFAULT_CREATED_AT = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
 function makeStudent(overrides: Partial<studentsApi.Student> = {}): studentsApi.Student {
   return {
     id: 'abc-123',
@@ -34,12 +37,29 @@ function makeStudent(overrides: Partial<studentsApi.Student> = {}): studentsApi.
     learningGoals: [],
     weaknesses: [],
     difficulties: [],
-    createdAt: '',
+    createdAt: DEFAULT_CREATED_AT,
     updatedAt: '',
     birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
     countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
     officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
     rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
+    ...overrides,
+  }
+}
+
+function makeActiveStudent(overrides: Partial<dashboardApi.ActiveStudent> = {}): dashboardApi.ActiveStudent {
+  return {
+    studentId: 'abc-123',
+    name: 'Ana García',
+    cefrLevel: 'B2',
+    nativeLanguages: [],
+    isActive: true,
+    lastSessionDate: null,
+    nextSessionDate: null,
+    totalSessions: 5,
+    teachingTodosCount: 0,
+    pendingTodos: [],
+    cancelledSessionsLast30Days: 0,
     ...overrides,
   }
 }
@@ -183,7 +203,7 @@ describe('Students page', () => {
     expect(screen.getByText('No students match your search.')).toBeInTheDocument()
   })
 
-  it('renders dashboard-sourced signals when dashboard data available', async () => {
+  it('renders Review pending signal when student has pending todos', async () => {
     vi.mocked(studentsApi.getStudents).mockResolvedValue(
       makeListResponse([makeStudent({ id: 'abc-123' })])
     )
@@ -192,23 +212,251 @@ describe('Students page', () => {
       todaySessions: [],
       pendingFollowups: [],
       activeStudents: [
-        {
+        makeActiveStudent({
           studentId: 'abc-123',
-          name: 'Ana García',
-          cefrLevel: 'B2',
-          nativeLanguages: [],
-          isActive: true,
-          lastSessionDate: null,
-          nextSessionDate: null,
-          totalSessions: 0,
           teachingTodosCount: 3,
-          pendingTodos: [],
-        },
+          pendingTodos: [{ id: 't1', text: 'Review grammar', createdAt: '', sourceSessionLogId: null, status: 'pending', coveredInSessionLogId: null }],
+        }),
       ],
     })
 
     wrapper(<Students />)
     await screen.findByTestId('student-name')
-    expect(screen.getByText('3 followups')).toBeInTheDocument()
+    expect(screen.getByText('Review pending')).toBeInTheDocument()
+  })
+
+  it('shows Former badge for inactive student even without dashboard data', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ id: 'abc-123', isActive: false })])
+    )
+    // dashboard has no entry for this student (inactive students excluded from dashboard)
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText('Former')).toBeInTheDocument()
+  })
+
+  it('renders initials avatar for each student', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ name: 'Ana García' })])
+    )
+    wrapper(<Students />)
+    const avatar = await screen.findByTestId('student-avatar')
+    expect(avatar).toHaveTextContent('AG')
+  })
+
+  it('sort by Next Session orders students by upcoming session date ascending', async () => {
+    const soon = new Date(Date.now() + 1 * 86400000).toISOString()
+    const later = new Date(Date.now() + 5 * 86400000).toISOString()
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([
+        makeStudent({ id: 'b', name: 'Bruno' }),
+        makeStudent({ id: 'a', name: 'Ana' }),
+      ])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [],
+      activeStudents: [
+        makeActiveStudent({ studentId: 'b', name: 'Bruno', nextSessionDate: later }),
+        makeActiveStudent({ studentId: 'a', name: 'Ana', nextSessionDate: soon }),
+      ],
+    })
+    wrapper(<Students />)
+    await screen.findByText('Ana')
+
+    // "Next Session" is the default sort — Ana (sooner) should appear first
+    const names = screen.getAllByTestId('student-name').map(el => el.textContent)
+    expect(names[0]).toBe('Ana')
+    expect(names[1]).toBe('Bruno')
+  })
+
+  it('sort by Last Session orders students by most recent session first', async () => {
+    const recent = new Date(Date.now() - 2 * 86400000).toISOString()
+    const older = new Date(Date.now() - 10 * 86400000).toISOString()
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([
+        makeStudent({ id: 'b', name: 'Bruno' }),
+        makeStudent({ id: 'a', name: 'Ana' }),
+      ])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [],
+      activeStudents: [
+        makeActiveStudent({ studentId: 'b', name: 'Bruno', lastSessionDate: older }),
+        makeActiveStudent({ studentId: 'a', name: 'Ana', lastSessionDate: recent }),
+      ],
+    })
+    wrapper(<Students />)
+    await screen.findByText('Ana')
+
+    const select = screen.getByRole('combobox', { name: /sort/i })
+    fireEvent.change(select, { target: { value: 'lastSession' } })
+
+    const names = screen.getAllByTestId('student-name').map(el => el.textContent)
+    expect(names[0]).toBe('Ana')
+    expect(names[1]).toBe('Bruno')
+  })
+
+  it('sort by Name orders students alphabetically', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([
+        makeStudent({ id: 'z', name: 'Zara Smith' }),
+        makeStudent({ id: 'a', name: 'Ana García' }),
+      ])
+    )
+    wrapper(<Students />)
+    await screen.findByText('Zara Smith')
+
+    const select = screen.getByRole('combobox', { name: /sort/i })
+    fireEvent.change(select, { target: { value: 'name' } })
+
+    const names = screen.getAllByTestId('student-name').map(el => el.textContent)
+    expect(names[0]).toBe('Ana García')
+    expect(names[1]).toBe('Zara Smith')
+  })
+
+  it('sort by CEFR Level orders students from A1 to C2', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([
+        makeStudent({ id: 'b', name: 'Bruno', cefrLevel: 'B2' }),
+        makeStudent({ id: 'a', name: 'Ana', cefrLevel: 'A1' }),
+      ])
+    )
+    wrapper(<Students />)
+    await screen.findByText('Bruno')
+
+    const select = screen.getByRole('combobox', { name: /sort/i })
+    fireEvent.change(select, { target: { value: 'cefrLevel' } })
+
+    const names = screen.getAllByTestId('student-name').map(el => el.textContent)
+    expect(names[0]).toBe('Ana')
+    expect(names[1]).toBe('Bruno')
+  })
+
+  it('shows Inactive Xd badge in red for student with 20-day gap', async () => {
+    const lastSession = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ id: 'abc-123' })])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [],
+      activeStudents: [makeActiveStudent({ studentId: 'abc-123', lastSessionDate: lastSession, nextSessionDate: null })],
+    })
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText('Inactive 20d')).toBeInTheDocument()
+  })
+
+  it('shows Cancelled 2x badge when student had 2+ cancellations in last 30 days', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ id: 'abc-123' })])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [],
+      activeStudents: [makeActiveStudent({ studentId: 'abc-123', cancelledSessionsLast30Days: 2 })],
+    })
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText('Cancelled 2x')).toBeInTheDocument()
+  })
+
+  it('shows NEW badge for student created 5 days ago with fewer than 3 sessions', async () => {
+    const recentDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ id: 'abc-123', createdAt: recentDate })])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [],
+      activeStudents: [makeActiveStudent({ studentId: 'abc-123', totalSessions: 1 })],
+    })
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText('NEW')).toBeInTheDocument()
+  })
+
+  it('does not show NEW badge for student created 20 days ago', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ id: 'abc-123' })])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [],
+      activeStudents: [makeActiveStudent({ studentId: 'abc-123', totalSessions: 1 })],
+    })
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.queryByText('NEW')).not.toBeInTheDocument()
+  })
+
+  it('shows Exam prep badge for student with objective due in 3 weeks', async () => {
+    const targetDate = new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString()
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({
+        id: 'abc-123',
+        shortTermObjectives: [{ id: 'obj1', text: 'DELE B2 exam', targetDate }],
+      })])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [],
+      activeStudents: [makeActiveStudent({ studentId: 'abc-123' })],
+    })
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText('Exam prep')).toBeInTheDocument()
+  })
+
+  it('shows RETURNING badge for student inactive 35 days who now has upcoming session', async () => {
+    const lastSession = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString()
+    const nextSession = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString()
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ id: 'abc-123' })])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [],
+      activeStudents: [makeActiveStudent({ studentId: 'abc-123', lastSessionDate: lastSession, nextSessionDate: nextSession })],
+    })
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText('RETURNING')).toBeInTheDocument()
+    expect(screen.queryByText(/Inactive/)).not.toBeInTheDocument()
+  })
+
+  it('shows load more button when students exceed page size and loads more on click', async () => {
+    const students = Array.from({ length: 13 }, (_, i) =>
+      makeStudent({ id: `s${i}`, name: `Student ${String(i).padStart(2, '0')}` })
+    )
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse(students))
+    wrapper(<Students />)
+    await screen.findAllByTestId('student-name')
+
+    expect(screen.getAllByTestId('student-name')).toHaveLength(12)
+    expect(screen.getByTestId('load-more')).toBeInTheDocument()
+    expect(screen.getByText('Showing 12 of 13 students')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('load-more'))
+    expect(screen.getAllByTestId('student-name')).toHaveLength(13)
+    expect(screen.queryByTestId('load-more')).not.toBeInTheDocument()
+  })
+
+  it('shows Next Session with time when session is today', async () => {
+    const todayAt2PM = new Date()
+    todayAt2PM.setHours(14, 30, 0, 0)
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ id: 'abc-123' })])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [],
+      activeStudents: [makeActiveStudent({ studentId: 'abc-123', nextSessionDate: todayAt2PM.toISOString() })],
+    })
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText(/Today 14:30/)).toBeInTheDocument()
+  })
+
+  it('shows pagination count text', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent()])
+    )
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText('Showing 1 of 1 student')).toBeInTheDocument()
   })
 })

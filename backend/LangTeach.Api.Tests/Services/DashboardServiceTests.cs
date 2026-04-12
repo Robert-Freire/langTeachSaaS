@@ -252,4 +252,37 @@ public class DashboardServiceTests : IDisposable
 
         result.ActiveStudents.Should().NotContain(s => s.StudentId == inactiveId);
     }
+
+    [Fact]
+    public async Task GetAsync_CancelledSessions_CountsOnlyLast30DaysPastSessions()
+    {
+        var within30Days = DateTime.UtcNow.AddDays(-10);
+        var within30DaysAlso = DateTime.UtcNow.AddDays(-25);
+        var olderThan30Days = DateTime.UtcNow.AddDays(-35);
+        var futureCancelled = DateTime.UtcNow.AddDays(5); // future — should NOT count
+
+        _db.SessionLogs.Add(MakeSession(_studentId, within30Days, isCancelled: true));
+        _db.SessionLogs.Add(MakeSession(_studentId, within30DaysAlso, isCancelled: true));
+        _db.SessionLogs.Add(MakeSession(_studentId, olderThan30Days, isCancelled: true));
+        _db.SessionLogs.Add(MakeSession(_studentId, futureCancelled, isCancelled: true));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.ActiveStudents.Should().HaveCount(1);
+        result.ActiveStudents[0].CancelledSessionsLast30Days.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task GetAsync_DeletedCancelledSessions_NotCounted()
+    {
+        var within30Days = DateTime.UtcNow.AddDays(-5);
+
+        _db.SessionLogs.Add(MakeSession(_studentId, within30Days, isCancelled: true, isDeleted: true));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.ActiveStudents[0].CancelledSessionsLast30Days.Should().Be(0);
+    }
 }

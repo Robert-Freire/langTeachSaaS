@@ -93,6 +93,8 @@ public class DashboardService : IDashboardService
 
     private async Task<List<ActiveStudentDto>> GetActiveStudentsAsync(Guid teacherId, DateTime now, CancellationToken cancellationToken)
     {
+        var cutoff30Days = now.AddDays(-30);
+
         var rows = await _db.Students
             .Where(s => s.TeacherId == teacherId && !s.IsDeleted && s.IsActive)
             .Select(s => new
@@ -109,7 +111,13 @@ public class DashboardService : IDashboardService
                 NextSessionDate = s.SessionLogs
                     .Where(sl => !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue && sl.SessionDate.Value > now)
                     .Min(sl => (DateTime?)sl.SessionDate),
-                TotalSessions = s.SessionLogs.Count(sl => !sl.IsDeleted)
+                TotalSessions = s.SessionLogs.Count(sl => !sl.IsDeleted),
+                CancelledSessionsLast30Days = s.SessionLogs
+                    .Count(sl => !sl.IsDeleted
+                              && sl.IsCancelled
+                              && sl.SessionDate.HasValue
+                              && sl.SessionDate.Value >= cutoff30Days
+                              && sl.SessionDate.Value <= now)
             })
             .ToListAsync(cancellationToken);
 
@@ -127,7 +135,8 @@ public class DashboardService : IDashboardService
                 NextSessionDate: r.NextSessionDate,
                 TotalSessions: r.TotalSessions,
                 TeachingTodosCount: allTodos.Count,
-                PendingTodos: pendingTodos
+                PendingTodos: pendingTodos,
+                CancelledSessionsLast30Days: r.CancelledSessionsLast30Days
             );
         }).ToList();
     }
