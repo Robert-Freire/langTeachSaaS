@@ -342,10 +342,7 @@ public class CourseService : ICourseService
                 ? JsonStorageHelper.DeserializeList<string>(student.Interests).ToArray()
                 : null,
             StudentGoals: student is not null
-                ? JsonStorageHelper.DeserializeListWithStringFallback<LearningGoalDto>(
-                    student.LearningGoals,
-                    text => new LearningGoalDto(Guid.NewGuid().ToString(), text, []))
-                    .SelectMany(g => new[] { g.Text }.Concat(g.Children.Select(c => c.Text))).ToArray()
+                ? LearningGoalHelper.FlattenGoals(student.LearningGoals)
                 : null,
             TemplateLevel: string.IsNullOrWhiteSpace(req.TemplateLevel) ? null : req.TemplateLevel,
             TemplateUnits: null,
