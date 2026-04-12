@@ -46,14 +46,19 @@ public class SessionLogService : ISessionLogService
         if (!studentExists)
             throw new KeyNotFoundException($"Student {studentId} not found.");
 
-        var sessions = await _db.SessionLogs
+        var rawSessions = await _db.SessionLogs
             .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
             .OrderBy(sl => sl.SessionDate.HasValue)
             .ThenByDescending(sl => sl.SessionDate)
-            .Select(sl => ToDto(sl))
             .ToListAsync(cancellationToken);
 
-        return sessions;
+        var sessionIds = rawSessions.Select(sl => sl.Id).ToList();
+        var voiceNoteSessionIds = await _db.VoiceNoteApplications
+            .Where(vna => sessionIds.Contains(vna.SessionLogId))
+            .Select(vna => vna.SessionLogId)
+            .ToHashSetAsync(cancellationToken);
+
+        return rawSessions.Select(sl => ToDto(sl, voiceNoteSessionIds.Contains(sl.Id))).ToList();
     }
 
     public async Task<SessionLogDto?> GetByIdAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default)
@@ -371,7 +376,7 @@ public class SessionLogService : ISessionLogService
         );
     }
 
-    private static SessionLogDto ToDto(SessionLog sl) => new(
+    private static SessionLogDto ToDto(SessionLog sl, bool hasVoiceNote = false) => new(
         sl.Id,
         sl.StudentId,
         sl.TeacherId,
@@ -395,7 +400,8 @@ public class SessionLogService : ISessionLogService
         sl.MentionedDifficultyPairs,
         sl.SuggestedDifficulties,
         sl.Duration,
-        sl.Title
+        sl.Title,
+        hasVoiceNote
     );
 
     internal static string GenerateTitle(string? plannedContent, string? actualContent, DateTime? sessionDate)

@@ -29,6 +29,7 @@ export interface SessionLog {
   suggestedDifficulties: string
   duration: number | null
   title: string | null
+  hasVoiceNote: boolean
 }
 
 export interface SuggestedDifficulty {

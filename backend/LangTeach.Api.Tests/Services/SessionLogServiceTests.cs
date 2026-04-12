@@ -213,6 +213,48 @@ public class SessionLogServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ListAsync_HasVoiceNote_TrueWhenVoiceNoteApplicationExists()
+    {
+        var sessionId = Guid.NewGuid();
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = sessionId, StudentId = _studentId, TeacherId = _teacherId,
+            SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        _db.VoiceNoteApplications.Add(new VoiceNoteApplication
+        {
+            Id = Guid.NewGuid(),
+            SessionLogId = sessionId,
+            ApplicationType = ApplicationType.Create,
+            AppliedAt = DateTime.UtcNow,
+        });
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.ListAsync(_teacherId, _studentId);
+
+        result.Should().HaveCount(1);
+        result[0].HasVoiceNote.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ListAsync_HasVoiceNote_FalseWhenNoVoiceNoteApplication()
+    {
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId,
+            SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.ListAsync(_teacherId, _studentId);
+
+        result.Should().HaveCount(1);
+        result[0].HasVoiceNote.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task ListAsync_FiltersByTeacher_DoesNotReturnOtherTeachersData()
     {
         var otherStudentId = Guid.NewGuid();
