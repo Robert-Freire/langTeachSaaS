@@ -4,6 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import StudentForm from './StudentForm'
 
+vi.mock('../api/followups', () => ({
+  getFollowups: vi.fn().mockResolvedValue([]),
+  createFollowup: vi.fn(),
+  updateFollowupStatus: vi.fn(),
+}))
+
 const mockGetStudent = vi.fn()
 const mockCreateStudent = vi.fn()
 const mockUpdateStudent = vi.fn()
@@ -26,6 +32,13 @@ vi.mock('../components/student/StudentCoursesCard', () => ({
 
 vi.mock('../components/student/LessonHistoryCard', () => ({
   LessonHistoryCard: () => <div data-testid="lesson-history-card" />,
+}))
+
+vi.mock('@/api/followups', () => ({
+  getFollowups: vi.fn().mockResolvedValue([]),
+  createFollowup: vi.fn(),
+  updateFollowupStatus: vi.fn(),
+  deleteFollowup: vi.fn(),
 }))
 
 vi.mock('../lib/studentOptions', () => ({
@@ -512,6 +525,81 @@ describe('StudentForm', () => {
     renderEdit()
     const btn = await screen.findByTestId('create-course-btn')
     expect(btn).toBeDisabled()
+  })
+
+  it('renders Personal Background section with all 6 identity fields', () => {
+    renderNew()
+    expect(screen.getByText('Personal Background')).toBeInTheDocument()
+    expect(screen.getByTestId('student-birth-year')).toBeInTheDocument()
+    expect(screen.getByTestId('student-profession')).toBeInTheDocument()
+    expect(screen.getByTestId('student-country-origin')).toBeInTheDocument()
+    expect(screen.getByTestId('student-city-origin')).toBeInTheDocument()
+    expect(screen.getByTestId('student-country-residence')).toBeInTheDocument()
+    expect(screen.getByTestId('student-city-residence')).toBeInTheDocument()
+  })
+
+  it('pre-populates identity fields in edit mode', async () => {
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1',
+      name: 'Ana',
+      learningLanguage: 'Spanish',
+      cefrLevel: 'B1',
+      interests: [],
+      nativeLanguages: [],
+      learningGoals: [],
+      weaknesses: [],
+      difficulties: [],
+      personalNotes: null,
+      teachingNotes: null,
+      birthYear: 1990,
+      profession: 'Architect',
+      countryOfOrigin: 'Portugal',
+      cityOfOrigin: 'Lisbon',
+      countryOfResidence: 'Spain',
+      cityOfResidence: 'Madrid',
+    })
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(screen.getByTestId('student-birth-year')).toHaveValue(1990)
+    expect(screen.getByTestId('student-profession')).toHaveValue('Architect')
+    expect(screen.getByTestId('student-country-origin')).toHaveValue('Portugal')
+    expect(screen.getByTestId('student-city-origin')).toHaveValue('Lisbon')
+    expect(screen.getByTestId('student-country-residence')).toHaveValue('Spain')
+    expect(screen.getByTestId('student-city-residence')).toHaveValue('Madrid')
+  })
+
+  it('includes identity fields in form submission', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockCreateStudent.mockResolvedValue({ id: 'new-id' })
+    renderNew()
+
+    await user.type(screen.getByTestId('student-name'), 'Test Student')
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+    await user.click(screen.getByTestId('student-cefr'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+    await user.type(screen.getByTestId('student-birth-year'), '1990')
+    await user.type(screen.getByTestId('student-profession'), 'Engineer')
+    await user.type(screen.getByTestId('student-country-origin'), 'Portugal')
+    await user.type(screen.getByTestId('student-city-origin'), 'Porto')
+    await user.type(screen.getByTestId('student-country-residence'), 'Spain')
+    await user.type(screen.getByTestId('student-city-residence'), 'Madrid')
+
+    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+
+    await vi.waitFor(() => {
+      expect(mockCreateStudent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          birthYear: 1990,
+          profession: 'Engineer',
+          countryOfOrigin: 'Portugal',
+          cityOfOrigin: 'Porto',
+          countryOfResidence: 'Spain',
+          cityOfResidence: 'Madrid',
+        }),
+      )
+    })
   })
 
 })

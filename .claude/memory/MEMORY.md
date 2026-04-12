@@ -60,3 +60,5 @@
 - [Pedagogy reviewer: Isaac](reference_pedagogy_reviewer_isaac.md) — pedagogy-reviewer agent = Isaac
 - [Software architect: Sophy](reference_sophy_architect.md) — architect agent: data models, drift review
 - [Architecture reviewer: Arch](reference_arch_reviewer.md) — architecture-reviewer agent = Arch
+- [UX designer: Vera](reference_vera_ux_designer.md) — /vera skill for interaction design, screen review, layout decisions
+- [Student Profile Field Guide](reference_student_field_guide.md) — docs/student-profile-field-guide.md is source of truth for student fields; sync on changes

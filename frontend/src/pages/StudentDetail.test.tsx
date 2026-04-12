@@ -5,6 +5,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import StudentDetail from './StudentDetail'
 import * as studentsApi from '../api/students'
 
+vi.mock('../api/followups', () => ({
+  getFollowups: vi.fn().mockResolvedValue([]),
+  createFollowup: vi.fn(),
+  updateFollowupStatus: vi.fn(),
+}))
+
 vi.mock('../api/students', () => ({
   getStudent: vi.fn(),
   updateStudent: vi.fn(),
@@ -15,6 +21,13 @@ vi.mock('../api/sessionLogs', () => ({
   createSession: vi.fn(),
   serializeTopicTags: vi.fn(() => '[]'),
   parseTopicTags: vi.fn(() => []),
+}))
+
+vi.mock('@/api/followups', () => ({
+  getFollowups: vi.fn().mockResolvedValue([]),
+  createFollowup: vi.fn(),
+  updateFollowupStatus: vi.fn(),
+  deleteFollowup: vi.fn(),
 }))
 
 vi.mock('../api/lessons', () => ({
@@ -186,6 +199,39 @@ describe('StudentDetail', () => {
     await screen.findByTestId('student-detail-name')
     expect(screen.getByTestId('official-cefr-badge')).toHaveTextContent('Official: B1')
   })
+
+  it('shows profession below name in header when set', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('student-header-profession')).toHaveTextContent('Designer')
+  })
+
+  it('does not render profession element when profession is null', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...MOCK_STUDENT,
+      profession: null,
+    })
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.queryByTestId('student-header-profession')).not.toBeInTheDocument()
+  })
+
+  it('shows origin/residence compact in metadata when cities are set', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('student-header-location')).toHaveTextContent('London / Barcelona')
+  })
+
+  it('does not render location element when no city data', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...MOCK_STUDENT,
+      cityOfOrigin: null,
+      cityOfResidence: null,
+    })
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.queryByTestId('student-header-location')).not.toBeInTheDocument()
+  })
 })
 
 describe('StudentDetail - Profile tab sections', () => {
@@ -204,8 +250,8 @@ describe('StudentDetail - Profile tab sections', () => {
     await screen.findByTestId('profile-about')
     expect(screen.getByText('London, United Kingdom')).toBeInTheDocument()
     expect(screen.getByText('Barcelona, Spain')).toBeInTheDocument()
-    expect(screen.getByText('1995')).toBeInTheDocument()
-    expect(screen.getByText('Designer')).toBeInTheDocument()
+    expect(screen.getByText(/^1995 \(\d+ years\)$/)).toBeInTheDocument()
+    expect(screen.getAllByText('Designer').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Moved to Barcelona for work')).toBeInTheDocument()
   })
 

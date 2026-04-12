@@ -183,6 +183,7 @@ else
     builder.Services.AddScoped<IReplanSuggestionService, ReplanSuggestionService>();
 builder.Services.AddScoped<IDifficultyTrendService, DifficultyTrendService>();
 builder.Services.AddScoped<ISessionLogService, SessionLogService>();
+builder.Services.AddScoped<ITeacherFollowupService, TeacherFollowupService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IProgressService, ProgressService>();
 builder.Services.AddScoped<ISessionHistoryService, SessionHistoryService>();

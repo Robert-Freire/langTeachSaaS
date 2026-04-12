@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Student Detail - Ana Martins | The Academic Atelier</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#1a1b22",
+                        "error": "#ba1a1a",
+                        "surface": "#fbf8ff",
+                        "on-tertiary-container": "#ffd2be",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "on-secondary-fixed": "#0b1c30",
+                        "background": "#fbf8ff",
+                        "outline": "#777587",
+                        "on-error-container": "#93000a",
+                        "primary": "#3525cd",
+                        "on-surface-variant": "#464555",
+                        "primary-fixed": "#e2dfff",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "primary-container": "#4f46e5",
+                        "surface-container-highest": "#e3e1ec",
+                        "surface-container-high": "#e8e7f1",
+                        "secondary-fixed": "#d3e4fe",
+                        "inverse-surface": "#2f3038",
+                        "tertiary-fixed": "#ffdbcc",
+                        "tertiary-container": "#a44100",
+                        "tertiary-fixed-dim": "#ffb695",
+                        "surface-tint": "#4d44e3",
+                        "inverse-primary": "#c3c0ff",
+                        "on-tertiary-fixed": "#351000",
+                        "secondary": "#505f76",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#0f0069",
+                        "on-secondary-container": "#54647a",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "surface-bright": "#fbf8ff",
+                        "surface-variant": "#e3e1ec",
+                        "on-tertiary-fixed-variant": "#7b2f00",
+                        "outline-variant": "#c7c4d8",
+                        "surface-container": "#eeedf7",
+                        "on-primary": "#ffffff",
+                        "on-background": "#1a1b22",
+                        "surface-container-low": "#f4f2fd",
+                        "surface-dim": "#dad9e3",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#dad7ff",
+                        "inverse-on-surface": "#f1effa",
+                        "tertiary": "#7e3000",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "secondary-container": "#d0e1fb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 overflow-y-auto flex flex-col py-8 px-4 gap-y-2 bg-[#F4F2FD] dark:bg-slate-900 no-border tonal-shift">
+<div class="mb-10 px-4">
+<span class="text-lg font-bold text-[#3525CD] dark:text-[#4F46E5] tracking-tight">The Academic Atelier</span>
+<p class="text-xs text-slate-500 font-inter">Language Curator</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#3525CD] hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-inter text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#3525CD] dark:text-white font-bold bg-[#FFFFFF] dark:bg-slate-800 rounded-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-inter text-sm">Students</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#3525CD] hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">event_repeat</span>
+<span class="font-inter text-sm">Sessions</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#3525CD] hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">library_books</span>
+<span class="font-inter text-sm">Courses</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#3525CD] hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-inter text-sm">Lessons</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-[#3525CD] hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-inter text-sm">Settings</span>
+</a>
+</nav>
+<div class="mt-auto space-y-4 px-4">
+<button class="w-full bg-[#3525CD] text-white py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-95">
+<span class="material-symbols-outlined text-sm">add</span>
+                New Curriculum
+            </button>
+<div class="pt-4 border-t border-slate-200/50">
+<a class="flex items-center gap-3 py-2 text-slate-500 hover:text-[#3525CD] transition-colors" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="font-inter text-sm">Help Center</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 min-h-screen">
+<!-- TopNavBar -->
+<header class="sticky top-0 w-full z-40 bg-[#FBF8FF]/80 backdrop-blur-md flex justify-between items-center px-10 h-20 shadow-[0_12px_40px_-12px_rgba(26,27,34,0.06)]">
+<div class="flex items-center gap-8">
+<h1 class="text-[#1A1B22] font-bold font-headline">Students / Detail</h1>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-[#3525CD] border-b-2 border-[#3525CD] pb-1 font-manrope text-sm font-medium tracking-wide" href="#">Overview</a>
+<a class="text-slate-500 hover:text-[#4F46E5] transition-all font-manrope text-sm font-medium tracking-wide" href="#">Profile</a>
+<a class="text-slate-500 hover:text-[#4F46E5] transition-all font-manrope text-sm font-medium tracking-wide" href="#">Sessions</a>
+<a class="text-slate-500 hover:text-[#4F46E5] transition-all font-manrope text-sm font-medium tracking-wide" href="#">Progress</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 mr-4">
+<button class="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all">
+<span class="material-symbols-outlined">history</span>
+</button>
+</div>
+<button class="text-[#3525CD] font-medium text-sm px-4 py-2 hover:bg-surface-container-low rounded-xl transition-all">Edit Student</button>
+<button class="bg-[#3525CD] text-white px-6 py-2.5 rounded-xl font-medium text-sm hover:opacity-90 shadow-lg shadow-[#3525CD]/20 transition-all active:scale-95">Log Session</button>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-10 max-w-7xl">
+<!-- Student Hero Section (Asymmetrical Layout) -->
+<section class="grid grid-cols-12 gap-10 items-start mb-12">
+<div class="col-span-12 lg:col-span-8 flex items-end gap-8">
+<div class="relative">
+<img alt="Ana Martins Profile" class="w-32 h-40 object-cover rounded-2xl shadow-xl rotate-[-2deg]" data-alt="Professional portrait of a young Portuguese woman with dark hair, warm lighting, smiling softly, architectural office background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoDr80I5-10SMl7kvaFtJ6M1WUljPWBQXKJqyRRLwF5oWRAIJXj7g3YvjLNLKAFEiExe4oJaGiBzqvf-unmh37zyUSjBowm8WTjjxL3W1nE0kqB-WUCoC1ES8eSgLbSGmX-2dKZVWkuGtyFgjCL-JJx9xjG3-Ps6JS4dFiX7_KfGfOkdgk0NR49NObWDF55ONxiypsGD1Wu6XVr_ZtKczM3gwj9vQ1ji_VPqRJXcCL0ZmKWJUKxNb_t1JLS0S7dzQFCQMuAWvCpvU4"/>
+<div class="absolute -bottom-3 -right-3 bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1.5 rounded-md font-bold text-sm shadow-md">
+                            B1
+                        </div>
+</div>
+<div class="mb-2">
+<div class="flex items-center gap-4 mb-1">
+<h2 class="text-4xl font-extrabold tracking-tight text-on-surface">Ana Martins</h2>
+<span class="bg-secondary-container text-on-secondary-container text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded">Active • Private</span>
+</div>
+<p class="text-slate-500 font-inter mb-4">Architect &amp; Language Curator • Lisbon / Madrid</p>
+<div class="flex gap-3">
+<span class="bg-surface-container-high px-4 py-1.5 rounded-full text-xs font-medium text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">schedule</span> Next: Thursday 10:30
+                            </span>
+<span class="bg-surface-container-high px-4 py-1.5 rounded-full text-xs font-medium text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">payments</span> €45/hr
+                            </span>
+</div>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-4 bg-tertiary/5 rounded-2xl p-6 relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="text-tertiary font-bold text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">target</span> Primary Objective
+                        </h3>
+<p class="text-2xl font-bold text-on-surface mb-2">DELE B2 Exam</p>
+<div class="flex flex-col gap-1 text-sm text-slate-600">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-base">event</span>
+<span>Deadline: June 15, 2024</span>
+</div>
+<div class="flex items-center gap-2 font-bold text-tertiary">
+<span class="material-symbols-outlined text-base">timer</span>
+<span>76 days remaining</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl text-tertiary/10 rotate-12">school</span>
+</div>
+</section>
+<!-- Working Memory (Bento Grid) -->
+<div class="grid grid-cols-12 gap-6 mb-12">
+<!-- Ideas para próximas clases (Todos) -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container-lowest rounded-2xl p-8 shadow-sm">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-bold">Ideas para clases</h3>
+<button class="text-[#3525CD] hover:bg-primary-fixed/30 p-1.5 rounded-lg transition-all">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+</div>
+<ul class="space-y-4">
+<li class="flex items-start gap-3 group">
+<button class="mt-1 w-5 h-5 rounded border border-outline-variant hover:border-primary transition-all flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-100 text-primary">check</span>
+</button>
+<span class="text-sm font-inter text-on-surface-variant">Review architectural vocabulary (Facade, structural loading)</span>
+</li>
+<li class="flex items-start gap-3 group">
+<button class="mt-1 w-5 h-5 rounded border border-outline-variant hover:border-primary transition-all flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-100 text-primary">check</span>
+</button>
+<span class="text-sm font-inter text-on-surface-variant">Prática de debate: Gentrification in Lisbon vs Madrid</span>
+</li>
+<li class="flex items-start gap-3 opacity-50">
+<button class="mt-1 w-5 h-5 rounded bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-white">check</span>
+</button>
+<span class="text-sm font-inter line-through">Past Tense review (Imperfecto vs Indefinido)</span>
+</li>
+</ul>
+</div>
+<!-- Pending Followups (Amber Tint) -->
+<div class="col-span-12 lg:col-span-4 bg-[#FFF9F2] rounded-2xl p-8 border-l-4 border-tertiary-fixed shadow-sm">
+<h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">forward_to_inbox</span>
+                        Pending Followups
+                    </h3>
+<div class="space-y-4">
+<div class="bg-white p-4 rounded-xl shadow-[0_4px_12px_-4px_rgba(126,48,0,0.1)] border border-tertiary-fixed/20">
+<p class="text-sm font-semibold text-on-surface mb-1">Share DELE prep PDF</p>
+<p class="text-xs text-slate-500">Grammar focus on Subjunctive</p>
+</div>
+<div class="bg-white p-4 rounded-xl shadow-[0_4px_12px_-4px_rgba(126,48,0,0.1)] border border-tertiary-fixed/20">
+<p class="text-sm font-semibold text-on-surface mb-1">Send audio clip from El Pais</p>
+<p class="text-xs text-slate-500">Topic: Modern Urbanism</p>
+</div>
+</div>
+</div>
+<!-- Skills & Stats -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container-low rounded-2xl p-8 flex flex-col justify-between">
+<div>
+<h3 class="text-lg font-bold mb-6">Pedagogical Profile</h3>
+<div class="space-y-6">
+<div>
+<div class="flex justify-between text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
+<span>Reading</span>
+<span class="text-primary-container">B2</span>
+</div>
+<div class="w-full bg-white h-2 rounded-full">
+<div class="bg-primary-container h-full w-[80%] rounded-full"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
+<span>Writing</span>
+<span class="text-tertiary">A2</span>
+</div>
+<div class="w-full bg-white h-2 rounded-full">
+<div class="bg-tertiary h-full w-[45%] rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-8 pt-6 border-t border-slate-200/50">
+<div class="flex gap-2">
+<span class="bg-primary-fixed text-on-primary-fixed-variant px-2 py-1 rounded-md text-[10px] font-bold">L-PORTUGUESE</span>
+<span class="bg-secondary-fixed text-on-secondary-fixed-variant px-2 py-1 rounded-md text-[10px] font-bold">T-SPANISH</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Session History (Chronological Layout) -->
+<section class="mb-12">
+<div class="flex items-center justify-between mb-8">
+<h3 class="text-2xl font-bold">Session History</h3>
+<div class="flex gap-2">
+<button class="bg-surface-container-high p-2 rounded-lg hover:bg-surface-container-highest transition-all">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+<button class="bg-surface-container-high p-2 rounded-lg hover:bg-surface-container-highest transition-all">
+<span class="material-symbols-outlined">search</span>
+</button>
+</div>
+</div>
+<div class="relative">
+<div class="absolute left-8 top-0 bottom-0 w-1 bg-surface-container-high rounded-full"></div>
+<div class="space-y-12">
+<!-- Item 1 -->
+<div class="relative pl-24 group">
+<div class="absolute left-[26px] top-2 w-4 h-4 rounded-full bg-primary ring-4 ring-surface"></div>
+<div class="bg-surface-container-lowest p-6 rounded-2xl hover:shadow-lg transition-all border border-transparent hover:border-primary-fixed/50">
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="text-xs font-bold text-primary tracking-widest uppercase mb-1 block">Thursday, March 21</span>
+<h4 class="text-lg font-bold">Vocabulary: Sustainable Materials</h4>
+</div>
+<span class="bg-surface-container-low px-3 py-1 rounded text-xs font-inter">60 mins</span>
+</div>
+<p class="text-sm text-slate-600 mb-4 font-inter leading-relaxed">
+                                    Discussed the ethics of cement production in Iberia. Ana showed high engagement but struggled with past subjunctive forms when hypothesizing about future regulations.
+                                </p>
+<div class="flex items-center gap-4 py-3 border-t border-slate-100">
+<div class="flex items-center gap-2 text-xs font-semibold text-tertiary">
+<span class="material-symbols-outlined text-sm">home_work</span>
+                                        Homework: Write 300 words on bioclimatic design.
+                                    </div>
+</div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="relative pl-24 group">
+<div class="absolute left-[26px] top-2 w-4 h-4 rounded-full bg-primary/40 ring-4 ring-surface"></div>
+<div class="bg-surface-container-lowest p-6 rounded-2xl hover:shadow-lg transition-all border border-transparent hover:border-primary-fixed/50">
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="text-xs font-bold text-slate-400 tracking-widest uppercase mb-1 block">Tuesday, March 19</span>
+<h4 class="text-lg font-bold">DELE Simulation: Reading Task 1</h4>
+</div>
+<span class="bg-surface-container-low px-3 py-1 rounded text-xs font-inter">90 mins</span>
+</div>
+<p class="text-sm text-slate-600 mb-4 font-inter leading-relaxed">
+                                    Focused on identifying tone in formal letters. Performance was excellent (18/20). She needs more synonyms for "nonetheless" and "furthermore".
+                                </p>
+<div class="flex items-center gap-2">
+<span class="bg-secondary-fixed-dim/30 text-on-secondary-fixed-variant px-3 py-1 rounded-full text-[11px] font-bold">EXAM-STRATEGY</span>
+<span class="bg-secondary-fixed-dim/30 text-on-secondary-fixed-variant px-3 py-1 rounded-full text-[11px] font-bold">READING-COMPREHENSION</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Teacher's Working Memory (Updated Layout) -->
+<section class="mx-10 mb-20 p-8 bg-[#1A1B22] rounded-3xl text-white relative overflow-hidden">
+<div class="relative z-10 grid grid-cols-12 gap-8">
+<div class="col-span-12 md:col-span-9">
+<h3 class="text-xl font-headline font-bold mb-4 flex items-center gap-2 text-primary-fixed">
+<span class="material-symbols-outlined">edit_note</span>
+                        Teacher's Working Memory
+                    </h3>
+<p class="text-slate-400 text-base font-inter leading-relaxed mb-6">
+                        Ana responds best to visual aids and architectural metaphors. Avoid dry grammar drills; instead, embed grammar into "site visit" scenarios. She is currently feeling pressure from her firm in Madrid, so keep homework light but high-impact.
+                    </p>
+<div class="flex gap-4">
+<button class="bg-primary hover:bg-primary-container px-6 py-2 rounded-xl text-sm font-bold transition-all">Add Memory</button>
+</div>
+</div>
+<div class="col-span-12 md:col-span-3">
+<div class="p-6 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 h-full flex flex-col justify-center">
+<h4 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Lifecycle</h4>
+<div class="space-y-4">
+<div class="flex justify-between text-sm">
+<span>Student Since</span>
+<span class="font-bold">Jan 2024</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Background Decorative Element -->
+<div class="absolute -bottom-10 -right-10 w-64 h-64 bg-primary/20 blur-[100px] rounded-full"></div>
+</section>
+</main>
+<!-- Floating Action for Mobile -->
+<div class="md:hidden fixed bottom-6 right-6">
+<button class="bg-[#3525CD] text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+</button>
+</div>
+</body></html>

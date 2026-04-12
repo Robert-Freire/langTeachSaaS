@@ -19,7 +19,7 @@ vi.mock('../lib/logger', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }))
 
-const emptyDashboard = { nextSession: null, todaySessions: [], activeStudents: [] }
+const emptyDashboard = { nextSession: null, todaySessions: [], activeStudents: [], pendingFollowups: [] }
 
 function makeStudent(overrides: Partial<studentsApi.Student> = {}): studentsApi.Student {
   return {
@@ -190,6 +190,7 @@ describe('Students page', () => {
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
       nextSession: null,
       todaySessions: [],
+      pendingFollowups: [],
       activeStudents: [
         {
           studentId: 'abc-123',

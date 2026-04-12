@@ -96,7 +96,6 @@ When a task is complete:
       | Reviewer | Finding | Action |
       |----------|---------|--------|
       | qa-verify | Gap: no e2e for empty state | Fixed (added test) |
-      | review | Unused import in FooBar.tsx | Fixed |
       | architecture-reviewer | Service could reuse SharedHelper | Deferred (#NNN) |
       | review-ui | Button clipped on mobile | Fixed |
       | CodeRabbit | Nullable warning in DTO | Dismissed (pre-existing) |

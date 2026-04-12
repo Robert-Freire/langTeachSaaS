@@ -1,0 +1,17 @@
+Source: WhatsApp voice note from Jordi, forwarded by Robert via email (msg UID 507, "Audio from Robert Freire" but content is Jordi), 2026-04-09 21:03.
+File: PTT-20260409-WA0000.opus
+
+Transcript (Spanish, Whisper base model; has rough ASR artifacts):
+
+Hoy hay unos dias, para cochitas, primero, a ver si las fechas, la fecha, puede aparecer automaticamente la fecha de hoy, decido tengo que introducir cada vez que entro una clase, la fecha. Y el ano, a ver si no hace falta escribir los cuatro digitos, solo con 26 series oficientes. Y otra cosa, hoy ahora ha dicho, lo que ha pasado es que no puedo crear nuevas clases. Solo puedo estar New Season, que ha parecido, estar New Next Season, es lo que he visto que ha parecido ahora. Y si trabajo desde esa me borra la clase anterior, con lo cual, si ahora quiero crear la clase del 19 de abril, no puedo. No se como crear una nueva clase. No se, a ver si me lo puedes mirar. Y luego he tenido otras cosas, pero bueno, ahi tengo clase. Mira a mi sobre todo lo ultimo, por favor. Gracias, de la foto.
+
+---
+Paraphrase / intent (Robert/PM gloss):
+
+Three items, second one is urgent:
+
+1. Date field in new session form should default to today. Don't make him type the date every time.
+2. Year field should accept 2-digit year (26) instead of requiring 4 digits.
+3. **BUG (priority): "No puedo crear nuevas clases."** He says the only button he can see is "New Session" / "Start Next Session" and when he clicks it, it seems to overwrite/replace the previous session instead of creating a new one. He wants to create the session for April 19 and doesn't know how. "Si trabajo desde esa me borra la clase anterior." Explicitly asks: "mira sobre todo lo ultimo, por favor" = look at the last one above all, please.
+
+This almost certainly relates to the "Start next session" button shipped last sprint (#582, Round 13 #65). Hypothesis: the button is replacing the current session rather than creating a new one, OR there is no visible "New session" entry point left for the ad-hoc case, only the "Start next session" flow.

@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, NotebookPen, Pencil } from 'lucide-react'
 import { getStudent, updateStudent } from '../api/students'
+import { getFollowups } from '@/api/followups'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
@@ -37,6 +38,14 @@ export default function StudentDetail() {
     queryFn: () => getStudent(id!),
     enabled: !!id,
   })
+
+  const { data: followups = [], refetch: refetchFollowups } = useQuery({
+    queryKey: ['followups', id],
+    queryFn: () => getFollowups(id!),
+    enabled: !!id,
+  })
+
+  const onFollowupChange = useCallback(() => { refetchFollowups() }, [refetchFollowups])
 
   const { mutate: toggleDifficultyStatus } = useMutation({
     mutationFn: (vars: { difficultyId: string; status: 'Active' | 'Covered' }) => {
@@ -144,6 +153,16 @@ export default function StudentDetail() {
                 {student.name}
               </h1>
 
+              {/* Profession */}
+              {student.profession && (
+                <p
+                  className="text-sm text-zinc-500 mt-0.5 truncate"
+                  data-testid="student-header-profession"
+                >
+                  {student.profession}
+                </p>
+              )}
+
               {/* Metadata row */}
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 {/* Teacher CEFR level */}
@@ -166,6 +185,16 @@ export default function StudentDetail() {
                 {student.nativeLanguages.length > 0 && (
                   <span className="text-[0.6875rem] uppercase tracking-[0.05em] text-zinc-400 font-medium">
                     Native: {student.nativeLanguages.join(', ')}
+                  </span>
+                )}
+
+                {/* Origin / Residence compact */}
+                {(student.cityOfOrigin || student.cityOfResidence) && (
+                  <span
+                    className="text-[0.6875rem] text-zinc-400 font-medium"
+                    data-testid="student-header-location"
+                  >
+                    {[student.cityOfOrigin, student.cityOfResidence].filter(Boolean).join(' / ')}
                   </span>
                 )}
               </div>
@@ -230,6 +259,8 @@ export default function StudentDetail() {
       {activeTab === 'profile' && (
         <StudentProfileTab
           student={student}
+          followups={followups}
+          onFollowupChange={onFollowupChange}
           onToggleDifficultyStatus={(difficultyId, status) =>
             toggleDifficultyStatus({ difficultyId, status })
           }

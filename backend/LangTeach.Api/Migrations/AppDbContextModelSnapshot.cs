@@ -726,6 +726,54 @@ namespace LangTeach.Api.Migrations
                     b.ToTable("Teachers");
                 });
 
+            modelBuilder.Entity("LangTeach.Api.Data.Models.TeacherFollowup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly?>("DueDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid?>("SourceSessionLogId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(450)")
+                        .HasDefaultValue("pending");
+
+                    b.Property<Guid?>("StudentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TeacherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceSessionLogId");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("TeacherId", "Status");
+
+                    b.HasIndex("TeacherId", "StudentId");
+
+                    b.ToTable("TeacherFollowups");
+                });
+
             modelBuilder.Entity("LangTeach.Api.Data.Models.TeacherSettings", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1045,6 +1093,31 @@ namespace LangTeach.Api.Migrations
                         .HasForeignKey("TeacherId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Teacher");
+                });
+
+            modelBuilder.Entity("LangTeach.Api.Data.Models.TeacherFollowup", b =>
+                {
+                    b.HasOne("LangTeach.Api.Data.Models.SessionLog", "SourceSessionLog")
+                        .WithMany()
+                        .HasForeignKey("SourceSessionLogId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("LangTeach.Api.Data.Models.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("LangTeach.Api.Data.Models.Teacher", "Teacher")
+                        .WithMany()
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SourceSessionLog");
+
+                    b.Navigation("Student");
 
                     b.Navigation("Teacher");
                 });

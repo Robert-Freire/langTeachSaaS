@@ -20,7 +20,8 @@ public class DashboardServiceTests : IDisposable
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _db = new AppDbContext(options);
-        _sut = new DashboardService(_db, NullLogger<DashboardService>.Instance);
+        var followupService = new TeacherFollowupService(_db);
+        _sut = new DashboardService(_db, followupService, NullLogger<DashboardService>.Instance);
 
         _db.Teachers.Add(new Teacher
         {

@@ -635,3 +635,395 @@ All three open questions from the previous revision have been answered:
    current product. No i18n migration triggered.
 
 Ready to execute.
+
+---
+
+## 7. Log Session screen redesign (Isaac review, 2026-04-11)
+
+### Current state
+
+The Log Session UI is a modal dialog over the student profile. It contains:
+- Record / Upload audio buttons
+- Date (blank date picker, does not default to today)
+- Cancelled checkbox
+- What was planned (blank textarea)
+- What was actually done (blank textarea)
+- Homework assigned (text input)
+- Topics for next session (textarea)
+- General notes (textarea, placeholder: "Learning style, student mood, context...")
+- Topic tags (text input + category dropdown + Add button)
+- Level reassessment (checkbox only, no target level)
+- Linked lesson (dropdown)
+- Log session button
+
+### Isaac's pedagogical critique
+
+The Log Session is the most critical moment in the teaching loop: the
+5 minutes after class when the teacher captures what happened. The current
+UI is **context-blind**: it shows blank fields with no information from
+the student's profile, previous sessions, or planning data. The teacher
+does everything from memory.
+
+**Problem 1: "What was planned" is blank.**
+The teacher already wrote "Topics for next session" in the *previous*
+session log. That text should pre-populate "What was planned" in this
+session. Making the teacher remember and re-type defeats the purpose of
+having logged it before. This is the connection between NextSessionTopics
+and the current session.
+
+**Problem 2: TeachingTodos are invisible.**
+The teacher's accumulated backlog ("trabajar ser/estar", "enviar
+ejercicio de gustar") is not shown here. They can't:
+- See what they've been meaning to get to
+- Check items off as covered in this session
+- Add new items that come up during class
+This is the exact pain Jordi described in the April 9 voice note: ideas
+get buried and lost.
+
+**Problem 3: No ShortTermObjectives reminder.**
+If the DELE exam is in 3 weeks, or the student has a trip to Madrid next
+week, the teacher should see that when logging. It changes what "Topics
+for next session" should prioritize. Currently invisible.
+
+**Problem 4: No Difficulties connection.**
+The teacher can't mark which difficulties were actively worked on in this
+session. This is how difficulties transition from "working" to "covered"
+status. Without it, the difficulty tracker is write-once, never updated.
+
+**Problem 5: It's a modal (hides the profile).**
+The student profile is behind a blur overlay. The teacher can't glance at
+goals, notes, teaching history, or difficulties while writing. The form
+should either be a full page or a side panel with context visible.
+
+**Problem 6: "General notes" is ambiguous.**
+The placeholder "Learning style, student mood, context..." overlaps with
+TeachingNotes and PersonalNotes on the profile. The teacher doesn't know
+where to put observations about the person vs observations about the
+teaching. Session-specific notes (mood today, energy level, particular
+struggles) should be clearly scoped to *this session*, not confused with
+profile-level notes.
+
+**Problem 7: Level reassessment has no target.**
+The checkbox says "Level reassessment" but when checked, there's no
+dropdown to specify what the teacher is reassessing to. Where does the
+new level get recorded?
+
+**Problem 8: Missing fields.**
+- No duration (useful for pacing and billing)
+- Date doesn't default to today
+- No session number indicator ("Session #14 with this student")
+
+### Proposed redesign direction
+
+The Log Session screen should be a **full page** (not a modal), split
+into two zones:
+
+**LEFT: Student context panel (read-only, ~35% width)**
+- Student name, level, L1
+- ShortTermObjectives with dates (highlighted if within 6 weeks)
+- TeachingTodos backlog (checkboxes to mark as covered in this session)
+- Last session summary (auto-populated: date, what was done, homework)
+- "What was planned" pre-populated from last session's NextSessionTopics
+- Current difficulties list (checkboxes to mark as worked-on)
+
+**RIGHT: Session log form (~65% width)**
+- Date (defaults to today) + Duration (minutes)
+- Session number (auto-calculated, read-only)
+- Cancelled toggle
+- What was actually done (textarea, the main narrative)
+- Homework assigned (text input)
+- Topics for next session (textarea, this feeds the next session's
+  "What was planned")
+- New TeachingTodos (quick-add: pedagogical ideas, saved to the
+  student's todo backlog)
+- New TeacherFollowups (quick-add: operational promises like "send PDF",
+  saved to the teacher-level followup tray on the dashboard)
+- Topic tags (with suggestions from curriculum and student's goals)
+- Level reassessment (checkbox + dropdown for new level when checked)
+- General notes (scoped to this session: "student mood, energy, context
+  for this specific class", NOT profile-level observations)
+- Linked lesson (dropdown)
+- Audio recording section (Record / Upload)
+
+**The key connections:**
+- Previous session's "Topics for next session" flows into this session's
+  "What was planned" (auto-populated, editable)
+- TeachingTodos are visible and checkable during logging
+- Difficulties are visible and can be marked as worked-on
+- ShortTermObjectives are visible as context reminders
+- New TeachingTodos can be added inline and saved to the student backlog
+- New TeacherFollowups can be added inline and saved to the teacher-level
+  followup tray (surfaces on dashboard, not on student profile)
+
+### Stitch prompt (for v0.dev)
+
+Paste the shared context block (section 1), then paste this prompt.
+
+~~~
+TASK: Design the Log Session screen for Matteo Russo (C1.1, Italian).
+This is a FULL PAGE, not a modal. It replaces the current modal dialog.
+
+DESIGN LANGUAGE: Same Stitch "Academic Atelier" rules as other screens.
+- Tonal layering, no 1px borders, ambient shadows.
+- Manrope headlines, Inter body, Label-SM uppercase metadata.
+- Square CEFR badges. Indigo primary gradient buttons.
+- Text color #1A1B22, never pure black.
+
+LAYOUT: Two-column, full width of main content area.
+
+LEFT COLUMN — STUDENT CONTEXT (~35% width)
+  Read-only panel on surface-container-lowest with ambient shadow.
+  This panel gives the teacher context while they write.
+
+  Section: "STUDENT" (Label-SM header)
+  - Avatar + "Matteo Russo" Title-SM + CEFR badge "C1.1" + "Italian"
+  - "Session #15" in zinc-500
+
+  Section: "OBJECTIVES" (Label-SM header)
+  Items with target dates in zinc-500:
+  - "Redacción formal semanal" — May 2026
+  - "Completar ejercicios de por/para" — Apr 15 (amber text, overdue)
+  Amber background highlight on items within 6 weeks of target.
+
+  Section: "TEACHING TODOS" (Label-SM header)
+  Subtitle in zinc-500: "Pedagogical ideas to work on with this student"
+  Checklist with indigo checkboxes. Teacher can check items off as
+  "covered in this session":
+  - [ ] "Trabajar concesivas con textos periodísticos"
+  - [ ] "Ejercicio contrastivo por/para con italiano"
+  - [x] "Explicar diferencia indicativo/subjuntivo en temporales"
+    (already covered, strikethrough, green dot)
+
+  Section: "PENDING FOLLOWUPS" (Label-SM header)
+  Subtitle in zinc-500: "Things you owe this student"
+  List with amber/zinc dots (same style as dashboard Followups panel):
+  - amber dot: "Corregir redacción 'mi ciudad ideal'" — 3d ago
+  - zinc dot: "Enviar ejercicios de por/para" — yesterday
+  These are TeacherFollowups filtered to this student. Read-only here
+  (checked off on the dashboard or via the form's quick-add).
+
+  Section: "LAST SESSION" (Label-SM header)
+  Date: "Apr 5, 2026" in zinc-500
+  Summary in Spanish (Body-MD):
+  "Subjuntivo en concesivas, le costó. Prometí ejercicios de por/para."
+  Homework: "redacción 'mi ciudad ideal' — pendiente de corrección"
+
+  Section: "PLANNED FOR TODAY" (Label-SM header)
+  Pre-populated from last session's "Topics for next session":
+  "Repasar ejercicio de por/para. Corregir redacción juntos."
+  Subtle indigo-50 background to indicate this is auto-filled.
+
+  Section: "ACTIVE DIFFICULTIES" (Label-SM header)
+  Compact list with checkboxes to mark as "worked on today":
+  - [ ] Grammar: "Subjuntivo en concesivas" — amber "Frequent"
+  - [ ] Grammar: "Por/para en abstractos" — zinc "Occasional"
+  - [ ] Writing: "Registro formal" — amber "Frequent"
+
+RIGHT COLUMN — SESSION LOG FORM (~65% width)
+  On surface-container-lowest card with ambient shadow.
+  Header: "Log Session" in Headline-MD (Manrope).
+
+  Row 1 (horizontal):
+  - Date picker (defaults to "Apr 9, 2026", today) — 50% width
+  - Duration dropdown: "60 min" selected (options: 30, 45, 60, 90 min)
+    — 25% width
+  - Cancelled toggle switch — 25% width
+
+  Section: "WHAT HAPPENED" (Label-SM header)
+  Large textarea (5 rows), placeholder: "What you actually covered..."
+  Pre-filled (editable): "Repasamos por/para con ejercicio contrastivo
+  italiano-español. Corregimos la redacción juntos, registro todavía
+  informal."
+
+  Section: "HOMEWORK" (Label-SM header)
+  Single-line input, placeholder: "Homework assigned..."
+  Pre-filled: "Reescribir la redacción con registro formal. Fecha: lunes."
+
+  Section: "NEXT SESSION" (Label-SM header)
+  Textarea (3 rows), placeholder: "What to focus on next time..."
+  Content: "Seguir con por/para en contextos abstractos. Empezar
+  concesivas con textos periodísticos."
+
+  Section: "NEW TEACHING TODOS" (Label-SM header)
+  Quick-add list. Each row: text input + "Add" button.
+  Subtitle in zinc-500: "Pedagogical ideas — saved to the student's
+  backlog for future sessions."
+  One item already added: "Buscar texto periodístico sobre cine para
+  concesivas"
+  Empty input row ready for another.
+
+  Section: "NEW FOLLOWUPS" (Label-SM header)
+  Quick-add list. Each row: text input + "Add" button.
+  Subtitle in zinc-500: "Things you owe — saved to your dashboard
+  followups tray."
+  One item already added: "Enviar PDF de conectores concesivos a Matteo"
+  Empty input row ready for another.
+  Visual differentiation from Teaching Todos: amber-50 background tint
+  on this section to match the dashboard Followups amber dot convention.
+
+  Section: "TOPICS COVERED" (Label-SM header)
+  Tag input with suggestions. Already added:
+  chips: "por/para" "redacción" "registro formal"
+  Input with placeholder: "Add topic..."
+  Category dropdown: Grammar / Vocabulary / Writing / Speaking /
+  Listening / Culture
+
+  Section: "LEVEL REASSESSMENT" (Label-SM header)
+  Row: toggle switch (off) + dropdown "Current: C1.1" (disabled when
+  toggle off). When toggled on, dropdown becomes active with all CEFR
+  levels. Below: small text "This will update the student's CEFR level."
+
+  Section: "SESSION NOTES" (Label-SM header)
+  Textarea (3 rows), placeholder: "Student mood, energy, context for
+  this specific session..."
+  Subtitle in zinc-500: "About this session, not the student in general."
+
+  Section: "LINKED LESSON" (Label-SM header)
+  Dropdown: "Select a lesson..." with search.
+
+  Section: "AUDIO" (Label-SM header)
+  Row: ghost button "Record" with mic icon + ghost button "Upload audio"
+  with upload icon.
+
+  Footer: right-aligned buttons.
+  - Ghost button "Cancel"
+  - Primary gradient button "Log Session"
+
+SIDEBAR: same Stitch sidebar. "Students" nav item is active.
+
+OUTPUT: a single React component file using shadcn/ui components, fully
+self-contained, with all Matteo's data hardcoded at the top. Include
+the Stitch sidebar.
+~~~
+
+### Open questions for PM / Sophy
+
+1. **Navigation flow:** Does "Log Session" from the profile navigate to
+   `/students/:id/log-session`, or does it use a slide-over panel? Full
+   page is recommended by Isaac for context visibility.
+2. **TeachingTodos checked off during logging:** When the teacher checks
+   a todo as "covered in this session," does it update immediately or
+   only on form submit? Immediate feels right (autosave pattern), but
+   needs backend confirmation.
+3. **"Planned for today" pre-population:** What if there's no previous
+   session? Show empty with a note "No previous session found" or hide
+   the section entirely?
+4. **Duration:** Free text or dropdown? Dropdown (30/45/60/90) covers
+   99% of cases and is faster. But some teachers have 75-minute slots.
+5. **Session number:** Auto-calculated from session count. Does it count
+   cancelled sessions? Pedagogically no (they didn't learn anything),
+   operationally maybe (for billing). Needs a decision.
+6. **TeacherFollowup vs TeachingTodo in the form:** Both have quick-add
+   sections. The visual distinction (amber tint for followups) may not
+   be enough. Should we use different placeholder text, different icons,
+   or a single input with a type toggle ("pedagogical" / "operational")?
+   Isaac recommends two separate sections with clear subtitles. PM/Vera
+   should weigh in on whether this creates cognitive overhead.
+7. **Pending followups in context panel:** Read-only or checkable? If
+   the teacher can check off "Enviar PDF" directly from the Log Session
+   context panel, it saves a trip to the dashboard. But it mixes
+   completing old items with logging a new session. Needs UX decision.
+
+---
+
+## 8. Voice extraction gaps (Isaac review, 2026-04-11)
+
+### Current extraction coverage
+
+The voice flow (Record/Upload -> Whisper transcription -> Claude Haiku
+extraction) currently extracts 7 fields: whatWasCovered, areasToImprove,
+emotionalSignals, homeworkAssigned, nextLessonIdeas, sessionDate, and
+suggestedDifficulties.
+
+### Fields the voice SHOULD extract
+
+Teachers naturally mention these in voice notes but the extraction
+prompt (`PromptService.BuildReflectionExtractionPrompt`) doesn't ask
+for them:
+
+| Field | Voice signal | Priority |
+|---|---|---|
+| topicTags | "Hemos trabajado el subjuntivo, vocabulario de restaurante" | HIGH |
+| previousHomeworkStatus | "Hizo los deberes" / "No los trajo" / "A medias" | HIGH |
+| teachingTodos | "Tengo que trabajar con el los conectores" / "Me apunto repasar ser/estar" | HIGH |
+| teacherFollowups | "Le tengo que mandar el PDF" / "Le debo un ejercicio" / "Prometi enviar el audio" | HIGH |
+| levelReassessment | "Creo que ya esta en B1" / "Lo subo a B2" | MEDIUM |
+| duration | "Hemos tenido una hora" / "Clase de 45 minutos" | MEDIUM |
+| isCancelled | "Cancelo la clase" / "No vino" | MEDIUM |
+| Difficulties worked on | "Hemos trabajado el subjuntivo" matching existing "Subjuntivo en concesivas" | MEDIUM |
+
+The extraction prompt should also receive the student's existing
+difficulties list as context so it can cross-reference mentions against
+known difficulties and flag which ones were worked on.
+
+### TeachingTodos and TeacherFollowups via voice (pedagogical note)
+
+Voice is the most natural capture moment. Jordi described it: the
+teacher is in the car between students, mentally debriefing. That
+2-minute voice note is where todos and followups are born. If the
+extraction doesn't capture them, the teacher has to remember to type
+them later in the form, which means they won't.
+
+Extraction should classify automatically:
+- "Tengo que trabajar X con este alumno" -> TeachingTodo (pedagogical)
+- "Le tengo que mandar/enviar/dar X" -> TeacherFollowup (operational)
+
+The signals are distinct in natural speech. The AI can reliably
+distinguish "I need to teach X" from "I need to send X."
+
+### Voice update for existing sessions (not implemented)
+
+Currently `handleVoiceNote` (SessionLogDialog.tsx:310) always calls
+`createSession` with `status: 'Draft'`. Problems:
+
+1. **Duplicate drafts.** Recording a second voice note creates a second
+   Draft session instead of updating the first.
+2. **No voice on confirmed sessions.** Teacher can't add a voice note to
+   a session they already confirmed (e.g., forgot to mention something).
+
+**Proposed behavior:**
+- **Create mode (no existing session):** Voice creates a Draft (current).
+- **Edit mode (existing session open):** Voice extraction merges into the
+  existing form state. Empty fields get filled; fields with content get
+  the extraction appended or shown as merge suggestions.
+- **Second voice note on same session:** Append/merge, not replace.
+  Teachers might record one note about what happened and another 10
+  minutes later when they remember something.
+
+### Proposed expanded extraction schema
+
+```json
+{
+  "whatWasCovered": "string or null",
+  "areasToImprove": "string or null",
+  "emotionalSignals": "string or null",
+  "homeworkAssigned": "string or null",
+  "nextLessonIdeas": "string or null",
+  "sessionDate": "string or null (ISO 8601)",
+  "suggestedDifficulties": [],
+  "topicTags": [{ "tag": "string", "category": "string or null" }],
+  "previousHomeworkStatus": "Done | Partial | NotDone | null",
+  "teachingTodos": ["string (pedagogical ideas for future sessions)"],
+  "teacherFollowups": ["string (operational promises: send, share, confirm)"],
+  "levelReassessment": "CEFR level string or null",
+  "durationMinutes": "integer or null",
+  "isCancelled": "boolean or null",
+  "difficultiesWorkedOn": ["string (matched against student's known difficulties)"]
+}
+```
+
+### Open questions for PM / Sophy
+
+8. **Merge strategy for second voice note:** Append text fields with
+   a newline separator? Show a diff/merge UI? Or just replace (lossy
+   but simple)? Isaac recommends append for narrative fields
+   (whatWasCovered, generalNotes) and union for list fields
+   (topicTags, teachingTodos, teacherFollowups).
+9. **Voice on confirmed sessions:** Does recording on a confirmed
+   session change its status back to Draft? Or does it auto-confirm
+   the merged version? Pedagogically, auto-confirm feels right (the
+   teacher is adding, not revising), but needs a backend decision.
+10. **Extraction model:** Current is Haiku. With the expanded schema
+    and difficulty cross-referencing, does it need Sonnet? Test quality
+    before deciding. Haiku is fast and cheap; only upgrade if it can't
+    reliably distinguish todos from followups.

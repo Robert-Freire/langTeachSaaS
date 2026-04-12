@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Academic Atelier - Student Profile: Ana Martins</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-container": "#dad7ff",
+                      "inverse-on-surface": "#f1effa",
+                      "on-primary": "#ffffff",
+                      "on-background": "#1a1b22",
+                      "surface-container-low": "#f4f2fd",
+                      "surface-dim": "#dad9e3",
+                      "surface-container-lowest": "#ffffff",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "secondary-container": "#d0e1fb",
+                      "tertiary": "#7e3000",
+                      "on-secondary": "#ffffff",
+                      "on-primary-fixed": "#0f0069",
+                      "on-secondary-container": "#54647a",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "secondary": "#505f76",
+                      "surface-container": "#eeedf7",
+                      "surface-bright": "#fbf8ff",
+                      "surface-variant": "#e3e1ec",
+                      "on-tertiary-fixed-variant": "#7b2f00",
+                      "outline-variant": "#c7c4d8",
+                      "on-tertiary": "#ffffff",
+                      "on-error": "#ffffff",
+                      "primary-container": "#4f46e5",
+                      "on-surface-variant": "#464555",
+                      "primary-fixed": "#e2dfff",
+                      "tertiary-fixed-dim": "#ffb695",
+                      "surface-tint": "#4d44e3",
+                      "inverse-primary": "#c3c0ff",
+                      "on-tertiary-fixed": "#351000",
+                      "surface-container-highest": "#e3e1ec",
+                      "surface-container-high": "#e8e7f1",
+                      "secondary-fixed": "#d3e4fe",
+                      "inverse-surface": "#2f3038",
+                      "tertiary-fixed": "#ffdbcc",
+                      "tertiary-container": "#a44100",
+                      "error-container": "#ffdad6",
+                      "primary-fixed-dim": "#c3c0ff",
+                      "on-surface": "#1a1b22",
+                      "error": "#ba1a1a",
+                      "surface": "#fbf8ff",
+                      "on-tertiary-container": "#ffd2be",
+                      "outline": "#777587",
+                      "on-error-container": "#93000a",
+                      "primary": "#3525cd",
+                      "on-primary-fixed-variant": "#3323cc",
+                      "on-secondary-fixed": "#0b1c30",
+                      "background": "#fbf8ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "fontFamily": {
+                      "headline": ["Manrope"],
+                      "body": ["Inter"],
+                      "label": ["Inter"]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: #FBF8FF; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface flex min-h-screen">
+<!-- SideNavBar (Shared Component) -->
+<aside class="bg-[#F4F2FD] dark:bg-zinc-900 h-screen w-64 fixed left-0 top-0 flex flex-col py-8 px-4 gap-y-4">
+<div class="flex flex-col mb-8 px-2">
+<h1 class="font-manrope font-bold text-[#3525CD] dark:text-[#4F46E5] text-xl">The Academic Atelier</h1>
+<p class="font-inter text-xs text-zinc-600 dark:text-zinc-400">Language Curator</p>
+</div>
+<nav class="flex flex-col gap-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-[#FFFFFF]/50 dark:hover:bg-zinc-800/50 transition-all font-inter title-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span> Dashboard
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#3525CD] dark:text-[#4F46E5] font-bold bg-[#FFFFFF] dark:bg-zinc-800 rounded-lg translate-x-1 duration-200 font-inter title-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span> Students
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-[#FFFFFF]/50 dark:hover:bg-zinc-800/50 transition-all font-inter title-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="event_repeat">event_repeat</span> Sessions
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-[#FFFFFF]/50 dark:hover:bg-zinc-800/50 transition-all font-inter title-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="school">school</span> Courses
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-[#FFFFFF]/50 dark:hover:bg-zinc-800/50 transition-all font-inter title-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span> Lessons
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-[#FFFFFF]/50 dark:hover:bg-zinc-800/50 transition-all font-inter title-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span> Settings
+            </a>
+</nav>
+<div class="mt-auto flex items-center gap-3 px-3 py-4 bg-surface-container-lowest/40 rounded-xl">
+<img alt="Teacher Profile" class="w-10 h-10 rounded-full object-cover" data-alt="professional portrait of a creative professional woman with glasses in a bright modern studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPjybSDJ213dHLxIBjBhOwPQ14toH08REpeIsg_yqXRFgajJtEPlHN5ReeXC2Jv41zno8vUb-3DexjjJltguwKQV7o8x3lWxWwlg8R3f0kiwFlgo-WGBcGbAfbmYg2wWroZLzS6C-iC7imCpmjjnGGvB59vYDx0-3zoJVu3w9TIuDnJ5fzcoCOjAix-6tnMtqkvJnbX9c3QKdpWUcxGIZUpTC9LoEQjC6ZkhXmzTzEW73NmcXKYuG0mMCxdt_TBPzIQvQdPSIoprEj"/>
+<div class="overflow-hidden">
+<p class="text-xs font-bold truncate">Elena Rossi</p>
+<p class="text-[10px] text-zinc-500">Teacher Account</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 flex flex-col min-h-screen relative bg-surface">
+<!-- TopAppBar (Shared Component) -->
+<header class="bg-[#FBF8FF] dark:bg-zinc-950 w-full h-16 flex justify-between items-center px-8 sticky top-0 z-30">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4">
+<img alt="Ana Martins" class="w-10 h-10 rounded-lg object-cover" data-alt="candid portrait of a middle-aged woman with thoughtful expression and elegant style in a sunny outdoor plaza" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKrdZwS-xycawKM7-IfPyZ0i96gd0bQ5e0uVKe-6EWxNmD8dFd3tbpC1yM6DQs4wz6Vg53zKPrLqFulPyl2Gnr3pcldy38WNn8fznevdeqQgttx8GSN_VAYKHhGWVJS8dB5YoZt8sRsJeadHhNlAv3Qt-oHUlH06OxLr96yzkpirP1XuSzMSOUaZjeAg2Uahl854FU5ZB0jN2hhNH6CJEUfadLeohU93piNpqJUeA6wgJrNeDUNNkNsd8psswWjLDBG1l7060MT7eb"/>
+<h2 class="font-manrope headline-md tracking-wide font-bold text-[#3525CD] dark:text-[#4F46E5]">Ana Martins</h2>
+</div>
+<nav class="flex gap-6 h-full items-center">
+<a class="text-zinc-500 dark:text-zinc-400 font-medium h-full flex items-center border-b-2 border-transparent hover:bg-[#F4F2FD] dark:hover:bg-zinc-800 transition-colors px-2" href="#">Overview</a>
+<a class="text-[#3525CD] dark:text-[#4F46E5] border-b-2 border-[#3525CD] font-medium h-full flex items-center px-2" href="#">Profile</a>
+<a class="text-zinc-500 dark:text-zinc-400 font-medium h-full flex items-center border-b-2 border-transparent hover:bg-[#F4F2FD] dark:hover:bg-zinc-800 transition-colors px-2" href="#">Sessions</a>
+<a class="text-zinc-500 dark:text-zinc-400 font-medium h-full flex items-center border-b-2 border-transparent hover:bg-[#F4F2FD] dark:hover:bg-zinc-800 transition-colors px-2" href="#">Progress</a>
+</nav>
+</div>
+<div class="flex items-center gap-3">
+<button class="bg-[#F4F2FD] text-[#3525CD] px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#E3E1EC] transition-all">Edit Student</button>
+<button class="bg-[#3525CD] text-white px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-all shadow-lg shadow-primary/20">Log Session</button>
+</div>
+</header>
+<!-- Divider -->
+<div class="bg-[#F4F2FD] dark:bg-zinc-900 h-[1px] w-full"></div>
+<!-- Content Area: Bento Layout -->
+<div class="p-8 lg:p-12 max-w-7xl mx-auto w-full grid grid-cols-12 gap-8 content-start">
+<!-- Top Highlight: The Anchor (Hero Bento) -->
+<section class="col-span-12 bg-white rounded-full p-8 shadow-sm flex flex-col lg:flex-row items-center gap-8 overflow-hidden relative border border-outline-variant/10">
+<div class="absolute top-0 right-0 w-64 h-64 bg-[#F4F2FD] rounded-full -mr-32 -mt-32 opacity-40"></div>
+<div class="relative z-10 flex-1">
+<span class="label-sm font-bold uppercase tracking-widest text-[#3525CD] mb-3 block opacity-60">The Why / Motivación</span>
+<p class="font-headline text-3xl font-extrabold leading-tight text-on-background max-w-2xl">
+                        “Se jubila en 2 años y quiere vivir parte del año en Alicante. <span class="text-primary italic">Necesita español para el día a día.</span>”
+                    <button class="inline-flex ml-2 text-zinc-300 hover:text-primary transition-colors align-middle">
+<span class="material-symbols-outlined text-lg">edit_note</span>
+</button></p>
+</div>
+<div class="flex flex-wrap gap-2 lg:w-1/3 justify-end relative z-10">
+<span class="px-4 py-1.5 bg-secondary-fixed text-on-secondary-fixed text-xs font-semibold rounded-full">Architecture</span>
+<span class="px-4 py-1.5 bg-secondary-fixed text-on-secondary-fixed text-xs font-semibold rounded-full">Lisbon</span>
+<span class="px-4 py-1.5 bg-secondary-fixed text-on-secondary-fixed text-xs font-semibold rounded-full">Travel</span>
+<span class="px-4 py-1.5 bg-secondary-fixed text-on-secondary-fixed text-xs font-semibold rounded-full">Spanish Cinema</span>
+</div>
+</section>
+<!-- Column Left: Identity & Pedagogy Core -->
+<div class="col-span-12 lg:col-span-8 flex flex-col gap-8">
+<!-- Pedagogical Diagnostic -->
+<div class="bg-white rounded-xl p-8 shadow-sm border border-outline-variant/10">
+<div class="flex items-center justify-between mb-8">
+<h3 class="text-xl font-bold font-headline flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">analytics</span> Pedagogical Diagnostic
+                        </h3>
+<div class="flex gap-2">
+<div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center text-primary font-bold">B1</div>
+</div>
+</div>
+<!-- Goals & Objectives -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
+<div>
+<h4 class="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">Learning Goals</h4>
+<ul class="space-y-4">
+<li class="flex gap-3 items-start">
+<span class="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0"></span>
+<p class="text-sm text-on-surface-variant font-medium">Mantener conversación informal de 10 minutos sin bloquearse.</p>
+</li>
+<li class="flex gap-3 items-start">
+<span class="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0"></span>
+<p class="text-sm text-on-surface-variant font-medium">Comprender noticias técnicas de arquitectura en prensa local.</p>
+</li>
+</ul>
+</div>
+<div>
+<h4 class="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">Short-Term Objectives</h4>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 bg-amber-50 rounded-lg border-l-4 border-amber-500">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-on-surface">DELE B2 Exam Preparation</span>
+<span class="text-[10px] text-amber-700 font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">event_upcoming</span> June 15 - Critical
+                                        </span>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border-l-4 border-zinc-300 opacity-70">
+<div class="flex flex-col">
+<span class="text-xs font-medium text-zinc-500">Architectural Vocabulary Module</span>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="text-[10px] text-zinc-400 font-semibold italic">March 22</span>
+<span class="text-[10px] text-error font-bold uppercase tracking-tighter">• Overdue</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Skill Overrides -->
+<h4 class="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">Skill Assessment Overrides</h4>
+<div class="grid grid-cols-4 gap-4 mb-10">
+<div class="p-4 bg-surface rounded-xl border border-outline-variant/10 flex flex-col items-center gap-2">
+<span class="text-[10px] uppercase font-bold text-zinc-500">Reading</span>
+<div class="w-12 h-12 rounded-lg bg-tertiary-fixed flex items-center justify-center text-tertiary font-bold text-lg">B2</div>
+</div>
+<div class="p-4 bg-surface rounded-xl border border-outline-variant/10 flex flex-col items-center gap-2">
+<span class="text-[10px] uppercase font-bold text-zinc-500">Writing</span>
+<div class="w-12 h-12 rounded-lg bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold text-lg">A2</div>
+</div>
+<div class="p-4 bg-surface rounded-xl border border-outline-variant/10 flex flex-col items-center gap-2">
+<span class="text-[10px] uppercase font-bold text-zinc-500">Speaking</span>
+<div class="w-12 h-12 rounded-lg bg-primary-fixed flex items-center justify-center text-primary font-bold text-lg">B1</div>
+</div>
+<div class="p-4 bg-surface rounded-xl border border-outline-variant/10 flex flex-col items-center gap-2">
+<span class="text-[10px] uppercase font-bold text-zinc-500">Listening</span>
+<div class="w-12 h-12 rounded-lg bg-primary-fixed flex items-center justify-center text-primary font-bold text-lg">B1</div>
+</div>
+</div>
+<!-- Difficulties Table -->
+<h4 class="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">Focus Areas &amp; Difficulties</h4>
+<div class="overflow-hidden rounded-xl border border-outline-variant/20">
+<table class="w-full text-left text-sm">
+<thead class="bg-surface-container-high">
+<tr>
+<th class="px-6 py-3 font-bold text-xs uppercase text-on-surface-variant">Area</th>
+<th class="px-6 py-3 font-bold text-xs uppercase text-on-surface-variant">Subcategory</th>
+<th class="px-6 py-3 font-bold text-xs uppercase text-on-surface-variant text-center">Trend</th>
+<th class="px-6 py-3 font-bold text-xs uppercase text-on-surface-variant">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-low">
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 font-semibold text-on-surface">Grammar</td>
+<td class="px-6 py-4 text-on-surface-variant">Ser vs Estar</td>
+<td class="px-6 py-4">
+<div class="flex justify-center">
+<span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">STABLE</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2 text-[10px] font-bold text-primary uppercase">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Working
+                                        </div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 font-semibold text-on-surface">Vocabulary</td>
+<td class="px-6 py-4 text-on-surface-variant">False Cognates (Port-Esp)</td>
+<td class="px-6 py-4">
+<div class="flex justify-center">
+<span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded uppercase">Improving</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2 text-[10px] font-bold text-emerald-600 uppercase">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Covered
+                                        </div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Combined Working Memory & Notes -->
+<div class="bg-white rounded-xl p-8 shadow-sm border border-outline-variant/10">
+<h3 class="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">edit_note</span> TEACHER'S WORKING MEMORY</h3>
+<div class="space-y-10">
+<section>
+<label class="text-[10px] font-bold text-on-surface-variant mb-3 block uppercase tracking-tight">Sensitivities / Life Context</label>
+<div class="p-4 bg-surface-container-lowest rounded-lg text-sm text-on-surface-variant leading-relaxed border border-outline-variant/5">
+                                Ana tends to revert to Portuguese grammar when tired. She prefers evening sessions after her architecture firm closes. Very responsive to cultural comparisons.
+                            </div>
+</section>
+<section class="pt-6 border-t border-surface-container-low">
+<label class="text-[10px] font-bold text-on-surface-variant mb-3 block uppercase tracking-tight">Pedagogical Observations</label>
+<div class="p-4 bg-surface rounded-lg text-sm text-on-surface-variant leading-relaxed border-l-4 border-primary shadow-sm">
+                                Visual learner. Benefits from infographics and site-specific vocabulary (construction terms). Slow reading speed but high comprehension.
+                            </div>
+</section>
+</div>
+</div>
+</div>
+<!-- Column Right: Identity & Operations -->
+<aside class="col-span-12 lg:col-span-4 flex flex-col gap-8">
+<!-- Personal Info Card -->
+<div class="bg-white rounded-xl p-8 shadow-sm border border-outline-variant/10">
+<h3 class="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">edit_note</span> TEACHER'S WORKING MEMORY</h3>
+<div class="space-y-6">
+<div class="flex justify-between items-center pb-4 border-b border-surface-container-low">
+<span class="text-sm font-medium text-zinc-500">Profession</span>
+<span class="text-sm font-bold text-on-surface">Architect</span>
+</div>
+<div class="flex justify-between items-center pb-4 border-b border-surface-container-low">
+<span class="text-sm font-medium text-zinc-500">Born</span>
+<span class="text-sm font-bold text-on-surface">1985 (39 years)</span>
+</div>
+<div class="flex justify-between items-center pb-4 border-b border-surface-container-low">
+<span class="text-sm font-medium text-zinc-500">Origin</span>
+<div class="text-right">
+<p class="text-sm font-bold text-on-surface">Lisbon, Portugal</p>
+<p class="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Native Portuguese</p>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium text-zinc-500">Residence</span>
+<span class="text-sm font-bold text-on-surface">Madrid, Spain</span>
+</div>
+</div>
+</div><div class="bg-white rounded-xl p-8 shadow-sm border border-outline-variant/10">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">interests</span> Interests
+        </h3>
+<button class="text-zinc-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded-full">Architecture</span>
+<span class="px-3 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded-full">Lisbon</span>
+<span class="px-3 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded-full">Travel</span>
+<span class="px-3 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded-full">Spanish Cinema</span>
+<button class="w-6 h-6 rounded-full border border-dashed border-outline-variant flex items-center justify-center text-zinc-400 hover:border-primary hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[14px]">add</span>
+</button>
+</div>
+</div>
+<!-- Commercial Card -->
+<div class="bg-surface-container-low rounded-xl p-8 shadow-sm">
+<div class="flex justify-between items-start mb-6">
+<span class="px-2 py-0.5 bg-white text-primary text-[10px] font-bold rounded border border-primary/20">PRIVATE STUDENT</span>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="text-[10px] font-bold">ACTIVE</span>
+</div>
+</div>
+<div class="flex flex-col items-center justify-center p-6 bg-white rounded-xl">
+<span class="text-sm font-medium text-zinc-500 mb-1">Current Rate</span>
+<span class="text-4xl font-manrope font-black text-[#3525CD]">€45<span class="text-lg font-bold">/hr</span></span>
+</div>
+</div>
+<!-- Split Todos Section -->
+<div class="bg-white rounded-xl p-8 shadow-sm border border-outline-variant/10 space-y-10">
+<!-- Teaching Todos (Indigo) -->
+<section>
+<h4 class="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center justify-between">
+<span class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">school</span> Teaching Todos</span>
+</h4>
+<div class="space-y-3">
+<div class="flex items-start gap-3 p-3 bg-white border border-outline-variant/10 rounded-lg group">
+<input class="w-4 h-4 mt-0.5 rounded border-outline text-primary focus:ring-primary transition-colors cursor-pointer" type="checkbox"/>
+<div class="flex-1">
+<p class="text-xs font-medium text-on-surface">Find Spanish podcasts about architecture</p>
+<p class="text-[9px] text-zinc-400 font-bold uppercase tracking-tighter">Idea</p>
+</div>
+</div>
+<div class="flex items-start gap-3 p-3 bg-primary/5 border border-primary/10 rounded-lg opacity-70">
+<input checked="" class="w-4 h-4 mt-0.5 rounded border-primary text-primary focus:ring-primary transition-colors cursor-pointer" type="checkbox"/>
+<div class="flex-1">
+<p class="text-xs font-medium text-on-surface line-through">Incorporate Alicante local news</p>
+<p class="text-[9px] text-primary font-bold uppercase tracking-tighter">Covered</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Pending Followups (Amber) -->
+<section>
+<h4 class="text-xs font-bold uppercase tracking-widest text-amber-700 mb-4 flex items-center justify-between">
+<span class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">notification_important</span> Pending Followups</span>
+</h4>
+<div class="space-y-3">
+<div class="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg group">
+<input class="w-4 h-4 mt-0.5 rounded border-amber-400 text-amber-600 focus:ring-amber-500 cursor-pointer" type="checkbox"/>
+<div class="flex-1">
+<p class="text-xs font-medium text-on-surface">Send DELE B2 practice PDFs</p>
+<p class="text-[10px] text-error font-bold">Overdue (2 days)</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Languages Matrix -->
+<div class="bg-white rounded-xl p-8 shadow-sm border border-outline-variant/10">
+<h3 class="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-6">Language Ecosystem</h3>
+<div class="space-y-8">
+<div>
+<p class="text-[10px] font-bold text-zinc-400 uppercase mb-3">SPOKEN LANGUAGES</p>
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface font-bold text-xs">PT</div>
+<div class="flex-1">
+<p class="text-sm font-bold">Portuguese</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface font-bold text-xs">EN</div>
+<div class="flex-1">
+<p class="text-sm font-bold">English</p>
+</div>
+</div>
+</div>
+</div>
+<div>
+<p class="text-[10px] font-bold text-zinc-400 uppercase mb-3">SPOKEN LANGUAGES</p>
+<div class="p-4 bg-primary-fixed rounded-xl border border-primary/10">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-primary font-bold">ES</div>
+<p class="text-sm font-bold text-on-primary-fixed">Learning Spanish</p>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div class="bg-white/60 p-2 rounded-lg">
+<p class="text-[8px] font-bold text-primary uppercase leading-tight">Teacher's Assessment</p>
+<p class="text-sm font-black text-primary">B1</p>
+</div>
+<div class="bg-white/60 p-2 rounded-lg opacity-70">
+<p class="text-[8px] font-bold text-zinc-500 uppercase leading-tight">Official</p>
+<p class="text-sm font-black text-zinc-600">A2</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+</body></html>

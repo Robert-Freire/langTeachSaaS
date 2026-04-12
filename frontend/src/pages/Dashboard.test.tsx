@@ -12,7 +12,7 @@ vi.mock('@/api/dashboard', () => ({
 }))
 
 function makeEmptyDashboard(): DashboardData {
-  return { nextSession: null, todaySessions: [], activeStudents: [] }
+  return { nextSession: null, todaySessions: [], activeStudents: [], pendingFollowups: [] }
 }
 
 function makeDashboard(overrides: Partial<DashboardData> = {}): DashboardData {
@@ -56,6 +56,7 @@ function makeDashboard(overrides: Partial<DashboardData> = {}): DashboardData {
         ],
       },
     ],
+    pendingFollowups: [],
     ...overrides,
   }
 }
@@ -143,10 +144,14 @@ describe('Dashboard', () => {
       expect(await screen.findByText(/All caught up/)).toBeInTheDocument()
     })
 
-    it('shows pending todo text when todos exist', async () => {
-      mockGetDashboard.mockResolvedValue(makeDashboard())
+    it('shows pending followup text when followups exist', async () => {
+      mockGetDashboard.mockResolvedValue(makeDashboard({
+        pendingFollowups: [
+          { id: 'f1', studentId: 'student-1', studentName: 'Ana García', text: 'Enviar ejercicio de gustar', status: 'pending', createdAt: new Date().toISOString(), dueDate: null, completedAt: null, sourceSessionLogId: null },
+        ],
+      }))
       renderDashboard()
-      expect(await screen.findByText('Review ser/estar')).toBeInTheDocument()
+      expect(await screen.findByText('Enviar ejercicio de gustar')).toBeInTheDocument()
     })
   })
 

@@ -8,11 +8,13 @@ namespace LangTeach.Api.Services;
 public class DashboardService : IDashboardService
 {
     private readonly AppDbContext _db;
+    private readonly ITeacherFollowupService _followupService;
     private readonly ILogger<DashboardService> _logger;
 
-    public DashboardService(AppDbContext db, ILogger<DashboardService> logger)
+    public DashboardService(AppDbContext db, ITeacherFollowupService followupService, ILogger<DashboardService> logger)
     {
         _db = db;
+        _followupService = followupService;
         _logger = logger;
     }
 
@@ -24,8 +26,9 @@ public class DashboardService : IDashboardService
         var nextSession = await GetNextSessionAsync(teacherId, now, cancellationToken);
         var todaySessions = await GetTodaySessionsAsync(teacherId, today, cancellationToken);
         var activeStudents = await GetActiveStudentsAsync(teacherId, now, cancellationToken);
+        var pendingFollowups = await _followupService.GetPendingAsync(teacherId, cancellationToken);
 
-        return new DashboardDto(nextSession, todaySessions, activeStudents);
+        return new DashboardDto(nextSession, todaySessions, activeStudents, pendingFollowups);
     }
 
     private async Task<NextSessionDto?> GetNextSessionAsync(Guid teacherId, DateTime now, CancellationToken cancellationToken)
