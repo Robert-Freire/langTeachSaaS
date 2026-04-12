@@ -162,6 +162,9 @@ export function SessionLogDialog({
   const voiceRunRef = useRef(0)
   const sessionDateRef = useRef(sessionDate)
   useEffect(() => { sessionDateRef.current = sessionDate }, [sessionDate])
+  // Track todos/followups submitted during this dialog session to prevent re-submission
+  const submittedTodosRef = useRef<Set<string>>(new Set())
+  const submittedFollowupsRef = useRef<Set<string>>(new Set())
 
   // Pre-populate fields when editing an existing session
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -487,17 +490,30 @@ export function SessionLogDialog({
 
       if (runId !== voiceRunRef.current) return
 
-      // Create teaching todos and followups (non-fatal - errors are logged only)
+      // Create teaching todos and followups (non-fatal - errors are logged only).
+      // Deduplicate by normalized text to avoid re-submitting on a second voice note.
       const todoFollowupErrors: unknown[] = []
       if (extracted.teachingTodos?.length) {
+        const newTodos = extracted.teachingTodos.filter(text => {
+          const key = text.trim().toLowerCase()
+          if (submittedTodosRef.current.has(key)) return false
+          submittedTodosRef.current.add(key)
+          return true
+        })
         const results = await Promise.allSettled(
-          extracted.teachingTodos.map(text => appendTeachingTodo(studentId, text))
+          newTodos.map(text => appendTeachingTodo(studentId, text))
         )
         results.forEach(r => r.status === 'rejected' && todoFollowupErrors.push(r.reason))
       }
       if (extracted.teacherFollowups?.length) {
+        const newFollowups = extracted.teacherFollowups.filter(text => {
+          const key = text.trim().toLowerCase()
+          if (submittedFollowupsRef.current.has(key)) return false
+          submittedFollowupsRef.current.add(key)
+          return true
+        })
         const results = await Promise.allSettled(
-          extracted.teacherFollowups.map(text =>
+          newFollowups.map(text =>
             createFollowup({ text, studentId, sourceSessionLogId: savedSessionId })
           )
         )
@@ -625,6 +641,9 @@ export function SessionLogDialog({
                   </p>
                 )}
             </div>
+
+            {/* Lock all form inputs while extraction is in progress to prevent stale-state overwrites */}
+            <fieldset disabled={isExtracting} className="contents">
 
             {sessionsLoading && (
               <div className="space-y-2">
@@ -1015,6 +1034,8 @@ export function SessionLogDialog({
             {submitError && (
               <p className="text-xs text-red-600" data-testid="session-log-error">{submitError}</p>
             )}
+
+            </fieldset>
 
             <DialogFooter>
               <Button
