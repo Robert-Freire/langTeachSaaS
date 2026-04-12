@@ -99,7 +99,11 @@ export async function getSessionSummary(studentId: string): Promise<StudentSessi
 
 export function parseTopicTags(raw: string): TopicTag[] {
   try {
-    return JSON.parse(raw) as TopicTag[]
+    const parsed: unknown[] = JSON.parse(raw) as unknown[]
+    if (!Array.isArray(parsed)) return []
+    return parsed.map((item) =>
+      typeof item === 'string' ? { tag: item } : (item as TopicTag)
+    )
   } catch {
     return []
   }
