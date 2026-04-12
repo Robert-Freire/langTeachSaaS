@@ -511,6 +511,23 @@ public class ReflectionExtractionServiceTests
         result.IsCancelled.Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData("B1", "B1")]
+    [InlineData("A2+", "A2+")]
+    [InlineData("C1", "C1")]
+    [InlineData("Intermediate", null)]
+    [InlineData("B3", null)]
+    [InlineData("", null)]
+    public void ParseResponse_ValidatesCefrLevelReassessment(string input, string? expected)
+    {
+        var sut = CreateSut("{}");
+        var json = $$"""{"suggestedDifficulties":[],"levelReassessment":"{{input}}"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.LevelReassessment.Should().Be(expected);
+    }
+
     [Fact]
     public void ParseResponse_ExtractsDifficultiesWorkedOn()
     {

@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using LangTeach.Api.AI;
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Helpers;
 
@@ -37,7 +39,13 @@ public class ReflectionExtractionService : IReflectionExtractionService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Claude API call failed during reflection extraction");
-            return new ExtractedReflectionDto(null, null, null, null, null, null, [], null, null, [], null, [], [], null, null, null, []);
+            return new ExtractedReflectionDto(
+                WhatWasCovered: null, AreasToImprove: null, EmotionalSignals: null,
+                HomeworkAssigned: null, NextLessonIdeas: null, SessionDate: null,
+                SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
+                TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
+                TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
+                IsCancelled: null, DifficultiesWorkedOn: []);
         }
 
         return ParseResponse(response.Content);
@@ -65,7 +73,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 PreviousHomeworkStatus: ParseHomeworkStatus(root),
                 TeachingTodos: ParseStringArray(root, "teachingTodos"),
                 TeacherFollowups: ParseStringArray(root, "teacherFollowups"),
-                LevelReassessment: GetStringOrNull(root, "levelReassessment"),
+                LevelReassessment: ParseCefrLevel(root, "levelReassessment"),
                 DurationMinutes: GetIntOrNull(root, "durationMinutes"),
                 IsCancelled: GetBoolOrNull(root, "isCancelled"),
                 DifficultiesWorkedOn: ParseStringArray(root, "difficultiesWorkedOn")
@@ -75,7 +83,13 @@ public class ReflectionExtractionService : IReflectionExtractionService
         {
             _logger.LogWarning(ex, "Failed to parse reflection extraction JSON (length: {Length})", json?.Length ?? 0);
             _logger.LogDebug("Unparseable Claude response: {Json}", json);
-            return new ExtractedReflectionDto(null, null, null, null, null, null, [], null, null, [], null, [], [], null, null, null, []);
+            return new ExtractedReflectionDto(
+                WhatWasCovered: null, AreasToImprove: null, EmotionalSignals: null,
+                HomeworkAssigned: null, NextLessonIdeas: null, SessionDate: null,
+                SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
+                TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
+                TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
+                IsCancelled: null, DifficultiesWorkedOn: []);
         }
     }
 
@@ -188,6 +202,16 @@ public class ReflectionExtractionService : IReflectionExtractionService
     {
         var raw = GetStringOrNull(root, "previousHomeworkStatus");
         if (raw is null) return null;
-        return raw is "Done" or "Partial" or "NotDone" ? raw : null;
+        return Enum.TryParse<HomeworkStatus>(raw, out var parsed) && parsed != HomeworkStatus.NotApplicable
+            ? raw
+            : null;
+    }
+
+    private static readonly Regex CefrLevelRegex = new(@"^[ABC][12]\+?$", RegexOptions.Compiled);
+
+    private static string? ParseCefrLevel(JsonElement root, string key)
+    {
+        var raw = GetStringOrNull(root, key);
+        return raw is not null && CefrLevelRegex.IsMatch(raw) ? raw : null;
     }
 }
