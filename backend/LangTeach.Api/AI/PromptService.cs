@@ -430,8 +430,46 @@ public class PromptService : IPromptService
             if (weaknesses.Length > 0)
                 sb.AppendLine($"- Areas to improve: {string.Join(", ", weaknesses)}");
 
+            if (ctx.StudentProfession is not null)
+                sb.AppendLine($"- Profession: {InputSanitizer.Sanitize(ctx.StudentProfession)}");
+
+            if (ctx.StudentBirthYear is not null)
+                sb.AppendLine($"- Age: {DateTime.UtcNow.Year - ctx.StudentBirthYear.Value}");
+
+            if (ctx.StudentCountryOfOrigin is not null)
+                sb.AppendLine($"- Country of origin: {InputSanitizer.Sanitize(ctx.StudentCountryOfOrigin)}");
+
+            if (ctx.StudentCountryOfResidence is not null)
+                sb.AppendLine($"- Country of residence: {InputSanitizer.Sanitize(ctx.StudentCountryOfResidence)}");
+
+            if (ctx.StudentOfficialCefrLevel is not null)
+                sb.AppendLine($"- Official CEFR level: {InputSanitizer.Sanitize(ctx.StudentOfficialCefrLevel)} (official) / {cefrLevel} (teacher assessment)");
+
+            if (ctx.StudentSpokenLanguages is { Length: > 0 })
+            {
+                var spokenLangs = ctx.StudentSpokenLanguages.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0).ToArray();
+                if (spokenLangs.Length > 0)
+                    sb.AppendLine($"- Also speaks: {string.Join(", ", spokenLangs)}");
+            }
+
+            if (ctx.StudentReasonForStudying is not null)
+                sb.AppendLine($"- Reason for studying {language}: {InputSanitizer.Sanitize(ctx.StudentReasonForStudying)}");
+
             sb.AppendLine();
             sb.AppendLine($"Personalize content for this student. Reference their interests in examples.");
+
+            if (ctx.StudentReasonForStudying is not null)
+                sb.AppendLine($"The student's reason for studying {language} is: {InputSanitizer.Sanitize(ctx.StudentReasonForStudying)}. Anchor vocabulary, topics, and examples to this motivation.");
+
+            if (ctx.StudentSpokenLanguages is { Length: > 0 })
+            {
+                var spokenForPrompt = ctx.StudentSpokenLanguages.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0).ToArray();
+                if (spokenForPrompt.Length > 0)
+                    sb.AppendLine($"The student also speaks {string.Join(" and ", spokenForPrompt)}. Where relevant, leverage cross-language awareness and cognates.");
+            }
+
+            if (ctx.StudentProfession is not null)
+                sb.AppendLine($"The student's profession is {InputSanitizer.Sanitize(ctx.StudentProfession)}. Use domain-specific vocabulary and scenarios from this field where appropriate.");
 
             if (ctx.StudentNativeLanguage is not null)
             {
