@@ -49,3 +49,10 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | architecture-reviewer | minor | Same case-sensitivity note as above. |
 | Sophy | minor | Dual mutation path (PUT full-replace + POST/PATCH sub-resource) -- intentional per issue spec. Sophy asked to document intent. Both paths are valid: PUT for import/sync, POST/PATCH for incremental UI. |
 | Sophy | info | `UpdateTeachingTodoAsync` returns null for both student-not-found and todo-not-found; controller maps both to 404. Minor ambiguity for callers; consistent with existing not-found handling. |
+
+## #688 — 2026-04-12
+
+| Reviewer | Severity | Note |
+|---|---|---|
+| architecture-reviewer | minor | `UpdateTeachingTodoAsync` text validation fires after `index < 0` guard; passing invalid text with nonexistent todo ID returns null instead of ValidationException. Not blocking: 404 on unknown ID is correct behavior regardless. Could align with AppendTeachingTodoAsync (validate first) in a future cleanup. |
+| Sophy | minor | `[MaxLength(500)]` on `UpdateTeachingTodoDto.Text` + manual length check in service is redundant. Same pattern exists in `AppendTeachingTodoAsync`. Fix both together in a cleanup pass. |
