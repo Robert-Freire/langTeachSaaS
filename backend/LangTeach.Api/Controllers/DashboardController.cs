@@ -41,4 +41,19 @@ public class DashboardController : ControllerBase
 
         return Ok(dto);
     }
+
+    [HttpGet("sessions")]
+    public async Task<IActionResult> GetSessions([FromQuery] Guid? studentId, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        var dto = await _dashboardService.GetSessionsListAsync(teacherId, studentId, cancellationToken);
+
+        _logger.LogInformation(
+            "GET /api/dashboard/sessions TeacherId={TeacherId} Upcoming={Upcoming} Today={Today} Recent={Recent}",
+            teacherId, dto.Upcoming.Count, dto.Today.Count, dto.Recent.Count);
+
+        return Ok(dto);
+    }
 }
