@@ -238,6 +238,39 @@ describe('StudentDetail', () => {
   })
 })
 
+describe('StudentDetail - Header badges', () => {
+  beforeEach(() => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue(MOCK_STUDENT)
+  })
+
+  it('shows Active + Private badge for active non-corporate student', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('student-status-badge')).toHaveTextContent(/Active/i)
+    expect(screen.getByTestId('student-status-badge')).toHaveTextContent(/Private/i)
+  })
+
+  it('shows Active + Corporate badge for active corporate student', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...MOCK_STUDENT, isCorporate: true })
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('student-status-badge')).toHaveTextContent(/Corporate/i)
+  })
+
+  it('shows Inactive badge for inactive student', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...MOCK_STUDENT, isActive: false })
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('student-status-badge')).toHaveTextContent(/Inactive/i)
+  })
+
+  it('does not show next session pill when no future sessions', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.queryByTestId('next-session-pill')).not.toBeInTheDocument()
+  })
+})
+
 describe('StudentDetail - Overview tab', () => {
   beforeEach(() => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue(MOCK_STUDENT)

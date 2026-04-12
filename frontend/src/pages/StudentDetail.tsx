@@ -5,6 +5,7 @@ import { ArrowLeft, NotebookPen, Pencil } from 'lucide-react'
 import { getStudent, updateStudent } from '../api/students'
 import { logger } from '../lib/logger'
 import { getFollowups } from '@/api/followups'
+import { listSessions } from '@/api/sessionLogs'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
@@ -43,6 +44,16 @@ export default function StudentDetail() {
     queryFn: () => getFollowups(id!),
     enabled: !!id,
   })
+
+  const { data: sessions = [] } = useQuery({
+    queryKey: ['sessions', id],
+    queryFn: () => listSessions(id!),
+    enabled: !!id,
+  })
+
+  const nextSession = sessions
+    .filter(s => s.sessionDate && new Date(s.sessionDate) > new Date() && !s.isCancelled)
+    .sort((a, b) => new Date(a.sessionDate!).getTime() - new Date(b.sessionDate!).getTime())[0] ?? null
 
   const onFollowupChange = useCallback(() => { refetchFollowups() }, [refetchFollowups])
   const onStudentChange = useCallback(() => {
@@ -191,6 +202,35 @@ export default function StudentDetail() {
                 </p>
               )}
 
+              {/* Status badges */}
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                {student.isActive ? (
+                  <span
+                    className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] bg-[#E8E7F1] text-[#464455]"
+                    data-testid="student-status-badge"
+                  >
+                    Active{' '}&bull;{' '}{student.isCorporate ? 'Corporate' : 'Private'}
+                  </span>
+                ) : (
+                  <span
+                    className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] bg-zinc-100 text-zinc-500"
+                    data-testid="student-status-badge"
+                  >
+                    Inactive
+                  </span>
+                )}
+                {nextSession && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium bg-[#E8E7F1] text-[#464455]"
+                    data-testid="next-session-pill"
+                  >
+                    <span className="text-[0.6875rem]">Next:</span>{' '}
+                    {new Date(nextSession.sessionDate!).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    {nextSession.duration && ` \u00b7 ${nextSession.duration}min`}
+                  </span>
+                )}
+              </div>
+
               {/* Metadata row */}
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 {/* Teacher CEFR level */}
@@ -278,9 +318,11 @@ export default function StudentDetail() {
       {activeTab === 'overview' && (
         <StudentOverviewTab
           student={student}
+          sessions={sessions}
           followups={followups}
           onFollowupChange={onFollowupChange}
           onStudentChange={onStudentChange}
+          onViewAllSessions={() => setActiveTab('sessions')}
         />
       )}
 

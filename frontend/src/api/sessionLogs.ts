@@ -28,6 +28,7 @@ export interface SessionLog {
   mentionedDifficultyPairs: string
   suggestedDifficulties: string
   duration: number | null
+  title: string | null
 }
 
 export interface SuggestedDifficulty {
