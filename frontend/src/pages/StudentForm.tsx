@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Plus, Trash2 } from 'lucide-react'
-import { getStudent, createStudent, updateStudent, deleteStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem, type ShortTermObjective } from '../api/students'
+import { getStudent, createStudent, updateStudent, deleteStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem, type ShortTermObjective, type LearningGoalItem } from '../api/students'
 import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
-import { LEARNING_GOALS, COMPETENCY_OPTIONS } from '../lib/studentOptions'
+import { COMPETENCY_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,6 +22,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { MultiSelect } from '@/components/ui/multi-select'
+import { LearningGoalTreeEditor } from '@/components/student/LearningGoalTreeEditor'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
 import { StudentFollowupsCard } from '@/components/student/StudentFollowupsCard'
 import { SectionHeader } from '@/components/student/SectionHeader'
@@ -78,7 +79,7 @@ export default function StudentForm() {
   const [spokenLanguages, setSpokenLanguages] = useState<string[]>([])
   const [spokenInput, setSpokenInput] = useState('')
   const [skillLevelOverrides, setSkillLevelOverrides] = useState<Record<string, string>>({})
-  const [learningGoals, setLearningGoals] = useState<string[]>([])
+  const [learningGoals, setLearningGoals] = useState<LearningGoalItem[]>([])
   const [weaknesses, setWeaknesses] = useState<StudentWeaknessItem[]>([])
   const [difficulties, setDifficulties] = useState<Difficulty[]>([])
   const [personalNotes, setPersonalNotes] = useState('')
@@ -866,14 +867,9 @@ export default function StudentForm() {
                   {/* Learning Goals */}
                   <div className="space-y-1.5">
                     <Label className="inline-flex items-center gap-1">Learning Goals <FieldTooltip fieldKey="learningGoals" /></Label>
-                    <MultiSelect
-                      options={LEARNING_GOALS}
-                      selected={learningGoals}
+                    <LearningGoalTreeEditor
+                      value={learningGoals}
                       onChange={setLearningGoals}
-                      placeholder="Select or type goals..."
-                      triggerId="learning-goals-trigger"
-                      chipTestId="learning-goal-chip"
-                      maxLength={100}
                     />
                   </div>
 

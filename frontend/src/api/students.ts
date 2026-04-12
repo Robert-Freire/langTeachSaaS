@@ -21,6 +21,12 @@ export interface ShortTermObjective {
   targetDate: string | null
 }
 
+export interface LearningGoalItem {
+  id: string
+  text: string
+  children: LearningGoalItem[]
+}
+
 export interface TeachingTodo {
   id: string
   text: string
@@ -39,7 +45,7 @@ export interface Student {
   personalNotes: string | null
   teachingNotes: string | null
   nativeLanguages: string[]
-  learningGoals: string[]
+  learningGoals: LearningGoalItem[]
   weaknesses: StudentWeaknessItem[]
   difficulties: Difficulty[]
   createdAt: string
@@ -83,7 +89,7 @@ export interface StudentFormData {
   personalNotes?: string | null
   teachingNotes?: string | null
   nativeLanguages?: string[]
-  learningGoals: string[]
+  learningGoals: LearningGoalItem[]
   weaknesses: StudentWeaknessItem[]
   difficulties: Difficulty[]
   birthYear?: number | null

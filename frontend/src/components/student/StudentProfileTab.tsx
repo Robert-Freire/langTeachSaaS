@@ -351,9 +351,21 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
               {student.learningGoals.length > 0 ? (
                 <ul className="space-y-1 list-none">
                   {student.learningGoals.map((goal) => (
-                    <li key={goal} className="flex items-start gap-2 text-sm text-[#1A1B22]">
-                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
-                      {goal}
+                    <li key={goal.id}>
+                      <div className="flex items-start gap-2 text-sm text-[#1A1B22]">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
+                        {goal.text}
+                      </div>
+                      {goal.children.length > 0 && (
+                        <ul className="mt-0.5 space-y-0.5 list-none pl-5">
+                          {goal.children.map((child) => (
+                            <li key={child.id} className="flex items-start gap-2 text-sm text-zinc-600">
+                              <span className="mt-1.5 h-1 w-1 rounded-full bg-indigo-300 shrink-0" />
+                              {child.text}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </li>
                   ))}
                 </ul>

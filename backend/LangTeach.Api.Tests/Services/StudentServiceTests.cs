@@ -491,4 +491,50 @@ public class StudentServiceTests : IDisposable
 
         await act.Should().ThrowAsync<ValidationException>();
     }
+
+    [Fact]
+    public async Task GetAllAsync_WithLegacyFlatStringLearningGoals_DeserializesBackwardCompat()
+    {
+        // Simulate a student row saved with the old flat-string JSON format
+        var student = new Student
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = _teacherId,
+            Name = "Legacy Goals Student",
+            LearningLanguage = "Spanish",
+            CefrLevel = "B1",
+            LearningGoals = """["travel","work"]""",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        _db.Students.Add(student);
+        await _db.SaveChangesAsync();
+
+        var result = (await _sut.ListAsync(_teacherId, new StudentListQuery(), CancellationToken.None)).Items;
+
+        var legacy = result.Single(s => s.Id == student.Id);
+        legacy.LearningGoals.Should().HaveCount(2);
+        legacy.LearningGoals.Select(g => g.Text).Should().BeEquivalentTo(["travel", "work"]);
+        legacy.LearningGoals.Should().AllSatisfy(g => g.Children.Should().BeEmpty());
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithThreeLevelNestedGoal_ThrowsValidation()
+    {
+        var request = BaseRequest();
+        request.LearningGoals =
+        [
+            new LearningGoalDto(Guid.NewGuid().ToString(), "Level 1",
+            [
+                new LearningGoalDto(Guid.NewGuid().ToString(), "Level 2",
+                [
+                    new LearningGoalDto(Guid.NewGuid().ToString(), "Level 3 — not allowed", []),
+                ]),
+            ]),
+        ];
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
 }

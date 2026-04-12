@@ -148,7 +148,10 @@ public class StudentsControllerTests
             LearningLanguage = "Spanish",
             CefrLevel = "B1",
             NativeLanguages = ["Portuguese"],
-            LearningGoals = ["travel", "conversation"],
+            LearningGoals = [
+                new LearningGoalDto(Guid.NewGuid().ToString(), "travel", []),
+                new LearningGoalDto(Guid.NewGuid().ToString(), "conversation", []),
+            ],
             Weaknesses = [new StudentWeaknessDto("past tenses", "grammatical"), new StudentWeaknessDto("articles", "lexical")],
         };
 
@@ -157,7 +160,7 @@ public class StudentsControllerTests
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
         student!.NativeLanguages.Should().BeEquivalentTo(["Portuguese"]);
-        student.LearningGoals.Should().BeEquivalentTo(["travel", "conversation"]);
+        student.LearningGoals.Select(g => g.Text).Should().BeEquivalentTo(["travel", "conversation"]);
         student.Weaknesses.Should().BeEquivalentTo([
             new StudentWeaknessDto("past tenses", "grammatical"),
             new StudentWeaknessDto("articles", "lexical"),
@@ -198,7 +201,7 @@ public class StudentsControllerTests
             LearningLanguage = created.LearningLanguage,
             CefrLevel = created.CefrLevel,
             NativeLanguages = ["German"],
-            LearningGoals = ["business"],
+            LearningGoals = [new LearningGoalDto(Guid.NewGuid().ToString(), "business", [])],
             Weaknesses = [new StudentWeaknessDto("word order", "grammatical")],
         };
 
@@ -207,7 +210,7 @@ public class StudentsControllerTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
         updated!.NativeLanguages.Should().BeEquivalentTo(["German"]);
-        updated.LearningGoals.Should().BeEquivalentTo(["business"]);
+        updated.LearningGoals.Select(g => g.Text).Should().BeEquivalentTo(["business"]);
         updated.Weaknesses.Should().BeEquivalentTo([new StudentWeaknessDto("word order", "grammatical")]);
     }
 
@@ -410,6 +413,65 @@ public class StudentsControllerTests
         var response = await client.DeleteAsync($"/api/students/{student.Id}/teaching-todos/nonexistent-id");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Create_WithNestedLearningGoals_RoundTripsHierarchy()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|nested-goals-test", "nested-goals@example.com");
+
+        var childId = Guid.NewGuid().ToString();
+        var parentId = Guid.NewGuid().ToString();
+        var request = new CreateStudentRequest
+        {
+            Name = "Nested Goals Student",
+            LearningLanguage = "Spanish",
+            CefrLevel = "B2",
+            LearningGoals =
+            [
+                new LearningGoalDto(parentId, "Dominar el subjuntivo",
+                [
+                    new LearningGoalDto(childId, "Subjuntivo en oraciones subordinadas", []),
+                ]),
+            ],
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var student = await response.Content.ReadFromJsonAsync<StudentDto>();
+        student!.LearningGoals.Should().HaveCount(1);
+        student.LearningGoals[0].Text.Should().Be("Dominar el subjuntivo");
+        student.LearningGoals[0].Children.Should().HaveCount(1);
+        student.LearningGoals[0].Children[0].Text.Should().Be("Subjuntivo en oraciones subordinadas");
+        student.LearningGoals[0].Children[0].Children.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Create_With3LevelNestedGoal_ReturnsBadRequest()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|deep-goals-test", "deep-goals@example.com");
+
+        var request = new CreateStudentRequest
+        {
+            Name = "Deep Goals Student",
+            LearningLanguage = "Spanish",
+            CefrLevel = "B1",
+            LearningGoals =
+            [
+                new LearningGoalDto(Guid.NewGuid().ToString(), "Level 1",
+                [
+                    new LearningGoalDto(Guid.NewGuid().ToString(), "Level 2",
+                    [
+                        new LearningGoalDto(Guid.NewGuid().ToString(), "Level 3 — not allowed", []),
+                    ]),
+                ]),
+            ],
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     private static async Task<StudentDto> CreateStudentAsync(

@@ -39,7 +39,10 @@ const FULL_STUDENT: Student = {
   personalNotes: 'Muy motivado, cinefilo.',
   teachingNotes: 'Nivel alto pero con lagunas.',
   nativeLanguages: ['Italian'],
-  learningGoals: ['Dominar el subjuntivo', 'Preparar DELE C1'],
+  learningGoals: [
+    { id: '1', text: 'Dominar el subjuntivo', children: [{ id: '1a', text: 'Subjuntivo de deseo', children: [] }] },
+    { id: '2', text: 'Preparar DELE C1', children: [] },
+  ],
   weaknesses: [{ description: 'Ser/Estar', weaknessType: 'grammatical' }],
   difficulties: [
     { id: 'd1', description: 'Subjuntivo en concesivas', competency: 'Grammar', subcategory: 'subjuntivo', severity: 'high', trend: 'stable', status: 'Active' },
@@ -304,6 +307,11 @@ describe('StudentProfileTab', () => {
       renderProfile(FULL_STUDENT)
       expect(screen.getByText('Dominar el subjuntivo')).toBeInTheDocument()
       expect(screen.getByText('Preparar DELE C1')).toBeInTheDocument()
+    })
+
+    it('renders sub-goals indented under parent', () => {
+      renderProfile(FULL_STUDENT)
+      expect(screen.getByText('Subjuntivo de deseo')).toBeInTheDocument()
     })
 
     it('shows empty state when no goals', () => {

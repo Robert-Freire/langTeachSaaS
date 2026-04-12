@@ -128,7 +128,7 @@ describe('StudentProfileOverview', () => {
   })
 
   it('renders learning goals as chips', () => {
-    renderOverview({ learningGoals: ['Travel', 'Work'] })
+    renderOverview({ learningGoals: [{ id: '1', text: 'Travel', children: [] }, { id: '2', text: 'Work', children: [] }] })
     expect(screen.getByText('Travel')).toBeInTheDocument()
     expect(screen.getByText('Work')).toBeInTheDocument()
   })

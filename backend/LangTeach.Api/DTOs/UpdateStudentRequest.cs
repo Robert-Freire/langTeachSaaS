@@ -24,9 +24,9 @@ public class UpdateStudentRequest
     [MaxStringLengthEach(50)]
     public List<string> NativeLanguages { get; set; } = [];
 
+    // Top-level count capped here; nested structure (max 2 levels, IDs, text length) validated in StudentService.ValidateLearningGoals.
     [MaxCollectionCount(20)]
-    [MaxStringLengthEach(100)]
-    public List<string> LearningGoals { get; set; } = [];
+    public List<LearningGoalDto> LearningGoals { get; set; } = [];
 
     [MaxCollectionCount(30)]
     public List<StudentWeaknessDto> Weaknesses { get; set; } = [];
