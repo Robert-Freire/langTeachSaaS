@@ -1,0 +1,33 @@
+
+lista sestudiantes
+* ordenar por nombre, por tarifa, por fecah de ultima clase 
+* buscar en lista de estudiantes, filtrat por estudiante actual/no actual
+* Mostrar ultima clase, mumnerro de clases, tarifa
+* mostrar la proxima clase programada
+
+
+* nuevo campo estudiante actual o no acutal por defecto es actual al crearse
+* nuevo campo alumno corporativo si o no
+* nuevo campo tarifa (lista abierat con valores que se reutilizan)
+* Pais y ciudad de origen, ano nacimiento/edad, idomas que habla
+* donde vive (pais/ciudad)
+* profesion
+* native languages, or we have all or it has to allow to create 
+
+====
+
+Learning goals,  no se pueden editar, Poddrian ser jerarquiquicos 
+
+=====
+cuando actualizo el estudian debe ir a overview
+
+====  
+Cunado acabo lka clase planifico la proxima seson. Hay que crearla desde topics dor next 
+
+las notas  genaleas agregarads pro ejemplo tener temas a trabajar
+
+click fuera de la modal in edit session close without asking nor saving
+
+Add today in datepicker, use two digits dates.
+
+Add to-dos/objectives
