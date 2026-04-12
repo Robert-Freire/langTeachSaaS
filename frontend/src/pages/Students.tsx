@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Search, Trash2, UserPlus, Users } from 'lucide-react'
@@ -261,12 +261,6 @@ export default function Students() {
   })
 
   const sortedStudents = sortStudents(filteredStudents, dashboardMap, sortBy)
-
-  // Reset visible count when filter/sort/search changes
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE)
-  }, [searchQuery, cefrFilter, sortBy])
-
   const visibleStudents = sortedStudents.slice(0, visibleCount)
 
   if (isStudentsLoading) {
@@ -281,7 +275,7 @@ export default function Students() {
         </div>
         <div className="bg-white rounded-xl overflow-hidden">
           <div className={cn('grid gap-4 px-4 py-2 border-b border-zinc-100', COL_CLASSES)}>
-            {TABLE_HEADERS.map((h, i) => (
+            {TABLE_HEADERS.map((_h, i) => (
               <Skeleton key={i} className="h-3 w-full" />
             ))}
           </div>
@@ -341,7 +335,7 @@ export default function Students() {
             {CEFR_FILTER_OPTIONS.map(level => (
               <button
                 key={level}
-                onClick={() => setCefrFilter(level)}
+                onClick={() => { setCefrFilter(level); setVisibleCount(PAGE_SIZE) }}
                 className={cn(
                   'px-2.5 py-1 text-xs font-medium rounded-md transition-colors',
                   cefrFilter === level
@@ -360,7 +354,7 @@ export default function Students() {
             <Input
               placeholder="Search students..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => { setSearchQuery(e.target.value); setVisibleCount(PAGE_SIZE) }}
               className="pl-8 h-8 text-sm bg-white border-zinc-200 focus-visible:ring-indigo-500"
             />
           </div>
@@ -369,7 +363,7 @@ export default function Students() {
           <div className="ml-auto">
             <select
               value={sortBy}
-              onChange={e => setSortBy(e.target.value as SortOption)}
+              onChange={e => { setSortBy(e.target.value as SortOption); setVisibleCount(PAGE_SIZE) }}
               aria-label="Sort students"
               className="text-xs font-medium text-zinc-500 bg-white border border-zinc-200 rounded-md px-2.5 py-1.5 h-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
             >
