@@ -85,6 +85,7 @@ const EMPTY_STUDENT: Student = {
   learningGoals: [],
   spokenLanguages: [],
   shortTermObjectives: [],
+  weaknesses: [],
   difficulties: [],
   teachingTodos: [],
   skillLevelOverrides: {},
@@ -358,18 +359,38 @@ describe('StudentProfileTab', () => {
     })
   })
 
-  describe('Difficulties section', () => {
-    it('renders difficulties with competency and severity', () => {
+  describe('Focus Areas & Difficulties section', () => {
+    it('renders difficulties as a table with Area, Subcategory, Trend, Status columns', () => {
       renderProfile(FULL_STUDENT)
-      expect(screen.getByText('Subjuntivo en concesivas')).toBeInTheDocument()
-      expect(screen.getByText('Grammar')).toBeInTheDocument()
-      expect(screen.getByText('high')).toBeInTheDocument()
+      const section = screen.getByTestId('profile-focus-areas')
+      expect(section).toBeInTheDocument()
+      expect(section).toHaveTextContent('Area')
+      expect(section).toHaveTextContent('Subcategory')
+      expect(section).toHaveTextContent('Trend')
+      expect(section).toHaveTextContent('Status')
     })
 
-    it('applies strikethrough to covered difficulties', () => {
+    it('renders difficulty area (competency) and subcategory', () => {
       renderProfile(FULL_STUDENT)
-      const covered = screen.getByText('Registro formal')
-      expect(covered.className).toContain('line-through')
+      expect(screen.getByText('Grammar')).toBeInTheDocument()
+      // Subcategory column shows d.subcategory when present
+      expect(screen.getByText('subjuntivo')).toBeInTheDocument()
+    })
+
+    it('renders trend badge with capitalized value', () => {
+      renderProfile(FULL_STUDENT)
+      expect(screen.getByText('Stable')).toBeInTheDocument()
+      expect(screen.getByText('Improving')).toBeInTheDocument()
+    })
+
+    it('renders Working status for Active difficulty', () => {
+      renderProfile(FULL_STUDENT)
+      expect(screen.getByTestId('difficulty-status-d1')).toHaveTextContent('Working')
+    })
+
+    it('renders Covered status for Covered difficulty', () => {
+      renderProfile(FULL_STUDENT)
+      expect(screen.getByTestId('difficulty-status-d2')).toHaveTextContent('Covered')
     })
 
     it('calls onToggleDifficultyStatus when toggle button is clicked', () => {
@@ -380,9 +401,30 @@ describe('StudentProfileTab', () => {
       expect(onToggle).toHaveBeenCalledWith('d1', 'Covered')
     })
 
-    it('shows empty state when no difficulties', () => {
+    it('renders weaknesses with category badges', () => {
+      renderProfile(FULL_STUDENT)
+      const section = screen.getByTestId('profile-weaknesses')
+      expect(section).toBeInTheDocument()
+      expect(screen.getByText('Ser/Estar')).toBeInTheDocument()
+      const badges = screen.getAllByTestId('weakness-type-badge')
+      expect(badges.some((b) => b.textContent === 'Grammatical')).toBe(true)
+    })
+
+    it('shows empty state when both weaknesses and difficulties are empty', () => {
       renderProfile(EMPTY_STUDENT)
-      expect(screen.getByText('No difficulties tracked')).toBeInTheDocument()
+      expect(screen.getByText('No focus areas tracked')).toBeInTheDocument()
+    })
+
+    it('shows difficulties table when difficulties exist but weaknesses empty', () => {
+      renderProfile({ ...EMPTY_STUDENT, difficulties: FULL_STUDENT.difficulties })
+      expect(screen.getByTestId('profile-focus-areas')).toBeInTheDocument()
+      expect(screen.queryByText('No focus areas tracked')).not.toBeInTheDocument()
+    })
+
+    it('shows weaknesses section when weaknesses exist but difficulties empty', () => {
+      renderProfile({ ...EMPTY_STUDENT, weaknesses: FULL_STUDENT.weaknesses })
+      expect(screen.getByTestId('profile-weaknesses')).toBeInTheDocument()
+      expect(screen.queryByText('No focus areas tracked')).not.toBeInTheDocument()
     })
   })
 

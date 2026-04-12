@@ -56,3 +56,11 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 |---|---|---|
 | architecture-reviewer | minor | `UpdateTeachingTodoAsync` text validation fires after `index < 0` guard; passing invalid text with nonexistent todo ID returns null instead of ValidationException. Not blocking: 404 on unknown ID is correct behavior regardless. Could align with AppendTeachingTodoAsync (validate first) in a future cleanup. |
 | Sophy | minor | `[MaxLength(500)]` on `UpdateTeachingTodoDto.Text` + manual length check in service is redundant. Same pattern exists in `AppendTeachingTodoAsync`. Fix both together in a cleanup pass. |
+
+## Task #667 — Focus Areas table: description field not displayed
+
+**Source:** CodeRabbit on PR #693  
+**Date:** 2026-04-12  
+**Severity:** Low  
+
+`d.description` (e.g. "Separable vs inseparable phrasal verbs") is not shown anywhere in the Focus Areas table. The Subcategory column now shows `d.subcategory || d.description`, so description is only visible when subcategory is empty. Consider adding a tooltip or secondary line in the Subcategory cell for the full description.
