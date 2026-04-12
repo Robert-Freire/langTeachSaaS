@@ -301,7 +301,15 @@ public class TelegramConversationServiceTests : IDisposable
                 new("confuses ser and estar", "Grammar", "Copulas", "Medium")
             },
             RawExtractionJson: null,
-            SessionTitle: null);
+            SessionTitle: null,
+            TopicTags: [],
+            PreviousHomeworkStatus: null,
+            TeachingTodos: [],
+            TeacherFollowups: [],
+            LevelReassessment: null,
+            DurationMinutes: null,
+            IsCancelled: null,
+            DifficultiesWorkedOn: []);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco worked on ser/estar today"), CancellationToken.None);
 
@@ -328,7 +336,15 @@ public class TelegramConversationServiceTests : IDisposable
             SessionDate: null,
             SuggestedDifficulties: new List<SuggestedDifficultyDto>(),
             RawExtractionJson: "{\"whatWasCovered\":\"ser vs estar\"}",
-            SessionTitle: null);
+            SessionTitle: null,
+            TopicTags: [],
+            PreviousHomeworkStatus: null,
+            TeachingTodos: [],
+            TeacherFollowups: [],
+            LevelReassessment: null,
+            DurationMinutes: null,
+            IsCancelled: null,
+            DifficultiesWorkedOn: []);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco trabajamos ser vs estar"), CancellationToken.None);
 
@@ -355,7 +371,15 @@ public class TelegramConversationServiceTests : IDisposable
             SessionDate: "2026-04-06",
             SuggestedDifficulties: new List<SuggestedDifficultyDto>(),
             RawExtractionJson: null,
-            SessionTitle: null);
+            SessionTitle: null,
+            TopicTags: [],
+            PreviousHomeworkStatus: null,
+            TeachingTodos: [],
+            TeacherFollowups: [],
+            LevelReassessment: null,
+            DurationMinutes: null,
+            IsCancelled: null,
+            DifficultiesWorkedOn: []);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco el pasado lunes trabajamos los condicionales"), CancellationToken.None);
 
@@ -393,7 +417,7 @@ public class TelegramConversationServiceTests : IDisposable
         public Exception? ThrowOnNext { get; set; }
         public string? LastInput { get; private set; }
 
-        public Task<ExtractedReflectionDto> ExtractAsync(string text, CancellationToken ct = default)
+        public Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, CancellationToken ct = default)
         {
             LastInput = text;
             if (ThrowOnNext is not null)
@@ -412,7 +436,15 @@ public class TelegramConversationServiceTests : IDisposable
                 SessionDate: null,
                 SuggestedDifficulties: new List<SuggestedDifficultyDto>(),
                 RawExtractionJson: null,
-                SessionTitle: null);
+                SessionTitle: null,
+                TopicTags: [],
+                PreviousHomeworkStatus: null,
+                TeachingTodos: [],
+                TeacherFollowups: [],
+                LevelReassessment: null,
+                DurationMinutes: null,
+                IsCancelled: null,
+                DifficultiesWorkedOn: []);
             return Task.FromResult(result);
         }
     }

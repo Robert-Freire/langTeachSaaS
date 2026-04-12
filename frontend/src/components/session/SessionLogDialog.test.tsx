@@ -8,6 +8,7 @@ import * as sessionLogsApi from '../../api/sessionLogs'
 import type { SessionLog } from '../../api/sessionLogs'
 import * as lessonsApi from '../../api/lessons'
 import { createFollowup } from '../../api/followups'
+import * as studentsApi from '../../api/students'
 
 vi.mock('../../api/followups', () => ({
   getFollowups: vi.fn().mockResolvedValue([]),
@@ -29,6 +30,13 @@ vi.mock('../../api/sessionLogs', () => ({
 
 vi.mock('../../api/lessons', () => ({
   getLessons: vi.fn(),
+}))
+
+vi.mock('../../api/students', () => ({
+  getStudent: vi.fn().mockResolvedValue({
+    id: 'student-1', name: 'Marco', difficulties: [], teachingTodos: [],
+  }),
+  appendTeachingTodo: vi.fn().mockResolvedValue({}),
 }))
 
 // AudioRecorder mock: exposes a button that fires onVoiceNote when clicked
@@ -1113,6 +1121,172 @@ describe('SessionLogDialog', () => {
           expect.objectContaining({ text: 'Send homework', studentId: STUDENT_ID })
         )
       )
+    })
+  })
+
+  describe('handleVoiceNote - new extracted fields', () => {
+    const DRAFT_SESSION = { id: 'draft-1', studentId: STUDENT_ID, sessionDate: null }
+
+    beforeEach(() => {
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+      vi.mocked(lessonsApi.getLessons).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
+      vi.mocked(sessionLogsApi.createSession).mockResolvedValue(DRAFT_SESSION as never)
+    })
+
+    it('creates teaching todos from extraction', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        whatWasCovered: 'Subjuntivo',
+        areasToImprove: null,
+        emotionalSignals: null,
+        homeworkAssigned: null,
+        nextLessonIdeas: null,
+        suggestedDifficulties: [],
+        teachingTodos: ['Trabajar conectores', 'Practicar subjuntivo'],
+        teacherFollowups: [],
+      })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(vi.mocked(studentsApi.appendTeachingTodo)).toHaveBeenCalledWith(STUDENT_ID, 'Trabajar conectores')
+        expect(vi.mocked(studentsApi.appendTeachingTodo)).toHaveBeenCalledWith(STUDENT_ID, 'Practicar subjuntivo')
+      })
+    })
+
+    it('creates teacher followups from extraction', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        whatWasCovered: 'Subjuntivo',
+        areasToImprove: null,
+        emotionalSignals: null,
+        homeworkAssigned: null,
+        nextLessonIdeas: null,
+        suggestedDifficulties: [],
+        teachingTodos: [],
+        teacherFollowups: ['Enviar el PDF', 'Mandar el audio'],
+      })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(vi.mocked(createFollowup)).toHaveBeenCalledWith(
+          expect.objectContaining({ text: 'Enviar el PDF', studentId: STUDENT_ID, sourceSessionLogId: 'draft-1' })
+        )
+        expect(vi.mocked(createFollowup)).toHaveBeenCalledWith(
+          expect.objectContaining({ text: 'Mandar el audio', studentId: STUDENT_ID })
+        )
+      })
+    })
+
+    it('sets previousHomeworkStatus from extraction', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        whatWasCovered: null,
+        areasToImprove: null,
+        emotionalSignals: null,
+        homeworkAssigned: null,
+        nextLessonIdeas: null,
+        suggestedDifficulties: [],
+        previousHomeworkStatus: 'Done',
+        teachingTodos: [],
+        teacherFollowups: [],
+      })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          expect.objectContaining({ previousHomeworkStatus: 'Done' })
+        )
+      })
+    })
+
+    it('passes durationMinutes to session creation', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        whatWasCovered: null,
+        areasToImprove: null,
+        emotionalSignals: null,
+        homeworkAssigned: null,
+        nextLessonIdeas: null,
+        suggestedDifficulties: [],
+        durationMinutes: 45,
+        teachingTodos: [],
+        teacherFollowups: [],
+      })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          expect.objectContaining({ duration: 45 })
+        )
+      })
+    })
+
+    it('enables level reassessment from extraction', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        whatWasCovered: null,
+        areasToImprove: null,
+        emotionalSignals: null,
+        homeworkAssigned: null,
+        nextLessonIdeas: null,
+        suggestedDifficulties: [],
+        levelReassessment: 'B2',
+        teachingTodos: [],
+        teacherFollowups: [],
+      })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          expect.objectContaining({ levelReassessmentLevel: 'B2' })
+        )
+      })
+    })
+
+    it('matches difficultiesWorkedOn against student active difficulties without error', async () => {
+      vi.mocked(studentsApi.getStudent).mockResolvedValue({
+        id: STUDENT_ID, name: 'Marco',
+        difficulties: [
+          { id: 'd1', description: 'Subjuntivo en concesivas', competency: 'Grammar', subcategory: 'Subjunctive', severity: 'Medium', status: 'Active', createdAt: '' },
+        ],
+        teachingTodos: [],
+      } as never)
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        whatWasCovered: 'Worked on subjuntivo',
+        areasToImprove: null,
+        emotionalSignals: null,
+        homeworkAssigned: null,
+        nextLessonIdeas: null,
+        suggestedDifficulties: [],
+        difficultiesWorkedOn: ['Subjuntivo en concesivas'],
+        teachingTodos: [],
+        teacherFollowups: [],
+      })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      // Draft is saved successfully (extraction + matching ran without errors)
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          expect.objectContaining({ actualContent: 'Worked on subjuntivo' })
+        )
+      })
     })
   })
 })

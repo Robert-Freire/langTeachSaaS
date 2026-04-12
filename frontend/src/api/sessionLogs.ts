@@ -43,8 +43,17 @@ export interface ExtractedReflection {
   homeworkAssigned: string | null
   nextLessonIdeas: string | null
   sessionDate?: string | null
+  sessionTitle?: string | null
   suggestedDifficulties: SuggestedDifficulty[]
   rawExtractionJson?: string | null
+  topicTags?: TopicTag[] | null
+  previousHomeworkStatus?: string | null
+  teachingTodos?: string[] | null
+  teacherFollowups?: string[] | null
+  levelReassessment?: string | null
+  durationMinutes?: number | null
+  isCancelled?: boolean | null
+  difficultiesWorkedOn?: string[] | null
 }
 
 export interface CreateSessionLogRequest {
@@ -63,6 +72,7 @@ export interface CreateSessionLogRequest {
   status?: 'Draft' | 'Confirmed'
   mentionedDifficultyPairs?: { Competency: string; Subcategory: string }[]
   suggestedDifficulties?: SuggestedDifficulty[]
+  duration?: number | null
   voiceNoteId?: string
   voiceNoteTranscription?: string
   rawExtractionJson?: string

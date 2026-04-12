@@ -206,7 +206,7 @@ public class TelegramConversationService : ITelegramConversationService
         ExtractedReflectionDto? extracted = null;
         try
         {
-            extracted = await _extractionService.ExtractAsync(notes, ct);
+            extracted = await _extractionService.ExtractAsync(notes, ct: ct);
         }
         catch (OperationCanceledException)
         {

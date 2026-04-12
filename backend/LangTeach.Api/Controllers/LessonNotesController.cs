@@ -85,7 +85,7 @@ public class LessonNotesController : ControllerBase
         if (lesson is null) return NotFound();
 
         _logger.LogInformation("POST /api/lessons/{LessonId}/notes/extract. TeacherId={TeacherId}", lessonId, teacherId);
-        var extracted = await _extractionService.ExtractAsync(request.Text, cancellationToken);
+        var extracted = await _extractionService.ExtractAsync(request.Text, ct: cancellationToken);
         return Ok(extracted);
     }
 }

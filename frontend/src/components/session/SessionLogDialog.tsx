@@ -30,7 +30,7 @@ import {
   type SuggestedDifficulty,
 } from '../../api/sessionLogs'
 import { getLessons } from '../../api/lessons'
-import { getStudent } from '../../api/students'
+import { getStudent, appendTeachingTodo } from '../../api/students'
 import { AudioRecorder } from '../audio/AudioRecorder'
 import type { VoiceNote } from '../../api/voiceNotes'
 
@@ -375,8 +375,32 @@ export function SessionLogDialog({
       setGeneralNotes(notes)
       setSuggestedDifficulties(extracted.suggestedDifficulties ?? [])
       if (!sessionDateRef.current && extracted.sessionDate) setSessionDate(extracted.sessionDate)
+      if (extracted.topicTags?.length && topicTags.length === 0) setTopicTags(extracted.topicTags)
+      if (extracted.previousHomeworkStatus) setPrevHomeworkStatus(extracted.previousHomeworkStatus)
+      if (extracted.isCancelled === true) setIsCancelled(true)
+      if (extracted.levelReassessment) {
+        setReassessmentEnabled(true)
+        setReassessmentLevel(extracted.levelReassessment)
+      }
+      if (extracted.difficultiesWorkedOn?.length) {
+        const workedOnSet = new Set(extracted.difficultiesWorkedOn.map(d => d.toLowerCase()))
+        const matchedKeys = activeDifficulties
+          .filter(d => workedOnSet.has(d.description.toLowerCase()))
+          .map(d => `${d.competency}|${d.subcategory}`)
+        if (matchedKeys.length) {
+          setMentionedDifficultyKeys(prev => new Set([...prev, ...matchedKeys]))
+        }
+      }
       /* eslint-enable react-hooks/set-state-in-effect */
       if (runId !== voiceRunRef.current) return
+      // Resolve values that may have been updated above
+      const resolvedPrevHomework = extracted.previousHomeworkStatus ?? prevHomeworkStatus
+      const resolvedIsCancelled = extracted.isCancelled === true ? true : isCancelled
+      const resolvedTopicTags = extracted.topicTags?.length && topicTags.length === 0
+        ? extracted.topicTags
+        : topicTags
+      const resolvedLevelEnabled = extracted.levelReassessment ? true : reassessmentEnabled
+      const resolvedLevelValue = extracted.levelReassessment ?? (reassessmentEnabled ? reassessmentLevel : null)
       // Auto-save as Draft using full current form state + extracted fields
       const resolvedDate = sessionDateRef.current || extracted.sessionDate || null
       const draft = await createSession(studentId, {
@@ -384,14 +408,15 @@ export function SessionLogDialog({
         plannedContent: plannedContent || null,
         actualContent: extracted.whatWasCovered ?? null,
         homeworkAssigned: extracted.homeworkAssigned ?? null,
-        previousHomeworkStatus: prevHomeworkStatus,
+        previousHomeworkStatus: resolvedPrevHomework,
         nextSessionTopics: extracted.nextLessonIdeas ?? null,
         generalNotes: notes || null,
-        levelReassessmentSkill: reassessmentEnabled ? reassessmentSkill || null : null,
-        levelReassessmentLevel: reassessmentEnabled ? reassessmentLevel || null : null,
+        levelReassessmentSkill: resolvedLevelEnabled ? reassessmentSkill || null : null,
+        levelReassessmentLevel: resolvedLevelEnabled ? resolvedLevelValue : null,
         linkedLessonId: selectedLessonId || null,
-        topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
-        isCancelled,
+        topicTags: resolvedTopicTags.length > 0 ? serializeTopicTags(resolvedTopicTags) : null,
+        isCancelled: resolvedIsCancelled,
+        duration: extracted.durationMinutes ?? null,
         status: 'Draft',
         suggestedDifficulties: extracted.suggestedDifficulties?.length ? extracted.suggestedDifficulties : undefined,
         voiceNoteId: voiceNote.id,
@@ -400,6 +425,25 @@ export function SessionLogDialog({
       })
       if (runId !== voiceRunRef.current) return
       setDraftSessionId(draft.id)
+      // Create teaching todos and followups (non-fatal - errors are logged only)
+      const todoFollowupErrors: unknown[] = []
+      if (extracted.teachingTodos?.length) {
+        const results = await Promise.allSettled(
+          extracted.teachingTodos.map(text => appendTeachingTodo(studentId, text))
+        )
+        results.forEach(r => r.status === 'rejected' && todoFollowupErrors.push(r.reason))
+      }
+      if (extracted.teacherFollowups?.length) {
+        const results = await Promise.allSettled(
+          extracted.teacherFollowups.map(text =>
+            createFollowup({ text, studentId, sourceSessionLogId: draft.id })
+          )
+        )
+        results.forEach(r => r.status === 'rejected' && todoFollowupErrors.push(r.reason))
+      }
+      if (todoFollowupErrors.length) {
+        logger.error('SessionLogDialog', 'some todo/followup creations failed', todoFollowupErrors)
+      }
     } catch (err) {
       logger.error('SessionLogDialog', 'voice extraction or draft save failed', err)
       setExtractionFailed(true)

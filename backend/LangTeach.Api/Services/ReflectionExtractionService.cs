@@ -25,9 +25,9 @@ public class ReflectionExtractionService : IReflectionExtractionService
         _logger = logger;
     }
 
-    public async Task<ExtractedReflectionDto> ExtractAsync(string text, CancellationToken ct = default)
+    public async Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, CancellationToken ct = default)
     {
-        var request = _prompts.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(DateOnly.FromDateTime(DateTime.UtcNow), text));
+        var request = _prompts.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(DateOnly.FromDateTime(DateTime.UtcNow), text, knownDifficulties));
 
         ClaudeResponse response;
         try
@@ -37,7 +37,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Claude API call failed during reflection extraction");
-            return new ExtractedReflectionDto(null, null, null, null, null, null, [], null, null);
+            return new ExtractedReflectionDto(null, null, null, null, null, null, [], null, null, [], null, [], [], null, null, null, []);
         }
 
         return ParseResponse(response.Content);
@@ -60,14 +60,22 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 SessionDate: GetIsoDateOrNull(root, "sessionDate"),
                 SuggestedDifficulties: ParseSuggestedDifficulties(root),
                 RawExtractionJson: cleaned,
-                SessionTitle: GetStringOrNull(root, "sessionTitle")
+                SessionTitle: GetStringOrNull(root, "sessionTitle"),
+                TopicTags: ParseTopicTags(root),
+                PreviousHomeworkStatus: ParseHomeworkStatus(root),
+                TeachingTodos: ParseStringArray(root, "teachingTodos"),
+                TeacherFollowups: ParseStringArray(root, "teacherFollowups"),
+                LevelReassessment: GetStringOrNull(root, "levelReassessment"),
+                DurationMinutes: GetIntOrNull(root, "durationMinutes"),
+                IsCancelled: GetBoolOrNull(root, "isCancelled"),
+                DifficultiesWorkedOn: ParseStringArray(root, "difficultiesWorkedOn")
             );
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to parse reflection extraction JSON (length: {Length})", json?.Length ?? 0);
             _logger.LogDebug("Unparseable Claude response: {Json}", json);
-            return new ExtractedReflectionDto(null, null, null, null, null, null, [], null, null);
+            return new ExtractedReflectionDto(null, null, null, null, null, null, [], null, null, [], null, [], [], null, null, null, []);
         }
     }
 
@@ -127,5 +135,59 @@ public class ReflectionExtractionService : IReflectionExtractionService
             out var parsed)
             ? parsed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
             : null;
+    }
+
+    private static int? GetIntOrNull(JsonElement root, string key)
+    {
+        if (!root.TryGetProperty(key, out var prop)) return null;
+        return prop.ValueKind == JsonValueKind.Number && prop.TryGetInt32(out var v) ? v : null;
+    }
+
+    private static bool? GetBoolOrNull(JsonElement root, string key)
+    {
+        if (!root.TryGetProperty(key, out var prop)) return null;
+        return prop.ValueKind is JsonValueKind.True or JsonValueKind.False ? prop.GetBoolean() : null;
+    }
+
+    private static List<string> ParseStringArray(JsonElement root, string key)
+    {
+        var result = new List<string>();
+        if (!root.TryGetProperty(key, out var arr) || arr.ValueKind != JsonValueKind.Array)
+            return result;
+
+        foreach (var item in arr.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.String)
+            {
+                var s = item.GetString();
+                if (!string.IsNullOrWhiteSpace(s))
+                    result.Add(s);
+            }
+        }
+        return result;
+    }
+
+    private static List<TopicTagDto> ParseTopicTags(JsonElement root)
+    {
+        var result = new List<TopicTagDto>();
+        if (!root.TryGetProperty("topicTags", out var arr) || arr.ValueKind != JsonValueKind.Array)
+            return result;
+
+        foreach (var item in arr.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object) continue;
+            var tag = GetStringOrNull(item, "tag")?.Trim();
+            if (string.IsNullOrWhiteSpace(tag)) continue;
+            var category = GetStringOrNull(item, "category")?.Trim();
+            result.Add(new TopicTagDto(tag, category));
+        }
+        return result;
+    }
+
+    private static string? ParseHomeworkStatus(JsonElement root)
+    {
+        var raw = GetStringOrNull(root, "previousHomeworkStatus");
+        if (raw is null) return null;
+        return raw is "Done" or "Partial" or "NotDone" ? raw : null;
     }
 }
