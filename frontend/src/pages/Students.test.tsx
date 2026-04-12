@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -96,20 +96,11 @@ describe('Students page', () => {
     await screen.findByText('Failed to load students. Please try again.')
   })
 
-  it('shows inline error when delete mutation fails', async () => {
+  it('does not render a delete button in the student list row (delete moved to edit page)', async () => {
     vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse([makeStudent()]))
-    vi.mocked(studentsApi.deleteStudent).mockRejectedValue(new Error('Server error'))
-
     wrapper(<Students />)
     await screen.findByTestId('student-name')
-    fireEvent.click(screen.getByTestId('delete-student'))
-    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('confirm-delete'))
-
-    await waitFor(() => {
-      expect(screen.getByTestId('delete-error')).toBeInTheDocument()
-    })
-    expect(screen.getByTestId('delete-error')).toHaveTextContent('Failed to delete student. Please try again.')
+    expect(screen.queryByTestId('delete-student')).not.toBeInTheDocument()
   })
 
   it('renders student list when fetch succeeds', async () => {

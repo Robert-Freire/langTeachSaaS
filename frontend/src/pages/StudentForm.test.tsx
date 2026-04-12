@@ -15,10 +15,13 @@ const mockCreateStudent = vi.fn()
 const mockUpdateStudent = vi.fn()
 const mockGetStudents = vi.fn()
 
+const mockDeleteStudent = vi.fn()
+
 vi.mock('../api/students', () => ({
   getStudent: (...args: unknown[]) => mockGetStudent(...args),
   createStudent: (...args: unknown[]) => mockCreateStudent(...args),
   updateStudent: (...args: unknown[]) => mockUpdateStudent(...args),
+  deleteStudent: (...args: unknown[]) => mockDeleteStudent(...args),
   getStudents: (...args: unknown[]) => mockGetStudents(...args),
   appendTeachingTodo: vi.fn(),
   updateTeachingTodo: vi.fn(),
@@ -92,20 +95,20 @@ describe('StudentForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetStudent.mockResolvedValue({
-      id: 'stu-1',
-      name: 'Ana',
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      nativeLanguages: [],
-      learningGoals: [],
+      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
+      interests: [], nativeLanguages: [], learningGoals: [],
       weaknesses: [] as { description: string; weaknessType: string }[],
-      difficulties: [],
-      personalNotes: null, teachingNotes: null,
+      difficulties: [], personalNotes: null, teachingNotes: null,
+      shortTermObjectives: [], spokenLanguages: [], teachingTodos: [],
+      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
+      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
+      officialCefrLevel: null, isActive: true, isCorporate: false, rate: null,
+      skillLevelOverrides: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
     })
     mockGetStudents.mockResolvedValue({ items: [], totalCount: 0 })
     mockCreateStudent.mockResolvedValue({ id: 'new-id' })
     mockUpdateStudent.mockResolvedValue({ id: 'stu-1' })
+    mockDeleteStudent.mockResolvedValue(undefined)
   })
 
   it('renders Back link to students list', () => {
@@ -115,9 +118,11 @@ describe('StudentForm', () => {
     expect(back).toHaveTextContent('Students')
   })
 
-  it('shows "Teaching Context" section heading instead of "AI Personalization"', () => {
+  it('shows Teaching Goals and Difficulties sections instead of a combined Teaching Context', () => {
     renderNew()
-    expect(screen.getByText('Teaching Context')).toBeInTheDocument()
+    expect(screen.getByText('Teaching Goals')).toBeInTheDocument()
+    expect(screen.getByText('Difficulties')).toBeInTheDocument()
+    expect(screen.queryByText('Teaching Context')).not.toBeInTheDocument()
     expect(screen.queryByText('AI Personalization')).not.toBeInTheDocument()
   })
 
@@ -176,7 +181,7 @@ describe('StudentForm', () => {
     renderEdit()
 
     await screen.findByRole('heading', { name: 'Edit Student' })
-    await user.click(screen.getByRole('button', { name: 'Update Student' }))
+    await user.click(screen.getAllByRole('button', { name: 'Save Profile' })[0])
 
     await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/students/stu-1')
@@ -500,7 +505,7 @@ describe('StudentForm', () => {
     expect(chips[1]).toHaveTextContent('English')
     expect(chips[2]).toHaveTextContent('Catalan')
 
-    await user.click(screen.getByRole('button', { name: 'Update Student' }))
+    await user.click(screen.getAllByRole('button', { name: 'Save Profile' })[0])
 
     await vi.waitFor(() => {
       expect(mockUpdateStudent).toHaveBeenCalledWith(
@@ -736,5 +741,91 @@ describe('StudentForm', () => {
   it('does not show teaching todos sidebar in create mode', () => {
     renderNew()
     expect(screen.queryByTestId('form-sidebar')).not.toBeInTheDocument()
+  })
+
+  it('renders commercial fields in edit mode', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(screen.getByTestId('toggle-is-active')).toBeInTheDocument()
+    expect(screen.getByTestId('toggle-is-corporate')).toBeInTheDocument()
+    expect(screen.getByTestId('student-rate')).toBeInTheDocument()
+  })
+
+  it('does not render commercial section in create mode', () => {
+    renderNew()
+    expect(screen.queryByTestId('toggle-is-active')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('toggle-is-corporate')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('student-rate')).not.toBeInTheDocument()
+  })
+
+  it('submits commercial fields in edit mode', async () => {
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
+      interests: [], nativeLanguages: [], learningGoals: [], weaknesses: [], difficulties: [],
+      personalNotes: null, teachingNotes: null, shortTermObjectives: [], spokenLanguages: [],
+      teachingTodos: [], birthYear: null, profession: null, countryOfOrigin: null,
+      cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null,
+      reasonForStudying: null, officialCefrLevel: null,
+      isActive: true, isCorporate: false, rate: '45/hr',
+      skillLevelOverrides: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+    })
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+
+    // Toggle isActive off
+    await user.click(screen.getByTestId('toggle-is-active'))
+    // inactive badge should appear
+    expect(await screen.findByTestId('inactive-badge')).toBeInTheDocument()
+
+    await user.click(screen.getAllByRole('button', { name: 'Save Profile' })[0])
+
+    await vi.waitFor(() => {
+      expect(mockUpdateStudent).toHaveBeenCalledWith(
+        'stu-1',
+        expect.objectContaining({ isActive: false, isCorporate: false, rate: '45/hr' }),
+      )
+    })
+  })
+
+  it('shows delete button in edit mode', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(screen.getByTestId('delete-student-btn')).toBeInTheDocument()
+  })
+
+  it('does not show delete button in create mode', () => {
+    renderNew()
+    expect(screen.queryByTestId('delete-student-btn')).not.toBeInTheDocument()
+  })
+
+  it('opens delete dialog and confirms deletion', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+
+    await user.click(screen.getByTestId('delete-student-btn'))
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument()
+
+    await user.click(screen.getByTestId('confirm-delete'))
+
+    await vi.waitFor(() => {
+      expect(mockDeleteStudent).toHaveBeenCalledWith('stu-1')
+    })
+  })
+
+  it('shows section nav in edit mode', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(screen.getByTestId('section-nav')).toBeInTheDocument()
+    expect(screen.getByTestId('section-nav-section-basic')).toBeInTheDocument()
+    expect(screen.getByTestId('section-nav-section-commercial')).toBeInTheDocument()
+  })
+
+  it('does not show section nav in create mode', () => {
+    renderNew()
+    expect(screen.queryByTestId('section-nav')).not.toBeInTheDocument()
   })
 })

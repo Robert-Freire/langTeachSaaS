@@ -3307,5 +3307,111 @@ public class PromptServiceTests
         request.UserPrompt.Should().Contain("Subjunctive Mood");
         request.SystemPrompt.Should().Contain("CEFR-level grammar expert");
     }
+
+    // --- New student profile fields ---
+
+    [Fact]
+    public void ReasonForStudying_IncludedInSystemPrompt()
+    {
+        var ctx = BaseCtx("Ana") with
+        {
+            StudentReasonForStudying = "para vivir en Barcelona"
+        };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().Contain("para vivir en Barcelona");
+        request.SystemPrompt.Should().Contain("Anchor vocabulary, topics, and examples to the student's stated study motivation");
+    }
+
+    [Fact]
+    public void Profession_IncludedInSystemPrompt()
+    {
+        var ctx = BaseCtx("Ana") with
+        {
+            StudentProfession = "marine biologist"
+        };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().Contain("marine biologist");
+        request.SystemPrompt.Should().Contain("domain-specific vocabulary");
+    }
+
+    [Fact]
+    public void SpokenLanguages_IncludedInSystemPrompt()
+    {
+        var ctx = BaseCtx("Ana") with
+        {
+            StudentSpokenLanguages = ["French", "Portuguese"]
+        };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().Contain("French");
+        request.SystemPrompt.Should().Contain("Portuguese");
+        request.SystemPrompt.Should().Contain("cross-language awareness and cognates from the student's other languages");
+    }
+
+    [Fact]
+    public void OfficialCefrLevel_IncludedWithTeacherLevelWhenSet()
+    {
+        var ctx = BaseCtx("Ana") with
+        {
+            StudentOfficialCefrLevel = "A2"
+        };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().Contain("A2");
+        request.SystemPrompt.Should().Contain("official");
+        request.SystemPrompt.Should().Contain("teacher assessment");
+    }
+
+    [Fact]
+    public void BirthYear_AgeComputedInSystemPrompt()
+    {
+        var birthYear = 1990;
+        var ctx = BaseCtx("Ana") with
+        {
+            StudentBirthYear = birthYear
+        };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        var expectedAge = (DateTime.UtcNow.Year - birthYear).ToString();
+        request.SystemPrompt.Should().Contain(expectedAge);
+    }
+
+    [Fact]
+    public void CountryOfOriginAndResidence_IncludedInSystemPrompt()
+    {
+        var ctx = BaseCtx("Ana") with
+        {
+            StudentCountryOfOrigin = "Brazil",
+            StudentCountryOfResidence = "Spain"
+        };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().Contain("Brazil");
+        request.SystemPrompt.Should().Contain("Spain");
+    }
+
+    [Fact]
+    public void NewFields_NotIncluded_WhenNull()
+    {
+        var ctx = BaseCtx("Ana");
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().NotContain("Profession:");
+        request.SystemPrompt.Should().NotContain("Age:");
+        request.SystemPrompt.Should().NotContain("Country of origin:");
+        request.SystemPrompt.Should().NotContain("Country of residence:");
+        request.SystemPrompt.Should().NotContain("Official CEFR level:");
+        request.SystemPrompt.Should().NotContain("Also speaks:");
+        request.SystemPrompt.Should().NotContain("Reason for studying");
+    }
 }
 

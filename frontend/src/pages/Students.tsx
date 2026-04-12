@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Search, Trash2, UserPlus, Users } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { Pencil, Search, UserPlus, Users } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
-import { getStudents, deleteStudent, type Student } from '../api/students'
+import { getStudents, type Student } from '../api/students'
 import { getDashboard, type ActiveStudent } from '../api/dashboard'
-import { logger } from '../lib/logger'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -13,16 +12,6 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { cn } from '@/lib/utils'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 
 // ── Avatar helpers ──────────────────────────────────────────────────────────
 
@@ -208,10 +197,7 @@ const TABLE_HEADERS = ['', 'Name', 'Level', 'Native Language', 'Last Session', '
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function Students() {
-  const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [cefrFilter, setCefrFilter] = useState<string>('All')
   const [sortBy, setSortBy] = useState<SortOption>('nextSession')
@@ -229,22 +215,6 @@ export default function Students() {
   const { data: dashboardData } = useQuery({
     queryKey: ['dashboard'],
     queryFn: getDashboard,
-  })
-
-  const { mutate: doDelete, isPending: isDeleting } = useMutation({
-    mutationFn: (id: string) => deleteStudent(id),
-    onSuccess: () => {
-      logger.info('Students', 'student deleted')
-      queryClient.invalidateQueries({ queryKey: ['students'] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-      setStudentToDelete(null)
-      setDeleteError(null)
-    },
-    onError: (err) => {
-      logger.error('Students', 'delete failed', err)
-      setDeleteError('Failed to delete student. Please try again.')
-      setStudentToDelete(null)
-    },
   })
 
   const dashboardMap = new Map<string, ActiveStudent>(
@@ -322,10 +292,6 @@ export default function Students() {
           </Link>
         }
       />
-
-      {deleteError && (
-        <span className="text-sm text-red-600 font-medium" data-testid="delete-error">{deleteError}</span>
-      )}
 
       {/* Search, filter and sort bar */}
       {allStudents.length > 0 && (
@@ -508,21 +474,6 @@ export default function Students() {
                         </TooltipTrigger>
                         <TooltipContent>Edit</TooltipContent>
                       </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger render={<span />}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => setStudentToDelete(student)}
-                            aria-label={`Delete ${student.name}`}
-                            data-testid="delete-student"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-zinc-400" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete</TooltipContent>
-                      </Tooltip>
                     </div>
 
                     {/* Hidden interests for e2e compatibility */}
@@ -558,28 +509,6 @@ export default function Students() {
         </div>
       )}
 
-      {/* Delete confirmation dialog */}
-      <AlertDialog open={!!studentToDelete} onOpenChange={(open) => !open && setStudentToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete {studentToDelete?.name}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently remove this student profile. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => studentToDelete && doDelete(studentToDelete.id)}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 text-white"
-              data-testid="confirm-delete"
-            >
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }
