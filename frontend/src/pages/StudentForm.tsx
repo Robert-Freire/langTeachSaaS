@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Plus, Trash2 } from 'lucide-react'
 import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem, type ShortTermObjective } from '../api/students'
+import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
 import { LEARNING_GOALS, COMPETENCY_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
@@ -23,6 +24,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { MultiSelect } from '@/components/ui/multi-select'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
 import { StudentFollowupsCard } from '@/components/student/StudentFollowupsCard'
+import { SectionHeader } from '@/components/student/SectionHeader'
 import { getFollowups } from '@/api/followups'
 import { FieldTooltip } from '@/components/FieldTooltip'
 import { PageHeader } from '@/components/PageHeader'
@@ -38,9 +40,13 @@ export default function StudentForm() {
   const [name, setName] = useState('')
   const [language, setLanguage] = useState('')
   const [cefrLevel, setCefrLevel] = useState('')
+  const [officialCefrLevel, setOfficialCefrLevel] = useState<string>('')
   const [interests, setInterests] = useState<string[]>([])
   const [interestInput, setInterestInput] = useState('')
   const [nativeLanguages, setNativeLanguages] = useState<string[]>([])
+  const [spokenLanguages, setSpokenLanguages] = useState<string[]>([])
+  const [spokenInput, setSpokenInput] = useState('')
+  const [skillLevelOverrides, setSkillLevelOverrides] = useState<Record<string, string>>({})
   const [learningGoals, setLearningGoals] = useState<string[]>([])
   const [weaknesses, setWeaknesses] = useState<StudentWeaknessItem[]>([])
   const [difficulties, setDifficulties] = useState<Difficulty[]>([])
@@ -56,6 +62,7 @@ export default function StudentForm() {
   const [shortTermObjectives, setShortTermObjectives] = useState<ShortTermObjective[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
   const interestInputRef = useRef<HTMLInputElement>(null)
+  const spokenInputRef = useRef<HTMLInputElement>(null)
 
   const { data: existing, isLoading, isError } = useQuery({
     queryKey: ['students', id],
@@ -69,6 +76,19 @@ export default function StudentForm() {
     enabled: isEdit && !!id,
   })
 
+  // Separate query for sidebar todos — intentionally uses the singular key ['student', id]
+  // (not ['students', id] used by the form) so that invalidating it on todo mutations
+  // does NOT trigger a refetch of the form data and reset unsaved field edits.
+  const { data: sidebarStudent } = useQuery({
+    queryKey: ['student', id],
+    queryFn: () => getStudent(id!),
+    enabled: isEdit && !!id,
+  })
+  const sidebarTodos = sidebarStudent?.teachingTodos ?? existing?.teachingTodos ?? []
+  const onSidebarTodoChange = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['student', id] })
+  }, [queryClient, id])
+
   // Sync server student data to local form state
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -76,8 +96,11 @@ export default function StudentForm() {
       setName(existing.name)
       setLanguage(existing.learningLanguage)
       setCefrLevel(existing.cefrLevel)
+      setOfficialCefrLevel(existing.officialCefrLevel ?? '')
       setInterests(existing.interests)
       setNativeLanguages(existing.nativeLanguages)
+      setSpokenLanguages(existing.spokenLanguages ?? [])
+      setSkillLevelOverrides(existing.skillLevelOverrides ?? {})
       setLearningGoals(existing.learningGoals)
       setWeaknesses(existing.weaknesses)
       setDifficulties(existing.difficulties ?? [])
@@ -126,6 +149,39 @@ export default function StudentForm() {
 
   function removeInterest(interest: string) {
     setInterests((prev) => prev.filter((i) => i !== interest))
+  }
+
+  function addSpokenLanguage(value: string) {
+    const trimmed = value.trim()
+    if (trimmed && !spokenLanguages.includes(trimmed)) {
+      setSpokenLanguages((prev) => [...prev, trimmed])
+    }
+    setSpokenInput('')
+  }
+
+  function handleSpokenKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addSpokenLanguage(spokenInput)
+    }
+    if (e.key === 'Backspace' && spokenInput === '' && spokenLanguages.length > 0) {
+      setSpokenLanguages((prev) => prev.slice(0, -1))
+    }
+  }
+
+  function removeSpokenLanguage(lang: string) {
+    setSpokenLanguages((prev) => prev.filter((l) => l !== lang))
+  }
+
+  function setSkillOverride(skill: string, value: string) {
+    setSkillLevelOverrides((prev) => {
+      if (!value) {
+        const next = { ...prev }
+        delete next[skill]
+        return next
+      }
+      return { ...prev, [skill]: value }
+    })
   }
 
   function addWeakness() {
@@ -198,12 +254,18 @@ export default function StudentForm() {
       (d) => d.competency && d.description.trim()
     )
     const validWeaknesses = weaknesses.filter((w) => w.description.trim())
+    const finalSpoken = spokenInput.trim()
+      ? [...spokenLanguages, spokenInput.trim()]
+      : spokenLanguages
     mutate({
       name: name.trim(),
       learningLanguage: language,
       cefrLevel,
+      officialCefrLevel: officialCefrLevel || null,
       interests: finalInterests,
       nativeLanguages,
+      spokenLanguages: finalSpoken,
+      skillLevelOverrides,
       learningGoals,
       weaknesses: validWeaknesses,
       difficulties: validDifficulties,
@@ -254,7 +316,8 @@ export default function StudentForm() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className={isEdit ? 'grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 items-start' : 'max-w-2xl space-y-6'}>
+    <div className="space-y-6">
       <PageHeader
         backTo="/students"
         backLabel="Students"
@@ -313,7 +376,7 @@ export default function StudentForm() {
               {errors.name && <p className="text-xs text-red-600">{errors.name}</p>}
             </div>
 
-            {/* Language + CEFR Level side-by-side */}
+            {/* Learning Language + Teacher's Assessment side-by-side */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
               <div className="space-y-1.5">
                 <Label className="inline-flex items-center gap-1">Learning Language <span className="text-red-500">*</span> <FieldTooltip fieldKey="learningLanguage" /></Label>
@@ -334,7 +397,7 @@ export default function StudentForm() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="inline-flex items-center gap-1">CEFR Level <span className="text-red-500">*</span> <FieldTooltip fieldKey="cefrLevel" /></Label>
+                <Label className="inline-flex items-center gap-1">Teacher's Assessment <span className="text-red-500">*</span> <FieldTooltip fieldKey="cefrLevel" /></Label>
                 <Select value={cefrLevel} onValueChange={(v) => v && setCefrLevel(v)}>
                   <SelectTrigger data-testid="student-cefr">
                     <SelectValue placeholder="Select a level" />
@@ -347,6 +410,116 @@ export default function StudentForm() {
                 </Select>
                 {errors.cefrLevel && <p className="text-xs text-red-600">{errors.cefrLevel}</p>}
               </div>
+            </div>
+
+            {/* Official CEFR Level */}
+            <div className="space-y-1.5 max-w-[calc(50%-0.5rem)]">
+              <Label className="inline-flex items-center gap-1">Official Level <FieldTooltip fieldKey="officialCefrLevel" /></Label>
+              <Select value={officialCefrLevel} onValueChange={(v) => setOfficialCefrLevel(!v || v === '__none__' ? '' : v)}>
+                <SelectTrigger data-testid="student-official-cefr">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">None</SelectItem>
+                  {CEFR_LEVELS.map((level) => (
+                    <SelectItem key={level} value={level}>{level}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-zinc-400">Official exam result or external assessment.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Languages card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Languages</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Native Languages */}
+            <div className="space-y-1.5">
+              <Label className="inline-flex items-center gap-1">Native Languages <FieldTooltip fieldKey="nativeLanguages" /></Label>
+              <MultiSelect
+                options={NATIVE_LANGUAGE_OPTIONS}
+                selected={nativeLanguages}
+                onChange={setNativeLanguages}
+                placeholder="Select native languages (optional)"
+                triggerId="student-native-language"
+                chipTestId="native-lang-chip"
+                maxItems={5}
+                allowCustom={false}
+              />
+            </div>
+
+            {/* Spoken Languages */}
+            <div className="space-y-1.5">
+              <Label className="inline-flex items-center gap-1">Spoken Languages <FieldTooltip fieldKey="spokenLanguages" /></Label>
+              <div
+                className="flex flex-wrap gap-1.5 min-h-10 w-full max-w-sm rounded-md border border-input bg-white px-3 py-2 cursor-text"
+                onClick={() => spokenInputRef.current?.focus()}
+                data-testid="spoken-languages-container"
+              >
+                {spokenLanguages.map((lang) => (
+                  <span
+                    key={lang}
+                    className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded px-2 py-0.5"
+                    data-testid="spoken-lang-chip"
+                  >
+                    {lang}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); removeSpokenLanguage(lang) }}
+                      className="text-indigo-400 hover:text-indigo-700 p-0.5 -mr-0.5"
+                      aria-label={`Remove ${lang}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  ref={spokenInputRef}
+                  value={spokenInput}
+                  onChange={(e) => setSpokenInput(e.target.value)}
+                  onKeyDown={handleSpokenKeyDown}
+                  onBlur={() => { if (spokenInput.trim()) addSpokenLanguage(spokenInput) }}
+                  placeholder={spokenLanguages.length === 0 ? 'Type and press Enter' : ''}
+                  className="flex-1 min-w-20 outline-none text-sm bg-transparent placeholder:text-zinc-400"
+                  data-testid="spoken-language-input"
+                />
+              </div>
+              <p className="text-xs text-zinc-400">Other languages spoken. Flat list, no proficiency level.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Skill Overrides card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base inline-flex items-center gap-1">Skill Overrides <FieldTooltip fieldKey="skillLevelOverrides" /></CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-zinc-400 mb-4">Override the general CEFR level per skill for AI generation. Leave empty to inherit the general level.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg">
+              {(['Reading', 'Writing', 'Speaking', 'Listening'] as const).map((skill) => (
+                <div key={skill} className="space-y-1.5">
+                  <Label className="text-xs">{skill}</Label>
+                  <Select
+                    value={skillLevelOverrides[skill] ?? ''}
+                    onValueChange={(v) => setSkillOverride(skill, !v || v === '__none__' ? '' : v)}
+                  >
+                    <SelectTrigger data-testid={`skill-override-${skill.toLowerCase()}`} className="h-8 text-xs">
+                      <SelectValue placeholder="--" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">--</SelectItem>
+                      {CEFR_LEVELS.map((level) => (
+                        <SelectItem key={level} value={level}>{level}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -504,21 +677,6 @@ export default function StudentForm() {
             <CardTitle className="text-base">Teaching Context</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-
-            {/* Native Languages */}
-            <div className="space-y-1.5">
-              <Label className="inline-flex items-center gap-1">Native Languages <FieldTooltip fieldKey="nativeLanguages" /></Label>
-              <MultiSelect
-                options={NATIVE_LANGUAGE_OPTIONS}
-                selected={nativeLanguages}
-                onChange={setNativeLanguages}
-                placeholder="Select native languages (optional)"
-                triggerId="student-native-language"
-                chipTestId="native-lang-chip"
-                maxItems={5}
-                allowCustom={false}
-              />
-            </div>
 
             {/* Learning Goals */}
             <div className="space-y-1.5">
@@ -806,22 +964,36 @@ export default function StudentForm() {
         </Card>
       </form>
 
-      {isEdit && id && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Pending Followups</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <StudentFollowupsCard
-              followups={followups}
-              studentId={id}
-              onFollowupChange={() => refetchFollowups()}
-            />
-          </CardContent>
-        </Card>
-      )}
-
       {isEdit && id && <StudentCoursesCard studentId={id} />}
+    </div>
+
+    {isEdit && id && (
+      <div className="space-y-4 lg:sticky lg:top-6" data-testid="form-sidebar">
+        <div
+          className="bg-white rounded-2xl p-4"
+          style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
+          data-testid="sidebar-teaching-todos"
+        >
+          <SectionHeader>Teaching Todos</SectionHeader>
+          <TeachingTodosCard
+            todos={sidebarTodos}
+            studentId={id}
+            onStudentChange={onSidebarTodoChange}
+            allowEdit
+          />
+        </div>
+        <div
+          className="bg-white rounded-2xl p-4"
+          style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
+        >
+          <StudentFollowupsCard
+            followups={followups}
+            studentId={id}
+            onFollowupChange={() => refetchFollowups()}
+          />
+        </div>
+      </div>
+    )}
     </div>
   )
 }

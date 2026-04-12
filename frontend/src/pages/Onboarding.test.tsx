@@ -163,7 +163,7 @@ describe('Onboarding', () => {
       birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
       countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
       officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
-      rate: null, spokenLanguages: [], teachingTodos: [],
+      rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
     }
     mockGetStudents.mockResolvedValue({ items: [mockStudent], totalCount: 1, page: 1, pageSize: 1 })
 
@@ -294,7 +294,7 @@ describe('Onboarding', () => {
       birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
       countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
       officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
-      rate: null, spokenLanguages: [], teachingTodos: [],
+      rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
     }
     mockGetStudents.mockResolvedValue({ items: [mockStudent], totalCount: 1, page: 1, pageSize: 1 })
 

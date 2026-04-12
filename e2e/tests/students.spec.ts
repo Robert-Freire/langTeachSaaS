@@ -483,6 +483,72 @@ test('student detail shows 4 tabs and overview content by default', async ({ bro
   await context.close()
 })
 
+test('saves and displays SpokenLanguages, OfficialCefrLevel, and SkillLevelOverrides', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Language Fields Test ${Date.now()}`
+
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: 10000 })
+
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+
+  // Set Official Level
+  await page.getByTestId('student-official-cefr').click()
+  await page.getByRole('option', { name: 'A2' }).click()
+
+  // Add a spoken language
+  await page.getByTestId('spoken-language-input').fill('English')
+  await page.getByTestId('spoken-language-input').press('Enter')
+  await expect(page.getByTestId('spoken-lang-chip').first()).toBeVisible({ timeout: 5000 })
+
+  // Set skill override for Reading
+  await page.getByTestId('skill-override-reading').click()
+  await page.getByRole('option', { name: 'B2' }).click()
+
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
+
+  // Verify Overview tab shows skill bar
+  await expect(page.getByTestId('tab-overview')).toBeVisible({ timeout: 5000 })
+  const overviewSkillBadge = page.getByTestId('overview-skill-badge-reading')
+  await expect(overviewSkillBadge).toBeVisible({ timeout: 5000 })
+  await expect(overviewSkillBadge).toHaveText('B2')
+
+  // Switch to Profile tab and verify Language Ecosystem and Skill Assessment
+  await page.getByTestId('tab-profile').click()
+  const langSection = page.getByTestId('profile-language-ecosystem')
+  await expect(langSection).toBeVisible({ timeout: 5000 })
+  await expect(langSection).toContainText('English')
+  await expect(langSection).toContainText('A2')
+
+  const skillSection = page.getByTestId('profile-skill-assessment')
+  await expect(skillSection).toBeVisible({ timeout: 5000 })
+  await expect(skillSection).toContainText('Reading')
+  await expect(skillSection).toContainText('B2')
+
+  // Cleanup
+  await page.goto('/students')
+  const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName }),
+  })
+  await deleteCard.getByTestId('delete-student').click()
+  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
+  await page.getByTestId('confirm-delete').click()
+  await expect(
+    page.locator('[data-testid^="student-row-"]').filter({
+      has: page.getByTestId('student-name').filter({ hasText: studentName }),
+    }),
+  ).not.toBeVisible({ timeout: 10000 })
+
+  await context.close()
+})
+
 test('identity fields round-trip: save and verify in profile view and edit form', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
@@ -536,15 +602,15 @@ test('identity fields round-trip: save and verify in profile view and edit form'
   await page.getByRole('button', { name: 'Cancel' }).click()
   await expect(page).toHaveURL('/students', { timeout: 10000 })
   const deleteCardIdentity = page.locator('[data-testid^="student-row-"]').filter({
-    has: page.getByTestId('student-name').filter({ hasText: studentName })
+    has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
   await deleteCardIdentity.getByTestId('delete-student').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
   await page.getByTestId('confirm-delete').click()
   await expect(
     page.locator('[data-testid^="student-row-"]').filter({
-      has: page.getByTestId('student-name').filter({ hasText: studentName })
-    })
+      has: page.getByTestId('student-name').filter({ hasText: studentName }),
+    }),
   ).not.toBeVisible({ timeout: 10000 })
 
   await context.close()
@@ -601,15 +667,15 @@ test('motivation fields: reason for studying and objectives round-trip', async (
   await page.getByRole('button', { name: 'Cancel' }).click()
   await expect(page).toHaveURL('/students', { timeout: 10000 })
   const deleteCardM = page.locator('[data-testid^="student-row-"]').filter({
-    has: page.getByTestId('student-name').filter({ hasText: studentName })
+    has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
   await deleteCardM.getByTestId('delete-student').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
   await page.getByTestId('confirm-delete').click()
   await expect(
     page.locator('[data-testid^="student-row-"]').filter({
-      has: page.getByTestId('student-name').filter({ hasText: studentName })
-    })
+      has: page.getByTestId('student-name').filter({ hasText: studentName }),
+    }),
   ).not.toBeVisible({ timeout: 10000 })
 
   await context.close()
@@ -653,6 +719,76 @@ test('Ana Visual profile tab shows Focus Areas section with difficulties and wea
   await expect(weaknessSection).toBeVisible()
   const badges = page.getByTestId('weakness-type-badge')
   await expect(badges.first()).toBeVisible()
+
+  await context.close()
+})
+
+test('teaching todos: add, toggle covered, verify ordering on overview tab', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Todo E2E Test ${Date.now()}`
+
+  // Create a student to work with
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: 10000 })
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
+
+  // Verify we're on the overview tab (default)
+  await expect(page.getByTestId('tab-overview')).toHaveAttribute('aria-selected', 'true', { timeout: 5000 })
+  await expect(page.getByTestId('teaching-todos-card')).toBeVisible({ timeout: 5000 })
+
+  // Empty state is shown
+  await expect(page.getByTestId('teaching-todos-empty')).toBeVisible()
+
+  // Add a teaching todo
+  const addInput = page.getByTestId('todo-add-input')
+  await addInput.fill('Practice ser vs estar')
+  await page.getByTestId('todo-add-btn').click()
+
+  // Todo appears in list
+  await expect(page.getByTestId('teaching-todos-list')).toBeVisible({ timeout: 5000 })
+  const firstTodo = page.getByTestId('teaching-todo-item').first()
+  await expect(firstTodo).toContainText('Practice ser vs estar')
+
+  // Add a second todo
+  await addInput.fill('Review subjunctive mood')
+  await page.getByTestId('todo-add-btn').click()
+  await expect(page.getByTestId('teaching-todo-item')).toHaveCount(2, { timeout: 5000 })
+
+  // Mark the first todo as covered — capture id before any reorder so locators stay stable
+  const toggleTestId = await page.getByTestId('teaching-todo-item').first().getByTestId(/^todo-toggle-/).getAttribute('data-testid')
+  expect(toggleTestId).toBeTruthy()
+  const todoId = toggleTestId!.replace('todo-toggle-', '')
+  const todoText = await page.getByTestId(`todo-text-${todoId}`).textContent()
+
+  await page.getByTestId(`todo-toggle-${todoId}`).click()
+
+  // Wait for covered state (strikethrough)
+  await expect(page.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: 5000 })
+
+  // Verify ordering: pending todo should appear before covered
+  const reorderedItems = page.getByTestId('teaching-todo-item')
+  const firstText = await reorderedItems.first().getByTestId(/^todo-text-/).textContent()
+  const lastText = await reorderedItems.last().getByTestId(/^todo-text-/).textContent()
+  expect(firstText).not.toEqual(todoText) // the one we covered should now be last
+  expect(lastText).toEqual(todoText)
+
+  // Cleanup: delete the student
+  await page.goto('/students')
+  const row = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await row.getByTestId('delete-student').click()
+  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
+  await page.getByTestId('confirm-delete').click()
+  await expect(row).not.toBeVisible({ timeout: 10000 })
 
   await context.close()
 })

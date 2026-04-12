@@ -9,11 +9,16 @@ import { TeachingTodosCard } from './TeachingTodosCard'
 import { StudentFollowupsCard } from './StudentFollowupsCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
 import { SectionHeader } from './SectionHeader'
+import { CefrBadge } from '@/components/dashboard/CefrBadge'
+import { langCode } from './langUtils'
+
+const SKILL_ORDER = ['Reading', 'Writing', 'Speaking', 'Listening']
 
 interface Props {
   student: Student
   followups?: TeacherFollowup[]
   onFollowupChange?: () => void
+  onStudentChange: () => void
   onToggleDifficultyStatus?: (id: string, status: 'Active' | 'Covered') => void
   onSaveReasonForStudying?: (value: string) => Promise<void>
   onSaveInterests?: (value: string[]) => Promise<void>
@@ -294,7 +299,7 @@ function InterestsSection({
   )
 }
 
-export function StudentProfileTab({ student, followups = [], onFollowupChange, onToggleDifficultyStatus, onSaveReasonForStudying, onSaveInterests }: Props) {
+export function StudentProfileTab({ student, followups = [], onFollowupChange, onStudentChange, onToggleDifficultyStatus, onSaveReasonForStudying, onSaveInterests }: Props) {
   const parsedPersonalNotes = parseNotes(student.personalNotes)
   const parsedTeachingNotes = parseNotes(student.teachingNotes)
 
@@ -577,27 +582,70 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
           {/* Interests (dedicated editable section) */}
           <InterestsSection key={student.id} student={student} onSave={onSaveInterests} />
 
-          {/* Languages */}
-          <section data-testid="profile-languages">
+          {/* Language Ecosystem */}
+          <section data-testid="profile-language-ecosystem">
             <SectionHeader>Language Ecosystem</SectionHeader>
-            <div>
-              <FieldValue
-                label="Native"
-                value={student.nativeLanguages.length > 0 ? student.nativeLanguages.join(', ') : null}
-              />
-              {student.spokenLanguages.length > 0 && (
-                <FieldValue label="Spoken" value={student.spokenLanguages.join(', ')} />
+            <div className="space-y-2">
+              {student.nativeLanguages.length > 0 && (
+                <div className="flex items-baseline gap-2 py-1">
+                  <span className="text-xs text-zinc-400 shrink-0 w-28">Native</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {student.nativeLanguages.map((lang) => (
+                      <span key={lang} className="inline-flex items-center gap-1 text-sm text-[#1A1B22]">
+                        {lang}
+                        <span className="inline-flex items-center justify-center rounded px-1 py-0.5 text-[0.625rem] font-bold uppercase bg-zinc-100 text-zinc-500">
+                          {langCode(lang)}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
-              <FieldValue
-                label="Learning"
-                value={`${student.learningLanguage} (${student.cefrLevel})`}
-              />
+              {student.spokenLanguages.length > 0 && (
+                <FieldValue label="Spoken Languages" value={student.spokenLanguages.join(', ')} />
+              )}
+              <div className="flex items-baseline gap-2 py-1">
+                <span className="text-xs text-zinc-400 shrink-0 w-28">Learning</span>
+                <span className="text-sm text-[#1A1B22] flex items-center gap-2">
+                  {student.learningLanguage}
+                  <CefrBadge level={student.cefrLevel} />
+                </span>
+              </div>
               {student.officialCefrLevel && (
-                <FieldValue label="Official level" value={student.officialCefrLevel} />
+                <div className="flex items-baseline gap-2 py-1">
+                  <span className="text-xs text-zinc-400 shrink-0 w-28">Levels</span>
+                  <span className="text-sm text-[#1A1B22] flex items-center gap-3">
+                    <span className="flex items-center gap-1">
+                      <span className="text-xs text-zinc-500">Teacher's Assessment:</span>
+                      <CefrBadge level={student.cefrLevel} />
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="text-xs text-zinc-500">Official:</span>
+                      <CefrBadge level={student.officialCefrLevel} />
+                    </span>
+                  </span>
+                </div>
+              )}
+              {student.nativeLanguages.length === 0 && student.spokenLanguages.length === 0 && (
+                <EmptyState text="No native or spoken languages added yet" />
               )}
             </div>
-            {student.nativeLanguages.length === 0 && student.spokenLanguages.length === 0 && (
-              <EmptyState text="No language details added yet" />
+          </section>
+
+          {/* Skill Assessment */}
+          <section data-testid="profile-skill-assessment">
+            <SectionHeader>Skill Assessment</SectionHeader>
+            {Object.keys(student.skillLevelOverrides ?? {}).length > 0 ? (
+              <div className="space-y-1.5">
+                {SKILL_ORDER.filter((s) => student.skillLevelOverrides?.[s]).map((skill) => (
+                  <div key={skill} className="flex items-center gap-3 py-0.5">
+                    <span className="text-xs text-zinc-400 w-20 shrink-0">{skill}</span>
+                    <CefrBadge level={student.skillLevelOverrides[skill]} data-testid={`skill-badge-${skill.toLowerCase()}`} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState text="No skill overrides set" />
             )}
           </section>
 
@@ -631,7 +679,11 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
           {/* Teaching Todos */}
           <section data-testid="profile-teaching-todos">
             <SectionHeader>Teaching Todos</SectionHeader>
-            <TeachingTodosCard todos={student.teachingTodos} />
+            <TeachingTodosCard
+              todos={student.teachingTodos}
+              studentId={student.id}
+              onStudentChange={onStudentChange}
+            />
           </section>
 
           {/* Pending Followups */}

@@ -64,6 +64,8 @@ export interface Student {
   spokenLanguages: string[]
   // Teaching fields
   teachingTodos: TeachingTodo[]
+  // Skill override fields
+  skillLevelOverrides: Record<string, string>
 }
 
 export interface StudentListResponse {
@@ -98,6 +100,7 @@ export interface StudentFormData {
   rate?: string | null
   spokenLanguages?: string[]
   teachingTodos?: TeachingTodo[]
+  skillLevelOverrides?: Record<string, string>
 }
 
 export async function getStudents(params?: {
@@ -145,5 +148,24 @@ export interface LessonHistoryEntry {
 
 export async function getLessonHistory(studentId: string): Promise<LessonHistoryEntry[]> {
   const res = await apiClient.get<LessonHistoryEntry[]>(`/api/students/${studentId}/lesson-history`)
+  return res.data
+}
+
+export async function appendTeachingTodo(studentId: string, text: string): Promise<Student> {
+  const res = await apiClient.post<Student>(`/api/students/${studentId}/teaching-todos`, { text })
+  return res.data
+}
+
+export async function updateTeachingTodo(
+  studentId: string,
+  todoId: string,
+  update: { status: string; text?: string }
+): Promise<Student> {
+  const res = await apiClient.patch<Student>(`/api/students/${studentId}/teaching-todos/${todoId}`, update)
+  return res.data
+}
+
+export async function deleteTeachingTodo(studentId: string, todoId: string): Promise<Student> {
+  const res = await apiClient.delete<Student>(`/api/students/${studentId}/teaching-todos/${todoId}`)
   return res.data
 }

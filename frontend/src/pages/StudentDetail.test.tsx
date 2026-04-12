@@ -14,6 +14,9 @@ vi.mock('../api/followups', () => ({
 vi.mock('../api/students', () => ({
   getStudent: vi.fn(),
   updateStudent: vi.fn(),
+  appendTeachingTodo: vi.fn(),
+  updateTeachingTodo: vi.fn(),
+  deleteTeachingTodo: vi.fn(),
 }))
 
 vi.mock('../api/sessionLogs', () => ({
@@ -76,6 +79,7 @@ const MOCK_STUDENT: studentsApi.Student = {
   isCorporate: false,
   rate: '30 EUR/h',
   spokenLanguages: ['French'],
+  skillLevelOverrides: {},
   teachingTodos: [
     { id: 'todo-1', text: 'Send homework exercises', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Pending', coveredInSessionLogId: null },
   ],
@@ -290,12 +294,13 @@ describe('StudentDetail - Profile tab sections', () => {
     expect(screen.getAllByText('Designer').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders Languages section', async () => {
+  it('renders Language Ecosystem section', async () => {
     await openProfileTab()
-    const section = await screen.findByTestId('profile-languages')
+    const section = await screen.findByTestId('profile-language-ecosystem')
     expect(section).toHaveTextContent('English')
     expect(section).toHaveTextContent('French')
-    expect(section).toHaveTextContent('Spanish (B1)')
+    expect(section).toHaveTextContent('Spanish')
+    expect(section).toHaveTextContent('B1')
   })
 
   it('renders Learning Goals section', async () => {
@@ -343,6 +348,6 @@ describe('StudentDetail - Profile tab sections', () => {
     expect(screen.getByText('No identity details added yet')).toBeInTheDocument()
     expect(screen.getByText('No learning goals set')).toBeInTheDocument()
     expect(screen.getByText('No objectives set')).toBeInTheDocument()
-    expect(screen.getByText('No teaching todos yet')).toBeInTheDocument()
+    expect(screen.getByTestId('teaching-todos-empty')).toBeInTheDocument()
   })
 })
