@@ -203,10 +203,16 @@ public class TelegramConversationService : ITelegramConversationService
     private async Task<CreateSessionLogRequest> BuildSessionLogRequestAsync(
         long chatId, Guid teacherId, Guid studentId, string notes, CancellationToken ct)
     {
+        var student = await _studentService.GetByIdAsync(teacherId, studentId, ct);
+        var knownDifficulties = student?.Difficulties
+            .Select(d => d.Description)
+            .Where(d => !string.IsNullOrWhiteSpace(d))
+            .ToList();
+
         ExtractedReflectionDto? extracted = null;
         try
         {
-            extracted = await _extractionService.ExtractAsync(notes, ct: ct);
+            extracted = await _extractionService.ExtractAsync(notes, knownDifficulties, ct);
         }
         catch (OperationCanceledException)
         {
