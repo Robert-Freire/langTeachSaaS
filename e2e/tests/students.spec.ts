@@ -1088,3 +1088,40 @@ test('nested learning goal with sub-goal persists after save', async ({ browser 
 
   await context.close()
 })
+
+test('partial difficulty row shows inline validation error and blocks save', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: NAV_TIMEOUT })
+
+  // Fill required fields
+  await page.getByTestId('student-name').fill(`Partial Diff Test ${Date.now()}`)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+
+  // Add a difficulty row and fill only description (no competency)
+  const addDiffBtn = page.getByTestId('add-difficulty')
+  await addDiffBtn.scrollIntoViewIfNeeded()
+  await addDiffBtn.click()
+  const diffRow = page.getByTestId('difficulty-row').first()
+  await expect(diffRow).toBeVisible({ timeout: UI_TIMEOUT })
+  await diffRow.getByTestId('difficulty-description').fill('Confuses ser/estar')
+
+  // Attempt to save
+  await page.getByRole('button', { name: 'Save Student' }).click()
+
+  // Inline error should appear
+  await expect(page.getByTestId('difficulty-error')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('difficulty-error')).toContainText('Both type and description are required')
+
+  // Completing the row clears the error
+  await diffRow.getByTestId('difficulty-competency').click()
+  await page.getByRole('option', { name: 'Grammar' }).click()
+  await expect(page.getByTestId('difficulty-error')).not.toBeVisible({ timeout: UI_TIMEOUT })
+
+  await context.close()
+})
