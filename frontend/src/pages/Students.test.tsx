@@ -234,6 +234,58 @@ describe('Students page', () => {
     expect(avatar).toHaveTextContent('AG')
   })
 
+  it('sort by Next Session orders students by upcoming session date ascending', async () => {
+    const soon = new Date(Date.now() + 1 * 86400000).toISOString()
+    const later = new Date(Date.now() + 5 * 86400000).toISOString()
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([
+        makeStudent({ id: 'b', name: 'Bruno' }),
+        makeStudent({ id: 'a', name: 'Ana' }),
+      ])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [],
+      activeStudents: [
+        makeActiveStudent({ studentId: 'b', name: 'Bruno', nextSessionDate: later }),
+        makeActiveStudent({ studentId: 'a', name: 'Ana', nextSessionDate: soon }),
+      ],
+    })
+    wrapper(<Students />)
+    await screen.findByText('Ana')
+
+    // "Next Session" is the default sort — Ana (sooner) should appear first
+    const names = screen.getAllByTestId('student-name').map(el => el.textContent)
+    expect(names[0]).toBe('Ana')
+    expect(names[1]).toBe('Bruno')
+  })
+
+  it('sort by Last Session orders students by most recent session first', async () => {
+    const recent = new Date(Date.now() - 2 * 86400000).toISOString()
+    const older = new Date(Date.now() - 10 * 86400000).toISOString()
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([
+        makeStudent({ id: 'b', name: 'Bruno' }),
+        makeStudent({ id: 'a', name: 'Ana' }),
+      ])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [],
+      activeStudents: [
+        makeActiveStudent({ studentId: 'b', name: 'Bruno', lastSessionDate: older }),
+        makeActiveStudent({ studentId: 'a', name: 'Ana', lastSessionDate: recent }),
+      ],
+    })
+    wrapper(<Students />)
+    await screen.findByText('Ana')
+
+    const select = screen.getByRole('combobox', { name: /sort/i })
+    fireEvent.change(select, { target: { value: 'lastSession' } })
+
+    const names = screen.getAllByTestId('student-name').map(el => el.textContent)
+    expect(names[0]).toBe('Ana')
+    expect(names[1]).toBe('Bruno')
+  })
+
   it('sort by Name orders students alphabetically', async () => {
     vi.mocked(studentsApi.getStudents).mockResolvedValue(
       makeListResponse([
