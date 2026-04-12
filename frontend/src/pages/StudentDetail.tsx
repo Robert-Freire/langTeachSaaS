@@ -358,7 +358,7 @@ export default function StudentDetail() {
       )}
 
       {activeTab === 'progress' && (
-        <ProgressDashboard studentId={student.id} />
+        <ProgressDashboard student={student} sessions={sessions} />
       )}
 
     </div>

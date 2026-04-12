@@ -1,217 +1,373 @@
-import { useQuery } from '@tanstack/react-query'
-import { TrendingUp, TrendingDown, Minus, CalendarDays, BookOpen, Target, Clock } from 'lucide-react'
-import { getProgress, type PacingStatus, type TimelineEntry } from '@/api/progress'
-import type { Difficulty } from '@/api/students'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
+import { useMemo } from 'react'
+import { CefrBadge } from '@/components/dashboard/CefrBadge'
+import type { Student } from '@/api/students'
+import type { SessionLog } from '@/api/sessionLogs'
 
 interface Props {
-  studentId: string
+  student: Student
+  sessions: SessionLog[]
 }
 
-function PacingChip({ status }: { status: PacingStatus }) {
-  const config: Record<PacingStatus, { label: string; className: string }> = {
-    'on-track': { label: 'On track',  className: 'bg-green-100 text-green-800 border-green-200' },
-    'ahead':    { label: 'Ahead',     className: 'bg-blue-100 text-blue-800 border-blue-200' },
-    'behind':   { label: 'Behind',    className: 'bg-amber-100 text-amber-800 border-amber-200' },
-    'unknown':  { label: 'No data',   className: 'bg-zinc-100 text-zinc-500 border-zinc-200' },
-  }
-  const { label, className } = config[status]
-  return (
-    <Badge variant="outline" className={`text-xs font-medium ${className}`} data-testid="pacing-status">
-      {label}
-    </Badge>
+const CEFR_ORDER: Record<string, number> = {
+  A1: 1, A2: 2, B1: 3, B2: 4, C1: 5, C2: 6,
+}
+
+const SKILL_ORDER = ['Reading', 'Writing', 'Speaking', 'Listening']
+
+function cefrBarWidth(level: string): number {
+  return ((CEFR_ORDER[level] ?? 0) / 6) * 100
+}
+
+function isAboveOrAtBaseline(skillLevel: string, baselineLevel: string): boolean {
+  return (CEFR_ORDER[skillLevel] ?? 0) >= (CEFR_ORDER[baselineLevel] ?? 0)
+}
+
+function formatStartDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+}
+
+interface PacingStats {
+  completedSessions: SessionLog[]
+  cancelledSessions: SessionLog[]
+  firstDate: string | null
+  frequency: string | null
+  cancellationRate: number
+}
+
+function computePacingStats(sessions: SessionLog[], fallbackStartDate: string | null): PacingStats {
+  const now = Date.now()
+  const completed = sessions.filter(
+    (s) => !s.isCancelled && s.statusName === 'Confirmed' && s.sessionDate,
   )
+  const cancelled = sessions.filter((s) => s.isCancelled)
+  const allDated = sessions.filter((s) => s.sessionDate)
+  const firstDate =
+    allDated.length > 0
+      ? allDated.reduce((min, s) =>
+          new Date(s.sessionDate!) < new Date(min.sessionDate!) ? s : min,
+        ).sessionDate!
+      : fallbackStartDate
+  const weeksSinceStart = firstDate
+    ? (now - new Date(firstDate).getTime()) / (7 * 24 * 60 * 60 * 1000)
+    : null
+  const frequency =
+    weeksSinceStart && weeksSinceStart > 0
+      ? (completed.length / weeksSinceStart).toFixed(1)
+      : null
+  const total = completed.length + cancelled.length
+  const cancellationRate = total > 0 ? Math.round((cancelled.length / total) * 100) : 0
+  return { completedSessions: completed, cancelledSessions: cancelled, firstDate, frequency, cancellationRate }
 }
 
-function TrendIcon({ trend }: { trend: Difficulty['trend'] }) {
-  if (trend === 'improving') return <TrendingUp className="h-3.5 w-3.5 text-green-500" />
-  if (trend === 'worsening') return <TrendingDown className="h-3.5 w-3.5 text-red-500" />
-  return <Minus className="h-3.5 w-3.5 text-zinc-400" />
+function computeRecentMentions(sessions: SessionLog[]): Set<string> {
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const mentions = new Set<string>()
+  sessions
+    .filter(
+      (s) =>
+        !s.isCancelled &&
+        s.statusName === 'Confirmed' &&
+        s.sessionDate &&
+        new Date(s.sessionDate) >= thirtyDaysAgo,
+    )
+    .forEach((s) => {
+      try {
+        const pairs = JSON.parse(s.mentionedDifficultyPairs || '[]') as {
+          Competency: string
+          Subcategory: string
+        }[]
+        pairs.forEach((p) => mentions.add(`${p.Competency}|${p.Subcategory}`))
+      } catch {
+        /* empty */
+      }
+    })
+  return mentions
 }
 
-function StatusDot({ status }: { status: TimelineEntry['status'] }) {
-  const color =
-    status === 'taught'  ? 'bg-green-500' :
-    status === 'created' ? 'bg-blue-400'  :
-    'bg-zinc-300'
-  return <span className={`mt-1.5 h-2.5 w-2.5 rounded-full shrink-0 ${color}`} />
-}
+export function ProgressDashboard({ student, sessions }: Props) {
+  const baselineNum = CEFR_ORDER[student.cefrLevel] ?? 3
+  const baselinePercent = (baselineNum / 6) * 100
+  const skillOverrides = student.skillLevelOverrides ?? {}
+  const hasSkillData = Object.keys(skillOverrides).length > 0
 
-export function ProgressDashboard({ studentId }: Props) {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['progress', studentId],
-    queryFn: () => getProgress(studentId),
-  })
+  // Pacing analytics
+  const { completedSessions, firstDate, frequency, cancellationRate } =
+    useMemo(() => computePacingStats(sessions, student.createdAt), [sessions, student.createdAt])
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4" data-testid="progress-loading">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-40 w-full" />
-      </div>
-    )
-  }
+  // Difficulty classification
+  const recentMentions = useMemo(() => computeRecentMentions(sessions), [sessions])
+  const difficulties = student.difficulties ?? []
 
-  if (isError || !data) {
-    return (
-      <p className="text-sm text-zinc-500 py-8 text-center">Could not load progress data.</p>
-    )
-  }
-
-  if (!data.courseId) {
-    return (
-      <div className="py-12 text-center space-y-2" data-testid="progress-no-course">
-        <BookOpen className="h-8 w-8 text-zinc-300 mx-auto" />
-        <p className="text-sm text-zinc-500">No active course found for this student.</p>
-        <p className="text-xs text-zinc-400">Create a course to track curriculum coverage and pacing.</p>
-      </div>
-    )
-  }
-
-  const coveragePercent = data.totalEntries > 0 ? Math.round((data.taughtEntries / data.totalEntries) * 100) : 0
+  const coveredDifficulties = difficulties.filter((d) => d.status === 'Covered')
+  const activeDifficulties = difficulties.filter((d) => d.status !== 'Covered')
+  const workingDifficulties = activeDifficulties.filter((d) =>
+    recentMentions.has(`${d.competency}|${d.subcategory}`),
+  )
+  const staleDifficulties = activeDifficulties.filter(
+    (d) => !recentMentions.has(`${d.competency}|${d.subcategory}`),
+  )
 
   return (
-    <div className="space-y-4">
-      {/* Coverage */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Target className="h-4 w-4 text-indigo-500" />
-            Curriculum Coverage
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-zinc-600">
-              {data.taughtEntries} of {data.totalEntries} topics taught
-            </span>
-            <span className="font-semibold text-zinc-900">{coveragePercent}%</span>
-          </div>
-          <div
-            className="h-2.5 w-full rounded-full bg-zinc-100 overflow-hidden"
-            data-testid="coverage-bar"
-            aria-label={`Coverage: ${coveragePercent}%`}
-          >
-            <div
-              className="h-full rounded-full bg-indigo-500 transition-all duration-300"
-              style={{ width: `${coveragePercent}%` }}
-            />
-          </div>
-          <div className="flex gap-4 text-xs text-zinc-500">
-            <span className="flex items-center gap-1">
-              <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
-              {data.taughtEntries} taught
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="inline-block h-2 w-2 rounded-full bg-blue-400" />
-              {data.createdEntries} in progress
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="inline-block h-2 w-2 rounded-full bg-zinc-300" />
-              {data.plannedEntries} planned
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Pacing */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Clock className="h-4 w-4 text-indigo-500" />
-            Pacing
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-center gap-4">
-            <PacingChip status={data.pacingStatus} />
-            <span className="text-sm text-zinc-600">
-              {data.sessionsDone} session{data.sessionsDone !== 1 ? 's' : ''} done
-              {data.plannedSessionCount != null && ` of ${data.plannedSessionCount} planned`}
-            </span>
-            {data.sessionsRemaining != null && (
-              <span className="text-sm text-zinc-500">
-                {data.sessionsRemaining} remaining
-              </span>
-            )}
-            {data.daysUntilExam != null && (
-              <span className="flex items-center gap-1 text-sm text-zinc-500">
-                <CalendarDays className="h-3.5 w-3.5" />
-                {data.daysUntilExam > 0
-                  ? `${data.daysUntilExam} days until exam`
-                  : 'Exam date passed'}
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Difficulty Trends */}
-      {data.difficulties.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-indigo-500" />
-              Difficulty Trends
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-1.5" data-testid="difficulty-trends">
-              {data.difficulties.map((d) => (
-                <li
-                  key={d.id}
-                  className={`flex items-center gap-2 text-sm ${d.status === 'Covered' ? 'text-zinc-400' : 'text-zinc-700'}`}
-                >
-                  <TrendIcon trend={d.trend} />
-                  <span className={d.status === 'Covered' ? 'line-through' : ''}>
-                    {d.description}
+    <div className="space-y-6" data-testid="progress-tab-content">
+      {/* Main grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Skill Imbalance Analysis — 8 cols */}
+        <div
+          className="lg:col-span-8 bg-white rounded-2xl p-8"
+          style={{ boxShadow: '0 12px 40px rgba(26,27,34,0.04)' }}
+          data-testid="skill-imbalance-section"
+        >
+          <div className="flex items-start justify-between mb-8">
+            <div>
+              <h3 className="text-lg font-bold text-[#1A1B22] mb-1">Skill Imbalance Analysis</h3>
+              <p className="text-sm text-zinc-500">
+                Skill levels compared to general CEFR level ({student.cefrLevel})
+              </p>
+            </div>
+            {hasSkillData && (
+              <div className="flex items-center gap-4 shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-sm bg-[#3525CD]" />
+                  <span className="text-[0.6875rem] font-bold uppercase text-zinc-400 tracking-tighter">
+                    Current
                   </span>
-                  <span className="text-xs text-zinc-400">({d.competency})</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-sm bg-[#E8E7F1]" />
+                  <span className="text-[0.6875rem] font-bold uppercase text-zinc-400 tracking-tighter">
+                    Baseline {student.cefrLevel}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
 
-      {/* Timeline */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-indigo-500" />
-            Session Timeline
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {data.timeline.length === 0 ? (
-            <p className="text-sm text-zinc-400 italic">No curriculum entries yet.</p>
-          ) : (
-            <ol className="space-y-2" data-testid="progress-timeline">
-              {data.timeline.map((entry) => (
-                <li key={entry.orderIndex} className="flex items-start gap-2.5">
-                  <StatusDot status={entry.status} />
-                  <div className="min-w-0">
-                    <p className={`text-sm leading-snug ${entry.status === 'planned' ? 'text-zinc-500' : 'text-zinc-800'}`}>
-                      {entry.topic}
-                    </p>
-                    <p className="text-xs text-zinc-400">
-                      {entry.grammarFocus && `${entry.grammarFocus} · `}
-                      {entry.sessionDate
-                        ? new Date(entry.sessionDate).toLocaleDateString()
-                        : entry.status === 'created'
-                          ? 'Lesson created'
-                          : 'Planned'}
-                    </p>
+          {hasSkillData ? (
+            <div className="space-y-8">
+              {SKILL_ORDER.map((skill) => {
+                const level = skillOverrides[skill]
+                if (!level) return null
+                const width = cefrBarWidth(level)
+                const above = isAboveOrAtBaseline(level, student.cefrLevel)
+                return (
+                  <div key={skill} className="relative">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-semibold text-[#1A1B22]">{skill}</span>
+                      <CefrBadge level={level} />
+                    </div>
+                    <div className="relative h-3 w-full bg-[#F4F2FD] rounded-full overflow-visible">
+                      {/* Baseline reference line */}
+                      <div
+                        className="absolute top-0 h-full w-0.5 bg-zinc-400/50 z-10"
+                        style={{ left: `${baselinePercent}%` }}
+                        aria-label={`Baseline ${student.cefrLevel}`}
+                      />
+                      <div
+                        className="h-full rounded-full overflow-hidden"
+                        style={{ width: `${baselinePercent}%` }}
+                      />
+                      <div
+                        className={`absolute top-0 left-0 h-full rounded-full transition-all duration-300 ${
+                          above ? 'bg-[#3525CD]' : 'bg-[#C3C0FF]'
+                        }`}
+                        style={{ width: `${width}%` }}
+                        data-testid={`skill-bar-${skill.toLowerCase()}`}
+                      />
+                    </div>
                   </div>
-                </li>
-              ))}
-            </ol>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
+              <p className="text-sm text-zinc-500">No skill assessments recorded yet.</p>
+              <p className="text-xs text-zinc-400">
+                Edit the student profile to add skill-level overrides.
+              </p>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Right column — 4 cols */}
+        <div className="lg:col-span-4 space-y-4">
+          {/* Pacing Analytics */}
+          <div className="bg-[#F4F2FD] rounded-2xl p-6" data-testid="pacing-section">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-6">
+              Pacing Analytics
+            </h3>
+            <div className="space-y-5">
+              <div>
+                <p className="text-3xl font-black text-[#3525CD] mb-1">
+                  {completedSessions.length}
+                </p>
+                <p className="text-xs font-medium text-zinc-600">
+                  Total completed session{completedSessions.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+
+              {(frequency || firstDate) && (
+                <div className="flex items-center gap-4 py-4 border-y border-zinc-200/60">
+                  {frequency && (
+                    <div className="flex-1">
+                      <p className="text-lg font-bold text-[#1A1B22]">{frequency}/wk</p>
+                      <p className="text-[0.6875rem] font-bold text-zinc-400 uppercase tracking-tighter">
+                        Frequency
+                      </p>
+                    </div>
+                  )}
+                  {frequency && firstDate && (
+                    <div className="w-px h-8 bg-zinc-300/50" />
+                  )}
+                  {firstDate && (
+                    <div className="flex-1">
+                      <p className="text-lg font-bold text-[#1A1B22]">
+                        {formatStartDate(firstDate)}
+                      </p>
+                      <p className="text-[0.6875rem] font-bold text-zinc-400 uppercase tracking-tighter">
+                        Start Date
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-[#1A1B22]">Cancellation Rate</p>
+                </div>
+                <div className="text-right">
+                  <span
+                    className={`font-bold ${cancellationRate > 20 ? 'text-amber-600' : 'text-green-600'}`}
+                    data-testid="cancellation-rate"
+                  >
+                    {cancellationRate}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Difficulties Summary */}
+          {difficulties.length > 0 && (
+            <div
+              className="bg-white rounded-2xl p-6"
+              style={{ boxShadow: '0 1px 3px rgba(26,27,34,0.08)', border: '1px solid rgba(199,196,216,0.15)' }}
+              data-testid="difficulties-section"
+            >
+              <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">
+                Difficulties Summary
+              </h3>
+              <div className="space-y-3">
+                {[...workingDifficulties, ...staleDifficulties, ...coveredDifficulties]
+                  .slice(0, 6)
+                  .map((d) => {
+                    const isWorking = d.status !== 'Covered' &&
+                      recentMentions.has(`${d.competency}|${d.subcategory}`)
+                    const isStale = d.status !== 'Covered' &&
+                      !recentMentions.has(`${d.competency}|${d.subcategory}`)
+                    const isCovered = d.status === 'Covered'
+
+                    return (
+                      <div
+                        key={d.id}
+                        className="flex items-center justify-between py-2 border-b border-zinc-50 last:border-0"
+                      >
+                        <span className="text-xs font-bold text-[#1A1B22] truncate mr-2 max-w-[140px]">
+                          {d.description}
+                        </span>
+                        {isWorking && (
+                          <span className="px-2 py-0.5 rounded-full text-[0.5625rem] font-bold bg-[#E2DFFF] text-[#3323CC] shrink-0">
+                            Working
+                          </span>
+                        )}
+                        {isStale && (
+                          <span className="px-2 py-0.5 rounded-full text-[0.5625rem] font-bold bg-amber-100 text-amber-700 shrink-0">
+                            Stale
+                          </span>
+                        )}
+                        {isCovered && (
+                          <span className="px-2 py-0.5 rounded-full text-[0.5625rem] font-bold bg-green-100 text-green-700 shrink-0">
+                            Covered
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Coming Soon placeholders */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6" data-testid="coming-soon-section">
+        {/* Curriculum Progress */}
+        <div
+          className="bg-white rounded-2xl p-8 flex flex-col items-center justify-center text-center min-h-[220px]"
+          style={{
+            boxShadow: '0 1px 3px rgba(26,27,34,0.06)',
+            border: '2px dashed rgba(199,196,216,0.4)',
+          }}
+        >
+          <div className="w-12 h-12 rounded-full bg-[#E2DFFF] flex items-center justify-center mb-4">
+            <svg className="w-5 h-5 text-[#3525CD]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+            </svg>
+          </div>
+          <h4 className="text-xs font-bold text-[#1A1B22] uppercase tracking-wider mb-2">
+            Curriculum Progress
+          </h4>
+          <p className="text-[0.6875rem] font-bold text-[#3525CD] mb-1">Coming Soon</p>
+          <p className="text-[0.6875rem] text-zinc-400 max-w-[180px]">
+            Track your lesson plan milestones.
+          </p>
+        </div>
+
+        {/* Topic Analysis */}
+        <div
+          className="bg-white rounded-2xl p-8 flex flex-col items-center justify-center text-center min-h-[220px]"
+          style={{
+            boxShadow: '0 1px 3px rgba(26,27,34,0.06)',
+            border: '2px dashed rgba(199,196,216,0.4)',
+          }}
+        >
+          <div className="w-12 h-12 rounded-full bg-[#FFD8C8] flex items-center justify-center mb-4">
+            <svg className="w-5 h-5 text-[#7E3000]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+            </svg>
+          </div>
+          <h4 className="text-xs font-bold text-[#1A1B22] uppercase tracking-wider mb-2">
+            Topic Analysis
+          </h4>
+          <p className="text-[0.6875rem] font-bold text-[#7E3000] mb-1">Coming Soon</p>
+          <p className="text-[0.6875rem] text-zinc-400 max-w-[180px]">
+            Deep dive into the thematic focus of each session.
+          </p>
+        </div>
+
+        {/* Engagement Trends */}
+        <div
+          className="bg-white rounded-2xl p-8 flex flex-col items-center justify-center text-center min-h-[220px]"
+          style={{
+            boxShadow: '0 1px 3px rgba(26,27,34,0.06)',
+            border: '2px dashed rgba(199,196,216,0.4)',
+          }}
+        >
+          <div className="w-12 h-12 rounded-full bg-[#D0E1FB] flex items-center justify-center mb-4">
+            <svg className="w-5 h-5 text-[#505F76]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+            </svg>
+          </div>
+          <h4 className="text-xs font-bold text-[#1A1B22] uppercase tracking-wider mb-2">
+            Engagement Trends
+          </h4>
+          <p className="text-[0.6875rem] font-bold text-[#505F76] mb-1">Coming Soon</p>
+          <p className="text-[0.6875rem] text-zinc-400 max-w-[180px]">
+            How your student's engagement evolves over time.
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
