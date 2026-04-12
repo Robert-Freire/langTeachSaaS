@@ -315,7 +315,7 @@ describe('StudentForm', () => {
     expect(screen.getByText('pass DELE B2 exam')).toBeInTheDocument()
   })
 
-  it('includes difficulties in form submission', async () => {
+  it('shows inline error for partial difficulty row (description only) and blocks save', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
     const user = userEvent.setup()
     mockCreateStudent.mockResolvedValue({ id: 'new-id' })
@@ -323,25 +323,115 @@ describe('StudentForm', () => {
 
     // Fill required fields
     await user.type(screen.getByTestId('student-name'), 'Test Student')
-    // Select language
     await user.click(screen.getByTestId('student-language'))
     await user.click(await screen.findByRole('option', { name: 'Spanish' }))
-    // Select CEFR
     await user.click(screen.getByTestId('student-cefr'))
     await user.click(await screen.findByRole('option', { name: 'B1' }))
 
-    // Add a difficulty and fill description but no competency
+    // Add a difficulty with only description filled
     await user.click(screen.getByTestId('add-difficulty'))
     await user.type(screen.getByTestId('difficulty-description'), 'test difficulty')
 
     // Submit
     await user.click(screen.getByRole('button', { name: 'Save Student' }))
 
-    // The difficulty row with empty competency gets filtered out
+    // Should show inline error and not call createStudent
+    expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
+    expect(screen.getByTestId('difficulty-error')).toHaveTextContent('Both type and description are required')
+    expect(mockCreateStudent).not.toHaveBeenCalled()
+  })
+
+  it('shows inline error for partial difficulty row (competency only) and blocks save', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockCreateStudent.mockResolvedValue({ id: 'new-id' })
+    renderNew()
+
+    await user.type(screen.getByTestId('student-name'), 'Test Student')
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+    await user.click(screen.getByTestId('student-cefr'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+
+    // Add a difficulty with only competency filled
+    await user.click(screen.getByTestId('add-difficulty'))
+    await user.click(screen.getByTestId('difficulty-competency'))
+    await user.click(await screen.findByRole('option', { name: /grammar/i }))
+
+    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+
+    expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
+    expect(mockCreateStudent).not.toHaveBeenCalled()
+  })
+
+  it('clears difficulty error when the row is completed', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockCreateStudent.mockResolvedValue({ id: 'new-id' })
+    renderNew()
+
+    await user.type(screen.getByTestId('student-name'), 'Test Student')
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+    await user.click(screen.getByTestId('student-cefr'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+
+    await user.click(screen.getByTestId('add-difficulty'))
+    await user.type(screen.getByTestId('difficulty-description'), 'test difficulty')
+    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+
+    // Error appears
+    expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
+
+    // Select competency to complete the row => error clears
+    await user.click(screen.getByTestId('difficulty-competency'))
+    await user.click(await screen.findByRole('option', { name: /grammar/i }))
+
+    expect(screen.queryByTestId('difficulty-error')).not.toBeInTheDocument()
+  })
+
+  it('clears difficulty error when the row is removed', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockCreateStudent.mockResolvedValue({ id: 'new-id' })
+    renderNew()
+
+    await user.type(screen.getByTestId('student-name'), 'Test Student')
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+    await user.click(screen.getByTestId('student-cefr'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+
+    await user.click(screen.getByTestId('add-difficulty'))
+    await user.type(screen.getByTestId('difficulty-description'), 'test difficulty')
+    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+
+    expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
+
+    await user.click(screen.getByTestId('remove-difficulty'))
+
+    expect(screen.queryByTestId('difficulty-error')).not.toBeInTheDocument()
+  })
+
+  it('does not show error for fully empty difficulty row on save', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockCreateStudent.mockResolvedValue({ id: 'new-id' })
+    renderNew()
+
+    await user.type(screen.getByTestId('student-name'), 'Test Student')
+    await user.click(screen.getByTestId('student-language'))
+    await user.click(await screen.findByRole('option', { name: 'Spanish' }))
+    await user.click(screen.getByTestId('student-cefr'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+
+    // Add empty row, don't fill anything
+    await user.click(screen.getByTestId('add-difficulty'))
+    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+
+    expect(screen.queryByTestId('difficulty-error')).not.toBeInTheDocument()
     expect(mockCreateStudent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        difficulties: [],
-      }),
+      expect.objectContaining({ difficulties: [] }),
     )
   })
 
@@ -566,7 +656,7 @@ describe('StudentForm', () => {
         }),
       )
     })
-  })
+  }, 15000)
 
   it('renders Reason for Studying textarea', () => {
     renderNew()

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import type { Student } from '@/api/students'
 import type { SessionLog } from '@/api/sessionLogs'
@@ -33,6 +34,7 @@ interface PacingStats {
   firstDate: string | null
   frequency: string | null
   cancellationRate: number
+  isBehind: boolean
 }
 
 function computePacingStats(sessions: SessionLog[], fallbackStartDate: string | null): PacingStats {
@@ -57,7 +59,11 @@ function computePacingStats(sessions: SessionLog[], fallbackStartDate: string | 
       : null
   const total = completed.length + cancelled.length
   const cancellationRate = total > 0 ? Math.round((cancelled.length / total) * 100) : 0
-  return { completedSessions: completed, cancelledSessions: cancelled, firstDate, frequency, cancellationRate }
+  const isBehind =
+    weeksSinceStart !== null &&
+    weeksSinceStart >= 4 &&
+    completed.length < weeksSinceStart
+  return { completedSessions: completed, cancelledSessions: cancelled, firstDate, frequency, cancellationRate, isBehind }
 }
 
 function computeRecentMentions(sessions: SessionLog[]): Set<string> {
@@ -92,7 +98,7 @@ export function ProgressDashboard({ student, sessions }: Props) {
   const hasSkillData = Object.keys(skillOverrides).length > 0
 
   // Pacing analytics
-  const { completedSessions, firstDate, frequency, cancellationRate } =
+  const { completedSessions, firstDate, frequency, cancellationRate, isBehind } =
     useMemo(() => computePacingStats(sessions, student.createdAt), [sessions, student.createdAt])
 
   // Difficulty classification
@@ -245,6 +251,36 @@ export function ProgressDashboard({ student, sessions }: Props) {
                   </span>
                 </div>
               </div>
+
+              {isBehind && (
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-[#1A1B22]">Pacing Status</p>
+                  <TooltipPrimitive.Root>
+                    <TooltipPrimitive.Trigger
+                      render={
+                        <span
+                          className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-[0.6875rem] font-bold text-amber-700 cursor-help"
+                          data-testid="pacing-behind-badge"
+                        />
+                      }
+                    >
+                      Behind
+                    </TooltipPrimitive.Trigger>
+                    <TooltipPrimitive.Portal>
+                      <TooltipPrimitive.Positioner side="top" sideOffset={4} className="isolate z-50">
+                        <TooltipPrimitive.Popup
+                          className="z-50 max-w-xs rounded-lg bg-white px-3 py-2 text-xs leading-relaxed text-zinc-700 data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+                          style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.10)' }}
+                          data-testid="pacing-behind-tooltip"
+                        >
+                          Behind: fewer sessions completed than expected for this point in the course.
+                          Shown when fewer than 1 session/week has been held on average since the start date.
+                        </TooltipPrimitive.Popup>
+                      </TooltipPrimitive.Positioner>
+                    </TooltipPrimitive.Portal>
+                  </TooltipPrimitive.Root>
+                </div>
+              )}
             </div>
           </div>
 
