@@ -173,10 +173,13 @@ function InterestsSection({
 
   async function handleSave() {
     if (!onSave) return
-    if (inputValue.trim()) handleAddInterest(inputValue)
+    const trimmed = inputValue.trim()
+    const finalList =
+      trimmed && !draft.includes(trimmed) ? [...draft, trimmed] : draft
     setSaving(true)
     try {
-      await onSave(draft)
+      await onSave(finalList)
+      setDraft(finalList)
       setEditing(false)
       setInputValue('')
     } finally {
@@ -315,7 +318,7 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
         <SectionHeader>The Why / Motivacion</SectionHeader>
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 items-start">
           <div className="flex-1 min-w-0">
-            <ReasonHero student={student} onSave={onSaveReasonForStudying} />
+            <ReasonHero key={student.id} student={student} onSave={onSaveReasonForStudying} />
           </div>
           {student.interests.length > 0 && (
             <div className="flex flex-wrap gap-1.5 sm:max-w-[200px]" data-testid="hero-interests">
@@ -475,7 +478,7 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
           </section>
 
           {/* Interests (dedicated editable section) */}
-          <InterestsSection student={student} onSave={onSaveInterests} />
+          <InterestsSection key={student.id} student={student} onSave={onSaveInterests} />
 
           {/* Languages */}
           <section data-testid="profile-languages">
