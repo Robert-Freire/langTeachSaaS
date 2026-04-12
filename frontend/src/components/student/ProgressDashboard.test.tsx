@@ -243,11 +243,11 @@ describe('ProgressDashboard', () => {
 
   it('does not show Behind badge when student has adequate session frequency', () => {
     const startDate = new Date(Date.now() - 5 * 7 * 24 * 60 * 60 * 1000).toISOString() // 5 weeks ago
-    // 5 sessions in 5 weeks (1/wk, above threshold)
-    const sessions = Array.from({ length: 5 }, (_, i) => ({
+    // 10 sessions in 5 weeks (2/wk, well above 1/wk threshold)
+    const sessions = Array.from({ length: 10 }, (_, i) => ({
       ...baseSession,
       id: `s${i}`,
-      sessionDate: new Date(Date.now() - (5 - i) * 7 * 24 * 60 * 60 * 1000).toISOString(),
+      sessionDate: new Date(Date.now() - (5 - Math.floor(i / 2)) * 7 * 24 * 60 * 60 * 1000 - i * 1000).toISOString(),
     }))
     const student = { ...baseStudent, createdAt: startDate }
     renderProgress(student, sessions)
