@@ -1018,22 +1018,24 @@ test('sessions tab redesign: timeline, search, status filter, and expand', async
   await expect(page.getByTestId('status-filter-all')).toBeVisible()
   await expect(page.getByTestId('date-range-button')).toBeVisible()
 
-  // Search: filter by "conditional"
+  // Search: filter by "conditional" — both Diego sessions contain this word, so both should remain
   await page.getByTestId('session-search-input').fill('conditional')
-  await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
+  const filteredEntries = page.getByTestId('session-entry')
+  await expect(filteredEntries).toHaveCount(2, { timeout: UI_TIMEOUT })
 
   // Clear search
   await page.getByTestId('session-search-input').fill('')
 
-  // Status filter: click All (already active, just verify it works)
+  // Status filter: click All (already active, verify it works and both sessions are back)
   await page.getByTestId('status-filter-all').click()
-  await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('session-entry')).toHaveCount(2, { timeout: UI_TIMEOUT })
 
-  // Status filter: Cancelled (Diego has no cancelled sessions, so empty state or still shows all)
+  // Status filter: Cancelled — Diego has no cancelled sessions, so list has 0 entries
   await page.getByTestId('status-filter-cancelled').click()
-  // Reset back to All
+  await expect(page.getByTestId('session-entry')).toHaveCount(0, { timeout: UI_TIMEOUT })
+  // Reset back to All and verify sessions are restored
   await page.getByTestId('status-filter-all').click()
-  await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('session-entry')).toHaveCount(2, { timeout: UI_TIMEOUT })
 
   // Expand first session entry
   const firstEntry = entries.first()

@@ -499,7 +499,10 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
 
   const totalHours = useMemo(() => {
     if (!sessions) return 0
-    return sessions.reduce((sum, s) => sum + (s.isCancelled ? 0 : (s.duration ?? 0)), 0) / 60
+    return sessions.reduce((sum, s) => {
+      if (s.isCancelled || s.statusName !== 'Confirmed') return sum
+      return sum + (s.duration ?? 0)
+    }, 0) / 60
   }, [sessions])
 
   const allTopics = useMemo(() => {

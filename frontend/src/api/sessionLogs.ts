@@ -101,9 +101,19 @@ export function parseTopicTags(raw: string): TopicTag[] {
   try {
     const parsed: unknown[] = JSON.parse(raw) as unknown[]
     if (!Array.isArray(parsed)) return []
-    return parsed.map((item) =>
-      typeof item === 'string' ? { tag: item } : (item as TopicTag)
-    )
+    return parsed.flatMap((item): TopicTag[] => {
+      if (typeof item === 'string') {
+        const tag = item.trim()
+        return tag ? [{ tag }] : []
+      }
+      if (item && typeof item === 'object' && 'tag' in item) {
+        const maybeTag = (item as { tag?: unknown }).tag
+        if (typeof maybeTag !== 'string' || maybeTag.trim() === '') return []
+        const maybeCategory = (item as { category?: unknown }).category
+        return [{ tag: maybeTag.trim(), ...(typeof maybeCategory === 'string' ? { category: maybeCategory } : {}) }]
+      }
+      return []
+    })
   } catch {
     return []
   }
