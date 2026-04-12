@@ -40,7 +40,7 @@ const BASE_STUDENT: Student = {
   personalNotes: null,
   teachingNotes: null,
   nativeLanguages: ['English'],
-  learningGoals: ['Conversational fluency'],
+  learningGoals: [{ id: '1', text: 'Conversational fluency', children: [] }],
   weaknesses: [],
   difficulties: [],
   createdAt: '2026-01-01T00:00:00Z',

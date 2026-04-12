@@ -48,7 +48,6 @@ vi.mock('@/api/followups', () => ({
 }))
 
 vi.mock('../lib/studentOptions', () => ({
-  LEARNING_GOALS: [{ value: 'travel', label: 'Travel' }],
   COMPETENCY_OPTIONS: [
     { value: 'Grammar', label: 'Grammar' },
     { value: 'Pronunciation', label: 'Pronunciation' },
@@ -266,76 +265,34 @@ describe('StudentForm', () => {
     expect(items[1]).toHaveValue('Difficulty with rolled r')
   })
 
-  it('shows "Add custom" option when typing non-matching text in learning goals', async () => {
+  it('adds a learning goal via tree editor', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
     const user = userEvent.setup()
     renderNew()
 
-    // Open the learning goals popover
-    await user.click(screen.getByTestId('learning-goals-trigger'))
+    await user.click(screen.getByTestId('learning-goal-add-btn'))
+    await user.type(screen.getByTestId('learning-goal-top-input'), 'pass DELE B2')
+    await user.keyboard('{Enter}')
 
-    // Type a custom value that doesn't match predefined options
-    const input = screen.getByPlaceholderText('Search or type custom...')
-    await user.type(input, 'pass DELE B2')
-
-    // Should show the "Add custom" option
-    const addOption = screen.getByTestId('add-custom-entry')
-    expect(addOption).toBeInTheDocument()
-    expect(addOption).toHaveTextContent('pass DELE B2')
+    expect(screen.getByText('pass DELE B2')).toBeInTheDocument()
   })
 
-  it('adds custom entry as chip when clicking "Add" option', async () => {
+  it('removes a learning goal via tree editor', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
     const user = userEvent.setup()
     renderNew()
 
-    // Open learning goals and type custom
-    await user.click(screen.getByTestId('learning-goals-trigger'))
-    const input = screen.getByPlaceholderText('Search or type custom...')
-    await user.type(input, 'pass DELE B2')
+    await user.click(screen.getByTestId('learning-goal-add-btn'))
+    await user.type(screen.getByTestId('learning-goal-top-input'), 'custom goal')
+    await user.keyboard('{Enter}')
 
-    // Click the add custom option
-    await user.click(screen.getByTestId('add-custom-entry'))
+    expect(screen.getByTestId('learning-goal-text')).toBeInTheDocument()
 
-    // Chip should appear
-    const chips = screen.getAllByTestId('learning-goal-chip')
-    expect(chips.some((c) => c.textContent?.includes('pass DELE B2'))).toBe(true)
+    await user.click(screen.getByTestId('learning-goal-delete-btn'))
+    expect(screen.queryByTestId('learning-goal-item')).not.toBeInTheDocument()
   })
 
-  it('can remove a custom entry chip', async () => {
-    const { default: userEvent } = await import('@testing-library/user-event')
-    const user = userEvent.setup()
-    renderNew()
-
-    // Add custom entry
-    await user.click(screen.getByTestId('learning-goals-trigger'))
-    const input = screen.getByPlaceholderText('Search or type custom...')
-    await user.type(input, 'custom goal')
-    await user.click(screen.getByTestId('add-custom-entry'))
-
-    // Verify chip exists
-    const chip = screen.getByTestId('learning-goal-chip')
-    expect(chip).toHaveTextContent('custom goal')
-
-    // Remove it
-    await user.click(screen.getByLabelText('Remove custom goal'))
-    expect(screen.queryByTestId('learning-goal-chip')).not.toBeInTheDocument()
-  })
-
-  it('does not show "Add custom" when input matches a predefined label', async () => {
-    const { default: userEvent } = await import('@testing-library/user-event')
-    const user = userEvent.setup()
-    renderNew()
-
-    await user.click(screen.getByTestId('learning-goals-trigger'))
-    const input = screen.getByPlaceholderText('Search or type custom...')
-    await user.type(input, 'Travel')
-
-    // Should NOT show the add custom option (matches predefined label)
-    expect(screen.queryByTestId('add-custom-entry')).not.toBeInTheDocument()
-  })
-
-  it('displays custom learning goals in edit mode when loaded from server', async () => {
+  it('displays learning goals in edit mode when loaded from server', async () => {
     mockGetStudent.mockResolvedValue({
       id: 'stu-1',
       name: 'Ana',
@@ -343,7 +300,10 @@ describe('StudentForm', () => {
       cefrLevel: 'B1',
       interests: [],
       nativeLanguages: [],
-      learningGoals: ['travel', 'pass DELE B2 exam'],
+      learningGoals: [
+        { id: '1', text: 'travel', children: [] },
+        { id: '2', text: 'pass DELE B2 exam', children: [] },
+      ],
       weaknesses: [],
       difficulties: [],
       personalNotes: null, teachingNotes: null,
@@ -351,9 +311,7 @@ describe('StudentForm', () => {
 
     renderEdit()
 
-    // Predefined goals show their label
-    await expect(screen.findByText('Travel')).resolves.toBeInTheDocument()
-    // Custom goals show their raw value
+    await expect(screen.findByText('travel')).resolves.toBeInTheDocument()
     expect(screen.getByText('pass DELE B2 exam')).toBeInTheDocument()
   })
 

@@ -59,7 +59,7 @@ const MOCK_STUDENT: studentsApi.Student = {
   personalNotes: null,
   teachingNotes: null,
   nativeLanguages: ['English'],
-  learningGoals: ['Travel', 'DELE B1'],
+  learningGoals: [{ id: '1', text: 'Travel', children: [] }, { id: '2', text: 'DELE B1', children: [] }],
   weaknesses: [],
   difficulties: [],
   createdAt: '2026-01-01T00:00:00Z',
