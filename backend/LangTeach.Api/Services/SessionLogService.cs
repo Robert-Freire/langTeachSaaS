@@ -67,7 +67,12 @@ public class SessionLogService : ISessionLogService
             .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.Student.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken);
 
-        return session is null ? null : ToDto(session);
+        if (session is null) return null;
+
+        var hasVoiceNote = await _db.VoiceNoteApplications
+            .AnyAsync(vna => vna.SessionLogId == session.Id, cancellationToken);
+
+        return ToDto(session, hasVoiceNote);
     }
 
     public async Task<SessionLogDto> CreateAsync(Guid teacherId, Guid studentId, CreateSessionLogRequest request, CancellationToken cancellationToken = default)
