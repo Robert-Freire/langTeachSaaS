@@ -239,9 +239,11 @@ test('second voice note updates draft, does not create a duplicate', async ({ br
   await page.getByTestId('audio-file-input').setInputFiles(audioPath)
   await expect(page.getByTestId('submit-session-log')).toHaveText('Confirm', { timeout: 20000 })
 
-  // Second voice note: should update the same Draft, not create a new one
+  // Second voice note: should update the same Draft, not create a new one.
+  // Wait for the extracting indicator to appear and clear so we know the second upload ran.
   await page.getByTestId('audio-file-input').setInputFiles(audioPath)
-  await expect(page.getByTestId('submit-session-log')).toHaveText('Confirm', { timeout: 20000 })
+  await expect(page.getByTestId('extracting-indicator')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('extracting-indicator')).toBeHidden({ timeout: 20000 })
 
   // Close the dialog without confirming
   await page.keyboard.press('Escape')

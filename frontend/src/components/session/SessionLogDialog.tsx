@@ -55,7 +55,15 @@ function mergeNarrative(existing: string, extracted: string): string {
 
 function mergeTopicTagsUnion(existing: TopicTag[], extracted: TopicTag[]): TopicTag[] {
   const seen = new Set(existing.map(t => t.tag.toLowerCase()))
-  return [...existing, ...extracted.filter(t => !seen.has(t.tag.toLowerCase()))]
+  const result = [...existing]
+  for (const t of extracted) {
+    const key = t.tag.toLowerCase()
+    if (!seen.has(key)) {
+      seen.add(key)
+      result.push(t)
+    }
+  }
+  return result
 }
 
 function mergeSuggestedDifficulties(
@@ -63,7 +71,15 @@ function mergeSuggestedDifficulties(
   extracted: SuggestedDifficulty[],
 ): SuggestedDifficulty[] {
   const seen = new Set(existing.map(d => `${d.competency}|${d.subcategory}`))
-  return [...existing, ...extracted.filter(d => !seen.has(`${d.competency}|${d.subcategory}`))]
+  const result = [...existing]
+  for (const d of extracted) {
+    const key = `${d.competency}|${d.subcategory}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      result.push(d)
+    }
+  }
+  return result
 }
 
 const HOMEWORK_STATUSES = [
