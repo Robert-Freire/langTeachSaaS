@@ -236,7 +236,7 @@ function SessionEntry({
 
           {/* Right: duration + mic + chevron */}
           <div className="flex items-center gap-2 shrink-0">
-            {session.duration != null && (
+            {(session.duration != null || isCancelled) && (
               <span className="text-xs text-zinc-400 font-medium" data-testid="duration-badge">
                 {isCancelled ? '0' : session.duration} min
               </span>

@@ -491,6 +491,29 @@ describe('SessionHistoryTab', () => {
     expect(screen.getByText('Subjunctive Usage in Time Clauses')).toBeInTheDocument()
   })
 
+  it('shows 0 min duration badge for cancelled sessions without duration', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, isCancelled: true, duration: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('duration-badge')).toHaveTextContent('0 min')
+  })
+
+  it('filters sessions by date range', async () => {
+    const sessionOld = { ...SESSION_BASE, id: 'old', sessionDate: '2026-01-01T00:00:00Z' }
+    const sessionNew = { ...SESSION_BASE, id: 'new', sessionDate: '2026-03-30T00:00:00Z' }
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([sessionNew, sessionOld])
+    wrapper()
+    await screen.findAllByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('date-range-button'))
+    const fromInput = await screen.findByTestId('date-from-input')
+    fireEvent.change(fromInput, { target: { value: '2026-03-01' } })
+    await waitFor(() => {
+      expect(screen.getAllByTestId('session-entry')).toHaveLength(1)
+    })
+  })
+
   it('falls back to Session date format when no title', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
       { ...SESSION_BASE, title: null, sessionDate: '2026-04-05T10:00:00Z' },
