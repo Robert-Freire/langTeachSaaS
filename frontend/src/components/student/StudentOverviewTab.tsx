@@ -308,14 +308,18 @@ function TeachingNotesPanel({
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(student.teachingNotes ?? '')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   async function handleSave() {
-    if (!onSaveTeachingNotes) return
+    if (!onSaveTeachingNotes || saving) return
     setSaving(true)
+    setSaveError(null)
     try {
       await onSaveTeachingNotes(draft)
       onStudentChange()
       setEditing(false)
+    } catch {
+      setSaveError('Failed to save notes.')
     } finally {
       setSaving(false)
     }
@@ -349,6 +353,7 @@ function TeachingNotesPanel({
                 placeholder="Notes about how this student learns best..."
                 data-testid="teaching-notes-textarea"
               />
+              {saveError && <p className="text-sm text-red-300">{saveError}</p>}
               <div className="flex gap-2">
                 <button
                   onClick={handleSave}
@@ -381,13 +386,15 @@ function TeachingNotesPanel({
                   No notes yet.
                 </p>
               )}
-              <button
-                onClick={handleEdit}
-                className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-2 text-sm font-bold transition-all"
-                data-testid="add-memory-btn"
-              >
-                Add Memory
-              </button>
+              {onSaveTeachingNotes && (
+                <button
+                  onClick={handleEdit}
+                  className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-2 text-sm font-bold transition-all"
+                  data-testid="add-memory-btn"
+                >
+                  Add Memory
+                </button>
+              )}
             </>
           )}
         </div>

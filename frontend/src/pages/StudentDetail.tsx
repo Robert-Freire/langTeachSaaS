@@ -53,7 +53,7 @@ export default function StudentDetail() {
   })
 
   const nextSession = sessions
-    .filter(s => s.sessionDate && new Date(s.sessionDate) > new Date() && !s.isCancelled)
+    .filter(s => s.sessionDate && new Date(s.sessionDate) > new Date() && !s.isCancelled && s.statusName === 'Confirmed')
     .sort((a, b) => new Date(a.sessionDate!).getTime() - new Date(b.sessionDate!).getTime())[0] ?? null
 
   const onFollowupChange = useCallback(() => { refetchFollowups() }, [refetchFollowups])

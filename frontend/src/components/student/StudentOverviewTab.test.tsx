@@ -301,19 +301,45 @@ describe('StudentOverviewTab - TeachingNotesPanel', () => {
     expect(screen.getByTestId('teaching-notes-text')).toHaveTextContent('Prefers visual examples')
   })
 
-  it('shows Add Memory button', () => {
-    renderOverview(BASE_STUDENT)
+  it('shows Add Memory button when onSaveTeachingNotes is provided', () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <StudentOverviewTab student={BASE_STUDENT} onStudentChange={() => {}} onSaveTeachingNotes={vi.fn().mockResolvedValue(undefined)} />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
     expect(screen.getByTestId('add-memory-btn')).toBeInTheDocument()
   })
 
-  it('shows textarea when Add Memory is clicked', () => {
+  it('hides Add Memory button when onSaveTeachingNotes is not provided', () => {
     renderOverview(BASE_STUDENT)
+    expect(screen.queryByTestId('add-memory-btn')).not.toBeInTheDocument()
+  })
+
+  it('shows textarea when Add Memory is clicked', () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <StudentOverviewTab student={BASE_STUDENT} onStudentChange={() => {}} onSaveTeachingNotes={vi.fn().mockResolvedValue(undefined)} />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
     fireEvent.click(screen.getByTestId('add-memory-btn'))
     expect(screen.getByTestId('teaching-notes-textarea')).toBeInTheDocument()
   })
 
   it('hides textarea when Cancel is clicked', () => {
-    renderOverview(BASE_STUDENT)
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <StudentOverviewTab student={BASE_STUDENT} onStudentChange={() => {}} onSaveTeachingNotes={vi.fn().mockResolvedValue(undefined)} />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
     fireEvent.click(screen.getByTestId('add-memory-btn'))
     expect(screen.getByTestId('teaching-notes-textarea')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('teaching-notes-cancel-btn'))
