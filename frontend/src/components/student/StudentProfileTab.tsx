@@ -426,7 +426,7 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
                               ? 'bg-amber-100 text-amber-700'
                               : 'bg-zinc-100 text-zinc-600'
                         return (
-                          <div key={i} className="flex items-center gap-2" data-testid="weakness-row">
+                          <div key={`weakness-${i}-${w.weaknessType}`} className="flex items-center gap-2" data-testid="weakness-row">
                             <span className={`text-xs font-medium rounded px-1.5 py-0.5 shrink-0 ${typeColor}`} data-testid="weakness-type-badge">
                               {typeLabel}
                             </span>

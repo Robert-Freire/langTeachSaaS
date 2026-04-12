@@ -631,7 +631,6 @@ test('Ana Visual profile tab shows Focus Areas section with difficulties and wea
   if (!anaVisual) throw new Error('Ana Visual not found. Ensure the demo seeder has run.')
 
   await page.goto(`/students/${anaVisual.id}`)
-  await expect(page.getByTestId('student-profile-tab')).not.toBeVisible({ timeout: 5000 }).catch(() => {})
 
   // Navigate to Profile tab
   await page.getByTestId('tab-profile').click()
