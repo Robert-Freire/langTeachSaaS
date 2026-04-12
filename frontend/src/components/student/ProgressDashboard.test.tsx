@@ -227,4 +227,30 @@ describe('ProgressDashboard', () => {
     expect(screen.getByText('Engagement Trends')).toBeInTheDocument()
     expect(screen.getAllByText('Coming Soon')).toHaveLength(3)
   })
+
+  it('shows Behind badge when student has fewer sessions than expected after 4+ weeks', () => {
+    const startDate = new Date(Date.now() - 8 * 7 * 24 * 60 * 60 * 1000).toISOString() // 8 weeks ago
+    // Only 2 sessions in 8 weeks (well below 0.8/wk threshold)
+    const sessions = [
+      { ...baseSession, id: 's1', sessionDate: new Date(Date.now() - 7 * 7 * 24 * 60 * 60 * 1000).toISOString() },
+      { ...baseSession, id: 's2', sessionDate: new Date(Date.now() - 6 * 7 * 24 * 60 * 60 * 1000).toISOString() },
+    ]
+    const student = { ...baseStudent, createdAt: startDate }
+    renderProgress(student, sessions)
+    expect(screen.getByTestId('pacing-behind-badge')).toBeInTheDocument()
+    expect(screen.getByTestId('pacing-behind-badge')).toHaveTextContent('Behind')
+  })
+
+  it('does not show Behind badge when student has adequate session frequency', () => {
+    const startDate = new Date(Date.now() - 5 * 7 * 24 * 60 * 60 * 1000).toISOString() // 5 weeks ago
+    // 5 sessions in 5 weeks (1/wk, above threshold)
+    const sessions = Array.from({ length: 5 }, (_, i) => ({
+      ...baseSession,
+      id: `s${i}`,
+      sessionDate: new Date(Date.now() - (5 - i) * 7 * 24 * 60 * 60 * 1000).toISOString(),
+    }))
+    const student = { ...baseStudent, createdAt: startDate }
+    renderProgress(student, sessions)
+    expect(screen.queryByTestId('pacing-behind-badge')).not.toBeInTheDocument()
+  })
 })
