@@ -50,6 +50,8 @@ function ReasonHero({
     try {
       await onSave(draft)
       setEditing(false)
+    } catch {
+      // caller logs the failure; keep editor open so user can retry
     } finally {
       setSaving(false)
     }
@@ -175,6 +177,8 @@ function InterestsSection({
       setDraft(finalList)
       setEditing(false)
       setInputValue('')
+    } catch {
+      // caller logs the failure; keep editor open so user can retry
     } finally {
       setSaving(false)
     }

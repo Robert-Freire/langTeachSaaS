@@ -31,7 +31,12 @@ function PrimaryObjectiveCard({ student }: { student: Student }) {
   // Show the first (most urgent) objective -- sorted: overdue first, then critical, then normal
   const sorted = [...objectives].sort((a, b) => {
     const order = { overdue: 0, critical: 1, normal: 2 }
-    return order[getObjectiveUrgency(a.targetDate)] - order[getObjectiveUrgency(b.targetDate)]
+    const urgencyDelta =
+      order[getObjectiveUrgency(a.targetDate)] - order[getObjectiveUrgency(b.targetDate)]
+    if (urgencyDelta !== 0) return urgencyDelta
+    const aDays = getDaysRemaining(a.targetDate)
+    const bDays = getDaysRemaining(b.targetDate)
+    return (aDays ?? Number.POSITIVE_INFINITY) - (bDays ?? Number.POSITIVE_INFINITY)
   })
 
   const obj = sorted[0]

@@ -588,7 +588,7 @@ test('motivation fields: reason for studying and objectives round-trip', async (
 
   // Profile tab: objectives section shows objective
   await expect(page.getByTestId('profile-objectives')).toBeVisible()
-  await expect(page.getByText(objectiveText)).toBeVisible()
+  await expect(page.getByTestId('profile-objectives').getByText(objectiveText)).toBeVisible()
 
   // Navigate to edit form and verify round-trip
   await page.getByTestId('edit-profile-link').click()
