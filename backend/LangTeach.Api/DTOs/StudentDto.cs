@@ -9,7 +9,7 @@ public record StudentDto(
     string? PersonalNotes,
     string? TeachingNotes,
     List<string> NativeLanguages,
-    List<string> LearningGoals,
+    List<LearningGoalDto> LearningGoals,
     List<StudentWeaknessDto> Weaknesses,
     List<DifficultyDto> Difficulties,
     DateTime CreatedAt,

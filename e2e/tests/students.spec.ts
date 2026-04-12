@@ -160,10 +160,10 @@ test('full student CRUD flow', async ({ browser }) => {
   await page.getByRole('option', { name: 'Portuguese' }).click()
   await page.keyboard.press('Escape')
 
-  // Select a learning goal
-  await page.getByTestId('learning-goals-trigger').click()
-  await page.getByRole('option', { name: 'Travel' }).click()
-  await page.keyboard.press('Escape')
+  // Add a learning goal via tree editor
+  await page.getByTestId('learning-goal-add-btn').click()
+  await page.getByTestId('learning-goal-top-input').fill('Travel')
+  await page.keyboard.press('Enter')
 
   // Add a weakness using the row-based compound input
   await page.getByTestId('add-weakness').click()
@@ -211,7 +211,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await expect(page.getByTestId('student-name')).toHaveValue(studentName)
 
   // Confirm enrichment fields round-trip correctly
-  await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'Travel' })).toBeVisible()
+  await expect(page.getByTestId('learning-goal-text').filter({ hasText: 'Travel' })).toBeVisible()
   await expect(page.getByTestId('weakness-description')).toHaveValue('Ser/Estar')
 
   // Verify difficulty persisted
@@ -306,31 +306,18 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'B1' }).click()
 
-  // Select a predefined goal
-  await page.getByTestId('learning-goals-trigger').click()
-  await page.getByRole('option', { name: 'Travel' }).click()
-  await page.keyboard.press('Escape')
+  // Add two learning goals via tree editor
+  await page.getByTestId('learning-goal-add-btn').click()
+  await page.getByTestId('learning-goal-top-input').fill('Travel')
+  await page.keyboard.press('Enter')
 
-  // Helper to add a custom entry: fills the command input then selects "Add"
-  async function addCustomEntry(triggerTestId: string, text: string) {
-    await page.getByTestId(triggerTestId).click()
-    // Radix keeps both popover inputs visible in DOM; .last() targets the
-    // most recently opened popover (`:visible` resolves to 2 elements)
-    const cmdInput = page.locator('input[cmdk-input]').last()
-    await cmdInput.fill(text)
-    // Wait for React to render the "Add" option
-    const addBtn = page.getByTestId('add-custom-entry')
-    await expect(addBtn).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
-    await addBtn.click()
-    await page.keyboard.press('Escape')
-  }
+  await page.getByTestId('learning-goal-add-btn').click()
+  await page.getByTestId('learning-goal-top-input').fill('pass DELE B2 in June')
+  await page.keyboard.press('Enter')
 
-  // Add a custom learning goal
-  await addCustomEntry('learning-goals-trigger', 'pass DELE B2 in June')
-
-  // Verify both chips are visible before saving
-  await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'Travel' })).toBeVisible()
-  await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'pass DELE B2 in June' })).toBeVisible()
+  // Verify both goals are visible before saving
+  await expect(page.getByTestId('learning-goal-text').filter({ hasText: 'Travel' })).toBeVisible()
+  await expect(page.getByTestId('learning-goal-text').filter({ hasText: 'pass DELE B2 in June' })).toBeVisible()
 
   // Add a weakness using the row-based input
   await page.getByTestId('add-weakness').click()
@@ -349,9 +336,9 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
   await studentCard.getByTestId('edit-student').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
 
-  // Verify predefined and custom goals persisted
-  await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'Travel' })).toBeVisible()
-  await expect(page.getByTestId('learning-goal-chip').filter({ hasText: 'pass DELE B2 in June' })).toBeVisible()
+  // Verify goals persisted
+  await expect(page.getByTestId('learning-goal-text').filter({ hasText: 'Travel' })).toBeVisible()
+  await expect(page.getByTestId('learning-goal-text').filter({ hasText: 'pass DELE B2 in June' })).toBeVisible()
   await expect(page.getByTestId('weakness-description')).toHaveValue('irregular verb conjugation')
 
   // Clean up: go back and delete the student
@@ -1049,6 +1036,55 @@ test('sessions tab redesign: timeline, search, status filter, and expand', async
   // Collapse by clicking again
   await firstEntry.getByTestId('session-entry-toggle').click()
   await expect(firstEntry.getByTestId('session-entry-detail')).not.toBeVisible()
+
+  await context.close()
+})
+
+test('nested learning goal with sub-goal persists after save', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Nested Goals ${Date.now()}`
+
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: UI_TIMEOUT })
+
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B2' }).click()
+
+  // Add a top-level goal
+  await page.getByTestId('learning-goal-add-btn').click()
+  await page.getByTestId('learning-goal-top-input').fill('Dominar el subjuntivo')
+  await page.keyboard.press('Enter')
+
+  // Add a sub-goal
+  await page.getByTestId('learning-goal-add-child-btn').click()
+  await page.getByTestId('learning-goal-child-input').fill('Subjuntivo de deseo')
+  await page.keyboard.press('Enter')
+
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
+
+  // Navigate back to edit and verify structure persists
+  await page.goto('/students')
+  const studentCard = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await expect(studentCard).toBeVisible({ timeout: UI_TIMEOUT })
+  await studentCard.getByTestId('edit-student').click()
+  await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
+
+  await expect(page.getByTestId('learning-goal-text').filter({ hasText: 'Dominar el subjuntivo' })).toBeVisible()
+  await expect(page.getByTestId('learning-goal-child-item').getByTestId('learning-goal-text').filter({ hasText: 'Subjuntivo de deseo' })).toBeVisible()
+
+  // Clean up
+  await page.getByTestId('delete-student-btn').click()
+  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await page.getByTestId('confirm-delete').click()
+  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
 
   await context.close()
 })

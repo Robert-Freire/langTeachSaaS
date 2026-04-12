@@ -102,6 +102,7 @@ public class StudentService : IStudentService
         ValidateBirthYear(request.BirthYear);
         ValidateShortTermObjectives(request.ShortTermObjectives);
         ValidateTeachingTodos(request.TeachingTodos);
+        ValidateLearningGoals(request.LearningGoals);
         var normalizedSkillOverrides = NormalizeSkillLevelOverrides(request.SkillLevelOverrides);
 
         var student = new Student
@@ -161,6 +162,7 @@ public class StudentService : IStudentService
         ValidateBirthYear(request.BirthYear);
         ValidateShortTermObjectives(request.ShortTermObjectives);
         ValidateTeachingTodos(request.TeachingTodos);
+        ValidateLearningGoals(request.LearningGoals);
         var normalizedSkillOverrides = NormalizeSkillLevelOverrides(request.SkillLevelOverrides);
 
         student.Name = request.Name;
@@ -223,7 +225,9 @@ public class StudentService : IStudentService
         s.PersonalNotes,
         s.TeachingNotes,
         JsonStorageHelper.DeserializeList<string>(s.NativeLanguages),
-        JsonStorageHelper.DeserializeList<string>(s.LearningGoals),
+        JsonStorageHelper.DeserializeListWithStringFallback<LearningGoalDto>(
+            s.LearningGoals,
+            text => new LearningGoalDto(Guid.NewGuid().ToString(), text, [])),
         JsonStorageHelper.DeserializeListWithStringFallback<StudentWeaknessDto>(
             s.Weaknesses,
             str => new StudentWeaknessDto(str, "grammatical")),
@@ -316,6 +320,36 @@ public class StudentService : IStudentService
             if (string.IsNullOrWhiteSpace(d.Status) || !AllowedStatuses.Contains(d.Status))
                 throw new ValidationException($"Difficulty status '{d.Status}' is not valid. Allowed: {string.Join(", ", AllowedStatuses)}.");
             // Trend is system-computed; any submitted value is silently accepted and will be overwritten by DifficultyTrendService.
+        }
+    }
+
+    private static void ValidateLearningGoals(List<LearningGoalDto> goals)
+    {
+        if (goals.Count > 20)
+            throw new ValidationException("Cannot have more than 20 learning goals.");
+        foreach (var goal in goals)
+        {
+            if (goal is null)
+                throw new ValidationException("Learning goals list must not contain null entries.");
+            if (string.IsNullOrWhiteSpace(goal.Id) || goal.Id.Length > 100)
+                throw new ValidationException("Each learning goal must have an id (max 100 characters).");
+            if (string.IsNullOrWhiteSpace(goal.Text) || goal.Text.Length > 200)
+                throw new ValidationException("Each learning goal text must be between 1 and 200 characters.");
+            var children = goal.Children ?? [];
+            if (children.Count > 20)
+                throw new ValidationException("Cannot have more than 20 sub-goals per goal.");
+            foreach (var child in children)
+            {
+                if (child is null)
+                    throw new ValidationException("Sub-goals list must not contain null entries.");
+                if (string.IsNullOrWhiteSpace(child.Id) || child.Id.Length > 100)
+                    throw new ValidationException("Each sub-goal must have an id (max 100 characters).");
+                if (string.IsNullOrWhiteSpace(child.Text) || child.Text.Length > 200)
+                    throw new ValidationException("Each sub-goal text must be between 1 and 200 characters.");
+                var grandchildren = child.Children ?? [];
+                if (grandchildren.Count > 0)
+                    throw new ValidationException("Learning goals support at most 2 levels (no sub-sub-goals).");
+            }
         }
     }
 

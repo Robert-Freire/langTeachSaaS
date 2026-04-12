@@ -223,7 +223,7 @@ describe('CourseNew wizard', () => {
         id: 'student-1', name: 'Marco', cefrLevel: 'A1',
         learningLanguage: 'Spanish', interests: ['football'],
         personalNotes: null, teachingNotes: null, nativeLanguages: ['Italian'],
-        learningGoals: ['get a job in Barcelona'],
+        learningGoals: [{ id: '1', text: 'get a job in Barcelona', children: [] }],
         weaknesses: [{ description: 'ser vs estar', weaknessType: 'grammatical' as const }],
         difficulties: [{ id: 'x', description: 'subjunctive', competency: 'Grammar', subcategory: '', severity: 'high', trend: 'stable', status: 'Active' }],
         createdAt: '2026-01-01', updatedAt: '2026-01-01', birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null, officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false, rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
