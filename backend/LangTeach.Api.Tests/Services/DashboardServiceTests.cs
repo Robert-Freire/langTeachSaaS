@@ -346,6 +346,47 @@ public class DashboardServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetSessionsListAsync_LaterTodaySession_AppearsOnlyInToday_NotUpcoming()
+    {
+        // Sessions later today should be in Today, not Upcoming (buckets must be disjoint)
+        var laterToday = DateTime.UtcNow.Date.AddHours(22);
+        _db.SessionLogs.Add(MakeSession(_studentId, laterToday));
+        _db.SaveChanges();
+
+        var result = await _sut.GetSessionsListAsync(_teacherId, null);
+
+        result.Today.Should().HaveCount(1);
+        result.Upcoming.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetSessionsListAsync_SoftDeletedStudent_ExcludedFromSections()
+    {
+        var deletedStudentId = Guid.NewGuid();
+        _db.Students.Add(new Student
+        {
+            Id = deletedStudentId,
+            TeacherId = _teacherId,
+            Name = "Deleted Student",
+            LearningLanguage = "Spanish",
+            CefrLevel = "B2",
+            NativeLanguages = "[]",
+            TeachingTodos = "[]",
+            IsActive = false,
+            IsDeleted = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        });
+        _db.SessionLogs.Add(MakeSession(deletedStudentId, DateTime.UtcNow.AddDays(2)));
+        _db.SaveChanges();
+
+        var result = await _sut.GetSessionsListAsync(_teacherId, null);
+
+        result.Upcoming.Should().BeEmpty();
+        result.Students.Should().NotContain(s => s.Name == "Deleted Student");
+    }
+
+    [Fact]
     public async Task GetSessionsListAsync_PastSessionWithin7Days_AppearsInRecent()
     {
         var recent = DateTime.UtcNow.AddDays(-3);

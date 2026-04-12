@@ -94,21 +94,22 @@ public class DashboardService : IDashboardService
 
     public async Task<SessionsListDto> GetSessionsListAsync(Guid teacherId, Guid? studentId, CancellationToken cancellationToken = default)
     {
-        var now = DateTime.UtcNow;
-        var today = now.Date;
-        var recentCutoff = today.AddDays(-7);
+        var recentCutoff = DateTime.UtcNow.Date.AddDays(-7);
 
         IQueryable<SessionLog> baseQuery = _db.SessionLogs
             .Where(sl => sl.TeacherId == teacherId
                       && !sl.IsDeleted
-                      && sl.SessionDate.HasValue)
+                      && sl.SessionDate.HasValue
+                      && !sl.Student.IsDeleted)
             .Include(sl => sl.Student);
 
         if (studentId.HasValue)
             baseQuery = baseQuery.Where(sl => sl.StudentId == studentId.Value);
 
+        var today = DateTime.UtcNow.Date;
+
         var upcomingRaw = await baseQuery
-            .Where(sl => !sl.IsCancelled && sl.SessionDate!.Value > now)
+            .Where(sl => !sl.IsCancelled && sl.SessionDate!.Value.Date > today)
             .OrderBy(sl => sl.SessionDate)
             .ToListAsync(cancellationToken);
 

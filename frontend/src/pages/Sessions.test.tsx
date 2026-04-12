@@ -122,11 +122,11 @@ describe('Sessions page', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/students/student-1')
   })
 
-  it('calls getSessionsList with studentId when filter applied', async () => {
+  it('calls getSessionsList initially without studentId', async () => {
     mockGetSessionsList.mockResolvedValue(makeDataWithSessions())
     renderSessions()
     await screen.findByTestId('sessions-list')
-    // Verify initial call was with no studentId
+    // Initial unfiltered fetch
     expect(mockGetSessionsList).toHaveBeenCalledWith(undefined)
   })
 })
