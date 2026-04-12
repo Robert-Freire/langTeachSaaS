@@ -117,10 +117,14 @@ interface StudentFilterProps {
 }
 
 function StudentFilter({ students, value, onChange }: StudentFilterProps) {
+  const studentName = students.find(s => s.studentId === value)?.name
+
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value} onValueChange={(v: string | null) => onChange(!v || v === 'all' ? 'all' : v)}>
       <SelectTrigger className="w-48 bg-white" data-testid="student-filter">
-        <SelectValue placeholder="All students" />
+        <SelectValue placeholder="All students">
+          {() => value === 'all' ? 'All students' : (studentName ?? 'All students')}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">All students</SelectItem>
