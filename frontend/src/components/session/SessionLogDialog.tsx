@@ -45,6 +45,43 @@ function isSuggestedDifficulty(value: unknown): value is SuggestedDifficulty {
   )
 }
 
+function mergeNarrative(existing: string, extracted: string): string {
+  const a = existing.trim()
+  const b = extracted.trim()
+  if (!a) return b
+  if (!b || a === b) return a
+  return `${a}\n${b}`
+}
+
+function mergeTopicTagsUnion(existing: TopicTag[], extracted: TopicTag[]): TopicTag[] {
+  const seen = new Set(existing.map(t => t.tag.toLowerCase()))
+  const result = [...existing]
+  for (const t of extracted) {
+    const key = t.tag.toLowerCase()
+    if (!seen.has(key)) {
+      seen.add(key)
+      result.push(t)
+    }
+  }
+  return result
+}
+
+function mergeSuggestedDifficulties(
+  existing: SuggestedDifficulty[],
+  extracted: SuggestedDifficulty[],
+): SuggestedDifficulty[] {
+  const seen = new Set(existing.map(d => `${d.competency}|${d.subcategory}`))
+  const result = [...existing]
+  for (const d of extracted) {
+    const key = `${d.competency}|${d.subcategory}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      result.push(d)
+    }
+  }
+  return result
+}
+
 const HOMEWORK_STATUSES = [
   { value: 'Done', label: 'Done' },
   { value: 'Partial', label: 'Partial' },
@@ -125,6 +162,9 @@ export function SessionLogDialog({
   const voiceRunRef = useRef(0)
   const sessionDateRef = useRef(sessionDate)
   useEffect(() => { sessionDateRef.current = sessionDate }, [sessionDate])
+  // Track todos/followups submitted during this dialog session to prevent re-submission
+  const submittedTodosRef = useRef<Set<string>>(new Set())
+  const submittedFollowupsRef = useRef<Set<string>>(new Set())
 
   // Pre-populate fields when editing an existing session
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -364,18 +404,24 @@ export function SessionLogDialog({
     try {
       const extracted = await extractSessionReflection(studentId, voiceNote.transcription)
       if (runId !== voiceRunRef.current) return
-      const notes = [extracted.areasToImprove, extracted.emotionalSignals]
-        .filter(Boolean)
-        .join('\n')
-      // Pre-fill form fields from extraction
+
+      // Compute merged values before setState to avoid async stale-state reads
+      const notes = [extracted.areasToImprove, extracted.emotionalSignals].filter(Boolean).join('\n')
+      const mergedActualContent = mergeNarrative(actualContent, extracted.whatWasCovered ?? '')
+      const mergedHomework      = mergeNarrative(homeworkAssigned, extracted.homeworkAssigned ?? '')
+      const mergedNextTopics    = mergeNarrative(nextSessionTopics, extracted.nextLessonIdeas ?? '')
+      const mergedNotes         = mergeNarrative(generalNotes, notes)
+      const mergedTopicTags     = mergeTopicTagsUnion(topicTags, extracted.topicTags ?? [])
+      const mergedDifficulties  = mergeSuggestedDifficulties(suggestedDifficulties, extracted.suggestedDifficulties ?? [])
+
       /* eslint-disable react-hooks/set-state-in-effect */
-      setActualContent(extracted.whatWasCovered ?? '')
-      setHomeworkAssigned(extracted.homeworkAssigned ?? '')
-      setNextSessionTopics(extracted.nextLessonIdeas ?? '')
-      setGeneralNotes(notes)
-      setSuggestedDifficulties(extracted.suggestedDifficulties ?? [])
+      setActualContent(mergedActualContent)
+      setHomeworkAssigned(mergedHomework)
+      setNextSessionTopics(mergedNextTopics)
+      setGeneralNotes(mergedNotes)
+      setSuggestedDifficulties(mergedDifficulties)
+      setTopicTags(mergedTopicTags)
       if (!sessionDateRef.current && extracted.sessionDate) setSessionDate(extracted.sessionDate)
-      if (extracted.topicTags?.length && topicTags.length === 0) setTopicTags(extracted.topicTags)
       if (extracted.previousHomeworkStatus) setPrevHomeworkStatus(extracted.previousHomeworkStatus)
       if (extracted.isCancelled === true) setIsCancelled(true)
       if (extracted.levelReassessment) {
@@ -397,51 +443,78 @@ export function SessionLogDialog({
       }
       /* eslint-enable react-hooks/set-state-in-effect */
       if (runId !== voiceRunRef.current) return
-      // Resolve values that may have been updated above
-      const resolvedPrevHomework = extracted.previousHomeworkStatus ?? prevHomeworkStatus
-      const resolvedIsCancelled = extracted.isCancelled === true ? true : isCancelled
-      const resolvedTopicTags = extracted.topicTags?.length && topicTags.length === 0
-        ? extracted.topicTags
-        : topicTags
-      // Reassessment: only include in draft if teacher had already enabled the toggle with a valid skill
-      const resolvedLevelEnabled = reassessmentEnabled
-      const resolvedLevelValue = reassessmentEnabled ? reassessmentLevel || null : null
-      // Auto-save as Draft using full current form state + extracted fields
-      const resolvedDate = sessionDateRef.current || extracted.sessionDate || null
-      const draft = await createSession(studentId, {
+
+      const resolvedPrevHomework  = extracted.previousHomeworkStatus ?? prevHomeworkStatus
+      const resolvedIsCancelled   = extracted.isCancelled === true ? true : isCancelled
+      const resolvedDate          = sessionDateRef.current || extracted.sessionDate || null
+      const resolvedLevelValue    = reassessmentEnabled ? reassessmentLevel || null : null
+
+      // Determine whether to update an existing session or create a new Draft.
+      // Edit mode: always update the open session (including Confirmed sessions).
+      // Create mode with draft: update the draft created by the previous voice note.
+      // Create mode without draft: create a new Draft.
+      const targetSessionId = isEditMode ? initialSession!.id : draftSessionId
+      const isConfirmedSession = isEditMode && initialSession!.statusName === 'Confirmed'
+      const resolvedStatus: 'Draft' | 'Confirmed' = isConfirmedSession ? 'Confirmed' : 'Draft'
+
+      const payload = {
         sessionDate: resolvedDate,
         plannedContent: plannedContent || null,
-        actualContent: extracted.whatWasCovered ?? null,
-        homeworkAssigned: extracted.homeworkAssigned ?? null,
+        actualContent: mergedActualContent || null,
+        homeworkAssigned: mergedHomework || null,
         previousHomeworkStatus: resolvedPrevHomework,
-        nextSessionTopics: extracted.nextLessonIdeas ?? null,
-        generalNotes: notes || null,
-        levelReassessmentSkill: resolvedLevelEnabled ? reassessmentSkill || null : null,
-        levelReassessmentLevel: resolvedLevelEnabled ? resolvedLevelValue : null,
+        nextSessionTopics: mergedNextTopics || null,
+        generalNotes: mergedNotes || null,
+        levelReassessmentSkill: reassessmentEnabled ? reassessmentSkill || null : null,
+        levelReassessmentLevel: resolvedLevelValue,
         linkedLessonId: selectedLessonId || null,
-        topicTags: resolvedTopicTags.length > 0 ? serializeTopicTags(resolvedTopicTags) : null,
+        topicTags: mergedTopicTags.length > 0 ? serializeTopicTags(mergedTopicTags) : null,
         isCancelled: resolvedIsCancelled,
         duration: extracted.durationMinutes ?? null,
-        status: 'Draft',
-        suggestedDifficulties: extracted.suggestedDifficulties?.length ? extracted.suggestedDifficulties : undefined,
+        status: resolvedStatus,
+        suggestedDifficulties: mergedDifficulties.length > 0 ? mergedDifficulties : undefined,
         voiceNoteId: voiceNote.id,
         voiceNoteTranscription: voiceNote.transcription ?? undefined,
         rawExtractionJson: extracted.rawExtractionJson ?? undefined,
-      })
+      }
+
+      let savedSessionId: string
+      if (targetSessionId) {
+        await updateSession(studentId, targetSessionId, payload)
+        savedSessionId = targetSessionId
+      } else {
+        const draft = await createSession(studentId, payload)
+        setDraftSessionId(draft.id)
+        savedSessionId = draft.id
+      }
+
       if (runId !== voiceRunRef.current) return
-      setDraftSessionId(draft.id)
-      // Create teaching todos and followups (non-fatal - errors are logged only)
+
+      // Create teaching todos and followups (non-fatal - errors are logged only).
+      // Deduplicate by normalized text to avoid re-submitting on a second voice note.
       const todoFollowupErrors: unknown[] = []
       if (extracted.teachingTodos?.length) {
+        const newTodos = extracted.teachingTodos.filter(text => {
+          const key = text.trim().toLowerCase()
+          if (submittedTodosRef.current.has(key)) return false
+          submittedTodosRef.current.add(key)
+          return true
+        })
         const results = await Promise.allSettled(
-          extracted.teachingTodos.map(text => appendTeachingTodo(studentId, text))
+          newTodos.map(text => appendTeachingTodo(studentId, text))
         )
         results.forEach(r => r.status === 'rejected' && todoFollowupErrors.push(r.reason))
       }
       if (extracted.teacherFollowups?.length) {
+        const newFollowups = extracted.teacherFollowups.filter(text => {
+          const key = text.trim().toLowerCase()
+          if (submittedFollowupsRef.current.has(key)) return false
+          submittedFollowupsRef.current.add(key)
+          return true
+        })
         const results = await Promise.allSettled(
-          extracted.teacherFollowups.map(text =>
-            createFollowup({ text, studentId, sourceSessionLogId: draft.id })
+          newFollowups.map(text =>
+            createFollowup({ text, studentId, sourceSessionLogId: savedSessionId })
           )
         )
         results.forEach(r => r.status === 'rejected' && todoFollowupErrors.push(r.reason))
@@ -548,9 +621,8 @@ export function SessionLogDialog({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Voice recording — create mode only, hidden after draft is saved */}
-            {!isEditMode && !draftSessionId && (
-              <div className="space-y-1" data-testid="voice-recorder-section">
+            {/* Voice recording */}
+            <div className="space-y-1" data-testid="voice-recorder-section">
                 <Label className="text-sm">Record session notes</Label>
                 {isExtracting ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="extracting-indicator">
@@ -568,8 +640,10 @@ export function SessionLogDialog({
                     Could not extract fields from audio. Fill in the form manually.
                   </p>
                 )}
-              </div>
-            )}
+            </div>
+
+            {/* Lock all form inputs while extraction is in progress to prevent stale-state overwrites */}
+            <fieldset disabled={isExtracting} className="contents">
 
             {sessionsLoading && (
               <div className="space-y-2">
@@ -960,6 +1034,8 @@ export function SessionLogDialog({
             {submitError && (
               <p className="text-xs text-red-600" data-testid="session-log-error">{submitError}</p>
             )}
+
+            </fieldset>
 
             <DialogFooter>
               <Button

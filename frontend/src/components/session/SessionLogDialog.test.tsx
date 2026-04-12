@@ -670,7 +670,7 @@ describe('SessionLogDialog', () => {
       await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
     })
 
-    it('does not show AudioRecorder in edit mode', async () => {
+    it('shows AudioRecorder in edit mode', async () => {
       wrapper(
         <SessionLogDialog
           studentId={STUDENT_ID}
@@ -680,7 +680,7 @@ describe('SessionLogDialog', () => {
         />
       )
       await waitFor(() => expect(screen.getByText('Edit Session')).toBeInTheDocument())
-      expect(screen.queryByTestId('mock-audio-recorder-trigger')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('mock-audio-recorder-trigger')).toBeInTheDocument()
     })
 
     it('calls extractSessionReflection after voice note received', async () => {
@@ -950,6 +950,148 @@ describe('SessionLogDialog', () => {
             ],
           }),
         )
+      })
+    })
+
+    it('second voice note in create mode calls updateSession on draft, not createSession again', async () => {
+      vi.mocked(sessionLogsApi.updateSession).mockResolvedValue({
+        ...SAMPLE_SESSION,
+        id: 'draft-session-id',
+        status: 1,
+        statusName: 'Draft' as const,
+      })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      // First voice note: creates Draft
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+      await waitFor(() => expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledTimes(1))
+
+      // Second voice note: updates the existing Draft
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.updateSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          'draft-session-id',
+          expect.objectContaining({ status: 'Draft' }),
+        )
+      })
+      expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledTimes(1)
+    })
+
+    it('voice note in edit mode calls updateSession on initialSession, not createSession', async () => {
+      vi.mocked(sessionLogsApi.updateSession).mockResolvedValue({ ...SAMPLE_SESSION })
+
+      wrapper(
+        <SessionLogDialog
+          studentId={STUDENT_ID}
+          open={true}
+          onOpenChange={vi.fn()}
+          initialSession={SAMPLE_SESSION}
+        />
+      )
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.updateSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          SAMPLE_SESSION.id,
+          expect.anything(),
+        )
+      })
+      expect(vi.mocked(sessionLogsApi.createSession)).not.toHaveBeenCalled()
+    })
+
+    it('voice note on confirmed session keeps status Confirmed in auto-save', async () => {
+      const CONFIRMED_SESSION = { ...SAMPLE_SESSION, statusName: 'Confirmed' as const, status: 0 }
+      vi.mocked(sessionLogsApi.updateSession).mockResolvedValue(CONFIRMED_SESSION)
+
+      wrapper(
+        <SessionLogDialog
+          studentId={STUDENT_ID}
+          open={true}
+          onOpenChange={vi.fn()}
+          initialSession={CONFIRMED_SESSION}
+        />
+      )
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.updateSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          CONFIRMED_SESSION.id,
+          expect.objectContaining({ status: 'Confirmed' }),
+        )
+      })
+      expect(vi.mocked(sessionLogsApi.createSession)).not.toHaveBeenCalled()
+    })
+
+    it('second voice note appends to narrative fields instead of replacing', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection)
+        .mockResolvedValueOnce({ ...EXTRACTED, whatWasCovered: 'First topic' })
+        .mockResolvedValueOnce({ ...EXTRACTED, whatWasCovered: 'Second topic' })
+      vi.mocked(sessionLogsApi.updateSession).mockResolvedValue({
+        ...SAMPLE_SESSION,
+        id: 'draft-session-id',
+        status: 1,
+        statusName: 'Draft' as const,
+      })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+      await waitFor(() => {
+        expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('First topic')
+      })
+
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+      await waitFor(() => {
+        const value = (screen.getByTestId('actual-content') as HTMLTextAreaElement).value
+        expect(value).toContain('First topic')
+        expect(value).toContain('Second topic')
+      })
+    })
+
+    it('voice note unions topic tags without duplicates', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection)
+        .mockResolvedValueOnce({ ...EXTRACTED, topicTags: [{ tag: 'ser/estar' }, { tag: 'subjuntivo' }] })
+        .mockResolvedValueOnce({ ...EXTRACTED, topicTags: [{ tag: 'subjuntivo' }, { tag: 'vocabulario' }] })
+      vi.mocked(sessionLogsApi.updateSession).mockResolvedValue({
+        ...SAMPLE_SESSION,
+        id: 'draft-session-id',
+        status: 1,
+        statusName: 'Draft' as const,
+      })
+
+      wrapper(<SessionLogDialog studentId={STUDENT_ID} open={true} onOpenChange={vi.fn()} />)
+      await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
+
+      // First voice note: sets topic tags
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+      await waitFor(() => expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledTimes(1))
+
+      // Second voice note: unions topic tags
+      fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
+      await waitFor(() => {
+        expect(vi.mocked(sessionLogsApi.updateSession)).toHaveBeenCalledWith(
+          STUDENT_ID,
+          'draft-session-id',
+          expect.objectContaining({
+            topicTags: expect.stringContaining('ser/estar'),
+          }),
+        )
+        // Should contain all three unique tags
+        const call = vi.mocked(sessionLogsApi.updateSession).mock.calls[0]
+        const payload = call[2] as { topicTags: string }
+        const tags = JSON.parse(payload.topicTags) as { tag: string }[]
+        expect(tags.map(t => t.tag)).toEqual(expect.arrayContaining(['ser/estar', 'subjuntivo', 'vocabulario']))
+        expect(tags).toHaveLength(3)
       })
     })
   })

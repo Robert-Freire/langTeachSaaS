@@ -185,3 +185,79 @@ test('editing a Draft session and saving confirms it', async ({ browser }) => {
 
   await context.close()
 })
+
+test('voice recorder is accessible in edit mode', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const student = await createStudent(page, `Edit Mode Voice Student ${Date.now()}`)
+
+  // Create a Draft session via API
+  const sessionRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+    headers: AUTH_HEADER,
+    data: {
+      actualContent: 'Initial draft content',
+      previousHomeworkStatus: 'NotApplicable',
+      status: 'Draft',
+    },
+  })
+  expect(sessionRes.ok()).toBeTruthy()
+
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: 15000 })
+
+  await page.getByRole('tab', { name: /history/i }).click()
+  await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: 10000 })
+
+  // Open edit dialog
+  await page.getByTestId('session-entry-toggle').click()
+  await page.getByTestId('edit-session-button').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+
+  // Voice recorder section should be visible in edit mode (bug fix)
+  await expect(page.getByTestId('voice-recorder-section')).toBeVisible({ timeout: 5000 })
+
+  await context.close()
+})
+
+test('second voice note updates draft, does not create a duplicate', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const student = await createStudent(page, `No Duplicate Draft Student ${Date.now()}`)
+
+  await page.goto(`/students/${student.id}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: 15000 })
+
+  // Open Log Session dialog
+  await page.getByTestId('log-session-button').click()
+  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+
+  const audioPath = path.join(__dirname, '../fixtures/test-audio.webm')
+
+  // First voice note: creates a Draft
+  await page.getByTestId('audio-file-input').setInputFiles(audioPath)
+  await expect(page.getByTestId('submit-session-log')).toHaveText('Confirm', { timeout: 20000 })
+
+  // Second voice note: should update the same Draft, not create a new one.
+  // Wait for the extracting indicator to appear and clear so we know the second upload ran.
+  await page.getByTestId('audio-file-input').setInputFiles(audioPath)
+  await expect(page.getByTestId('extracting-indicator')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('extracting-indicator')).toBeHidden({ timeout: 20000 })
+
+  // Close the dialog without confirming
+  await page.keyboard.press('Escape')
+  // Dismiss the discard dialog if it appears
+  const discardBtn = page.getByTestId('discard-btn')
+  if (await discardBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await discardBtn.click()
+  }
+
+  // Navigate to session history tab and verify only ONE Draft exists
+  await page.getByRole('tab', { name: /history/i }).click()
+  await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: 10000 })
+  const draftBadges = page.getByTestId('draft-badge')
+  await expect(draftBadges).toHaveCount(1, { timeout: 5000 })
+
+  await context.close()
+})
