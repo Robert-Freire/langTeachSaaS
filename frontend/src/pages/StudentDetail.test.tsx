@@ -14,6 +14,9 @@ vi.mock('../api/followups', () => ({
 vi.mock('../api/students', () => ({
   getStudent: vi.fn(),
   updateStudent: vi.fn(),
+  appendTeachingTodo: vi.fn(),
+  updateTeachingTodo: vi.fn(),
+  deleteTeachingTodo: vi.fn(),
 }))
 
 vi.mock('../api/sessionLogs', () => ({
@@ -343,6 +346,6 @@ describe('StudentDetail - Profile tab sections', () => {
     expect(screen.getByText('No identity details added yet')).toBeInTheDocument()
     expect(screen.getByText('No learning goals set')).toBeInTheDocument()
     expect(screen.getByText('No objectives set')).toBeInTheDocument()
-    expect(screen.getByText('No teaching todos yet')).toBeInTheDocument()
+    expect(screen.getByTestId('teaching-todos-empty')).toBeInTheDocument()
   })
 })

@@ -12,7 +12,6 @@ import { StudentProfileTab } from '@/components/student/StudentProfileTab'
 import { StudentOverviewTab } from '@/components/student/StudentOverviewTab'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
-import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
 import { SessionLogDialog } from '@/components/session/SessionLogDialog'
 
 function getInitials(name: string): string {
@@ -47,6 +46,9 @@ export default function StudentDetail() {
   })
 
   const onFollowupChange = useCallback(() => { refetchFollowups() }, [refetchFollowups])
+  const onStudentChange = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['student', id] })
+  }, [queryClient, id])
 
   function buildStudentPayload() {
     if (!student) throw new Error('Student not loaded')
@@ -278,6 +280,7 @@ export default function StudentDetail() {
           student={student}
           followups={followups}
           onFollowupChange={onFollowupChange}
+          onStudentChange={onStudentChange}
         />
       )}
 
@@ -286,6 +289,7 @@ export default function StudentDetail() {
           student={student}
           followups={followups}
           onFollowupChange={onFollowupChange}
+          onStudentChange={onStudentChange}
           onToggleDifficultyStatus={(difficultyId, status) =>
             toggleDifficultyStatus({ difficultyId, status })
           }
@@ -295,18 +299,7 @@ export default function StudentDetail() {
       )}
 
       {activeTab === 'sessions' && (
-        <div className="space-y-6">
-          <SessionHistoryTab studentId={student.id} />
-          <div
-            className="bg-white rounded-2xl p-6"
-            style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
-          >
-            <h3 className="text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-zinc-500 mb-3">
-              Teaching Todos
-            </h3>
-            <TeachingTodosCard todos={student.teachingTodos} />
-          </div>
-        </div>
+        <SessionHistoryTab studentId={student.id} />
       )}
 
       {activeTab === 'progress' && (

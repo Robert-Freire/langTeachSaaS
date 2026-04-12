@@ -11,6 +11,16 @@ vi.mock('@/api/followups', () => ({
   updateFollowupStatus: vi.fn(),
 }))
 
+vi.mock('@/api/students', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/api/students')>()
+  return {
+    ...actual,
+    appendTeachingTodo: vi.fn(),
+    updateTeachingTodo: vi.fn(),
+    deleteTeachingTodo: vi.fn(),
+  }
+})
+
 function dateOffset(days: number): string {
   const d = new Date()
   d.setDate(d.getDate() + days)

@@ -1,49 +1,270 @@
-import { ClipboardList } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { useMutation } from '@tanstack/react-query'
+import { Plus, Trash2, Check } from 'lucide-react'
 import type { TeachingTodo } from '@/api/students'
+import { appendTeachingTodo, updateTeachingTodo, deleteTeachingTodo } from '@/api/students'
 
-interface Props {
+interface TeachingTodosCardProps {
   todos: TeachingTodo[]
+  studentId: string
+  onStudentChange: () => void
+  allowEdit?: boolean
 }
 
-function statusDot(status: string) {
-  if (status === 'Pending') return 'bg-indigo-500'
-  if (status === 'Covered') return 'bg-green-500'
-  return 'bg-zinc-400'
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `${days}d ago`
+  const months = Math.floor(days / 30)
+  return `${months}mo ago`
 }
 
-export function TeachingTodosCard({ todos }: Props) {
-  if (todos.length === 0) {
-    return (
-      <div className="py-6 text-center" data-testid="teaching-todos-empty">
-        <ClipboardList className="h-6 w-6 text-zinc-300 mx-auto mb-2" />
-        <p className="text-sm text-zinc-400">No teaching todos yet</p>
-      </div>
-    )
+function sortTodos(todos: TeachingTodo[]): TeachingTodo[] {
+  return [...todos].sort((a, b) => {
+    const priority = (s: string) => (s === 'Pending' ? 0 : 1)
+    const p = priority(a.status) - priority(b.status)
+    if (p !== 0) return p
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  })
+}
+
+interface OptimisticAdd extends TeachingTodo { _temp: true }
+interface PendingUpdate { status?: string; text?: string }
+
+export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit = false }: TeachingTodosCardProps) {
+  // Optimistic state: overlays on top of the server-provided `todos` prop
+  const [optimisticAdds, setOptimisticAdds] = useState<OptimisticAdd[]>([])
+  const [pendingUpdates, setPendingUpdates] = useState<Map<string, PendingUpdate>>(() => new Map())
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set())
+
+  const [newText, setNewText] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+
+  // Derive displayed list from server state + optimistic overlays
+  const displayedTodos = useMemo(() => {
+    const serverMerged = todos
+      .filter(t => !deletedIds.has(t.id))
+      .map(t => {
+        const pending = pendingUpdates.get(t.id)
+        return pending ? { ...t, ...pending } : t
+      })
+    return sortTodos([...serverMerged, ...optimisticAdds])
+  }, [todos, deletedIds, pendingUpdates, optimisticAdds])
+
+  const addMutation = useMutation({
+    mutationFn: (text: string) => appendTeachingTodo(studentId, text),
+    onMutate: (text) => {
+      const tempId = `temp-${Date.now()}`
+      const temp: OptimisticAdd = {
+        _temp: true,
+        id: tempId,
+        text,
+        status: 'Pending',
+        createdAt: new Date().toISOString(),
+        sourceSessionLogId: null,
+        coveredInSessionLogId: null,
+      }
+      setOptimisticAdds(prev => [...prev, temp])
+      return { tempId }
+    },
+    onSuccess: (_, __, context) => {
+      setOptimisticAdds(prev => prev.filter(t => t.id !== context?.tempId))
+      onStudentChange()
+    },
+    onError: (_, __, context) => {
+      setOptimisticAdds(prev => prev.filter(t => t.id !== context?.tempId))
+    },
+  })
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ todoId, status }: { todoId: string; status: string }) =>
+      updateTeachingTodo(studentId, todoId, { status }),
+    onMutate: ({ todoId, status }) => {
+      setPendingUpdates(prev => new Map(prev).set(todoId, { ...prev.get(todoId), status }))
+    },
+    onSuccess: (_, { todoId }) => {
+      setPendingUpdates(prev => { const m = new Map(prev); m.delete(todoId); return m })
+      onStudentChange()
+    },
+    onError: (_, { todoId }) => {
+      setPendingUpdates(prev => { const m = new Map(prev); m.delete(todoId); return m })
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (todoId: string) => deleteTeachingTodo(studentId, todoId),
+    onMutate: (todoId) => {
+      setDeletedIds(prev => new Set([...prev, todoId]))
+    },
+    onSuccess: (_, todoId) => {
+      setDeletedIds(prev => { const s = new Set(prev); s.delete(todoId); return s })
+      onStudentChange()
+    },
+    onError: (_, todoId) => {
+      setDeletedIds(prev => { const s = new Set(prev); s.delete(todoId); return s })
+    },
+  })
+
+  const editMutation = useMutation({
+    mutationFn: ({ todoId, text, status }: { todoId: string; text: string; status: string }) =>
+      updateTeachingTodo(studentId, todoId, { status, text }),
+    onMutate: ({ todoId, text }) => {
+      setPendingUpdates(prev => new Map(prev).set(todoId, { ...prev.get(todoId), text }))
+    },
+    onSuccess: (_, { todoId }) => {
+      setPendingUpdates(prev => { const m = new Map(prev); m.delete(todoId); return m })
+      onStudentChange()
+    },
+    onError: (_, { todoId }) => {
+      setPendingUpdates(prev => { const m = new Map(prev); m.delete(todoId); return m })
+    },
+  })
+
+  function handleAdd() {
+    const text = newText.trim()
+    if (!text || addMutation.isPending) return
+    setNewText('')
+    addMutation.mutate(text)
+  }
+
+  function handleToggle(todo: TeachingTodo) {
+    if (toggleMutation.isPending) return
+    const next = todo.status === 'Pending' ? 'Covered' : 'Pending'
+    toggleMutation.mutate({ todoId: todo.id, status: next })
+  }
+
+  function startEdit(todo: TeachingTodo) {
+    setEditingId(todo.id)
+    setEditText(todo.text)
+  }
+
+  function commitEdit(todoId: string, currentStatus: string) {
+    const text = editText.trim()
+    setEditingId(null)
+    const originalTodo = todos.find(t => t.id === todoId) ?? displayedTodos.find(t => t.id === todoId)
+    if (text && text !== originalTodo?.text) {
+      editMutation.mutate({ todoId, text, status: currentStatus })
+    }
   }
 
   return (
-    <ul className="space-y-2" data-testid="teaching-todos-list">
-      {todos.map((todo) => {
-        const isCovered = todo.status === 'Covered'
-        const isDismissed = todo.status === 'Dismissed'
-        return (
-          <li key={todo.id} className="flex items-start gap-2.5" data-testid="teaching-todo-item">
-            <span
-              className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${statusDot(todo.status)}`}
-              data-testid={`todo-status-${todo.status.toLowerCase()}`}
-            />
-            <span
-              className={`text-sm ${
-                isCovered ? 'line-through text-zinc-400' :
-                isDismissed ? 'text-zinc-400' :
-                'text-[#1A1B22]'
-              }`}
-            >
-              {todo.text}
-            </span>
-          </li>
-        )
-      })}
-    </ul>
+    <div data-testid="teaching-todos-card">
+      {displayedTodos.length === 0 ? (
+        <p className="text-sm text-zinc-400 italic mb-3" data-testid="teaching-todos-empty">
+          No ideas yet. Add one below.
+        </p>
+      ) : (
+        <ul className="space-y-2 mb-3" data-testid="teaching-todos-list">
+          {displayedTodos.map((todo) => {
+            const isCovered = todo.status === 'Covered'
+            const isDismissed = todo.status === 'Dismissed'
+            const isInactive = isCovered || isDismissed
+            const isEditing = editingId === todo.id
+
+            return (
+              <li
+                key={todo.id}
+                className="flex items-start gap-2 group"
+                data-testid="teaching-todo-item"
+              >
+                {/* Checkbox / status toggle */}
+                <button
+                  type="button"
+                  onClick={() => handleToggle(todo)}
+                  aria-label={isCovered ? 'Mark pending' : 'Mark covered'}
+                  data-testid={`todo-toggle-${todo.id}`}
+                  className={`mt-0.5 shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+                    isCovered
+                      ? 'bg-green-500 border-green-500'
+                      : isDismissed
+                        ? 'border-zinc-300 bg-zinc-100'
+                        : 'border-indigo-400 hover:border-indigo-600'
+                  }`}
+                >
+                  {isCovered && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+                </button>
+
+                {/* Text / edit */}
+                <div className="flex-1 min-w-0">
+                  {isEditing ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      value={editText}
+                      onChange={e => setEditText(e.target.value)}
+                      onBlur={() => commitEdit(todo.id, todo.status)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') commitEdit(todo.id, todo.status)
+                        if (e.key === 'Escape') setEditingId(null)
+                      }}
+                      maxLength={500}
+                      className="w-full text-sm border-b border-indigo-300 bg-transparent outline-none text-[#1A1B22] py-0.5"
+                      data-testid={`todo-edit-input-${todo.id}`}
+                    />
+                  ) : (
+                    <span
+                      className={`text-sm leading-snug ${
+                        isInactive ? 'line-through text-zinc-400' : 'text-[#1A1B22]'
+                      } ${allowEdit ? 'cursor-text hover:text-indigo-700' : ''}`}
+                      onClick={() => allowEdit && startEdit(todo)}
+                      data-testid={`todo-text-${todo.id}`}
+                    >
+                      {todo.text}
+                    </span>
+                  )}
+                  <span className="block text-[0.6875rem] text-zinc-400 mt-0.5" data-testid={`todo-time-${todo.id}`}>
+                    {relativeTime(todo.createdAt)}
+                  </span>
+                </div>
+
+                {/* Delete button (allowEdit only) */}
+                {allowEdit && !isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => deleteMutation.mutate(todo.id)}
+                    aria-label="Delete todo"
+                    data-testid={`todo-delete-${todo.id}`}
+                    className="shrink-0 text-zinc-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 mt-0.5"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+
+      {/* Add input */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={newText}
+          onChange={e => setNewText(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          placeholder="Add a teaching idea..."
+          maxLength={500}
+          className="flex-1 rounded-lg border border-zinc-200 bg-indigo-50 px-3 py-1.5 text-sm text-[#1A1B22] placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          data-testid="todo-add-input"
+          disabled={addMutation.isPending}
+        />
+        <button
+          type="button"
+          onClick={handleAdd}
+          disabled={addMutation.isPending || !newText.trim()}
+          data-testid="todo-add-btn"
+          aria-label="Add todo"
+          className="shrink-0 rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
   )
 }

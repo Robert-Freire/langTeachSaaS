@@ -614,3 +614,73 @@ test('motivation fields: reason for studying and objectives round-trip', async (
 
   await context.close()
 })
+
+test('teaching todos: add, toggle covered, verify ordering on overview tab', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Todo E2E Test ${Date.now()}`
+
+  // Create a student to work with
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: 10000 })
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: 10000 })
+
+  // Verify we're on the overview tab (default)
+  await expect(page.getByTestId('tab-overview')).toHaveAttribute('aria-selected', 'true', { timeout: 5000 })
+  await expect(page.getByTestId('teaching-todos-card')).toBeVisible({ timeout: 5000 })
+
+  // Empty state is shown
+  await expect(page.getByTestId('teaching-todos-empty')).toBeVisible()
+
+  // Add a teaching todo
+  const addInput = page.getByTestId('todo-add-input')
+  await addInput.fill('Practice ser vs estar')
+  await page.getByTestId('todo-add-btn').click()
+
+  // Todo appears in list
+  await expect(page.getByTestId('teaching-todos-list')).toBeVisible({ timeout: 5000 })
+  const firstTodo = page.getByTestId('teaching-todo-item').first()
+  await expect(firstTodo).toContainText('Practice ser vs estar')
+
+  // Add a second todo
+  await addInput.fill('Review subjunctive mood')
+  await page.getByTestId('todo-add-btn').click()
+  await expect(page.getByTestId('teaching-todo-item')).toHaveCount(2, { timeout: 5000 })
+
+  // Mark the first todo as covered
+  const items = page.getByTestId('teaching-todo-item')
+  const firstItem = items.first()
+  const todoText = await firstItem.getByTestId(/^todo-text-/).textContent()
+  const todoId = (await firstItem.getByTestId(/^todo-toggle-/).getAttribute('data-testid'))?.replace('todo-toggle-', '')
+
+  await firstItem.getByTestId(`todo-toggle-${todoId}`).click()
+
+  // Wait for covered state (strikethrough)
+  await expect(firstItem.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: 5000 })
+
+  // Verify ordering: pending todo should appear before covered
+  const reorderedItems = page.getByTestId('teaching-todo-item')
+  const firstText = await reorderedItems.first().getByTestId(/^todo-text-/).textContent()
+  const lastText = await reorderedItems.last().getByTestId(/^todo-text-/).textContent()
+  expect(firstText).not.toEqual(todoText) // the one we covered should now be last
+  expect(lastText).toEqual(todoText)
+
+  // Cleanup: delete the student
+  await page.goto('/students')
+  const row = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await row.getByTestId('delete-student').click()
+  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
+  await page.getByTestId('confirm-delete').click()
+  await expect(row).not.toBeVisible({ timeout: 10000 })
+
+  await context.close()
+})

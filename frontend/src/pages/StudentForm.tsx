@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Plus, Trash2 } from 'lucide-react'
 import { getStudent, createStudent, updateStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem, type ShortTermObjective } from '../api/students'
+import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
 import { LEARNING_GOALS, COMPETENCY_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
@@ -23,6 +24,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { MultiSelect } from '@/components/ui/multi-select'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
 import { StudentFollowupsCard } from '@/components/student/StudentFollowupsCard'
+import { SectionHeader } from '@/components/student/SectionHeader'
 import { getFollowups } from '@/api/followups'
 import { FieldTooltip } from '@/components/FieldTooltip'
 import { PageHeader } from '@/components/PageHeader'
@@ -68,6 +70,19 @@ export default function StudentForm() {
     queryFn: () => getFollowups(id!),
     enabled: isEdit && !!id,
   })
+
+  // Separate query for sidebar todos — intentionally uses the singular key ['student', id]
+  // (not ['students', id] used by the form) so that invalidating it on todo mutations
+  // does NOT trigger a refetch of the form data and reset unsaved field edits.
+  const { data: sidebarStudent } = useQuery({
+    queryKey: ['student', id],
+    queryFn: () => getStudent(id!),
+    enabled: isEdit && !!id,
+  })
+  const sidebarTodos = sidebarStudent?.teachingTodos ?? []
+  const onSidebarTodoChange = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['student', id] })
+  }, [queryClient, id])
 
   // Sync server student data to local form state
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -254,7 +269,8 @@ export default function StudentForm() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className={isEdit ? 'grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 items-start' : 'max-w-2xl space-y-6'}>
+    <div className="space-y-6">
       <PageHeader
         backTo="/students"
         backLabel="Students"
@@ -806,22 +822,36 @@ export default function StudentForm() {
         </Card>
       </form>
 
-      {isEdit && id && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Pending Followups</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <StudentFollowupsCard
-              followups={followups}
-              studentId={id}
-              onFollowupChange={() => refetchFollowups()}
-            />
-          </CardContent>
-        </Card>
-      )}
-
       {isEdit && id && <StudentCoursesCard studentId={id} />}
+    </div>
+
+    {isEdit && id && (
+      <div className="space-y-4 lg:sticky lg:top-6" data-testid="form-sidebar">
+        <div
+          className="bg-white rounded-2xl p-4"
+          style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
+          data-testid="sidebar-teaching-todos"
+        >
+          <SectionHeader>Teaching Todos</SectionHeader>
+          <TeachingTodosCard
+            todos={sidebarTodos}
+            studentId={id}
+            onStudentChange={onSidebarTodoChange}
+            allowEdit
+          />
+        </div>
+        <div
+          className="bg-white rounded-2xl p-4"
+          style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
+        >
+          <StudentFollowupsCard
+            followups={followups}
+            studentId={id}
+            onFollowupChange={() => refetchFollowups()}
+          />
+        </div>
+      </div>
+    )}
     </div>
   )
 }

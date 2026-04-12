@@ -14,6 +14,7 @@ interface Props {
   student: Student
   followups?: TeacherFollowup[]
   onFollowupChange?: () => void
+  onStudentChange?: () => void
   onToggleDifficultyStatus?: (id: string, status: 'Active' | 'Covered') => void
   onSaveReasonForStudying?: (value: string) => Promise<void>
   onSaveInterests?: (value: string[]) => Promise<void>
@@ -294,7 +295,7 @@ function InterestsSection({
   )
 }
 
-export function StudentProfileTab({ student, followups = [], onFollowupChange, onToggleDifficultyStatus, onSaveReasonForStudying, onSaveInterests }: Props) {
+export function StudentProfileTab({ student, followups = [], onFollowupChange, onStudentChange, onToggleDifficultyStatus, onSaveReasonForStudying, onSaveInterests }: Props) {
   const parsedPersonalNotes = parseNotes(student.personalNotes)
   const parsedTeachingNotes = parseNotes(student.teachingNotes)
 
@@ -589,7 +590,11 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
           {/* Teaching Todos */}
           <section data-testid="profile-teaching-todos">
             <SectionHeader>Teaching Todos</SectionHeader>
-            <TeachingTodosCard todos={student.teachingTodos} />
+            <TeachingTodosCard
+              todos={student.teachingTodos}
+              studentId={student.id}
+              onStudentChange={onStudentChange ?? (() => {})}
+            />
           </section>
 
           {/* Pending Followups */}
