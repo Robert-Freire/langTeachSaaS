@@ -792,3 +792,63 @@ test('teaching todos: add, toggle covered, verify ordering on overview tab', asy
 
   await context.close()
 })
+
+test('log session page: create session from full-page form and redirect back', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const studentName = `LogSessionTest_${Date.now()}`
+
+  // Create a student
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: 10000 })
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
+
+  // Click "Log Session" button - should navigate to full page
+  await expect(page.getByTestId('log-session-button')).toBeVisible({ timeout: 10000 })
+  await page.getByTestId('log-session-button').click()
+
+  // Assert full-page route
+  await expect(page).toHaveURL(/\/students\/[^/]+\/log-session$/, { timeout: 10000 })
+
+  // Left panel shows student name and session number
+  await expect(page.getByTestId('student-name')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('student-name')).toHaveText(studentName)
+  await expect(page.getByTestId('session-number')).toHaveText('Session #1')
+
+  // Right panel: date defaults to today
+  await expect(page.getByTestId('session-date')).toBeVisible()
+  const today = new Date().toISOString().split('T')[0]
+  await expect(page.getByTestId('session-date')).toHaveValue(today)
+
+  // Fill in "What Happened?"
+  await page.getByTestId('actual-content').fill('Covered introduction to present tense.')
+
+  // Submit
+  await page.getByTestId('submit-button').click()
+
+  // Should redirect back to student detail
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 15000 })
+
+  // Sessions tab should show the new session
+  await page.getByTestId('tab-sessions').click()
+  const sessionEntries = page.locator('[data-testid="session-entry"]')
+  await expect(sessionEntries.first()).toBeVisible({ timeout: 10000 })
+
+  // Cleanup: delete student
+  await page.goto('/students')
+  const row = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await row.getByTestId('delete-student').click()
+  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
+  await page.getByTestId('confirm-delete').click()
+  await expect(row).not.toBeVisible({ timeout: 10000 })
+
+  await context.close()
+})

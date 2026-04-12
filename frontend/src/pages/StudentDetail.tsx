@@ -12,7 +12,6 @@ import { StudentProfileTab } from '@/components/student/StudentProfileTab'
 import { StudentOverviewTab } from '@/components/student/StudentOverviewTab'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
-import { SessionLogDialog } from '@/components/session/SessionLogDialog'
 
 function getInitials(name: string): string {
   return name
@@ -31,7 +30,7 @@ export default function StudentDetail() {
   const [searchParams] = useSearchParams()
   const defaultTab = searchParams.get('tab') ?? 'overview'
   const [activeTab, setActiveTab] = useState(defaultTab)
-  const [logSessionOpen, setLogSessionOpen] = useState(false)
+
 
   const { data: student, isLoading, isError } = useQuery({
     queryKey: ['student', id],
@@ -241,7 +240,7 @@ export default function StudentDetail() {
               Edit
             </Link>
             <Button
-              onClick={() => setLogSessionOpen(true)}
+              onClick={() => navigate(`/students/${student.id}/log-session`)}
               className="rounded-xl text-white text-sm font-medium"
               style={{ background: 'linear-gradient(135deg, #3525CD, #4F46E5)' }}
               size="sm"
@@ -307,12 +306,6 @@ export default function StudentDetail() {
         <ProgressDashboard studentId={student.id} />
       )}
 
-      {/* Session log dialog */}
-      <SessionLogDialog
-        studentId={student.id}
-        open={logSessionOpen}
-        onOpenChange={setLogSessionOpen}
-      />
     </div>
   )
 }
