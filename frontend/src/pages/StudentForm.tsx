@@ -301,10 +301,24 @@ export default function StudentForm() {
     setDifficulties((prev) =>
       prev.map((d) => (d.id === diffId ? { ...d, [field]: value } : d))
     )
+    setErrors((prev) => {
+      const key = `difficulty-${diffId}`
+      if (!prev[key]) return prev
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
   }
 
   function removeDifficulty(diffId: string) {
     setDifficulties((prev) => prev.filter((d) => d.id !== diffId))
+    setErrors((prev) => {
+      const key = `difficulty-${diffId}`
+      if (!prev[key]) return prev
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
   }
 
   function addObjective() {
@@ -329,6 +343,13 @@ export default function StudentForm() {
     if (!name.trim()) errs.name = 'Name is required'
     if (!language) errs.language = 'Language is required'
     if (!cefrLevel) errs.cefrLevel = 'CEFR level is required'
+    difficulties.forEach((d) => {
+      const hasDesc = d.description.trim().length > 0
+      const hasCom = d.competency.length > 0
+      if ((hasDesc || hasCom) && !(hasDesc && hasCom)) {
+        errs[`difficulty-${d.id}`] = 'Both type and description are required'
+      }
+    })
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -1046,8 +1067,8 @@ export default function StudentForm() {
                     </div>
 
                     {difficulties.map((d) => (
+                      <div key={d.id} className="space-y-1">
                       <div
-                        key={d.id}
                         className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_auto_1fr_auto_auto] sm:gap-2 sm:items-start"
                         data-testid="difficulty-row"
                       >
@@ -1101,6 +1122,12 @@ export default function StudentForm() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                      </div>
+                      {errors[`difficulty-${d.id}`] && (
+                        <p className="text-xs text-red-600" data-testid="difficulty-error">
+                          {errors[`difficulty-${d.id}`]}
+                        </p>
+                      )}
                       </div>
                     ))}
 
