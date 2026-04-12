@@ -336,111 +336,6 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
         {/* Left column (3/5) */}
         <div className="lg:col-span-3 space-y-6">
-          {/* Focus Areas & Difficulties */}
-          <section data-testid="profile-focus-areas">
-            <SectionHeader>Focus Areas &amp; Difficulties</SectionHeader>
-            {student.difficulties.length === 0 && student.weaknesses.length === 0 ? (
-              <EmptyState text="No focus areas tracked" />
-            ) : (
-              <>
-                {student.difficulties.length > 0 && (
-                  <div className="mb-4 overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left">
-                          <th className="text-xs font-medium text-zinc-400 pb-2 pr-4">Area</th>
-                          <th className="text-xs font-medium text-zinc-400 pb-2 pr-4">Subcategory</th>
-                          <th className="text-xs font-medium text-zinc-400 pb-2 pr-4">Trend</th>
-                          <th className="text-xs font-medium text-zinc-400 pb-2">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {student.difficulties.map((d) => {
-                          const isCovered = d.status === 'Covered'
-                          const trendLabel = d.trend.charAt(0).toUpperCase() + d.trend.slice(1)
-                          const trendColor =
-                            d.trend.toLowerCase() === 'improving'
-                              ? 'bg-green-100 text-green-700'
-                              : d.trend.toLowerCase() === 'regressing' || d.trend.toLowerCase() === 'worsening'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-zinc-100 text-zinc-600'
-                          return (
-                            <tr key={d.id} data-testid="difficulty-row" className="border-t border-zinc-50">
-                              <td className="py-2 pr-4 text-[#1A1B22] align-top">{d.competency}</td>
-                              <td className="py-2 pr-4 text-[#1A1B22] align-top">
-                                {d.description}
-                                {d.subcategory && (
-                                  <span className="text-zinc-400 text-xs ml-1">({d.subcategory})</span>
-                                )}
-                              </td>
-                              <td className="py-2 pr-4 align-top">
-                                <span className={`inline-block text-xs font-medium rounded px-1.5 py-0.5 ${trendColor}`}>
-                                  {trendLabel}
-                                </span>
-                              </td>
-                              <td className="py-2 align-top">
-                                <div className="flex items-center gap-1.5">
-                                  <span
-                                    className={`inline-flex items-center gap-1 text-xs font-medium ${
-                                      isCovered ? 'text-zinc-400' : 'text-green-600'
-                                    }`}
-                                    data-testid={`difficulty-status-${d.id}`}
-                                  >
-                                    <span
-                                      className={`h-1.5 w-1.5 rounded-full ${
-                                        isCovered ? 'bg-zinc-400' : 'bg-green-500'
-                                      }`}
-                                    />
-                                    {isCovered ? 'Covered' : 'Working'}
-                                  </span>
-                                  {onToggleDifficultyStatus && (
-                                    <button
-                                      type="button"
-                                      className="text-xs text-zinc-300 hover:text-zinc-600 transition-colors ml-1"
-                                      onClick={() => onToggleDifficultyStatus(d.id, isCovered ? 'Active' : 'Covered')}
-                                      data-testid={`toggle-difficulty-status-${d.id}`}
-                                      aria-label={isCovered ? 'Mark as working' : 'Mark as covered'}
-                                    >
-                                      ↕
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-                {student.weaknesses.length > 0 && (
-                  <div data-testid="profile-weaknesses">
-                    <p className="text-xs text-zinc-400 font-medium mb-1.5">Areas to Improve</p>
-                    <div className="space-y-1.5">
-                      {student.weaknesses.map((w, i) => {
-                        const typeLabel = w.weaknessType.charAt(0).toUpperCase() + w.weaknessType.slice(1)
-                        const typeColor =
-                          w.weaknessType === 'grammatical'
-                            ? 'bg-indigo-100 text-indigo-700'
-                            : w.weaknessType === 'lexical'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-zinc-100 text-zinc-600'
-                        return (
-                          <div key={`weakness-${i}-${w.weaknessType}`} className="flex items-center gap-2" data-testid="weakness-row">
-                            <span className={`text-xs font-medium rounded px-1.5 py-0.5 shrink-0 ${typeColor}`} data-testid="weakness-type-badge">
-                              {typeLabel}
-                            </span>
-                            <span className="text-sm text-[#1A1B22]">{w.description}</span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </section>
-
           {/* Pedagogical Diagnostic */}
           <section data-testid="profile-pedagogical-diagnostic">
             <SectionHeader>Pedagogical Diagnostic</SectionHeader>
@@ -507,6 +402,106 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
                 <EmptyState text="No objectives set" />
               )}
             </div>
+          </section>
+
+          {/* Focus Areas & Difficulties */}
+          <section data-testid="profile-focus-areas">
+            <SectionHeader>Focus Areas &amp; Difficulties</SectionHeader>
+            {student.difficulties.length === 0 && student.weaknesses.length === 0 ? (
+              <EmptyState text="No focus areas tracked" />
+            ) : (
+              <>
+                {student.difficulties.length > 0 && (
+                  <div className="mb-4 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left">
+                          <th className="text-xs font-medium text-zinc-400 pb-2 pr-4">Area</th>
+                          <th className="text-xs font-medium text-zinc-400 pb-2 pr-4">Subcategory</th>
+                          <th className="text-xs font-medium text-zinc-400 pb-2 pr-4">Trend</th>
+                          <th className="text-xs font-medium text-zinc-400 pb-2">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {student.difficulties.map((d) => {
+                          const isCovered = d.status === 'Covered'
+                          const trendLabel = d.trend.charAt(0).toUpperCase() + d.trend.slice(1)
+                          const trendColor =
+                            d.trend.toLowerCase() === 'improving'
+                              ? 'bg-green-100 text-green-700'
+                              : d.trend.toLowerCase() === 'regressing' || d.trend.toLowerCase() === 'worsening'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-zinc-100 text-zinc-600'
+                          return (
+                            <tr key={d.id} data-testid="difficulty-row" className="border-t border-zinc-50">
+                              <td className="py-2 pr-4 text-[#1A1B22] align-top">{d.competency}</td>
+                              <td className="py-2 pr-4 text-[#1A1B22] align-top">{d.description}</td>
+                              <td className="py-2 pr-4 align-top">
+                                <span className={`inline-block text-xs font-medium rounded px-1.5 py-0.5 ${trendColor}`}>
+                                  {trendLabel}
+                                </span>
+                              </td>
+                              <td className="py-2 align-top">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`inline-flex items-center gap-1 text-xs font-medium ${
+                                      isCovered ? 'text-zinc-400' : 'text-green-600'
+                                    }`}
+                                    data-testid={`difficulty-status-${d.id}`}
+                                  >
+                                    <span
+                                      className={`h-1.5 w-1.5 rounded-full ${
+                                        isCovered ? 'bg-zinc-400' : 'bg-green-500'
+                                      }`}
+                                    />
+                                    {isCovered ? 'Covered' : 'Working'}
+                                  </span>
+                                  {onToggleDifficultyStatus && (
+                                    <button
+                                      type="button"
+                                      className="text-xs text-zinc-300 hover:text-zinc-600 transition-colors ml-1"
+                                      onClick={() => onToggleDifficultyStatus(d.id, isCovered ? 'Active' : 'Covered')}
+                                      data-testid={`toggle-difficulty-status-${d.id}`}
+                                      aria-label={isCovered ? 'Mark as working' : 'Mark as covered'}
+                                    >
+                                      ↕
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {student.weaknesses.length > 0 && (
+                  <div data-testid="profile-weaknesses">
+                    <p className="text-xs text-zinc-400 font-medium mb-1.5">Areas to Improve</p>
+                    <div className="space-y-1.5">
+                      {student.weaknesses.map((w, i) => {
+                        const typeLabel = w.weaknessType.charAt(0).toUpperCase() + w.weaknessType.slice(1)
+                        const typeColor =
+                          w.weaknessType === 'grammatical'
+                            ? 'bg-indigo-100 text-indigo-700'
+                            : w.weaknessType === 'lexical'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-zinc-100 text-zinc-600'
+                        return (
+                          <div key={`weakness-${i}-${w.weaknessType}`} className="flex items-center gap-2" data-testid="weakness-row">
+                            <span className={`text-xs font-medium rounded px-1.5 py-0.5 shrink-0 ${typeColor}`} data-testid="weakness-type-badge">
+                              {typeLabel}
+                            </span>
+                            <span className="text-sm text-[#1A1B22]">{w.description}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </section>
 
           {/* Personal notes */}
