@@ -705,7 +705,7 @@ test('motivation fields: reason for studying and objectives round-trip', async (
 })
 
 test('Ana Visual profile tab shows Focus Areas section with difficulties and weaknesses', async ({ browser }) => {
-  const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5178'
+  const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
   const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 
   const context = await createMockAuthContext(browser)
@@ -988,7 +988,7 @@ test('commercial fields round-trip: isActive, isCorporate, rate', async ({ brows
 })
 
 test('sessions tab redesign: timeline, search, status filter, and expand', async ({ browser }) => {
-  const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5178'
+  const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
   const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 
   const context = await createMockAuthContext(browser)

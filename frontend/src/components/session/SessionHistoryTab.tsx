@@ -16,6 +16,8 @@ import { SessionLogDialog } from './SessionLogDialog'
 import { logger } from '../../lib/logger'
 import { Link } from 'react-router-dom'
 import { listSessions, deleteSession, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
+import { formatMonthDay } from '../../utils/formatDate'
+import { HOMEWORK_STATUS_INFO } from '../../utils/homeworkStatusStyles'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
@@ -55,12 +57,6 @@ function tagCategoryClass(category?: string): string {
   return 'bg-[#B7C8E1] text-[#0B1C30]'
 }
 
-function formatMonthDay(dateStr: string | null): string {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
-
 function formatMonth(dateStr: string | null): string {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
@@ -77,12 +73,7 @@ function sessionTitle(session: SessionLog): string {
   return 'Session'
 }
 
-function homeworkStatusIcon(statusName: string): { icon: string; color: string; label: string } {
-  if (statusName === 'Done') return { icon: '✓', color: 'text-emerald-600', label: 'Done' }
-  if (statusName === 'Partial') return { icon: '◑', color: 'text-amber-500', label: 'Partial' }
-  if (statusName === 'NotDone') return { icon: '✗', color: 'text-red-500', label: 'Not done' }
-  return { icon: '—', color: 'text-zinc-400', label: 'N/A' }
-}
+const HW_STATUS_FALLBACK = { icon: '—', color: 'text-zinc-400', label: 'N/A' }
 
 function SessionEntry({
   session,
@@ -117,7 +108,7 @@ function SessionEntry({
   const hasActionItem = Boolean(session.nextSessionTopics)
   const hasNote = Boolean(session.generalNotes)
   const hwStatus = session.previousHomeworkStatusName
-  const hwInfo = homeworkStatusIcon(hwStatus)
+  const hwInfo = (hwStatus ? HOMEWORK_STATUS_INFO[hwStatus] : undefined) ?? HW_STATUS_FALLBACK
   const isCancelled = session.isCancelled
   const isDraft = session.statusName === 'Draft'
 
