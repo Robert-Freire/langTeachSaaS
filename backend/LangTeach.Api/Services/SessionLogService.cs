@@ -46,14 +46,19 @@ public class SessionLogService : ISessionLogService
         if (!studentExists)
             throw new KeyNotFoundException($"Student {studentId} not found.");
 
-        var sessions = await _db.SessionLogs
+        var rawSessions = await _db.SessionLogs
             .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
             .OrderBy(sl => sl.SessionDate.HasValue)
             .ThenByDescending(sl => sl.SessionDate)
-            .Select(sl => ToDto(sl))
             .ToListAsync(cancellationToken);
 
-        return sessions;
+        var sessionIds = rawSessions.Select(sl => sl.Id).ToList();
+        var voiceNoteSessionIds = await _db.VoiceNoteApplications
+            .Where(vna => sessionIds.Contains(vna.SessionLogId))
+            .Select(vna => vna.SessionLogId)
+            .ToHashSetAsync(cancellationToken);
+
+        return rawSessions.Select(sl => ToDto(sl, voiceNoteSessionIds.Contains(sl.Id))).ToList();
     }
 
     public async Task<SessionLogDto?> GetByIdAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default)
@@ -62,7 +67,12 @@ public class SessionLogService : ISessionLogService
             .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.Student.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken);
 
-        return session is null ? null : ToDto(session);
+        if (session is null) return null;
+
+        var hasVoiceNote = await _db.VoiceNoteApplications
+            .AnyAsync(vna => vna.SessionLogId == session.Id, cancellationToken);
+
+        return ToDto(session, hasVoiceNote);
     }
 
     public async Task<SessionLogDto> CreateAsync(Guid teacherId, Guid studentId, CreateSessionLogRequest request, CancellationToken cancellationToken = default)
@@ -251,7 +261,10 @@ public class SessionLogService : ISessionLogService
         try { await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken); }
         catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session update", studentId); }
 
-        return ToDto(entity);
+        var hasVoiceNote = await _db.VoiceNoteApplications
+            .AnyAsync(vna => vna.SessionLogId == entity.Id, cancellationToken);
+
+        return ToDto(entity, hasVoiceNote);
     }
 
     public async Task<bool> SoftDeleteAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default)
@@ -371,7 +384,7 @@ public class SessionLogService : ISessionLogService
         );
     }
 
-    private static SessionLogDto ToDto(SessionLog sl) => new(
+    private static SessionLogDto ToDto(SessionLog sl, bool hasVoiceNote = false) => new(
         sl.Id,
         sl.StudentId,
         sl.TeacherId,
@@ -395,7 +408,8 @@ public class SessionLogService : ISessionLogService
         sl.MentionedDifficultyPairs,
         sl.SuggestedDifficulties,
         sl.Duration,
-        sl.Title
+        sl.Title,
+        hasVoiceNote
     );
 
     internal static string GenerateTitle(string? plannedContent, string? actualContent, DateTime? sessionDate)

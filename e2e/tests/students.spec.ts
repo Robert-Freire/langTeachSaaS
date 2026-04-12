@@ -705,7 +705,7 @@ test('motivation fields: reason for studying and objectives round-trip', async (
 })
 
 test('Ana Visual profile tab shows Focus Areas section with difficulties and weaknesses', async ({ browser }) => {
-  const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5178'
+  const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
   const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 
   const context = await createMockAuthContext(browser)
@@ -983,6 +983,72 @@ test('commercial fields round-trip: isActive, isCorporate, rate', async ({ brows
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
   await page.getByTestId('confirm-delete').click()
   await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+
+  await context.close()
+})
+
+test('sessions tab redesign: timeline, search, status filter, and expand', async ({ browser }) => {
+  const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
+  const AUTH_HEADER = { Authorization: 'Bearer test-token' }
+
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  // Find Diego Seed who has seeded session logs
+  const res = await page.request.get(`${API_BASE}/api/students`, { headers: AUTH_HEADER })
+  expect(res.ok()).toBeTruthy()
+  const body = await res.json()
+  const students: Array<{ name: string; id: string }> = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
+  const diego = students.find((s) => s.name === 'Diego Seed')
+  if (!diego) throw new Error('Diego Seed not found. Ensure the demo seeder has run.')
+
+  await page.goto(`/students/${diego.id}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+
+  // Navigate to Sessions tab
+  await page.getByTestId('tab-sessions').click()
+  await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  // Session entries are visible
+  const entries = page.getByTestId('session-entry')
+  await expect(entries.first()).toBeVisible({ timeout: UI_TIMEOUT })
+
+  // Toolbar is visible
+  await expect(page.getByTestId('session-search-input')).toBeVisible()
+  await expect(page.getByTestId('status-filter-all')).toBeVisible()
+  await expect(page.getByTestId('date-range-button')).toBeVisible()
+
+  // Search: filter by "conditional" — both Diego sessions contain this word, so both should remain
+  await page.getByTestId('session-search-input').fill('conditional')
+  const filteredEntries = page.getByTestId('session-entry')
+  await expect(filteredEntries).toHaveCount(2, { timeout: UI_TIMEOUT })
+
+  // Clear search
+  await page.getByTestId('session-search-input').fill('')
+
+  // Status filter: click All (already active, verify it works and both sessions are back)
+  await page.getByTestId('status-filter-all').click()
+  await expect(page.getByTestId('session-entry')).toHaveCount(2, { timeout: UI_TIMEOUT })
+
+  // Status filter: Cancelled — Diego has no cancelled sessions, so list has 0 entries
+  await page.getByTestId('status-filter-cancelled').click()
+  await expect(page.getByTestId('session-entry')).toHaveCount(0, { timeout: UI_TIMEOUT })
+  // Reset back to All and verify sessions are restored
+  await page.getByTestId('status-filter-all').click()
+  await expect(page.getByTestId('session-entry')).toHaveCount(2, { timeout: UI_TIMEOUT })
+
+  // Expand first session entry
+  const firstEntry = entries.first()
+  await firstEntry.getByTestId('session-entry-toggle').click()
+  await expect(firstEntry.getByTestId('session-entry-detail')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  // Expanded entry shows edit + delete buttons
+  await expect(firstEntry.getByTestId('edit-session-button')).toBeVisible()
+  await expect(firstEntry.getByTestId('delete-session-button')).toBeVisible()
+
+  // Collapse by clicking again
+  await firstEntry.getByTestId('session-entry-toggle').click()
+  await expect(firstEntry.getByTestId('session-entry-detail')).not.toBeVisible()
 
   await context.close()
 })

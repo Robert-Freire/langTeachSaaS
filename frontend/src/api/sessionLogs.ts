@@ -29,6 +29,7 @@ export interface SessionLog {
   suggestedDifficulties: string
   duration: number | null
   title: string | null
+  hasVoiceNote: boolean
 }
 
 export interface SuggestedDifficulty {
@@ -98,7 +99,21 @@ export async function getSessionSummary(studentId: string): Promise<StudentSessi
 
 export function parseTopicTags(raw: string): TopicTag[] {
   try {
-    return JSON.parse(raw) as TopicTag[]
+    const parsed: unknown[] = JSON.parse(raw) as unknown[]
+    if (!Array.isArray(parsed)) return []
+    return parsed.flatMap((item): TopicTag[] => {
+      if (typeof item === 'string') {
+        const tag = item.trim()
+        return tag ? [{ tag }] : []
+      }
+      if (item && typeof item === 'object' && 'tag' in item) {
+        const maybeTag = (item as { tag?: unknown }).tag
+        if (typeof maybeTag !== 'string' || maybeTag.trim() === '') return []
+        const maybeCategory = (item as { category?: unknown }).category
+        return [{ tag: maybeTag.trim(), ...(typeof maybeCategory === 'string' ? { category: maybeCategory } : {}) }]
+      }
+      return []
+    })
   } catch {
     return []
   }

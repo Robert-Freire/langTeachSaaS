@@ -298,6 +298,7 @@ describe('StudentDetail - Header badges', () => {
       mentionedDifficultyPairs: '[]',
       suggestedDifficulties: '[]',
       duration: 60,
+      hasVoiceNote: false,
     }])
     wrapper()
     expect(await screen.findByTestId('next-session-pill')).toBeInTheDocument()

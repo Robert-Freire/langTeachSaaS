@@ -220,6 +220,7 @@ const MOCK_SESSION: SessionLog = {
   mentionedDifficultyPairs: '[]',
   suggestedDifficulties: '[]',
   duration: 60,
+  hasVoiceNote: false,
 }
 
 describe('StudentOverviewTab - RecentSessions', () => {
