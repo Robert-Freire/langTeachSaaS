@@ -52,6 +52,7 @@ const FULL_STUDENT: Student = {
   isCorporate: false,
   rate: '25 EUR/h',
   spokenLanguages: ['English', 'French'],
+  skillLevelOverrides: { Reading: 'B2', Writing: 'B1' },
   teachingTodos: [
     { id: 'todo-1', text: 'Enviar ejercicios de por/para', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Pending', coveredInSessionLogId: null },
     { id: 'todo-2', text: 'Explicar diferencia', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Covered', coveredInSessionLogId: 'session-1' },
@@ -76,6 +77,7 @@ const EMPTY_STUDENT: Student = {
   shortTermObjectives: [],
   difficulties: [],
   teachingTodos: [],
+  skillLevelOverrides: {},
 }
 
 function renderProfile(
@@ -221,12 +223,49 @@ describe('StudentProfileTab', () => {
     })
   })
 
-  describe('Languages section', () => {
-    it('shows native, spoken, and learning languages', () => {
+  describe('Language Ecosystem section', () => {
+    it('shows native language with code badge', () => {
       renderProfile(FULL_STUDENT)
-      expect(screen.getByText('Italian')).toBeInTheDocument()
-      expect(screen.getByText('English, French')).toBeInTheDocument()
-      expect(screen.getByText('Spanish (C1)')).toBeInTheDocument()
+      const section = screen.getByTestId('profile-language-ecosystem')
+      expect(section).toHaveTextContent('Italian')
+      expect(section).toHaveTextContent('IT')
+    })
+
+    it('shows spoken languages as flat list', () => {
+      renderProfile(FULL_STUDENT)
+      const section = screen.getByTestId('profile-language-ecosystem')
+      expect(section).toHaveTextContent('English, French')
+    })
+
+    it('shows learning language with CEFR badge', () => {
+      renderProfile(FULL_STUDENT)
+      const section = screen.getByTestId('profile-language-ecosystem')
+      expect(section).toHaveTextContent('Spanish')
+      expect(section).toHaveTextContent('C1')
+    })
+
+    it('shows both CEFR levels when officialCefrLevel is set', () => {
+      renderProfile({ ...FULL_STUDENT, officialCefrLevel: 'B2' })
+      const section = screen.getByTestId('profile-language-ecosystem')
+      expect(section).toHaveTextContent("Teacher's Assessment")
+      expect(section).toHaveTextContent('Official')
+      expect(section).toHaveTextContent('B2')
+    })
+  })
+
+  describe('Skill Assessment section', () => {
+    it('shows skill overrides as CEFR badges', () => {
+      renderProfile(FULL_STUDENT)
+      const section = screen.getByTestId('profile-skill-assessment')
+      expect(section).toHaveTextContent('Reading')
+      expect(section).toHaveTextContent('B2')
+      expect(section).toHaveTextContent('Writing')
+      expect(section).toHaveTextContent('B1')
+    })
+
+    it('shows empty state when no skill overrides', () => {
+      renderProfile(EMPTY_STUDENT)
+      expect(screen.getByText('No skill overrides set')).toBeInTheDocument()
     })
   })
 

@@ -47,6 +47,7 @@ const BASE_STUDENT: Student = {
   rate: null,
   spokenLanguages: [],
   teachingTodos: [],
+  skillLevelOverrides: {},
 }
 
 function renderOverview(student: Student) {

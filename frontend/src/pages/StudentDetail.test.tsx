@@ -76,6 +76,7 @@ const MOCK_STUDENT: studentsApi.Student = {
   isCorporate: false,
   rate: '30 EUR/h',
   spokenLanguages: ['French'],
+  skillLevelOverrides: {},
   teachingTodos: [
     { id: 'todo-1', text: 'Send homework exercises', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Pending', coveredInSessionLogId: null },
   ],
@@ -290,12 +291,13 @@ describe('StudentDetail - Profile tab sections', () => {
     expect(screen.getAllByText('Designer').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders Languages section', async () => {
+  it('renders Language Ecosystem section', async () => {
     await openProfileTab()
-    const section = await screen.findByTestId('profile-languages')
+    const section = await screen.findByTestId('profile-language-ecosystem')
     expect(section).toHaveTextContent('English')
     expect(section).toHaveTextContent('French')
-    expect(section).toHaveTextContent('Spanish (B1)')
+    expect(section).toHaveTextContent('Spanish')
+    expect(section).toHaveTextContent('B1')
   })
 
   it('renders Learning Goals section', async () => {

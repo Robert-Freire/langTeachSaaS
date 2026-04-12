@@ -74,6 +74,7 @@ export default function StudentDetail() {
       isCorporate: student.isCorporate,
       rate: student.rate,
       spokenLanguages: student.spokenLanguages,
+      skillLevelOverrides: student.skillLevelOverrides,
       teachingTodos: student.teachingTodos,
     }
   }

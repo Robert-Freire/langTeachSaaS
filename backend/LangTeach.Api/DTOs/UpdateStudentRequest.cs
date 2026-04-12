@@ -84,4 +84,7 @@ public class UpdateStudentRequest
     // Teaching fields
     [MaxCollectionCount(50)]
     public List<TeachingTodoDto> TeachingTodos { get; set; } = [];
+
+    // Skill override fields (keys: Reading, Writing, Speaking, Listening; values: A1-C2)
+    public Dictionary<string, string> SkillLevelOverrides { get; set; } = new();
 }

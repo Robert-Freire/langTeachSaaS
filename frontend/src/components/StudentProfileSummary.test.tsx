@@ -20,7 +20,7 @@ const BASE_STUDENT: Student = {
   birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
   countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
   officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
-  rate: null, spokenLanguages: [], teachingTodos: [],
+  rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
 }
 
 const FULL_STUDENT: Student = {
