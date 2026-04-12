@@ -89,7 +89,7 @@ export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Pr
           )}
 
           <FieldRow label="Learning goals">
-            <ChipList items={student.learningGoals.map(g => g.text)} emptyText="None specified" />
+            <ChipList items={student.learningGoals.flatMap(g => [g.text, ...g.children.map(c => `↳ ${c.text}`)])} emptyText="None specified" />
           </FieldRow>
 
           <FieldRow label="Interests">
