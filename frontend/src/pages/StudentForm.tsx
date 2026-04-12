@@ -390,7 +390,7 @@ export default function StudentForm() {
             <div className="space-y-1.5">
               <Label className="inline-flex items-center gap-1">Spoken Languages <FieldTooltip fieldKey="spokenLanguages" /></Label>
               <div
-                className="flex flex-wrap gap-1.5 min-h-10 w-full max-w-sm rounded-md border border-zinc-200 bg-white px-3 py-2 cursor-text"
+                className="flex flex-wrap gap-1.5 min-h-10 w-full max-w-sm rounded-md border border-input bg-white px-3 py-2 cursor-text"
                 onClick={() => spokenInputRef.current?.focus()}
                 data-testid="spoken-languages-container"
               >
