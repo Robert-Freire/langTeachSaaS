@@ -6,6 +6,7 @@ import { getStudent, updateStudent } from '../api/students'
 import { logger } from '../lib/logger'
 import { getFollowups } from '@/api/followups'
 import { listSessions } from '@/api/sessionLogs'
+import { formatDateShort } from '@/utils/formatDate'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
@@ -128,6 +129,17 @@ export default function StudentDetail() {
     },
   })
 
+  const { mutateAsync: saveTeachingNotes } = useMutation({
+    mutationFn: (value: string) =>
+      updateStudent(id!, { ...buildStudentPayload(), teachingNotes: value || null }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student', id] })
+    },
+    onError: (err) => {
+      logger.error('StudentDetail', 'Failed to update teaching notes', err)
+    },
+  })
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -225,7 +237,7 @@ export default function StudentDetail() {
                     data-testid="next-session-pill"
                   >
                     <span className="text-[0.6875rem]">Next:</span>{' '}
-                    {new Date(nextSession.sessionDate!).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    {formatDateShort(nextSession.sessionDate!)}
                     {nextSession.duration && ` \u00b7 ${nextSession.duration}min`}
                   </span>
                 )}
@@ -323,6 +335,7 @@ export default function StudentDetail() {
           onFollowupChange={onFollowupChange}
           onStudentChange={onStudentChange}
           onViewAllSessions={() => setActiveTab('sessions')}
+          onSaveTeachingNotes={(v) => saveTeachingNotes(v).then(() => {})}
         />
       )}
 

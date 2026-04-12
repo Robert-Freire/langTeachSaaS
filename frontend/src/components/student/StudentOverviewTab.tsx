@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { CalendarClock, ArrowRight, Brain } from 'lucide-react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Student } from '@/api/students'
-import { updateStudent } from '@/api/students'
 import type { TeacherFollowup } from '@/api/followups'
 import type { SessionLog } from '@/api/sessionLogs'
 import { parseTopicTags } from '@/api/sessionLogs'
@@ -11,7 +9,7 @@ import { StudentFollowupsCard } from './StudentFollowupsCard'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { getObjectiveUrgency, getDaysRemaining, formatDaysRemaining } from '@/lib/objectiveUrgency'
 import { SectionHeader } from './SectionHeader'
-import { logger } from '@/lib/logger'
+import { formatMonthYear, formatDateLong, formatDateShort } from '@/utils/formatDate'
 
 interface Props {
   student: Student
@@ -20,6 +18,7 @@ interface Props {
   onFollowupChange?: () => void
   onStudentChange: () => void
   onViewAllSessions?: () => void
+  onSaveTeachingNotes?: (notes: string) => Promise<void>
 }
 
 // ---------------------------------------------------------------------------
@@ -185,14 +184,6 @@ function PedagogicalProfileCard({ student }: { student: Student }) {
 // RecentSessions
 // ---------------------------------------------------------------------------
 
-function formatSessionDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  })
-}
-
 function getSessionTitle(session: SessionLog): string {
   if (session.title) return session.title
   if (session.plannedContent) return session.plannedContent.slice(0, 60)
@@ -256,7 +247,7 @@ function RecentSessions({
                         idx === 0 ? 'text-indigo-600' : 'text-zinc-400'
                       }`}
                     >
-                      {formatSessionDate(session.sessionDate!)}
+                      {formatDateLong(session.sessionDate!)}
                     </span>
                     <h4 className="text-sm font-bold text-[#1A1B22]">
                       {getSessionTitle(session)}
@@ -304,63 +295,30 @@ function RecentSessions({
 // TeachingNotesPanel
 // ---------------------------------------------------------------------------
 
-function buildTeachingNotesPayload(student: Student, notes: string) {
-  return {
-    name: student.name,
-    learningLanguage: student.learningLanguage,
-    cefrLevel: student.cefrLevel,
-    interests: student.interests,
-    nativeLanguages: student.nativeLanguages,
-    learningGoals: student.learningGoals,
-    weaknesses: student.weaknesses,
-    difficulties: student.difficulties,
-    personalNotes: student.personalNotes,
-    teachingNotes: notes || null,
-    birthYear: student.birthYear,
-    profession: student.profession,
-    countryOfOrigin: student.countryOfOrigin,
-    cityOfOrigin: student.cityOfOrigin,
-    countryOfResidence: student.countryOfResidence,
-    cityOfResidence: student.cityOfResidence,
-    reasonForStudying: student.reasonForStudying,
-    officialCefrLevel: student.officialCefrLevel,
-    shortTermObjectives: student.shortTermObjectives,
-    isActive: student.isActive,
-    isCorporate: student.isCorporate,
-    rate: student.rate,
-    spokenLanguages: student.spokenLanguages,
-    skillLevelOverrides: student.skillLevelOverrides,
-    teachingTodos: student.teachingTodos,
-  }
-}
-
-function formatStudentSince(createdAt: string): string {
-  return new Date(createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-}
-
 function TeachingNotesPanel({
   student,
   onStudentChange,
+  onSaveTeachingNotes,
 }: {
   student: Student
   onStudentChange: () => void
+  onSaveTeachingNotes?: (notes: string) => Promise<void>
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(student.teachingNotes ?? '')
-  const queryClient = useQueryClient()
+  const [saving, setSaving] = useState(false)
 
-  const { mutate: saveNotes, isPending } = useMutation({
-    mutationFn: (notes: string) =>
-      updateStudent(student.id, buildTeachingNotesPayload(student, notes)),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['student', student.id] })
+  async function handleSave() {
+    if (!onSaveTeachingNotes) return
+    setSaving(true)
+    try {
+      await onSaveTeachingNotes(draft)
       onStudentChange()
       setEditing(false)
-    },
-    onError: (err) => {
-      logger.error('TeachingNotesPanel', 'Failed to save teaching notes', err)
-    },
-  })
+    } finally {
+      setSaving(false)
+    }
+  }
 
   function handleEdit() {
     setDraft(student.teachingNotes ?? '')
@@ -392,8 +350,8 @@ function TeachingNotesPanel({
               />
               <div className="flex gap-2">
                 <button
-                  onClick={() => saveNotes(draft)}
-                  disabled={isPending}
+                  onClick={handleSave}
+                  disabled={saving}
                   className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-1.5 text-sm font-bold transition-all disabled:opacity-50"
                   data-testid="teaching-notes-save-btn"
                 >
@@ -441,7 +399,7 @@ function TeachingNotesPanel({
             <div className="flex justify-between text-sm">
               <span className="text-zinc-400">Student Since</span>
               <span className="font-bold text-white" data-testid="student-since">
-                {formatStudentSince(student.createdAt)}
+                {formatMonthYear(student.createdAt)}
               </span>
             </div>
           </div>
@@ -465,6 +423,7 @@ export function StudentOverviewTab({
   onFollowupChange,
   onStudentChange,
   onViewAllSessions,
+  onSaveTeachingNotes,
 }: Props) {
   return (
     <div className="space-y-6" data-testid="student-overview-tab">
@@ -506,7 +465,11 @@ export function StudentOverviewTab({
       <RecentSessions sessions={sessions} onViewAll={onViewAllSessions} />
 
       {/* Teacher's Working Memory */}
-      <TeachingNotesPanel student={student} onStudentChange={onStudentChange} />
+      <TeachingNotesPanel
+        student={student}
+        onStudentChange={onStudentChange}
+        onSaveTeachingNotes={onSaveTeachingNotes}
+      />
     </div>
   )
 }
