@@ -61,8 +61,8 @@ function computePacingStats(sessions: SessionLog[], fallbackStartDate: string | 
   const cancellationRate = total > 0 ? Math.round((cancelled.length / total) * 100) : 0
   const isBehind =
     weeksSinceStart !== null &&
-    weeksSinceStart > 4 &&
-    completed.length < weeksSinceStart * 0.8
+    weeksSinceStart >= 4 &&
+    completed.length < weeksSinceStart
   return { completedSessions: completed, cancelledSessions: cancelled, firstDate, frequency, cancellationRate, isBehind }
 }
 
