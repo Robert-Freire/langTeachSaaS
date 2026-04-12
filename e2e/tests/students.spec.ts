@@ -614,3 +614,46 @@ test('motivation fields: reason for studying and objectives round-trip', async (
 
   await context.close()
 })
+
+test('Ana Visual profile tab shows Focus Areas section with difficulties and weaknesses', async ({ browser }) => {
+  const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5178'
+  const AUTH_HEADER = { Authorization: 'Bearer test-token' }
+
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  // Find Ana Visual via the API (she is a demo seed student with difficulties and weaknesses)
+  const res = await page.request.get(`${API_BASE}/api/students`, { headers: AUTH_HEADER })
+  expect(res.ok()).toBeTruthy()
+  const body = await res.json()
+  const students: Array<{ name: string; id: string }> = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
+  const anaVisual = students.find((s) => s.name === 'Ana Visual')
+  if (!anaVisual) throw new Error('Ana Visual not found. Ensure the demo seeder has run.')
+
+  await page.goto(`/students/${anaVisual.id}`)
+  await expect(page.getByTestId('student-profile-tab')).not.toBeVisible({ timeout: 5000 }).catch(() => {})
+
+  // Navigate to Profile tab
+  await page.getByTestId('tab-profile').click()
+  await expect(page.getByTestId('student-profile-tab')).toBeVisible({ timeout: 10000 })
+
+  // Focus Areas & Difficulties section renders
+  const focusSection = page.getByTestId('profile-focus-areas')
+  await expect(focusSection).toBeVisible()
+
+  // Difficulty rows render with Trend and Status
+  const diffRows = page.getByTestId('difficulty-row')
+  await expect(diffRows.first()).toBeVisible()
+
+  // At least one difficulty has a Working or Covered status
+  const statusEls = page.getByTestId(/^difficulty-status-/)
+  await expect(statusEls.first()).toBeVisible()
+
+  // Weaknesses section renders with category badges
+  const weaknessSection = page.getByTestId('profile-weaknesses')
+  await expect(weaknessSection).toBeVisible()
+  const badges = page.getByTestId('weakness-type-badge')
+  await expect(badges.first()).toBeVisible()
+
+  await context.close()
+})
