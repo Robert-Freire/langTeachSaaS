@@ -107,45 +107,21 @@ public class DashboardService : IDashboardService
         if (studentId.HasValue)
             baseQuery = baseQuery.Where(sl => sl.StudentId == studentId.Value);
 
-        var upcoming = await baseQuery
+        var upcomingRaw = await baseQuery
             .Where(sl => !sl.IsCancelled && sl.SessionDate!.Value > now)
             .OrderBy(sl => sl.SessionDate)
-            .Select(sl => new SessionListItemDto(
-                sl.Id,
-                sl.StudentId,
-                sl.Student.Name,
-                sl.Student.CefrLevel,
-                sl.SessionDate!.Value,
-                sl.PlannedContent,
-                sl.IsCancelled ? "Cancelled" : sl.Status.ToString()))
             .ToListAsync(cancellationToken);
 
-        var today_sessions = await baseQuery
+        var todaySessionsRaw = await baseQuery
             .Where(sl => sl.SessionDate!.Value.Date == today)
             .OrderBy(sl => sl.SessionDate)
-            .Select(sl => new SessionListItemDto(
-                sl.Id,
-                sl.StudentId,
-                sl.Student.Name,
-                sl.Student.CefrLevel,
-                sl.SessionDate!.Value,
-                sl.PlannedContent,
-                sl.IsCancelled ? "Cancelled" : sl.Status.ToString()))
             .ToListAsync(cancellationToken);
 
-        var recent = await baseQuery
+        var recentRaw = await baseQuery
             .Where(sl => !sl.IsCancelled
                       && sl.SessionDate!.Value >= recentCutoff
                       && sl.SessionDate!.Value.Date < today)
             .OrderByDescending(sl => sl.SessionDate)
-            .Select(sl => new SessionListItemDto(
-                sl.Id,
-                sl.StudentId,
-                sl.Student.Name,
-                sl.Student.CefrLevel,
-                sl.SessionDate!.Value,
-                sl.PlannedContent,
-                sl.IsCancelled ? "Cancelled" : sl.Status.ToString()))
             .ToListAsync(cancellationToken);
 
         var students = await _db.Students
@@ -154,8 +130,22 @@ public class DashboardService : IDashboardService
             .Select(s => new SessionFilterStudentDto(s.Id, s.Name, s.CefrLevel))
             .ToListAsync(cancellationToken);
 
-        return new SessionsListDto(upcoming, today_sessions, recent, students);
+        return new SessionsListDto(
+            upcomingRaw.Select(MapToSessionListItem).ToList(),
+            todaySessionsRaw.Select(MapToSessionListItem).ToList(),
+            recentRaw.Select(MapToSessionListItem).ToList(),
+            students);
     }
+
+    private static SessionListItemDto MapToSessionListItem(SessionLog sl) =>
+        new(
+            sl.Id,
+            sl.StudentId,
+            sl.Student.Name,
+            sl.Student.CefrLevel,
+            sl.SessionDate!.Value,
+            sl.PlannedContent,
+            sl.IsCancelled ? "Cancelled" : sl.Status.ToString());
 
     private async Task<List<ActiveStudentDto>> GetActiveStudentsAsync(Guid teacherId, DateTime now, CancellationToken cancellationToken)
     {

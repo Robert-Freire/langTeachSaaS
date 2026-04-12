@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { CalendarDays, ChevronRight } from 'lucide-react'
 import { getSessionsList, type SessionListItem, type SessionFilterStudent } from '@/api/sessions'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
+import { PageHeader } from '@/components/PageHeader'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
@@ -160,17 +161,16 @@ export default function Sessions() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-manrope text-[1.75rem] font-bold text-[#1A1B22]">Sessions</h1>
-        {data && (
+      <PageHeader
+        title="Sessions"
+        actions={data && (
           <StudentFilter
             students={data.students}
             value={selectedStudentId}
             onChange={handleStudentChange}
           />
         )}
-      </div>
+      />
 
       {isLoading && (
         <div className="space-y-4" data-testid="sessions-skeleton">
