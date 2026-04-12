@@ -64,7 +64,7 @@ function renderOverview(student: Student) {
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
-        <StudentOverviewTab student={student} />
+        <StudentOverviewTab student={student} onStudentChange={() => {}} />
       </MemoryRouter>
     </QueryClientProvider>
   )
