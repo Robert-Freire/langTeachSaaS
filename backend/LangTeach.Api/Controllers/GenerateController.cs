@@ -362,6 +362,7 @@ public class GenerateController : ControllerBase
             TemplateName: templateName,
             CurriculumObjectives: lesson.Objectives,
             TeacherGrammarConstraints: request.GrammarConstraints,
+            SectionType: request.SectionType,
             SessionHistory: sessionHistory,
             StudentReasonForStudying: student?.ReasonForStudying,
             StudentSpokenLanguages: student?.SpokenLanguages.ToArray(),

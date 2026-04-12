@@ -430,21 +430,32 @@ public class PromptService : IPromptService
             if (weaknesses.Length > 0)
                 sb.AppendLine($"- Areas to improve: {string.Join(", ", weaknesses)}");
 
-            if (ctx.StudentProfession is not null)
-                sb.AppendLine($"- Profession: {InputSanitizer.Sanitize(ctx.StudentProfession)}");
+            var profession       = InputSanitizer.Sanitize(ctx.StudentProfession);
+            var reasonForStudying = InputSanitizer.Sanitize(ctx.StudentReasonForStudying);
+            var countryOfOrigin  = InputSanitizer.Sanitize(ctx.StudentCountryOfOrigin);
+            var countryOfResidence = InputSanitizer.Sanitize(ctx.StudentCountryOfResidence);
+            var officialCefr     = InputSanitizer.Sanitize(ctx.StudentOfficialCefrLevel);
 
             // Age is approximated from birth year (off by up to one year depending on birthday — acceptable for prompt personalization)
-            if (ctx.StudentBirthYear is not null)
-                sb.AppendLine($"- Age: {DateTime.UtcNow.Year - ctx.StudentBirthYear.Value}");
+            var currentYear = DateTime.UtcNow.Year;
+            var age = ctx.StudentBirthYear is int birthYear && birthYear >= currentYear - 120 && birthYear <= currentYear
+                ? currentYear - birthYear
+                : (int?)null;
 
-            if (ctx.StudentCountryOfOrigin is not null)
-                sb.AppendLine($"- Country of origin: {InputSanitizer.Sanitize(ctx.StudentCountryOfOrigin)}");
+            if (profession.Length > 0)
+                sb.AppendLine($"- Profession: {profession}");
 
-            if (ctx.StudentCountryOfResidence is not null)
-                sb.AppendLine($"- Country of residence: {InputSanitizer.Sanitize(ctx.StudentCountryOfResidence)}");
+            if (age is not null)
+                sb.AppendLine($"- Age: {age}");
 
-            if (ctx.StudentOfficialCefrLevel is not null)
-                sb.AppendLine($"- Official CEFR level: {InputSanitizer.Sanitize(ctx.StudentOfficialCefrLevel)} (official) / {cefrLevel} (teacher assessment)");
+            if (countryOfOrigin.Length > 0)
+                sb.AppendLine($"- Country of origin: {countryOfOrigin}");
+
+            if (countryOfResidence.Length > 0)
+                sb.AppendLine($"- Country of residence: {countryOfResidence}");
+
+            if (officialCefr.Length > 0)
+                sb.AppendLine($"- Official CEFR level: {officialCefr} (official) / {cefrLevel} (teacher assessment)");
 
             if (ctx.StudentSpokenLanguages is { Length: > 0 })
             {
@@ -453,13 +464,13 @@ public class PromptService : IPromptService
                     sb.AppendLine($"- Also speaks: {string.Join(", ", spokenLangs)}");
             }
 
-            if (ctx.StudentReasonForStudying is not null)
-                sb.AppendLine($"- Reason for studying {language}: {InputSanitizer.Sanitize(ctx.StudentReasonForStudying)}");
+            if (reasonForStudying.Length > 0)
+                sb.AppendLine($"- Reason for studying {language}: {reasonForStudying}");
 
             sb.AppendLine();
             sb.AppendLine($"Personalize content for this student. Reference their interests in examples.");
 
-            if (ctx.StudentReasonForStudying is not null)
+            if (reasonForStudying.Length > 0)
                 sb.AppendLine($"Anchor vocabulary, topics, and examples to the student's stated study motivation.");
 
             if (ctx.StudentSpokenLanguages is { Length: > 0 })
@@ -469,7 +480,7 @@ public class PromptService : IPromptService
                     sb.AppendLine("Where relevant, leverage cross-language awareness and cognates from the student's other languages.");
             }
 
-            if (ctx.StudentProfession is not null)
+            if (profession.Length > 0)
                 sb.AppendLine("Use domain-specific vocabulary and scenarios from the student's professional field where appropriate.");
 
             if (ctx.StudentNativeLanguage is not null)
