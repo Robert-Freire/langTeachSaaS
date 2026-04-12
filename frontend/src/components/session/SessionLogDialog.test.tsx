@@ -1232,9 +1232,9 @@ describe('SessionLogDialog', () => {
       })
     })
 
-    it('enables level reassessment from extraction', async () => {
+    it('pre-fills level reassessment field without auto-enabling toggle', async () => {
       vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
-        whatWasCovered: null,
+        whatWasCovered: 'Conditionals',
         areasToImprove: null,
         emotionalSignals: null,
         homeworkAssigned: null,
@@ -1249,10 +1249,11 @@ describe('SessionLogDialog', () => {
       await waitFor(() => expect(screen.getByTestId('mock-audio-recorder-trigger')).toBeInTheDocument())
       fireEvent.click(screen.getByTestId('mock-audio-recorder-trigger'))
 
+      // Toggle is NOT auto-enabled (coarse B2 != sublevel B2.1); draft has null reassessment
       await waitFor(() => {
         expect(vi.mocked(sessionLogsApi.createSession)).toHaveBeenCalledWith(
           STUDENT_ID,
-          expect.objectContaining({ levelReassessmentLevel: 'B2' })
+          expect.objectContaining({ levelReassessmentLevel: null, levelReassessmentSkill: null })
         )
       })
     })

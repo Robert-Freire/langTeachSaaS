@@ -1446,11 +1446,16 @@ public class PromptService : IPromptService
         var competencies = string.Join(", ", _pedagogy.GetValidDifficultyCompetencies().OrderBy(x => x));
         var severities = string.Join(" | ", _pedagogy.GetValidDifficultySeverities().OrderBy(x => x));
 
-        var difficultiesSection = ctx.KnownDifficulties is { Count: > 0 }
+        var safeKnownDifficulties = ctx.KnownDifficulties?
+            .Select(InputSanitizer.Sanitize)
+            .Where(d => !string.IsNullOrWhiteSpace(d))
+            .ToArray();
+
+        var difficultiesSection = safeKnownDifficulties is { Length: > 0 }
             ? $"""
 
             Student's known difficulties (for difficultiesWorkedOn cross-referencing):
-            {string.Join("\n", ctx.KnownDifficulties.Select(d => $"- {d}"))}
+            {string.Join("\n", safeKnownDifficulties.Select(d => $"- {d}"))}
             Include in difficultiesWorkedOn any difficulty from this list that the teacher explicitly mentions working on in this session.
             """
             : string.Empty;

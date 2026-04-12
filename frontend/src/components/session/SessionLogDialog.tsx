@@ -379,12 +379,16 @@ export function SessionLogDialog({
       if (extracted.previousHomeworkStatus) setPrevHomeworkStatus(extracted.previousHomeworkStatus)
       if (extracted.isCancelled === true) setIsCancelled(true)
       if (extracted.levelReassessment) {
-        setReassessmentEnabled(true)
+        // Pre-fill the level field without enabling the toggle: extracted values are coarse (B2)
+        // but the UI requires sublevels (B2.1). The teacher decides whether to enable reassessment.
         setReassessmentLevel(extracted.levelReassessment)
       }
       if (extracted.difficultiesWorkedOn?.length) {
+        // Use studentData if loaded; otherwise fetch directly to avoid race condition
+        const studentForMatch = studentData ?? await getStudent(studentId)
+        const activeDifficultiesForRun = studentForMatch.difficulties.filter(d => d.status === 'Active')
         const workedOnSet = new Set(extracted.difficultiesWorkedOn.map(d => d.toLowerCase()))
-        const matchedKeys = activeDifficulties
+        const matchedKeys = activeDifficultiesForRun
           .filter(d => workedOnSet.has(d.description.toLowerCase()))
           .map(d => `${d.competency}|${d.subcategory}`)
         if (matchedKeys.length) {
@@ -399,8 +403,9 @@ export function SessionLogDialog({
       const resolvedTopicTags = extracted.topicTags?.length && topicTags.length === 0
         ? extracted.topicTags
         : topicTags
-      const resolvedLevelEnabled = extracted.levelReassessment ? true : reassessmentEnabled
-      const resolvedLevelValue = extracted.levelReassessment ?? (reassessmentEnabled ? reassessmentLevel : null)
+      // Reassessment: only include in draft if teacher had already enabled the toggle with a valid skill
+      const resolvedLevelEnabled = reassessmentEnabled
+      const resolvedLevelValue = reassessmentEnabled ? reassessmentLevel || null : null
       // Auto-save as Draft using full current form state + extracted fields
       const resolvedDate = sessionDateRef.current || extracted.sessionDate || null
       const draft = await createSession(studentId, {
