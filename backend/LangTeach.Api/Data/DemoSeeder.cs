@@ -302,7 +302,7 @@ public static class DemoSeeder
             NativeLanguages     = """["Spanish"]""",
             LearningGoals       = """["Achieve C1 certification","Improve academic writing"]""",
             Interests           = """["history","cinema","chess"]""",
-            Difficulties        = """[{"id":"d1","description":"Third conditional structures","competency":"Grammar","subcategory":"Conditionals","severity":"medium","status":"Active","trend":"stable"},{"id":"d2","description":"Academic vocabulary range","competency":"Vocabulary","subcategory":"Academic","severity":"high","status":"Active","trend":"worsening"},{"id":"d3","description":"Reading speed","competency":"Reading","subcategory":"Comprehension","severity":"low","status":"Covered","trend":"improving"}]""",
+            Difficulties        = """[{"id":"d1","description":"Third conditional structures","competency":"Grammar","subcategory":"Conditionals","severity":"medium","status":"Active","trend":"stable"},{"id":"d2","description":"Academic vocabulary range","competency":"Vocabulary","subcategory":"Academic","severity":"high","status":"Active","trend":"worsening"},{"id":"d3","description":"Reading speed","competency":"Discourse","subcategory":"Comprehension","severity":"low","status":"Covered","trend":"improving"}]""",
             Weaknesses          = "[]",
             PersonalNotes       = "[scenario-seed]",
             BirthYear           = 1988,
