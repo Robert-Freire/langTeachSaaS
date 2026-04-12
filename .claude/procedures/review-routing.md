@@ -4,7 +4,9 @@ Run all reviewers **sequentially** (never as parallel background agents; notific
 
 ## Step 1: Determine the full reviewer list
 
-**Always run:** `review`, then `architecture-reviewer`.
+**Always run:** `architecture-reviewer`.
+
+> **Note:** The `review` (code review) agent has been retired from the pre-push sequence. CodeRabbit covers the same ground (line-level bugs, style, unused imports, null checks) with better PR-level context. Findings are addressed post-push via follow-up commits.
 
 **Then check the issue labels and diff to add conditional reviewers:**
 
@@ -39,8 +41,6 @@ gh issue view <N> --json labels --jq '.labels[].name'
 
 | Reviewer | Verdict | Action |
 |---|---|---|
-| `review` | FAIL | Fix critical issues, re-commit, re-run checks and review |
-| `review` | PASS WITH NOTES | Address important items. Log unfixed notes to `plan/code-review-backlog.md` (PR#, date, severity, description) |
 | `architecture-reviewer` | NEEDS REVISION | Fix violations, re-commit, re-run checks and architecture review |
 | `architecture-reviewer` | PASS WITH NOTES | Address where reasonable. Log minor notes to `plan/code-review-backlog.md` |
 | Sophy | NEEDS CLARIFICATION | Address her questions before pushing |
