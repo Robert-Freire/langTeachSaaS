@@ -225,6 +225,16 @@ describe('Students page', () => {
     expect(screen.getByText('Review pending')).toBeInTheDocument()
   })
 
+  it('shows Former badge for inactive student even without dashboard data', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ id: 'abc-123', isActive: false })])
+    )
+    // dashboard has no entry for this student (inactive students excluded from dashboard)
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText('Former')).toBeInTheDocument()
+  })
+
   it('renders initials avatar for each student', async () => {
     vi.mocked(studentsApi.getStudents).mockResolvedValue(
       makeListResponse([makeStudent({ name: 'Ana García' })])

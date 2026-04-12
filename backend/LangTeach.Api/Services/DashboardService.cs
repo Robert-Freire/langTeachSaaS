@@ -116,7 +116,8 @@ public class DashboardService : IDashboardService
                     .Count(sl => !sl.IsDeleted
                               && sl.IsCancelled
                               && sl.SessionDate.HasValue
-                              && sl.SessionDate.Value >= cutoff30Days)
+                              && sl.SessionDate.Value >= cutoff30Days
+                              && sl.SessionDate.Value <= now)
             })
             .ToListAsync(cancellationToken);
 

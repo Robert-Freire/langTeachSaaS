@@ -93,11 +93,11 @@ interface Signal {
 }
 
 function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal[] {
-  if (!dash) return []
-
-  if (!dash.isActive) {
+  if (!student.isActive) {
     return [{ label: 'Former', variant: 'zinc' }]
   }
+
+  if (!dash) return []
 
   const signals: Signal[] = []
   const now = Date.now()
@@ -252,7 +252,7 @@ export default function Students() {
   )
 
   const allStudents = studentsData?.items ?? []
-  const activeCount = dashboardData?.activeStudents.length ?? allStudents.length
+  const activeCount = dashboardData?.activeStudents.length ?? allStudents.filter(s => s.isActive).length
 
   const filteredStudents = allStudents.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase())
