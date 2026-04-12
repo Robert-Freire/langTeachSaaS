@@ -18,7 +18,7 @@ function PrimaryObjectiveCard({ student }: { student: Student }) {
   if (objectives.length === 0) {
     return (
       <div
-        className="bg-white rounded-2xl p-6"
+        className="bg-white rounded-2xl px-6 py-4"
         style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
         data-testid="primary-objective-card"
       >

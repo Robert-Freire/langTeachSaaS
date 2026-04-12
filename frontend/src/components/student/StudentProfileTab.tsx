@@ -62,7 +62,7 @@ function ReasonHero({
 
   return (
     <div
-      className="group relative"
+      className="group relative bg-indigo-50/60 rounded-xl px-4 py-3"
       data-testid="reason-hero"
     >
       {editing ? (
@@ -70,7 +70,7 @@ function ReasonHero({
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="w-full text-lg italic text-[#1A1B22] bg-zinc-50 border border-indigo-300 rounded-xl px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            className="w-full text-lg italic text-[#1A1B22] bg-white border border-indigo-300 rounded-xl px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"
             rows={3}
             maxLength={512}
             placeholder="Why is this student learning?"
@@ -306,9 +306,9 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
       style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
       data-testid="student-profile-tab"
     >
-      {/* Hero: The Why / Motivacion */}
+      {/* Hero: The Why / Motivation */}
       <section className="mb-8 pb-8 border-b border-zinc-100" data-testid="profile-hero">
-        <SectionHeader>The Why / Motivacion</SectionHeader>
+        <SectionHeader>The Why / Motivation</SectionHeader>
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 items-start">
           <div className="flex-1 min-w-0">
             <ReasonHero key={student.id} student={student} onSave={onSaveReasonForStudying} />

@@ -443,7 +443,7 @@ export default function StudentForm() {
           </CardHeader>
           <CardContent>
             <div className="space-y-1.5">
-              <Label htmlFor="reason-for-studying">Why is this student learning this language?</Label>
+              <Label htmlFor="reason-for-studying">Reason for studying</Label>
               <Textarea
                 id="reason-for-studying"
                 value={reasonForStudying}
