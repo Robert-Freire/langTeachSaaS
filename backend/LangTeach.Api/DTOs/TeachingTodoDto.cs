@@ -16,4 +16,5 @@ public record CreateTeachingTodoDto(
 
 public record UpdateTeachingTodoDto(
     [Required] string Status,
-    string? CoveredInSessionLogId);
+    string? CoveredInSessionLogId,
+    [MaxLength(500)] string? Text);

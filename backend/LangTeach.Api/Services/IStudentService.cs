@@ -11,4 +11,5 @@ public interface IStudentService
     Task<bool> DeleteAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken = default);
     Task<StudentDto?> AppendTeachingTodoAsync(Guid teacherId, Guid studentId, CreateTeachingTodoDto request, CancellationToken cancellationToken = default);
     Task<StudentDto?> UpdateTeachingTodoAsync(Guid teacherId, Guid studentId, string todoId, UpdateTeachingTodoDto request, CancellationToken cancellationToken = default);
+    Task<StudentDto?> DeleteTeachingTodoAsync(Guid teacherId, Guid studentId, string todoId, CancellationToken cancellationToken = default);
 }
