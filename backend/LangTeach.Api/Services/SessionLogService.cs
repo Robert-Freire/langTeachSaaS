@@ -261,7 +261,10 @@ public class SessionLogService : ISessionLogService
         try { await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken); }
         catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session update", studentId); }
 
-        return ToDto(entity);
+        var hasVoiceNote = await _db.VoiceNoteApplications
+            .AnyAsync(vna => vna.SessionLogId == entity.Id, cancellationToken);
+
+        return ToDto(entity, hasVoiceNote);
     }
 
     public async Task<bool> SoftDeleteAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default)
