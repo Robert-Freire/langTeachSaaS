@@ -35,7 +35,7 @@ interface PacingStats {
   cancellationRate: number
 }
 
-function computePacingStats(sessions: SessionLog[]): PacingStats {
+function computePacingStats(sessions: SessionLog[], fallbackStartDate: string | null): PacingStats {
   const now = Date.now()
   const completed = sessions.filter(
     (s) => !s.isCancelled && s.statusName === 'Confirmed' && s.sessionDate,
@@ -47,12 +47,12 @@ function computePacingStats(sessions: SessionLog[]): PacingStats {
       ? allDated.reduce((min, s) =>
           new Date(s.sessionDate!) < new Date(min.sessionDate!) ? s : min,
         ).sessionDate!
-      : null
+      : fallbackStartDate
   const weeksSinceStart = firstDate
     ? (now - new Date(firstDate).getTime()) / (7 * 24 * 60 * 60 * 1000)
     : null
   const frequency =
-    weeksSinceStart && weeksSinceStart > 0.5
+    weeksSinceStart && weeksSinceStart > 0
       ? (completed.length / weeksSinceStart).toFixed(1)
       : null
   const total = completed.length + cancelled.length
@@ -93,7 +93,7 @@ export function ProgressDashboard({ student, sessions }: Props) {
 
   // Pacing analytics
   const { completedSessions, firstDate, frequency, cancellationRate } =
-    useMemo(() => computePacingStats(sessions), [sessions])
+    useMemo(() => computePacingStats(sessions, student.createdAt), [sessions, student.createdAt])
 
   // Difficulty classification
   const recentMentions = useMemo(() => computeRecentMentions(sessions), [sessions])
