@@ -120,5 +120,12 @@ public record GenerationContext(
     string? CurriculumObjectives = null,
     string? TeacherGrammarConstraints = null,
     string? SectionType = null,
-    SessionHistoryContext? SessionHistory = null
+    SessionHistoryContext? SessionHistory = null,
+    string? StudentReasonForStudying = null,
+    string[]? StudentSpokenLanguages = null,
+    string? StudentProfession = null,
+    int? StudentBirthYear = null,
+    string? StudentCountryOfOrigin = null,
+    string? StudentCountryOfResidence = null,
+    string? StudentOfficialCefrLevel = null
 );

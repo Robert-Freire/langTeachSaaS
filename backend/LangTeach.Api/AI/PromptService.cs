@@ -430,8 +430,58 @@ public class PromptService : IPromptService
             if (weaknesses.Length > 0)
                 sb.AppendLine($"- Areas to improve: {string.Join(", ", weaknesses)}");
 
+            var profession       = InputSanitizer.Sanitize(ctx.StudentProfession);
+            var reasonForStudying = InputSanitizer.Sanitize(ctx.StudentReasonForStudying);
+            var countryOfOrigin  = InputSanitizer.Sanitize(ctx.StudentCountryOfOrigin);
+            var countryOfResidence = InputSanitizer.Sanitize(ctx.StudentCountryOfResidence);
+            var officialCefr     = InputSanitizer.Sanitize(ctx.StudentOfficialCefrLevel);
+
+            // Age is approximated from birth year (off by up to one year depending on birthday — acceptable for prompt personalization)
+            var currentYear = DateTime.UtcNow.Year;
+            var age = ctx.StudentBirthYear is int birthYear && birthYear >= currentYear - 120 && birthYear <= currentYear
+                ? currentYear - birthYear
+                : (int?)null;
+
+            if (profession.Length > 0)
+                sb.AppendLine($"- Profession: {profession}");
+
+            if (age is not null)
+                sb.AppendLine($"- Age: {age}");
+
+            if (countryOfOrigin.Length > 0)
+                sb.AppendLine($"- Country of origin: {countryOfOrigin}");
+
+            if (countryOfResidence.Length > 0)
+                sb.AppendLine($"- Country of residence: {countryOfResidence}");
+
+            if (officialCefr.Length > 0)
+                sb.AppendLine($"- Official CEFR level: {officialCefr} (official) / {cefrLevel} (teacher assessment)");
+
+            if (ctx.StudentSpokenLanguages is { Length: > 0 })
+            {
+                var spokenLangs = ctx.StudentSpokenLanguages.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0).ToArray();
+                if (spokenLangs.Length > 0)
+                    sb.AppendLine($"- Also speaks: {string.Join(", ", spokenLangs)}");
+            }
+
+            if (reasonForStudying.Length > 0)
+                sb.AppendLine($"- Reason for studying {language}: {reasonForStudying}");
+
             sb.AppendLine();
             sb.AppendLine($"Personalize content for this student. Reference their interests in examples.");
+
+            if (reasonForStudying.Length > 0)
+                sb.AppendLine($"Anchor vocabulary, topics, and examples to the student's stated study motivation.");
+
+            if (ctx.StudentSpokenLanguages is { Length: > 0 })
+            {
+                var spokenForPrompt = ctx.StudentSpokenLanguages.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0).ToArray();
+                if (spokenForPrompt.Length > 0)
+                    sb.AppendLine("Where relevant, leverage cross-language awareness and cognates from the student's other languages.");
+            }
+
+            if (profession.Length > 0)
+                sb.AppendLine("Use domain-specific vocabulary and scenarios from the student's professional field where appropriate.");
 
             if (ctx.StudentNativeLanguage is not null)
             {
