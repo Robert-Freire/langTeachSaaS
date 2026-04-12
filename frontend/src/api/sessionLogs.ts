@@ -77,7 +77,6 @@ export interface CreateSessionLogRequest {
   voiceNoteId?: string
   voiceNoteTranscription?: string
   rawExtractionJson?: string
-  duration?: number | null
 }
 
 export type UpdateSessionLogRequest = CreateSessionLogRequest
