@@ -84,9 +84,10 @@ test('creates student with lexical weakness and verifies round-trip', async ({ b
   await page.getByRole('option', { name: 'Lexical' }).click()
 
   await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
-  // Find the student card and navigate to edit
+  // Go to roster to find the student card and navigate to edit
+  await page.goto('/students')
   const studentCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -225,7 +226,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'C1' }).click()
 
-  await page.getByRole('button', { name: 'Update Student' }).click()
+  await page.getByRole('button', { name: 'Save Profile' }).first().click()
 
   // Should redirect to student profile page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
@@ -247,7 +248,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await verifyDiffRow.getByTestId('remove-difficulty').click()
   await expect(page.getByTestId('difficulty-row')).not.toBeVisible()
 
-  await page.getByRole('button', { name: 'Update Student' }).click()
+  await page.getByRole('button', { name: 'Save Profile' }).first().click()
 
   // Should redirect to student profile page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })

@@ -215,6 +215,8 @@ export default function StudentForm() {
     },
   })
 
+  const isBusy = isPending || isDeleting
+
   function addInterest(value: string) {
     const trimmed = value.trim()
     if (trimmed && !interests.includes(trimmed)) {
@@ -438,6 +440,7 @@ export default function StudentForm() {
                 type="button"
                 variant="outline"
                 onClick={() => setShowDeleteDialog(true)}
+                disabled={isBusy}
                 className="text-red-600 border-red-200 hover:bg-red-50"
                 data-testid="delete-student-btn"
               >
@@ -502,7 +505,7 @@ export default function StudentForm() {
               type="submit"
               form="student-form"
               size="sm"
-              disabled={isPending}
+              disabled={isBusy}
               className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               {isPending ? 'Saving...' : 'Save Profile'}
@@ -1272,7 +1275,7 @@ export default function StudentForm() {
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => doDelete(id)}
-                disabled={isDeleting}
+                disabled={isBusy}
                 className="bg-red-600 hover:bg-red-700 text-white"
                 data-testid="confirm-delete"
               >
