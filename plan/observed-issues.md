@@ -3,6 +3,7 @@
 Out-of-scope observations logged by agents during implementation. Each row is something an agent noticed but did not fix because it was outside the current task's scope. These get batched into future GitHub issues by the PM.
 
 | Source issue | Date | Severity | Observation |
+| #674 | 2026-04-12 | low | review-ui agent could not find `log-session-button` testid on student detail page in create mode. Pre-existing selector mismatch, unrelated to this PR. Should be investigated and fixed in a future task. |
 | #626 | 2026-04-10 | medium | DemoSeeder uses PersonalNotes as seed-detection marker; if teacher edits that field the seeder loses track and may create duplicates. Pre-existing pattern (was Notes before this PR). Should use a dedicated IsDemo flag or deterministic seed name matching. |
 | #627 | 2026-04-10 | low | CodeRabbit suggested validating sourceSessionLogId/coveredInSessionLogId against DB. Dismissed: issue spec explicitly chose soft-backlink (stored UUID, no FK), Sophy approved. If referential integrity becomes a requirement, it can be added later. |
 | #636 | 2026-04-10 | low | All controllers use `Auth0Id is null` check instead of `IsNullOrWhiteSpace`, and none wrap `UpsertTeacherAsync` in a try/catch for `InvalidOperationException`. Pre-existing pattern across 16 controllers. Could be addressed in a future controller hardening sweep. |
