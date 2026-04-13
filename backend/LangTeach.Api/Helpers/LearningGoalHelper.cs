@@ -11,6 +11,9 @@ public static class LearningGoalHelper
 
     public static string[] FlattenGoals(string? json) =>
         Deserialize(json)
-            .SelectMany(g => new[] { g.Text }.Concat(g.Children.Select(c => c.Text)))
+            .Where(g => g is not null)
+            .SelectMany(g => new[] { g.Text }
+                .Concat((g.Children ?? []).Where(c => c is not null).Select(c => c.Text))
+                .Where(t => t is not null))
             .ToArray();
 }
