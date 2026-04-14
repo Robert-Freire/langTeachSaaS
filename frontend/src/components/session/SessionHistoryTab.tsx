@@ -11,6 +11,7 @@ import {
   Mic,
   CalendarDays,
   Filter,
+  MoreHorizontal,
 } from 'lucide-react'
 import { SessionLogDialog } from './SessionLogDialog'
 import { logger } from '../../lib/logger'
@@ -24,7 +25,6 @@ import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   AlertDialog,
-  AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -89,6 +89,7 @@ function SessionEntry({
   const [expanded, setExpanded] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [kebabOpen, setKebabOpen] = useState(false)
   const queryClient = useQueryClient()
 
   const { mutate: softDelete, isPending: isDeleting } = useMutation({
@@ -111,342 +112,380 @@ function SessionEntry({
   const hwInfo = (hwStatus ? HOMEWORK_STATUS_INFO[hwStatus] : undefined) ?? HW_STATUS_FALLBACK
   const isCancelled = session.isCancelled
   const isDraft = session.statusName === 'Draft'
+  const showHwIcon = Boolean(hwStatus && hwStatus !== 'NotApplicable')
+
+  // Right column is empty when there's no homework and no next plan
+  const hasRightColumn =
+    Boolean(session.homeworkAssigned) ||
+    Boolean(session.nextSessionTopics) ||
+    showHwIcon
 
   const cardClass = isCancelled
     ? 'bg-[#F4F2FD]/50 opacity-60 grayscale'
     : 'bg-white shadow-sm'
 
   return (
-    <div
-      className={`rounded-2xl ring-1 ring-[#C7C4D8]/10 overflow-hidden transition-all ${cardClass}`}
-      data-testid="session-entry"
-    >
-      {/* Collapsed row / header */}
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full text-left p-4 hover:bg-[#F4F2FD]/40 transition-colors"
-        aria-expanded={expanded}
-        data-testid="session-entry-toggle"
+    <>
+      <div
+        className={`rounded-2xl ring-1 ring-[#C7C4D8]/10 overflow-hidden transition-all ${cardClass}`}
+        data-testid="session-entry"
       >
-        <div className="flex items-center justify-between gap-3">
-          {/* Left: date badge + title + snippet */}
-          <div className="flex items-start gap-3 min-w-0 flex-1">
-            {/* Date badge */}
-            <div
-              className={`flex flex-col items-center justify-center shrink-0 rounded-xl w-12 h-12 ${
-                isCancelled ? 'bg-zinc-200 text-zinc-500' : 'bg-[#E2DFFF] text-[#3525CD]'
-              }`}
-            >
-              <span className="text-[8px] font-bold uppercase leading-none">{formatMonth(session.sessionDate)}</span>
-              <span className="text-lg font-extrabold leading-tight">{formatDay(session.sessionDate)}</span>
-            </div>
-
-            {/* Title + content */}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                <h3
-                  className={`font-bold text-sm text-[#1A1B22] ${isCancelled ? 'line-through text-zinc-500' : ''}`}
+        {/* Header row: expand button + kebab menu */}
+        <div className="flex items-stretch">
+          {/* Main expand button */}
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="flex-1 min-w-0 text-left p-4 hover:bg-[#F4F2FD]/40 transition-colors"
+            aria-expanded={expanded}
+            data-testid="session-entry-toggle"
+          >
+            <div className="flex items-center gap-3">
+              {/* Left: date badge + title + snippet */}
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                {/* Date badge */}
+                <div
+                  className={`flex flex-col items-center justify-center shrink-0 rounded-xl w-12 h-12 ${
+                    isCancelled ? 'bg-zinc-200 text-zinc-500' : 'bg-[#E2DFFF] text-[#3525CD]'
+                  }`}
                 >
-                  {sessionTitle(session)}
-                </h3>
-                {isCancelled && (
-                  <span
-                    className="px-2 py-0.5 rounded bg-zinc-200 text-zinc-600 text-[9px] font-bold uppercase"
-                    data-testid="cancelled-badge"
-                  >
-                    Cancelled
-                  </span>
-                )}
-                {isDraft && !isCancelled && (
-                  <span
-                    className="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-[9px] font-bold uppercase"
-                    data-testid="draft-badge"
-                  >
-                    Pending review
-                  </span>
-                )}
-                {!isCancelled && !isDraft && (
-                  <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase">
-                    Completed
-                  </span>
-                )}
-                {hasActionItem && (
-                  <span className="inline-flex items-center gap-1 text-xs text-amber-600" data-testid="action-item-count">
-                    <span className="bg-amber-400 rounded-full w-1.5 h-1.5 shrink-0" />
-                    1 action item
-                    {expanded ? (
-                      <ChevronUp className="h-3 w-3 shrink-0" />
-                    ) : (
-                      <ChevronDown className="h-3 w-3 shrink-0" />
+                  <span className="text-[8px] font-bold uppercase leading-none">{formatMonth(session.sessionDate)}</span>
+                  <span className="text-lg font-extrabold leading-tight">{formatDay(session.sessionDate)}</span>
+                </div>
+
+                {/* Title + content */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                    <h3
+                      className={`font-bold text-sm text-[#1A1B22] ${isCancelled ? 'line-through text-zinc-500' : ''}`}
+                    >
+                      {sessionTitle(session)}
+                    </h3>
+                    {isCancelled && (
+                      <span
+                        className="px-2 py-0.5 rounded bg-zinc-200 text-zinc-600 text-[9px] font-bold uppercase"
+                        data-testid="cancelled-badge"
+                      >
+                        Cancelled
+                      </span>
                     )}
+                    {isDraft && !isCancelled && (
+                      <span
+                        className="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-[9px] font-bold uppercase"
+                        data-testid="draft-badge"
+                      >
+                        Pending review
+                      </span>
+                    )}
+                    {!isCancelled && !isDraft && (
+                      <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase">
+                        Completed
+                      </span>
+                    )}
+                    {hasActionItem && (
+                      <span className="inline-flex items-center gap-1 text-xs text-amber-600" data-testid="action-item-count">
+                        <span className="bg-amber-400 rounded-full w-1.5 h-1.5 shrink-0" />
+                        1 action item
+                        {expanded ? (
+                          <ChevronUp className="h-3 w-3 shrink-0" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3 shrink-0" />
+                        )}
+                      </span>
+                    )}
+                    {hasNote && (
+                      <span className="inline-flex items-center gap-1 text-xs text-zinc-400" data-testid="general-note-count">
+                        <span className="bg-zinc-300 rounded-full w-1.5 h-1.5 shrink-0" />
+                        1 note
+                        {expanded ? (
+                          <ChevronUp className="h-3 w-3 shrink-0" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3 shrink-0" />
+                        )}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Snippet -- actualContent, slightly more prominent when no title */}
+                  {!expanded && session.actualContent && (
+                    <p className={`line-clamp-${session.title ? '1' : '2'} ${session.title ? 'text-xs text-zinc-500' : 'text-xs text-zinc-600'}`}>
+                      {session.actualContent}
+                    </p>
+                  )}
+
+                  {/* Next session topics preview */}
+                  {!expanded && session.nextSessionTopics && (
+                    <p className="text-xs text-amber-700 line-clamp-1" data-testid="next-session-topics-preview">
+                      <span className="font-medium">Next:</span>{' '}
+                      {session.nextSessionTopics}
+                    </p>
+                  )}
+
+                  {/* Topic chips (collapsed) */}
+                  {!expanded && topicTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {topicTags.slice(0, 4).map((tag, i) => (
+                        <span
+                          key={`${tag.tag}-${i}`}
+                          className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${tagCategoryClass(tag.category)}`}
+                        >
+                          {tag.tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right: hw status icon + duration + mic + chevron */}
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Homework status icon */}
+                {showHwIcon && (
+                  <span
+                    className={`text-sm font-bold leading-none ${hwInfo.color}`}
+                    title={hwInfo.label}
+                    data-testid="hw-status-icon"
+                  >
+                    {hwInfo.icon}
                   </span>
                 )}
-                {hasNote && (
-                  <span className="inline-flex items-center gap-1 text-xs text-zinc-400" data-testid="general-note-count">
-                    <span className="bg-zinc-300 rounded-full w-1.5 h-1.5 shrink-0" />
-                    1 note
-                    {expanded ? (
-                      <ChevronUp className="h-3 w-3 shrink-0" />
-                    ) : (
-                      <ChevronDown className="h-3 w-3 shrink-0" />
-                    )}
+                {(session.duration != null || isCancelled) && (
+                  <span className="text-xs text-zinc-400 font-medium" data-testid="duration-badge">
+                    {isCancelled ? '0' : session.duration} min
                   </span>
+                )}
+                {session.hasVoiceNote && (
+                  <span className="text-zinc-400" data-testid="voice-note-icon">
+                    <Mic className="h-4 w-4" />
+                  </span>
+                )}
+                {expanded ? (
+                  <ChevronUp className="h-4 w-4 text-zinc-400" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-zinc-400" />
+                )}
+              </div>
+            </div>
+          </button>
+
+          {/* Kebab menu - outside the expand button */}
+          <div className="flex items-center px-2 shrink-0">
+            <Popover open={kebabOpen} onOpenChange={setKebabOpen}>
+              <PopoverTrigger
+                render={
+                  <button
+                    className="p-1.5 rounded-lg hover:bg-[#F4F2FD] text-zinc-400 hover:text-zinc-600 transition-colors"
+                    aria-label="Session options"
+                    data-testid="session-kebab-trigger"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                }
+              />
+              <PopoverContent className="w-44 p-1" align="end" side="bottom">
+                <button
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-[#F4F2FD] text-[#1A1B22] transition-colors"
+                  onClick={() => {
+                    setKebabOpen(false)
+                    onEdit(session)
+                  }}
+                  data-testid="edit-session-button"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </button>
+                <div className="h-px bg-[#C7C4D8]/20 my-1" />
+                <button
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                  onClick={() => {
+                    setKebabOpen(false)
+                    setDeleteOpen(true)
+                  }}
+                  disabled={isDeleting}
+                  data-testid="delete-session-button"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
+                </button>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        {/* Expanded detail */}
+        {expanded && (
+          <div
+            className="border-t border-[#C7C4D8]/10 p-5 bg-[#FBFAFF]"
+            data-testid="session-entry-detail"
+          >
+            <div className={`grid grid-cols-1 gap-6 ${hasRightColumn ? 'md:grid-cols-3' : ''}`}>
+              {/* Left/full: narrative + tags + notes */}
+              <div className={`${hasRightColumn ? 'md:col-span-2' : ''} space-y-5`}>
+                {session.actualContent && (
+                  <div>
+                    <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
+                      Session Narrative
+                    </h4>
+                    <p className="text-sm leading-relaxed text-[#464455] italic whitespace-pre-wrap">
+                      &ldquo;{session.actualContent}&rdquo;
+                    </p>
+                  </div>
+                )}
+
+                {/* Planned content (only if different from actual) */}
+                {session.plannedContent && session.plannedContent !== session.actualContent && (
+                  <div>
+                    <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
+                      What was planned
+                    </h4>
+                    <p className="text-sm text-[#1A1B22] whitespace-pre-wrap">{session.plannedContent}</p>
+                  </div>
+                )}
+
+                {/* Topic tags */}
+                {topicTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {topicTags.map((tag, i) => {
+                      const catLabel = tag.category
+                        ? (TAG_CATEGORY_LABELS[tag.category] ?? tag.category)
+                        : null
+                      return (
+                        <span
+                          key={`${tag.tag}-${i}`}
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold ${tagCategoryClass(tag.category)}`}
+                          data-testid="topic-tag-chip"
+                        >
+                          {tag.tag}
+                          {catLabel && <span className="opacity-60">({catLabel})</span>}
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Teacher notes */}
+                {session.generalNotes && (
+                  <div className="p-4 rounded-xl bg-white border-l-4 border-[#4F46E5] ring-1 ring-[#C7C4D8]/10">
+                    <h4 className="text-[10px] font-bold text-[#3525CD] uppercase tracking-widest mb-2">
+                      Teacher Notes
+                    </h4>
+                    <p className="text-sm text-[#1A1B22] whitespace-pre-wrap">{session.generalNotes}</p>
+                  </div>
+                )}
+
+                {/* Level reassessment */}
+                {session.levelReassessmentSkill && session.levelReassessmentLevel && (
+                  <div>
+                    <p className="text-xs font-medium text-zinc-500 mb-0.5">Level reassessment</p>
+                    <p className="text-sm text-[#1A1B22]">
+                      {session.levelReassessmentSkill}: {session.levelReassessmentLevel}
+                    </p>
+                  </div>
+                )}
+
+                {/* Linked lesson */}
+                {session.linkedLessonId && (
+                  <Link
+                    to={`/lessons/${session.linkedLessonId}`}
+                    className="inline-flex items-center gap-1.5 text-xs text-[#3525CD] hover:text-[#4F46E5] font-medium"
+                    data-testid="linked-lesson-link"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    View linked lesson
+                  </Link>
                 )}
               </div>
 
-              {/* Snippet -- actualContent, hidden when expanded */}
-              {!expanded && session.actualContent && (
-                <p className="text-xs text-zinc-500 line-clamp-1">
-                  {session.actualContent}
-                </p>
-              )}
+              {/* Right: homework + next session plan (only rendered when needed) */}
+              {hasRightColumn && (
+                <div className="space-y-5">
+                  {/* Homework card */}
+                  {(showHwIcon || session.homeworkAssigned) ? (
+                    <div className="bg-[#F4F2FD] p-4 rounded-2xl">
+                      <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">
+                        Homework
+                      </h4>
+                      <div className="space-y-3">
+                        {showHwIcon && (
+                          <div>
+                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight mb-1">
+                              Previous Homework Status
+                            </p>
+                            <div className="flex items-center gap-1.5" data-testid="hw-status-badge">
+                              <span className={`text-sm font-bold ${hwInfo.color}`}>{hwInfo.icon}</span>
+                              <span className={`text-xs font-bold uppercase tracking-wide ${hwInfo.color}`}>
+                                {hwInfo.label}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        {session.homeworkAssigned && (
+                          <div className={showHwIcon ? 'pt-3 border-t border-[#C7C4D8]/20' : ''}>
+                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight mb-1">
+                              Homework Assigned
+                            </p>
+                            <p className="text-sm font-semibold text-[#1A1B22]">{session.homeworkAssigned}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
 
-              {/* Next session topics preview */}
-              {!expanded && session.nextSessionTopics && (
-                <p className="text-xs text-amber-700 line-clamp-1" data-testid="next-session-topics-preview">
-                  <span className="font-medium">Next:</span>{' '}
-                  {session.nextSessionTopics}
-                </p>
-              )}
-
-              {/* Topic chips (collapsed) */}
-              {!expanded && topicTags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {topicTags.slice(0, 4).map((tag, i) => (
-                    <span
-                      key={`${tag.tag}-${i}`}
-                      className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${tagCategoryClass(tag.category)}`}
+                  {/* Next session plan */}
+                  {session.nextSessionTopics && (
+                    <div
+                      className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
+                      data-testid="next-session-topics-section"
                     >
-                      {tag.tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right: duration + mic + chevron */}
-          <div className="flex items-center gap-2 shrink-0">
-            {(session.duration != null || isCancelled) && (
-              <span className="text-xs text-zinc-400 font-medium" data-testid="duration-badge">
-                {isCancelled ? '0' : session.duration} min
-              </span>
-            )}
-            {session.hasVoiceNote && (
-              <span className="text-zinc-400" data-testid="voice-note-icon">
-                <Mic className="h-4 w-4" />
-              </span>
-            )}
-            {expanded ? (
-              <ChevronUp className="h-4 w-4 text-zinc-400" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-zinc-400" />
-            )}
-          </div>
-        </div>
-      </button>
-
-      {/* Expanded detail */}
-      {expanded && (
-        <div
-          className="border-t border-[#C7C4D8]/10 p-5 bg-[#FBFAFF]"
-          data-testid="session-entry-detail"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Left: narrative + tags + notes + planned */}
-            <div className="md:col-span-2 space-y-5">
-              {session.actualContent && (
-                <div>
-                  <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
-                    Session Narrative
-                  </h4>
-                  <p className="text-sm leading-relaxed text-[#464455] italic whitespace-pre-wrap">
-                    &ldquo;{session.actualContent}&rdquo;
-                  </p>
-                </div>
-              )}
-
-              {/* Planned content (only if different from actual) */}
-              {session.plannedContent && session.plannedContent !== session.actualContent && (
-                <div>
-                  <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
-                    What was planned
-                  </h4>
-                  <p className="text-sm text-[#1A1B22] whitespace-pre-wrap">{session.plannedContent}</p>
-                </div>
-              )}
-
-              {/* Topic tags */}
-              {topicTags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {topicTags.map((tag, i) => {
-                    const catLabel = tag.category
-                      ? (TAG_CATEGORY_LABELS[tag.category] ?? tag.category)
-                      : null
-                    return (
-                      <span
-                        key={`${tag.tag}-${i}`}
-                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold ${tagCategoryClass(tag.category)}`}
-                        data-testid="topic-tag-chip"
+                      <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                        <CalendarDays className="h-3 w-3" />
+                        Planned for next class
+                      </p>
+                      <p className="text-sm text-amber-900 whitespace-pre-wrap">{session.nextSessionTopics}</p>
+                      <button
+                        className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 hover:text-amber-900 transition-colors"
+                        onClick={() => onStartNextSession(session)}
+                        data-testid="start-next-session-button"
                       >
-                        {tag.tag}
-                        {catLabel && <span className="opacity-60">({catLabel})</span>}
-                      </span>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* Teacher notes */}
-              {session.generalNotes && (
-                <div className="p-4 rounded-xl bg-white border-l-4 border-[#4F46E5] ring-1 ring-[#C7C4D8]/10">
-                  <h4 className="text-[10px] font-bold text-[#3525CD] uppercase tracking-widest mb-2">
-                    Teacher Notes
-                  </h4>
-                  <p className="text-sm text-[#1A1B22] whitespace-pre-wrap">{session.generalNotes}</p>
-                </div>
-              )}
-
-              {/* Level reassessment */}
-              {session.levelReassessmentSkill && session.levelReassessmentLevel && (
-                <div>
-                  <p className="text-xs font-medium text-zinc-500 mb-0.5">Level reassessment</p>
-                  <p className="text-sm text-[#1A1B22]">
-                    {session.levelReassessmentSkill}: {session.levelReassessmentLevel}
-                  </p>
-                </div>
-              )}
-
-              {/* Linked lesson */}
-              {session.linkedLessonId && (
-                <Link
-                  to={`/lessons/${session.linkedLessonId}`}
-                  className="inline-flex items-center gap-1.5 text-xs text-[#3525CD] hover:text-[#4F46E5] font-medium"
-                  data-testid="linked-lesson-link"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  View linked lesson
-                </Link>
-              )}
-            </div>
-
-            {/* Right: homework + next session plan */}
-            <div className="space-y-5">
-              {/* Homework card */}
-              {(hwStatus && hwStatus !== 'NotApplicable') || session.homeworkAssigned ? (
-                <div className="bg-[#F4F2FD] p-4 rounded-2xl">
-                  <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">
-                    Homework
-                  </h4>
-                  <div className="space-y-3">
-                    {hwStatus && hwStatus !== 'NotApplicable' && (
-                      <div>
-                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight mb-1">
-                          Previous Homework Status
-                        </p>
-                        <div className="flex items-center gap-1.5" data-testid="hw-status-badge">
-                          <span className={`text-sm font-bold ${hwInfo.color}`}>{hwInfo.icon}</span>
-                          <span className={`text-xs font-bold uppercase tracking-wide ${hwInfo.color}`}>
-                            {hwInfo.label}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    {session.homeworkAssigned && (
-                      <div className={hwStatus && hwStatus !== 'NotApplicable' ? 'pt-3 border-t border-[#C7C4D8]/20' : ''}>
-                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight mb-1">
-                          Homework Assigned
-                        </p>
-                        <p className="text-sm font-semibold text-[#1A1B22]">{session.homeworkAssigned}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Next session plan */}
-              {session.nextSessionTopics && (
-                <div
-                  className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
-                  data-testid="next-session-topics-section"
-                >
-                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                    <CalendarDays className="h-3 w-3" />
-                    Planned for next class
-                  </p>
-                  <p className="text-sm text-amber-900 whitespace-pre-wrap">{session.nextSessionTopics}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Actions row */}
-          <div className="flex flex-wrap justify-end gap-2 mt-5 pt-4 border-t border-[#C7C4D8]/10">
-            {session.nextSessionTopics && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onStartNextSession(session)}
-                data-testid="start-next-session-button"
-                className="text-[#3525CD] border-[#4F46E5]/30 hover:bg-[#E2DFFF] hover:text-[#3525CD]"
-              >
-                <PlayCircle className="h-3.5 w-3.5 mr-1" />
-                Start next session
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onEdit(session)}
-              data-testid="edit-session-button"
-            >
-              <Pencil className="h-3.5 w-3.5 mr-1" />
-              Edit
-            </Button>
-            <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-              <AlertDialogTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-                    disabled={isDeleting}
-                    data-testid="delete-session-button"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 mr-1" />
-                    Delete
-                  </Button>
-                }
-              />
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete session log?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This session record will be removed. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  {deleteError && (
-                    <p className="text-xs text-red-600 w-full text-center mb-1" data-testid="delete-session-error">
-                      {deleteError}
-                    </p>
+                        <PlayCircle className="h-3.5 w-3.5" />
+                        Start next session
+                      </button>
+                    </div>
                   )}
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => softDelete()}
-                    disabled={isDeleting}
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                    data-testid="confirm-delete-session"
-                  >
-                    {isDeleting ? 'Deleting...' : 'Delete'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+
+      {/* Delete confirmation dialog - at root level, not inside footer */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete session log?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This session record will be removed. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {deleteError && (
+              <p className="text-xs text-red-600 w-full text-center mb-1" data-testid="delete-session-error">
+                {deleteError}
+              </p>
+            )}
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => softDelete()}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              data-testid="confirm-delete-session"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 
