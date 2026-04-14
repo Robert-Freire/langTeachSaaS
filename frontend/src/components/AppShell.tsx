@@ -22,7 +22,7 @@ function NavLink({ to, label, icon: Icon, location }: {
   icon: ElementType
   location: ReturnType<typeof useLocation>
 }) {
-  const active = location.pathname === to || (to !== '/' && location.pathname.startsWith(to))
+  const active = location.pathname === to || (to !== '/' && location.pathname.startsWith(`${to}/`))
   return (
     <Link
       to={to}
