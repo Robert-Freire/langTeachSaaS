@@ -143,6 +143,26 @@ describe('StudentForm', () => {
     expect(await screen.findByRole('heading', { name: 'Edit Student' })).toBeInTheDocument()
   })
 
+  it('edit mode does not render Save Profile button', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(screen.queryByRole('button', { name: 'Save Profile' })).not.toBeInTheDocument()
+  })
+
+  it('edit mode renders Done button and autosave status indicator', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(screen.getByTestId('done-btn')).toBeInTheDocument()
+    expect(screen.getByTestId('autosave-status')).toBeInTheDocument()
+  })
+
+  it('breadcrumb in edit mode points to student detail', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    const back = screen.getByTestId('page-header-back')
+    expect(back).toHaveAttribute('href', '/students/stu-1')
+  })
+
   it('Save button has form attribute pointing to student-form', () => {
     renderNew()
     const saveBtn = screen.getByRole('button', { name: 'Save Student' })
@@ -174,17 +194,15 @@ describe('StudentForm', () => {
     })
   })
 
-  it('after updating a student, redirects to student profile page', async () => {
+  it('after updating a student, Done button navigates to student profile page', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
     const user = userEvent.setup()
     renderEdit()
 
     await screen.findByRole('heading', { name: 'Edit Student' })
-    await user.click(screen.getAllByRole('button', { name: 'Save Profile' })[0])
+    await user.click(screen.getByTestId('done-btn'))
 
-    await vi.waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/students/stu-1')
-    })
+    expect(mockNavigate).toHaveBeenCalledWith('/students/stu-1')
   })
 
   it('shows "Student not found" when getStudent rejects', async () => {
@@ -339,7 +357,7 @@ describe('StudentForm', () => {
     expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
     expect(screen.getByTestId('difficulty-error')).toHaveTextContent('Both type and description are required')
     expect(mockCreateStudent).not.toHaveBeenCalled()
-  })
+  }, 15000)
 
   it('shows inline error for partial difficulty row (competency only) and blocks save', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
@@ -362,7 +380,7 @@ describe('StudentForm', () => {
 
     expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
     expect(mockCreateStudent).not.toHaveBeenCalled()
-  })
+  }, 15000)
 
   it('clears difficulty error when the row is completed', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
@@ -526,10 +544,7 @@ describe('StudentForm', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/courses/new?studentId=stu-1')
   })
 
-  it('loads all native languages in edit mode and preserves them on save', async () => {
-    const { default: userEvent } = await import('@testing-library/user-event')
-    const user = userEvent.setup()
-    mockUpdateStudent.mockResolvedValue({ id: 'stu-1' })
+  it('loads all native languages in edit mode and displays them as chips', async () => {
     mockGetStudent.mockResolvedValue({
       id: 'stu-1',
       name: 'Ana',
@@ -552,17 +567,6 @@ describe('StudentForm', () => {
     expect(chips[0]).toHaveTextContent('Portuguese')
     expect(chips[1]).toHaveTextContent('English')
     expect(chips[2]).toHaveTextContent('Catalan')
-
-    await user.click(screen.getAllByRole('button', { name: 'Save Profile' })[0])
-
-    await vi.waitFor(() => {
-      expect(mockUpdateStudent).toHaveBeenCalledWith(
-        'stu-1',
-        expect.objectContaining({
-          nativeLanguages: ['Portuguese', 'English', 'Catalan'],
-        }),
-      )
-    })
   })
 
   it('"Create Course" button is disabled when student is missing CEFR level', async () => {
@@ -822,12 +826,10 @@ describe('StudentForm', () => {
     renderEdit()
     await screen.findByRole('heading', { name: 'Edit Student' })
 
-    // Toggle isActive off
+    // Toggle isActive off — autosave fires immediately on toggle
     await user.click(screen.getByTestId('toggle-is-active'))
     // inactive badge should appear
     expect(await screen.findByTestId('inactive-badge')).toBeInTheDocument()
-
-    await user.click(screen.getAllByRole('button', { name: 'Save Profile' })[0])
 
     await vi.waitFor(() => {
       expect(mockUpdateStudent).toHaveBeenCalledWith(

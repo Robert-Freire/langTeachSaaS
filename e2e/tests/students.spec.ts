@@ -229,7 +229,9 @@ test('full student CRUD flow', async ({ browser }) => {
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'C1' }).click()
 
-  await page.getByRole('button', { name: 'Save Profile' }).first().click()
+  // Wait for autosave to complete then navigate via Done button
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+  await page.getByTestId('done-btn').click()
 
   // Should redirect to student profile page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
@@ -252,7 +254,9 @@ test('full student CRUD flow', async ({ browser }) => {
   await verifyDiffRow.getByTestId('remove-difficulty').click()
   await expect(page.getByTestId('difficulty-row')).not.toBeVisible()
 
-  await page.getByRole('button', { name: 'Save Profile' }).first().click()
+  // Wait for autosave to complete then navigate via Done button
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+  await page.getByTestId('done-btn').click()
 
   // Should redirect to student profile page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
@@ -960,14 +964,15 @@ test('commercial fields round-trip: isActive, isCorporate, rate', async ({ brows
   await expect(page.getByTestId('toggle-is-corporate')).toBeVisible()
   await expect(page.getByTestId('student-rate')).toBeVisible()
 
-  // Fill commercial fields
+  // Fill commercial fields - each change triggers autosave
   await page.getByTestId('student-rate').fill('55/hr')
   await page.getByTestId('toggle-is-corporate').click()
   await page.getByTestId('toggle-is-active').click()
   await expect(page.getByTestId('inactive-badge')).toBeVisible()
 
-  // Save
-  await page.getByRole('button', { name: 'Save Profile' }).first().click()
+  // Wait for autosave to complete then navigate via Done button
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+  await page.getByTestId('done-btn').click()
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Profile tab: commercial section shows updated values
