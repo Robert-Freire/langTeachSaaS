@@ -146,3 +146,49 @@ describe('TeachingTodosCard', () => {
     await waitFor(() => expect(studentsApi.appendTeachingTodo).toHaveBeenCalledWith('s1', 'Via enter'))
   })
 })
+
+describe('TeachingTodosCard - controlled showAddForm mode', () => {
+  it('hides add input row when showAddForm=false', () => {
+    render(
+      <TeachingTodosCard todos={[]} studentId="s1" onStudentChange={vi.fn()} showAddForm={false} onAddFormClose={vi.fn()} />,
+      { wrapper }
+    )
+    expect(screen.queryByTestId('todo-add-input')).not.toBeInTheDocument()
+  })
+
+  it('shows add input row when showAddForm=true', () => {
+    render(
+      <TeachingTodosCard todos={[]} studentId="s1" onStudentChange={vi.fn()} showAddForm={true} onAddFormClose={vi.fn()} />,
+      { wrapper }
+    )
+    expect(screen.getByTestId('todo-add-input')).toBeInTheDocument()
+  })
+
+  it('calls onAddFormClose after successful add', async () => {
+    const newStudent = makeStudent([PENDING_TODO])
+    vi.mocked(studentsApi.appendTeachingTodo).mockResolvedValue(newStudent)
+    const onAddFormClose = vi.fn()
+    render(
+      <TeachingTodosCard todos={[]} studentId="s1" onStudentChange={vi.fn()} showAddForm={true} onAddFormClose={onAddFormClose} />,
+      { wrapper }
+    )
+    fireEvent.change(screen.getByTestId('todo-add-input'), { target: { value: 'New idea' } })
+    fireEvent.keyDown(screen.getByTestId('todo-add-input'), { key: 'Enter' })
+    await waitFor(() => expect(onAddFormClose).toHaveBeenCalled())
+  })
+
+  it('calls onAddFormClose on Escape key', () => {
+    const onAddFormClose = vi.fn()
+    render(
+      <TeachingTodosCard todos={[]} studentId="s1" onStudentChange={vi.fn()} showAddForm={true} onAddFormClose={onAddFormClose} />,
+      { wrapper }
+    )
+    fireEvent.keyDown(screen.getByTestId('todo-add-input'), { key: 'Escape' })
+    expect(onAddFormClose).toHaveBeenCalled()
+  })
+
+  it('always shows add input in uncontrolled mode (no showAddForm prop)', () => {
+    render(<TeachingTodosCard todos={[]} studentId="s1" onStudentChange={vi.fn()} />, { wrapper })
+    expect(screen.getByTestId('todo-add-input')).toBeInTheDocument()
+  })
+})
