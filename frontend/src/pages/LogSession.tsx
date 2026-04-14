@@ -206,7 +206,7 @@ export default function LogSession() {
     : nonCancelledSessions[0] ?? null
 
   const editSessionRank = isEditMode
-    ? (() => { const i = nonCancelledSessions.findIndex(s => s.id === sessionId); return i >= 0 ? i + 1 : null })()
+    ? (() => { const i = nonCancelledSessions.findIndex(s => s.id === sessionId); return i >= 0 ? nonCancelledSessions.length - i : null })()
     : null
   const sessionNumber = isEditMode ? (editSessionRank ?? '?') : nonCancelledSessions.length + 1
   const pendingFollowups = allFollowups.filter(f => f.status === 'pending')
