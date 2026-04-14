@@ -25,22 +25,24 @@ interface UseSessionAutosaveResult {
 }
 
 /**
- * Manages autosave for the Log Session form (create-mode).
+ * Manages autosave for the Log Session form (create and edit mode).
  *
- * First save: calls createSession(), stores the returned ID.
- * Subsequent saves: calls updateSession() with the stored ID.
+ * Create mode: first save calls createSession(), stores the returned ID.
+ * Edit mode: pass `initialSessionId` to start with an existing ID so saves call updateSession() immediately.
  *
  * @param studentId - The student id. Pass undefined to disable autosave.
  * @param getFormData - A ref whose `.current` returns the full CreateSessionLogRequest snapshot.
+ * @param initialSessionId - Optional existing session ID for edit mode.
  */
 export function useSessionAutosave(
   studentId: string | undefined,
   getFormData: React.MutableRefObject<(() => CreateSessionLogRequest) | null>,
+  initialSessionId?: string,
 ): UseSessionAutosaveResult {
   const [status, setStatus] = useState<SaveStatus>('idle')
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(initialSessionId ?? null)
 
-  const sessionIdRef = useRef<string | null>(null)
+  const sessionIdRef = useRef<string | null>(initialSessionId ?? null)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -56,6 +58,14 @@ export function useSessionAutosave(
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
     }
   }, [])
+
+  // Seed session ID for edit mode once it becomes available
+  useEffect(() => {
+    if (initialSessionId && !sessionIdRef.current) {
+      sessionIdRef.current = initialSessionId
+      setSessionId(initialSessionId)
+    }
+  }, [initialSessionId])
 
   const doSave = useCallback(async (override?: Partial<CreateSessionLogRequest>): Promise<string | null> => {
     if (!studentId || !isMountedRef.current) return null

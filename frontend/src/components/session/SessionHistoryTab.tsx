@@ -13,9 +13,8 @@ import {
   Filter,
   MoreHorizontal,
 } from 'lucide-react'
-import { SessionLogDialog } from './SessionLogDialog'
 import { logger } from '../../lib/logger'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { listSessions, deleteSession, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
 import { formatMonthDay } from '../../utils/formatDate'
 import { HOMEWORK_STATUS_INFO } from '../../utils/homeworkStatusStyles'
@@ -84,7 +83,7 @@ function SessionEntry({
   session: SessionLog
   studentId: string
   onEdit: (session: SessionLog) => void
-  onStartNextSession: (session: SessionLog) => void
+  onStartNextSession: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -440,7 +439,7 @@ function SessionEntry({
                       <p className="text-sm text-amber-900 whitespace-pre-wrap">{session.nextSessionTopics}</p>
                       <button
                         className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 hover:text-amber-900 transition-colors"
-                        onClick={() => onStartNextSession(session)}
+                        onClick={() => onStartNextSession()}
                         data-testid="start-next-session-button"
                       >
                         <PlayCircle className="h-3.5 w-3.5" />
@@ -487,10 +486,7 @@ function SessionEntry({
 }
 
 export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
-  const [editSession, setEditSession] = useState<SessionLog | null>(null)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [startNextSource, setStartNextSource] = useState<SessionLog | null>(null)
-  const [startNextDialogOpen, setStartNextDialogOpen] = useState(false)
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [topicFilter, setTopicFilter] = useState<string>('')
@@ -499,23 +495,11 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   function handleEdit(session: SessionLog) {
-    setEditSession(session)
-    setEditDialogOpen(true)
+    navigate(`/students/${studentId}/sessions/${session.id}/edit`)
   }
 
-  function handleEditDialogChange(open: boolean) {
-    setEditDialogOpen(open)
-    if (!open) setEditSession(null)
-  }
-
-  function handleStartNextSession(session: SessionLog) {
-    setStartNextSource(session)
-    setStartNextDialogOpen(true)
-  }
-
-  function handleStartNextDialogChange(open: boolean) {
-    setStartNextDialogOpen(open)
-    if (!open) setStartNextSource(null)
+  function handleStartNextSession() {
+    navigate(`/students/${studentId}/log-session`)
   }
 
   const { data: sessions, isLoading, isError, refetch } = useQuery({
@@ -845,18 +829,6 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
         </footer>
       )}
 
-      <SessionLogDialog
-        studentId={studentId}
-        open={editDialogOpen}
-        onOpenChange={handleEditDialogChange}
-        initialSession={editSession}
-      />
-      <SessionLogDialog
-        studentId={studentId}
-        open={startNextDialogOpen}
-        onOpenChange={handleStartNextDialogChange}
-        initialPlannedContent={startNextSource?.nextSessionTopics ?? undefined}
-      />
     </div>
   )
 }

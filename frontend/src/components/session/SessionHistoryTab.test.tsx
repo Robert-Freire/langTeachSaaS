@@ -6,6 +6,12 @@ import { SessionHistoryTab } from './SessionHistoryTab'
 import * as sessionLogsApi from '../../api/sessionLogs'
 import * as lessonsApi from '../../api/lessons'
 
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>()
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 vi.mock('../../api/sessionLogs', () => ({
   listSessions: vi.fn(),
   deleteSession: vi.fn(),
@@ -68,6 +74,7 @@ function wrapper() {
 describe('SessionHistoryTab', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockNavigate.mockClear()
     vi.mocked(lessonsApi.getLessons).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
   })
 
@@ -203,7 +210,7 @@ describe('SessionHistoryTab', () => {
     expect(await screen.findByTestId('edit-session-button')).toBeInTheDocument()
   })
 
-  it('clicking edit button opens SessionLogDialog in edit mode', async () => {
+  it('clicking edit button navigates to the edit session route', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
@@ -211,8 +218,7 @@ describe('SessionHistoryTab', () => {
     const editBtn = await screen.findByTestId('edit-session-button')
     fireEvent.click(editBtn)
     await waitFor(() => {
-      expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument()
-      expect(screen.getByText('Edit Session')).toBeInTheDocument()
+      expect(mockNavigate).toHaveBeenCalledWith(`/students/student-1/sessions/${SESSION_BASE.id}/edit`)
     })
   })
 
@@ -400,18 +406,15 @@ describe('SessionHistoryTab', () => {
     expect(screen.queryByTestId('start-next-session-button')).not.toBeInTheDocument()
   })
 
-  it('clicking "Start next session" opens Log Session dialog with planned content pre-filled', async () => {
+  it('clicking "Start next session" navigates to log-session page', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
     fireEvent.click(screen.getByTestId('start-next-session-button'))
     await waitFor(() => {
-      expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument()
-      expect(screen.getByText('Log Session')).toBeInTheDocument()
+      expect(mockNavigate).toHaveBeenCalledWith(`/students/student-1/log-session`)
     })
-    const plannedField = screen.getByTestId('planned-content') as HTMLTextAreaElement
-    expect(plannedField.value).toBe('Review irregular verbs')
   })
 
   it('shows Total Hours stat when sessions have duration', async () => {

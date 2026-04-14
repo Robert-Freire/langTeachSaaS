@@ -123,6 +123,11 @@ export function serializeTopicTags(tags: TopicTag[]): string {
   return JSON.stringify(tags)
 }
 
+export async function getSession(studentId: string, sessionId: string): Promise<SessionLog> {
+  const res = await apiClient.get<SessionLog>(`/api/students/${studentId}/sessions/${sessionId}`)
+  return res.data
+}
+
 export async function listSessions(studentId: string): Promise<SessionLog[]> {
   const res = await apiClient.get<SessionLog[]>(`/api/students/${studentId}/sessions`)
   return res.data

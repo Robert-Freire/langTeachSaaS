@@ -54,6 +54,7 @@ export default function App() {
                   <Route path="/students/new" element={<StudentForm />} />
                   <Route path="/students/:id/edit" element={<StudentForm />} />
                   <Route path="/students/:id/log-session" element={<LogSession />} />
+                  <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
                   <Route path="/sessions" element={<Sessions />} />
                   <Route path="/students/:id" element={<StudentDetail />} />
                   <Route path="/lessons" element={<Lessons />} />
