@@ -4,6 +4,14 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 ---
 
+## In-Flight Tasks (2026-04-14)
+
+| Task | Issue | PR | Status |
+|------|-------|----|--------|
+| t725 | #725 Edit Student autosave | #743 | MERGED |
+| t726 | #726 Edit Student Stitch visual alignment | #744 | MERGED |
+| t730 | #730 Dashboard polish - hero CTA, roster signals, followup urgency | #748 | PR open, CI pending |
+
 ## Live Tracker: GitHub Issues
 
 GitHub Issues is the single source of truth for task tracking.
