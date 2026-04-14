@@ -930,4 +930,59 @@ describe('StudentForm', () => {
     const dangerZone = screen.getByTestId('danger-zone')
     expect(dangerZone).toContainElement(errorEl)
   })
+
+  // AC1: clicking a CEFR badge opens the select for editing
+  it('clicking CEFR badge reveals the select dropdown for editing', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+
+    const badge = screen.getByTestId('student-cefr-badge')
+    await user.click(badge)
+    // After clicking, the select trigger should appear
+    expect(await screen.findByTestId('student-cefr')).toBeInTheDocument()
+    expect(screen.queryByTestId('student-cefr-badge')).not.toBeInTheDocument()
+  })
+
+  // AC2: native language chips use rounded-full
+  it('native language chips have rounded-full class', async () => {
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
+      interests: [], nativeLanguages: ['Ukrainian'], learningGoals: [],
+      weaknesses: [], difficulties: [], personalNotes: null, teachingNotes: null,
+      shortTermObjectives: [], spokenLanguages: [], teachingTodos: [],
+      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
+      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
+      officialCefrLevel: null, isActive: true, isCorporate: false, rate: null,
+      skillLevelOverrides: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+    })
+    renderEdit()
+    const chips = await screen.findAllByTestId('native-lang-chip')
+    expect(chips.length).toBeGreaterThan(0)
+    chips.forEach((chip) => {
+      expect(chip.className).toContain('rounded-full')
+    })
+  })
+
+  // AC6: difficulty rows with severity/trend data render the visual indicators
+  it('renders difficulty visual indicators when severity and trend are set', async () => {
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
+      interests: [], nativeLanguages: [], learningGoals: [],
+      weaknesses: [], difficulties: [
+        { id: 'd1', description: 'test', competency: 'Grammar', subcategory: '', severity: 'high', trend: 'worsening', status: 'Active' },
+      ], personalNotes: null, teachingNotes: null,
+      shortTermObjectives: [], spokenLanguages: [], teachingTodos: [],
+      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
+      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
+      officialCefrLevel: null, isActive: true, isCorporate: false, rate: null,
+      skillLevelOverrides: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+    })
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(await screen.findByTestId('difficulty-visual-indicators')).toBeInTheDocument()
+    expect(screen.getByTestId('difficulty-severity-bar')).toBeInTheDocument()
+    expect(screen.getByTestId('difficulty-trend-indicator')).toBeInTheDocument()
+  })
 })
