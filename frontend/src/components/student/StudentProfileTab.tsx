@@ -247,9 +247,11 @@ function MotivationHero({
 
   async function handleSave() {
     if (!onSave) return
+    const value = draft.trim()
     setSaving(true)
     try {
-      await onSave(draft)
+      await onSave(value)
+      setDraft(value)
       setEditing(false)
     } catch {
       // keep editor open
