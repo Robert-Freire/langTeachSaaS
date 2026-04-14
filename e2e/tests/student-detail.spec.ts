@@ -207,3 +207,67 @@ test('student detail profile tab: inline-add learning goal', async ({ browser })
     await context.close()
   }
 })
+
+test('student detail profile tab: inline-add short-term objective', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    await page.goto('/students')
+    await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+    const anaVisual = page.getByText('Ana Visual').first()
+    await expect(anaVisual).toBeVisible({ timeout: UI_TIMEOUT })
+    await anaVisual.click()
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+
+    await page.getByTestId('tab-profile').click()
+    await expect(page.getByTestId('student-profile-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    await expect(page.getByTestId('objective-add-btn')).toBeVisible({ timeout: UI_TIMEOUT })
+    await page.getByTestId('objective-add-btn').click()
+
+    const objInput = page.getByTestId('objective-add-btn-input')
+    await expect(objInput).toBeVisible({ timeout: UI_TIMEOUT })
+
+    const objText = `E2E objective ${Date.now()}`
+    await objInput.fill(objText)
+    await objInput.press('Enter')
+
+    await expect(page.getByText(objText)).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByTestId('objective-add-btn-input')).not.toBeVisible()
+  } finally {
+    await context.close()
+  }
+})
+
+test('student detail profile tab: inline-add focus area difficulty', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    await page.goto('/students')
+    await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+    const anaVisual = page.getByText('Ana Visual').first()
+    await expect(anaVisual).toBeVisible({ timeout: UI_TIMEOUT })
+    await anaVisual.click()
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+
+    await page.getByTestId('tab-profile').click()
+    await expect(page.getByTestId('student-profile-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    await expect(page.getByTestId('difficulty-add-btn')).toBeVisible({ timeout: UI_TIMEOUT })
+    await page.getByTestId('difficulty-add-btn').click()
+
+    await expect(page.getByTestId('difficulty-add-competency')).toBeVisible({ timeout: UI_TIMEOUT })
+    await page.getByTestId('difficulty-add-competency').fill('Pronunciation')
+
+    const descText = `E2E difficulty ${Date.now()}`
+    await page.getByTestId('difficulty-add-description').fill(descText)
+    await page.getByTestId('difficulty-add-description').press('Enter')
+
+    await expect(page.getByText(descText)).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByTestId('difficulty-add-description')).not.toBeVisible()
+  } finally {
+    await context.close()
+  }
+})
