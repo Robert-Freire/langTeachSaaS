@@ -876,4 +876,58 @@ describe('StudentForm', () => {
     renderNew()
     expect(screen.queryByTestId('section-nav')).not.toBeInTheDocument()
   })
+
+  // AC1: CEFR badge displays when value is populated in edit mode
+  it('shows CEFR badge instead of select when cefrLevel is loaded in edit mode', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    // cefrLevel is 'B1' from mock — badge should appear, select should not
+    expect(screen.getByTestId('student-cefr-badge')).toBeInTheDocument()
+    expect(screen.queryByTestId('student-cefr')).not.toBeInTheDocument()
+  })
+
+  // AC2: Language chips use full roundedness
+  it('spoken language chips have rounded-full class', async () => {
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
+      interests: [], nativeLanguages: [], learningGoals: [],
+      weaknesses: [], difficulties: [], personalNotes: null, teachingNotes: null,
+      shortTermObjectives: [], spokenLanguages: ['French', 'Italian'], teachingTodos: [],
+      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
+      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
+      officialCefrLevel: null, isActive: true, isCorporate: false, rate: null,
+      skillLevelOverrides: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+    })
+    renderEdit()
+    const chips = await screen.findAllByTestId('spoken-lang-chip')
+    expect(chips.length).toBeGreaterThan(0)
+    chips.forEach((chip) => {
+      expect(chip.className).toContain('rounded-full')
+    })
+  })
+
+  // AC7: Delete button is in the danger zone at the bottom, not in the page header
+  it('delete button is inside the danger zone, not in the page header', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    const dangerZone = screen.getByTestId('danger-zone')
+    const deleteBtn = screen.getByTestId('delete-student-btn')
+    expect(dangerZone).toContainElement(deleteBtn)
+  })
+
+  // AC7: deleteError message renders inside the danger zone
+  it('shows deleteError inside danger zone when deletion fails', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockDeleteStudent.mockRejectedValue(new Error('Network error'))
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+
+    await user.click(screen.getByTestId('delete-student-btn'))
+    await user.click(await screen.findByTestId('confirm-delete'))
+
+    const errorEl = await screen.findByTestId('delete-error')
+    const dangerZone = screen.getByTestId('danger-zone')
+    expect(dangerZone).toContainElement(errorEl)
+  })
 })

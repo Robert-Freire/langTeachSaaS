@@ -118,4 +118,12 @@ describe('LearningGoalTreeEditor', () => {
     const childItem = screen.getByTestId('learning-goal-child-item')
     expect(childItem.querySelector('[data-testid="learning-goal-add-child-btn"]')).toBeNull()
   })
+
+  // AC5: root goals render inside styled card containers
+  it('wraps each root goal in a card container', () => {
+    const goals = [makeGoal('Travel'), makeGoal('Business')]
+    render(<LearningGoalTreeEditor value={goals} onChange={vi.fn()} />)
+    const cards = screen.getAllByTestId('learning-goal-card')
+    expect(cards).toHaveLength(2)
+  })
 })

@@ -184,15 +184,20 @@ export function LearningGoalTreeEditor({ value, onChange }: Props) {
   }
 
   return (
-    <div className="space-y-0.5">
+    <div className="space-y-2">
       {value.map((goal, i) => (
-        <GoalRow
+        <div
           key={goal.id}
-          goal={goal}
-          depth={0}
-          onUpdate={(updated) => updateGoal(i, updated)}
-          onDelete={() => deleteGoal(i)}
-        />
+          className="bg-white rounded-lg border border-[#F4F2FD] p-3 space-y-1"
+          data-testid="learning-goal-card"
+        >
+          <GoalRow
+            goal={goal}
+            depth={0}
+            onUpdate={(updated) => updateGoal(i, updated)}
+            onDelete={() => deleteGoal(i)}
+          />
+        </div>
       ))}
 
       {addingTop ? (
