@@ -34,24 +34,15 @@ function EmptyState({ text }: { text: string }) {
 // ------------------------------------------------------------------
 // Skill badge (large square, for horizontal Skill Assessment row)
 // ------------------------------------------------------------------
-function cefrBgText(level: string): string {
-  const prefix = level[0]?.toUpperCase()
-  if (prefix === 'A') return 'bg-[#DDE8F5] text-[#1A4B7A]'
-  if (prefix === 'B') return 'bg-[#ECEAFD] text-[#3525CD]'
-  if (prefix === 'C') return 'bg-[#F8E9D6] text-[#7E3000]'
-  return 'bg-zinc-100 text-zinc-700'
-}
-
 function SkillBadgeSquare({ skill, level }: { skill: string; level: string }) {
   return (
     <div className="flex flex-col items-center gap-1.5">
       <span className="text-[0.625rem] font-bold uppercase tracking-wide text-zinc-500">{skill}</span>
-      <div
-        className={`w-12 h-12 rounded-lg flex items-center justify-center font-bold text-base ${cefrBgText(level)}`}
+      <CefrBadge
+        level={level}
+        className="w-12 h-12 rounded-lg text-base px-0 py-0"
         data-testid={`skill-badge-${skill.toLowerCase()}`}
-      >
-        {level}
-      </div>
+      />
     </div>
   )
 }

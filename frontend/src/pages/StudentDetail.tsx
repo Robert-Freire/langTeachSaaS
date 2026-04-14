@@ -5,6 +5,7 @@ import { ArrowLeft, NotebookPen, Pencil, CalendarClock } from 'lucide-react'
 import { getStudent, updateStudent } from '../api/students'
 import type { Student } from '../api/students'
 import { logger } from '../lib/logger'
+import { newId } from '@/lib/newId'
 import { getFollowups } from '@/api/followups'
 import { listSessions } from '@/api/sessionLogs'
 import type { SessionLog } from '@/api/sessionLogs'
@@ -17,12 +18,6 @@ import { StudentOverviewTab } from '@/components/student/StudentOverviewTab'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
 import { getObjectiveUrgency, getDaysRemaining, formatDaysRemaining } from '@/lib/objectiveUrgency'
-
-function newId() {
-  return typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random()}`
-}
 
 function getInitials(name: string): string {
   return name
