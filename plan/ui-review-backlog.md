@@ -18,6 +18,13 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 |----------|--------|---------|
 | Low | Student Detail / Profile tab | Ana Seed has no `SkillLevelOverrides` in seeder so horizontal Skill Assessment badges cannot be visually verified. Would need seeder update to add skill overrides to Ana Seed. Unit tests verify the badge layout. |
 | Low | Student Detail / Profile tab | Ana Seed has `PersonalNotes` but no `TeachingNotes` in seeder, so Teacher's Working Memory dark section shows only Sensitivities subsection. To verify both subsections, add TeachingNotes to Ana Seed seeder entry. |
+
+## 2026-04-14 (task #726 review-ui)
+
+| Severity | Screen | Finding |
+|----------|--------|---------|
+| Low | Edit Student | Visual seed student (Ana Visual) has no native/spoken languages, so indigo `rounded-full` language chips could not be visually verified. Unit tests assert `rounded-full` class. Update seed to include spoken languages. |
+| Low | Edit Student | Visual seed student has no learning goals or short-term objectives, so goal card containers and orange-border objective rows could not be visually verified. Unit tests cover the card wrapper. |
 | Info | Student Detail / Profile tab | Right-column "Teacher's Working Memory" sidebar (white card with Profession/Born/Origin/Residence) has same label as left-column dark notes section. Both labeled per Stitch spec. Naming duplication may confuse reviewers but is intentional design distinction. |
 | Low | Student Detail / Profile tab | Ana Visual's Teacher's Working Memory dark section shows VisualTag marker string as content (expected seeder data artifact). Not a code issue; personalNotes = VisualTag is intentionally set in seeder as a marker. |
 
@@ -40,3 +47,10 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 |----------|--------|---------|
 | Low | Student edit / Languages card | NativeLanguages combobox shows "N selected" summary text -- no visible hint which language. Consider showing first selected name. Pre-existing combobox behavior, not introduced in #663. |
 | Low | Student detail / Overview tab | When student has no native languages, the section is absent entirely with no "None specified" fallback. Tab jumps from title to Learning Goals. Arguably correct but could feel like missing data. |
+
+## 2026-04-14 (task #730 review-ui)
+
+| Severity | Screen | Finding |
+|----------|--------|---------|
+| Low | Dashboard / Hero card | Mock teacher has no scheduled sessions, so Start Session CTA, adaptive urgency badge, structured Last Session Briefing (4 bullets), and warm homework card cannot be visually verified. Needs a future session seeded for the mock teacher. All code paths tested via unit tests. |
+| Low | Dashboard / Pending Followups | Mock teacher has no pending followups, so OVERDUE/OLD/TODAY badge designs and colored priority dots are unverified visually. Unit tests verify all badge variants. |
