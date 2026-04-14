@@ -11,6 +11,7 @@ function hashCode(s: string): number {
  * Rotation formula: abs(hash(studentId + dateISO)) % prompts.length
  */
 export function rotatingPrompt(studentId: string, prompts: string[]): string {
+  if (prompts.length === 0) return ''
   const today = new Date().toISOString().slice(0, 10)
   return prompts[Math.abs(hashCode(studentId + today)) % prompts.length]
 }
