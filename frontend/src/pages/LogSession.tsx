@@ -186,7 +186,7 @@ export default function LogSession() {
     enabled: !!id,
   })
 
-  const { data: editSession, isLoading: editSessionLoading } = useQuery({
+  const { data: editSession, isLoading: editSessionLoading, isError: editSessionError } = useQuery({
     queryKey: ['session', id, sessionId],
     queryFn: () => getSession(id!, sessionId!),
     enabled: isEditMode && !!id && !!sessionId,
@@ -427,6 +427,14 @@ export default function LogSession() {
     return (
       <div className="p-8 text-sm text-zinc-500" data-testid="log-session-not-found">
         Student not found.
+      </div>
+    )
+  }
+
+  if (isEditMode && (editSessionError || (!editSessionLoading && !editSession))) {
+    return (
+      <div className="p-8 text-sm text-zinc-500" data-testid="log-session-edit-not-found">
+        Session not found.
       </div>
     )
   }
