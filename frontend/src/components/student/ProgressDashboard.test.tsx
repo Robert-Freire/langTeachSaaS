@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect } from 'vitest'
 import { ProgressDashboard } from './ProgressDashboard'
 import type { Student } from '@/api/students'
@@ -295,6 +296,42 @@ describe('ProgressDashboard', () => {
     renderProgress(student, sessions)
     expect(screen.getByTestId('pacing-behind-badge')).toBeInTheDocument()
     expect(screen.getByTestId('pacing-behind-badge')).toHaveTextContent('Behind')
+  })
+
+  it('shows full description text in difficulty tooltip on hover', async () => {
+    const user = userEvent.setup()
+    const longDescription = 'Very long difficulty description that gets truncated in the UI but shown in full on hover'
+    const student = {
+      ...baseStudent,
+      difficulties: [
+        {
+          id: 'd-tooltip',
+          description: longDescription,
+          competency: 'Grammar',
+          subcategory: 'Complex clauses',
+          severity: 'high',
+          trend: 'stable',
+          status: 'Active',
+        },
+      ],
+    }
+    renderProgress(student)
+    // Tooltip trigger wraps the description — hover to open
+    const truncatedText = screen.getByText(longDescription)
+    await user.hover(truncatedText)
+    // Tooltip popup should now be visible with full description
+    const tooltip = await screen.findByTestId('difficulty-tooltip-d-tooltip')
+    expect(tooltip).toHaveTextContent(longDescription)
+  })
+
+  it('all skill bars use a single consistent fill color (no two-tone artifact)', () => {
+    renderProgress()
+    // Each skill bar should have exactly one fill div with a background-color class
+    // The artifact div from before was an unstyled empty div; after fix, only the fill div remains
+    const readingBar = screen.getByTestId('skill-bar-reading')
+    // The fill bar should have exactly one bg-* color class (primary blue for above baseline)
+    expect(readingBar.className).toContain('bg-[#3525CD]')
+    expect(readingBar.className).not.toContain('bg-[#F4F2FD]') // track color should not bleed into fill
   })
 
   it('does not show Behind badge when student has adequate session frequency', () => {
