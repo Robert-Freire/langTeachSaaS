@@ -250,6 +250,9 @@ export default function StudentDetail() {
     { key: 'progress', label: 'Progress' },
   ]
 
+  const identitySubtitle = buildIdentitySubtitle(student)
+  const sessionFrequency = calcSessionFrequency(sessions)
+
   return (
     <div className="space-y-6">
       {/* Header card */}
@@ -283,12 +286,12 @@ export default function StudentDetail() {
               </h1>
 
               {/* Identity subtitle: L1 speaker · Profession, City */}
-              {buildIdentitySubtitle(student) && (
+              {identitySubtitle && (
                 <p
                   className="text-sm text-zinc-500 mt-0.5 truncate"
                   data-testid="student-header-subtitle"
                 >
-                  {buildIdentitySubtitle(student)}
+                  {identitySubtitle}
                 </p>
               )}
 
@@ -322,12 +325,12 @@ export default function StudentDetail() {
               </div>
 
               {/* Session frequency */}
-              {calcSessionFrequency(sessions) && (
+              {sessionFrequency && (
                 <span
                   className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-medium text-zinc-500 bg-[#F4F2FD]"
                   data-testid="session-frequency-indicator"
                 >
-                  {calcSessionFrequency(sessions)}
+                  {sessionFrequency}
                 </span>
               )}
 
