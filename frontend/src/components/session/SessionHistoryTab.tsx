@@ -114,11 +114,8 @@ function SessionEntry({
   const isDraft = session.statusName === 'Draft'
   const showHwIcon = Boolean(hwStatus && hwStatus !== 'NotApplicable')
 
-  // Right column is empty when there's no homework and no next plan
-  const hasRightColumn =
-    Boolean(session.homeworkAssigned) ||
-    Boolean(session.nextSessionTopics) ||
-    showHwIcon
+  // Right column is only needed when there's actual homework content or a next plan
+  const hasRightColumn = Boolean(session.homeworkAssigned) || Boolean(session.nextSessionTopics)
 
   const cardClass = isCancelled
     ? 'bg-[#F4F2FD]/50 opacity-60 grayscale'
@@ -459,7 +456,7 @@ function SessionEntry({
       </div>
 
       {/* Delete confirmation dialog - at root level, not inside footer */}
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <AlertDialog open={deleteOpen} onOpenChange={(open) => { setDeleteOpen(open); if (!open) setDeleteError(null) }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete session log?</AlertDialogTitle>

@@ -611,4 +611,23 @@ describe('SessionHistoryTab', () => {
     const grid = detail.querySelector('.grid')
     expect(grid?.className).not.toContain('md:grid-cols-3')
   })
+
+  it('uses full-width layout when only hw status icon exists (no homework assigned, no next plan)', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      {
+        ...SESSION_BASE,
+        homeworkAssigned: null,
+        nextSessionTopics: null,
+        previousHomeworkStatusName: 'Done',
+        previousHomeworkStatus: 1,
+      },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const detail = screen.getByTestId('session-entry-detail')
+    // Right column should not render even when hw status icon is present
+    const grid = detail.querySelector('.grid')
+    expect(grid?.className).not.toContain('md:grid-cols-3')
+  })
 })
