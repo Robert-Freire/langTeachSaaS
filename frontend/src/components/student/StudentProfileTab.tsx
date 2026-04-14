@@ -338,7 +338,7 @@ function MotivationHero({
               ) : (
                 <div className="flex items-center gap-2">
                   <p className="font-manrope text-lg italic text-zinc-400 flex-1" data-testid="reason-quote">
-                    Why is this student learning Spanish?
+                    Why is this student learning {student.learningLanguage}?
                   </p>
                   {onSave && (
                     <button

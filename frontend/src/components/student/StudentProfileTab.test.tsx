@@ -141,7 +141,7 @@ describe('StudentProfileTab', () => {
 
     it('shows empty state prompt when no reason', () => {
       renderProfile(EMPTY_STUDENT)
-      expect(screen.getByTestId('reason-quote')).toHaveTextContent('Why is this student learning Spanish?')
+      expect(screen.getByTestId('reason-quote')).toHaveTextContent(`Why is this student learning ${EMPTY_STUDENT.learningLanguage}?`)
     })
 
     it('shows interests beside the quote', () => {
