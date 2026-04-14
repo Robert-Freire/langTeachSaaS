@@ -12,7 +12,7 @@ vi.mock('@/api/dashboard', () => ({
 }))
 
 function makeEmptyDashboard(): DashboardData {
-  return { nextSession: null, todaySessions: [], activeStudents: [], pendingFollowups: [] }
+  return { nextSession: null, todaySessions: [], activeStudents: [], pendingFollowups: [], upcomingThisWeek: [] }
 }
 
 function makeDashboard(overrides: Partial<DashboardData> = {}): DashboardData {
@@ -28,6 +28,9 @@ function makeDashboard(overrides: Partial<DashboardData> = {}): DashboardData {
       lastSessionDate: new Date(Date.now() - 7 * 86400000).toISOString(),
       homeworkAssigned: 'Page 42',
       previousHomeworkStatus: '3',
+      lastSessionTopicTags: [],
+      lastSessionHomework: null,
+      lastSessionFollowups: [],
     },
     todaySessions: [
       {
@@ -58,6 +61,7 @@ function makeDashboard(overrides: Partial<DashboardData> = {}): DashboardData {
       },
     ],
     pendingFollowups: [],
+    upcomingThisWeek: [],
     ...overrides,
   }
 }
@@ -127,9 +131,9 @@ describe('Dashboard', () => {
   })
 
   describe('Zone 2: Today Agenda', () => {
-    it('shows empty state when no today sessions', async () => {
+    it('shows empty state when no today or upcoming sessions', async () => {
       renderDashboard()
-      expect(await screen.findByText(/No sessions today/)).toBeInTheDocument()
+      expect(await screen.findByText(/No sessions this week/)).toBeInTheDocument()
     })
 
     it('shows session rows when sessions exist', async () => {

@@ -21,6 +21,18 @@ export interface NextSession {
   lastSessionDate: string | null
   homeworkAssigned: string | null
   previousHomeworkStatus: string | null
+  lastSessionTopicTags: string[]
+  lastSessionHomework: string | null
+  lastSessionFollowups: string[]
+}
+
+export interface UpcomingSession {
+  sessionLogId: string
+  studentId: string
+  studentName: string
+  studentCefrLevel: string
+  sessionDate: string
+  plannedContent: string | null
 }
 
 export interface TodaySession {
@@ -52,6 +64,7 @@ export interface DashboardData {
   todaySessions: TodaySession[]
   activeStudents: ActiveStudent[]
   pendingFollowups: TeacherFollowup[]
+  upcomingThisWeek: UpcomingSession[]
 }
 
 export type { TeacherFollowup }

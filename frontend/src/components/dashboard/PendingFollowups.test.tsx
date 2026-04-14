@@ -54,4 +54,21 @@ describe('PendingFollowups', () => {
     render(<PendingFollowups followups={[makeFollowup({ id: 'f1' })]} />)
     expect(screen.getByTestId('followup-dot-f1')).toBeInTheDocument()
   })
+
+  it('shows TODAY badge for followup created today', () => {
+    render(<PendingFollowups followups={[makeFollowup({ id: 'f1', createdAt: new Date().toISOString() })]} />)
+    expect(screen.getByTestId('followup-age-f1')).toHaveTextContent('TODAY')
+  })
+
+  it('shows OVERDUE badge for followup more than 3 days old', () => {
+    const old = new Date(Date.now() - 7 * 86400000).toISOString()
+    render(<PendingFollowups followups={[makeFollowup({ id: 'f1', createdAt: old })]} />)
+    expect(screen.getByTestId('followup-age-f1')).toHaveTextContent('OVERDUE')
+  })
+
+  it('shows OLD badge for followup 1-3 days old', () => {
+    const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString()
+    render(<PendingFollowups followups={[makeFollowup({ id: 'f1', createdAt: twoDaysAgo })]} />)
+    expect(screen.getByTestId('followup-age-f1')).toHaveTextContent('OLD')
+  })
 })

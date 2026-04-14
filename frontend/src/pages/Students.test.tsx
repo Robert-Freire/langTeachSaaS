@@ -19,7 +19,7 @@ vi.mock('../lib/logger', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }))
 
-const emptyDashboard = { nextSession: null, todaySessions: [], activeStudents: [], pendingFollowups: [] }
+const emptyDashboard = { nextSession: null, todaySessions: [], activeStudents: [], pendingFollowups: [], upcomingThisWeek: [] }
 
 // Default createdAt is 30 days ago to avoid triggering the NEW signal badge
 const DEFAULT_CREATED_AT = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -217,6 +217,7 @@ describe('Students page', () => {
       nextSession: null,
       todaySessions: [],
       pendingFollowups: [],
+      upcomingThisWeek: [],
       activeStudents: [
         makeActiveStudent({
           studentId: 'abc-123',
@@ -260,7 +261,7 @@ describe('Students page', () => {
       ])
     )
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
-      nextSession: null, todaySessions: [], pendingFollowups: [],
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
       activeStudents: [
         makeActiveStudent({ studentId: 'b', name: 'Bruno', nextSessionDate: later }),
         makeActiveStudent({ studentId: 'a', name: 'Ana', nextSessionDate: soon }),
@@ -286,7 +287,7 @@ describe('Students page', () => {
       ])
     )
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
-      nextSession: null, todaySessions: [], pendingFollowups: [],
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
       activeStudents: [
         makeActiveStudent({ studentId: 'b', name: 'Bruno', lastSessionDate: older }),
         makeActiveStudent({ studentId: 'a', name: 'Ana', lastSessionDate: recent }),
@@ -340,7 +341,7 @@ describe('Students page', () => {
       ])
     )
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
-      nextSession: null, todaySessions: [], pendingFollowups: [],
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
       activeStudents: [
         makeActiveStudent({ studentId: 'z', name: 'Zara Smith', lastSessionDate: recent }),
       ],
@@ -366,7 +367,7 @@ describe('Students page', () => {
       makeListResponse([makeStudent({ id: 'abc-123' })])
     )
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
-      nextSession: null, todaySessions: [], pendingFollowups: [],
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
       activeStudents: [makeActiveStudent({ studentId: 'abc-123', lastSessionDate: lastSession, nextSessionDate: null })],
     })
     wrapper(<Students />)
@@ -379,7 +380,7 @@ describe('Students page', () => {
       makeListResponse([makeStudent({ id: 'abc-123' })])
     )
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
-      nextSession: null, todaySessions: [], pendingFollowups: [],
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
       activeStudents: [makeActiveStudent({ studentId: 'abc-123', cancelledSessionsLast30Days: 2 })],
     })
     wrapper(<Students />)
@@ -393,7 +394,7 @@ describe('Students page', () => {
       makeListResponse([makeStudent({ id: 'abc-123', createdAt: recentDate })])
     )
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
-      nextSession: null, todaySessions: [], pendingFollowups: [],
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
       activeStudents: [makeActiveStudent({ studentId: 'abc-123', totalSessions: 1 })],
     })
     wrapper(<Students />)
@@ -406,7 +407,7 @@ describe('Students page', () => {
       makeListResponse([makeStudent({ id: 'abc-123' })])
     )
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
-      nextSession: null, todaySessions: [], pendingFollowups: [],
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
       activeStudents: [makeActiveStudent({ studentId: 'abc-123', totalSessions: 1 })],
     })
     wrapper(<Students />)
@@ -423,7 +424,7 @@ describe('Students page', () => {
       })])
     )
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
-      nextSession: null, todaySessions: [], pendingFollowups: [],
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
       activeStudents: [makeActiveStudent({ studentId: 'abc-123' })],
     })
     wrapper(<Students />)
@@ -438,7 +439,7 @@ describe('Students page', () => {
       makeListResponse([makeStudent({ id: 'abc-123' })])
     )
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
-      nextSession: null, todaySessions: [], pendingFollowups: [],
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
       activeStudents: [makeActiveStudent({ studentId: 'abc-123', lastSessionDate: lastSession, nextSessionDate: nextSession })],
     })
     wrapper(<Students />)
@@ -471,7 +472,7 @@ describe('Students page', () => {
       makeListResponse([makeStudent({ id: 'abc-123' })])
     )
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
-      nextSession: null, todaySessions: [], pendingFollowups: [],
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
       activeStudents: [makeActiveStudent({ studentId: 'abc-123', nextSessionDate: todayAt2PM.toISOString() })],
     })
     wrapper(<Students />)

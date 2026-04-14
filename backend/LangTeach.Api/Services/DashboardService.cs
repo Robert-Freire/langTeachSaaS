@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
@@ -28,8 +29,9 @@ public class DashboardService : IDashboardService
         var todaySessions = await GetTodaySessionsAsync(teacherId, today, cancellationToken);
         var activeStudents = await GetActiveStudentsAsync(teacherId, now, cancellationToken);
         var pendingFollowups = await _followupService.GetPendingAsync(teacherId, cancellationToken);
+        var upcomingThisWeek = await GetUpcomingThisWeekAsync(teacherId, today, cancellationToken);
 
-        return new DashboardDto(nextSession, todaySessions, activeStudents, pendingFollowups);
+        return new DashboardDto(nextSession, todaySessions, activeStudents, pendingFollowups, upcomingThisWeek);
     }
 
     private async Task<NextSessionDto?> GetNextSessionAsync(Guid teacherId, DateTime now, CancellationToken cancellationToken)
@@ -56,6 +58,27 @@ public class DashboardService : IDashboardService
             .OrderByDescending(sl => sl.SessionDate)
             .FirstOrDefaultAsync(cancellationToken);
 
+        List<string> lastSessionTopicTags = [];
+        if (lastPast is not null)
+        {
+            try
+            {
+                lastSessionTopicTags = (JsonSerializer.Deserialize<List<TopicTagEntry>>(lastPast.TopicTags) ?? [])
+                    .Select(t => t.Tag).ToList();
+            }
+            catch (JsonException)
+            {
+                _logger.LogWarning("Failed to deserialize TopicTags for session {SessionId}", lastPast.Id);
+            }
+        }
+
+        var lastSessionFollowups = lastPast is not null
+            ? await _db.TeacherFollowups
+                .Where(f => f.SourceSessionLogId == lastPast.Id && f.Status != "done")
+                .Select(f => f.Text)
+                .ToListAsync(cancellationToken)
+            : [];
+
         return new NextSessionDto(
             SessionLogId: next.Id,
             StudentId: next.StudentId,
@@ -66,7 +89,10 @@ public class DashboardService : IDashboardService
             LastSessionNotes: lastPast?.GeneralNotes,
             LastSessionDate: lastPast?.SessionDate,
             HomeworkAssigned: next.HomeworkAssigned,
-            PreviousHomeworkStatus: next.PreviousHomeworkStatus.ToString()
+            PreviousHomeworkStatus: next.PreviousHomeworkStatus.ToString(),
+            LastSessionTopicTags: lastSessionTopicTags,
+            LastSessionHomework: lastPast?.HomeworkAssigned,
+            LastSessionFollowups: lastSessionFollowups
         );
     }
 
@@ -89,6 +115,32 @@ public class DashboardService : IDashboardService
             SessionDate: sl.SessionDate!.Value,
             PlannedContent: sl.PlannedContent,
             Status: sl.Status.ToString()
+        )).ToList();
+    }
+
+    private async Task<List<UpcomingSessionDto>> GetUpcomingThisWeekAsync(Guid teacherId, DateTime today, CancellationToken cancellationToken)
+    {
+        var endOfWeek = today.AddDays(7);
+
+        var sessions = await _db.SessionLogs
+            .Where(sl => sl.TeacherId == teacherId
+                      && !sl.IsDeleted
+                      && !sl.IsCancelled
+                      && sl.SessionDate.HasValue
+                      && sl.SessionDate.Value.Date > today
+                      && sl.SessionDate.Value.Date <= endOfWeek)
+            .Include(sl => sl.Student)
+            .OrderBy(sl => sl.SessionDate)
+            .Take(5)
+            .ToListAsync(cancellationToken);
+
+        return sessions.Select(sl => new UpcomingSessionDto(
+            SessionLogId: sl.Id,
+            StudentId: sl.StudentId,
+            StudentName: sl.Student.Name,
+            StudentCefrLevel: sl.Student.CefrLevel,
+            SessionDate: sl.SessionDate!.Value,
+            PlannedContent: sl.PlannedContent
         )).ToList();
     }
 
@@ -197,4 +249,6 @@ public class DashboardService : IDashboardService
             );
         }).ToList();
     }
+
+    private sealed record TopicTagEntry(string Tag, string? Category);
 }

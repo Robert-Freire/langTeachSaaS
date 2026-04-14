@@ -6,15 +6,34 @@ interface NextSessionHeroProps {
   session: NextSession | null
 }
 
-function formatCountdown(sessionDate: string): string {
+interface UrgencyBadge {
+  label: string
+  className: string
+  showBadge: boolean
+}
+
+function getUrgencyBadge(sessionDate: string): UrgencyBadge {
   const diff = new Date(sessionDate).getTime() - Date.now()
-  if (diff <= 0) return 'NOW'
+  if (diff <= 0) return { label: 'NOW', className: 'bg-gradient-to-br from-[#3525CD] to-indigo-500 text-white', showBadge: true }
   const mins = Math.round(diff / 60000)
-  if (mins < 60) return `IN ${mins} MIN`
-  const hrs = Math.round(mins / 60)
-  if (hrs < 24) return `IN ${hrs}H`
-  const days = Math.round(hrs / 24)
-  return `IN ${days}D`
+  if (mins <= 120) {
+    // Within 2 hours: green gradient pill
+    const label = mins < 60 ? `IN ${mins} MIN` : `IN ${Math.round(mins / 60)}H`
+    return { label, className: 'bg-gradient-to-br from-[#3525CD] to-indigo-500 text-white', showBadge: true }
+  }
+  const hrs = diff / 3600000
+  if (hrs < 24) {
+    // Today but not imminent: neutral
+    const timeStr = new Date(sessionDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    return { label: `TODAY, ${timeStr}`, className: 'bg-zinc-100 text-zinc-600', showBadge: true }
+  }
+  const days = Math.round(diff / 86400000)
+  if (days <= 7) {
+    // Within a week: neutral no-frills
+    return { label: `IN ${days}D`, className: 'bg-zinc-100 text-zinc-500', showBadge: true }
+  }
+  // More than 7 days: no badge
+  return { label: '', className: '', showBadge: false }
 }
 
 function formatSessionTime(sessionDate: string): string {
@@ -56,7 +75,14 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
     )
   }
 
+  const urgency = getUrgencyBadge(session.sessionDate)
   const hwStatus = homeworkStatusLabel(session.previousHomeworkStatus)
+
+  const hasTopics = session.lastSessionTopicTags.length > 0
+  const hasResponse = !!session.lastSessionNotes
+  const hasLastHomework = !!session.lastSessionHomework
+  const hasPromises = session.lastSessionFollowups.length > 0
+  const hasBriefing = hasTopics || hasResponse || hasLastHomework || hasPromises
 
   return (
     <div
@@ -67,9 +93,11 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
       <div className="flex items-start justify-between gap-4 mb-5">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <span className="inline-flex items-center rounded-full bg-gradient-to-br from-[#3525CD] to-indigo-500 px-3 py-1 text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-white font-inter">
-              {formatCountdown(session.sessionDate)}
-            </span>
+            {urgency.showBadge && (
+              <span className={`inline-flex items-center rounded-full px-3 py-1 text-[0.6875rem] font-bold uppercase tracking-[0.05em] font-inter ${urgency.className}`}>
+                {urgency.label}
+              </span>
+            )}
             <span className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter">
               {formatSessionDay(session.sessionDate)} &middot; {formatSessionTime(session.sessionDate)}
             </span>
@@ -80,12 +108,21 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
         </div>
         <div className="flex flex-col items-end gap-2">
           <CefrBadge level={session.studentCefrLevel} />
-          <Link
-            to={`/students/${session.studentId}`}
-            className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-indigo-600 hover:text-indigo-800 font-inter transition-colors"
-          >
-            View profile
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to={`/students/${session.studentId}`}
+              className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-indigo-600 hover:text-indigo-800 font-inter transition-colors"
+            >
+              View profile
+            </Link>
+            <Link
+              to={`/students/${session.studentId}/log-session`}
+              className="inline-flex items-center rounded-xl bg-gradient-to-br from-[#3525CD] to-indigo-500 px-3 py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-white font-inter transition-opacity hover:opacity-90"
+              data-testid="start-session-btn"
+            >
+              Start session
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -97,21 +134,47 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
         </div>
       )}
 
-      {/* Briefing grid */}
-      {(session.lastSessionNotes || session.homeworkAssigned) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-xl bg-[#F4F2FD] p-4">
-          {session.lastSessionNotes && (
-            <div>
-              <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mb-1">
+      {/* Last session briefing + homework card */}
+      {(hasBriefing || session.homeworkAssigned) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Structured briefing */}
+          {hasBriefing && (
+            <div className="rounded-xl bg-[#F4F2FD] p-4 space-y-2.5">
+              <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter">
                 Last session{session.lastSessionDate ? ` · ${formatLastSessionDate(session.lastSessionDate)}` : ''}
               </p>
-              <p className="text-sm text-[#1A1B22] font-inter">{session.lastSessionNotes}</p>
+              {hasTopics && (
+                <div>
+                  <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mb-0.5">Topics</p>
+                  <p className="text-sm text-[#1A1B22] font-inter">{session.lastSessionTopicTags.join(', ')}</p>
+                </div>
+              )}
+              {hasResponse && (
+                <div>
+                  <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mb-0.5">How it went</p>
+                  <p className="text-sm text-[#1A1B22] font-inter">{session.lastSessionNotes}</p>
+                </div>
+              )}
+              {hasLastHomework && (
+                <div>
+                  <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mb-0.5">Homework assigned</p>
+                  <p className="text-sm text-[#1A1B22] font-inter">{session.lastSessionHomework}</p>
+                </div>
+              )}
+              {hasPromises && (
+                <div>
+                  <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mb-0.5">Promises made</p>
+                  <p className="text-sm text-[#1A1B22] font-inter">{session.lastSessionFollowups.join(' · ')}</p>
+                </div>
+              )}
             </div>
           )}
+
+          {/* Homework status card */}
           {session.homeworkAssigned && (
-            <div>
-              <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mb-1">
-                Homework &middot; <span className={hwStatus.color}>{hwStatus.label}</span>
+            <div className="rounded-xl bg-amber-50 border border-amber-100 p-4">
+              <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-amber-700 font-inter mb-1">
+                Homework pending &middot; <span className={hwStatus.color}>{hwStatus.label}</span>
               </p>
               <p className="text-sm text-[#1A1B22] font-inter">{session.homeworkAssigned}</p>
             </div>

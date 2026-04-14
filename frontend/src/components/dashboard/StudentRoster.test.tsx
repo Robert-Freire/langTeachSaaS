@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { StudentRoster } from './StudentRoster'
@@ -69,7 +69,45 @@ describe('StudentRoster', () => {
     expect(screen.getByRole('link', { name: /Add your first student/i })).toBeInTheDocument()
   })
 
-  it('shows pending todo count badge when student has pending todos', () => {
+  it('shows student count', () => {
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent(), makeStudent({ studentId: 's2', name: 'Marco Rossi' })]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByTestId('student-count')).toHaveTextContent('2 active enrollments')
+  })
+
+  it('shows singular enrollment for one student', () => {
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent()]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByTestId('student-count')).toHaveTextContent('1 active enrollment')
+  })
+
+  it('shows L1 native language', () => {
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent({ nativeLanguages: ['Spanish'] })]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Spanish')).toBeInTheDocument()
+  })
+
+  it('shows dash for missing native language', () => {
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent({ nativeLanguages: [] })]} />
+      </MemoryRouter>,
+    )
+    // Multiple dashes may appear (Last, Next also show — for nulls in this case)
+    const cells = screen.getAllByText('—')
+    expect(cells.length).toBeGreaterThan(0)
+  })
+
+  it('shows Review pending signal when student has pending todos', () => {
     const student = makeStudent({ pendingTodos: [
       { id: 't1', text: 'Todo 1', createdAt: new Date().toISOString(), status: 'pending', sourceSessionLogId: null, coveredInSessionLogId: null },
     ] })
@@ -78,18 +116,55 @@ describe('StudentRoster', () => {
         <StudentRoster students={[student]} />
       </MemoryRouter>,
     )
-    expect(screen.getByText('1')).toBeInTheDocument()
+    expect(screen.getByText('Review pending')).toBeInTheDocument()
   })
 
-  it('limits to 10 students maximum', () => {
-    const students = Array.from({ length: 15 }, (_, i) =>
-      makeStudent({ studentId: `s${i}`, name: `Student ${i}`, nextSessionDate: new Date(Date.now() + i * 86400000).toISOString() }),
+  it('shows Cancelled 2x signal when cancelledSessionsLast30Days >= 2', () => {
+    const student = makeStudent({ cancelledSessionsLast30Days: 2 })
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[student]} />
+      </MemoryRouter>,
     )
+    expect(screen.getByText('Cancelled 2x')).toBeInTheDocument()
+  })
+
+  it('shows Inactive signal when last session >= 14 days ago and no next session', () => {
+    const student = makeStudent({
+      lastSessionDate: new Date(Date.now() - 20 * 86400000).toISOString(),
+      nextSessionDate: null,
+    })
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[student]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText(/Inactive \d+d/)).toBeInTheDocument()
+  })
+
+  it('renders sort dropdown showing Last Session by default', () => {
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent()]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByTestId('roster-sort')).toHaveTextContent('Last Session')
+  })
+
+  it('sorts by name when Name option selected', () => {
+    const students = [
+      makeStudent({ studentId: 's1', name: 'Zara' }),
+      makeStudent({ studentId: 's2', name: 'Ana' }),
+    ]
     render(
       <MemoryRouter>
         <StudentRoster students={students} />
       </MemoryRouter>,
     )
-    expect(screen.getAllByTestId('zone3-student-row')).toHaveLength(10)
+    fireEvent.click(screen.getByTestId('roster-sort'))
+    fireEvent.click(screen.getByTestId('roster-sort-option-name'))
+    const rows = screen.getAllByTestId('zone3-student-row')
+    expect(rows[0]).toHaveTextContent('Ana')
+    expect(rows[1]).toHaveTextContent('Zara')
   })
 })
