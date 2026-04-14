@@ -109,6 +109,7 @@ function GoalRow({ goal, depth, onUpdate, onDelete }: GoalRowProps) {
         {canAddChild && (
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => { setAddingChild(true); setExpanded(true) }}
             className="text-zinc-400 hover:text-indigo-600 shrink-0"
             title="Add sub-goal"
@@ -218,6 +219,7 @@ export function LearningGoalTreeEditor({ value, onChange }: Props) {
           type="button"
           variant="ghost"
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => setAddingTop(true)}
           className="h-7 text-xs text-zinc-500 hover:text-indigo-600 px-0"
           data-testid="learning-goal-add-btn"

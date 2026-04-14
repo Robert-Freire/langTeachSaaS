@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Plus, Trash2 } from 'lucide-react'
+import { X, Plus, Trash2, CheckCircle, Loader2, RefreshCw } from 'lucide-react'
 import { getStudent, createStudent, updateStudent, deleteStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem, type ShortTermObjective, type LearningGoalItem } from '../api/students'
 import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
@@ -31,7 +31,8 @@ import { getFollowups } from '@/api/followups'
 import { FieldTooltip } from '@/components/FieldTooltip'
 import { PageHeader } from '@/components/PageHeader'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
-import { LANGUAGES, NATIVE_LANGUAGE_OPTIONS } from '@/lib/languages'
+import { ALL_LANGUAGE_OPTIONS } from '@/lib/languages'
+import { useStudentAutosave } from '@/hooks/useStudentAutosave'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -78,7 +79,6 @@ export default function StudentForm() {
   const [interestInput, setInterestInput] = useState('')
   const [nativeLanguages, setNativeLanguages] = useState<string[]>([])
   const [spokenLanguages, setSpokenLanguages] = useState<string[]>([])
-  const [spokenInput, setSpokenInput] = useState('')
   const [skillLevelOverrides, setSkillLevelOverrides] = useState<Record<string, string>>({})
   const [learningGoals, setLearningGoals] = useState<LearningGoalItem[]>([])
   const [weaknesses, setWeaknesses] = useState<StudentWeaknessItem[]>([])
@@ -100,8 +100,12 @@ export default function StudentForm() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState(SCROLLSPY_IDS[0])
+  const [duplicateMsg, setDuplicateMsg] = useState<string | null>(null)
   const interestInputRef = useRef<HTMLInputElement>(null)
-  const spokenInputRef = useRef<HTMLInputElement>(null)
+
+  // formDataRef is kept up-to-date by a useEffect so the autosave hook always
+  // reads committed state (avoids stale closure issues with debounced saves).
+  const formDataRef = useRef<(() => StudentFormData | null) | null>(null)
 
   const { data: existing, isLoading, isError } = useQuery({
     queryKey: ['students', id],
@@ -159,6 +163,54 @@ export default function StudentForm() {
     }
   }, [existing])
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Keep formDataRef current so the autosave hook always reads the latest committed state.
+  useEffect(() => {
+    formDataRef.current = () => {
+      if (!isEdit) return null
+      const trimmedName = name.trim()
+      if (!trimmedName || !language) return null  // required fields missing - block save
+      const validDifficulties = difficulties.filter((d) => d.competency && d.description.trim())
+      const validWeaknesses = weaknesses.filter((w) => w.description.trim())
+      return {
+        name: trimmedName,
+        learningLanguage: language,
+        cefrLevel,
+        officialCefrLevel: officialCefrLevel || null,
+        interests,
+        nativeLanguages,
+        spokenLanguages,
+        skillLevelOverrides,
+        learningGoals,
+        weaknesses: validWeaknesses,
+        difficulties: validDifficulties,
+        personalNotes: personalNotes.trim() || null,
+        teachingNotes: teachingNotes.trim() || null,
+        birthYear: birthYear ?? null,
+        profession: profession.trim() || null,
+        countryOfOrigin: countryOfOrigin.trim() || null,
+        cityOfOrigin: cityOfOrigin.trim() || null,
+        countryOfResidence: countryOfResidence.trim() || null,
+        cityOfResidence: cityOfResidence.trim() || null,
+        reasonForStudying: reasonForStudying.trim() || null,
+        shortTermObjectives: shortTermObjectives.filter((o) => o.text.trim()),
+        isActive,
+        isCorporate,
+        rate: rate.trim() || null,
+      }
+    }
+  }, [
+    isEdit, name, language, cefrLevel, officialCefrLevel, interests, nativeLanguages,
+    spokenLanguages, skillLevelOverrides, learningGoals, weaknesses, difficulties,
+    personalNotes, teachingNotes, birthYear, profession, countryOfOrigin, cityOfOrigin,
+    countryOfResidence, cityOfResidence, reasonForStudying, shortTermObjectives,
+    isActive, isCorporate, rate,
+  ])
+
+  const { status: saveStatus, scheduleTextSave, saveNow } = useStudentAutosave(
+    isEdit ? id : undefined,
+    formDataRef,
+  )
 
   // Scrollspy: listen on the main scroll container
   useEffect(() => {
@@ -222,7 +274,9 @@ export default function StudentForm() {
   function addInterest(value: string) {
     const trimmed = value.trim()
     if (trimmed && !interests.includes(trimmed)) {
-      setInterests((prev) => [...prev, trimmed])
+      const next = [...interests, trimmed]
+      setInterests(next)
+      if (isEdit) saveNow({ interests: next })
     }
     setInterestInput('')
   }
@@ -238,29 +292,14 @@ export default function StudentForm() {
   }
 
   function removeInterest(interest: string) {
-    setInterests((prev) => prev.filter((i) => i !== interest))
+    const next = interests.filter((i) => i !== interest)
+    setInterests(next)
+    if (isEdit) saveNow({ interests: next })
   }
 
-  function addSpokenLanguage(value: string) {
-    const trimmed = value.trim()
-    if (trimmed && !spokenLanguages.includes(trimmed)) {
-      setSpokenLanguages((prev) => [...prev, trimmed])
-    }
-    setSpokenInput('')
-  }
-
-  function handleSpokenKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault()
-      addSpokenLanguage(spokenInput)
-    }
-    if (e.key === 'Backspace' && spokenInput === '' && spokenLanguages.length > 0) {
-      setSpokenLanguages((prev) => prev.slice(0, -1))
-    }
-  }
-
-  function removeSpokenLanguage(lang: string) {
-    setSpokenLanguages((prev) => prev.filter((l) => l !== lang))
+  function showDuplicateMsg(msg: string) {
+    setDuplicateMsg(msg)
+    setTimeout(() => setDuplicateMsg(null), 2000)
   }
 
   function setSkillOverride(skill: string, value: string) {
@@ -282,10 +321,13 @@ export default function StudentForm() {
     setWeaknesses((prev) =>
       prev.map((w, i) => (i === index ? { ...w, [field]: value } : w))
     )
+    if (isEdit) scheduleTextSave()
   }
 
   function removeWeakness(index: number) {
-    setWeaknesses((prev) => prev.filter((_, i) => i !== index))
+    const next = weaknesses.filter((_, i) => i !== index)
+    setWeaknesses(next)
+    if (isEdit) saveNow({ weaknesses: next.filter((w) => w.description.trim()) })
   }
 
   function addDifficulty() {
@@ -293,12 +335,14 @@ export default function StudentForm() {
       ...prev,
       { id: newId(), description: '', competency: '', subcategory: '', severity: 'medium', trend: 'stable', status: 'Active' },
     ])
+    if (isEdit) saveNow()
   }
 
   function updateDifficulty(diffId: string, field: keyof Difficulty, value: string) {
     setDifficulties((prev) =>
       prev.map((d) => (d.id === diffId ? { ...d, [field]: value } : d))
     )
+    if (isEdit) scheduleTextSave()
     setErrors((prev) => {
       const key = `difficulty-${diffId}`
       if (!prev[key]) return prev
@@ -317,7 +361,9 @@ export default function StudentForm() {
   }
 
   function removeDifficulty(diffId: string) {
-    setDifficulties((prev) => prev.filter((d) => d.id !== diffId))
+    const next = difficulties.filter((d) => d.id !== diffId)
+    setDifficulties(next)
+    if (isEdit) saveNow({ difficulties: next.filter((d) => d.competency && d.description.trim()) })
     setErrors((prev) => {
       const key = `difficulty-${diffId}`
       if (!prev[key]) return prev
@@ -329,19 +375,23 @@ export default function StudentForm() {
 
   function addObjective() {
     setShortTermObjectives((prev) => [...prev, { id: newId(), text: '', targetDate: null }])
+    if (isEdit) saveNow()
   }
 
   function updateObjective(objId: string, field: 'text' | 'targetDate', value: string | null) {
     setShortTermObjectives((prev) =>
       prev.map((o) => (o.id === objId ? { ...o, [field]: value } : o))
     )
+    if (isEdit) scheduleTextSave()
   }
 
   function removeObjective(objId: string) {
-    setShortTermObjectives((prev) => prev.filter((o) => o.id !== objId))
+    const next = shortTermObjectives.filter((o) => o.id !== objId)
+    setShortTermObjectives(next)
+    if (isEdit) saveNow({ shortTermObjectives: next.filter((o) => o.text.trim()) })
   }
 
-  function validate(): boolean {
+  function validateForCreate(): boolean {
     const errs: Record<string, string> = {}
     if (!name.trim()) errs.name = 'Name is required'
     if (!language) errs.language = 'Language is required'
@@ -357,9 +407,25 @@ export default function StudentForm() {
     return Object.keys(errs).length === 0
   }
 
+  // In edit mode, validate required fields inline and update error state immediately.
+  // Pass nextValues to avoid reading stale state when called right after a setter.
+  function validateRequiredInline(nextValues?: { name?: string; language?: string }) {
+    const nextName = nextValues?.name ?? name
+    const nextLanguage = nextValues?.language ?? language
+    setErrors((prev) => {
+      const next = { ...prev }
+      if (!nextName.trim()) { next.name = 'Name is required' }
+      else { delete next.name }
+      if (!nextLanguage) { next.language = 'Language is required' }
+      else { delete next.language }
+      return next
+    })
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!validate()) return
+    if (isEdit) return  // Edit mode uses autosave; form submit is a no-op
+    if (!validateForCreate()) return
     const finalInterests = interestInput.trim()
       ? [...interests, interestInput.trim()]
       : interests
@@ -367,9 +433,6 @@ export default function StudentForm() {
       (d) => d.competency && d.description.trim()
     )
     const validWeaknesses = weaknesses.filter((w) => w.description.trim())
-    const finalSpoken = spokenInput.trim()
-      ? [...spokenLanguages, spokenInput.trim()]
-      : spokenLanguages
     mutate({
       name: name.trim(),
       learningLanguage: language,
@@ -377,7 +440,7 @@ export default function StudentForm() {
       officialCefrLevel: officialCefrLevel || null,
       interests: finalInterests,
       nativeLanguages,
-      spokenLanguages: finalSpoken,
+      spokenLanguages,
       skillLevelOverrides,
       learningGoals,
       weaknesses: validWeaknesses,
@@ -435,8 +498,8 @@ export default function StudentForm() {
     <>
       {/* Page header — always at top, full width */}
       <PageHeader
-        backTo="/students"
-        backLabel="Students"
+        backTo={isEdit && id ? `/students/${id}` : '/students'}
+        backLabel={isEdit && existing?.name ? existing.name : 'Students'}
         title={isEdit ? 'Edit Student' : 'Add Student'}
         subtitle={isEdit ? "Update this student's profile." : 'Create a new student profile.'}
         actions={
@@ -510,7 +573,7 @@ export default function StudentForm() {
               <button
                 key={s.id}
                 type="button"
-                onClick={() => scrollToSection(s.id)}
+                onClick={() => { setActiveSection(s.id); scrollToSection(s.id) }}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                   activeSection === s.id
                     ? 'bg-indigo-50 text-indigo-700'
@@ -522,18 +585,31 @@ export default function StudentForm() {
               </button>
             ))}
           </nav>
-          <div className="flex items-center gap-2 shrink-0 ml-auto">
-            <Button type="button" variant="outline" size="sm" onClick={() => navigate('/students')}>
-              Cancel
-            </Button>
+          <div className="flex items-center gap-3 shrink-0 ml-auto">
+            {/* Autosave status indicator */}
+            <span className="text-xs flex items-center gap-1" data-testid="autosave-status">
+              {saveStatus === 'saving' && (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" /><span className="text-zinc-400">Saving...</span></>
+              )}
+              {saveStatus === 'saved' && (
+                <><CheckCircle className="h-3.5 w-3.5 text-green-500" /><span className="text-zinc-500">All changes saved</span></>
+              )}
+              {saveStatus === 'retrying' && (
+                <><RefreshCw className="h-3.5 w-3.5 text-red-500" /><span className="text-red-500">Couldn't save, retrying...</span></>
+              )}
+              {saveStatus === 'error' && (
+                <><RefreshCw className="h-3.5 w-3.5 text-red-500" /><span className="text-red-500">Couldn't save</span></>
+              )}
+            </span>
             <Button
-              type="submit"
-              form="student-form"
+              type="button"
               size="sm"
-              disabled={isBusy}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              variant="outline"
+              onClick={() => navigate(`/students/${id}`)}
+              disabled={saveStatus === 'saving'}
+              data-testid="done-btn"
             >
-              {isPending ? 'Saving...' : 'Save Profile'}
+              Done
             </Button>
           </div>
         </div>
@@ -559,7 +635,7 @@ export default function StudentForm() {
                       <Input
                         id="name"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => { setName(e.target.value); if (isEdit) { validateRequiredInline({ name: e.target.value }); scheduleTextSave() } }}
                         placeholder="e.g. Ana García"
                         maxLength={200}
                         className="max-w-sm"
@@ -572,25 +648,30 @@ export default function StudentForm() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
                       <div className="space-y-1.5">
                         <Label className="inline-flex items-center gap-1">Learning Language <span className="text-red-500">*</span> <FieldTooltip fieldKey="learningLanguage" /></Label>
-                        <Select value={language} onValueChange={(v) => {
-                          if (!v) return
-                          setLanguage(v)
-                        }}>
-                          <SelectTrigger data-testid="student-language">
-                            <SelectValue placeholder="Select a language" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {LANGUAGES.map((lang) => (
-                              <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <MultiSelect
+                          options={ALL_LANGUAGE_OPTIONS}
+                          selected={language ? [language] : []}
+                          onChange={(vals) => {
+                            const v = vals[0] ?? ''
+                            setLanguage(v)
+                            if (isEdit) {
+                              validateRequiredInline({ language: v })
+                              if (v) saveNow({ learningLanguage: v })
+                            }
+                          }}
+                          placeholder="Select a language"
+                          triggerId="student-language"
+                          chipTestId="language-chip"
+                          maxItems={1}
+                          allowCustom={true}
+                          onDuplicate={() => showDuplicateMsg('Already selected')}
+                        />
                         {errors.language && <p className="text-xs text-red-600">{errors.language}</p>}
                       </div>
 
                       <div className="space-y-1.5">
                         <Label className="inline-flex items-center gap-1">Teacher's Assessment <span className="text-red-500">*</span> <FieldTooltip fieldKey="cefrLevel" /></Label>
-                        <Select value={cefrLevel} onValueChange={(v) => v && setCefrLevel(v)}>
+                        <Select value={cefrLevel} onValueChange={(v) => { if (!v) return; setCefrLevel(v); if (isEdit) saveNow({ cefrLevel: v }) }}>
                           <SelectTrigger data-testid="student-cefr">
                             <SelectValue placeholder="Select a level" />
                           </SelectTrigger>
@@ -607,7 +688,7 @@ export default function StudentForm() {
                     {/* Official CEFR Level */}
                     <div className="space-y-1.5 max-w-[calc(50%-0.5rem)]">
                       <Label className="inline-flex items-center gap-1">Official Level <FieldTooltip fieldKey="officialCefrLevel" /></Label>
-                      <Select value={officialCefrLevel} onValueChange={(v) => setOfficialCefrLevel(!v || v === '__none__' ? '' : v)}>
+                      <Select value={officialCefrLevel} onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setOfficialCefrLevel(next); if (isEdit) saveNow({ officialCefrLevel: next || null }) }}>
                         <SelectTrigger data-testid="student-official-cefr">
                           <SelectValue placeholder="None" />
                         </SelectTrigger>
@@ -633,53 +714,32 @@ export default function StudentForm() {
                     <div className="space-y-1.5">
                       <Label className="inline-flex items-center gap-1">Native Languages <FieldTooltip fieldKey="nativeLanguages" /></Label>
                       <MultiSelect
-                        options={NATIVE_LANGUAGE_OPTIONS}
+                        options={ALL_LANGUAGE_OPTIONS}
                         selected={nativeLanguages}
-                        onChange={setNativeLanguages}
+                        onChange={(vals) => { setNativeLanguages(vals); if (isEdit) saveNow({ nativeLanguages: vals }) }}
                         placeholder="Select native languages (optional)"
                         triggerId="student-native-language"
                         chipTestId="native-lang-chip"
                         maxItems={5}
-                        allowCustom={false}
+                        allowCustom={true}
+                        onDuplicate={() => showDuplicateMsg('Already added')}
                       />
                     </div>
 
                     {/* Spoken Languages */}
                     <div className="space-y-1.5">
                       <Label className="inline-flex items-center gap-1">Spoken Languages <FieldTooltip fieldKey="spokenLanguages" /></Label>
-                      <div
-                        className="flex flex-wrap gap-1.5 min-h-10 w-full max-w-sm rounded-md border border-input bg-white px-3 py-2 cursor-text"
-                        onClick={() => spokenInputRef.current?.focus()}
-                        data-testid="spoken-languages-container"
-                      >
-                        {spokenLanguages.map((lang) => (
-                          <span
-                            key={lang}
-                            className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded px-2 py-0.5"
-                            data-testid="spoken-lang-chip"
-                          >
-                            {lang}
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); removeSpokenLanguage(lang) }}
-                              className="text-indigo-400 hover:text-indigo-700 p-0.5 -mr-0.5"
-                              aria-label={`Remove ${lang}`}
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </span>
-                        ))}
-                        <input
-                          ref={spokenInputRef}
-                          value={spokenInput}
-                          onChange={(e) => setSpokenInput(e.target.value)}
-                          onKeyDown={handleSpokenKeyDown}
-                          onBlur={() => { if (spokenInput.trim()) addSpokenLanguage(spokenInput) }}
-                          placeholder={spokenLanguages.length === 0 ? 'Type and press Enter' : ''}
-                          className="flex-1 min-w-20 outline-none text-sm bg-transparent placeholder:text-zinc-400"
-                          data-testid="spoken-language-input"
-                        />
-                      </div>
+                      <MultiSelect
+                        options={ALL_LANGUAGE_OPTIONS}
+                        selected={spokenLanguages}
+                        onChange={(vals) => { setSpokenLanguages(vals); if (isEdit) saveNow({ spokenLanguages: vals }) }}
+                        placeholder="Select spoken languages (optional)"
+                        triggerId="spoken-languages-container"
+                        chipTestId="spoken-lang-chip"
+                        allowCustom={true}
+                        onDuplicate={() => showDuplicateMsg('Already added')}
+                      />
+                      {duplicateMsg && <p className="text-xs text-amber-600" data-testid="duplicate-msg">{duplicateMsg}</p>}
                       <p className="text-xs text-zinc-400">Other languages spoken. Flat list, no proficiency level.</p>
                     </div>
                   </CardContent>
@@ -700,7 +760,7 @@ export default function StudentForm() {
                           <Label className="text-xs">{skill}</Label>
                           <Select
                             value={skillLevelOverrides[skill] ?? ''}
-                            onValueChange={(v) => setSkillOverride(skill, !v || v === '__none__' ? '' : v)}
+                            onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setSkillOverride(skill, next); if (isEdit) { const nextOverrides = next ? { ...skillLevelOverrides, [skill]: next } : Object.fromEntries(Object.entries(skillLevelOverrides).filter(([k]) => k !== skill)); saveNow({ skillLevelOverrides: nextOverrides }) } }}
                           >
                             <SelectTrigger data-testid={`skill-override-${skill.toLowerCase()}`} className="h-8 text-xs">
                               <SelectValue placeholder="--" />
@@ -738,6 +798,7 @@ export default function StudentForm() {
                           const raw = e.target.value
                           const num = Number(raw)
                           setBirthYear(raw && !isNaN(num) && Number.isInteger(num) ? num : null)
+                          if (isEdit) scheduleTextSave()
                         }}
                         placeholder="e.g. 1990"
                         min={1900}
@@ -750,7 +811,7 @@ export default function StudentForm() {
                       <Input
                         id="profession"
                         value={profession}
-                        onChange={(e) => setProfession(e.target.value)}
+                        onChange={(e) => { setProfession(e.target.value); if (isEdit) scheduleTextSave() }}
                         placeholder="e.g. Software engineer"
                         maxLength={128}
                         data-testid="student-profession"
@@ -767,7 +828,7 @@ export default function StudentForm() {
                         <Input
                           id="country-origin"
                           value={countryOfOrigin}
-                          onChange={(e) => setCountryOfOrigin(e.target.value)}
+                          onChange={(e) => { setCountryOfOrigin(e.target.value); if (isEdit) scheduleTextSave() }}
                           placeholder="e.g. Portugal"
                           maxLength={64}
                           data-testid="student-country-origin"
@@ -778,7 +839,7 @@ export default function StudentForm() {
                         <Input
                           id="city-origin"
                           value={cityOfOrigin}
-                          onChange={(e) => setCityOfOrigin(e.target.value)}
+                          onChange={(e) => { setCityOfOrigin(e.target.value); if (isEdit) scheduleTextSave() }}
                           placeholder="e.g. Lisbon"
                           maxLength={64}
                           data-testid="student-city-origin"
@@ -796,7 +857,7 @@ export default function StudentForm() {
                         <Input
                           id="country-residence"
                           value={countryOfResidence}
-                          onChange={(e) => setCountryOfResidence(e.target.value)}
+                          onChange={(e) => { setCountryOfResidence(e.target.value); if (isEdit) scheduleTextSave() }}
                           placeholder="e.g. Spain"
                           maxLength={64}
                           data-testid="student-country-residence"
@@ -807,7 +868,7 @@ export default function StudentForm() {
                         <Input
                           id="city-residence"
                           value={cityOfResidence}
-                          onChange={(e) => setCityOfResidence(e.target.value)}
+                          onChange={(e) => { setCityOfResidence(e.target.value); if (isEdit) scheduleTextSave() }}
                           placeholder="e.g. Madrid"
                           maxLength={64}
                           data-testid="student-city-residence"
@@ -828,7 +889,7 @@ export default function StudentForm() {
                     <Textarea
                       id="reason-for-studying"
                       value={reasonForStudying}
-                      onChange={(e) => setReasonForStudying(e.target.value)}
+                      onChange={(e) => { setReasonForStudying(e.target.value); if (isEdit) scheduleTextSave() }}
                       placeholder="e.g. Moving to Spain next year, loves the culture..."
                       maxLength={512}
                       rows={3}
@@ -893,7 +954,7 @@ export default function StudentForm() {
                     <Label className="inline-flex items-center gap-1">Learning Goals <FieldTooltip fieldKey="learningGoals" /></Label>
                     <LearningGoalTreeEditor
                       value={learningGoals}
-                      onChange={setLearningGoals}
+                      onChange={(goals) => { setLearningGoals(goals); if (isEdit) saveNow({ learningGoals: goals }) }}
                     />
                   </div>
 
@@ -1157,7 +1218,7 @@ export default function StudentForm() {
                       <p className="text-xs text-zinc-400">Sensitivities / life context.</p>
                       <Textarea
                         value={personalNotes}
-                        onChange={(e) => setPersonalNotes(e.target.value)}
+                        onChange={(e) => { setPersonalNotes(e.target.value); if (isEdit) scheduleTextSave() }}
                         placeholder="Optional personal notes..."
                         maxLength={2000}
                         rows={5}
@@ -1170,7 +1231,7 @@ export default function StudentForm() {
                       <p className="text-xs text-zinc-400">Learning style, teaching observations.</p>
                       <Textarea
                         value={teachingNotes}
-                        onChange={(e) => setTeachingNotes(e.target.value)}
+                        onChange={(e) => { setTeachingNotes(e.target.value); if (isEdit) scheduleTextSave() }}
                         placeholder="Optional teaching notes..."
                         maxLength={2000}
                         rows={5}
@@ -1202,7 +1263,7 @@ export default function StudentForm() {
                         type="button"
                         role="switch"
                         aria-checked={isActive}
-                        onClick={() => setIsActive(!isActive)}
+                        onClick={() => { const next = !isActive; setIsActive(next); if (isEdit) saveNow({ isActive: next }) }}
                         data-testid="toggle-is-active"
                         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${isActive ? 'bg-indigo-600' : 'bg-zinc-300'}`}
                         aria-label="Toggle active status"
@@ -1224,7 +1285,7 @@ export default function StudentForm() {
                         type="button"
                         role="switch"
                         aria-checked={isCorporate}
-                        onClick={() => setIsCorporate(!isCorporate)}
+                        onClick={() => { const next = !isCorporate; setIsCorporate(next); if (isEdit) saveNow({ isCorporate: next }) }}
                         data-testid="toggle-is-corporate"
                         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${isCorporate ? 'bg-indigo-600' : 'bg-zinc-300'}`}
                         aria-label="Toggle corporate status"
@@ -1241,7 +1302,7 @@ export default function StudentForm() {
                       <Input
                         id="rate"
                         value={rate}
-                        onChange={(e) => setRate(e.target.value)}
+                        onChange={(e) => { setRate(e.target.value); if (isEdit) scheduleTextSave() }}
                         placeholder="e.g. 45/hr"
                         maxLength={50}
                         className="max-w-[200px]"

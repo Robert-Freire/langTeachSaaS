@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import StudentForm from './StudentForm'
@@ -57,6 +57,19 @@ vi.mock('../lib/studentOptions', () => ({
     { value: 'high', label: 'High' },
   ],
 }))
+
+// Small language list for fast rendering in most tests (combobox with 60+ options is slow in CI).
+// Tests that specifically test the full language list use the real options — see describe block below.
+const SMALL_LANGUAGE_OPTIONS = [
+  { value: 'English', label: 'English' },
+  { value: 'Spanish', label: 'Spanish' },
+  { value: 'French', label: 'French' },
+]
+let _allLanguageOptions = SMALL_LANGUAGE_OPTIONS
+vi.mock('../lib/languages', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../lib/languages')>()
+  return { ...original, get ALL_LANGUAGE_OPTIONS() { return _allLanguageOptions } }
+})
 
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -143,6 +156,26 @@ describe('StudentForm', () => {
     expect(await screen.findByRole('heading', { name: 'Edit Student' })).toBeInTheDocument()
   })
 
+  it('edit mode does not render Save Profile button', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(screen.queryByRole('button', { name: 'Save Profile' })).not.toBeInTheDocument()
+  })
+
+  it('edit mode renders Done button and autosave status indicator', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(screen.getByTestId('done-btn')).toBeInTheDocument()
+    expect(screen.getByTestId('autosave-status')).toBeInTheDocument()
+  })
+
+  it('breadcrumb in edit mode points to student detail', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    const back = screen.getByTestId('page-header-back')
+    expect(back).toHaveAttribute('href', '/students/stu-1')
+  })
+
   it('Save button has form attribute pointing to student-form', () => {
     renderNew()
     const saveBtn = screen.getByRole('button', { name: 'Save Student' })
@@ -174,17 +207,15 @@ describe('StudentForm', () => {
     })
   })
 
-  it('after updating a student, redirects to student profile page', async () => {
+  it('after updating a student, Done button navigates to student profile page', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
     const user = userEvent.setup()
     renderEdit()
 
     await screen.findByRole('heading', { name: 'Edit Student' })
-    await user.click(screen.getAllByRole('button', { name: 'Save Profile' })[0])
+    await user.click(screen.getByTestId('done-btn'))
 
-    await vi.waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/students/stu-1')
-    })
+    expect(mockNavigate).toHaveBeenCalledWith('/students/stu-1')
   })
 
   it('shows "Student not found" when getStudent rejects', async () => {
@@ -526,10 +557,7 @@ describe('StudentForm', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/courses/new?studentId=stu-1')
   })
 
-  it('loads all native languages in edit mode and preserves them on save', async () => {
-    const { default: userEvent } = await import('@testing-library/user-event')
-    const user = userEvent.setup()
-    mockUpdateStudent.mockResolvedValue({ id: 'stu-1' })
+  it('loads all native languages in edit mode and displays them as chips', async () => {
     mockGetStudent.mockResolvedValue({
       id: 'stu-1',
       name: 'Ana',
@@ -552,17 +580,6 @@ describe('StudentForm', () => {
     expect(chips[0]).toHaveTextContent('Portuguese')
     expect(chips[1]).toHaveTextContent('English')
     expect(chips[2]).toHaveTextContent('Catalan')
-
-    await user.click(screen.getAllByRole('button', { name: 'Save Profile' })[0])
-
-    await vi.waitFor(() => {
-      expect(mockUpdateStudent).toHaveBeenCalledWith(
-        'stu-1',
-        expect.objectContaining({
-          nativeLanguages: ['Portuguese', 'English', 'Catalan'],
-        }),
-      )
-    })
   })
 
   it('"Create Course" button is disabled when student is missing CEFR level', async () => {
@@ -656,7 +673,7 @@ describe('StudentForm', () => {
         }),
       )
     })
-  }, 15000)
+  })
 
   it('renders Reason for Studying textarea', () => {
     renderNew()
@@ -822,12 +839,10 @@ describe('StudentForm', () => {
     renderEdit()
     await screen.findByRole('heading', { name: 'Edit Student' })
 
-    // Toggle isActive off
+    // Toggle isActive off — autosave fires immediately on toggle
     await user.click(screen.getByTestId('toggle-is-active'))
     // inactive badge should appear
     expect(await screen.findByTestId('inactive-badge')).toBeInTheDocument()
-
-    await user.click(screen.getAllByRole('button', { name: 'Save Profile' })[0])
 
     await vi.waitFor(() => {
       expect(mockUpdateStudent).toHaveBeenCalledWith(
@@ -876,4 +891,51 @@ describe('StudentForm', () => {
     renderNew()
     expect(screen.queryByTestId('section-nav')).not.toBeInTheDocument()
   })
+})
+
+describe('StudentForm – language combobox with full options', () => {
+  beforeAll(async () => {
+    const { ALL_LANGUAGE_OPTIONS } = await vi.importActual<typeof import('../lib/languages')>('../lib/languages')
+    _allLanguageOptions = ALL_LANGUAGE_OPTIONS as typeof SMALL_LANGUAGE_OPTIONS
+  })
+  afterAll(() => { _allLanguageOptions = SMALL_LANGUAGE_OPTIONS })
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUpdateStudent.mockResolvedValue({ id: 'stu-1' })
+    mockGetStudents.mockResolvedValue([])
+  })
+
+  it('allows selecting a language only in the full list (e.g. Welsh)', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockCreateStudent.mockResolvedValue({ id: 'new-id' })
+    renderNew()
+    await user.type(screen.getByTestId('student-name'), 'Test Student')
+    await user.click(screen.getByTestId('student-language'))
+    await user.type(screen.getByPlaceholderText('Search or type custom...'), 'Welsh')
+    await user.click(await screen.findByRole('option', { name: 'Welsh' }))
+    await user.click(screen.getByTestId('student-cefr'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await vi.waitFor(() => {
+      expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({ learningLanguage: 'Welsh' }))
+    })
+  }, 15000)
+
+  it('allows entering a custom language not in the predefined list', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockCreateStudent.mockResolvedValue({ id: 'new-id' })
+    renderNew()
+    await user.type(screen.getByTestId('student-name'), 'Test Student')
+    await user.click(screen.getByTestId('student-language'))
+    await user.type(screen.getByPlaceholderText('Search or type custom...'), 'Esperanto')
+    await user.click(await screen.findByTestId('add-custom-entry'))
+    await user.click(screen.getByTestId('student-cefr'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await vi.waitFor(() => {
+      expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({ learningLanguage: 'Esperanto' }))
+    })
+  }, 15000)
 })

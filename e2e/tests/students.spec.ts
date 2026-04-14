@@ -103,8 +103,7 @@ test('creates student with lexical weakness and verifies round-trip', async ({ b
   await expect(typeSelect).toContainText('Lexical', { timeout: FEEDBACK_TIMEOUT })
 
   // Cleanup
-  await page.getByRole('button', { name: 'Cancel' }).click()
-  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+  await page.goto('/students')
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -229,7 +228,9 @@ test('full student CRUD flow', async ({ browser }) => {
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'C1' }).click()
 
-  await page.getByRole('button', { name: 'Save Profile' }).first().click()
+  // Wait for autosave to complete then navigate via Done button
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+  await page.getByTestId('done-btn').click()
 
   // Should redirect to student profile page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
@@ -252,7 +253,9 @@ test('full student CRUD flow', async ({ browser }) => {
   await verifyDiffRow.getByTestId('remove-difficulty').click()
   await expect(page.getByTestId('difficulty-row')).not.toBeVisible()
 
-  await page.getByRole('button', { name: 'Save Profile' }).first().click()
+  // Wait for autosave to complete then navigate via Done button
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+  await page.getByTestId('done-btn').click()
 
   // Should redirect to student profile page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
@@ -269,8 +272,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await expect(page.getByText('No specific difficulties tracked yet.')).toBeVisible()
 
   // Go back to list for delete step
-  await page.getByRole('button', { name: 'Cancel' }).click()
-  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+  await page.goto('/students')
 
   // Delete
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
@@ -349,8 +351,7 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
   await expect(page.getByTestId('weakness-description')).toHaveValue('irregular verb conjugation')
 
   // Clean up: go back and delete the student
-  await page.getByRole('button', { name: 'Cancel' }).click()
-  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+  await page.goto('/students')
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -515,8 +516,9 @@ test('saves and displays SpokenLanguages, OfficialCefrLevel, and SkillLevelOverr
   await page.getByRole('option', { name: 'A2' }).click()
 
   // Add a spoken language
-  await page.getByTestId('spoken-language-input').fill('English')
-  await page.getByTestId('spoken-language-input').press('Enter')
+  await page.getByTestId('spoken-languages-container').click()
+  await page.getByPlaceholder('Search or type custom...').fill('English')
+  await page.getByRole('option', { name: 'English' }).click()
   await expect(page.getByTestId('spoken-lang-chip').first()).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
   // Set skill override for Reading
@@ -615,8 +617,7 @@ test('identity fields round-trip: save and verify in profile view and edit form'
   await expect(page.getByTestId('student-city-residence')).toHaveValue('Madrid')
 
   // Cleanup
-  await page.getByRole('button', { name: 'Cancel' }).click()
-  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+  await page.goto('/students')
   const deleteCardIdentity = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
@@ -684,8 +685,7 @@ test('motivation fields: reason for studying and objectives round-trip', async (
   await expect(page.getByTestId('objective-text-input')).toHaveValue(objectiveText)
 
   // Cleanup
-  await page.getByRole('button', { name: 'Cancel' }).click()
-  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+  await page.goto('/students')
   const deleteCardM = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
@@ -960,14 +960,15 @@ test('commercial fields round-trip: isActive, isCorporate, rate', async ({ brows
   await expect(page.getByTestId('toggle-is-corporate')).toBeVisible()
   await expect(page.getByTestId('student-rate')).toBeVisible()
 
-  // Fill commercial fields
+  // Fill commercial fields - each change triggers autosave
   await page.getByTestId('student-rate').fill('55/hr')
   await page.getByTestId('toggle-is-corporate').click()
   await page.getByTestId('toggle-is-active').click()
   await expect(page.getByTestId('inactive-badge')).toBeVisible()
 
-  // Save
-  await page.getByRole('button', { name: 'Save Profile' }).first().click()
+  // Wait for autosave to complete then navigate via Done button
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+  await page.getByTestId('done-btn').click()
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Profile tab: commercial section shows updated values

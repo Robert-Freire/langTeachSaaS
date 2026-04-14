@@ -25,6 +25,7 @@ export function MultiSelect({
   maxLength,
   maxItems,
   allowCustom = true,
+  onDuplicate,
 }: {
   options: { value: string; label: string }[]
   selected: string[]
@@ -35,6 +36,7 @@ export function MultiSelect({
   maxLength?: number
   maxItems?: number
   allowCustom?: boolean
+  onDuplicate?: () => void
 }) {
   const [open, setOpen] = useState(false)
   const [inputValue, setInputValue] = useState('')
@@ -59,7 +61,9 @@ export function MultiSelect({
     const trimmed = inputValue.trim()
     if (!trimmed) return
     const limited = maxLength ? trimmed.slice(0, maxLength) : trimmed
-    if (!selected.includes(limited)) {
+    if (selected.includes(limited)) {
+      onDuplicate?.()
+    } else {
       onChange([...selected, limited])
     }
     setInputValue('')
