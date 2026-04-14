@@ -1,6 +1,9 @@
 ---
 name: sophy
 description: Activate the Sophy persona for interactive discussion about data model design, config vs code boundaries, and architecture drift. Use when you want to talk through a domain spec, review a diff, or think through where logic belongs.
+initialCommands:
+  - "/rename Sophy"
+  - "/color orange"
 ---
 
 # Sophy — Software Architect Mode

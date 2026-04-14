@@ -3,9 +3,9 @@
 > **Sprint started:** 2026-04-08
 > **Branch:** `sprint/ui-redesign-student-polish`
 > **Milestone:** #16
-> **Last updated:** 2026-04-11
+> **Last updated:** 2026-04-12
 
-## Progress: 16 closed / 22 open
+## Progress: 36 closed / 7 open
 
 ---
 
@@ -14,6 +14,7 @@
 | # | Title | Area |
 |---|-------|------|
 | 603 | fix: add student with difficulties to DemoSeeder | backend |
+| 612 | fix: session log dialog UX polish | frontend | (closed as not_planned, superseded by #672)
 | 620 | fix: Telegram bot URL scheme bug | backend |
 | 625 | feat: student profile additive scalar fields (backend prep) | backend |
 | 626 | refactor: student notes split + native languages plural + learning goals (backend prep) | backend |
@@ -24,106 +25,77 @@
 | 636 | feat: teacher dashboard aggregation endpoint | backend |
 | 637 | feat: students list redesign (compact table, Stitch style) | frontend |
 | 638 | feat: dashboard redesign (session-first layout, Stitch style) | frontend |
-| 639 | feat: student detail redesign (4-tab layout, Stitch style) | frontend |
+| 639 | feat: student detail redesign (3-tab layout, Stitch style) | frontend |
+| 644 | refactor: CEFR badge unification | frontend |
 | 650 | fix: reflection extraction preserves original language and extracts session date | backend |
 | 653 | refactor: move prompt construction from service layer to PromptService | backend |
-| 612 | fix: session log dialog UX polish | frontend | (closed as not_planned, superseded by #672)
 | 656 | Add voice note traceability via VoiceNoteApplication table | backend |
+| 657 | Pedagogy: align difficulty taxonomy with CEFR 2020 | content |
+| 662 | feat: identity fields (BirthYear, Profession, Country, City) | frontend |
+| 663 | feat: language context (SpokenLanguages, OfficialCefrLevel, SkillLevelOverrides) | frontend |
+| 664 | feat: motivation fields (ReasonForStudying, ShortTermObjectives) | frontend |
+| 665 | feat: teaching todos inline UI | frontend |
+| 667 | fix: profile view display gaps for existing fields | frontend |
+| 671 | feat: TeacherFollowup entity and dashboard integration | backend+frontend |
+| 676 | feat: SessionLog Duration + Title fields | backend |
+| 683 | fix: DemoSeeder "Reading" competency not in taxonomy | backend |
+| 669 | chore: script to copy Jordi's data to local dev | infra |
+| 672 | feat: Log Session redesign (full page, context panel, quick-add) | frontend |
+| 673 | feat: voice extraction prompt expansion (topicTags, todos, followups, homework) | backend+frontend |
+| 675 | feat: students list redesign v2 (signal badges, avatars, sort) | frontend |
+| 681 | feat: Edit Student form layout redesign (section nav, grouping) | frontend |
+| 682 | feat: student detail Overview tab (three-card layout) | frontend |
+| 666 | feat: commercial fields in edit form (IsActive, IsCorporate, Rate) | frontend |
+| 668 | feat: wire new student profile fields into PromptService GenerationContext | backend |
+| 699 | feat: move student delete action to edit page | frontend |
+| 688 | feat: teaching todos delete + text-edit backend endpoints | backend |
 
 ---
 
 ## Implementation order (open issues)
 
-### Wave 1: Backend prep (no frontend dependencies, unblocks later waves)
+### Waves 1-2: DONE
 
-| # | Title | P | Area | Effort | Unblocks |
-|---|-------|---|------|--------|----------|
-D | 676 | feat: SessionLog Duration + Title fields | P1 | backend | small | #677 (Sessions tab), #672 (Log Session) |
-| 671 | feat: TeacherFollowup entity (backend: migration, API, service) | P1 | backend | medium | #672 (Log Session), #673 (voice extraction), followup surfaces in Wave 2 |
+All backend prep (676, 671) and profile field issues (662, 663, 664, 665, 667, 644)
+are merged. All dependencies for remaining work are satisfied.
 
-### Wave 2: All screen builds (parallel, all reference Stitch screenshots)
+### Remaining work: Execution plan
 
-No dependencies between these issues. All depend on #639 (done).
-#671 frontend surfaces depend on Wave 1 backend completing first.
-#682 (Overview tab) should be built early in Wave 2 so field issues can populate it.
+**Two parallel lanes.** Only one `area:frontend` task can run at a time (Docker port).
+Backend/infra tasks run in a second lane with zero conflict.
 
-**Tab infrastructure (must come before field issues):**
+**Lane A (frontend, sequential):**
 
-| # | Title | P | Area | Effort | Notes |
-|---|-------|---|------|--------|-------|
-| 682 | feat: student detail Overview tab (daily glance, three-card layout) | P1 | frontend | high | Default tab. Three-card row + Primary Objective + recent sessions + Teacher's Working Memory. Build with empty states, field issues populate. |
+| Order | # | Title | P | Effort | Notes |
+|-------|---|-------|---|--------|-------|
+D | A1 | 682 | Overview tab (three-card layout) | P1 | high | Done |
+D | A2 | 675 | Students list v2 (badges, avatars, sort) | P1 | high | Done |
+D | A3 | 666 + 681 + 699 | Commercial fields + Edit form layout + Move delete to edit page | P1+P2 | small+medium | Done (PR #702) |
+D | A4 | 677 | Sessions tab (timeline + filters) | P1 | high | In progress |
+D | A5 | 672 | Log Session redesign (full page) | P1 | high | Done |
+D | A6 | 674 | Voice duplicate drafts fix | P2 | medium | Unblocked (672 done) |
+D | A7 | 678 | Progress tab (skill imbalance, pacing) | P2 | medium | Unblocked (663 done) |
 
-**Profile fields (frontend-only, backend done):**
-
-| # | Title | P | Area | Effort | Notes |
-|---|-------|---|------|--------|-------|
-| 662 | feat: identity fields (BirthYear, Profession, Country, City) | P1 | frontend | medium | Header + Profile Identity Details + Edit form |
-| 663 | feat: language context (SpokenLanguages, OfficialCefrLevel, SkillLevelOverrides) | P1 | frontend | medium | **Absorbs NativeLanguages display fix from #667.** Profile Language Ecosystem + Overview Pedagogical Profile + Edit form |
-| 664 | feat: motivation fields (ReasonForStudying, ShortTermObjectives) | P1 | frontend | medium | **Absorbs LearningGoals + Interests display fixes from #667.** Profile "The Why" hero + Diagnostic + Overview Primary Objective + Edit form |
-| 666 | feat: commercial fields (IsActive, IsCorporate, Rate) | P2 | frontend | small | Header badges + Profile Commercial + Edit form |
-| 667 | fix: Weaknesses + Difficulties display in Focus Areas section | P1 | frontend | small | **Scoped down** from 5 fields to 2 (3 absorbed by #663 and #664) |
-
-**Interactive features:**
-
-| # | Title | P | Area | Effort | Notes |
-|---|-------|---|------|--------|-------|
-| 665 | feat: teaching todos inline UI | P1 | frontend | medium-high | Overview + Profile + Edit sidebar. Indigo convention. No dependency on profile fields. |
-| 671 | feat: TeacherFollowup frontend surfaces | P1 | frontend | medium | Dashboard panel + Overview + Profile + Edit sidebar. Amber convention. Depends on Wave 1 backend. |
-
-**Other screens:**
-
-| # | Title | P | Area | Effort | Notes |
-|---|-------|---|------|--------|-------|
-| 675 | feat: students list Stitch v2 (signal badges, avatars, sort, pagination) | P1 | frontend | high | Independent of profile work |
-| 681 | feat: Edit Student form layout (section nav, grouping) | P1 | frontend | medium | Depends on #662-666 (fields must exist to arrange). Or implement as layout foundation in #662. |
-| 644 | refactor: CEFR badge unification | P2 | frontend | small | Deps done (#637, #639). Benefits all screens. |
-
-### Wave 3: Voice + new tabs (depends on Wave 1 backend)
-
-| # | Title | P | Area | Effort | Depends on |
-|---|-------|---|------|--------|-----------|
-| 673 | feat: voice extraction prompt expansion | P1 | backend+frontend | medium | #671 backend (Wave 1) |
-| 677 | feat: Sessions tab (full timeline with filters) | P1 | frontend | high | #676 (Wave 1) |
-| 678 | feat: Progress tab (skill imbalance, pacing, difficulties evolution) | P2 | frontend | medium | #663 for SkillLevelOverrides display patterns |
-
-### Wave 4: Log Session (depends on Waves 1-2)
-
-| # | Title | P | Area | Effort | Depends on |
-|---|-------|---|------|--------|-----------|
-| 672 | feat: Log Session redesign (full page, context panel, quick-add) | P1 | frontend | high | #665, #671, #676 |
-| 674 | fix: voice duplicate drafts + merge behavior | P2 | frontend+backend | medium | #672 |
+**Lane B: DONE** (668 and 673 both merged)
 
 ### Vera walkthrough
 
-Schedule after Wave 2 is merged (all profile fields, todos, followups,
-students list done). Vera reviews all screens including Log Session and
-Sessions tab designs before Wave 3-4 implementation.
-
----
-
-## Independent tasks (no wave dependency)
-
-| # | Title | P | Area | Notes |
-|---|-------|---|------|-------|
-| 669 | chore: script to copy Jordi's data from Azure SQL to local dev | P2 | infra | Can run anytime |
-| 657 | Pedagogy: align difficulty taxonomy with CEFR 2020 | P2 | content | Independent, needs Sophy review |
+A1, A2, A3, A5 are all merged. Vera review of all screens is now due before A6-A8 implementation.
 
 ## Backlog (P3, if time allows)
 
 | # | Title | Notes |
 |---|-------|-------|
-| 640 | feat: cross-student sessions list page (/sessions) | New page, large scope |
-| 628 | feat: hierarchical learning goals (categories + sub-goals) | Backend + frontend |
-| 613 | fix: tooltip for progress dashboard pacing badge | Tiny, dashboard was replaced |
 | 604 | fix: StudentForm validate partial difficulty rows | Small bug fix |
+| 613 | fix: tooltip for progress dashboard pacing badge | Tiny, dashboard was replaced |
+D | 628 | feat: hierarchical learning goals (categories + sub-goals) | Backend + frontend |
+P| 640 | feat: cross-student sessions list page (/sessions) | New page, large scope |
 
 ---
 
 ## Deferred (not in sprint)
 
-| # | Title | Notes |
-|---|-------|-------|
-| 668 | feat: wire new student fields into PromptService GenerationContext | P2, no milestone |
+None currently.
 
 ---
 

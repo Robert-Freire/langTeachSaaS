@@ -4,7 +4,7 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 ---
 
-*Cleared 2026-04-08 during Adaptive Replanning sprint close. All entries deleted (low/info severity, all already deferred with sound reasoning) or batched into #603-#609.*
+*Cleared 2026-04-13 during UI Redesign sprint triage. Actionable entries batched into #713 (deduplication), #713 (MaxLength redundancy). Remaining entries deleted (verified safe, intentional per spec, defensive-only, or consistent with existing patterns).*
 
 ## #722 — 2026-04-14
 

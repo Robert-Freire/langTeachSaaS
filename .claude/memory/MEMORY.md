@@ -44,10 +44,12 @@
 - [Never defer without a GitHub issue](feedback_never_defer_without_issue.md) — every deferral needs a GitHub issue immediately
 - [Never run frontend locally](feedback_no_local_frontend_dev.md) — frontend in Docker only; never start Vite on host
 - [No parallel background agents](feedback_background_agent_polling.md) — notifications unreliable; run all agents sequentially in foreground
+- [Review agent retired](feedback_review_agent_retired.md) — CodeRabbit handles line-level code review; no pre-push `review` agent
 - [Stop on infrastructure gaps](feedback_stop_on_infra_gaps.md) — if backend can't fulfill an AC, stop and ask; don't invent frontend workarounds
 - [Review findings must become issues](feedback_review_findings_must_be_issues.md) — file GitHub issues for all sprint-close findings before closing
 - [Task status format is script-parsed](feedback_task_status_format_stability.md) — don't change memory format without updating scripts that parse it
 - [State sprint branch name at merge green light](feedback_sprint_merge_branch_name.md) — always say the branch name (e.g. sprint/post-class-tracking) when approving merge
+- [Issue creation discipline](feedback_issue_creation_discipline.md) — all decisions made, all labels set (incl size), no open choices; checklist at .claude/procedures/issue-management.md
 
 ## Reference
 - [Azure resources (dev)](reference_azure_resources.md) — vault `kv-lt-dev-5ba22u`, RG `rg-langteach-dev`, full resource table
