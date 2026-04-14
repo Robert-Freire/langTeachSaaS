@@ -3,16 +3,11 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import type { LearningGoalItem } from '../../api/students'
+import { newId } from '@/lib/newId'
 
 interface Props {
   value: LearningGoalItem[]
   onChange: (goals: LearningGoalItem[]) => void
-}
-
-function newId(): string {
-  return typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
 }
 
 function newGoal(text: string): LearningGoalItem {

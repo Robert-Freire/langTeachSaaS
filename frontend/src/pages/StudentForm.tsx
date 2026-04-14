@@ -7,6 +7,7 @@ import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
 import { COMPETENCY_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
+import { newId } from '@/lib/newId'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -288,12 +289,9 @@ export default function StudentForm() {
   }
 
   function addDifficulty() {
-    const newId = typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
     setDifficulties((prev) => [
       ...prev,
-      { id: newId, description: '', competency: '', subcategory: '', severity: 'medium', trend: 'stable', status: 'Active' },
+      { id: newId(), description: '', competency: '', subcategory: '', severity: 'medium', trend: 'stable', status: 'Active' },
     ])
   }
 
@@ -330,10 +328,7 @@ export default function StudentForm() {
   }
 
   function addObjective() {
-    const newId = typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
-    setShortTermObjectives((prev) => [...prev, { id: newId, text: '', targetDate: null }])
+    setShortTermObjectives((prev) => [...prev, { id: newId(), text: '', targetDate: null }])
   }
 
   function updateObjective(objId: string, field: 'text' | 'targetDate', value: string | null) {
