@@ -591,6 +591,7 @@ export default function StudentForm() {
                           <Select
                             value={cefrLevel}
                             onValueChange={(v) => { if (v) { setCefrLevel(v); setEditingCefrField(null) } }}
+                            // undefined = let Radix control open state; false would suppress user-triggered opens
                             open={editingCefrField === 'cefrLevel' || undefined}
                             onOpenChange={(open) => { if (!open) setEditingCefrField(null) }}
                           >
