@@ -58,10 +58,19 @@ public class DashboardService : IDashboardService
             .OrderByDescending(sl => sl.SessionDate)
             .FirstOrDefaultAsync(cancellationToken);
 
-        var lastSessionTopicTags = lastPast is not null
-            ? (JsonSerializer.Deserialize<List<TopicTagEntry>>(lastPast.TopicTags) ?? [])
-                .Select(t => t.Tag).ToList()
-            : [];
+        List<string> lastSessionTopicTags = [];
+        if (lastPast is not null)
+        {
+            try
+            {
+                lastSessionTopicTags = (JsonSerializer.Deserialize<List<TopicTagEntry>>(lastPast.TopicTags) ?? [])
+                    .Select(t => t.Tag).ToList();
+            }
+            catch (JsonException)
+            {
+                _logger.LogWarning("Failed to deserialize TopicTags for session {SessionId}", lastPast.Id);
+            }
+        }
 
         var lastSessionFollowups = lastPast is not null
             ? await _db.TeacherFollowups
