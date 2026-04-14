@@ -216,7 +216,7 @@ describe('ProgressDashboard', () => {
       {
         ...baseSession,
         sessionDate: recentDate,
-        mentionedDifficultyPairs: JSON.stringify([{ Competency: 'Grammar', Subcategory: 'Subjunctive' }]),
+        mentionedDifficultyPairs: JSON.stringify([{ competency: 'Grammar', subcategory: 'Subjunctive' }]),
       },
     ]
     renderProgress(student, sessions)
@@ -245,7 +245,7 @@ describe('ProgressDashboard', () => {
       {
         ...baseSession,
         sessionDate: oldDate,
-        mentionedDifficultyPairs: JSON.stringify([{ Competency: 'Grammar', Subcategory: 'Verb types' }]),
+        mentionedDifficultyPairs: JSON.stringify([{ competency: 'Grammar', subcategory: 'Verb types' }]),
       },
     ]
     renderProgress(student, sessions)

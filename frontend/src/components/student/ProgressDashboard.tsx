@@ -91,10 +91,10 @@ function computeRecentMentions(sessions: SessionLog[]): Set<string> {
     .forEach((s) => {
       try {
         const pairs = JSON.parse(s.mentionedDifficultyPairs || '[]') as {
-          Competency: string
-          Subcategory: string
+          competency: string
+          subcategory: string
         }[]
-        pairs.forEach((p) => mentions.add(`${p.Competency}|${p.Subcategory}`))
+        pairs.forEach((p) => mentions.add(`${p.competency}|${p.subcategory}`))
       } catch {
         /* empty */
       }
@@ -110,11 +110,11 @@ function computeLastMentionDates(sessions: SessionLog[]): Map<string, Date> {
       const sessionDate = new Date(s.sessionDate!)
       try {
         const pairs = JSON.parse(s.mentionedDifficultyPairs || '[]') as {
-          Competency: string
-          Subcategory: string
+          competency: string
+          subcategory: string
         }[]
         pairs.forEach((p) => {
-          const key = `${p.Competency}|${p.Subcategory}`
+          const key = `${p.competency}|${p.subcategory}`
           const existing = lastMentioned.get(key)
           if (!existing || sessionDate > existing) {
             lastMentioned.set(key, sessionDate)
