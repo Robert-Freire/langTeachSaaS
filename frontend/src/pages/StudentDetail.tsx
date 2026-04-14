@@ -18,6 +18,12 @@ import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
 import { getObjectiveUrgency, getDaysRemaining, formatDaysRemaining } from '@/lib/objectiveUrgency'
 
+function newId() {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random()}`
+}
+
 function getInitials(name: string): string {
   return name
     .split(' ')
@@ -215,6 +221,45 @@ export default function StudentDetail() {
     },
     onError: (err) => {
       logger.error('StudentDetail', 'Failed to update teaching notes', err)
+    },
+  })
+
+  const { mutateAsync: saveLearningGoal } = useMutation({
+    mutationFn: (text: string) => {
+      const newGoal = { id: newId(), text, children: [] }
+      return updateStudent(id!, { ...buildStudentPayload(), learningGoals: [...student!.learningGoals, newGoal] })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student', id] })
+    },
+    onError: (err) => {
+      logger.error('StudentDetail', 'Failed to add learning goal', err)
+    },
+  })
+
+  const { mutateAsync: saveShortTermObjective } = useMutation({
+    mutationFn: (text: string) => {
+      const newObj = { id: newId(), text, targetDate: null }
+      return updateStudent(id!, { ...buildStudentPayload(), shortTermObjectives: [...student!.shortTermObjectives, newObj] })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student', id] })
+    },
+    onError: (err) => {
+      logger.error('StudentDetail', 'Failed to add objective', err)
+    },
+  })
+
+  const { mutateAsync: saveDifficulty } = useMutation({
+    mutationFn: ({ competency, description }: { competency: string; description: string }) => {
+      const newDiff = { id: newId(), competency, description, subcategory: '', severity: 'medium', trend: 'stable', status: 'Active' }
+      return updateStudent(id!, { ...buildStudentPayload(), difficulties: [...student!.difficulties, newDiff] })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student', id] })
+    },
+    onError: (err) => {
+      logger.error('StudentDetail', 'Failed to add difficulty', err)
     },
   })
 
@@ -444,6 +489,9 @@ export default function StudentDetail() {
           }
           onSaveReasonForStudying={(v) => saveReasonForStudying(v).then(() => {})}
           onSaveInterests={(v) => saveInterests(v).then(() => {})}
+          onSaveLearningGoal={(text) => saveLearningGoal(text).then(() => {})}
+          onSaveShortTermObjective={(text) => saveShortTermObjective(text).then(() => {})}
+          onSaveDifficulty={(vars) => saveDifficulty(vars).then(() => {})}
         />
       )}
 

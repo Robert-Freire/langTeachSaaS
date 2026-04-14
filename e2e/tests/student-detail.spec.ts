@@ -167,3 +167,43 @@ test('student detail overview tab: Followups card amber when pending followups e
     await context.close()
   }
 })
+
+test('student detail profile tab: inline-add learning goal', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    // Navigate to Ana Visual (has minimal profile data, no learning goals)
+    await page.goto('/students')
+    await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+    const anaVisual = page.getByText('Ana Visual').first()
+    await expect(anaVisual).toBeVisible({ timeout: UI_TIMEOUT })
+    await anaVisual.click()
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+
+    // Switch to Profile tab
+    await page.getByTestId('tab-profile').click()
+    await expect(page.getByTestId('student-profile-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Click + button on Learning Goals section
+    await expect(page.getByTestId('goal-add-btn')).toBeVisible({ timeout: UI_TIMEOUT })
+    await page.getByTestId('goal-add-btn').click()
+
+    // Inline input appears
+    const goalInput = page.getByTestId('goal-add-btn-input')
+    await expect(goalInput).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Type a new goal and press Enter
+    const goalText = `E2E goal ${Date.now()}`
+    await goalInput.fill(goalText)
+    await goalInput.press('Enter')
+
+    // New goal appears in the list
+    await expect(page.getByText(goalText)).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Input is closed
+    await expect(page.getByTestId('goal-add-btn-input')).not.toBeVisible()
+  } finally {
+    await context.close()
+  }
+})

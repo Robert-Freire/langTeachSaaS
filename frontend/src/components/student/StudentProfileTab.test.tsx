@@ -100,6 +100,9 @@ function renderProfile(
     onToggle?: (id: string, status: 'Active' | 'Covered') => void
     onSaveReason?: (value: string) => Promise<void>
     onSaveInterests?: (value: string[]) => Promise<void>
+    onSaveLearningGoal?: (text: string) => Promise<void>
+    onSaveShortTermObjective?: (text: string) => Promise<void>
+    onSaveDifficulty?: (vars: { competency: string; description: string }) => Promise<void>
     followups?: TeacherFollowup[]
   }
 ) {
@@ -113,6 +116,9 @@ function renderProfile(
           onToggleDifficultyStatus={opts?.onToggle}
           onSaveReasonForStudying={opts?.onSaveReason}
           onSaveInterests={opts?.onSaveInterests}
+          onSaveLearningGoal={opts?.onSaveLearningGoal}
+          onSaveShortTermObjective={opts?.onSaveShortTermObjective}
+          onSaveDifficulty={opts?.onSaveDifficulty}
           followups={opts?.followups}
         />
       </MemoryRouter>
@@ -133,9 +139,9 @@ describe('StudentProfileTab', () => {
       expect(quote).toHaveTextContent('Vive en Barcelona')
     })
 
-    it('shows empty state when no reason', () => {
+    it('shows empty state prompt when no reason', () => {
       renderProfile(EMPTY_STUDENT)
-      expect(screen.getByTestId('reason-quote')).toHaveTextContent('No reason for studying added yet.')
+      expect(screen.getByTestId('reason-quote')).toHaveTextContent('Why is this student learning Spanish?')
     })
 
     it('shows interests beside the quote', () => {
@@ -188,17 +194,27 @@ describe('StudentProfileTab', () => {
     })
   })
 
-  describe('Identity Details section', () => {
+  describe('Working Memory sidebar (right col top)', () => {
     it('shows identity fields when populated', () => {
       renderProfile(FULL_STUDENT)
       expect(screen.getByText('Rome, Italy')).toBeInTheDocument()
       expect(screen.getByText('Barcelona, Spain')).toBeInTheDocument()
-      expect(screen.getByText(/^1998 \(\d+ years\)$/)).toBeInTheDocument()
+      // Born shows year and age (no "years" suffix)
+      expect(screen.getByText(/^1998 \(\d+\)$/)).toBeInTheDocument()
       expect(screen.getByText('Film student')).toBeInTheDocument()
     })
 
-    it('shows empty state when no identity data', () => {
+    it('is hidden when no identity data (empty state collapse)', () => {
       renderProfile(EMPTY_STUDENT)
+      // section is not rendered when empty by default
+      expect(screen.queryByTestId('profile-about')).not.toBeInTheDocument()
+    })
+
+    it('shows empty state when revealed via show-all toggle', () => {
+      renderProfile(EMPTY_STUDENT)
+      const toggle = screen.getByTestId('show-empty-sections-btn')
+      fireEvent.click(toggle)
+      expect(screen.getByTestId('profile-about')).toBeInTheDocument()
       expect(screen.getByText('No identity details added yet')).toBeInTheDocument()
     })
   })
@@ -259,17 +275,16 @@ describe('StudentProfileTab', () => {
       expect(section).toHaveTextContent('C1')
     })
 
-    it('shows both CEFR levels when officialCefrLevel is set', () => {
+    it('shows official CEFR level when set', () => {
       renderProfile({ ...FULL_STUDENT, officialCefrLevel: 'B2' })
       const section = screen.getByTestId('profile-language-ecosystem')
-      expect(section).toHaveTextContent("Teacher's Assessment")
       expect(section).toHaveTextContent('Official')
       expect(section).toHaveTextContent('B2')
     })
   })
 
-  describe('Skill Assessment section', () => {
-    it('shows skill overrides as CEFR badges', () => {
+  describe('Skill Assessment section (inside Pedagogical Diagnostic)', () => {
+    it('shows skill overrides as square CEFR badges', () => {
       renderProfile(FULL_STUDENT)
       const section = screen.getByTestId('profile-skill-assessment')
       expect(section).toHaveTextContent('Reading')
@@ -278,13 +293,13 @@ describe('StudentProfileTab', () => {
       expect(section).toHaveTextContent('B1')
     })
 
-    it('shows empty state when no skill overrides', () => {
+    it('does not render skill assessment when no overrides', () => {
       renderProfile(EMPTY_STUDENT)
-      expect(screen.getByText('No skill overrides set')).toBeInTheDocument()
+      expect(screen.queryByTestId('profile-skill-assessment')).not.toBeInTheDocument()
     })
   })
 
-  describe('Notes sections', () => {
+  describe('Teacher\'s Working Memory (unified notes, dark section)', () => {
     it('renders personal notes', () => {
       renderProfile(FULL_STUDENT)
       expect(screen.getByText(/Muy motivado/)).toBeInTheDocument()
@@ -295,10 +310,16 @@ describe('StudentProfileTab', () => {
       expect(screen.getByText(/Nivel alto/)).toBeInTheDocument()
     })
 
-    it('shows empty states for missing notes', () => {
+    it('is hidden when both notes are empty (empty state collapse)', () => {
       renderProfile(EMPTY_STUDENT)
-      expect(screen.getByText('No personal notes')).toBeInTheDocument()
-      expect(screen.getByText('No pedagogical observations')).toBeInTheDocument()
+      expect(screen.queryByTestId('profile-teachers-working-memory')).not.toBeInTheDocument()
+    })
+
+    it('shows when revealed via show-all toggle', () => {
+      renderProfile(EMPTY_STUDENT)
+      const toggle = screen.getByTestId('show-empty-sections-btn')
+      fireEvent.click(toggle)
+      expect(screen.getByTestId('profile-teachers-working-memory')).toBeInTheDocument()
     })
   })
 
@@ -317,6 +338,44 @@ describe('StudentProfileTab', () => {
     it('shows empty state when no goals', () => {
       renderProfile(EMPTY_STUDENT)
       expect(screen.getByText('No learning goals set')).toBeInTheDocument()
+    })
+
+    it('shows + button when onSaveLearningGoal is provided', () => {
+      renderProfile(FULL_STUDENT, { onSaveLearningGoal: vi.fn().mockResolvedValue(undefined) })
+      expect(screen.getByTestId('goal-add-btn')).toBeInTheDocument()
+    })
+
+    it('opens inline input when + is clicked', () => {
+      renderProfile(FULL_STUDENT, { onSaveLearningGoal: vi.fn().mockResolvedValue(undefined) })
+      fireEvent.click(screen.getByTestId('goal-add-btn'))
+      expect(screen.getByTestId('goal-add-btn-input')).toBeInTheDocument()
+    })
+
+    it('calls onSaveLearningGoal on Enter key', async () => {
+      const onSave = vi.fn().mockResolvedValue(undefined)
+      renderProfile(FULL_STUDENT, { onSaveLearningGoal: onSave })
+      fireEvent.click(screen.getByTestId('goal-add-btn'))
+      const input = screen.getByTestId('goal-add-btn-input')
+      fireEvent.change(input, { target: { value: 'New goal text' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+      await waitFor(() => expect(onSave).toHaveBeenCalledWith('New goal text'))
+    })
+
+    it('calls onSaveLearningGoal on save button click', async () => {
+      const onSave = vi.fn().mockResolvedValue(undefined)
+      renderProfile(FULL_STUDENT, { onSaveLearningGoal: onSave })
+      fireEvent.click(screen.getByTestId('goal-add-btn'))
+      fireEvent.change(screen.getByTestId('goal-add-btn-input'), { target: { value: 'Another goal' } })
+      fireEvent.click(screen.getByTestId('goal-add-btn-save'))
+      await waitFor(() => expect(onSave).toHaveBeenCalledWith('Another goal'))
+    })
+
+    it('closes input on Escape', () => {
+      renderProfile(FULL_STUDENT, { onSaveLearningGoal: vi.fn().mockResolvedValue(undefined) })
+      fireEvent.click(screen.getByTestId('goal-add-btn'))
+      const input = screen.getByTestId('goal-add-btn-input')
+      fireEvent.keyDown(input, { key: 'Escape' })
+      expect(screen.queryByTestId('goal-add-btn-input')).not.toBeInTheDocument()
     })
   })
 
@@ -365,6 +424,21 @@ describe('StudentProfileTab', () => {
       expect(screen.queryByTestId('objective-overdue-label')).not.toBeInTheDocument()
       expect(screen.queryByTestId('objective-critical-label')).not.toBeInTheDocument()
     })
+
+    it('shows + button when onSaveShortTermObjective is provided', () => {
+      renderProfile(FULL_STUDENT, { onSaveShortTermObjective: vi.fn().mockResolvedValue(undefined) })
+      expect(screen.getByTestId('objective-add-btn')).toBeInTheDocument()
+    })
+
+    it('opens inline input and saves on Enter', async () => {
+      const onSave = vi.fn().mockResolvedValue(undefined)
+      renderProfile(FULL_STUDENT, { onSaveShortTermObjective: onSave })
+      fireEvent.click(screen.getByTestId('objective-add-btn'))
+      const input = screen.getByTestId('objective-add-btn-input')
+      fireEvent.change(input, { target: { value: 'New objective' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+      await waitFor(() => expect(onSave).toHaveBeenCalledWith('New objective'))
+    })
   })
 
   describe('Focus Areas & Difficulties section', () => {
@@ -381,7 +455,6 @@ describe('StudentProfileTab', () => {
     it('renders difficulty area (competency) and subcategory', () => {
       renderProfile(FULL_STUDENT)
       expect(screen.getByText('Grammar')).toBeInTheDocument()
-      // Subcategory column shows d.subcategory when present
       expect(screen.getByText('subjuntivo')).toBeInTheDocument()
     })
 
@@ -433,6 +506,30 @@ describe('StudentProfileTab', () => {
       renderProfile({ ...EMPTY_STUDENT, weaknesses: FULL_STUDENT.weaknesses })
       expect(screen.getByTestId('profile-weaknesses')).toBeInTheDocument()
       expect(screen.queryByText('No focus areas tracked')).not.toBeInTheDocument()
+    })
+
+    it('shows + button when onSaveDifficulty is provided', () => {
+      renderProfile(FULL_STUDENT, { onSaveDifficulty: vi.fn().mockResolvedValue(undefined) })
+      expect(screen.getByTestId('difficulty-add-btn')).toBeInTheDocument()
+    })
+
+    it('opens two-field inline input when + is clicked', () => {
+      renderProfile(FULL_STUDENT, { onSaveDifficulty: vi.fn().mockResolvedValue(undefined) })
+      fireEvent.click(screen.getByTestId('difficulty-add-btn'))
+      expect(screen.getByTestId('difficulty-add-competency')).toBeInTheDocument()
+      expect(screen.getByTestId('difficulty-add-description')).toBeInTheDocument()
+    })
+
+    it('calls onSaveDifficulty with both fields on Enter', async () => {
+      const onSave = vi.fn().mockResolvedValue(undefined)
+      renderProfile(FULL_STUDENT, { onSaveDifficulty: onSave })
+      fireEvent.click(screen.getByTestId('difficulty-add-btn'))
+      fireEvent.change(screen.getByTestId('difficulty-add-competency'), { target: { value: 'Pronunciation' } })
+      fireEvent.change(screen.getByTestId('difficulty-add-description'), { target: { value: 'Rolling R' } })
+      fireEvent.keyDown(screen.getByTestId('difficulty-add-description'), { key: 'Enter' })
+      await waitFor(() =>
+        expect(onSave).toHaveBeenCalledWith({ competency: 'Pronunciation', description: 'Rolling R' })
+      )
     })
   })
 
@@ -496,6 +593,33 @@ describe('StudentProfileTab', () => {
     it('shows Corporate badge when corporate', () => {
       renderProfile({ ...FULL_STUDENT, isCorporate: true })
       expect(screen.getByText('Corporate')).toBeInTheDocument()
+    })
+  })
+
+  describe('Empty state progressive disclosure', () => {
+    it('shows "show all sections" toggle when some sections are empty', () => {
+      renderProfile(EMPTY_STUDENT)
+      expect(screen.getByTestId('show-empty-sections-btn')).toBeInTheDocument()
+    })
+
+    it('does not show the toggle when all sections have data', () => {
+      renderProfile(FULL_STUDENT)
+      // FULL_STUDENT has profession/birthYear/notes, so no sections collapsed
+      expect(screen.queryByTestId('show-empty-sections-btn')).not.toBeInTheDocument()
+    })
+
+    it('reveals hidden sections after clicking show-all', () => {
+      renderProfile(EMPTY_STUDENT)
+      expect(screen.queryByTestId('profile-about')).not.toBeInTheDocument()
+      fireEvent.click(screen.getByTestId('show-empty-sections-btn'))
+      expect(screen.getByTestId('profile-about')).toBeInTheDocument()
+      expect(screen.getByTestId('profile-teachers-working-memory')).toBeInTheDocument()
+    })
+
+    it('hides the toggle after expanding', () => {
+      renderProfile(EMPTY_STUDENT)
+      fireEvent.click(screen.getByTestId('show-empty-sections-btn'))
+      expect(screen.queryByTestId('show-empty-sections-btn')).not.toBeInTheDocument()
     })
   })
 })

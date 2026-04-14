@@ -474,7 +474,7 @@ describe('StudentDetail - Profile tab sections', () => {
     await screen.findByTestId('profile-about')
     expect(screen.getByText('London, United Kingdom')).toBeInTheDocument()
     expect(screen.getByText('Barcelona, Spain')).toBeInTheDocument()
-    expect(screen.getByText(/^1995 \(\d+ years\)$/)).toBeInTheDocument()
+    expect(screen.getByText(/^1995 \(\d+\)$/)).toBeInTheDocument()
     expect(screen.getAllByText('Designer').length).toBeGreaterThanOrEqual(1)
   })
 
@@ -528,8 +528,10 @@ describe('StudentDetail - Profile tab sections', () => {
       teachingTodos: [],
     })
     await openProfileTab()
-    await screen.findByTestId('profile-about')
-    expect(screen.getByText('No identity details added yet')).toBeInTheDocument()
+    // identity sidebar is collapsed (no data) — show-empty-sections toggle is visible instead
+    await screen.findByTestId('show-empty-sections-btn')
+    expect(screen.queryByTestId('profile-about')).not.toBeInTheDocument()
+    // these sections are always shown (inside Pedagogical Diagnostic card)
     expect(screen.getByText('No learning goals set')).toBeInTheDocument()
     expect(screen.getByText('No objectives set')).toBeInTheDocument()
     expect(screen.getByTestId('teaching-todos-empty')).toBeInTheDocument()
