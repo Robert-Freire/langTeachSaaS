@@ -59,4 +59,12 @@ export const LANG_TO_CODE: Record<string, string> = {
   Hebrew: 'HE', Farsi: 'FA', Bengali: 'BN', Vietnamese: 'VI',
   Thai: 'TH', Indonesian: 'ID', Malay: 'MS', Tagalog: 'TL',
   Swahili: 'SW', Yoruba: 'YO', Zulu: 'ZU', Amharic: 'AM',
+  // Additional languages added with ALL_LANGUAGES expansion
+  Afrikaans: 'AF', Albanian: 'SQ', Armenian: 'HY', Azerbaijani: 'AZ',
+  Basque: 'EU', Belarusian: 'BE', Bosnian: 'BS', Estonian: 'ET',
+  Galician: 'GL', Georgian: 'KA', Gujarati: 'GU', Icelandic: 'IS',
+  Kannada: 'KN', Kazakh: 'KK', Latvian: 'LV', Lithuanian: 'LT',
+  Macedonian: 'MK', Maltese: 'MT', Marathi: 'MR', Nepali: 'NE',
+  Pashto: 'PS', Punjabi: 'PA', Sinhalese: 'SI', Somali: 'SO',
+  Tamil: 'TA', Telugu: 'TE', Urdu: 'UR', Uzbek: 'UZ', Welsh: 'CY',
 }

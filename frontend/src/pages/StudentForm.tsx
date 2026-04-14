@@ -408,12 +408,15 @@ export default function StudentForm() {
   }
 
   // In edit mode, validate required fields inline and update error state immediately.
-  function validateRequiredInline() {
+  // Pass nextValues to avoid reading stale state when called right after a setter.
+  function validateRequiredInline(nextValues?: { name?: string; language?: string }) {
+    const nextName = nextValues?.name ?? name
+    const nextLanguage = nextValues?.language ?? language
     setErrors((prev) => {
       const next = { ...prev }
-      if (!name.trim()) { next.name = 'Name is required' }
+      if (!nextName.trim()) { next.name = 'Name is required' }
       else { delete next.name }
-      if (!language) { next.language = 'Language is required' }
+      if (!nextLanguage) { next.language = 'Language is required' }
       else { delete next.language }
       return next
     })
@@ -591,8 +594,11 @@ export default function StudentForm() {
               {saveStatus === 'saved' && (
                 <><CheckCircle className="h-3.5 w-3.5 text-green-500" /><span className="text-zinc-500">All changes saved</span></>
               )}
-              {saveStatus === 'error' && (
+              {saveStatus === 'retrying' && (
                 <><RefreshCw className="h-3.5 w-3.5 text-red-500" /><span className="text-red-500">Couldn't save, retrying...</span></>
+              )}
+              {saveStatus === 'error' && (
+                <><RefreshCw className="h-3.5 w-3.5 text-red-500" /><span className="text-red-500">Couldn't save</span></>
               )}
             </span>
             <Button
@@ -600,6 +606,7 @@ export default function StudentForm() {
               size="sm"
               variant="outline"
               onClick={() => navigate(`/students/${id}`)}
+              disabled={saveStatus === 'saving'}
               data-testid="done-btn"
             >
               Done
@@ -628,7 +635,7 @@ export default function StudentForm() {
                       <Input
                         id="name"
                         value={name}
-                        onChange={(e) => { setName(e.target.value); if (isEdit) { validateRequiredInline(); scheduleTextSave() } }}
+                        onChange={(e) => { setName(e.target.value); if (isEdit) { validateRequiredInline({ name: e.target.value }); scheduleTextSave() } }}
                         placeholder="e.g. Ana García"
                         maxLength={200}
                         className="max-w-sm"
@@ -648,7 +655,7 @@ export default function StudentForm() {
                             const v = vals[0] ?? ''
                             setLanguage(v)
                             if (isEdit) {
-                              validateRequiredInline()
+                              validateRequiredInline({ language: v })
                               if (v) saveNow({ learningLanguage: v })
                             }
                           }}

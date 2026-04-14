@@ -103,8 +103,7 @@ test('creates student with lexical weakness and verifies round-trip', async ({ b
   await expect(typeSelect).toContainText('Lexical', { timeout: FEEDBACK_TIMEOUT })
 
   // Cleanup
-  await page.getByRole('button', { name: 'Cancel' }).click()
-  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+  await page.goto('/students')
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -273,8 +272,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await expect(page.getByText('No specific difficulties tracked yet.')).toBeVisible()
 
   // Go back to list for delete step
-  await page.getByRole('button', { name: 'Cancel' }).click()
-  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+  await page.goto('/students')
 
   // Delete
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
@@ -353,8 +351,7 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
   await expect(page.getByTestId('weakness-description')).toHaveValue('irregular verb conjugation')
 
   // Clean up: go back and delete the student
-  await page.getByRole('button', { name: 'Cancel' }).click()
-  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+  await page.goto('/students')
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -519,8 +516,9 @@ test('saves and displays SpokenLanguages, OfficialCefrLevel, and SkillLevelOverr
   await page.getByRole('option', { name: 'A2' }).click()
 
   // Add a spoken language
-  await page.getByTestId('spoken-language-input').fill('English')
-  await page.getByTestId('spoken-language-input').press('Enter')
+  await page.getByTestId('spoken-languages-container').click()
+  await page.getByPlaceholder('Search or type custom...').fill('English')
+  await page.getByRole('option', { name: 'English' }).click()
   await expect(page.getByTestId('spoken-lang-chip').first()).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
   // Set skill override for Reading
@@ -619,8 +617,7 @@ test('identity fields round-trip: save and verify in profile view and edit form'
   await expect(page.getByTestId('student-city-residence')).toHaveValue('Madrid')
 
   // Cleanup
-  await page.getByRole('button', { name: 'Cancel' }).click()
-  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+  await page.goto('/students')
   const deleteCardIdentity = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
@@ -688,8 +685,7 @@ test('motivation fields: reason for studying and objectives round-trip', async (
   await expect(page.getByTestId('objective-text-input')).toHaveValue(objectiveText)
 
   // Cleanup
-  await page.getByRole('button', { name: 'Cancel' }).click()
-  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+  await page.goto('/students')
   const deleteCardM = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })

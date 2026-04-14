@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import { updateStudent } from '../api/students'
 import type { StudentFormData } from '../api/students'
 
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'retrying' | 'error'
 
 const DEBOUNCE_MS = 400
 const IDLE_RESET_MS = 2000
@@ -68,6 +68,7 @@ export function useStudentAutosave(
     try {
       await updateStudent(studentId, data)
       retryCountRef.current = 0
+      if (retryTimerRef.current) { clearTimeout(retryTimerRef.current); retryTimerRef.current = null }
       if (!isMountedRef.current) return
       setStatus('saved')
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
@@ -76,13 +77,16 @@ export function useStudentAutosave(
       }, IDLE_RESET_MS)
     } catch {
       if (!isMountedRef.current) return
-      setStatus('error')
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
       if (retryCountRef.current < MAX_RETRIES) {
         retryCountRef.current += 1
+        setStatus('retrying')
         retryTimerRef.current = setTimeout(() => {
           // eslint-disable-next-line react-hooks/immutability
           if (isMountedRef.current) doSave()
         }, RETRY_DELAY_MS)
+      } else {
+        setStatus('error')
       }
     }
   }, [studentId, getFormData])
