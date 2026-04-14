@@ -12,6 +12,15 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 |----------|--------|---------|
 | Low | Sessions list | Demo seeder creates sessions at now-7 and now-14 days at seeding time. By the time review-ui runs days later, sessions fall outside the 7-day Recent window, so the visual spec only verifies empty state. Row layout (CefrBadge, Label-SM headers, no-divider rows) cannot be visually verified until seeder is updated to use -1/-3 day offsets or a fresh seed is done close to review time. |
 
+## 2026-04-14 (task #721 review-ui)
+
+| Severity | Screen | Finding |
+|----------|--------|---------|
+| Low | Student Detail / Profile tab | Ana Seed has no `SkillLevelOverrides` in seeder so horizontal Skill Assessment badges cannot be visually verified. Would need seeder update to add skill overrides to Ana Seed. Unit tests verify the badge layout. |
+| Low | Student Detail / Profile tab | Ana Seed has `PersonalNotes` but no `TeachingNotes` in seeder, so Teacher's Working Memory dark section shows only Sensitivities subsection. To verify both subsections, add TeachingNotes to Ana Seed seeder entry. |
+| Info | Student Detail / Profile tab | Right-column "Teacher's Working Memory" sidebar (white card with Profession/Born/Origin/Residence) has same label as left-column dark notes section. Both labeled per Stitch spec. Naming duplication may confuse reviewers but is intentional design distinction. |
+| Low | Student Detail / Profile tab | Ana Visual's Teacher's Working Memory dark section shows VisualTag marker string as content (expected seeder data artifact). Not a code issue; personalNotes = VisualTag is intentionally set in seeder as a marker. |
+
 ## 2026-04-14 (task #718 review-ui)
 
 | Severity | Screen | Finding |

@@ -5,6 +5,7 @@ import { ArrowLeft, NotebookPen, Pencil, CalendarClock } from 'lucide-react'
 import { getStudent, updateStudent } from '../api/students'
 import type { Student } from '../api/students'
 import { logger } from '../lib/logger'
+import { newId } from '@/lib/newId'
 import { getFollowups } from '@/api/followups'
 import { listSessions } from '@/api/sessionLogs'
 import type { SessionLog } from '@/api/sessionLogs'
@@ -215,6 +216,45 @@ export default function StudentDetail() {
     },
     onError: (err) => {
       logger.error('StudentDetail', 'Failed to update teaching notes', err)
+    },
+  })
+
+  const { mutateAsync: saveLearningGoal } = useMutation({
+    mutationFn: (text: string) => {
+      const newGoal = { id: newId(), text, children: [] }
+      return updateStudent(id!, { ...buildStudentPayload(), learningGoals: [...student!.learningGoals, newGoal] })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student', id] })
+    },
+    onError: (err) => {
+      logger.error('StudentDetail', 'Failed to add learning goal', err)
+    },
+  })
+
+  const { mutateAsync: saveShortTermObjective } = useMutation({
+    mutationFn: (text: string) => {
+      const newObj = { id: newId(), text, targetDate: null }
+      return updateStudent(id!, { ...buildStudentPayload(), shortTermObjectives: [...student!.shortTermObjectives, newObj] })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student', id] })
+    },
+    onError: (err) => {
+      logger.error('StudentDetail', 'Failed to add objective', err)
+    },
+  })
+
+  const { mutateAsync: saveDifficulty } = useMutation({
+    mutationFn: ({ competency, description }: { competency: string; description: string }) => {
+      const newDiff = { id: newId(), competency, description, subcategory: '', severity: 'medium', trend: 'stable', status: 'Active' }
+      return updateStudent(id!, { ...buildStudentPayload(), difficulties: [...student!.difficulties, newDiff] })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student', id] })
+    },
+    onError: (err) => {
+      logger.error('StudentDetail', 'Failed to add difficulty', err)
     },
   })
 
@@ -444,6 +484,9 @@ export default function StudentDetail() {
           }
           onSaveReasonForStudying={(v) => saveReasonForStudying(v).then(() => {})}
           onSaveInterests={(v) => saveInterests(v).then(() => {})}
+          onSaveLearningGoal={(text) => saveLearningGoal(text).then(() => {})}
+          onSaveShortTermObjective={(text) => saveShortTermObjective(text).then(() => {})}
+          onSaveDifficulty={(vars) => saveDifficulty(vars).then(() => {})}
         />
       )}
 

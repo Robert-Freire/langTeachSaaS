@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Pencil, X, Plus, Check } from 'lucide-react'
+import { Pencil, X, Plus, Check, GraduationCap, ChevronDown } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { Student } from '@/api/students'
@@ -22,23 +22,219 @@ interface Props {
   onToggleDifficultyStatus?: (id: string, status: 'Active' | 'Covered') => void
   onSaveReasonForStudying?: (value: string) => Promise<void>
   onSaveInterests?: (value: string[]) => Promise<void>
-}
-
-function FieldValue({ label, value }: { label: string; value: string | number | null | undefined }) {
-  if (value == null || value === '') return null
-  return (
-    <div className="flex items-baseline gap-2 py-1">
-      <span className="text-xs text-zinc-400 shrink-0 w-28">{label}</span>
-      <span className="text-sm text-[#1A1B22]">{value}</span>
-    </div>
-  )
+  onSaveLearningGoal?: (text: string) => Promise<void>
+  onSaveShortTermObjective?: (text: string) => Promise<void>
+  onSaveDifficulty?: (vars: { competency: string; description: string }) => Promise<void>
 }
 
 function EmptyState({ text }: { text: string }) {
   return <p className="text-sm text-zinc-400 italic">{text}</p>
 }
 
-function ReasonHero({
+// ------------------------------------------------------------------
+// Skill badge (large square, for horizontal Skill Assessment row)
+// ------------------------------------------------------------------
+function SkillBadgeSquare({ skill, level }: { skill: string; level: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <span className="text-[0.625rem] font-bold uppercase tracking-wide text-zinc-500">{skill}</span>
+      <CefrBadge
+        level={level}
+        className="w-12 h-12 rounded-lg text-base px-0 py-0"
+        data-testid={`skill-badge-${skill.toLowerCase()}`}
+      />
+    </div>
+  )
+}
+
+// ------------------------------------------------------------------
+// Inline-add components
+// ------------------------------------------------------------------
+function InlineAddInput({
+  placeholder,
+  onSave,
+  'data-testid': testId,
+}: {
+  placeholder: string
+  onSave: (text: string) => Promise<void>
+  'data-testid'?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [text, setText] = useState('')
+  const [saving, setSaving] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  function handleOpen() {
+    setOpen(true)
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }
+
+  async function handleSave() {
+    const val = text.trim()
+    if (!val || saving) return
+    setSaving(true)
+    try {
+      await onSave(val)
+      setText('')
+      setOpen(false)
+    } catch {
+      // keep open on error
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={handleOpen}
+        className="p-1 text-zinc-400 hover:text-indigo-600 rounded transition-colors"
+        aria-label={`Add ${placeholder}`}
+        data-testid={testId}
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </button>
+    )
+  }
+
+  return (
+    <div className="flex gap-2 mt-2" data-testid={`${testId}-row`}>
+      <input
+        ref={inputRef}
+        type="text"
+        value={text}
+        onChange={e => setText(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter') handleSave()
+          if (e.key === 'Escape') { setText(''); setOpen(false) }
+        }}
+        placeholder={placeholder}
+        maxLength={500}
+        className="flex-1 rounded-lg border border-zinc-200 bg-indigo-50 px-3 py-1.5 text-sm text-[#1A1B22] placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+        data-testid={`${testId}-input`}
+      />
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={saving || !text.trim()}
+        className="shrink-0 rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+        data-testid={`${testId}-save`}
+      >
+        <Check className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => { setText(''); setOpen(false) }}
+        className="shrink-0 rounded-lg bg-zinc-100 p-1.5 text-zinc-500 hover:bg-zinc-200 transition-colors"
+        data-testid={`${testId}-cancel`}
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  )
+}
+
+function InlineAddDifficulty({
+  onSave,
+}: {
+  onSave: (vars: { competency: string; description: string }) => Promise<void>
+}) {
+  const [open, setOpen] = useState(false)
+  const [competency, setCompetency] = useState('')
+  const [description, setDescription] = useState('')
+  const [saving, setSaving] = useState(false)
+  const competencyRef = useRef<HTMLInputElement>(null)
+
+  function handleOpen() {
+    setOpen(true)
+    setTimeout(() => competencyRef.current?.focus(), 50)
+  }
+
+  async function handleSave() {
+    const comp = competency.trim()
+    const desc = description.trim()
+    if (!comp || !desc || saving) return
+    setSaving(true)
+    try {
+      await onSave({ competency: comp, description: desc })
+      setCompetency('')
+      setDescription('')
+      setOpen(false)
+    } catch {
+      // keep open
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={handleOpen}
+        className="p-1 text-zinc-400 hover:text-indigo-600 rounded transition-colors"
+        aria-label="Add focus area"
+        data-testid="difficulty-add-btn"
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </button>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2 mt-2" data-testid="difficulty-add-row">
+      <div className="flex gap-2">
+        <input
+          ref={competencyRef}
+          type="text"
+          value={competency}
+          onChange={e => setCompetency(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Escape') { setCompetency(''); setDescription(''); setOpen(false) } }}
+          placeholder="Area (e.g. Grammar)"
+          maxLength={100}
+          className="w-32 rounded-lg border border-zinc-200 bg-indigo-50 px-3 py-1.5 text-sm text-[#1A1B22] placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          data-testid="difficulty-add-competency"
+        />
+        <input
+          type="text"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') handleSave()
+            if (e.key === 'Escape') { setCompetency(''); setDescription(''); setOpen(false) }
+          }}
+          placeholder="Description"
+          maxLength={300}
+          className="flex-1 rounded-lg border border-zinc-200 bg-indigo-50 px-3 py-1.5 text-sm text-[#1A1B22] placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          data-testid="difficulty-add-description"
+        />
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || !competency.trim() || !description.trim()}
+          className="shrink-0 rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+          data-testid="difficulty-add-save"
+        >
+          <Check className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => { setCompetency(''); setDescription(''); setOpen(false) }}
+          className="shrink-0 rounded-lg bg-zinc-100 p-1.5 text-zinc-500 hover:bg-zinc-200 transition-colors"
+          data-testid="difficulty-add-cancel"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ------------------------------------------------------------------
+// Motivation Hero (banner with Manrope quote + interest chips inside)
+// ------------------------------------------------------------------
+function MotivationHero({
   student,
   onSave,
 }: {
@@ -51,12 +247,14 @@ function ReasonHero({
 
   async function handleSave() {
     if (!onSave) return
+    const value = draft.trim()
     setSaving(true)
     try {
-      await onSave(draft)
+      await onSave(value)
+      setDraft(value)
       setEditing(false)
     } catch {
-      // caller logs the failure; keep editor open so user can retry
+      // keep editor open
     } finally {
       setSaving(false)
     }
@@ -69,73 +267,120 @@ function ReasonHero({
 
   return (
     <div
-      className="group relative bg-indigo-50/60 rounded-xl px-4 py-3"
+      className="group relative bg-indigo-50/60 rounded-xl px-6 py-5 overflow-hidden"
       data-testid="reason-hero"
     >
-      {editing ? (
-        <div className="space-y-2">
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="w-full text-lg italic text-[#1A1B22] bg-white border border-indigo-300 rounded-xl px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            rows={3}
-            maxLength={512}
-            placeholder="Why is this student learning?"
-            autoFocus
-            data-testid="reason-textarea"
-          />
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white h-7 px-3 text-xs"
-              data-testid="reason-save-btn"
-            >
-              <Check className="h-3 w-3 mr-1" />
-              {saving ? 'Saving...' : 'Save'}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={handleCancel}
-              className="h-7 px-3 text-xs text-zinc-500"
-              data-testid="reason-cancel-btn"
-            >
-              Cancel
-            </Button>
+      {/* Decorative circle */}
+      <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-100/50 rounded-full -mr-20 -mt-20 pointer-events-none" />
+
+      <div className="relative z-10">
+        <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-indigo-600 mb-3 opacity-70">
+          The Why / Motivation
+        </p>
+
+        {editing ? (
+          <div className="space-y-2">
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              className="w-full font-manrope text-xl italic text-[#1A1B22] bg-white border border-indigo-300 rounded-xl px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              rows={3}
+              maxLength={512}
+              placeholder="Why is this student learning?"
+              autoFocus
+              data-testid="reason-textarea"
+            />
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white h-7 px-3 text-xs"
+                data-testid="reason-save-btn"
+              >
+                <Check className="h-3 w-3 mr-1" />
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={handleCancel}
+                className="h-7 px-3 text-xs text-zinc-500"
+                data-testid="reason-cancel-btn"
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="flex items-start gap-2">
-          {student.reasonForStudying ? (
-            <p className="text-lg italic text-[#1A1B22] leading-relaxed flex-1" data-testid="reason-quote">
-              &ldquo;{student.reasonForStudying}&rdquo;
-            </p>
-          ) : (
-            <p className="text-sm text-zinc-400 italic flex-1" data-testid="reason-quote">
-              No reason for studying added yet.
-            </p>
-          )}
-          {onSave && (
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-zinc-400 hover:text-indigo-600 rounded"
-              aria-label="Edit reason for studying"
-              data-testid="reason-edit-btn"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      )}
+        ) : (
+          <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+            <div className="flex-1 min-w-0">
+              {student.reasonForStudying ? (
+                <div className="flex items-start gap-2">
+                  <p
+                    className="font-manrope text-2xl font-extrabold text-primary italic leading-snug flex-1"
+                    data-testid="reason-quote"
+                  >
+                    &ldquo;{student.reasonForStudying}&rdquo;
+                  </p>
+                  {onSave && (
+                    <button
+                      type="button"
+                      onClick={() => setEditing(true)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-zinc-400 hover:text-indigo-600 rounded shrink-0 mt-1"
+                      aria-label="Edit reason for studying"
+                      data-testid="reason-edit-btn"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="font-manrope text-lg italic text-zinc-400 flex-1" data-testid="reason-quote">
+                    Why is this student learning {student.learningLanguage}?
+                  </p>
+                  {onSave && (
+                    <button
+                      type="button"
+                      onClick={() => setEditing(true)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-zinc-400 hover:text-indigo-600 rounded shrink-0"
+                      aria-label="Edit reason for studying"
+                      data-testid="reason-edit-btn"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Interest chips pulled into banner */}
+            {student.interests.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 lg:max-w-[180px]" data-testid="hero-interests">
+                {student.interests.map((interest) => (
+                  <span
+                    key={interest}
+                    className="inline-block bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full px-3 py-1"
+                    data-testid="hero-interest-tag"
+                  >
+                    {interest}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
+// ------------------------------------------------------------------
+// Interests section (right column, editable)
+// ------------------------------------------------------------------
 function InterestsSection({
   student,
   onSave,
@@ -174,8 +419,7 @@ function InterestsSection({
   async function handleSave() {
     if (!onSave) return
     const trimmed = inputValue.trim()
-    const finalList =
-      trimmed && !draft.includes(trimmed) ? [...draft, trimmed] : draft
+    const finalList = trimmed && !draft.includes(trimmed) ? [...draft, trimmed] : draft
     setSaving(true)
     try {
       await onSave(finalList)
@@ -183,7 +427,7 @@ function InterestsSection({
       setEditing(false)
       setInputValue('')
     } catch {
-      // caller logs the failure; keep editor open so user can retry
+      // keep open
     } finally {
       setSaving(false)
     }
@@ -299,15 +543,53 @@ function InterestsSection({
   )
 }
 
-export function StudentProfileTab({ student, followups = [], onFollowupChange, onStudentChange, onToggleDifficultyStatus, onSaveReasonForStudying, onSaveInterests }: Props) {
+// ------------------------------------------------------------------
+// FieldValue (used in Working Memory sidebar)
+// ------------------------------------------------------------------
+function FieldValue({ label, value }: { label: string; value: string | number | null | undefined }) {
+  if (value == null || value === '') return null
+  return (
+    <div className="flex items-baseline justify-between py-2 border-b border-[#F4F2FD] last:border-0">
+      <span className="text-sm font-medium text-zinc-500">{label}</span>
+      <span className="text-sm font-bold text-[#1A1B22] text-right">{value}</span>
+    </div>
+  )
+}
+
+// ------------------------------------------------------------------
+// Main component
+// ------------------------------------------------------------------
+export function StudentProfileTab({
+  student,
+  followups = [],
+  onFollowupChange,
+  onStudentChange,
+  onToggleDifficultyStatus,
+  onSaveReasonForStudying,
+  onSaveInterests,
+  onSaveLearningGoal,
+  onSaveShortTermObjective,
+  onSaveDifficulty,
+}: Props) {
+  const [showEmptySections, setShowEmptySections] = useState(false)
+
   const parsedPersonalNotes = parseNotes(student.personalNotes)
   const parsedTeachingNotes = parseNotes(student.teachingNotes)
 
-  const hasAbout = student.birthYear || student.profession || student.countryOfOrigin ||
-    student.cityOfOrigin || student.countryOfResidence || student.cityOfResidence
+  const hasAbout = !!(
+    student.birthYear ||
+    student.profession ||
+    student.countryOfOrigin ||
+    student.cityOfOrigin ||
+    student.countryOfResidence ||
+    student.cityOfResidence
+  )
+  const hasWorkingMemory = !!(student.personalNotes || student.teachingNotes)
 
   const location = [student.cityOfResidence, student.countryOfResidence].filter(Boolean).join(', ')
   const origin = [student.cityOfOrigin, student.countryOfOrigin].filter(Boolean).join(', ')
+
+  const anySectionCollapsed = (!hasAbout || !hasWorkingMemory) && !showEmptySections
 
   return (
     <div
@@ -315,292 +597,344 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
       style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
       data-testid="student-profile-tab"
     >
-      {/* Hero: The Why / Motivation */}
-      <section className="mb-8 pb-8 border-b border-zinc-100" data-testid="profile-hero">
-        <SectionHeader>The Why / Motivation</SectionHeader>
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 items-start">
-          <div className="flex-1 min-w-0">
-            <ReasonHero key={student.id} student={student} onSave={onSaveReasonForStudying} />
-          </div>
-          {student.interests.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 sm:max-w-[200px]" data-testid="hero-interests">
-              {student.interests.map((interest) => (
-                <span
-                  key={interest}
-                  className="inline-block bg-zinc-100 text-zinc-600 text-xs font-medium rounded-full px-2.5 py-1"
-                  data-testid="hero-interest-tag"
-                >
-                  {interest}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+      {/* Hero: Motivation Banner */}
+      <div className="mb-8" data-testid="profile-hero">
+        <MotivationHero key={student.id} student={student} onSave={onSaveReasonForStudying} />
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
-        {/* Left column (3/5) */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Pedagogical Diagnostic */}
-          <section data-testid="profile-pedagogical-diagnostic">
-            <SectionHeader>Pedagogical Diagnostic</SectionHeader>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+        {/* ============================================================
+            LEFT COLUMN (8/12)
+            ============================================================ */}
+        <div className="lg:col-span-8 space-y-6">
 
-            {/* Learning Goals */}
-            <div className="mb-4" data-testid="profile-learning-goals">
-              <p className="text-xs text-zinc-400 font-medium mb-1.5">Learning Goals</p>
-              {student.learningGoals.length > 0 ? (
-                <ul className="space-y-1 list-none">
-                  {student.learningGoals.map((goal) => (
-                    <li key={goal.id}>
-                      <div className="flex items-start gap-2 text-sm text-[#1A1B22]">
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
-                        {goal.text}
-                      </div>
-                      {goal.children.length > 0 && (
-                        <ul className="mt-0.5 space-y-0.5 list-none pl-5">
-                          {goal.children.map((child) => (
-                            <li key={child.id} className="flex items-start gap-2 text-sm text-zinc-600">
-                              <span className="mt-1.5 h-1 w-1 rounded-full bg-indigo-300 shrink-0" />
-                              {child.text}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <EmptyState text="No learning goals set" />
-              )}
+          {/* Pedagogical Diagnostic card */}
+          <section
+            className="bg-[#FAFAFA] rounded-xl p-6"
+            style={{ boxShadow: '0 2px 12px rgba(26,27,34,0.06)' }}
+            data-testid="profile-pedagogical-diagnostic"
+          >
+            {/* Card header */}
+            <div className="flex items-center gap-2 mb-6">
+              <GraduationCap className="h-5 w-5 text-indigo-600 shrink-0" />
+              <h3 className="font-manrope text-base font-bold text-[#1A1B22]">Pedagogical Diagnostic</h3>
             </div>
 
-            {/* Short-Term Objectives */}
-            <div data-testid="profile-objectives">
-              <p className="text-xs text-zinc-400 font-medium mb-1.5">Short-Term Objectives</p>
-              {student.shortTermObjectives.length > 0 ? (
-                <ul className="space-y-2">
-                  {student.shortTermObjectives.map((obj) => {
-                    const urgency = getObjectiveUrgency(obj.targetDate)
-                    return (
-                      <li
-                        key={obj.id}
-                        className={`rounded-lg px-3 py-2 text-sm ${
-                          urgency === 'overdue'
-                            ? 'border-2 border-red-300 bg-red-50'
-                            : urgency === 'critical'
-                              ? 'border-2 border-orange-300 bg-orange-50'
-                              : 'bg-zinc-50'
-                        }`}
-                        data-testid="objective-row"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-[#1A1B22]">{obj.text}</span>
-                          {urgency === 'overdue' && (
-                            <span className="text-xs font-bold text-red-600 shrink-0 uppercase" data-testid="objective-overdue-label">
-                              OVERDUE
-                            </span>
-                          )}
-                          {urgency === 'critical' && (
-                            <span className="text-xs font-bold text-orange-600 shrink-0 uppercase" data-testid="objective-critical-label">
-                              Critical
-                            </span>
-                          )}
+            <div className="space-y-6">
+              {/* Learning Goals */}
+              <div data-testid="profile-learning-goals">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">Learning Goals</p>
+                  {onSaveLearningGoal && (
+                    <InlineAddInput
+                      placeholder="Add a learning goal"
+                      onSave={onSaveLearningGoal}
+                      data-testid="goal-add-btn"
+                    />
+                  )}
+                </div>
+                {student.learningGoals.length > 0 ? (
+                  <ul className="space-y-1 list-none">
+                    {student.learningGoals.map((goal) => (
+                      <li key={goal.id}>
+                        <div className="flex items-start gap-2 text-sm text-[#1A1B22]">
+                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
+                          {goal.text}
                         </div>
-                        {obj.targetDate && (
-                          <span className="text-xs text-zinc-400 mt-0.5 block">
-                            Target: {new Date(obj.targetDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </span>
+                        {goal.children.length > 0 && (
+                          <ul className="mt-0.5 space-y-0.5 list-none pl-5">
+                            {goal.children.map((child) => (
+                              <li key={child.id} className="flex items-start gap-2 text-sm text-zinc-600">
+                                <span className="mt-1.5 h-1 w-1 rounded-full bg-indigo-300 shrink-0" />
+                                {child.text}
+                              </li>
+                            ))}
+                          </ul>
                         )}
                       </li>
-                    )
-                  })}
-                </ul>
-              ) : (
-                <EmptyState text="No objectives set" />
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyState text="No learning goals set" />
+                )}
+              </div>
+
+              {/* Short-Term Objectives */}
+              <div data-testid="profile-objectives">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">Short-Term Objectives</p>
+                  {onSaveShortTermObjective && (
+                    <InlineAddInput
+                      placeholder="Add an objective"
+                      onSave={onSaveShortTermObjective}
+                      data-testid="objective-add-btn"
+                    />
+                  )}
+                </div>
+                {student.shortTermObjectives.length > 0 ? (
+                  <ul className="space-y-2">
+                    {student.shortTermObjectives.map((obj) => {
+                      const urgency = getObjectiveUrgency(obj.targetDate)
+                      return (
+                        <li
+                          key={obj.id}
+                          className={`rounded-lg px-3 py-2 text-sm ${
+                            urgency === 'overdue'
+                              ? 'border-l-4 border-red-400 bg-red-50'
+                              : urgency === 'critical'
+                                ? 'border-l-4 border-amber-400 bg-amber-50'
+                                : 'bg-zinc-50'
+                          }`}
+                          data-testid="objective-row"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-[#1A1B22] font-medium">{obj.text}</span>
+                            {urgency === 'overdue' && (
+                              <span className="text-xs font-bold text-red-600 shrink-0 uppercase" data-testid="objective-overdue-label">
+                                OVERDUE
+                              </span>
+                            )}
+                            {urgency === 'critical' && (
+                              <span className="text-xs font-bold text-amber-600 shrink-0 uppercase" data-testid="objective-critical-label">
+                                Critical
+                              </span>
+                            )}
+                          </div>
+                          {obj.targetDate && (
+                            <span className="text-xs text-zinc-400 mt-0.5 block">
+                              Target: {new Date(obj.targetDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                ) : (
+                  <EmptyState text="No objectives set" />
+                )}
+              </div>
+
+              {/* Skill Assessment - horizontal large square badges */}
+              {Object.keys(student.skillLevelOverrides ?? {}).length > 0 && (
+                <div data-testid="profile-skill-assessment">
+                  <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3">Skill Assessment</p>
+                  <div className="grid grid-cols-4 gap-3">
+                    {SKILL_ORDER.filter((s) => student.skillLevelOverrides?.[s]).map((skill) => (
+                      <SkillBadgeSquare key={skill} skill={skill} level={student.skillLevelOverrides[skill]} />
+                    ))}
+                  </div>
+                </div>
               )}
+
+              {/* Focus Areas & Difficulties */}
+              <div data-testid="profile-focus-areas">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">Focus Areas &amp; Difficulties</p>
+                  {onSaveDifficulty && <InlineAddDifficulty onSave={onSaveDifficulty} />}
+                </div>
+                {student.difficulties.length === 0 && student.weaknesses.length === 0 ? (
+                  <EmptyState text="No focus areas tracked" />
+                ) : (
+                  <>
+                    {student.difficulties.length > 0 && (
+                      <div className="overflow-x-auto rounded-lg border border-[#F4F2FD]">
+                        <table className="w-full text-sm">
+                          <thead className="bg-[#F4F2FD]">
+                            <tr>
+                              <th className="px-4 py-2 text-left text-xs font-bold uppercase text-zinc-500">Area</th>
+                              <th className="px-4 py-2 text-left text-xs font-bold uppercase text-zinc-500">Subcategory</th>
+                              <th className="px-4 py-2 text-left text-xs font-bold uppercase text-zinc-500">Trend</th>
+                              <th className="px-4 py-2 text-left text-xs font-bold uppercase text-zinc-500">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#F4F2FD]">
+                            {student.difficulties.map((d) => {
+                              const isCovered = d.status === 'Covered'
+                              const trendLabel = d.trend.charAt(0).toUpperCase() + d.trend.slice(1)
+                              const trendColor =
+                                d.trend.toLowerCase() === 'improving'
+                                  ? 'bg-green-100 text-green-700'
+                                  : d.trend.toLowerCase() === 'regressing' || d.trend.toLowerCase() === 'worsening'
+                                    ? 'bg-red-100 text-red-700'
+                                    : 'bg-zinc-100 text-zinc-600'
+                              return (
+                                <tr key={d.id} data-testid="difficulty-row" className="hover:bg-[#FAFAFA] transition-colors">
+                                  <td className="px-4 py-3 font-semibold text-[#1A1B22] align-top">{d.competency}</td>
+                                  <td className="px-4 py-3 text-zinc-600 align-top">{d.subcategory || d.description}</td>
+                                  <td className="px-4 py-3 align-top">
+                                    <span className={`inline-block text-xs font-bold rounded px-1.5 py-0.5 ${trendColor}`}>
+                                      {trendLabel}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 align-top">
+                                    <div className="flex items-center gap-1.5">
+                                      <span
+                                        className={`inline-flex items-center gap-1 text-xs font-bold uppercase ${
+                                          isCovered ? 'text-zinc-400' : 'text-indigo-600'
+                                        }`}
+                                        data-testid={`difficulty-status-${d.id}`}
+                                      >
+                                        <span
+                                          className={`h-1.5 w-1.5 rounded-full ${
+                                            isCovered ? 'bg-zinc-400' : 'bg-indigo-500'
+                                          }`}
+                                        />
+                                        {isCovered ? 'Covered' : 'Working'}
+                                      </span>
+                                      {onToggleDifficultyStatus && (
+                                        <button
+                                          type="button"
+                                          className="text-xs text-zinc-300 hover:text-zinc-600 transition-colors ml-1"
+                                          onClick={() => onToggleDifficultyStatus(d.id, isCovered ? 'Active' : 'Covered')}
+                                          data-testid={`toggle-difficulty-status-${d.id}`}
+                                          aria-label={isCovered ? 'Mark as working' : 'Mark as covered'}
+                                        >
+                                          ↕
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    {student.weaknesses.length > 0 && (
+                      <div className="mt-3" data-testid="profile-weaknesses">
+                        <p className="text-xs text-zinc-400 font-medium mb-1.5">Areas to Improve</p>
+                        <div className="space-y-1.5">
+                          {student.weaknesses.map((w, i) => {
+                            const typeLabel = w.weaknessType.charAt(0).toUpperCase() + w.weaknessType.slice(1)
+                            const typeColor =
+                              w.weaknessType === 'grammatical'
+                                ? 'bg-indigo-100 text-indigo-700'
+                                : w.weaknessType === 'lexical'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-zinc-100 text-zinc-600'
+                            return (
+                              <div key={`weakness-${i}-${w.weaknessType}`} className="flex items-center gap-2" data-testid="weakness-row">
+                                <span className={`text-xs font-medium rounded px-1.5 py-0.5 shrink-0 ${typeColor}`} data-testid="weakness-type-badge">
+                                  {typeLabel}
+                                </span>
+                                <span className="text-sm text-[#1A1B22]">{w.description}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </section>
 
-          {/* Focus Areas & Difficulties */}
-          <section data-testid="profile-focus-areas">
-            <SectionHeader>Focus Areas &amp; Difficulties</SectionHeader>
-            {student.difficulties.length === 0 && student.weaknesses.length === 0 ? (
-              <EmptyState text="No focus areas tracked" />
-            ) : (
-              <>
-                {student.difficulties.length > 0 && (
-                  <div className="mb-4 overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left">
-                          <th className="text-xs font-medium text-zinc-400 pb-2 pr-4">Area</th>
-                          <th className="text-xs font-medium text-zinc-400 pb-2 pr-4">Subcategory</th>
-                          <th className="text-xs font-medium text-zinc-400 pb-2 pr-4">Trend</th>
-                          <th className="text-xs font-medium text-zinc-400 pb-2">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {student.difficulties.map((d) => {
-                          const isCovered = d.status === 'Covered'
-                          const trendLabel = d.trend.charAt(0).toUpperCase() + d.trend.slice(1)
-                          const trendColor =
-                            d.trend.toLowerCase() === 'improving'
-                              ? 'bg-green-100 text-green-700'
-                              : d.trend.toLowerCase() === 'regressing' || d.trend.toLowerCase() === 'worsening'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-zinc-100 text-zinc-600'
-                          return (
-                            <tr key={d.id} data-testid="difficulty-row" className="border-t border-zinc-50">
-                              <td className="py-2 pr-4 text-[#1A1B22] align-top">{d.competency}</td>
-                              <td className="py-2 pr-4 text-[#1A1B22] align-top">{d.subcategory || d.description}</td>
-                              <td className="py-2 pr-4 align-top">
-                                <span className={`inline-block text-xs font-medium rounded px-1.5 py-0.5 ${trendColor}`}>
-                                  {trendLabel}
-                                </span>
-                              </td>
-                              <td className="py-2 align-top">
-                                <div className="flex items-center gap-1.5">
-                                  <span
-                                    className={`inline-flex items-center gap-1 text-xs font-medium ${
-                                      isCovered ? 'text-zinc-400' : 'text-green-600'
-                                    }`}
-                                    data-testid={`difficulty-status-${d.id}`}
-                                  >
-                                    <span
-                                      className={`h-1.5 w-1.5 rounded-full ${
-                                        isCovered ? 'bg-zinc-400' : 'bg-green-500'
-                                      }`}
-                                    />
-                                    {isCovered ? 'Covered' : 'Working'}
-                                  </span>
-                                  {onToggleDifficultyStatus && (
-                                    <button
-                                      type="button"
-                                      className="text-xs text-zinc-300 hover:text-zinc-600 transition-colors ml-1"
-                                      onClick={() => onToggleDifficultyStatus(d.id, isCovered ? 'Active' : 'Covered')}
-                                      data-testid={`toggle-difficulty-status-${d.id}`}
-                                      aria-label={isCovered ? 'Mark as working' : 'Mark as covered'}
-                                    >
-                                      ↕
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-                {student.weaknesses.length > 0 && (
-                  <div data-testid="profile-weaknesses">
-                    <p className="text-xs text-zinc-400 font-medium mb-1.5">Areas to Improve</p>
-                    <div className="space-y-1.5">
-                      {student.weaknesses.map((w, i) => {
-                        const typeLabel = w.weaknessType.charAt(0).toUpperCase() + w.weaknessType.slice(1)
-                        const typeColor =
-                          w.weaknessType === 'grammatical'
-                            ? 'bg-indigo-100 text-indigo-700'
-                            : w.weaknessType === 'lexical'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-zinc-100 text-zinc-600'
-                        return (
-                          <div key={`weakness-${i}-${w.weaknessType}`} className="flex items-center gap-2" data-testid="weakness-row">
-                            <span className={`text-xs font-medium rounded px-1.5 py-0.5 shrink-0 ${typeColor}`} data-testid="weakness-type-badge">
-                              {typeLabel}
-                            </span>
-                            <span className="text-sm text-[#1A1B22]">{w.description}</span>
+          {/* Teacher's Working Memory (dark, private teacher space) */}
+          {(hasWorkingMemory || showEmptySections) && (
+            <section
+              className="rounded-2xl p-6 text-white"
+              style={{ background: '#1A1B22' }}
+              data-testid="profile-teachers-working-memory"
+            >
+              <h3 className="text-[0.6875rem] font-bold uppercase tracking-widest text-[#C3C0FF] mb-5 flex items-center gap-2">
+                Teacher&apos;s Working Memory
+              </h3>
+
+              <div className="space-y-6">
+                {/* Personal notes (Sensitivities / Life Context) */}
+                {(parsedPersonalNotes || student.personalNotes) && (
+                  <div>
+                    <p className="text-[0.625rem] font-bold uppercase tracking-widest text-white/50 mb-2">
+                      Sensitivities / Life Context
+                    </p>
+                    {parsedPersonalNotes ? (
+                      <div className="space-y-2">
+                        {parsedPersonalNotes.sections.map((section, i) => (
+                          <div key={`pn-${i}-${section.label}`}>
+                            {section.label && (
+                              <p className="text-xs font-medium text-white/60 mb-0.5">{section.label}</p>
+                            )}
+                            <p className="text-sm text-white/90 whitespace-pre-wrap leading-relaxed">{section.text}</p>
                           </div>
-                        )
-                      })}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-white/90 whitespace-pre-wrap leading-relaxed">{student.personalNotes}</p>
+                    )}
                   </div>
                 )}
-              </>
-            )}
-          </section>
 
-          {/* Personal notes */}
-          <section data-testid="profile-personal-notes">
-            <SectionHeader>Sensitivities / Life Context</SectionHeader>
-            {parsedPersonalNotes ? (
-              <div className="space-y-2">
-                {parsedPersonalNotes.sections.map((section, i) => (
-                  <div key={`pn-${i}-${section.label}`}>
-                    {section.label && (
-                      <p className="text-xs font-medium text-zinc-500 mb-0.5">{section.label}</p>
+                {/* Teaching notes (Pedagogical Observations) */}
+                {(parsedTeachingNotes || student.teachingNotes) && (
+                  <div className={parsedPersonalNotes || student.personalNotes ? 'pt-4 border-t border-white/10' : ''}>
+                    <p className="text-[0.625rem] font-bold uppercase tracking-widest text-white/50 mb-2">
+                      Pedagogical Observations
+                    </p>
+                    {parsedTeachingNotes ? (
+                      <div className="space-y-2 border-l-2 border-indigo-400/50 pl-3">
+                        {parsedTeachingNotes.sections.map((section, i) => (
+                          <div key={`tn-${i}-${section.label}`}>
+                            {section.label && (
+                              <p className="text-xs font-medium text-white/60 mb-0.5">{section.label}</p>
+                            )}
+                            <p className="text-sm text-white/90 whitespace-pre-wrap leading-relaxed">{section.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-white/90 whitespace-pre-wrap leading-relaxed border-l-2 border-indigo-400/50 pl-3">
+                        {student.teachingNotes}
+                      </p>
                     )}
-                    <p className="text-sm text-[#1A1B22] whitespace-pre-wrap">{section.text}</p>
                   </div>
-                ))}
-              </div>
-            ) : student.personalNotes ? (
-              <p className="text-sm text-[#1A1B22] whitespace-pre-wrap">{student.personalNotes}</p>
-            ) : (
-              <EmptyState text="No personal notes" />
-            )}
-          </section>
+                )}
 
-          {/* Teaching notes */}
-          <section data-testid="profile-teaching-notes">
-            <SectionHeader>Pedagogical Observations</SectionHeader>
-            {parsedTeachingNotes ? (
-              <div className="space-y-2 border-l-2 border-indigo-200 pl-3">
-                {parsedTeachingNotes.sections.map((section, i) => (
-                  <div key={`tn-${i}-${section.label}`}>
-                    {section.label && (
-                      <p className="text-xs font-medium text-zinc-500 mb-0.5">{section.label}</p>
-                    )}
-                    <p className="text-sm text-[#1A1B22] whitespace-pre-wrap">{section.text}</p>
-                  </div>
-                ))}
+                {!student.personalNotes && !student.teachingNotes && (
+                  <p className="text-sm text-white/40 italic">No notes added yet</p>
+                )}
               </div>
-            ) : student.teachingNotes ? (
-              <p className="text-sm text-[#1A1B22] whitespace-pre-wrap border-l-2 border-indigo-200 pl-3">{student.teachingNotes}</p>
-            ) : (
-              <EmptyState text="No pedagogical observations" />
-            )}
-          </section>
+            </section>
+          )}
         </div>
 
-        {/* Right column (2/5) */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Identity Details */}
-          <section data-testid="profile-about">
-            <SectionHeader>Identity Details</SectionHeader>
-            {hasAbout ? (
-              <div>
-                {origin && <FieldValue label="Origin" value={origin} />}
-                {location && <FieldValue label="Lives in" value={location} />}
-                {student.birthYear != null && (() => {
-                  const currentYear = new Date().getFullYear()
-                  return (
-                    <FieldValue
-                      label="Birth year"
-                      value={student.birthYear <= currentYear
-                        ? `${student.birthYear} (${currentYear - student.birthYear} years)`
-                        : `${student.birthYear}`}
-                    />
-                  )
-                })()}
-                <FieldValue label="Profession" value={student.profession} />
-              </div>
-            ) : (
-              <EmptyState text="No identity details added yet" />
-            )}
-          </section>
+        {/* ============================================================
+            RIGHT COLUMN (4/12)
+            ============================================================ */}
+        <div className="lg:col-span-4 space-y-6">
 
-          {/* Interests (dedicated editable section) */}
-          <InterestsSection key={student.id} student={student} onSave={onSaveInterests} />
+          {/* 1. Working Memory sidebar (Profession, Born+age, Origin, Residence) */}
+          {(hasAbout || showEmptySections) && (
+            <section
+              className="bg-white rounded-xl p-5"
+              style={{ boxShadow: '0 2px 12px rgba(26,27,34,0.06)' }}
+              data-testid="profile-about"
+            >
+              <SectionHeader>Teacher&apos;s Working Memory</SectionHeader>
+              {hasAbout ? (
+                <div>
+                  {student.profession && <FieldValue label="Profession" value={student.profession} />}
+                  {student.birthYear != null && (() => {
+                    const age = new Date().getFullYear() - student.birthYear!
+                    return <FieldValue label="Born" value={`${student.birthYear} (${age})`} />
+                  })()}
+                  {origin && <FieldValue label="Origin" value={origin} />}
+                  {location && <FieldValue label="Residence" value={location} />}
+                </div>
+              ) : (
+                <EmptyState text="No identity details added yet" />
+              )}
+            </section>
+          )}
 
-          {/* Language Ecosystem */}
+          {/* 2. Language Ecosystem */}
           <section data-testid="profile-language-ecosystem">
             <SectionHeader>Language Ecosystem</SectionHeader>
             <div className="space-y-2">
               {student.nativeLanguages.length > 0 && (
                 <div className="flex items-baseline gap-2 py-1">
-                  <span className="text-xs text-zinc-400 shrink-0 w-28">Native</span>
+                  <span className="text-xs text-zinc-400 shrink-0 w-20">Native</span>
                   <div className="flex flex-wrap gap-1.5">
                     {student.nativeLanguages.map((lang) => (
                       <span key={lang} className="inline-flex items-center gap-1 text-sm text-[#1A1B22]">
@@ -614,10 +948,13 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
                 </div>
               )}
               {student.spokenLanguages.length > 0 && (
-                <FieldValue label="Spoken Languages" value={student.spokenLanguages.join(', ')} />
+                <div className="flex items-baseline gap-2 py-1">
+                  <span className="text-xs text-zinc-400 shrink-0 w-20">Spoken</span>
+                  <span className="text-sm text-[#1A1B22]">{student.spokenLanguages.join(', ')}</span>
+                </div>
               )}
               <div className="flex items-baseline gap-2 py-1">
-                <span className="text-xs text-zinc-400 shrink-0 w-28">Learning</span>
+                <span className="text-xs text-zinc-400 shrink-0 w-20">Learning</span>
                 <span className="text-sm text-[#1A1B22] flex items-center gap-2">
                   {student.learningLanguage}
                   <CefrBadge level={student.cefrLevel} />
@@ -625,16 +962,10 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
               </div>
               {student.officialCefrLevel && (
                 <div className="flex items-baseline gap-2 py-1">
-                  <span className="text-xs text-zinc-400 shrink-0 w-28">Levels</span>
-                  <span className="text-sm text-[#1A1B22] flex items-center gap-3">
-                    <span className="flex items-center gap-1">
-                      <span className="text-xs text-zinc-500">Teacher's Assessment:</span>
-                      <CefrBadge level={student.cefrLevel} />
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="text-xs text-zinc-500">Official:</span>
-                      <CefrBadge level={student.officialCefrLevel} />
-                    </span>
+                  <span className="text-xs text-zinc-400 shrink-0 w-20">Official</span>
+                  <span className="text-sm text-[#1A1B22] flex items-center gap-1">
+                    <span className="text-xs text-zinc-500">Official:</span>
+                    <CefrBadge level={student.officialCefrLevel} />
                   </span>
                 </div>
               )}
@@ -644,24 +975,10 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
             </div>
           </section>
 
-          {/* Skill Assessment */}
-          <section data-testid="profile-skill-assessment">
-            <SectionHeader>Skill Assessment</SectionHeader>
-            {Object.keys(student.skillLevelOverrides ?? {}).length > 0 ? (
-              <div className="space-y-1.5">
-                {SKILL_ORDER.filter((s) => student.skillLevelOverrides?.[s]).map((skill) => (
-                  <div key={skill} className="flex items-center gap-3 py-0.5">
-                    <span className="text-xs text-zinc-400 w-20 shrink-0">{skill}</span>
-                    <CefrBadge level={student.skillLevelOverrides[skill]} data-testid={`skill-badge-${skill.toLowerCase()}`} />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState text="No skill overrides set" />
-            )}
-          </section>
+          {/* 3. Interests */}
+          <InterestsSection key={student.id} student={student} onSave={onSaveInterests} />
 
-          {/* Commercial */}
+          {/* 4. Commercial */}
           <section data-testid="profile-commercial">
             <SectionHeader>Commercial</SectionHeader>
             <div className="flex flex-wrap items-center gap-2">
@@ -688,7 +1005,7 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
             </div>
           </section>
 
-          {/* Teaching Todos */}
+          {/* 5. Teaching Todos */}
           <section data-testid="profile-teaching-todos">
             <SectionHeader>Teaching Todos</SectionHeader>
             <TeachingTodosCard
@@ -698,7 +1015,7 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
             />
           </section>
 
-          {/* Pending Followups */}
+          {/* 6. Pending Followups */}
           <section data-testid="profile-followups">
             <StudentFollowupsCard
               followups={followups}
@@ -708,6 +1025,21 @@ export function StudentProfileTab({ student, followups = [], onFollowupChange, o
           </section>
         </div>
       </div>
+
+      {/* Show all sections toggle */}
+      {anySectionCollapsed && (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShowEmptySections(true)}
+            className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-indigo-600 transition-colors"
+            data-testid="show-empty-sections-btn"
+          >
+            <ChevronDown className="h-3.5 w-3.5" />
+            Show all sections
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -3,6 +3,8 @@
 Out-of-scope observations logged by agents during implementation. Each row is something an agent noticed but did not fix because it was outside the current task's scope. These get batched into future GitHub issues by the PM.
 
 | Source issue | Date | Severity | Observation |
+| #721 | 2026-04-14 | low | Ana Seed has no SkillLevelOverrides in seeder so horizontal Skill Assessment badges on Profile tab cannot be visually verified. Consider adding skill overrides to Ana Seed seeder entry. |
+| #721 | 2026-04-14 | low | Ana Seed has PersonalNotes but no TeachingNotes in seeder; Teacher's Working Memory dark section only shows Sensitivities subsection. Consider adding TeachingNotes to Ana Seed for fuller visual verification. |
 | #674 | 2026-04-12 | low | review-ui agent could not find `log-session-button` testid on student detail page in create mode. Pre-existing selector mismatch, unrelated to this PR. Should be investigated and fixed in a future task. |
 | #626 | 2026-04-10 | medium | DemoSeeder uses PersonalNotes as seed-detection marker; if teacher edits that field the seeder loses track and may create duplicates. Pre-existing pattern (was Notes before this PR). Should use a dedicated IsDemo flag or deterministic seed name matching. |
 | #627 | 2026-04-10 | low | CodeRabbit suggested validating sourceSessionLogId/coveredInSessionLogId against DB. Dismissed: issue spec explicitly chose soft-backlink (stored UUID, no FK), Sophy approved. If referential integrity becomes a requirement, it can be added later. |
