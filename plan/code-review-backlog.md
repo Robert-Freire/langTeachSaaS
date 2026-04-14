@@ -6,6 +6,13 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-04-08 during Adaptive Replanning sprint close. All entries deleted (low/info severity, all already deferred with sound reasoning) or batched into #603-#609.*
 
+## #724 — 2026-04-14
+
+| Reviewer | Severity | Note |
+|---|---|---|
+| architecture-reviewer | minor | `formatTimeSince` in `ProgressDashboard.tsx` duplicates day/week bucketing logic from `relativeTime()` in `formatDate.ts`. Formats differ (`"5d"` vs `"5 days ago"`) so they serve different purposes, but if a third compact-time callsite appears, extract to `formatDate.ts` as `formatTimeSinceCompact`. |
+| architecture-reviewer | minor | `CEFR_ORDER` (as Record) is redeclared in `ProgressDashboard.tsx` and `StudentOverviewTab.tsx` also has a private CEFR array. Both are pre-existing; worth extracting to a shared `cefrUtils.ts` if a third file needs it. |
+
 ## #672 — 2026-04-12
 
 | Reviewer | Severity | Note |
