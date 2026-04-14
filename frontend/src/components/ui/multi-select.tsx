@@ -144,7 +144,7 @@ export function MultiSelect({
             return (
               <span
                 key={value}
-                className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded px-2 py-0.5"
+                className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full px-2.5 py-0.5"
                 data-testid={chipTestId}
               >
                 {label}

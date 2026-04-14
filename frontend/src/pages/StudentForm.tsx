@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Plus, Trash2, CheckCircle, Loader2, RefreshCw } from 'lucide-react'
+import { X, Plus, Trash2, TrendingUp, TrendingDown, Minus, Calendar, CheckCircle, Loader2, RefreshCw } from 'lucide-react'
 import { getStudent, createStudent, updateStudent, deleteStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem, type ShortTermObjective, type LearningGoalItem } from '../api/students'
 import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
@@ -31,6 +31,7 @@ import { getFollowups } from '@/api/followups'
 import { FieldTooltip } from '@/components/FieldTooltip'
 import { PageHeader } from '@/components/PageHeader'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
+import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { ALL_LANGUAGE_OPTIONS } from '@/lib/languages'
 import { useStudentAutosave } from '@/hooks/useStudentAutosave'
 import {
@@ -54,10 +55,11 @@ const FORM_SECTIONS = [
   { id: 'section-commercial', label: 'Commercial' },
 ]
 
-// Scrollspy tracks these in order; section-proficiency omitted because it shares
-// the same Y position as section-basic (2-column layout) and basic wins.
+// Scrollspy tracks these in order. section-proficiency is now below section-basic
+// (Skill Overrides moved lower per Stitch placement), so it gets its own Y position.
 const SCROLLSPY_IDS = [
   'section-basic',
+  'section-proficiency',
   'section-background',
   'section-teaching-goals',
   'section-difficulties',
@@ -100,6 +102,7 @@ export default function StudentForm() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState(SCROLLSPY_IDS[0])
+  const [editingCefrField, setEditingCefrField] = useState<string | null>(null)
   const [duplicateMsg, setDuplicateMsg] = useState<string | null>(null)
   const interestInputRef = useRef<HTMLInputElement>(null)
 
@@ -523,18 +526,6 @@ export default function StudentForm() {
                 </Tooltip>
               )
             })()}
-            {isEdit && id && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowDeleteDialog(true)}
-                disabled={isBusy}
-                className="text-red-600 border-red-200 hover:bg-red-50"
-                data-testid="delete-student-btn"
-              >
-                Delete
-              </Button>
-            )}
             {!isEdit && (
               <>
                 <Button type="button" variant="outline" onClick={() => navigate('/students')}>
@@ -559,10 +550,6 @@ export default function StudentForm() {
             Inactive
           </span>
         </div>
-      )}
-
-      {deleteError && (
-        <span className="text-sm text-red-600 font-medium mt-2" data-testid="delete-error">{deleteError}</span>
       )}
 
       {/* Sticky section nav — edit mode only, renders below header so it sticks as header scrolls away */}
@@ -671,16 +658,34 @@ export default function StudentForm() {
 
                       <div className="space-y-1.5">
                         <Label className="inline-flex items-center gap-1">Teacher's Assessment <span className="text-red-500">*</span> <FieldTooltip fieldKey="cefrLevel" /></Label>
-                        <Select value={cefrLevel} onValueChange={(v) => { if (!v) return; setCefrLevel(v); if (isEdit) saveNow({ cefrLevel: v }) }}>
-                          <SelectTrigger data-testid="student-cefr">
-                            <SelectValue placeholder="Select a level" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {CEFR_LEVELS.map((level) => (
-                              <SelectItem key={level} value={level}>{level}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {cefrLevel && editingCefrField !== 'cefrLevel' ? (
+                          <button
+                            type="button"
+                            onClick={() => setEditingCefrField('cefrLevel')}
+                            className="block"
+                            aria-label="Edit Teacher's Assessment level"
+                            data-testid="student-cefr-badge"
+                          >
+                            <CefrBadge level={cefrLevel} className="cursor-pointer hover:opacity-80 transition-opacity" />
+                          </button>
+                        ) : (
+                          <Select
+                            value={cefrLevel}
+                            onValueChange={(v) => { if (!v) return; setCefrLevel(v); setEditingCefrField(null); if (isEdit) saveNow({ cefrLevel: v }) }}
+                            // undefined = let Radix control open state; false would suppress user-triggered opens
+                            open={editingCefrField === 'cefrLevel' || undefined}
+                            onOpenChange={(open) => { if (!open) setEditingCefrField(null) }}
+                          >
+                            <SelectTrigger data-testid="student-cefr">
+                              <SelectValue placeholder="Select a level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CEFR_LEVELS.map((level) => (
+                                <SelectItem key={level} value={level}>{level}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                         {errors.cefrLevel && <p className="text-xs text-red-600">{errors.cefrLevel}</p>}
                       </div>
                     </div>
@@ -688,17 +693,34 @@ export default function StudentForm() {
                     {/* Official CEFR Level */}
                     <div className="space-y-1.5 max-w-[calc(50%-0.5rem)]">
                       <Label className="inline-flex items-center gap-1">Official Level <FieldTooltip fieldKey="officialCefrLevel" /></Label>
-                      <Select value={officialCefrLevel} onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setOfficialCefrLevel(next); if (isEdit) saveNow({ officialCefrLevel: next || null }) }}>
-                        <SelectTrigger data-testid="student-official-cefr">
-                          <SelectValue placeholder="None" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">None</SelectItem>
-                          {CEFR_LEVELS.map((level) => (
-                            <SelectItem key={level} value={level}>{level}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {officialCefrLevel && editingCefrField !== 'officialCefrLevel' ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditingCefrField('officialCefrLevel')}
+                          className="block"
+                          aria-label="Edit Official Level"
+                          data-testid="student-official-cefr-badge"
+                        >
+                          <CefrBadge level={officialCefrLevel} className="cursor-pointer hover:opacity-80 transition-opacity" />
+                        </button>
+                      ) : (
+                        <Select
+                          value={officialCefrLevel}
+                          onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setOfficialCefrLevel(next); setEditingCefrField(null); if (isEdit) saveNow({ officialCefrLevel: next || null }) }}
+                          open={editingCefrField === 'officialCefrLevel' || undefined}
+                          onOpenChange={(open) => { if (!open) setEditingCefrField(null) }}
+                        >
+                          <SelectTrigger data-testid="student-official-cefr">
+                            <SelectValue placeholder="None" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">None</SelectItem>
+                            {CEFR_LEVELS.map((level) => (
+                              <SelectItem key={level} value={level}>{level}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                       <p className="text-xs text-zinc-400">Official exam result or external assessment.</p>
                     </div>
                   </CardContent>
@@ -745,22 +767,37 @@ export default function StudentForm() {
                   </CardContent>
                 </Card>
               </div>
+            </div>
 
-              {/* Skill Overrides card — right column, anchored as section-proficiency */}
-              <div id="section-proficiency">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base inline-flex items-center gap-1">Skill Overrides <FieldTooltip fieldKey="skillLevelOverrides" /></CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs text-zinc-400 mb-4">Override the general CEFR level per skill for AI generation. Leave empty to inherit the general level.</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      {(['Reading', 'Writing', 'Speaking', 'Listening'] as const).map((skill) => (
-                        <div key={skill} className="space-y-1.5">
-                          <Label className="text-xs">{skill}</Label>
+            {/* Skill Overrides — below the 2-column grid, placed in right column position */}
+            <div id="section-proficiency" className="grid grid-cols-1 lg:grid-cols-[7fr_5fr] gap-6">
+              <div /> {/* empty left column to push Skill Overrides to the right */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base inline-flex items-center gap-1">Skill Overrides <FieldTooltip fieldKey="skillLevelOverrides" /></CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-zinc-400 mb-4">Override the general CEFR level per skill for AI generation. Leave empty to inherit the general level.</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {(['Reading', 'Writing', 'Speaking', 'Listening'] as const).map((skill) => (
+                      <div key={skill} className="space-y-1.5">
+                        <Label className="text-xs">{skill}</Label>
+                        {skillLevelOverrides[skill] && editingCefrField !== `skill-${skill}` ? (
+                          <button
+                            type="button"
+                            onClick={() => setEditingCefrField(`skill-${skill}`)}
+                            className="block"
+                            aria-label={`Edit ${skill} override`}
+                            data-testid={`skill-override-${skill.toLowerCase()}-badge`}
+                          >
+                            <CefrBadge level={skillLevelOverrides[skill]} className="cursor-pointer hover:opacity-80 transition-opacity" />
+                          </button>
+                        ) : (
                           <Select
                             value={skillLevelOverrides[skill] ?? ''}
-                            onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setSkillOverride(skill, next); if (isEdit) { const nextOverrides = next ? { ...skillLevelOverrides, [skill]: next } : Object.fromEntries(Object.entries(skillLevelOverrides).filter(([k]) => k !== skill)); saveNow({ skillLevelOverrides: nextOverrides }) } }}
+                            onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setSkillOverride(skill, next); setEditingCefrField(null); if (isEdit) { const nextOverrides = next ? { ...skillLevelOverrides, [skill]: next } : Object.fromEntries(Object.entries(skillLevelOverrides).filter(([k]) => k !== skill)); saveNow({ skillLevelOverrides: nextOverrides }) } }}
+                            open={editingCefrField === `skill-${skill}` || undefined}
+                            onOpenChange={(open) => { if (!open) setEditingCefrField(null) }}
                           >
                             <SelectTrigger data-testid={`skill-override-${skill.toLowerCase()}`} className="h-8 text-xs">
                               <SelectValue placeholder="--" />
@@ -772,12 +809,12 @@ export default function StudentForm() {
                               ))}
                             </SelectContent>
                           </Select>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             {/* ── SECTION: Personal Background ── */}
@@ -884,18 +921,25 @@ export default function StudentForm() {
                   <CardTitle className="text-base">Reason for Studying</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="reason-for-studying">Reason for studying</Label>
-                    <Textarea
-                      id="reason-for-studying"
-                      value={reasonForStudying}
-                      onChange={(e) => { setReasonForStudying(e.target.value); if (isEdit) scheduleTextSave() }}
-                      placeholder="e.g. Moving to Spain next year, loves the culture..."
-                      maxLength={512}
-                      rows={3}
-                      className="max-w-sm resize-none"
-                      data-testid="student-reason-for-studying"
-                    />
+                  <div className="grid grid-cols-[auto_1fr] gap-4 items-start">
+                    <span
+                      className="text-6xl leading-none text-indigo-200 select-none font-manrope"
+                      aria-hidden="true"
+                    >
+                      &ldquo;
+                    </span>
+                    <div className="space-y-1.5">
+                      <Textarea
+                        id="reason-for-studying"
+                        value={reasonForStudying}
+                        onChange={(e) => { setReasonForStudying(e.target.value); if (isEdit) scheduleTextSave() }}
+                        placeholder="e.g. Moving to Spain next year, loves the culture..."
+                        maxLength={512}
+                        rows={3}
+                        className="resize-none w-full italic text-[#1A1B22]"
+                        data-testid="student-reason-for-studying"
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -912,7 +956,7 @@ export default function StudentForm() {
                     {interests.map((interest) => (
                       <span
                         key={interest}
-                        className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded px-2 py-0.5"
+                        className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full px-2.5 py-0.5"
                         data-testid="interest-chip"
                       >
                         {interest}
@@ -983,7 +1027,7 @@ export default function StudentForm() {
                       return (
                         <div
                           key={obj.id}
-                          className="flex flex-col sm:flex-row gap-2 sm:items-start"
+                          className="flex flex-col sm:flex-row gap-2 sm:items-start border-l-4 border-orange-300 pl-3 rounded-r-lg bg-orange-50/30"
                           data-testid="objective-row"
                         >
                           <Input
@@ -995,6 +1039,7 @@ export default function StudentForm() {
                             data-testid="objective-text-input"
                           />
                           <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-zinc-400 shrink-0" aria-hidden="true" />
                             <input
                               type="date"
                               value={obj.targetDate ?? ''}
@@ -1187,6 +1232,34 @@ export default function StudentForm() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
+                      {/* Severity bar + trend indicator */}
+                      {(d.severity || d.trend) && (
+                        <div className="flex items-center gap-3 pl-1" data-testid="difficulty-visual-indicators">
+                          {d.severity && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-zinc-400">Severity</span>
+                              <div className="w-16 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full ${
+                                    d.severity === 'high' ? 'bg-red-500 w-full' :
+                                    d.severity === 'medium' ? 'bg-amber-500 w-2/3' :
+                                    'bg-green-500 w-1/3'
+                                  }`}
+                                  data-testid="difficulty-severity-bar"
+                                />
+                              </div>
+                            </div>
+                          )}
+                          {d.trend && (
+                            <div className="flex items-center gap-1" data-testid="difficulty-trend-indicator">
+                              {d.trend === 'improving' && <TrendingUp className="h-3.5 w-3.5 text-green-500" />}
+                              {d.trend === 'worsening' && <TrendingDown className="h-3.5 w-3.5 text-red-500" />}
+                              {d.trend === 'stable' && <Minus className="h-3.5 w-3.5 text-zinc-400" />}
+                              <span className="text-xs text-zinc-400 capitalize">{d.trend}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       {errors[`difficulty-${d.id}`] && (
                         <p className="text-xs text-red-600" data-testid="difficulty-error">
                           {errors[`difficulty-${d.id}`]}
@@ -1317,6 +1390,25 @@ export default function StudentForm() {
           </form>
 
           {isEdit && id && <StudentCoursesCard studentId={id} />}
+
+          {/* Danger zone — delete action at bottom of page */}
+          {isEdit && id && (
+            <div className="pt-6 border-t border-zinc-100 space-y-2" data-testid="danger-zone">
+              {deleteError && (
+                <p className="text-sm text-red-600 font-medium" data-testid="delete-error">{deleteError}</p>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={isBusy}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 text-sm px-0"
+                data-testid="delete-student-btn"
+              >
+                Delete this student
+              </Button>
+            </div>
+          )}
         </div>
 
         {isEdit && id && (
