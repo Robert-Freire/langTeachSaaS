@@ -68,11 +68,11 @@ function makeListResponse(items: studentsApi.Student[]): studentsApi.StudentList
   return { items, totalCount: items.length, page: 1, pageSize: 100 }
 }
 
-function wrapper(ui: React.ReactElement) {
+function wrapper(ui: React.ReactElement, initialSearch = '') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>{ui}</MemoryRouter>
+      <MemoryRouter initialEntries={[`/${initialSearch}`]}>{ui}</MemoryRouter>
     </QueryClientProvider>
   )
 }
@@ -101,6 +101,13 @@ describe('Students page', () => {
     wrapper(<Students />)
     await screen.findByTestId('student-name')
     expect(screen.queryByTestId('delete-student')).not.toBeInTheDocument()
+  })
+
+  it('does not render an edit pencil in the student list row (edit accessed from detail view)', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse([makeStudent()]))
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.queryByTestId('edit-student')).not.toBeInTheDocument()
   })
 
   it('renders student list when fetch succeeds', async () => {
@@ -146,6 +153,14 @@ describe('Students page', () => {
     expect(badge).toHaveTextContent('B2')
     expect(badge.className).toContain('rounded-md')
     expect(badge.className).not.toContain('rounded-full')
+  })
+
+  it('renders ALERTS column header (not SIGNALS)', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse([makeStudent()]))
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText('Alerts')).toBeInTheDocument()
+    expect(screen.queryByText('Signals')).not.toBeInTheDocument()
   })
 
   it('filters students by name when search query is entered', async () => {
@@ -251,10 +266,11 @@ describe('Students page', () => {
         makeActiveStudent({ studentId: 'a', name: 'Ana', nextSessionDate: soon }),
       ],
     })
-    wrapper(<Students />)
+    // Use URL param to set sort to nextSession (default is now lastSession)
+    wrapper(<Students />, '?sort=nextSession')
     await screen.findByText('Ana')
 
-    // "Next Session" is the default sort — Ana (sooner) should appear first
+    // Ana (sooner) should appear first
     const names = screen.getAllByTestId('student-name').map(el => el.textContent)
     expect(names[0]).toBe('Ana')
     expect(names[1]).toBe('Bruno')
@@ -276,11 +292,9 @@ describe('Students page', () => {
         makeActiveStudent({ studentId: 'a', name: 'Ana', lastSessionDate: recent }),
       ],
     })
-    wrapper(<Students />)
+    // lastSession is the default — but pass explicitly for clarity
+    wrapper(<Students />, '?sort=lastSession')
     await screen.findByText('Ana')
-
-    const select = screen.getByRole('combobox', { name: /sort/i })
-    fireEvent.change(select, { target: { value: 'lastSession' } })
 
     const names = screen.getAllByTestId('student-name').map(el => el.textContent)
     expect(names[0]).toBe('Ana')
@@ -294,11 +308,8 @@ describe('Students page', () => {
         makeStudent({ id: 'a', name: 'Ana García' }),
       ])
     )
-    wrapper(<Students />)
+    wrapper(<Students />, '?sort=name')
     await screen.findByText('Zara Smith')
-
-    const select = screen.getByRole('combobox', { name: /sort/i })
-    fireEvent.change(select, { target: { value: 'name' } })
 
     const names = screen.getAllByTestId('student-name').map(el => el.textContent)
     expect(names[0]).toBe('Ana García')
@@ -312,15 +323,41 @@ describe('Students page', () => {
         makeStudent({ id: 'a', name: 'Ana', cefrLevel: 'A1' }),
       ])
     )
-    wrapper(<Students />)
+    wrapper(<Students />, '?sort=cefrLevel')
     await screen.findByText('Bruno')
-
-    const select = screen.getByRole('combobox', { name: /sort/i })
-    fireEvent.change(select, { target: { value: 'cefrLevel' } })
 
     const names = screen.getAllByTestId('student-name').map(el => el.textContent)
     expect(names[0]).toBe('Ana')
     expect(names[1]).toBe('Bruno')
+  })
+
+  it('sort button opens dropdown and selecting an option changes sort', async () => {
+    const recent = new Date(Date.now() - 2 * 86400000).toISOString()
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([
+        makeStudent({ id: 'z', name: 'Zara Smith' }),
+        makeStudent({ id: 'a', name: 'Ana García' }),
+      ])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [],
+      activeStudents: [
+        makeActiveStudent({ studentId: 'z', name: 'Zara Smith', lastSessionDate: recent }),
+      ],
+    })
+    wrapper(<Students />)
+    await screen.findByText('Zara Smith')
+
+    // Open the sort dropdown
+    fireEvent.click(screen.getByTestId('sort-button'))
+    expect(screen.getByTestId('sort-option-name')).toBeInTheDocument()
+
+    // Select Name sort
+    fireEvent.click(screen.getByTestId('sort-option-name'))
+
+    const names = screen.getAllByTestId('student-name').map(el => el.textContent)
+    expect(names[0]).toBe('Ana García')
+    expect(names[1]).toBe('Zara Smith')
   })
 
   it('shows Inactive Xd badge in red for student with 20-day gap', async () => {
@@ -449,5 +486,47 @@ describe('Students page', () => {
     wrapper(<Students />)
     await screen.findByTestId('student-name')
     expect(screen.getByText('Showing 1 of 1 student')).toBeInTheDocument()
+  })
+
+  it('subtitle shows total count without "active" when no filter is active', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([
+        makeStudent({ id: 'a', name: 'Ana' }),
+        makeStudent({ id: 'b', name: 'Bruno' }),
+      ])
+    )
+    wrapper(<Students />)
+    await screen.findAllByTestId('student-name')
+    expect(screen.getByText('Managing 2 language learners in your atelier')).toBeInTheDocument()
+  })
+
+  it('subtitle updates when CEFR filter is active', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([
+        makeStudent({ id: 'a', name: 'Ana', cefrLevel: 'B2' }),
+        makeStudent({ id: 'b', name: 'Bruno', cefrLevel: 'A1' }),
+      ])
+    )
+    wrapper(<Students />)
+    await screen.findByText('Ana')
+
+    fireEvent.click(screen.getByRole('button', { name: 'B2' }))
+    expect(screen.getByText('Managing 1 B2 learner in your atelier')).toBeInTheDocument()
+  })
+
+  it('subtitle shows search result count when search is active', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([
+        makeStudent({ id: 'a', name: 'Ana García' }),
+        makeStudent({ id: 'b', name: 'Bruno Almeida' }),
+      ])
+    )
+    wrapper(<Students />)
+    await screen.findByText('Ana García')
+
+    const input = screen.getByPlaceholderText('Search students...')
+    fireEvent.change(input, { target: { value: 'Ana' } })
+
+    expect(screen.getByText("Showing 1 result for 'Ana'")).toBeInTheDocument()
   })
 })

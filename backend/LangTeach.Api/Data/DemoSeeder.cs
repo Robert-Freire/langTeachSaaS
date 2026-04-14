@@ -47,10 +47,10 @@ public static class DemoSeeder
         var students = new List<Student>
         {
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Souza",        LearningLanguage = "English", CefrLevel = "B2", Interests = """["travel","cooking"]""",    PersonalNotes = DemoTag, TeachingTodos = """[{"id":"a1b2c3d4-0000-0000-0000-000000000001","text":"Trabajar la diferencia entre artículo determinado e indeterminado","createdAt":"2026-04-09T10:00:00Z","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null},{"id":"a1b2c3d4-0000-0000-0000-000000000002","text":"Repasar pretérito en narraciones personales","createdAt":"2026-04-09T10:05:00Z","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null}]""", CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Rossi",      LearningLanguage = "English", CefrLevel = "A2", Interests = """["football","music"]""",    PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Yuki Tanaka",      LearningLanguage = "English", CefrLevel = "B1", Interests = """["technology","anime"]""",  PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Fatima Al-Hassan", LearningLanguage = "English", CefrLevel = "C1", Interests = """["literature","history"]""", PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Carlos Mendez",    LearningLanguage = "English", CefrLevel = "A1", Interests = """["business","travel"]""",   PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Rossi",      LearningLanguage = "English", CefrLevel = "A2", NativeLanguages = """["Italian"]""",   Interests = """["football","music"]""",    PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Yuki Tanaka",      LearningLanguage = "English", CefrLevel = "B1", NativeLanguages = """["Japanese"]""",  Interests = """["technology","anime"]""",  PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Fatima Al-Hassan", LearningLanguage = "English", CefrLevel = "C1", NativeLanguages = """["Arabic"]""",    Interests = """["literature","history"]""", PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Carlos Mendez",    LearningLanguage = "English", CefrLevel = "A1", NativeLanguages = """["Spanish"]""",   Interests = """["business","travel"]""",   PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
         };
 
         db.Students.AddRange(students);
@@ -159,7 +159,7 @@ public static class DemoSeeder
         var students = new List<Student>
         {
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", PersonalNotes = VisualTag, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", Difficulties = AnaVisualDifficulties, CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Visual", LearningLanguage = "English", CefrLevel = "A2", PersonalNotes = VisualTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Visual", LearningLanguage = "English", CefrLevel = "A2", NativeLanguages = """["Italian"]""", PersonalNotes = VisualTag, CreatedAt = now, UpdatedAt = now },
         };
         db.Students.AddRange(students);
 
@@ -269,7 +269,7 @@ public static class DemoSeeder
             Name             = "Marco Seed",
             LearningLanguage = "English",
             CefrLevel        = "A2",
-            NativeLanguages  = "[]",
+            NativeLanguages  = """["Italian"]""",
             LearningGoals    = "[]",
             Interests        = "[]",
             Difficulties     = "[]",
@@ -284,7 +284,7 @@ public static class DemoSeeder
             Name             = "Clara Seed",
             LearningLanguage = "Spanish",
             CefrLevel        = "A1",
-            NativeLanguages  = "[]",
+            NativeLanguages  = """["German"]""",
             LearningGoals    = "[]",
             Interests        = "[]",
             Difficulties     = "[]",

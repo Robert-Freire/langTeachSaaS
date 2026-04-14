@@ -1,14 +1,13 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useRef, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Pencil, Search, UserPlus, Users } from 'lucide-react'
+import { Search, UserPlus, Users, ChevronsUpDown } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { getStudents, type Student } from '../api/students'
 import { getDashboard, type ActiveStudent } from '../api/dashboard'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { cn } from '@/lib/utils'
@@ -74,16 +73,15 @@ function formatRelativeDate(dateStr: string | null | undefined, showTime = false
 
 // ── Signal badges ───────────────────────────────────────────────────────────
 
-type SignalVariant = 'amber' | 'zinc' | 'indigo' | 'red'
-
 interface Signal {
   label: string
-  variant: SignalVariant
+  className: string
+  redDot?: boolean
 }
 
 function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal[] {
   if (!student.isActive) {
-    return [{ label: 'Former', variant: 'zinc' }]
+    return [{ label: 'Former', className: 'bg-zinc-600 text-white' }]
   }
 
   if (!dash) return []
@@ -101,15 +99,15 @@ function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal
   // RETURNING: was inactive 30+ days and now has a scheduled next session
   const isReturning = lastSessionGapDays != null && lastSessionGapDays >= 30 && hasNextSession
   if (isReturning) {
-    signals.push({ label: 'RETURNING', variant: 'zinc' })
+    signals.push({ label: 'RETURNING', className: 'bg-[#1A1B22] text-white' })
   } else if (lastSessionGapDays != null && lastSessionGapDays >= 14) {
     // Inactive Xd: last session 14+ days ago and no upcoming session (or < 30d gap)
-    signals.push({ label: `Inactive ${lastSessionGapDays}d`, variant: 'red' })
+    signals.push({ label: `Inactive ${lastSessionGapDays}d`, className: 'bg-amber-500 text-white' })
   }
 
   // Cancelled 2x
   if (dash.cancelledSessionsLast30Days >= 2) {
-    signals.push({ label: 'Cancelled 2x', variant: 'amber' })
+    signals.push({ label: 'Cancelled 2x', className: 'bg-[#1A1B22] text-white', redDot: true })
   }
 
   // NEW: created in last 14 days with fewer than 3 sessions
@@ -117,7 +115,7 @@ function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal
     const createdMs = new Date(student.createdAt).getTime()
     const daysSinceCreation = Math.floor((now - createdMs) / (1000 * 60 * 60 * 24))
     if (daysSinceCreation <= 14 && dash.totalSessions < 3) {
-      signals.push({ label: 'NEW', variant: 'indigo' })
+      signals.push({ label: 'NEW', className: 'bg-green-500 text-white' })
     }
   }
 
@@ -130,27 +128,27 @@ function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal
     return msUntil >= 0 && msUntil <= sixWeeksMs
   })
   if (hasExamPrep) {
-    signals.push({ label: 'Exam prep', variant: 'indigo' })
+    signals.push({ label: 'Exam prep', className: 'bg-[#3525CD] text-white' })
   }
 
   // Review pending: has pending teaching todos
   if (dash.pendingTodos.length > 0) {
-    signals.push({ label: 'Review pending', variant: 'indigo' })
+    signals.push({ label: 'Review pending', className: 'bg-[#3525CD] text-white' })
   }
 
   return signals
 }
 
-const SIGNAL_VARIANT_CLASSES: Record<SignalVariant, string> = {
-  amber: 'bg-amber-50 text-amber-700',
-  zinc: 'bg-zinc-100 text-zinc-600',
-  indigo: 'bg-indigo-50 text-indigo-700',
-  red: 'bg-red-50 text-red-700',
-}
-
 // ── Sort ────────────────────────────────────────────────────────────────────
 
 type SortOption = 'nextSession' | 'lastSession' | 'name' | 'cefrLevel'
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'nextSession', label: 'Next Session' },
+  { value: 'lastSession', label: 'Last Session' },
+  { value: 'name', label: 'Name' },
+  { value: 'cefrLevel', label: 'CEFR Level' },
+]
 
 function sortStudents(
   students: Student[],
@@ -191,17 +189,45 @@ function sortStudents(
 const CEFR_FILTER_OPTIONS = ['All', ...CEFR_LEVELS] as const
 const PAGE_SIZE = 12
 
-const COL_CLASSES = 'grid-cols-[32px_minmax(160px,2fr)_80px_120px_110px_140px_1fr_56px]'
-const TABLE_HEADERS = ['', 'Name', 'Level', 'Native Language', 'Last Session', 'Next Session', 'Signals', ''] as const
+const COL_CLASSES = 'grid-cols-[32px_minmax(160px,2fr)_80px_120px_110px_140px_1fr]'
+const TABLE_HEADERS = ['', 'Name', 'Level', 'Native Language', 'Last Session', 'Next Session', 'Alerts'] as const
 
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function Students() {
   const navigate = useNavigate()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [cefrFilter, setCefrFilter] = useState<string>('All')
-  const [sortBy, setSortBy] = useState<SortOption>('nextSession')
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const searchQuery = searchParams.get('q') ?? ''
+  const cefrFilter = searchParams.get('level') ?? 'All'
+  const sortBy = (searchParams.get('sort') as SortOption) ?? 'lastSession'
+  const visibleCount = Number(searchParams.get('count') ?? PAGE_SIZE)
+
+  const [sortOpen, setSortOpen] = useState(false)
+  const sortRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!sortOpen) return
+    function handleMouseDown(e: MouseEvent) {
+      if (!sortRef.current?.contains(e.target as Node)) setSortOpen(false)
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [sortOpen])
+
+  function updateParam(updates: Record<string, string | null>) {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === null || value === '' || value === 'All' || (key === 'count' && value === String(PAGE_SIZE))) {
+          next.delete(key)
+        } else {
+          next.set(key, value)
+        }
+      }
+      return next
+    }, { replace: true })
+  }
 
   const {
     data: studentsData,
@@ -222,7 +248,6 @@ export default function Students() {
   )
 
   const allStudents = studentsData?.items ?? []
-  const activeCount = dashboardData?.activeStudents.length ?? allStudents.filter(s => s.isActive).length
 
   const filteredStudents = allStudents.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -232,6 +257,23 @@ export default function Students() {
 
   const sortedStudents = sortStudents(filteredStudents, dashboardMap, sortBy)
   const visibleStudents = sortedStudents.slice(0, visibleCount)
+
+  // ── Dynamic subtitle ─────────────────────────────────────────────────────
+
+  function buildSubtitle(): string {
+    const total = allStudents.length
+    if (searchQuery) {
+      const count = filteredStudents.length
+      return `Showing ${count} result${count === 1 ? '' : 's'} for '${searchQuery}'`
+    }
+    if (cefrFilter !== 'All') {
+      const count = allStudents.filter(s => s.cefrLevel === cefrFilter).length
+      return `Managing ${count} ${cefrFilter} learner${count === 1 ? '' : 's'} in your atelier`
+    }
+    return `Managing ${total} language learner${total === 1 ? '' : 's'} in your atelier`
+  }
+
+  const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? 'Last Session'
 
   if (isStudentsLoading) {
     return (
@@ -258,7 +300,6 @@ export default function Students() {
               <Skeleton className="h-4 w-16" />
               <Skeleton className="h-4 w-20" />
               <Skeleton className="h-4 w-12" />
-              <div />
             </div>
           ))}
         </div>
@@ -278,7 +319,7 @@ export default function Students() {
     <div className="space-y-5">
       <PageHeader
         title="Student Roster"
-        subtitle={`Managing ${activeCount} active language learner${activeCount === 1 ? '' : 's'} in your atelier.`}
+        subtitle={allStudents.length > 0 ? buildSubtitle() : undefined}
         actions={
           <Link
             to="/students/new"
@@ -296,12 +337,23 @@ export default function Students() {
       {/* Search, filter and sort bar */}
       {allStudents.length > 0 && (
         <div className="flex items-center gap-3 flex-wrap">
-          {/* CEFR pills */}
+          {/* Search (left) */}
+          <div className="relative flex-1 min-w-48 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 pointer-events-none" />
+            <Input
+              placeholder="Search students..."
+              value={searchQuery}
+              onChange={e => updateParam({ q: e.target.value, count: null })}
+              className="pl-8 h-8 text-sm bg-white border-zinc-200 focus-visible:ring-indigo-500"
+            />
+          </div>
+
+          {/* CEFR pills (right of search) */}
           <div className="flex items-center gap-1">
             {CEFR_FILTER_OPTIONS.map(level => (
               <button
                 key={level}
-                onClick={() => { setCefrFilter(level); setVisibleCount(PAGE_SIZE) }}
+                onClick={() => updateParam({ level: level === 'All' ? null : level, count: null })}
                 className={cn(
                   'px-2.5 py-1 text-xs font-medium rounded-md transition-colors',
                   cefrFilter === level
@@ -314,30 +366,47 @@ export default function Students() {
             ))}
           </div>
 
-          {/* Search */}
-          <div className="relative flex-1 min-w-48 max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 pointer-events-none" />
-            <Input
-              placeholder="Search students..."
-              value={searchQuery}
-              onChange={e => { setSearchQuery(e.target.value); setVisibleCount(PAGE_SIZE) }}
-              className="pl-8 h-8 text-sm bg-white border-zinc-200 focus-visible:ring-indigo-500"
-            />
-          </div>
-
-          {/* Sort dropdown */}
-          <div className="ml-auto">
-            <select
-              value={sortBy}
-              onChange={e => { setSortBy(e.target.value as SortOption); setVisibleCount(PAGE_SIZE) }}
+          {/* Sort dropdown (custom, no border) */}
+          <div className="ml-auto relative" ref={sortRef}>
+            <button
+              data-testid="sort-button"
               aria-label="Sort students"
-              className="text-xs font-medium text-zinc-500 bg-white border border-zinc-200 rounded-md px-2.5 py-1.5 h-8 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+              aria-haspopup="listbox"
+              aria-expanded={sortOpen}
+              onClick={() => setSortOpen(o => !o)}
+              className="flex items-center gap-1.5 px-3 py-1.5 h-8 text-xs rounded-md bg-white hover:bg-zinc-50 transition-colors"
             >
-              <option value="nextSession">Sort: Next Session</option>
-              <option value="lastSession">Sort: Last Session</option>
-              <option value="name">Sort: Name</option>
-              <option value="cefrLevel">Sort: CEFR Level</option>
-            </select>
+              <span className="text-zinc-500">Sort by:</span>
+              <span className="font-medium text-zinc-800">{currentSortLabel}</span>
+              <ChevronsUpDown className="h-3.5 w-3.5 text-zinc-400" />
+            </button>
+            {sortOpen && (
+              <div
+                role="listbox"
+                className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-zinc-100 z-10 py-1"
+              >
+                {SORT_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    role="option"
+                    aria-selected={sortBy === opt.value}
+                    data-testid={`sort-option-${opt.value}`}
+                    onClick={() => {
+                      updateParam({ sort: opt.value === 'lastSession' ? null : opt.value, count: null })
+                      setSortOpen(false)
+                    }}
+                    className={cn(
+                      'w-full text-left px-3 py-1.5 text-xs transition-colors',
+                      sortBy === opt.value
+                        ? 'font-semibold text-[#3525CD] bg-indigo-50'
+                        : 'text-zinc-600 hover:bg-zinc-50'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -390,7 +459,7 @@ export default function Students() {
                     onClick={() => navigate(`/students/${student.id}`)}
                     className={cn(
                       'grid gap-x-4 items-center px-2 py-1.5 rounded-lg cursor-pointer transition-colors group',
-                      'hover:bg-[#E3E1EC]',
+                      'hover:bg-[#ECEAFD]',
                       COL_CLASSES
                     )}
                   >
@@ -437,7 +506,7 @@ export default function Students() {
                       {formatRelativeDate(dash?.nextSessionDate, true)}
                     </span>
 
-                    {/* Signals */}
+                    {/* Alerts */}
                     <div className="flex items-center gap-1 flex-wrap">
                       {signals.length === 0 ? (
                         <span className="text-zinc-300 text-sm">—</span>
@@ -446,34 +515,17 @@ export default function Students() {
                           <span
                             key={sig.label}
                             className={cn(
-                              'inline-flex items-center px-1.5 py-0.5 rounded-md text-[0.6875rem] font-medium',
-                              SIGNAL_VARIANT_CLASSES[sig.variant]
+                              'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-medium',
+                              sig.className
                             )}
                           >
+                            {sig.redDot && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-none" />
+                            )}
                             {sig.label}
                           </span>
                         ))
                       )}
-                    </div>
-
-                    {/* Actions */}
-                    <div
-                      className="flex items-center gap-0.5"
-                      onClick={e => e.stopPropagation()}
-                    >
-                      <Tooltip>
-                        <TooltipTrigger render={<span />}>
-                          <Link
-                            to={`/students/${student.id}/edit`}
-                            aria-label={`Edit ${student.name}`}
-                            className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-7 w-7')}
-                            data-testid="edit-student"
-                          >
-                            <Pencil className="h-3.5 w-3.5 text-zinc-400" />
-                          </Link>
-                        </TooltipTrigger>
-                        <TooltipContent>Edit</TooltipContent>
-                      </Tooltip>
                     </div>
 
                     {/* Hidden interests for e2e compatibility */}
@@ -490,7 +542,7 @@ export default function Students() {
 
           {/* Pagination footer */}
           {sortedStudents.length > 0 && (
-            <div className="px-4 py-3 flex items-center justify-between border-t border-zinc-50">
+            <div className="px-4 py-3 flex items-center border-t border-zinc-50 relative">
               <span className="text-xs text-zinc-400">
                 Showing {Math.min(visibleCount, sortedStudents.length)} of {sortedStudents.length} student{sortedStudents.length === 1 ? '' : 's'}
               </span>
@@ -498,8 +550,9 @@ export default function Students() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
+                  onClick={() => updateParam({ count: String(visibleCount + PAGE_SIZE) })}
                   data-testid="load-more"
+                  className="absolute left-1/2 -translate-x-1/2"
                 >
                   Load more
                 </Button>
