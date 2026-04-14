@@ -6,6 +6,13 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-04-13 during UI Redesign sprint triage. Actionable entries batched into #713 (deduplication), #713 (MaxLength redundancy). Remaining entries deleted (verified safe, intentional per spec, defensive-only, or consistent with existing patterns).*
 
+## #724 — 2026-04-14
+
+| Reviewer | Severity | Note |
+|---|---|---|
+| architecture-reviewer | minor | `formatTimeSince` in `ProgressDashboard.tsx` duplicates day/week bucketing logic from `relativeTime()` in `formatDate.ts`. Formats differ (`"5d"` vs `"5 days ago"`) so they serve different purposes, but if a third compact-time callsite appears, extract to `formatDate.ts` as `formatTimeSinceCompact`. |
+| architecture-reviewer | minor | `CEFR_ORDER` (as Record) is redeclared in `ProgressDashboard.tsx` and `StudentOverviewTab.tsx` also has a private CEFR array. Both are pre-existing; worth extracting to a shared `cefrUtils.ts` if a third file needs it. |
+
 ## #722 — 2026-04-14
 
 | Reviewer | Severity | Note |

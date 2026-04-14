@@ -240,6 +240,30 @@ test('student detail profile tab: inline-add short-term objective', async ({ bro
   }
 })
 
+test('student detail progress tab: renders without errors', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    await page.goto('/students')
+    await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+
+    const anaSeed = page.getByText('Ana Seed').first()
+    await expect(anaSeed).toBeVisible({ timeout: UI_TIMEOUT })
+    await anaSeed.click()
+
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+    await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    await page.getByTestId('tab-progress').click()
+    await expect(page.getByTestId('progress-tab-content')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByTestId('skill-imbalance-section')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByTestId('pacing-section')).toBeVisible({ timeout: UI_TIMEOUT })
+  } finally {
+    await context.close()
+  }
+})
+
 test('student detail profile tab: inline-add focus area difficulty', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()

@@ -23,9 +23,20 @@ function isAboveOrAtBaseline(skillLevel: string, baselineLevel: string): boolean
   return (CEFR_ORDER[skillLevel] ?? 0) >= (CEFR_ORDER[baselineLevel] ?? 0)
 }
 
+function isGapTwoOrMore(skillLevel: string, baselineLevel: string): boolean {
+  return (CEFR_ORDER[baselineLevel] ?? 0) - (CEFR_ORDER[skillLevel] ?? 0) >= 2
+}
+
 function formatStartDate(dateStr: string): string {
   const d = new Date(dateStr)
   return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+}
+
+function formatTimeSince(date: Date): string {
+  const diffMs = Date.now() - date.getTime()
+  const days = Math.floor(diffMs / (24 * 60 * 60 * 1000))
+  if (days < 7) return `${days}d`
+  return `${Math.floor(days / 7)}w`
 }
 
 interface PacingStats {
@@ -80,15 +91,40 @@ function computeRecentMentions(sessions: SessionLog[]): Set<string> {
     .forEach((s) => {
       try {
         const pairs = JSON.parse(s.mentionedDifficultyPairs || '[]') as {
-          Competency: string
-          Subcategory: string
+          competency: string
+          subcategory: string
         }[]
-        pairs.forEach((p) => mentions.add(`${p.Competency}|${p.Subcategory}`))
+        pairs.forEach((p) => mentions.add(`${p.competency}|${p.subcategory}`))
       } catch {
         /* empty */
       }
     })
   return mentions
+}
+
+function computeLastMentionDates(sessions: SessionLog[]): Map<string, Date> {
+  const lastMentioned = new Map<string, Date>()
+  sessions
+    .filter((s) => !s.isCancelled && s.statusName === 'Confirmed' && s.sessionDate)
+    .forEach((s) => {
+      const sessionDate = new Date(s.sessionDate!)
+      try {
+        const pairs = JSON.parse(s.mentionedDifficultyPairs || '[]') as {
+          competency: string
+          subcategory: string
+        }[]
+        pairs.forEach((p) => {
+          const key = `${p.competency}|${p.subcategory}`
+          const existing = lastMentioned.get(key)
+          if (!existing || sessionDate > existing) {
+            lastMentioned.set(key, sessionDate)
+          }
+        })
+      } catch {
+        /* empty */
+      }
+    })
+  return lastMentioned
 }
 
 export function ProgressDashboard({ student, sessions }: Props) {
@@ -103,6 +139,7 @@ export function ProgressDashboard({ student, sessions }: Props) {
 
   // Difficulty classification
   const recentMentions = useMemo(() => computeRecentMentions(sessions), [sessions])
+  const lastMentionDates = useMemo(() => computeLastMentionDates(sessions), [sessions])
   const difficulties = student.difficulties ?? []
 
   const coveredDifficulties = difficulties.filter((d) => d.status === 'Covered')
@@ -156,27 +193,34 @@ export function ProgressDashboard({ student, sessions }: Props) {
                 if (!level) return null
                 const width = cefrBarWidth(level)
                 const above = isAboveOrAtBaseline(level, student.cefrLevel)
+                const hasGap = isGapTwoOrMore(level, student.cefrLevel)
+                const barColor = hasGap ? 'bg-amber-400' : above ? 'bg-[#3525CD]' : 'bg-[#C3C0FF]'
                 return (
                   <div key={skill} className="relative">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-semibold text-[#1A1B22]">{skill}</span>
-                      <CefrBadge level={level} />
+                      <div className="flex items-center gap-2">
+                        {hasGap && (
+                          <span
+                            className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[0.5625rem] font-bold text-amber-700"
+                            data-testid={`skill-gap-badge-${skill.toLowerCase()}`}
+                          >
+                            Gap
+                          </span>
+                        )}
+                        <CefrBadge level={level} />
+                      </div>
                     </div>
                     <div className="relative h-3 w-full bg-[#F4F2FD] rounded-full overflow-visible">
-                      {/* Baseline reference line */}
+                      {/* Baseline reference marker — positioned outside clip context */}
                       <div
-                        className="absolute top-0 h-full w-0.5 bg-zinc-400/50 z-10"
-                        style={{ left: `${baselinePercent}%` }}
+                        className="absolute z-10 w-0.5 bg-[#C7C4D8]"
+                        style={{ left: `${baselinePercent}%`, top: '-2px', bottom: '-2px' }}
                         aria-label={`Baseline ${student.cefrLevel}`}
+                        data-testid={`baseline-marker-${skill.toLowerCase()}`}
                       />
                       <div
-                        className="h-full rounded-full overflow-hidden"
-                        style={{ width: `${baselinePercent}%` }}
-                      />
-                      <div
-                        className={`absolute top-0 left-0 h-full rounded-full transition-all duration-300 ${
-                          above ? 'bg-[#3525CD]' : 'bg-[#C3C0FF]'
-                        }`}
+                        className={`absolute top-0 left-0 h-full rounded-full transition-all duration-300 ${barColor}`}
                         style={{ width: `${width}%` }}
                         data-testid={`skill-bar-${skill.toLowerCase()}`}
                       />
@@ -196,13 +240,13 @@ export function ProgressDashboard({ student, sessions }: Props) {
         </div>
 
         {/* Right column — 4 cols */}
-        <div className="lg:col-span-4 space-y-4">
+        <div className="lg:col-span-4 space-y-5">
           {/* Pacing Analytics */}
-          <div className="bg-[#F4F2FD] rounded-2xl p-6" data-testid="pacing-section">
+          <div className="bg-[#F4F2FD] rounded-2xl p-7" data-testid="pacing-section">
             <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-6">
               Pacing Analytics
             </h3>
-            <div className="space-y-5">
+            <div className="space-y-6">
               <div>
                 <p className="text-3xl font-black text-[#3525CD] mb-1">
                   {completedSessions.length}
@@ -287,7 +331,7 @@ export function ProgressDashboard({ student, sessions }: Props) {
           {/* Difficulties Summary */}
           {difficulties.length > 0 && (
             <div
-              className="bg-white rounded-2xl p-6"
+              className="bg-white rounded-2xl p-7"
               style={{ boxShadow: '0 1px 3px rgba(26,27,34,0.08)', border: '1px solid rgba(199,196,216,0.15)' }}
               data-testid="difficulties-section"
             >
@@ -303,30 +347,64 @@ export function ProgressDashboard({ student, sessions }: Props) {
                     const isStale = d.status !== 'Covered' &&
                       !recentMentions.has(`${d.competency}|${d.subcategory}`)
                     const isCovered = d.status === 'Covered'
+                    const lastMentionDate = lastMentionDates.get(`${d.competency}|${d.subcategory}`)
+                    const timeSince = lastMentionDate ? formatTimeSince(lastMentionDate) : null
 
                     return (
                       <div
                         key={d.id}
                         className="flex items-center justify-between py-2 border-b border-zinc-50 last:border-0"
                       >
-                        <span className="text-xs font-bold text-[#1A1B22] truncate mr-2 max-w-[140px]">
-                          {d.description}
-                        </span>
-                        {isWorking && (
-                          <span className="px-2 py-0.5 rounded-full text-[0.5625rem] font-bold bg-[#E2DFFF] text-[#3323CC] shrink-0">
-                            Working
-                          </span>
-                        )}
-                        {isStale && (
-                          <span className="px-2 py-0.5 rounded-full text-[0.5625rem] font-bold bg-amber-100 text-amber-700 shrink-0">
-                            Stale
-                          </span>
-                        )}
-                        {isCovered && (
-                          <span className="px-2 py-0.5 rounded-full text-[0.5625rem] font-bold bg-green-100 text-green-700 shrink-0">
-                            Covered
-                          </span>
-                        )}
+                        <TooltipPrimitive.Root>
+                          <TooltipPrimitive.Trigger
+                            render={
+                              <div className="flex flex-col gap-0.5 mr-2 min-w-0 cursor-default" />
+                            }
+                          >
+                            <span className="text-xs font-bold text-[#1A1B22] truncate max-w-[140px] block">
+                              {d.description}
+                            </span>
+                            <span className="text-[0.5625rem] font-bold uppercase text-zinc-400 block">
+                              {d.competency}
+                            </span>
+                          </TooltipPrimitive.Trigger>
+                          <TooltipPrimitive.Portal>
+                            <TooltipPrimitive.Positioner side="top" sideOffset={4} className="isolate z-50">
+                              <TooltipPrimitive.Popup
+                                className="z-50 max-w-xs rounded-lg bg-white px-3 py-2 text-xs leading-relaxed text-zinc-700"
+                                style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.10)' }}
+                                data-testid={`difficulty-tooltip-${d.id}`}
+                              >
+                                {d.description}
+                              </TooltipPrimitive.Popup>
+                            </TooltipPrimitive.Positioner>
+                          </TooltipPrimitive.Portal>
+                        </TooltipPrimitive.Root>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {timeSince && (
+                            <span
+                              className="text-[0.5625rem] text-zinc-400"
+                              data-testid={`difficulty-time-since-${d.id}`}
+                            >
+                              {timeSince}
+                            </span>
+                          )}
+                          {isWorking && (
+                            <span className="px-2 py-0.5 rounded-full text-[0.5625rem] font-bold bg-[#E2DFFF] text-[#3323CC]">
+                              Working
+                            </span>
+                          )}
+                          {isStale && (
+                            <span className="px-2 py-0.5 rounded-full text-[0.5625rem] font-bold bg-amber-100 text-amber-700">
+                              Stale
+                            </span>
+                          )}
+                          {isCovered && (
+                            <span className="px-2 py-0.5 rounded-full text-[0.5625rem] font-bold bg-green-100 text-green-700">
+                              Covered
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )
                   })}
