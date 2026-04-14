@@ -142,14 +142,13 @@ describe('StudentRoster', () => {
     expect(screen.getByText(/Inactive \d+d/)).toBeInTheDocument()
   })
 
-  it('renders sort dropdown defaulting to Last Session', () => {
+  it('renders sort dropdown showing Last Session by default', () => {
     render(
       <MemoryRouter>
         <StudentRoster students={[makeStudent()]} />
       </MemoryRouter>,
     )
-    const select = screen.getByTestId('roster-sort') as HTMLSelectElement
-    expect(select.value).toBe('lastSession')
+    expect(screen.getByTestId('roster-sort')).toHaveTextContent('Last Session')
   })
 
   it('sorts by name when Name option selected', () => {
@@ -162,8 +161,8 @@ describe('StudentRoster', () => {
         <StudentRoster students={students} />
       </MemoryRouter>,
     )
-    const select = screen.getByTestId('roster-sort')
-    fireEvent.change(select, { target: { value: 'name' } })
+    fireEvent.click(screen.getByTestId('roster-sort'))
+    fireEvent.click(screen.getByTestId('roster-sort-option-name'))
     const rows = screen.getAllByTestId('zone3-student-row')
     expect(rows[0]).toHaveTextContent('Ana')
     expect(rows[1]).toHaveTextContent('Zara')

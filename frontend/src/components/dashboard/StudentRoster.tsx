@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { ChevronsUpDown } from 'lucide-react'
 import { CefrBadge } from './CefrBadge'
 import type { ActiveStudent } from '@/api/dashboard'
 
@@ -70,7 +71,19 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 
 export function StudentRoster({ students }: StudentRosterProps) {
   const [sortBy, setSortBy] = useState<SortOption>('lastSession')
+  const [sortOpen, setSortOpen] = useState(false)
+  const sortRef = useRef<HTMLDivElement>(null)
 
+  useEffect(() => {
+    if (!sortOpen) return
+    function handleClick(e: MouseEvent) {
+      if (!sortRef.current?.contains(e.target as Node)) setSortOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [sortOpen])
+
+  const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? 'Last Session'
   const sorted = sortStudents(students, sortBy)
 
   return (
@@ -85,19 +98,43 @@ export function StudentRoster({ students }: StudentRosterProps) {
           )}
         </div>
         {students.length > 0 && (
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter hidden sm:block">Sort</span>
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value as SortOption)}
-              className="text-xs font-inter text-[#1A1B22] bg-[#F4F2FD] rounded-lg px-2 py-1.5 border-none outline-none cursor-pointer"
+          <div className="relative shrink-0" ref={sortRef}>
+            <button
               aria-label="Sort students"
+              aria-haspopup="listbox"
+              aria-expanded={sortOpen}
+              onClick={() => setSortOpen(o => !o)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-[#F4F2FD] hover:bg-[#ECEAFD] transition-colors"
               data-testid="roster-sort"
             >
-              {SORT_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+              <span className="text-zinc-500 hidden sm:inline">Sort:</span>
+              <span className="font-medium text-[#1A1B22]">{currentSortLabel}</span>
+              <ChevronsUpDown className="h-3.5 w-3.5 text-zinc-400" />
+            </button>
+            {sortOpen && (
+              <div
+                role="listbox"
+                className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-zinc-100 z-10 py-1"
+              >
+                {SORT_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    role="option"
+                    aria-selected={sortBy === opt.value}
+                    data-testid={`roster-sort-option-${opt.value}`}
+                    onClick={() => { setSortBy(opt.value); setSortOpen(false) }}
+                    className={[
+                      'w-full text-left px-3 py-1.5 text-xs transition-colors',
+                      sortBy === opt.value
+                        ? 'font-semibold text-[#3525CD] bg-indigo-50'
+                        : 'text-zinc-600 hover:bg-zinc-50',
+                    ].join(' ')}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
