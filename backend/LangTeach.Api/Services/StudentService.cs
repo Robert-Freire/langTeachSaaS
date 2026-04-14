@@ -225,9 +225,7 @@ public class StudentService : IStudentService
         s.PersonalNotes,
         s.TeachingNotes,
         JsonStorageHelper.DeserializeList<string>(s.NativeLanguages),
-        JsonStorageHelper.DeserializeListWithStringFallback<LearningGoalDto>(
-            s.LearningGoals,
-            text => new LearningGoalDto(Guid.NewGuid().ToString(), text, [])),
+        LearningGoalHelper.Deserialize(s.LearningGoals),
         JsonStorageHelper.DeserializeListWithStringFallback<StudentWeaknessDto>(
             s.Weaknesses,
             str => new StudentWeaknessDto(str, "grammatical")),

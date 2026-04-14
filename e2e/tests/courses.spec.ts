@@ -741,7 +741,8 @@ test('full happy path: student edit → CourseNew (locked) → generate → Cour
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
   await expect(studentCard).toBeVisible({ timeout: NAV_TIMEOUT })
-  await studentCard.getByTestId('edit-student').click()
+  await studentCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: NAV_TIMEOUT })
 
   const editUrl = page.url()

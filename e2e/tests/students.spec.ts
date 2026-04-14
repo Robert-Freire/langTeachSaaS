@@ -92,7 +92,8 @@ test('creates student with lexical weakness and verifies round-trip', async ({ b
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
   await expect(studentCard).toBeVisible({ timeout: UI_TIMEOUT })
-  await studentCard.getByTestId('edit-student').click()
+  await studentCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
 
   // Verify weakness round-tripped correctly
@@ -107,7 +108,8 @@ test('creates student with lexical weakness and verifies round-trip', async ({ b
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
-  await deleteCard.getByTestId('edit-student').click()
+  await deleteCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page).toHaveURL(/\/edit$/, { timeout: UI_TIMEOUT })
   await page.getByTestId('delete-student-btn').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
@@ -205,8 +207,9 @@ test('full student CRUD flow', async ({ browser }) => {
   await expect(studentCard.getByTestId('interest-chip').filter({ hasText: 'travel' })).toBeAttached()
   await expect(studentCard.getByTestId('native-language-chip')).toContainText('Portuguese')
 
-  // Edit: click the edit button within this student's card
-  await studentCard.getByTestId('edit-student').click()
+  // Edit: navigate to detail then click edit
+  await studentCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
   await expect(page.getByTestId('student-name')).toHaveValue(studentName)
 
@@ -239,7 +242,8 @@ test('full student CRUD flow', async ({ browser }) => {
   await expect(updatedCard.getByTestId('student-level')).toContainText('C1', { timeout: UI_TIMEOUT })
 
   // Re-enter edit to verify difficulty was updated and remove it
-  await updatedCard.getByTestId('edit-student').click()
+  await updatedCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
   const verifyDiffRow = page.getByTestId('difficulty-row')
   await expect(verifyDiffRow.getByTestId('difficulty-description')).toHaveValue('ser/estar in all tenses')
@@ -258,7 +262,8 @@ test('full student CRUD flow', async ({ browser }) => {
   const finalCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
-  await finalCard.getByTestId('edit-student').click()
+  await finalCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
   await expect(page.getByTestId('difficulty-row')).not.toBeVisible()
   await expect(page.getByText('No specific difficulties tracked yet.')).toBeVisible()
@@ -271,7 +276,8 @@ test('full student CRUD flow', async ({ browser }) => {
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
-  await deleteCard.getByTestId('edit-student').click()
+  await deleteCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page).toHaveURL(/\/edit$/, { timeout: UI_TIMEOUT })
   await page.getByTestId('delete-student-btn').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
@@ -333,7 +339,8 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
   await expect(studentCard).toBeVisible({ timeout: UI_TIMEOUT })
-  await studentCard.getByTestId('edit-student').click()
+  await studentCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
 
   // Verify goals persisted
@@ -347,7 +354,8 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
-  await deleteCard.getByTestId('edit-student').click()
+  await deleteCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page).toHaveURL(/\/edit$/, { timeout: UI_TIMEOUT })
   await page.getByTestId('delete-student-btn').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
@@ -384,7 +392,8 @@ test('"Create Course" button on student edit page navigates to CourseNew with st
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
   await expect(studentCard).toBeVisible({ timeout: UI_TIMEOUT })
-  await studentCard.getByTestId('edit-student').click()
+  await studentCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
 
   // Capture the student ID from the edit URL
@@ -469,7 +478,8 @@ test('student detail shows 4 tabs and overview content by default', async ({ bro
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
-  await deleteCard.getByTestId('edit-student').click()
+  await deleteCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page).toHaveURL(/\/edit$/, { timeout: UI_TIMEOUT })
   await page.getByTestId('delete-student-btn').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
@@ -538,7 +548,8 @@ test('saves and displays SpokenLanguages, OfficialCefrLevel, and SkillLevelOverr
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
-  await deleteCard.getByTestId('edit-student').click()
+  await deleteCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page).toHaveURL(/\/edit$/, { timeout: UI_TIMEOUT })
   await page.getByTestId('delete-student-btn').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
@@ -608,7 +619,8 @@ test('identity fields round-trip: save and verify in profile view and edit form'
   const deleteCardIdentity = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
-  await deleteCardIdentity.getByTestId('edit-student').click()
+  await deleteCardIdentity.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page).toHaveURL(/\/edit$/, { timeout: UI_TIMEOUT })
   await page.getByTestId('delete-student-btn').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
@@ -676,7 +688,8 @@ test('motivation fields: reason for studying and objectives round-trip', async (
   const deleteCardM = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
-  await deleteCardM.getByTestId('edit-student').click()
+  await deleteCardM.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page).toHaveURL(/\/edit$/, { timeout: UI_TIMEOUT })
   await page.getByTestId('delete-student-btn').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
@@ -795,7 +808,8 @@ test('teaching todos: add, toggle covered, verify ordering on overview tab', asy
   const row = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
-  await row.getByTestId('edit-student').click()
+  await row.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page).toHaveURL(/\/edit$/, { timeout: UI_TIMEOUT })
   await page.getByTestId('delete-student-btn').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
@@ -858,7 +872,8 @@ test('log session page: create session from full-page form and redirect back', a
   const row = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
-  await row.getByTestId('edit-student').click()
+  await row.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page).toHaveURL(/\/edit$/, { timeout: UI_TIMEOUT })
   await page.getByTestId('delete-student-btn').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
@@ -904,7 +919,8 @@ test('overview tab: header badges, pedagogical profile, teaching notes panel vis
   const overviewRow = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
-  await overviewRow.getByTestId('edit-student').click()
+  await overviewRow.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page).toHaveURL(/\/edit$/, { timeout: UI_TIMEOUT })
   await page.getByTestId('delete-student-btn').click()
   await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
@@ -1074,7 +1090,8 @@ test('nested learning goal with sub-goal persists after save', async ({ browser 
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
   await expect(studentCard).toBeVisible({ timeout: UI_TIMEOUT })
-  await studentCard.getByTestId('edit-student').click()
+  await studentCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
 
   await expect(page.getByTestId('learning-goal-text').filter({ hasText: 'Dominar el subjuntivo' })).toBeVisible()
