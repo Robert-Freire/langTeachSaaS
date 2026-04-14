@@ -1,11 +1,13 @@
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, NotebookPen, Pencil } from 'lucide-react'
+import { ArrowLeft, NotebookPen, Pencil, CalendarClock } from 'lucide-react'
 import { getStudent, updateStudent } from '../api/students'
+import type { Student } from '../api/students'
 import { logger } from '../lib/logger'
 import { getFollowups } from '@/api/followups'
 import { listSessions } from '@/api/sessionLogs'
+import type { SessionLog } from '@/api/sessionLogs'
 import { formatDateShort } from '@/utils/formatDate'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -14,6 +16,7 @@ import { StudentProfileTab } from '@/components/student/StudentProfileTab'
 import { StudentOverviewTab } from '@/components/student/StudentOverviewTab'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
+import { getObjectiveUrgency, getDaysRemaining, formatDaysRemaining } from '@/lib/objectiveUrgency'
 
 function getInitials(name: string): string {
   return name
@@ -25,13 +28,88 @@ function getInitials(name: string): string {
     .toUpperCase()
 }
 
+function buildIdentitySubtitle(student: Student): string | null {
+  const segments: string[] = []
+  if (student.nativeLanguages.length > 0) {
+    segments.push(`${student.nativeLanguages[0]} speaker`)
+  }
+  const profCityParts: string[] = []
+  if (student.profession) profCityParts.push(student.profession)
+  const city = student.cityOfResidence ?? student.cityOfOrigin
+  if (city) profCityParts.push(city)
+  if (profCityParts.length > 0) segments.push(profCityParts.join(', '))
+  return segments.length > 0 ? segments.join(' \u00b7 ') : null
+}
+
+function calcSessionFrequency(sessions: SessionLog[]): string | null {
+  const past = sessions
+    .filter(s => !s.isCancelled && s.sessionDate && s.statusName === 'Confirmed' && new Date(s.sessionDate) <= new Date())
+    .sort((a, b) => new Date(a.sessionDate!).getTime() - new Date(b.sessionDate!).getTime())
+  if (past.length === 0) return null
+  if (past.length === 1) return '1 session'
+  const first = new Date(past[0].sessionDate!)
+  const last = new Date(past[past.length - 1].sessionDate!)
+  const spanDays = Math.round((last.getTime() - first.getTime()) / 86400000)
+  if (spanDays < 14) return `${past.length} sessions`
+  const weeks = Math.max(1, Math.round(spanDays / 7))
+  const avgDays = Math.round(spanDays / (past.length - 1))
+  const weekLabel = weeks === 1 ? '1 week' : `${weeks} weeks`
+  return `${past.length} sessions in ${weekLabel} \u00b7 avg. every ${avgDays} days`
+}
+
+function HeaderObjective({ student }: { student: Student }) {
+  const objectives = student.shortTermObjectives
+  if (objectives.length === 0) return null
+  const sorted = [...objectives].sort((a, b) => {
+    const order = { overdue: 0, critical: 1, normal: 2 }
+    const urgencyDelta =
+      order[getObjectiveUrgency(a.targetDate)] - order[getObjectiveUrgency(b.targetDate)]
+    if (urgencyDelta !== 0) return urgencyDelta
+    const aDays = getDaysRemaining(a.targetDate)
+    const bDays = getDaysRemaining(b.targetDate)
+    return (aDays ?? Number.POSITIVE_INFINITY) - (bDays ?? Number.POSITIVE_INFINITY)
+  })
+  const obj = sorted[0]
+  const urgency = getObjectiveUrgency(obj.targetDate)
+  const daysRemaining = getDaysRemaining(obj.targetDate)
+  return (
+    <div
+      className="mt-2 flex items-center gap-2 flex-wrap"
+      data-testid="primary-objective-card"
+    >
+      <span className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-[#7E3000]">Goal</span>
+      <span className="text-sm font-medium text-[#1A1B22] truncate max-w-xs" data-testid="objective-text">
+        {obj.text}
+      </span>
+      {obj.targetDate && (
+        <span className="flex items-center gap-1 text-xs text-zinc-500">
+          <CalendarClock className="h-3 w-3 shrink-0" />
+          {new Date(obj.targetDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          {daysRemaining !== null && (
+            <span
+              className={`font-semibold ${
+                urgency === 'overdue' ? 'text-red-600' : urgency === 'critical' ? 'text-orange-600' : 'text-[#7E3000]'
+              }`}
+              data-testid="days-remaining"
+            >
+              {formatDaysRemaining(daysRemaining)}
+            </span>
+          )}
+        </span>
+      )}
+      {objectives.length > 1 && (
+        <span className="text-[0.6875rem] text-zinc-400">+{objectives.length - 1} more</span>
+      )}
+    </div>
+  )
+}
+
 export default function StudentDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [searchParams] = useSearchParams()
-  const defaultTab = searchParams.get('tab') ?? 'overview'
-  const [activeTab, setActiveTab] = useState(defaultTab)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = searchParams.get('tab') ?? 'overview'
 
 
   const { data: student, isLoading, isError } = useQuery({
@@ -204,13 +282,13 @@ export default function StudentDetail() {
                 {student.name}
               </h1>
 
-              {/* Profession */}
-              {student.profession && (
+              {/* Identity subtitle: L1 speaker · Profession, City */}
+              {buildIdentitySubtitle(student) && (
                 <p
                   className="text-sm text-zinc-500 mt-0.5 truncate"
-                  data-testid="student-header-profession"
+                  data-testid="student-header-subtitle"
                 >
-                  {student.profession}
+                  {buildIdentitySubtitle(student)}
                 </p>
               )}
 
@@ -242,6 +320,16 @@ export default function StudentDetail() {
                   </span>
                 )}
               </div>
+
+              {/* Session frequency */}
+              {calcSessionFrequency(sessions) && (
+                <span
+                  className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-medium text-zinc-500 bg-[#F4F2FD]"
+                  data-testid="session-frequency-indicator"
+                >
+                  {calcSessionFrequency(sessions)}
+                </span>
+              )}
 
               {/* Metadata row */}
               <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -278,6 +366,9 @@ export default function StudentDetail() {
                   </span>
                 )}
               </div>
+
+              {/* Primary Objective — compact, in header */}
+              <HeaderObjective student={student} />
             </div>
           </div>
 
@@ -285,11 +376,11 @@ export default function StudentDetail() {
           <div className="flex items-center gap-2 shrink-0">
             <Link
               to={`/students/${student.id}/edit`}
-              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-[#1A1B22] hover:bg-[#F4F2FD] transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium bg-[#E8E7F1] text-[#3525CD] hover:bg-[#DDD9F5] transition-colors"
               data-testid="edit-profile-link"
             >
               <Pencil className="h-3.5 w-3.5" />
-              Edit
+              Edit Student
             </Link>
             <Button
               onClick={() => navigate(`/students/${student.id}/log-session`)}
@@ -312,11 +403,11 @@ export default function StudentDetail() {
             key={tab.key}
             role="tab"
             aria-selected={activeTab === tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            onClick={() => setSearchParams({ tab: tab.key })}
+            className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors ${
               activeTab === tab.key
                 ? 'text-indigo-700 bg-white'
-                : 'text-zinc-500 hover:text-zinc-700 hover:bg-white/50'
+                : 'text-zinc-500 hover:text-zinc-700 hover:bg-[#F4F2FD]'
             }`}
             style={activeTab === tab.key ? { boxShadow: '0 1px 3px rgba(26, 27, 34, 0.08)' } : undefined}
             data-testid={`tab-${tab.key}`}
@@ -334,7 +425,7 @@ export default function StudentDetail() {
           followups={followups}
           onFollowupChange={onFollowupChange}
           onStudentChange={onStudentChange}
-          onViewAllSessions={() => setActiveTab('sessions')}
+          onViewAllSessions={() => setSearchParams({ tab: 'sessions' })}
           onSaveTeachingNotes={(v) => saveTeachingNotes(v).then(() => {})}
         />
       )}
