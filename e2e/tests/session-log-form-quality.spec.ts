@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
+import { NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
 
 const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 
@@ -34,10 +35,10 @@ test('log session form quality: topics covered visible without secondary, sugges
     const student = await createRes.json()
 
     await page.goto(`/students/${student.id}/log-session`)
-    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 15000 })
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
 
     // Topics Covered is visible without toggling secondary
-    await expect(page.getByTestId('topics-covered-section')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByTestId('topics-covered-section')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
     // Duration defaults to 60
     await expect(page.getByTestId('duration-select')).toContainText('60')
@@ -47,7 +48,7 @@ test('log session form quality: topics covered visible without secondary, sugges
     await page.getByTestId('actual-content').fill(narrative)
 
     // Suggestion chips appear for matched keywords
-    await expect(page.getByTestId('topic-tag-suggestions')).toBeVisible({ timeout: 3000 })
+    await expect(page.getByTestId('topic-tag-suggestions')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
     await expect(page.getByTestId('tag-suggestion-subjuntivo')).toBeVisible()
     await expect(page.getByTestId('tag-suggestion-imperfecto')).toBeVisible()
 
@@ -55,14 +56,14 @@ test('log session form quality: topics covered visible without secondary, sugges
     await page.getByTestId('tag-suggestion-subjuntivo').click()
 
     // subjuntivo chip should no longer appear in suggestions (already added)
-    await expect(page.getByTestId('tag-suggestion-subjuntivo')).not.toBeVisible({ timeout: 2000 })
+    await expect(page.getByTestId('tag-suggestion-subjuntivo')).not.toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
     // Autosave completes
-    await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: 8000 })
+    await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
 
     // Click Done to save and navigate back
     await page.getByTestId('done-btn').click()
-    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
     // Verify session was created with auto-generated title (from first line of narrative)
     const sessionsRes = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions`, {
