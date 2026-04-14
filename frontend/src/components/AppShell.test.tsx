@@ -78,11 +78,38 @@ describe('AppShell', () => {
     expect(allDashboardLinks.length).toBeGreaterThanOrEqual(2)
   })
 
-  it('renders nav items in correct order: Dashboard, Students, Sessions, Courses, Lessons, Settings', () => {
+  it('renders nav items in correct order: Dashboard, Students, Sessions, Courses, Lessons, then Settings separated at bottom', () => {
     renderShell()
     const links = document.querySelector('aside')?.querySelectorAll('a')
     const labels = Array.from(links ?? []).map(a => a.textContent?.trim())
     expect(labels).toEqual(['Dashboard', 'Students', 'Sessions', 'Courses', 'Lessons', 'Settings'])
+  })
+
+  it('Settings link is outside the main nav element', () => {
+    renderShell()
+    const aside = document.querySelector('aside')
+    const nav = aside?.querySelector('nav')
+    const settingsInNav = nav?.querySelector('a[href="/settings"]')
+    expect(settingsInNav).toBeNull()
+    // Settings is still in the aside, just outside nav
+    const settingsInAside = aside?.querySelector('a[href="/settings"]')
+    expect(settingsInAside).toBeInTheDocument()
+  })
+
+  it('does not show generation counter in sidebar', () => {
+    renderShell()
+    expect(document.querySelector('aside')?.textContent).not.toMatch(/generations/)
+  })
+
+  it('logout button is inside the teacher profile card and calls logout', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    const card = document.querySelector('[data-testid="teacher-profile-card"]')
+    expect(card).toBeInTheDocument()
+    const logoutBtn = card?.querySelector('button[aria-label="Log out"]')
+    expect(logoutBtn).toBeInTheDocument()
+    await user.click(logoutBtn as Element)
+    expect(mockLogout).toHaveBeenCalledWith({ logoutParams: { returnTo: window.location.origin } })
   })
 
   it('renders Sessions nav item linking to /sessions', () => {

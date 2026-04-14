@@ -7,16 +7,32 @@ import { cn } from '@/lib/utils'
 import LangTeachLogo from '@/components/LangTeachLogo'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { UsageIndicator } from '@/components/UsageIndicator'
 
-const navItems = [
+const mainNavItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/students', label: 'Students', icon: Users },
   { to: '/sessions', label: 'Sessions', icon: CalendarDays },
   { to: '/courses', label: 'Courses', icon: GraduationCap },
   { to: '/lessons', label: 'Lessons', icon: BookOpen },
-  { to: '/settings', label: 'Settings', icon: Settings },
 ]
+
+function SettingsLink({ location }: { location: ReturnType<typeof useLocation> }) {
+  const active = location.pathname === '/settings'
+  return (
+    <Link
+      to="/settings"
+      className={cn(
+        'flex items-center gap-3 py-2.5 pl-4 pr-3 text-base font-medium font-inter transition-colors',
+        active
+          ? 'bg-white border-l-[3px] border-l-indigo-600 text-indigo-700 rounded-r-md'
+          : 'text-zinc-500 hover:bg-[#E6E0F8] hover:text-zinc-900 rounded-md border-l-[3px] border-l-transparent'
+      )}
+    >
+      <Settings className={cn('h-5 w-5 shrink-0', active ? 'text-indigo-600' : 'text-zinc-400')} />
+      Settings
+    </Link>
+  )
+}
 
 function SidebarContent({ user, initials, logout, location }: {
   user: ReturnType<typeof useAuth0>['user']
@@ -37,9 +53,9 @@ function SidebarContent({ user, initials, logout, location }: {
         </p>
       </div>
 
-      {/* Nav */}
+      {/* Main nav */}
       <nav className="flex-1 overflow-y-auto px-3 space-y-0.5">
-        {navItems.map(({ to, label, icon: Icon }) => {
+        {mainNavItems.map(({ to, label, icon: Icon }) => {
           const active = location.pathname === to || (to !== '/' && location.pathname.startsWith(to))
           return (
             <Link
@@ -59,26 +75,29 @@ function SidebarContent({ user, initials, logout, location }: {
         })}
       </nav>
 
-      {/* Usage + User card + Logout */}
-      <div className="px-3 py-4 mt-2 space-y-3">
-        <UsageIndicator />
-        <div className="bg-white rounded-xl p-3 flex items-center gap-3">
+      {/* Bottom: Settings (visually separated) + teacher profile with tucked logout */}
+      <div className="px-3 py-4 space-y-3">
+        <div className="border-t border-zinc-200/60 pt-3">
+          <SettingsLink location={location} />
+        </div>
+        <div className="bg-white rounded-xl p-3 flex items-center gap-3" data-testid="teacher-profile-card">
           <Avatar className="h-9 w-9 shrink-0">
             <AvatarImage src={user?.picture} alt={user?.name} />
             <AvatarFallback className="bg-indigo-600 text-white text-xs font-semibold">{initials}</AvatarFallback>
           </Avatar>
-          <div className="flex flex-col overflow-hidden min-w-0">
+          <div className="flex flex-col overflow-hidden min-w-0 flex-1">
             <span className="text-sm font-bold text-zinc-900 truncate font-inter">{user?.name ?? user?.email}</span>
             <span className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter">Teacher</span>
           </div>
+          <button
+            onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+            aria-label="Log out"
+            title="Log out"
+            className="text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors p-1.5 rounded-lg shrink-0"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
-        <button
-          onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-zinc-400 hover:bg-[#E6E0F8] hover:text-zinc-700 transition-colors font-inter"
-        >
-          <LogOut className="h-5 w-5 shrink-0" />
-          Log out
-        </button>
       </div>
     </>
   )
