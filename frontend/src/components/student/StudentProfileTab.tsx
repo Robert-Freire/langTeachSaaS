@@ -12,12 +12,6 @@ import { SectionHeader } from './SectionHeader'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { langCode } from './langUtils'
 
-function newId() {
-  return typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random()}`
-}
-
 const SKILL_ORDER = ['Reading', 'Writing', 'Speaking', 'Listening']
 
 interface Props {
