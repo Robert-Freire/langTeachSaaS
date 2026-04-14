@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ElementType } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings, LogOut, Menu } from 'lucide-react'
@@ -16,11 +16,16 @@ const mainNavItems = [
   { to: '/lessons', label: 'Lessons', icon: BookOpen },
 ]
 
-function SettingsLink({ location }: { location: ReturnType<typeof useLocation> }) {
-  const active = location.pathname === '/settings'
+function NavLink({ to, label, icon: Icon, location }: {
+  to: string
+  label: string
+  icon: ElementType
+  location: ReturnType<typeof useLocation>
+}) {
+  const active = location.pathname === to || (to !== '/' && location.pathname.startsWith(to))
   return (
     <Link
-      to="/settings"
+      to={to}
       className={cn(
         'flex items-center gap-3 py-2.5 pl-4 pr-3 text-base font-medium font-inter transition-colors',
         active
@@ -28,8 +33,8 @@ function SettingsLink({ location }: { location: ReturnType<typeof useLocation> }
           : 'text-zinc-500 hover:bg-[#E6E0F8] hover:text-zinc-900 rounded-md border-l-[3px] border-l-transparent'
       )}
     >
-      <Settings className={cn('h-5 w-5 shrink-0', active ? 'text-indigo-600' : 'text-zinc-400')} />
-      Settings
+      <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-indigo-600' : 'text-zinc-400')} />
+      {label}
     </Link>
   )
 }
@@ -55,30 +60,15 @@ function SidebarContent({ user, initials, logout, location }: {
 
       {/* Main nav */}
       <nav className="flex-1 overflow-y-auto px-3 space-y-0.5">
-        {mainNavItems.map(({ to, label, icon: Icon }) => {
-          const active = location.pathname === to || (to !== '/' && location.pathname.startsWith(to))
-          return (
-            <Link
-              key={to}
-              to={to}
-              className={cn(
-                'flex items-center gap-3 py-2.5 pl-4 pr-3 text-base font-medium font-inter transition-colors',
-                active
-                  ? 'bg-white border-l-[3px] border-l-indigo-600 text-indigo-700 rounded-r-md'
-                  : 'text-zinc-500 hover:bg-[#E6E0F8] hover:text-zinc-900 rounded-md border-l-[3px] border-l-transparent'
-              )}
-            >
-              <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-indigo-600' : 'text-zinc-400')} />
-              {label}
-            </Link>
-          )
-        })}
+        {mainNavItems.map(({ to, label, icon }) => (
+          <NavLink key={to} to={to} label={label} icon={icon} location={location} />
+        ))}
       </nav>
 
       {/* Bottom: Settings (visually separated) + teacher profile with tucked logout */}
       <div className="px-3 py-4 space-y-3">
         <div className="border-t border-zinc-200/60 pt-3">
-          <SettingsLink location={location} />
+          <NavLink to="/settings" label="Settings" icon={Settings} location={location} />
         </div>
         <div className="bg-white rounded-xl p-3 flex items-center gap-3" data-testid="teacher-profile-card">
           <Avatar className="h-9 w-9 shrink-0">

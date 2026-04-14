@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
@@ -87,28 +87,27 @@ describe('AppShell', () => {
 
   it('Settings link is outside the main nav element', () => {
     renderShell()
-    const aside = document.querySelector('aside')
-    const nav = aside?.querySelector('nav')
-    const settingsInNav = nav?.querySelector('a[href="/settings"]')
-    expect(settingsInNav).toBeNull()
-    // Settings is still in the aside, just outside nav
-    const settingsInAside = aside?.querySelector('a[href="/settings"]')
-    expect(settingsInAside).toBeInTheDocument()
+    // Settings must not be inside the <nav> (main nav group)
+    const nav = screen.getByRole('navigation')
+    expect(within(nav).queryByRole('link', { name: /^settings$/i })).not.toBeInTheDocument()
+    // Settings must still render as a link in the overall sidebar
+    const settingsLinks = screen.getAllByRole('link', { name: /^settings$/i })
+    expect(settingsLinks.length).toBeGreaterThanOrEqual(1)
   })
 
   it('does not show generation counter in sidebar', () => {
     renderShell()
-    expect(document.querySelector('aside')?.textContent).not.toMatch(/generations/)
+    expect(screen.queryByText(/generations/)).not.toBeInTheDocument()
   })
 
   it('logout button is inside the teacher profile card and calls logout', async () => {
     const user = userEvent.setup()
     renderShell()
-    const card = document.querySelector('[data-testid="teacher-profile-card"]')
+    const card = screen.getAllByTestId('teacher-profile-card')[0]
     expect(card).toBeInTheDocument()
-    const logoutBtn = card?.querySelector('button[aria-label="Log out"]')
+    const logoutBtn = within(card).getByRole('button', { name: /log out/i })
     expect(logoutBtn).toBeInTheDocument()
-    await user.click(logoutBtn as Element)
+    await user.click(logoutBtn)
     expect(mockLogout).toHaveBeenCalledWith({ logoutParams: { returnTo: window.location.origin } })
   })
 
