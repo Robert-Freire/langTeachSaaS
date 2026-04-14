@@ -16,6 +16,9 @@ function makeSession(overrides: Partial<NextSession> = {}): NextSession {
     lastSessionDate: new Date(Date.now() - 7 * 86400000).toISOString(),
     homeworkAssigned: 'Exercises page 42',
     previousHomeworkStatus: '3',
+    lastSessionTopicTags: ['Subjuntivo', 'Concesivas'],
+    lastSessionHomework: 'Redacción mi ciudad ideal',
+    lastSessionFollowups: ['Prometí ejercicios de por/para'],
     ...overrides,
   }
 }
@@ -59,16 +62,75 @@ describe('NextSessionHero', () => {
     expect(screen.getByText('Subjunctive mood')).toBeInTheDocument()
   })
 
-  it('shows last session notes', () => {
+  it('shows Start session CTA linking to log-session route', () => {
     render(
       <MemoryRouter>
         <NextSessionHero session={makeSession()} />
       </MemoryRouter>,
     )
-    expect(screen.getByText('Struggles with ser/estar')).toBeInTheDocument()
+    const btn = screen.getByTestId('start-session-btn')
+    expect(btn).toBeInTheDocument()
+    expect(btn).toHaveAttribute('href', '/students/student-1/log-session')
   })
 
-  it('shows homework assignment and status', () => {
+  it('shows View profile link', () => {
+    render(
+      <MemoryRouter>
+        <NextSessionHero session={makeSession()} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('link', { name: /View profile/ })).toHaveAttribute('href', '/students/student-1')
+  })
+
+  it('shows green gradient badge for session within 2 hours', () => {
+    render(
+      <MemoryRouter>
+        <NextSessionHero session={makeSession({ sessionDate: new Date(Date.now() + 30 * 60000).toISOString() })} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText(/IN \d+ MIN/)).toBeInTheDocument()
+  })
+
+  it('shows neutral TODAY badge for session today but not imminent', () => {
+    render(
+      <MemoryRouter>
+        <NextSessionHero session={makeSession({ sessionDate: new Date(Date.now() + 4 * 3600000).toISOString() })} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText(/TODAY/)).toBeInTheDocument()
+  })
+
+  it('shows no badge for session more than 7 days away', () => {
+    render(
+      <MemoryRouter>
+        <NextSessionHero session={makeSession({ sessionDate: new Date(Date.now() + 10 * 86400000).toISOString() })} />
+      </MemoryRouter>,
+    )
+    // No IN badge should appear
+    expect(screen.queryByText(/^IN \d/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/TODAY/)).not.toBeInTheDocument()
+  })
+
+  it('shows structured briefing: topics and promises', () => {
+    render(
+      <MemoryRouter>
+        <NextSessionHero session={makeSession()} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Subjuntivo, Concesivas')).toBeInTheDocument()
+    expect(screen.getByText('Prometí ejercicios de por/para')).toBeInTheDocument()
+  })
+
+  it('shows last session homework in briefing', () => {
+    render(
+      <MemoryRouter>
+        <NextSessionHero session={makeSession()} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Redacción mi ciudad ideal')).toBeInTheDocument()
+  })
+
+  it('shows homework status card with previousHomeworkStatus', () => {
     render(
       <MemoryRouter>
         <NextSessionHero session={makeSession()} />
@@ -78,21 +140,21 @@ describe('NextSessionHero', () => {
     expect(screen.getByText('Completed')).toBeInTheDocument()
   })
 
-  it('shows link to student profile', () => {
+  it('hides briefing section when all briefing fields are empty', () => {
     render(
       <MemoryRouter>
-        <NextSessionHero session={makeSession()} />
+        <NextSessionHero
+          session={makeSession({
+            lastSessionNotes: null,
+            lastSessionTopicTags: [],
+            lastSessionHomework: null,
+            lastSessionFollowups: [],
+            homeworkAssigned: null,
+          })}
+        />
       </MemoryRouter>,
     )
-    expect(screen.getByRole('link', { name: /View profile/ })).toHaveAttribute('href', '/students/student-1')
-  })
-
-  it('shows countdown badge', () => {
-    render(
-      <MemoryRouter>
-        <NextSessionHero session={makeSession()} />
-      </MemoryRouter>,
-    )
-    expect(screen.getByText(/IN \d+/)).toBeInTheDocument()
+    expect(screen.queryByText('Topics')).not.toBeInTheDocument()
+    expect(screen.queryByText('Promises made')).not.toBeInTheDocument()
   })
 })

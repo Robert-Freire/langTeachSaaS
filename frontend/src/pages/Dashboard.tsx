@@ -56,6 +56,7 @@ export default function Dashboard() {
   const todaySessions = data?.todaySessions ?? []
   const activeStudents = data?.activeStudents ?? []
   const pendingFollowups = data?.pendingFollowups ?? []
+  const upcomingThisWeek = data?.upcomingThisWeek ?? []
 
   return (
     <div className="space-y-5">
@@ -74,6 +75,7 @@ export default function Dashboard() {
         <TodayAgenda
           sessions={todaySessions}
           nextSessionId={nextSession?.sessionLogId ?? null}
+          upcomingThisWeek={upcomingThisWeek}
         />
         <PendingFollowups followups={pendingFollowups} />
       </div>

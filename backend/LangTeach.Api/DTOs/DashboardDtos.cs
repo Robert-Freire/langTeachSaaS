@@ -29,7 +29,19 @@ public record NextSessionDto(
     string? LastSessionNotes,
     DateTime? LastSessionDate,
     string? HomeworkAssigned,
-    string? PreviousHomeworkStatus
+    string? PreviousHomeworkStatus,
+    List<string> LastSessionTopicTags,
+    string? LastSessionHomework,
+    List<string> LastSessionFollowups
+);
+
+public record UpcomingSessionDto(
+    Guid SessionLogId,
+    Guid StudentId,
+    string StudentName,
+    string StudentCefrLevel,
+    DateTime SessionDate,
+    string? PlannedContent
 );
 
 public record TodaySessionDto(
@@ -60,5 +72,6 @@ public record DashboardDto(
     NextSessionDto? NextSession,
     List<TodaySessionDto> TodaySessions,
     List<ActiveStudentDto> ActiveStudents,
-    List<TeacherFollowupDto> PendingFollowups
+    List<TeacherFollowupDto> PendingFollowups,
+    List<UpcomingSessionDto> UpcomingThisWeek
 );

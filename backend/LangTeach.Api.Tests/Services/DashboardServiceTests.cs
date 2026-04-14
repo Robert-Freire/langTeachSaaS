@@ -439,4 +439,126 @@ public class DashboardServiceTests : IDisposable
         result.Upcoming.Should().HaveCount(1);
         result.Upcoming[0].StudentId.Should().Be(_studentId);
     }
+
+    // GetAsync new fields: LastSessionTopicTags, LastSessionHomework, LastSessionFollowups
+
+    [Fact]
+    public async Task GetAsync_FutureSessionWithPastSession_PopulatesLastSessionTopicTags()
+    {
+        var past = DateTime.UtcNow.AddDays(-7);
+        var future = DateTime.UtcNow.AddDays(1);
+        var pastSession = MakeSession(_studentId, past);
+        pastSession.TopicTags = "[\"Subjuntivo\",\"Concesivas\"]";
+        _db.SessionLogs.Add(pastSession);
+        _db.SessionLogs.Add(MakeSession(_studentId, future));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.NextSession!.LastSessionTopicTags.Should().Equal("Subjuntivo", "Concesivas");
+    }
+
+    [Fact]
+    public async Task GetAsync_FutureSessionWithPastSession_PopulatesLastSessionHomework()
+    {
+        var past = DateTime.UtcNow.AddDays(-7);
+        var future = DateTime.UtcNow.AddDays(1);
+        var pastSession = MakeSession(_studentId, past);
+        pastSession.HomeworkAssigned = "Redacción mi ciudad ideal";
+        _db.SessionLogs.Add(pastSession);
+        _db.SessionLogs.Add(MakeSession(_studentId, future));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.NextSession!.LastSessionHomework.Should().Be("Redacción mi ciudad ideal");
+    }
+
+    [Fact]
+    public async Task GetAsync_FutureSessionWithPastSession_PopulatesPendingFollowupsFromPastSession()
+    {
+        var past = DateTime.UtcNow.AddDays(-7);
+        var future = DateTime.UtcNow.AddDays(1);
+        var pastSession = MakeSession(_studentId, past);
+        _db.SessionLogs.Add(pastSession);
+        _db.SessionLogs.Add(MakeSession(_studentId, future));
+        _db.TeacherFollowups.Add(new TeacherFollowup
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = _teacherId,
+            Text = "Prometí ejercicios de por/para",
+            Status = "pending",
+            SourceSessionLogId = pastSession.Id,
+            CreatedAt = DateTime.UtcNow,
+        });
+        _db.TeacherFollowups.Add(new TeacherFollowup
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = _teacherId,
+            Text = "Already done promise",
+            Status = "done",
+            SourceSessionLogId = pastSession.Id,
+            CreatedAt = DateTime.UtcNow,
+        });
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.NextSession!.LastSessionFollowups.Should().ContainSingle().Which.Should().Be("Prometí ejercicios de por/para");
+    }
+
+    [Fact]
+    public async Task GetAsync_NoLastSession_LastSessionFieldsAreEmpty()
+    {
+        var future = DateTime.UtcNow.AddDays(1);
+        _db.SessionLogs.Add(MakeSession(_studentId, future));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.NextSession!.LastSessionTopicTags.Should().BeEmpty();
+        result.NextSession.LastSessionHomework.Should().BeNull();
+        result.NextSession.LastSessionFollowups.Should().BeEmpty();
+    }
+
+    // GetAsync new field: UpcomingThisWeek
+
+    [Fact]
+    public async Task GetAsync_SessionsThisWeek_ReturnedInUpcomingThisWeek()
+    {
+        var tomorrow = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
+        var inFiveDays = DateTime.UtcNow.Date.AddDays(5).AddHours(10);
+        _db.SessionLogs.Add(MakeSession(_studentId, tomorrow));
+        _db.SessionLogs.Add(MakeSession(_studentId, inFiveDays));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.UpcomingThisWeek.Should().HaveCount(2);
+        result.UpcomingThisWeek[0].SessionDate.Should().BeCloseTo(tomorrow, TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public async Task GetAsync_SessionBeyond7Days_ExcludedFromUpcomingThisWeek()
+    {
+        var inTenDays = DateTime.UtcNow.Date.AddDays(10).AddHours(10);
+        _db.SessionLogs.Add(MakeSession(_studentId, inTenDays));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.UpcomingThisWeek.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetAsync_CancelledSessionThisWeek_ExcludedFromUpcomingThisWeek()
+    {
+        var tomorrow = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
+        _db.SessionLogs.Add(MakeSession(_studentId, tomorrow, isCancelled: true));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.UpcomingThisWeek.Should().BeEmpty();
+    }
 }

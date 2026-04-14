@@ -34,6 +34,51 @@ test('dashboard renders with seeded data', async ({ browser }) => {
   }
 })
 
+test('dashboard zone3 roster shows student count and sort control', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    await page.goto('/')
+    await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: NAV_TIMEOUT })
+    await expect(page.getByTestId('zone3-student-roster')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    const rosterRows = page.getByTestId('zone3-student-row')
+    const rowCount = await rosterRows.count()
+    if (rowCount > 0) {
+      // Sort control should be present when students exist
+      await expect(page.getByTestId('roster-sort')).toBeVisible({ timeout: UI_TIMEOUT })
+      // Student count label should be present
+      await expect(page.getByTestId('student-count')).toBeVisible({ timeout: UI_TIMEOUT })
+    }
+  } finally {
+    await context.close()
+  }
+})
+
+test('start session button navigates to log-session when next session is shown', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    await page.goto('/')
+    await expect(page.locator('h1')).toHaveText('Dashboard', { timeout: NAV_TIMEOUT })
+
+    const heroPresent = await page.getByTestId('zone1-next-session').isVisible()
+    if (!heroPresent) {
+      // No next session seeded — skip assertion
+      return
+    }
+
+    const startBtn = page.getByTestId('start-session-btn')
+    await expect(startBtn).toBeVisible({ timeout: UI_TIMEOUT })
+    await startBtn.click()
+    await expect(page).toHaveURL(/\/students\/[0-9a-f-]+\/log-session/, { timeout: UI_TIMEOUT })
+  } finally {
+    await context.close()
+  }
+})
+
 test('clicking student in roster navigates to student detail', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()

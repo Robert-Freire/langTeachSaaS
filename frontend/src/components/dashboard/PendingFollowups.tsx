@@ -6,12 +6,29 @@ interface PendingFollowupsProps {
   followups: TeacherFollowup[]
 }
 
-function ageBadge(createdAt: string): { label: string; className: string } {
+interface AgeBadgeInfo {
+  label: string
+  dotColor: string
+  badgeClassName: string
+}
+
+function ageBadge(createdAt: string): AgeBadgeInfo {
   const days = Math.floor(Math.max(0, Date.now() - new Date(createdAt).getTime()) / 86400000)
-  if (days === 0) return { label: 'new', className: 'bg-emerald-100 text-emerald-700' }
-  if (days <= 3) return { label: `${days}d`, className: 'bg-emerald-100 text-emerald-700' }
-  if (days <= 7) return { label: `${days}d`, className: 'bg-amber-100 text-amber-700' }
-  return { label: `${days}d`, className: 'bg-red-100 text-red-700' }
+  if (days === 0) return {
+    label: 'TODAY',
+    dotColor: 'bg-emerald-500',
+    badgeClassName: 'bg-emerald-100 text-emerald-700',
+  }
+  if (days <= 3) return {
+    label: `${days}D OLD`,
+    dotColor: 'bg-amber-400',
+    badgeClassName: 'bg-amber-100 text-amber-700',
+  }
+  return {
+    label: `${days}D OVERDUE`,
+    dotColor: 'bg-red-500',
+    badgeClassName: 'bg-red-100 text-red-700',
+  }
 }
 
 export function PendingFollowups({ followups }: PendingFollowupsProps) {
@@ -50,7 +67,7 @@ export function PendingFollowups({ followups }: PendingFollowupsProps) {
                 <button
                   onClick={() => handleMarkDone(f.id)}
                   aria-label="Mark done"
-                  className="mt-0.5 shrink-0 w-3.5 h-3.5 rounded-full border-2 border-amber-400 bg-amber-100 hover:bg-amber-400 transition-colors"
+                  className={`mt-0.5 shrink-0 w-3.5 h-3.5 rounded-full border-2 ${badge.dotColor} border-transparent hover:opacity-80 transition-opacity`}
                   data-testid={`followup-dot-${f.id}`}
                 />
                 <div className="flex-1 min-w-0">
@@ -61,7 +78,7 @@ export function PendingFollowups({ followups }: PendingFollowupsProps) {
                   )}
                   <p className="text-sm text-[#1A1B22] font-inter">{f.text}</p>
                 </div>
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[0.6875rem] font-bold font-inter shrink-0 ${badge.className}`}>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[0.6875rem] font-bold font-inter shrink-0 ${badge.badgeClassName}`} data-testid={`followup-age-${f.id}`}>
                   {badge.label}
                 </span>
               </div>
