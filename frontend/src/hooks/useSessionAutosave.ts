@@ -97,7 +97,7 @@ export function useSessionAutosave(
         setStatus('retrying')
         retryTimerRef.current = setTimeout(() => {
           // eslint-disable-next-line react-hooks/immutability
-          if (isMountedRef.current) void doSave()
+          if (isMountedRef.current) void doSave(override)
         }, RETRY_DELAY_MS)
       } else {
         setStatus('error')

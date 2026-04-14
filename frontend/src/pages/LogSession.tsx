@@ -246,6 +246,11 @@ export default function LogSession() {
       // Flush any pending debounced save and ensure session exists if user made changes
       if (!sid && (hasChanges || hasSideEffects)) {
         sid = await saveNow()
+        if (!sid) {
+          setDoneError('Failed to save session. Please try again.')
+          setIsDone(false)
+          return
+        }
       }
 
       if (sid && !isCancelled) {

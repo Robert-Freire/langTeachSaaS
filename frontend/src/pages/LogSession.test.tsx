@@ -256,14 +256,18 @@ describe('LogSession', () => {
     renderLogSession()
     await screen.findByTestId('done-btn')
     // No changes made - Done should navigate without saving
-    fireEvent.click(screen.getByTestId('done-btn'))
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('done-btn'))
+    })
     await screen.findByTestId('student-detail')
   })
 
   it('back-button navigates back to student detail', async () => {
     renderLogSession()
     await screen.findByTestId('back-button')
-    fireEvent.click(screen.getByTestId('back-button'))
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('back-button'))
+    })
     await screen.findByTestId('student-detail')
   })
 
