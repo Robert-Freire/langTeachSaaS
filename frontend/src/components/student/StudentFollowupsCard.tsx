@@ -7,13 +7,15 @@ interface StudentFollowupsCardProps {
   followups: TeacherFollowup[]
   studentId: string
   onFollowupChange: () => void
+  /** Shown in place of the default empty text when there are no followups */
+  emptyPrompt?: string
 }
 
 function daysAgo(createdAt: string): number {
   return Math.floor(Math.max(0, Date.now() - new Date(createdAt).getTime()) / 86400000)
 }
 
-export function StudentFollowupsCard({ followups, studentId, onFollowupChange }: StudentFollowupsCardProps) {
+export function StudentFollowupsCard({ followups, studentId, onFollowupChange, emptyPrompt }: StudentFollowupsCardProps) {
   const [newText, setNewText] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -58,7 +60,9 @@ export function StudentFollowupsCard({ followups, studentId, onFollowupChange }:
       </div>
 
       {pending.length === 0 && done.length === 0 ? (
-        <p className="text-xs text-zinc-400 py-2">No pending followups</p>
+        <p className="text-xs text-zinc-400 italic py-2" data-testid="followups-empty">
+          {emptyPrompt ?? 'No pending followups'}
+        </p>
       ) : (
         <div className="space-y-1.5">
           {pending.map(f => {

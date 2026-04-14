@@ -9,6 +9,10 @@ interface TeachingTodosCardProps {
   studentId: string
   onStudentChange: () => void
   allowEdit?: boolean
+  /** Controlled mode: when provided, the add input row is shown only when true */
+  showAddForm?: boolean
+  /** Called after a successful add or when the user dismisses the input (controlled mode only) */
+  onAddFormClose?: () => void
 }
 
 function relativeTime(iso: string): string {
@@ -36,7 +40,8 @@ function sortTodos(todos: TeachingTodo[]): TeachingTodo[] {
 interface OptimisticAdd extends TeachingTodo { _temp: true }
 interface PendingUpdate { status?: string; text?: string }
 
-export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit = false }: TeachingTodosCardProps) {
+export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit = false, showAddForm, onAddFormClose }: TeachingTodosCardProps) {
+  const isControlled = showAddForm !== undefined
   // Optimistic state: overlays on top of the server-provided `todos` prop
   const [optimisticAdds, setOptimisticAdds] = useState<OptimisticAdd[]>([])
   const [pendingUpdates, setPendingUpdates] = useState<Map<string, PendingUpdate>>(() => new Map())
@@ -76,6 +81,7 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
     onSuccess: (_, __, context) => {
       setOptimisticAdds(prev => prev.filter(t => t.id !== context?.tempId))
       onStudentChange()
+      if (isControlled) onAddFormClose?.()
     },
     onError: (_, __, context) => {
       setOptimisticAdds(prev => prev.filter(t => t.id !== context?.tempId))
@@ -242,30 +248,39 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
         </ul>
       )}
 
-      {/* Add input */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={newText}
-          onChange={e => setNewText(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleAdd()}
-          placeholder="Add a teaching idea..."
-          maxLength={500}
-          className="flex-1 rounded-lg border border-zinc-200 bg-indigo-50 px-3 py-1.5 text-sm text-[#1A1B22] placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-          data-testid="todo-add-input"
-          disabled={addMutation.isPending}
-        />
-        <button
-          type="button"
-          onClick={handleAdd}
-          disabled={addMutation.isPending || !newText.trim()}
-          data-testid="todo-add-btn"
-          aria-label="Add todo"
-          className="shrink-0 rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
-      </div>
+      {/* Add input — always visible in uncontrolled mode; visible only when showAddForm=true in controlled mode */}
+      {(!isControlled || showAddForm) && (
+        <div className="flex gap-2" data-testid="todo-add-row">
+          <input
+            autoFocus={isControlled}
+            type="text"
+            value={newText}
+            onChange={e => setNewText(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') handleAdd()
+              if (e.key === 'Escape' && isControlled) { setNewText(''); onAddFormClose?.() }
+            }}
+            onBlur={() => {
+              if (isControlled && !newText.trim()) onAddFormClose?.()
+            }}
+            placeholder="Add a teaching idea..."
+            maxLength={500}
+            className="flex-1 rounded-lg border border-zinc-200 bg-indigo-50 px-3 py-1.5 text-sm text-[#1A1B22] placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            data-testid="todo-add-input"
+            disabled={addMutation.isPending}
+          />
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={addMutation.isPending || !newText.trim()}
+            data-testid="todo-add-btn"
+            aria-label="Add todo"
+            className="shrink-0 rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -18,6 +18,13 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 |----------|--------|---------|
 | Low | Students list | Alert badge color variants (amber BEHIND, purple REVIEW PENDING, dark badge) cannot be visually verified because demo seed students are all in NEW state. Unit tests verify all badge color classes. Would need seed students with `pace=behind` or `hasPendingLessonPlan=true` to show these in review. |
 
+## 2026-04-14 (task #719 review-ui)
+
+| Severity | Screen | Finding |
+|----------|--------|---------|
+| Low | Student detail / Sessions tab | review-ui text selector `text=Sessions` matches the sidebar nav item instead of the tab button, causing navigation away from the page. Pre-existing selector collision in the review tool, not a rendering regression. |
+| Low | Student detail / Progress tab | Screenshot not captured due to timeout after the Sessions tab navigation issue above. Tab label renders correctly in all header screenshots. |
+
 ## 2026-04-12 (task #663 review-ui)
 
 | Severity | Screen | Finding |

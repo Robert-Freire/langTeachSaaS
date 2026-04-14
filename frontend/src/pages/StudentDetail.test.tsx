@@ -204,20 +204,44 @@ describe('StudentDetail', () => {
     expect(screen.getByTestId('official-cefr-badge')).toHaveTextContent('Official: B1')
   })
 
-  it('shows profession below name in header when set', async () => {
+  it('shows identity subtitle with L1, profession, and city', async () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.getByTestId('student-header-profession')).toHaveTextContent('Designer')
+    expect(screen.getByTestId('student-header-subtitle')).toHaveTextContent('English speaker · Designer, Barcelona')
   })
 
-  it('does not render profession element when profession is null', async () => {
+  it('omits L1 segment in subtitle when nativeLanguages is empty', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...MOCK_STUDENT,
+      nativeLanguages: [],
+    })
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('student-header-subtitle')).toHaveTextContent('Designer, Barcelona')
+    expect(screen.getByTestId('student-header-subtitle')).not.toHaveTextContent('speaker')
+  })
+
+  it('omits profession segment in subtitle when profession is null', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...MOCK_STUDENT,
       profession: null,
     })
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.queryByTestId('student-header-profession')).not.toBeInTheDocument()
+    expect(screen.getByTestId('student-header-subtitle')).toHaveTextContent('English speaker · Barcelona')
+  })
+
+  it('hides subtitle entirely when L1, profession, and city are all absent', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...MOCK_STUDENT,
+      nativeLanguages: [],
+      profession: null,
+      cityOfOrigin: null,
+      cityOfResidence: null,
+    })
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.queryByTestId('student-header-subtitle')).not.toBeInTheDocument()
   })
 
   it('shows origin/residence compact in metadata when cities are set', async () => {
@@ -235,6 +259,35 @@ describe('StudentDetail', () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
     expect(screen.queryByTestId('student-header-location')).not.toBeInTheDocument()
+  })
+
+  it('tab click updates URL search param', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    fireEvent.click(screen.getByTestId('tab-profile'))
+    expect(screen.getByTestId('student-profile-tab')).toBeInTheDocument()
+  })
+
+  it('renders correct tab when URL has ?tab=profile on load', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/students/student-1?tab=profile']}>
+          <Routes>
+            <Route path="/students/:id" element={<StudentDetail />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('student-profile-tab')).toBeInTheDocument()
+    expect(screen.queryByTestId('student-overview-tab')).not.toBeInTheDocument()
+  })
+
+  it('shows Edit Student as tonal secondary button', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.getByTestId('edit-profile-link')).toHaveTextContent('Edit Student')
   })
 })
 
@@ -315,14 +368,57 @@ describe('StudentDetail - Header badges', () => {
     fireEvent.click(screen.getByTestId('tab-sessions'))
     expect(screen.getByTestId('student-status-badge')).toBeInTheDocument()
   })
+
+  it('hides session frequency indicator when no sessions', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.queryByTestId('session-frequency-indicator')).not.toBeInTheDocument()
+  })
+
+  it('shows session frequency indicator when past sessions exist', async () => {
+    const past1 = new Date()
+    past1.setDate(past1.getDate() - 30)
+    const past2 = new Date()
+    past2.setDate(past2.getDate() - 14)
+    const { listSessions } = await import('../api/sessionLogs')
+    const makeSession = (id: string, date: Date) => ({
+      id,
+      studentId: 'student-1',
+      sessionDate: date.toISOString(),
+      title: null,
+      plannedContent: null,
+      actualContent: null,
+      homeworkAssigned: null,
+      previousHomeworkStatus: 0,
+      previousHomeworkStatusName: 'NotDone' as const,
+      nextSessionTopics: null,
+      generalNotes: null,
+      levelReassessmentSkill: null,
+      levelReassessmentLevel: null,
+      linkedLessonId: null,
+      topicTags: '[]',
+      createdAt: date.toISOString(),
+      updatedAt: date.toISOString(),
+      isCancelled: false,
+      status: 1,
+      statusName: 'Confirmed' as const,
+      mentionedDifficultyPairs: '[]',
+      suggestedDifficulties: '[]',
+      duration: 60,
+      hasVoiceNote: false,
+    })
+    vi.mocked(listSessions).mockResolvedValueOnce([makeSession('s1', past1), makeSession('s2', past2)])
+    wrapper()
+    expect(await screen.findByTestId('session-frequency-indicator')).toBeInTheDocument()
+  })
 })
 
-describe('StudentDetail - Overview tab', () => {
+describe('StudentDetail - Primary objective in header', () => {
   beforeEach(() => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue(MOCK_STUDENT)
   })
 
-  it('renders primary objective card', async () => {
+  it('shows primary objective in header when objective is set', async () => {
     wrapper()
     await screen.findByTestId('primary-objective-card')
     expect(screen.getByTestId('objective-text')).toHaveTextContent('Complete DELE B1 exam prep')
@@ -340,11 +436,19 @@ describe('StudentDetail - Overview tab', () => {
     expect(screen.getByTestId('days-remaining')).toHaveTextContent('days left')
   })
 
-  it('shows empty state when no objectives', async () => {
+  it('hides objective element when no objectives set', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...MOCK_STUDENT, shortTermObjectives: [] })
     wrapper()
+    await screen.findByTestId('student-detail-name')
+    expect(screen.queryByTestId('primary-objective-card')).not.toBeInTheDocument()
+  })
+
+  it('objective card persists when switching tabs', async () => {
+    wrapper()
     await screen.findByTestId('primary-objective-card')
-    expect(screen.getByText('No objectives set')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('tab-profile'))
+    expect(screen.getByTestId('primary-objective-card')).toBeInTheDocument()
+    expect(screen.getByTestId('objective-text')).toHaveTextContent('Complete DELE B1 exam prep')
   })
 })
 
@@ -392,8 +496,8 @@ describe('StudentDetail - Profile tab sections', () => {
 
   it('renders Short-Term Objectives section', async () => {
     await openProfileTab()
-    await screen.findByTestId('profile-objectives')
-    expect(screen.getByText('Complete DELE B1 exam prep')).toBeInTheDocument()
+    const section = await screen.findByTestId('profile-objectives')
+    expect(section).toHaveTextContent('Complete DELE B1 exam prep')
   })
 
   it('renders Teaching Todos section', async () => {

@@ -1,0 +1,169 @@
+import { test, expect } from '@playwright/test'
+import { createMockAuthContext } from '../helpers/auth-helper'
+import { setupMockTeacher } from '../helpers/mock-teacher-helper'
+import { UI_TIMEOUT, NAV_TIMEOUT } from '../helpers/timeouts'
+
+test.beforeAll(async ({ browser }) => {
+  const ctx = await createMockAuthContext(browser)
+  const page = await ctx.newPage()
+  await setupMockTeacher(page)
+  await page.close()
+  await ctx.close()
+})
+
+test('student detail overview tab: three-card row renders in correct order', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    // Navigate to students list and click Ana Seed (rich-profile scenario)
+    await page.goto('/students')
+    await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+
+    const anaSeed = page.getByText('Ana Seed').first()
+    await expect(anaSeed).toBeVisible({ timeout: UI_TIMEOUT })
+    await anaSeed.click()
+
+    // Should land on student detail
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+    await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Three-card row exists
+    const threeCardRow = page.getByTestId('three-card-row')
+    await expect(threeCardRow).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Followups card, Profile card, Ideas card are all present
+    await expect(threeCardRow.getByTestId('followups-card-wrapper')).toBeVisible()
+    await expect(threeCardRow.getByTestId('pedagogical-profile-card')).toBeVisible()
+    await expect(threeCardRow.getByTestId('ideas-card-wrapper')).toBeVisible()
+
+    // Followups is the first child (DOM order)
+    const followupsBox = await threeCardRow.getByTestId('followups-card-wrapper').boundingBox()
+    const profileBox = await threeCardRow.getByTestId('pedagogical-profile-card').boundingBox()
+    const ideasBox = await threeCardRow.getByTestId('ideas-card-wrapper').boundingBox()
+    expect(followupsBox!.x).toBeLessThan(profileBox!.x)
+    expect(profileBox!.x).toBeLessThan(ideasBox!.x)
+
+    // Language tags row shows target language
+    await expect(threeCardRow.getByTestId('language-tags')).toBeVisible()
+    await expect(threeCardRow.getByTestId('target-language-tag')).toBeVisible()
+  } finally {
+    await context.close()
+  }
+})
+
+test('student detail overview tab: compact session cards and view-all link', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    // Diego Seed has 2 session log entries
+    await page.goto('/students')
+    await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+
+    const diegoSeed = page.getByText('Diego Seed').first()
+    await expect(diegoSeed).toBeVisible({ timeout: UI_TIMEOUT })
+    await diegoSeed.click()
+
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+    await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Recent sessions section exists
+    const recentSessions = page.getByTestId('recent-sessions')
+    await expect(recentSessions).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Compact session items visible (at most 2)
+    const sessionItems = recentSessions.getByTestId('recent-session-item')
+    const count = await sessionItems.count()
+    expect(count).toBeGreaterThan(0)
+    expect(count).toBeLessThanOrEqual(2)
+
+    // View all sessions link is visible
+    await expect(page.getByTestId('view-all-sessions-btn')).toBeVisible()
+  } finally {
+    await context.close()
+  }
+})
+
+test('student detail overview tab: + Ideas button opens inline input', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    // Create a fresh student with no todos so the + button is the only trigger
+    const studentName = `Ideas Button Test ${Date.now()}`
+    await page.goto('/students/new')
+    await expect(page.locator('h1')).toHaveText('Add Student', { timeout: NAV_TIMEOUT })
+    await page.getByTestId('student-name').fill(studentName)
+    await page.getByTestId('student-language').click()
+    await page.getByRole('option', { name: 'Spanish' }).click()
+    await page.getByTestId('student-cefr').click()
+    await page.getByRole('option', { name: 'A1' }).click()
+    await page.getByTestId('student-native-language').click()
+    await page.getByRole('option', { name: 'English' }).click()
+    await page.keyboard.press('Escape')
+    await page.getByRole('button', { name: 'Save Student' }).click()
+
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+    await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // The + button in the Ideas card header should be visible
+    await expect(page.getByTestId('ideas-add-header-btn')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Before clicking: add input should NOT be visible (controlled mode, showAddForm=false)
+    await expect(page.getByTestId('todo-add-input')).not.toBeVisible()
+
+    // Click + to reveal the inline input
+    await page.getByTestId('ideas-add-header-btn').click()
+    await expect(page.getByTestId('todo-add-input')).toBeVisible({ timeout: UI_TIMEOUT })
+  } finally {
+    await context.close()
+  }
+})
+
+test('student detail overview tab: Followups card amber when pending followups exist', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    // Create student, add followup from profile tab, verify amber on overview
+    const studentName = `Amber Followup Test ${Date.now()}`
+    await page.goto('/students/new')
+    await expect(page.locator('h1')).toHaveText('Add Student', { timeout: NAV_TIMEOUT })
+    await page.getByTestId('student-name').fill(studentName)
+    await page.getByTestId('student-language').click()
+    await page.getByRole('option', { name: 'Spanish' }).click()
+    await page.getByTestId('student-cefr').click()
+    await page.getByRole('option', { name: 'A1' }).click()
+    await page.getByTestId('student-native-language').click()
+    await page.getByRole('option', { name: 'English' }).click()
+    await page.keyboard.press('Escape')
+    await page.getByRole('button', { name: 'Save Student' }).click()
+
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+
+    // Navigate to Overview tab and verify neutral background (no followups yet)
+    await page.getByTestId('tab-overview').click()
+    await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+    const wrapperNeutral = page.getByTestId('followups-card-wrapper')
+    const neutralClass = await wrapperNeutral.getAttribute('class')
+    expect(neutralClass).not.toContain('FFF9F2')
+
+    // Add a followup from Profile tab
+    await page.getByTestId('tab-profile').click()
+    const followupText = `Test followup ${Date.now()}`
+    await expect(page.getByTestId('followup-input')).toBeVisible({ timeout: UI_TIMEOUT })
+    await page.getByTestId('followup-input').fill(followupText)
+    await page.getByTestId('followup-add-btn').click()
+    await expect(page.getByText(followupText)).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Go back to Overview — Followups card should now be amber
+    await page.getByTestId('tab-overview').click()
+    await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+    const wrapperAmber = page.getByTestId('followups-card-wrapper')
+    const amberClass = await wrapperAmber.getAttribute('class')
+    expect(amberClass).toContain('FFF9F2')
+  } finally {
+    await context.close()
+  }
+})

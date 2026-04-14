@@ -22,14 +22,6 @@ vi.mock('@/api/students', async (importOriginal) => {
   }
 })
 
-function dateOffset(days: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() + days)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
 
 const BASE_STUDENT: Student = {
   id: 'student-1',
@@ -62,12 +54,12 @@ const BASE_STUDENT: Student = {
   skillLevelOverrides: {},
 }
 
-function renderOverview(student: Student, sessions?: SessionLog[]) {
+function renderOverview(student: Student, sessions?: SessionLog[], followups?: import('@/api/followups').TeacherFollowup[]) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
-        <StudentOverviewTab student={student} sessions={sessions} onStudentChange={() => {}} />
+        <StudentOverviewTab student={student} sessions={sessions} followups={followups} onStudentChange={() => {}} />
       </MemoryRouter>
     </QueryClientProvider>
   )
@@ -79,71 +71,6 @@ describe('StudentOverviewTab', () => {
     expect(screen.getByTestId('student-overview-tab')).toBeInTheDocument()
   })
 
-  it('shows empty state when no objectives', () => {
-    renderOverview(BASE_STUDENT)
-    expect(screen.getByText('No objectives set')).toBeInTheDocument()
-  })
-
-  it('shows primary objective text and date', () => {
-    const student = {
-      ...BASE_STUDENT,
-      shortTermObjectives: [
-        { id: 'obj-1', text: 'Pass DELE B1 exam', targetDate: dateOffset(50) },
-      ],
-    }
-    renderOverview(student)
-    expect(screen.getByTestId('objective-text')).toHaveTextContent('Pass DELE B1 exam')
-    expect(screen.getByTestId('days-remaining')).toHaveTextContent('days left')
-  })
-
-  it('shows OVERDUE for past-due objective', () => {
-    const student = {
-      ...BASE_STUDENT,
-      shortTermObjectives: [
-        { id: 'obj-1', text: 'Complete workbook', targetDate: dateOffset(-5) },
-      ],
-    }
-    renderOverview(student)
-    expect(screen.getByTestId('days-remaining')).toHaveTextContent('OVERDUE')
-  })
-
-  it('shows critical treatment for objective within 6 weeks', () => {
-    const student = {
-      ...BASE_STUDENT,
-      shortTermObjectives: [
-        { id: 'obj-1', text: 'Prepare presentation', targetDate: dateOffset(20) },
-      ],
-    }
-    renderOverview(student)
-    const item = screen.getByTestId('objective-item')
-    expect(item.className).toContain('border-orange')
-  })
-
-  it('shows count of additional objectives', () => {
-    const student = {
-      ...BASE_STUDENT,
-      shortTermObjectives: [
-        { id: 'obj-1', text: 'First objective', targetDate: dateOffset(50) },
-        { id: 'obj-2', text: 'Second objective', targetDate: dateOffset(60) },
-        { id: 'obj-3', text: 'Third objective', targetDate: dateOffset(70) },
-      ],
-    }
-    renderOverview(student)
-    expect(screen.getByText('+2 more objectives')).toBeInTheDocument()
-  })
-
-  it('sorts overdue before critical before normal', () => {
-    const student = {
-      ...BASE_STUDENT,
-      shortTermObjectives: [
-        { id: 'obj-normal', text: 'Normal objective', targetDate: dateOffset(60) },
-        { id: 'obj-overdue', text: 'Overdue objective', targetDate: dateOffset(-10) },
-        { id: 'obj-critical', text: 'Critical objective', targetDate: dateOffset(14) },
-      ],
-    }
-    renderOverview(student)
-    expect(screen.getByTestId('objective-text')).toHaveTextContent('Overdue objective')
-  })
 })
 
 // ---------------------------------------------------------------------------
@@ -170,20 +97,29 @@ describe('StudentOverviewTab - PedagogicalProfileCard', () => {
     expect(screen.getAllByText('A2').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders native language tags', () => {
+  it('renders native language tags with L- prefix', () => {
     const student = {
       ...BASE_STUDENT,
       nativeLanguages: ['English', 'French'],
     }
     renderOverview(student)
-    const tagsSection = screen.getByTestId('native-language-tags')
-    expect(tagsSection).toHaveTextContent('English')
-    expect(tagsSection).toHaveTextContent('French')
+    const tagsSection = screen.getByTestId('language-tags')
+    expect(tagsSection).toHaveTextContent('L-ENGLISH')
+    expect(tagsSection).toHaveTextContent('L-FRENCH')
   })
 
-  it('does not render native language tags when empty', () => {
+  it('always renders language tag row with target language', () => {
     renderOverview({ ...BASE_STUDENT, nativeLanguages: [] })
-    expect(screen.queryByTestId('native-language-tags')).not.toBeInTheDocument()
+    const tagsSection = screen.getByTestId('language-tags')
+    expect(tagsSection).toHaveTextContent('T-SPANISH')
+  })
+
+  it('renders target language tag alongside native tags', () => {
+    const student = { ...BASE_STUDENT, nativeLanguages: ['Ukrainian'], learningLanguage: 'Spanish' }
+    renderOverview(student)
+    const tagsSection = screen.getByTestId('language-tags')
+    expect(tagsSection).toHaveTextContent('L-UKRAINIAN')
+    expect(tagsSection).toHaveTextContent('T-SPANISH')
   })
 })
 
@@ -235,12 +171,7 @@ describe('StudentOverviewTab - RecentSessions', () => {
     expect(screen.getByText('Vocabulary: Travel')).toBeInTheDocument()
   })
 
-  it('shows session narrative snippet', () => {
-    renderOverview(BASE_STUDENT, [MOCK_SESSION])
-    expect(screen.getByText('We covered travel vocabulary in detail')).toBeInTheDocument()
-  })
-
-  it('shows homework when set', () => {
+  it('shows homework chip when set', () => {
     renderOverview(BASE_STUDENT, [MOCK_SESSION])
     expect(screen.getByText(/Write 5 sentences/)).toBeInTheDocument()
   })
@@ -269,7 +200,7 @@ describe('StudentOverviewTab - RecentSessions', () => {
     expect(onViewAll).toHaveBeenCalled()
   })
 
-  it('limits to 3 sessions', () => {
+  it('limits to 2 sessions', () => {
     const sessions: SessionLog[] = [1, 2, 3, 4].map((i) => ({
       ...MOCK_SESSION,
       id: `sess-${i}`,
@@ -277,7 +208,19 @@ describe('StudentOverviewTab - RecentSessions', () => {
       title: `Session ${i}`,
     }))
     renderOverview(BASE_STUDENT, sessions)
-    expect(screen.getAllByTestId('recent-session-item').length).toBe(3)
+    expect(screen.getAllByTestId('recent-session-item').length).toBe(2)
+  })
+
+  it('synthesizes title from narrative when title is blank', () => {
+    const session = { ...MOCK_SESSION, title: null, actualContent: 'Practised pretérito indefinido with travel narrative' }
+    renderOverview(BASE_STUDENT, [session])
+    expect(screen.getByTestId('compact-session-title')).toHaveTextContent('Practised pretérito indefinido')
+  })
+
+  it('synthesizes title from narrative when title is generic Session', () => {
+    const session = { ...MOCK_SESSION, title: 'Session', actualContent: 'Review of irregular verbs' }
+    renderOverview(BASE_STUDENT, [session])
+    expect(screen.getByTestId('compact-session-title')).toHaveTextContent('Review of irregular verbs')
   })
 })
 
@@ -350,5 +293,99 @@ describe('StudentOverviewTab - TeachingNotesPanel', () => {
   it('shows Student Since date from createdAt', () => {
     renderOverview({ ...BASE_STUDENT, createdAt: '2026-01-01T00:00:00Z' })
     expect(screen.getByTestId('student-since')).toHaveTextContent('Jan 2026')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Card layout and conditional styling
+// ---------------------------------------------------------------------------
+
+describe('StudentOverviewTab - card order and conditional styling', () => {
+  it('renders Followups card before Profile card before Ideas card', () => {
+    renderOverview(BASE_STUDENT)
+    const row = screen.getByTestId('three-card-row')
+    const followups = row.querySelector('[data-testid="followups-card-wrapper"]')
+    const profile = row.querySelector('[data-testid="pedagogical-profile-card"]')
+    const ideas = row.querySelector('[data-testid="ideas-card-wrapper"]')
+    expect(followups).toBeInTheDocument()
+    expect(profile).toBeInTheDocument()
+    expect(ideas).toBeInTheDocument()
+    // Verify DOM order: followups comes first, then profile, then ideas
+    const children = Array.from(row.children)
+    expect(children.indexOf(followups!)).toBeLessThan(children.indexOf(profile!))
+    expect(children.indexOf(profile!)).toBeLessThan(children.indexOf(ideas!))
+  })
+
+  it('Followups card has neutral background when no pending followups', () => {
+    renderOverview(BASE_STUDENT, [], [])
+    const wrapper = screen.getByTestId('followups-card-wrapper')
+    expect(wrapper.className).toContain('bg-white')
+    expect(wrapper.className).not.toContain('FFF9F2')
+  })
+
+  it('Followups card has amber background when pending followups exist', () => {
+    const pendingFollowup = { id: 'f1', text: 'Prepare vocabulary list', status: 'pending' as const, studentId: 'student-1', studentName: null, createdAt: new Date().toISOString(), dueDate: null, completedAt: null, sourceSessionLogId: null }
+    renderOverview(BASE_STUDENT, [], [pendingFollowup])
+    const wrapper = screen.getByTestId('followups-card-wrapper')
+    expect(wrapper.className).toContain('FFF9F2')
+  })
+
+  it('Ideas card has muted background when no todos', () => {
+    renderOverview({ ...BASE_STUDENT, teachingTodos: [] })
+    const wrapper = screen.getByTestId('ideas-card-wrapper')
+    expect(wrapper.className).toContain('F4F2FD')
+  })
+
+  it('Ideas card has white background when todos exist', () => {
+    const student = {
+      ...BASE_STUDENT,
+      teachingTodos: [{ id: 't1', text: 'Practice past tense', status: 'Pending', createdAt: new Date().toISOString(), sourceSessionLogId: null, coveredInSessionLogId: null }],
+    }
+    renderOverview(student)
+    const wrapper = screen.getByTestId('ideas-card-wrapper')
+    expect(wrapper.className).toContain('bg-white')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Rotating prompts
+// ---------------------------------------------------------------------------
+
+describe('StudentOverviewTab - rotating empty-state prompts', () => {
+  it('shows rotating prompt for Pedagogical Profile when no overrides, difficulties, or goals', () => {
+    const student = {
+      ...BASE_STUDENT,
+      skillLevelOverrides: {},
+      difficulties: [],
+      learningGoals: [],
+    }
+    renderOverview(student)
+    expect(screen.getByTestId('pedagogical-profile-rotating-prompt')).toBeInTheDocument()
+  })
+
+  it('shows active difficulties instead of rotating prompt when present', () => {
+    const student = {
+      ...BASE_STUDENT,
+      skillLevelOverrides: {},
+      difficulties: [{ id: 'd1', description: 'Pretérito vs imperfecto', competency: 'Grammar', subcategory: '', severity: 'Medium', trend: 'Stable', status: 'Active' }],
+      learningGoals: [],
+    }
+    renderOverview(student)
+    expect(screen.queryByTestId('pedagogical-profile-rotating-prompt')).not.toBeInTheDocument()
+    expect(screen.getByTestId('pedagogical-profile-empty')).toHaveTextContent('Pretérito vs imperfecto')
+  })
+
+  it('shows rotating prompt for Ideas when no todos', () => {
+    renderOverview({ ...BASE_STUDENT, teachingTodos: [] })
+    expect(screen.getByTestId('ideas-rotating-prompt')).toBeInTheDocument()
+  })
+
+  it('hides rotating prompt for Ideas when todos exist', () => {
+    const student = {
+      ...BASE_STUDENT,
+      teachingTodos: [{ id: 't1', text: 'Practice something', status: 'Pending', createdAt: new Date().toISOString(), sourceSessionLogId: null, coveredInSessionLogId: null }],
+    }
+    renderOverview(student)
+    expect(screen.queryByTestId('ideas-rotating-prompt')).not.toBeInTheDocument()
   })
 })

@@ -449,7 +449,8 @@ test('student detail shows 4 tabs and overview content by default', async ({ bro
 
   // Overview tab content should be visible by default
   await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: UI_TIMEOUT })
-  await expect(page.getByTestId('primary-objective-card')).toBeVisible()
+  // No objective set for this student, so primary-objective-card should be hidden
+  await expect(page.getByTestId('primary-objective-card')).not.toBeVisible()
 
   // Click Profile tab
   await page.getByTestId('tab-profile').click()
@@ -662,7 +663,7 @@ test('motivation fields: reason for studying and objectives round-trip', async (
   await page.getByRole('button', { name: 'Save Student' }).click()
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
-  // Overview tab: primary objective card shows the objective
+  // Header: primary objective card shows the objective (visible on all tabs)
   await expect(page.getByTestId('primary-objective-card')).toBeVisible({ timeout: UI_TIMEOUT })
   await expect(page.getByTestId('objective-text')).toHaveText(objectiveText)
 
