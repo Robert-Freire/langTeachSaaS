@@ -13,6 +13,13 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | architecture-reviewer | minor | `formatTimeSince` in `ProgressDashboard.tsx` duplicates day/week bucketing logic from `relativeTime()` in `formatDate.ts`. Formats differ (`"5d"` vs `"5 days ago"`) so they serve different purposes, but if a third compact-time callsite appears, extract to `formatDate.ts` as `formatTimeSinceCompact`. |
 | architecture-reviewer | minor | `CEFR_ORDER` (as Record) is redeclared in `ProgressDashboard.tsx` and `StudentOverviewTab.tsx` also has a private CEFR array. Both are pre-existing; worth extracting to a shared `cefrUtils.ts` if a third file needs it. |
 
+## #722 — 2026-04-14
+
+| Reviewer | Severity | Note |
+|---|---|---|
+| architecture-reviewer | minor | `formatMonth`/`formatDay` in `SessionHistoryTab.tsx` duplicate shared util logic in `formatDate.ts`. Deferred as #737. |
+| architecture-reviewer | minor | `sessionTitle()` in `SessionHistoryTab.tsx` parallels `getDisplayTitle()` in `StudentOverviewTab.tsx`. Both fall back to date string when no title. Deferred as #737. |
+
 ## #672 — 2026-04-12
 
 | Reviewer | Severity | Note |

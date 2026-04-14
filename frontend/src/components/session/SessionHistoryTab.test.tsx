@@ -97,8 +97,10 @@ describe('SessionHistoryTab', () => {
     expect(await screen.findAllByTestId('session-entry')).toHaveLength(1)
   })
 
-  it('shows actualContent snippet in collapsed state with line-clamp-1', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+  it('shows actualContent snippet in collapsed state with line-clamp-1 when title exists', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, title: 'Preterito Indefinido' },
+    ])
     wrapper()
     await screen.findByTestId('session-entry')
     const actualEl = screen.getByText(/Covered basics and exercises/)
@@ -106,6 +108,16 @@ describe('SessionHistoryTab', () => {
     expect(actualEl.closest('p')).toHaveClass('line-clamp-1')
     // plannedContent is NOT shown in collapsed state
     expect(screen.queryByText(/Preterito indefinido intro/)).not.toBeInTheDocument()
+  })
+
+  it('shows actualContent snippet with line-clamp-2 when no title', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, title: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    const actualEl = screen.getByText(/Covered basics and exercises/)
+    expect(actualEl.closest('p')).toHaveClass('line-clamp-2')
   })
 
   it('hides actualContent snippet when expanded and shows it in detail section', async () => {
@@ -168,28 +180,36 @@ describe('SessionHistoryTab', () => {
     expect(chips[1]).toHaveTextContent('viajes')
   })
 
-  it('shows delete button in expanded view', async () => {
+  it('shows kebab menu trigger in collapsed row', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
-    fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    expect(screen.getByTestId('delete-session-button')).toBeInTheDocument()
+    expect(screen.getByTestId('session-kebab-trigger')).toBeInTheDocument()
   })
 
-  it('shows edit button in expanded view', async () => {
+  it('shows delete button in kebab menu', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
-    fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    expect(screen.getByTestId('edit-session-button')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('session-kebab-trigger'))
+    expect(await screen.findByTestId('delete-session-button')).toBeInTheDocument()
+  })
+
+  it('shows edit button in kebab menu', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-kebab-trigger'))
+    expect(await screen.findByTestId('edit-session-button')).toBeInTheDocument()
   })
 
   it('clicking edit button opens SessionLogDialog in edit mode', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
-    fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    fireEvent.click(screen.getByTestId('edit-session-button'))
+    fireEvent.click(screen.getByTestId('session-kebab-trigger'))
+    const editBtn = await screen.findByTestId('edit-session-button')
+    fireEvent.click(editBtn)
     await waitFor(() => {
       expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument()
       expect(screen.getByText('Edit Session')).toBeInTheDocument()
@@ -201,8 +221,9 @@ describe('SessionHistoryTab', () => {
     vi.mocked(sessionLogsApi.deleteSession).mockResolvedValue(undefined)
     wrapper()
     await screen.findByTestId('session-entry')
-    fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    fireEvent.click(screen.getByTestId('delete-session-button'))
+    fireEvent.click(screen.getByTestId('session-kebab-trigger'))
+    const deleteBtn = await screen.findByTestId('delete-session-button')
+    fireEvent.click(deleteBtn)
     // Dialog opens but we cancel
     const cancelBtn = await screen.findByRole('button', { name: /cancel/i })
     fireEvent.click(cancelBtn)
@@ -214,8 +235,9 @@ describe('SessionHistoryTab', () => {
     vi.mocked(sessionLogsApi.deleteSession).mockResolvedValue(undefined)
     wrapper()
     await screen.findByTestId('session-entry')
-    fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    fireEvent.click(screen.getByTestId('delete-session-button'))
+    fireEvent.click(screen.getByTestId('session-kebab-trigger'))
+    const deleteBtn = await screen.findByTestId('delete-session-button')
+    fireEvent.click(deleteBtn)
     const confirmBtn = await screen.findByTestId('confirm-delete-session')
     fireEvent.click(confirmBtn)
     await waitFor(() => {
@@ -358,12 +380,14 @@ describe('SessionHistoryTab', () => {
     expect(screen.queryByTestId('next-session-topics-section')).not.toBeInTheDocument()
   })
 
-  it('shows "Start next session" button in expanded view when nextSessionTopics is non-empty', async () => {
+  it('shows "Start next session" button inside the amber card when nextSessionTopics is non-empty', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    expect(screen.getByTestId('start-next-session-button')).toBeInTheDocument()
+    const section = screen.getByTestId('next-session-topics-section')
+    const button = section.querySelector('[data-testid="start-next-session-button"]')
+    expect(button).not.toBeNull()
   })
 
   it('does not show "Start next session" button when nextSessionTopics is null', async () => {
@@ -521,5 +545,89 @@ describe('SessionHistoryTab', () => {
     wrapper()
     await screen.findByTestId('session-entry')
     expect(screen.getByText(/Session, Apr 5/)).toBeInTheDocument()
+  })
+
+  it('shows homework status icon in collapsed row when previousHomeworkStatusName is set', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, previousHomeworkStatusName: 'Done' },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('hw-status-icon')).toBeInTheDocument()
+    expect(screen.getByTestId('hw-status-icon')).toHaveTextContent('✓')
+  })
+
+  it('shows x icon when homework not done', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, previousHomeworkStatusName: 'NotDone', previousHomeworkStatus: 2 },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('hw-status-icon')).toHaveTextContent('✗')
+  })
+
+  it('shows half-circle icon when homework partially done', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, previousHomeworkStatusName: 'Partial', previousHomeworkStatus: 3 },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('hw-status-icon')).toHaveTextContent('◑')
+  })
+
+  it('does not show homework status icon when previousHomeworkStatusName is empty', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, previousHomeworkStatusName: '', previousHomeworkStatus: 0 },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.queryByTestId('hw-status-icon')).not.toBeInTheDocument()
+  })
+
+  it('does not show homework status icon when status is NotApplicable', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, previousHomeworkStatusName: 'NotApplicable', previousHomeworkStatus: 3 },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.queryByTestId('hw-status-icon')).not.toBeInTheDocument()
+  })
+
+  it('uses full-width layout when no homework and no next plan', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      {
+        ...SESSION_BASE,
+        homeworkAssigned: null,
+        nextSessionTopics: null,
+        previousHomeworkStatusName: '',
+        previousHomeworkStatus: 0,
+      },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const detail = screen.getByTestId('session-entry-detail')
+    // The grid should not have md:grid-cols-3 when no right column content
+    const grid = detail.querySelector('.grid')
+    expect(grid?.className).not.toContain('md:grid-cols-3')
+  })
+
+  it('uses full-width layout when only hw status icon exists (no homework assigned, no next plan)', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      {
+        ...SESSION_BASE,
+        homeworkAssigned: null,
+        nextSessionTopics: null,
+        previousHomeworkStatusName: 'Done',
+        previousHomeworkStatus: 1,
+      },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const detail = screen.getByTestId('session-entry-detail')
+    // Right column should not render even when hw status icon is present
+    const grid = detail.querySelector('.grid')
+    expect(grid?.className).not.toContain('md:grid-cols-3')
   })
 })
