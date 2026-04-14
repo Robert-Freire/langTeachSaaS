@@ -59,7 +59,8 @@ public class DashboardService : IDashboardService
             .FirstOrDefaultAsync(cancellationToken);
 
         var lastSessionTopicTags = lastPast is not null
-            ? JsonSerializer.Deserialize<List<string>>(lastPast.TopicTags) ?? []
+            ? (JsonSerializer.Deserialize<List<TopicTagEntry>>(lastPast.TopicTags) ?? [])
+                .Select(t => t.Tag).ToList()
             : [];
 
         var lastSessionFollowups = lastPast is not null
@@ -239,4 +240,6 @@ public class DashboardService : IDashboardService
             );
         }).ToList();
     }
+
+    private sealed record TopicTagEntry(string Tag, string? Category);
 }

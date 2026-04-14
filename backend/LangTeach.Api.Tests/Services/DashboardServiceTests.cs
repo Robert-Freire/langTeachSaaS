@@ -448,7 +448,7 @@ public class DashboardServiceTests : IDisposable
         var past = DateTime.UtcNow.AddDays(-7);
         var future = DateTime.UtcNow.AddDays(1);
         var pastSession = MakeSession(_studentId, past);
-        pastSession.TopicTags = "[\"Subjuntivo\",\"Concesivas\"]";
+        pastSession.TopicTags = "[{\"Tag\":\"Subjuntivo\",\"Category\":null},{\"Tag\":\"Concesivas\",\"Category\":null}]";
         _db.SessionLogs.Add(pastSession);
         _db.SessionLogs.Add(MakeSession(_studentId, future));
         _db.SaveChanges();
