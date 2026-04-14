@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -21,6 +21,7 @@ vi.mock('@/api/students', () => ({
 vi.mock('@/api/sessionLogs', () => ({
   listSessions: vi.fn(),
   createSession: vi.fn(),
+  updateSession: vi.fn(),
   parseTopicTags: vi.fn((raw: string) => JSON.parse(raw) as unknown[]),
   serializeTopicTags: vi.fn((tags: unknown[]) => JSON.stringify(tags)),
 }))
@@ -128,6 +129,10 @@ describe('LogSession', () => {
       ...SAMPLE_SESSION,
       id: 'new-session',
     })
+    vi.mocked(sessionLogsApi.updateSession).mockResolvedValue({
+      ...SAMPLE_SESSION,
+      id: 'new-session',
+    })
     vi.mocked(followupsApi.getFollowups).mockResolvedValue([])
     vi.mocked(lessonsApi.getLessons).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
   })
@@ -196,7 +201,6 @@ describe('LogSession', () => {
     ])
     renderLogSession()
     await screen.findByTestId('log-session-left-panel')
-    // Text appears multiple times (left panel + pre-filled textarea); use getAllByText
     expect(screen.getAllByText('Subjunctive revision').length).toBeGreaterThan(0)
   })
 
@@ -218,7 +222,7 @@ describe('LogSession', () => {
     expect(cb.checked).toBe(true)
   })
 
-  it('hides form fields when cancelled is checked', async () => {
+  it('hides form fields when cancelled toggle is clicked', async () => {
     renderLogSession()
     await screen.findByTestId('cancelled-toggle')
     expect(screen.getByTestId('actual-content')).toBeDefined()
@@ -228,11 +232,13 @@ describe('LogSession', () => {
     })
   })
 
-  it('calls createSession with correct payload on submit', async () => {
+  it('calls createSession with correct payload when Done is clicked after typing', async () => {
     renderLogSession()
     await screen.findByTestId('actual-content')
     fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Great session' } })
-    fireEvent.click(screen.getByTestId('submit-button'))
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('done-btn'))
+    })
     await waitFor(() => {
       expect(sessionLogsApi.createSession).toHaveBeenCalledWith(
         STUDENT_ID,
@@ -246,40 +252,26 @@ describe('LogSession', () => {
     })
   })
 
-  it('navigates back to student detail on successful submit', async () => {
+  it('navigates back to student detail when Done is clicked', async () => {
     renderLogSession()
-    await screen.findByTestId('actual-content')
-    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Covered grammar' } })
-    fireEvent.click(screen.getByTestId('submit-button'))
+    await screen.findByTestId('done-btn')
+    // No changes made - Done should navigate without saving
+    fireEvent.click(screen.getByTestId('done-btn'))
     await screen.findByTestId('student-detail')
   })
 
-  it('shows error message when createSession fails', async () => {
-    vi.mocked(sessionLogsApi.createSession).mockRejectedValue(new Error('Network error'))
+  it('back-button navigates back to student detail', async () => {
     renderLogSession()
-    await screen.findByTestId('actual-content')
-    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Some content' } })
-    fireEvent.click(screen.getByTestId('submit-button'))
-    await screen.findByTestId('submit-error')
-  })
-
-  it('shows validation error when submitting without content', async () => {
-    renderLogSession()
-    await screen.findByTestId('submit-button')
-    // Do NOT fill actualContent - submit with empty content
-    fireEvent.click(screen.getByTestId('submit-button'))
-    await waitFor(() => {
-      expect(screen.getByText(/describe what happened/i)).toBeDefined()
-    })
-    // createSession should not be called for this test (cleared in beforeEach)
-    expect(vi.mocked(sessionLogsApi.createSession)).not.toHaveBeenCalled()
-  })
-
-  it('cancel button navigates back to student detail', async () => {
-    renderLogSession()
-    await screen.findByTestId('cancel-button')
-    fireEvent.click(screen.getByTestId('cancel-button'))
+    await screen.findByTestId('back-button')
+    fireEvent.click(screen.getByTestId('back-button'))
     await screen.findByTestId('student-detail')
+  })
+
+  it('shows autosave status indicator', async () => {
+    renderLogSession()
+    await screen.findByTestId('autosave-status')
+    // Initially idle - no text shown
+    expect(screen.getByTestId('autosave-status')).toBeDefined()
   })
 
   it('adds new todo to list on Enter key', async () => {
@@ -291,7 +283,7 @@ describe('LogSession', () => {
     expect(screen.queryByDisplayValue('Check pronunciation')).toBeNull()
   })
 
-  it('calls updateTeachingTodo for checked todos on submit', async () => {
+  it('calls updateTeachingTodo for checked todos on Done', async () => {
     const todo: TeachingTodo = {
       id: 'todo-1', text: 'Review grammar', status: 'Pending',
       createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, coveredInSessionLogId: null,
@@ -302,7 +294,9 @@ describe('LogSession', () => {
     fireEvent.click(screen.getByTestId('teaching-todo-checkbox'))
     await screen.findByTestId('actual-content')
     fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Session content' } })
-    fireEvent.click(screen.getByTestId('submit-button'))
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('done-btn'))
+    })
     await waitFor(() => {
       expect(studentsApi.updateTeachingTodo).toHaveBeenCalledWith(
         STUDENT_ID, 'todo-1',
@@ -311,27 +305,31 @@ describe('LogSession', () => {
     })
   })
 
-  it('calls appendTeachingTodo for new todo added via quick-add on submit', async () => {
+  it('calls appendTeachingTodo for new todo added via quick-add on Done', async () => {
     renderLogSession()
     await screen.findByTestId('new-todo-input')
     fireEvent.change(screen.getByTestId('new-todo-input'), { target: { value: 'Practice pronunciation' } })
     fireEvent.keyDown(screen.getByTestId('new-todo-input'), { key: 'Enter' })
     await screen.findByTestId('actual-content')
     fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Session content' } })
-    fireEvent.click(screen.getByTestId('submit-button'))
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('done-btn'))
+    })
     await waitFor(() => {
       expect(studentsApi.appendTeachingTodo).toHaveBeenCalledWith(STUDENT_ID, 'Practice pronunciation')
     })
   })
 
-  it('calls createFollowup for new followup added via quick-add on submit', async () => {
+  it('calls createFollowup for new followup added via quick-add on Done', async () => {
     renderLogSession()
     await screen.findByTestId('new-followup-input')
     fireEvent.change(screen.getByTestId('new-followup-input'), { target: { value: 'Send workbook PDF' } })
     fireEvent.keyDown(screen.getByTestId('new-followup-input'), { key: 'Enter' })
     await screen.findByTestId('actual-content')
     fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Session content' } })
-    fireEvent.click(screen.getByTestId('submit-button'))
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('done-btn'))
+    })
     await waitFor(() => {
       expect(followupsApi.createFollowup).toHaveBeenCalledWith(
         expect.objectContaining({ text: 'Send workbook PDF', studentId: STUDENT_ID })

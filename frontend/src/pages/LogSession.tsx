@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Plus, X, AlertTriangle } from 'lucide-react'
+import {
+  ArrowLeft, Plus, X, ChevronDown, ChevronUp,
+  Loader2, CheckCircle, RefreshCw, Mic,
+} from 'lucide-react'
 import { getStudent, appendTeachingTodo, updateTeachingTodo } from '@/api/students'
-import { listSessions, createSession, serializeTopicTags, type TopicTag } from '@/api/sessionLogs'
+import { listSessions, serializeTopicTags, type TopicTag, type CreateSessionLogRequest } from '@/api/sessionLogs'
 import { getFollowups, createFollowup, updateFollowupStatus } from '@/api/followups'
 import { getLessons } from '@/api/lessons'
 import { Button } from '@/components/ui/button'
@@ -17,6 +20,7 @@ import { TopicTagsInput } from '@/components/session/TopicTagsInput'
 import { AudioRecorder } from '@/components/audio/AudioRecorder'
 import { getObjectiveUrgency, getDaysRemaining } from '@/lib/objectiveUrgency'
 import { formatDate as formatDateUtil } from '@/utils/formatDate'
+import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
 
 const DURATION_OPTIONS = [
@@ -31,7 +35,6 @@ const PREV_HOMEWORK_STATUSES = [
   { value: 'Done', label: 'Done' },
   { value: 'Partial', label: 'Partial' },
   { value: 'NotDone', label: 'Not Done' },
-  { value: 'NotApplicable', label: 'Not applicable' },
 ]
 
 const CEFR_SUBLEVELS = [
@@ -64,6 +67,42 @@ function PanelSection({ label, children }: { label: string; children: React.Reac
   )
 }
 
+// Toggle switch component
+function ToggleSwitch({
+  id,
+  checked,
+  onChange,
+  label,
+  'data-testid': testId,
+}: {
+  id: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+  label: string
+  'data-testid'?: string
+}) {
+  return (
+    <button
+      type="button"
+      id={id}
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      data-testid={testId}
+      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+        checked ? 'bg-indigo-600' : 'bg-zinc-300'
+      }`}
+    >
+      <span
+        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+          checked ? 'translate-x-4' : 'translate-x-1'
+        }`}
+      />
+      <span className="sr-only">{label}</span>
+    </button>
+  )
+}
+
 export default function LogSession() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -83,22 +122,24 @@ export default function LogSession() {
   const [reassessmentEnabled, setReassessmentEnabled] = useState(false)
   const [reassessmentLevel, setReassessmentLevel] = useState('')
   const [selectedLessonId, setSelectedLessonId] = useState('')
+  const [voiceNoteId, setVoiceNoteId] = useState<string | undefined>()
+  const [secondaryOpen, setSecondaryOpen] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
 
   // Left panel interactive state
   const [checkedTodoIds, setCheckedTodoIds] = useState<Set<string>>(new Set())
   const [checkedFollowupIds, setCheckedFollowupIds] = useState<Set<string>>(new Set())
   const [mentionedDifficultyKeys, setMentionedDifficultyKeys] = useState<Set<string>>(new Set())
 
-  // Quick-add lists (applied on submit)
+  // Quick-add lists (applied on Done)
   const [newTodoText, setNewTodoText] = useState('')
   const [newTodos, setNewTodos] = useState<string[]>([])
   const [newFollowupText, setNewFollowupText] = useState('')
   const [newFollowups, setNewFollowups] = useState<string[]>([])
 
-  // Submit state
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  // Done state
+  const [isDone, setIsDone] = useState(false)
+  const [doneError, setDoneError] = useState<string | null>(null)
 
   // Data fetching
   const { data: student, isLoading: studentLoading } = useQuery({
@@ -132,85 +173,91 @@ export default function LogSession() {
   const activeDifficulties = student?.difficulties.filter(d => d.status === 'Active') ?? []
   const pendingTodos = student?.teachingTodos.filter(t => t.status === 'Pending') ?? []
   const showPrevHomework = prevSession !== null && prevSession.homeworkAssigned !== null
-
   const plannedForToday = prevSession?.nextSessionTopics ?? null
 
-  // Pre-populate "What Happened?" from planned-for-today when we first get sessions
-  // This is done once: only if actualContent is still empty when sessions load
+  // Pre-populate "What Happened?" from planned-for-today
   const [didPrefill, setDidPrefill] = useState(false)
   if (!didPrefill && !sessionsLoading && plannedForToday && actualContent === '') {
     setActualContent(plannedForToday)
     setDidPrefill(true)
   }
 
-  function resolvedDuration(): number | null {
-    if (durationChoice === 'other') {
-      const v = parseInt(durationOther, 10)
-      return isNaN(v) || v <= 0 ? null : v
-    }
-    return parseInt(durationChoice, 10)
+  // Autosave setup - keep ref current after every render (StudentForm pattern)
+  const getFormDataRef = useRef<(() => CreateSessionLogRequest) | null>(null)
+
+  useEffect(() => {
+    const dur = durationChoice === 'other'
+      ? (parseInt(durationOther, 10) || null)
+      : parseInt(durationChoice, 10)
+
+    const mentionedPairs = activeDifficulties
+      .filter(d => mentionedDifficultyKeys.has(`${d.competency}|${d.subcategory}`))
+      .map(d => ({ Competency: d.competency, Subcategory: d.subcategory }))
+
+    getFormDataRef.current = (): CreateSessionLogRequest => ({
+      sessionDate: sessionDate || null,
+      actualContent: isCancelled ? null : (actualContent || null),
+      plannedContent: plannedForToday || null,
+      homeworkAssigned: isCancelled ? null : (homeworkAssigned || null),
+      previousHomeworkStatus: prevHomeworkStatus ?? 'NotApplicable',
+      nextSessionTopics: isCancelled ? null : (nextSessionTopics || null),
+      generalNotes: generalNotes || null,
+      levelReassessmentSkill: reassessmentEnabled ? 'General' : null,
+      levelReassessmentLevel: reassessmentEnabled ? reassessmentLevel || null : null,
+      linkedLessonId: selectedLessonId || null,
+      topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
+      isCancelled,
+      status: 'Confirmed',
+      mentionedDifficultyPairs: mentionedPairs,
+      duration: dur,
+      ...(voiceNoteId ? { voiceNoteId } : {}),
+    })
+  }, [
+    sessionDate, durationChoice, durationOther, isCancelled, prevHomeworkStatus,
+    actualContent, homeworkAssigned, nextSessionTopics, generalNotes, topicTags,
+    reassessmentEnabled, reassessmentLevel, selectedLessonId, voiceNoteId,
+    mentionedDifficultyKeys, activeDifficulties, plannedForToday,
+  ])
+
+  const { status: saveStatus, sessionId, scheduleTextSave, saveNow } = useSessionAutosave(id, getFormDataRef)
+
+  function markChangedAndSchedule() {
+    setHasChanges(true)
+    scheduleTextSave()
   }
 
-  function validate(): boolean {
-    const errs: Record<string, string> = {}
-    if (!isCancelled && !actualContent.trim()) {
-      errs.actualContent = 'Please describe what happened in the session.'
-    }
-    if (!isCancelled && showPrevHomework && prevHomeworkStatus === null) {
-      errs.prevHomeworkStatus = 'Please indicate whether the previous homework was done.'
-    }
-    if (reassessmentEnabled && !reassessmentLevel.trim()) {
-      errs.reassessmentLevel = 'Select a CEFR sub-level for reassessment.'
-    }
-    if (reassessmentEnabled && reassessmentLevel && !CEFR_SUBLEVELS.includes(reassessmentLevel.trim().toUpperCase())) {
-      errs.reassessmentLevel = 'Must be a valid CEFR sub-level (e.g. B1.1, B2.2).'
-    }
-    setErrors(errs)
-    return Object.keys(errs).length === 0
+  function markChangedAndSaveNow(override?: Partial<CreateSessionLogRequest>) {
+    setHasChanges(true)
+    void saveNow(override)
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!id || !validate()) return
-
-    setIsSubmitting(true)
-    setSubmitError(null)
+  async function handleDone() {
+    if (isDone) return
+    setIsDone(true)
+    setDoneError(null)
 
     try {
-      const mentionedPairs = activeDifficulties
-        .filter(d => mentionedDifficultyKeys.has(`${d.competency}|${d.subcategory}`))
-        .map(d => ({ Competency: d.competency, Subcategory: d.subcategory }))
+      let sid = sessionId
+      const hasSideEffects = !isCancelled && (
+        checkedTodoIds.size > 0 || checkedFollowupIds.size > 0 ||
+        newTodos.length > 0 || newFollowups.length > 0
+      )
 
-      const session = await createSession(id, {
-        sessionDate: sessionDate || null,
-        actualContent: isCancelled ? null : (actualContent || null),
-        plannedContent: plannedForToday || null,
-        homeworkAssigned: isCancelled ? null : (homeworkAssigned || null),
-        previousHomeworkStatus: prevHomeworkStatus ?? 'NotApplicable',
-        nextSessionTopics: isCancelled ? null : (nextSessionTopics || null),
-        generalNotes: generalNotes || null,
-        levelReassessmentSkill: reassessmentEnabled ? 'General' : null,
-        levelReassessmentLevel: reassessmentEnabled ? reassessmentLevel || null : null,
-        linkedLessonId: selectedLessonId || null,
-        topicTags: topicTags.length > 0 ? serializeTopicTags(topicTags) : null,
-        isCancelled,
-        status: 'Confirmed',
-        mentionedDifficultyPairs: mentionedPairs,
-        duration: resolvedDuration(),
-      })
+      // Flush any pending debounced save and ensure session exists if user made changes
+      if (!sid && (hasChanges || hasSideEffects)) {
+        sid = await saveNow()
+      }
 
-      // Run all side effects in parallel (best-effort, do not block navigation)
-      // Skip todo/followup mutations for cancelled sessions - the session never happened
-      if (!isCancelled) {
+      if (sid && !isCancelled) {
         await Promise.allSettled([
           ...[...checkedTodoIds].map(todoId =>
-            updateTeachingTodo(id, todoId, { status: 'Covered', coveredInSessionLogId: session.id })
+            updateTeachingTodo(id!, todoId, { status: 'Covered', coveredInSessionLogId: sid! })
           ),
           ...[...checkedFollowupIds].map(followupId =>
             updateFollowupStatus(followupId, 'done')
           ),
-          ...newTodos.map(text => appendTeachingTodo(id, text)),
-          ...newFollowups.map(text => createFollowup({ text, studentId: id, sourceSessionLogId: session.id })),
+          ...newTodos.map(text => appendTeachingTodo(id!, text)),
+          ...newFollowups.map(text => createFollowup({ text, studentId: id!, sourceSessionLogId: sid! })),
         ])
       }
 
@@ -220,10 +267,9 @@ export default function LogSession() {
 
       navigate(`/students/${id}`)
     } catch (err) {
-      logger.error('LogSession', 'session create failed', err)
-      setSubmitError('Failed to save session. Please try again.')
-    } finally {
-      setIsSubmitting(false)
+      logger.error('LogSession', 'done handler failed', err)
+      setDoneError('Something went wrong. Please try again.')
+      setIsDone(false)
     }
   }
 
@@ -252,6 +298,7 @@ export default function LogSession() {
       else next.add(key)
       return next
     })
+    markChangedAndSchedule()
   }
 
   function addTodo() {
@@ -303,6 +350,8 @@ export default function LogSession() {
     const db = getDaysRemaining(b.targetDate) ?? Infinity
     return da - db
   })
+
+  const doneBusy = isDone || saveStatus === 'saving'
 
   return (
     <div className="flex h-full min-h-0" data-testid="log-session-page">
@@ -390,7 +439,7 @@ export default function LogSession() {
               ))}
             </div>
             {checkedTodoIds.size > 0 && (
-              <p className="text-[0.6875rem] text-indigo-500 mt-1">Checked items will be marked as covered on submit</p>
+              <p className="text-[0.6875rem] text-indigo-500 mt-1">Checked items will be marked as covered on Done</p>
             )}
           </PanelSection>
         )}
@@ -480,42 +529,69 @@ export default function LogSession() {
 
       {/* ─── Right panel: Session Log Form ───────────────────────────── */}
       <main className="flex-1 overflow-y-auto min-h-0" data-testid="log-session-right-panel">
-        <form onSubmit={handleSubmit} className="px-8 py-8 space-y-6 max-w-2xl">
-          {/* Header */}
+        <div className="px-8 py-8 space-y-6 max-w-2xl">
+
+          {/* ── Header bar ── */}
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => navigate(`/students/${id}`)}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-[#1A1B22] hover:bg-[#F4F2FD] transition-colors"
+              onClick={handleDone}
+              disabled={doneBusy}
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-[#1A1B22] hover:bg-[#F4F2FD] transition-colors disabled:opacity-40"
               aria-label="Back to student"
               data-testid="back-button"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <div>
-              <h1 className="font-headline text-2xl font-bold text-[#1A1B22]">Log Session</h1>
-              <p className="text-sm text-zinc-400">Session #{sessionNumber} &middot; {student.name}</p>
+
+            {/* Autosave status indicator */}
+            <span className="text-xs flex items-center gap-1" data-testid="autosave-status">
+              {saveStatus === 'saving' && (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" /><span className="text-zinc-400">Saving...</span></>
+              )}
+              {saveStatus === 'saved' && (
+                <><CheckCircle className="h-3.5 w-3.5 text-green-500" /><span className="text-zinc-500">All changes saved</span></>
+              )}
+              {saveStatus === 'retrying' && (
+                <><RefreshCw className="h-3.5 w-3.5 text-red-500" /><span className="text-red-500">Couldn't save, retrying...</span></>
+              )}
+              {saveStatus === 'error' && (
+                <><RefreshCw className="h-3.5 w-3.5 text-red-500" /><span className="text-red-500">Couldn't save</span></>
+              )}
+            </span>
+
+            <div className="ml-auto">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleDone}
+                disabled={doneBusy}
+                data-testid="done-btn"
+              >
+                {isDone ? 'Saving...' : 'Done'}
+              </Button>
             </div>
           </div>
 
-          {/* Row 1: Date + Duration + Cancelled */}
-          <div className="flex items-end gap-4 flex-wrap">
-            <div className="space-y-1 min-w-[140px]">
-              <Label htmlFor="session-date" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Date</Label>
+          {/* ── Compact metadata bar: Date / Duration / Cancelled ── */}
+          <div className="flex items-center gap-4 flex-wrap rounded-xl px-4 py-3" style={{ background: '#F4F2FD' }}>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="session-date" className="text-xs font-semibold text-zinc-500 shrink-0">Date</Label>
               <Input
                 id="session-date"
                 type="date"
                 value={sessionDate}
-                onChange={e => setSessionDate(e.target.value)}
-                className="text-sm bg-white"
+                onChange={e => { setSessionDate(e.target.value); markChangedAndSchedule() }}
+                className="text-sm bg-white h-7 px-2 py-0 w-36"
                 data-testid="session-date"
               />
             </div>
 
-            <div className="space-y-1 min-w-[130px]">
-              <Label htmlFor="duration" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Duration</Label>
-              <Select value={durationChoice} onValueChange={(v) => setDurationChoice(v ?? durationChoice)}>
-                <SelectTrigger id="duration" className="text-sm bg-white" data-testid="duration-select">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="duration" className="text-xs font-semibold text-zinc-500 shrink-0">Duration</Label>
+              <Select value={durationChoice} onValueChange={(v) => { const val = v ?? durationChoice; setDurationChoice(val); markChangedAndSaveNow({ duration: val === 'other' ? null : parseInt(val, 10) }) }}>
+                <SelectTrigger id="duration" className="text-sm bg-white h-7 px-2 py-0 w-28" data-testid="duration-select">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -527,313 +603,374 @@ export default function LogSession() {
             </div>
 
             {durationChoice === 'other' && (
-              <div className="space-y-1 min-w-[100px]">
-                <Label htmlFor="duration-other" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Minutes</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="duration-other" className="text-xs font-semibold text-zinc-500 shrink-0">Min</Label>
                 <Input
                   id="duration-other"
                   type="number"
                   min="1"
                   value={durationOther}
-                  onChange={e => setDurationOther(e.target.value)}
+                  onChange={e => { setDurationOther(e.target.value); markChangedAndSchedule() }}
                   placeholder="e.g. 75"
-                  className="text-sm bg-white"
+                  className="text-sm bg-white h-7 px-2 py-0 w-20"
                   data-testid="duration-other"
                 />
               </div>
             )}
 
-            <div className="flex items-center gap-2 pb-1">
-              <input
-                type="checkbox"
+            <div className="flex items-center gap-2 ml-auto">
+              <Label htmlFor="cancelled-toggle" className="text-sm text-zinc-600 cursor-pointer select-none">
+                Cancelled
+              </Label>
+              <ToggleSwitch
                 id="cancelled-toggle"
                 checked={isCancelled}
-                onChange={e => setIsCancelled(e.target.checked)}
-                className="h-4 w-4 rounded border-zinc-300 text-indigo-600"
+                onChange={(v) => { setIsCancelled(v); markChangedAndSaveNow({ isCancelled: v }) }}
+                label="Cancelled"
                 data-testid="cancelled-toggle"
               />
-              <Label htmlFor="cancelled-toggle" className="text-sm cursor-pointer text-zinc-600">Cancelled</Label>
             </div>
           </div>
 
-          {/* Previous Homework Status */}
-          {showPrevHomework && !isCancelled && (
-            <div className="space-y-1">
-              <Label htmlFor="prev-homework-status" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Previous Homework Status
-              </Label>
-              <div className="flex gap-2 flex-wrap" data-testid="prev-homework-status">
-                {PREV_HOMEWORK_STATUSES.filter(s => s.value !== 'NotApplicable').map(s => (
-                  <button
-                    key={s.value}
-                    type="button"
-                    onClick={() => setPrevHomeworkStatus(s.value)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      prevHomeworkStatus === s.value
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-[#F4F2FD] text-zinc-600 hover:bg-[#E8E7F1]'
-                    }`}
-                    data-testid={`prev-hw-${s.value.toLowerCase()}`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* What Happened */}
+          {/* ── Editorial headline + Previous HW + What Happened ── */}
           {!isCancelled && (
-            <div className="space-y-1">
-              <Label htmlFor="actual-content" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                What Happened?
-              </Label>
-              {plannedForToday && (
-                <div className="flex items-start gap-1.5 rounded-lg px-3 py-2 text-xs text-indigo-700" style={{ background: '#EEF0FD' }}>
-                  <span className="font-medium shrink-0">Reference:</span>
-                  <span className="italic line-clamp-2">{plannedForToday}</span>
+            <>
+              <div className="space-y-0.5">
+                <div className="flex items-baseline justify-between">
+                  <h1 className="font-headline text-2xl font-bold text-[#1A1B22]">What Happened?</h1>
+                  <span className="text-xs text-zinc-400 shrink-0 ml-4">
+                    Session #{sessionNumber}&ensp;&middot;&ensp;{formatDate(sessionDate)}
+                  </span>
                 </div>
-              )}
-              <Textarea
-                id="actual-content"
-                value={actualContent}
-                onChange={e => setActualContent(e.target.value)}
-                placeholder="Describe what happened in the session..."
-                rows={6}
-                className="resize-none text-sm bg-white"
-                data-testid="actual-content"
-              />
-              {errors.actualContent && (
-                <p className="text-xs text-red-600 flex items-center gap-1">
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  {errors.actualContent}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Voice Note */}
-          {!isCancelled && (
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Voice Note</Label>
-              <AudioRecorder
-                onVoiceNote={() => {
-                  // Voice note uploaded - user can fill form manually
-                }}
-              />
-            </div>
-          )}
-
-          {/* Homework Assigned */}
-          {!isCancelled && (
-            <div className="space-y-1">
-              <Label htmlFor="homework-assigned" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Homework Assigned
-              </Label>
-              <Input
-                id="homework-assigned"
-                value={homeworkAssigned}
-                onChange={e => setHomeworkAssigned(e.target.value)}
-                placeholder="e.g. Workbook page 42, exercises 3-5"
-                className="text-sm bg-white"
-                data-testid="homework-assigned"
-              />
-            </div>
-          )}
-
-          {/* Next Session */}
-          {!isCancelled && (
-            <div className="space-y-1">
-              <Label htmlFor="next-session-topics" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Next Session Plan
-              </Label>
-              <Textarea
-                id="next-session-topics"
-                value={nextSessionTopics}
-                onChange={e => setNextSessionTopics(e.target.value)}
-                placeholder="What to focus on next time..."
-                rows={3}
-                className="resize-none text-sm bg-white"
-                data-testid="next-session-topics"
-              />
-            </div>
-          )}
-
-          {/* Teaching Todos quick-add */}
-          {!isCancelled && (
-            <div className="space-y-2 rounded-xl p-4" style={{ background: '#F0EFFF' }}>
-              <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">New Teaching Todos</p>
-              {newTodos.map((text, idx) => (
-                <div key={idx} className="flex items-center gap-2" data-testid="new-todo-item">
-                  <span className="flex-1 text-sm text-[#1A1B22]">{text}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeTodo(idx)}
-                    className="text-zinc-400 hover:text-red-500 transition-colors"
-                    aria-label="Remove todo"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-              <div className="flex gap-2">
-                <Input
-                  value={newTodoText}
-                  onChange={e => setNewTodoText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTodo() } }}
-                  placeholder="Add new todo..."
-                  className="text-sm bg-white flex-1"
-                  data-testid="new-todo-input"
-                />
-                <Button type="button" variant="ghost" size="sm" onClick={addTodo} className="text-indigo-600 hover:bg-indigo-50">
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <p className="text-sm text-zinc-400">Reflect on the session flow and student engagement.</p>
               </div>
-            </div>
-          )}
 
-          {/* Followups quick-add */}
-          {!isCancelled && (
-            <div className="space-y-2 rounded-xl p-4" style={{ background: '#FFFBEB' }}>
-              <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">New Followups</p>
-              {newFollowups.map((text, idx) => (
-                <div key={idx} className="flex items-center gap-2" data-testid="new-followup-item">
-                  <span className="flex-1 text-sm text-[#1A1B22]">{text}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeFollowup(idx)}
-                    className="text-zinc-400 hover:text-red-500 transition-colors"
-                    aria-label="Remove followup"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-              <div className="flex gap-2">
-                <Input
-                  value={newFollowupText}
-                  onChange={e => setNewFollowupText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addFollowup() } }}
-                  placeholder="Add new followup..."
-                  className="text-sm bg-white flex-1"
-                  data-testid="new-followup-input"
-                />
-                <Button type="button" variant="ghost" size="sm" onClick={addFollowup} className="text-amber-600 hover:bg-amber-50">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Topics Covered */}
-          <div className="space-y-1">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Topics Covered</Label>
-            <TopicTagsInput value={topicTags} onChange={setTopicTags} />
-          </div>
-
-          {/* Today's Context */}
-          <div className="space-y-1">
-            <Label htmlFor="general-notes" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Today's Context
-            </Label>
-            <Textarea
-              id="general-notes"
-              value={generalNotes}
-              onChange={e => setGeneralNotes(e.target.value)}
-              placeholder="Observations on mood, energy levels, context..."
-              rows={3}
-              className="resize-none text-sm bg-white"
-              data-testid="general-notes"
-            />
-          </div>
-
-          {/* Link to Lesson Plan */}
-          {studentLessons.length > 0 && (
-            <div className="space-y-1">
-              <Label htmlFor="linked-lesson" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Link to Lesson Plan (optional)
-              </Label>
-              <Select
-                value={selectedLessonId || '__none__'}
-                onValueChange={(v) => setSelectedLessonId(v === '__none__' ? '' : (v ?? selectedLessonId))}
-              >
-                <SelectTrigger id="linked-lesson" className="text-sm bg-white" data-testid="linked-lesson">
-                  <SelectValue placeholder="Search lessons..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">None</SelectItem>
-                  {studentLessons.map(l => (
-                    <SelectItem key={l.id} value={l.id}>{l.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Level Reassessment */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="reassessment-toggle"
-                checked={reassessmentEnabled}
-                onChange={e => setReassessmentEnabled(e.target.checked)}
-                className="h-4 w-4 rounded border-zinc-300 text-indigo-600"
-                data-testid="reassessment-toggle"
-              />
-              <Label htmlFor="reassessment-toggle" className="text-sm cursor-pointer text-zinc-600">
-                Flag for Level Reassessment
-              </Label>
-            </div>
-            {reassessmentEnabled && (
-              <div className="space-y-1 ml-6">
-                <Label htmlFor="reassessment-level" className="text-xs text-zinc-500">New CEFR sub-level</Label>
-                <Select value={reassessmentLevel} onValueChange={(v) => setReassessmentLevel(v ?? reassessmentLevel)}>
-                  <SelectTrigger id="reassessment-level" className="text-sm bg-white w-40" data-testid="reassessment-level">
-                    <SelectValue placeholder="e.g. B1.1" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CEFR_SUBLEVELS.map(l => (
-                      <SelectItem key={l} value={l}>{l}</SelectItem>
+              {/* Previous Homework Status */}
+              {showPrevHomework && (
+                <div className="space-y-1.5">
+                  <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">
+                    Previous Homework
+                  </p>
+                  <div className="flex gap-2 flex-wrap" data-testid="prev-homework-status">
+                    {PREV_HOMEWORK_STATUSES.map(s => (
+                      <button
+                        key={s.value}
+                        type="button"
+                        onClick={() => { setPrevHomeworkStatus(s.value); markChangedAndSaveNow({ previousHomeworkStatus: s.value }) }}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                          prevHomeworkStatus === s.value
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-[#F4F2FD] text-zinc-600 hover:bg-[#E8E7F1]'
+                        }`}
+                        data-testid={`prev-hw-${s.value.toLowerCase()}`}
+                      >
+                        {s.label}
+                      </button>
                     ))}
-                  </SelectContent>
-                </Select>
-                {errors.reassessmentLevel && (
-                  <p className="text-xs text-red-600">{errors.reassessmentLevel}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* What Happened textarea */}
+              <div className="space-y-1">
+                {plannedForToday && (
+                  <div className="flex items-start gap-1.5 rounded-lg px-3 py-2 text-xs text-indigo-700" style={{ background: '#EEF0FD' }}>
+                    <span className="font-medium shrink-0">Reference:</span>
+                    <span className="italic line-clamp-2">{plannedForToday}</span>
+                  </div>
+                )}
+                <Textarea
+                  id="actual-content"
+                  value={actualContent}
+                  onChange={e => { setActualContent(e.target.value); markChangedAndSchedule() }}
+                  placeholder="Describe what happened in the session..."
+                  rows={6}
+                  className="resize-none text-sm bg-white"
+                  data-testid="actual-content"
+                />
+              </div>
+
+              {/* Homework Assigned */}
+              <div className="space-y-1">
+                <Label htmlFor="homework-assigned" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">
+                  Homework Assigned
+                </Label>
+                <Input
+                  id="homework-assigned"
+                  value={homeworkAssigned}
+                  onChange={e => { setHomeworkAssigned(e.target.value); markChangedAndSchedule() }}
+                  placeholder="e.g. Workbook page 42, exercises 3-5"
+                  className="text-sm bg-white"
+                  data-testid="homework-assigned"
+                />
+              </div>
+
+              {/* Next Session Plan */}
+              <div className="space-y-1">
+                <Label htmlFor="next-session-topics" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">
+                  Next Session Plan
+                </Label>
+                <Textarea
+                  id="next-session-topics"
+                  value={nextSessionTopics}
+                  onChange={e => { setNextSessionTopics(e.target.value); markChangedAndSchedule() }}
+                  placeholder="What to focus on next time..."
+                  rows={3}
+                  className="resize-none text-sm bg-white"
+                  data-testid="next-session-topics"
+                />
+              </div>
+
+              {/* Todos + Followups side-by-side */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Teaching Todos quick-add */}
+                <div className="space-y-2 rounded-xl p-4" style={{ background: '#F0EFFF' }}>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">New Teaching Todos</p>
+                  {newTodos.map((text, idx) => (
+                    <div key={idx} className="flex items-center gap-2" data-testid="new-todo-item">
+                      <span className="flex-1 text-sm text-[#1A1B22]">{text}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeTodo(idx)}
+                        className="text-zinc-400 hover:text-red-500 transition-colors"
+                        aria-label="Remove todo"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    <Input
+                      value={newTodoText}
+                      onChange={e => setNewTodoText(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTodo() } }}
+                      placeholder="Add todo..."
+                      className="text-sm bg-white flex-1"
+                      data-testid="new-todo-input"
+                    />
+                    <Button type="button" variant="ghost" size="sm" onClick={addTodo} className="text-indigo-600 hover:bg-indigo-50">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Followups quick-add */}
+                <div className="space-y-2 rounded-xl p-4" style={{ background: '#FFFBEB' }}>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">New Followups</p>
+                  {newFollowups.map((text, idx) => (
+                    <div key={idx} className="flex items-center gap-2" data-testid="new-followup-item">
+                      <span className="flex-1 text-sm text-[#1A1B22]">{text}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeFollowup(idx)}
+                        className="text-zinc-400 hover:text-red-500 transition-colors"
+                        aria-label="Remove followup"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    <Input
+                      value={newFollowupText}
+                      onChange={e => setNewFollowupText(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addFollowup() } }}
+                      placeholder="Add followup..."
+                      className="text-sm bg-white flex-1"
+                      data-testid="new-followup-input"
+                    />
+                    <Button type="button" variant="ghost" size="sm" onClick={addFollowup} className="text-amber-600 hover:bg-amber-50">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progressive disclosure: secondary sections */}
+              <button
+                type="button"
+                onClick={() => setSecondaryOpen(o => !o)}
+                className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-indigo-600 transition-colors"
+                data-testid="toggle-secondary"
+              >
+                {secondaryOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {secondaryOpen ? 'Hide extra sections' : 'Show extra sections'}
+              </button>
+
+              {secondaryOpen && (
+                <div className="space-y-6">
+                  {/* Voice Note - horizontal bar */}
+                  <div className="flex items-center gap-4 rounded-xl px-4 py-3 bg-white" style={{ boxShadow: '0 1px 4px rgba(26,27,34,0.06)' }}>
+                    <div className="flex items-center gap-2 text-zinc-600">
+                      <Mic className="h-4 w-4 text-indigo-500" />
+                      <div>
+                        <p className="text-sm font-medium text-[#1A1B22]">Voice Note</p>
+                        <p className="text-xs text-zinc-400">Capture thoughts via voice</p>
+                      </div>
+                    </div>
+                    <div className="ml-auto">
+                      <AudioRecorder
+                        onVoiceNote={(note) => {
+                          setVoiceNoteId(note.id)
+                          markChangedAndSaveNow({ voiceNoteId: note.id })
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Topics Covered */}
+                  <div className="space-y-1">
+                    <Label className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">Topics Covered</Label>
+                    <TopicTagsInput
+                      value={topicTags}
+                      onChange={(tags) => { setTopicTags(tags); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
+                    />
+                  </div>
+
+                  {/* Today's Context */}
+                  <div className="space-y-1">
+                    <Label htmlFor="general-notes" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">
+                      Today's Context
+                    </Label>
+                    <Textarea
+                      id="general-notes"
+                      value={generalNotes}
+                      onChange={e => { setGeneralNotes(e.target.value); markChangedAndSchedule() }}
+                      placeholder="Observations on mood, energy levels, context..."
+                      rows={3}
+                      className="resize-none text-sm bg-white"
+                      data-testid="general-notes"
+                    />
+                  </div>
+
+                  {/* Link to Lesson Plan */}
+                  {studentLessons.length > 0 && (
+                    <div className="space-y-1">
+                      <Label htmlFor="linked-lesson" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">
+                        Link to Lesson Plan (optional)
+                      </Label>
+                      <Select
+                        value={selectedLessonId || '__none__'}
+                        onValueChange={(v) => { const next = v === '__none__' ? '' : (v ?? selectedLessonId); setSelectedLessonId(next); markChangedAndSaveNow({ linkedLessonId: next || null }) }}
+                      >
+                        <SelectTrigger id="linked-lesson" className="text-sm bg-white" data-testid="linked-lesson">
+                          <SelectValue placeholder="Search lessons..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">None</SelectItem>
+                          {studentLessons.map(l => (
+                            <SelectItem key={l.id} value={l.id}>{l.title}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Level Reassessment */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <ToggleSwitch
+                        id="reassessment-toggle"
+                        checked={reassessmentEnabled}
+                        onChange={(v) => { setReassessmentEnabled(v); markChangedAndSaveNow({ levelReassessmentSkill: v ? 'General' : null, levelReassessmentLevel: v ? reassessmentLevel || null : null }) }}
+                        label="Flag for Level Reassessment"
+                        data-testid="reassessment-toggle"
+                      />
+                      <Label htmlFor="reassessment-toggle" className="text-sm cursor-pointer text-zinc-600">
+                        Flag for Level Reassessment
+                      </Label>
+                    </div>
+                    {reassessmentEnabled && (
+                      <div className="space-y-1 ml-10">
+                        <Label htmlFor="reassessment-level" className="text-xs text-zinc-500">New CEFR sub-level</Label>
+                        <Select value={reassessmentLevel} onValueChange={(v) => { setReassessmentLevel(v ?? reassessmentLevel); markChangedAndSaveNow({ levelReassessmentLevel: v || null }) }}>
+                          <SelectTrigger id="reassessment-level" className="text-sm bg-white w-40" data-testid="reassessment-level">
+                            <SelectValue placeholder="e.g. B1.1" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CEFR_SUBLEVELS.map(l => (
+                              <SelectItem key={l} value={l}>{l}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Cancelled session: minimal fields */}
+          {isCancelled && (
+            <div className="space-y-1">
+              <p className="text-sm text-zinc-400 italic">This session was cancelled. Only date, duration, topics covered and notes will be recorded.</p>
+
+              {/* Topics Covered */}
+              <div className="space-y-1 pt-4">
+                <Label className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">Topics Covered</Label>
+                <TopicTagsInput
+                  value={topicTags}
+                  onChange={(tags) => { setTopicTags(tags); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
+                />
+              </div>
+
+              {/* Today's Context */}
+              <div className="space-y-1 pt-2">
+                <Label htmlFor="general-notes" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">
+                  Notes
+                </Label>
+                <Textarea
+                  id="general-notes"
+                  value={generalNotes}
+                  onChange={e => { setGeneralNotes(e.target.value); markChangedAndSchedule() }}
+                  placeholder="Notes about the cancellation..."
+                  rows={3}
+                  className="resize-none text-sm bg-white"
+                  data-testid="general-notes"
+                />
+              </div>
+
+              {/* Level Reassessment */}
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center gap-2">
+                  <ToggleSwitch
+                    id="reassessment-toggle"
+                    checked={reassessmentEnabled}
+                    onChange={(v) => { setReassessmentEnabled(v); markChangedAndSaveNow({ levelReassessmentSkill: v ? 'General' : null, levelReassessmentLevel: v ? reassessmentLevel || null : null }) }}
+                    label="Flag for Level Reassessment"
+                    data-testid="reassessment-toggle"
+                  />
+                  <Label htmlFor="reassessment-toggle" className="text-sm cursor-pointer text-zinc-600">
+                    Flag for Level Reassessment
+                  </Label>
+                </div>
+                {reassessmentEnabled && (
+                  <div className="space-y-1 ml-10">
+                    <Label htmlFor="reassessment-level" className="text-xs text-zinc-500">New CEFR sub-level</Label>
+                    <Select value={reassessmentLevel} onValueChange={(v) => { setReassessmentLevel(v ?? reassessmentLevel); markChangedAndSaveNow({ levelReassessmentLevel: v || null }) }}>
+                      <SelectTrigger id="reassessment-level" className="text-sm bg-white w-40" data-testid="reassessment-level">
+                        <SelectValue placeholder="e.g. B1.1" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CEFR_SUBLEVELS.map(l => (
+                          <SelectItem key={l} value={l}>{l}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-
-          {/* Submit error */}
-          {submitError && (
-            <div className="rounded-lg px-4 py-3 bg-red-50 text-sm text-red-700 flex items-center gap-2" data-testid="submit-error">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              {submitError}
             </div>
           )}
 
-          {/* Footer */}
-          <div className="flex items-center justify-between pt-2 border-t border-[#F4F2FD]">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => navigate(`/students/${id}`)}
-              className="text-zinc-500 hover:text-[#1A1B22]"
-              data-testid="cancel-button"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="text-white px-6 rounded-xl font-medium"
-              style={{ background: 'linear-gradient(135deg, #3525CD, #4F46E5)' }}
-              data-testid="submit-button"
-            >
-              {isSubmitting ? 'Saving...' : 'Log Session'}
-            </Button>
-          </div>
-        </form>
+          {/* Done error */}
+          {doneError && (
+            <div className="rounded-lg px-4 py-3 bg-red-50 text-sm text-red-700" data-testid="done-error">
+              {doneError}
+            </div>
+          )}
+        </div>
       </main>
     </div>
   )
