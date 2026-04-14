@@ -6,6 +6,13 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-04-08 during Adaptive Replanning sprint close. All entries deleted (low/info severity, all already deferred with sound reasoning) or batched into #603-#609.*
 
+## #722 — 2026-04-14
+
+| Reviewer | Severity | Note |
+|---|---|---|
+| architecture-reviewer | minor | `formatMonth`/`formatDay` in `SessionHistoryTab.tsx` duplicate shared util logic in `formatDate.ts`. Deferred as #737. |
+| architecture-reviewer | minor | `sessionTitle()` in `SessionHistoryTab.tsx` parallels `getDisplayTitle()` in `StudentOverviewTab.tsx`. Both fall back to date string when no title. Deferred as #737. |
+
 ## #672 — 2026-04-12
 
 | Reviewer | Severity | Note |

@@ -122,11 +122,11 @@ test('@visual session history tab - edit dialog pre-populated', async ({ browser
   await page.getByRole('tab', { name: /sessions/i }).click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
 
-  // Expand the first session entry and open edit dialog
+  // Open kebab menu on the first session entry and click Edit
   const firstEntry = page.getByTestId('session-entry').first()
-  await firstEntry.getByTestId('session-entry-toggle').click()
-  await expect(firstEntry.getByTestId('session-entry-detail')).toBeVisible()
-  await firstEntry.getByTestId('edit-session-button').click()
+  await firstEntry.getByTestId('session-kebab-trigger').click()
+  await expect(page.getByTestId('edit-session-button')).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.getByTestId('edit-session-button').click()
 
   // Dialog opens in edit mode
   await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: UI_TIMEOUT })
