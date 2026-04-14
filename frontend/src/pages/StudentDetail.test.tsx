@@ -41,11 +41,6 @@ vi.mock('../components/session/SessionHistoryTab', () => ({
   SessionHistoryTab: () => <div data-testid="session-history-tab" />,
 }))
 
-vi.mock('../components/session/SessionLogDialog', () => ({
-  SessionLogDialog: ({ open }: { open: boolean }) =>
-    open ? <div data-testid="session-log-dialog" /> : null,
-}))
-
 vi.mock('../components/student/ProgressDashboard', () => ({
   ProgressDashboard: () => <div data-testid="progress-dashboard" />,
 }))

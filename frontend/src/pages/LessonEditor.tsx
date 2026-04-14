@@ -45,7 +45,6 @@ import { FullLessonGenerateButton } from '@/components/lesson/FullLessonGenerate
 import { LessonNotesCard } from '@/components/lesson/LessonNotesCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { LessonObjectivesSummary } from '@/components/lesson/LessonObjectivesSummary'
-import { SessionLogDialog } from '@/components/session/SessionLogDialog'
 
 const SECTION_ORDER: SectionType[] = ['WarmUp', 'Presentation', 'Practice', 'Production', 'WrapUp']
 const SECTION_LABELS: Record<SectionType, string> = {
@@ -70,7 +69,6 @@ export default function LessonEditor() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  const [logSessionOpen, setLogSessionOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [schedulingInline, setSchedulingInline] = useState(false)
   const [inlineScheduleDate, setInlineScheduleDate] = useState('')
@@ -511,7 +509,7 @@ export default function LessonEditor() {
 
           {lesson.studentId && (
             <button
-              onClick={() => setLogSessionOpen(true)}
+              onClick={() => navigate(`/students/${lesson.studentId}/log-session?lessonId=${lesson.id}`)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
               data-testid="log-session-btn"
             >
@@ -947,16 +945,6 @@ export default function LessonEditor() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {lesson.studentId && (
-        <SessionLogDialog
-          studentId={lesson.studentId}
-          open={logSessionOpen}
-          onOpenChange={setLogSessionOpen}
-          linkedLessonId={lesson.id}
-          lessonTitle={lesson.title}
-          lessonObjectives={lesson.objectives}
-        />
-      )}
     </div>
   )
 }

@@ -131,4 +131,13 @@ describe('useSessionAutosave', () => {
     // All calls should be createSession, never updateSession
     expect(mockUpdateSession).not.toHaveBeenCalled()
   })
+
+  it('edit mode: first saveNow calls updateSession when initialSessionId is provided', async () => {
+    const ref = makeGetFormDataRef()
+    const { result } = renderHook(() => useSessionAutosave('stu-1', ref, 'existing-ses-id'))
+    expect(result.current.sessionId).toBe('existing-ses-id')
+    await act(async () => { await result.current.saveNow() })
+    expect(mockCreateSession).not.toHaveBeenCalled()
+    expect(mockUpdateSession).toHaveBeenCalledWith('stu-1', 'existing-ses-id', BASE_FORM_DATA)
+  })
 })

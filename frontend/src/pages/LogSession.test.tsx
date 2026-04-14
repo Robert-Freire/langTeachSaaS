@@ -19,10 +19,13 @@ vi.mock('@/api/students', () => ({
 }))
 
 vi.mock('@/api/sessionLogs', () => ({
+  getSession: vi.fn(),
   listSessions: vi.fn(),
   createSession: vi.fn(),
   updateSession: vi.fn(),
-  parseTopicTags: vi.fn((raw: string) => JSON.parse(raw) as unknown[]),
+  parseTopicTags: vi.fn((raw: string) => {
+    try { return JSON.parse(raw) as unknown[] } catch { return [] }
+  }),
   serializeTopicTags: vi.fn((tags: unknown[]) => JSON.stringify(tags)),
 }))
 
@@ -398,6 +401,112 @@ describe('LogSession', () => {
     })
     await waitFor(() => {
       expect(screen.queryByTestId('topic-tag-suggestions')).toBeNull()
+    })
+  })
+})
+
+const SESSION_ID = 'session-edit-1'
+
+const EDIT_SESSION: SessionLog = {
+  ...SAMPLE_SESSION,
+  id: SESSION_ID,
+  actualContent: 'Covered irregular preterite',
+  homeworkAssigned: 'Exercises p. 55',
+  nextSessionTopics: 'Imperfect tense',
+  sessionDate: '2026-04-01T00:00:00Z',
+  duration: 45,
+  previousHomeworkStatusName: 'Done',
+  isCancelled: false,
+  mentionedDifficultyPairs: '[]',
+  suggestedDifficulties: '[]',
+  levelReassessmentSkill: null,
+  levelReassessmentLevel: null,
+  linkedLessonId: null,
+}
+
+function renderEditSession() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
+        <Routes>
+          <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+          <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>
+  )
+}
+
+describe('LogSession — edit mode', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(studentsApi.getStudent).mockResolvedValue(SAMPLE_STUDENT)
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([EDIT_SESSION])
+    vi.mocked(sessionLogsApi.getSession).mockResolvedValue(EDIT_SESSION)
+    vi.mocked(sessionLogsApi.updateSession).mockResolvedValue(EDIT_SESSION)
+    vi.mocked(sessionLogsApi.createSession).mockResolvedValue({ ...EDIT_SESSION, id: 'new-session' })
+    vi.mocked(followupsApi.getFollowups).mockResolvedValue([])
+    vi.mocked(lessonsApi.getLessons).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
+  })
+
+  it('shows "Edit Session" heading in edit mode', async () => {
+    renderEditSession()
+    await screen.findByTestId('page-heading')
+    expect(screen.getByTestId('page-heading')).toHaveTextContent('Edit Session')
+  })
+
+  it('pre-populates actual content from fetched session', async () => {
+    renderEditSession()
+    await screen.findByTestId('actual-content')
+    expect(screen.getByTestId('actual-content')).toHaveValue('Covered irregular preterite')
+  })
+
+  it('does not clobber actual content with plannedForToday in edit mode', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...EDIT_SESSION, id: 'other-session', nextSessionTopics: 'Should not appear' },
+      EDIT_SESSION,
+    ])
+    renderEditSession()
+    await screen.findByTestId('actual-content')
+    expect(screen.getByTestId('actual-content')).toHaveValue('Covered irregular preterite')
+  })
+
+  it('calls updateSession (not createSession) when changes are made in edit mode', async () => {
+    renderEditSession()
+    await screen.findByTestId('actual-content')
+    // Make a change to trigger hasChanges
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Updated content' } })
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('done-btn'))
+    })
+    await waitFor(() => {
+      expect(sessionLogsApi.updateSession).toHaveBeenCalledWith(
+        STUDENT_ID,
+        SESSION_ID,
+        expect.objectContaining({ actualContent: 'Updated content' }),
+      )
+      expect(sessionLogsApi.createSession).not.toHaveBeenCalled()
+    })
+  })
+
+  it('renders suggested difficulty chip and allows dismissal', async () => {
+    const sessionWithDiff: SessionLog = {
+      ...EDIT_SESSION,
+      suggestedDifficulties: JSON.stringify([{
+        description: 'Confuses ser/estar',
+        competency: 'Grammar',
+        subcategory: 'Ser/Estar',
+        severity: 'Medium',
+      }]),
+    }
+    vi.mocked(sessionLogsApi.getSession).mockResolvedValue(sessionWithDiff)
+    renderEditSession()
+    const chip = await screen.findByTestId('suggested-difficulty-chip')
+    expect(chip).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('remove-suggested-difficulty'))
+    await waitFor(() => {
+      expect(screen.queryByTestId('suggested-difficulty-chip')).not.toBeInTheDocument()
     })
   })
 })

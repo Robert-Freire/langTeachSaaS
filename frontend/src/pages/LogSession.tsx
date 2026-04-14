@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Plus, X, ChevronDown, ChevronUp,
   Loader2, CheckCircle, RefreshCw, Mic,
 } from 'lucide-react'
 import { getStudent, appendTeachingTodo, updateTeachingTodo } from '@/api/students'
-import { listSessions, serializeTopicTags, type TopicTag, type CreateSessionLogRequest } from '@/api/sessionLogs'
+import {
+  getSession, listSessions, parseTopicTags, serializeTopicTags,
+  type TopicTag, type CreateSessionLogRequest, type SuggestedDifficulty,
+} from '@/api/sessionLogs'
 import { getFollowups, createFollowup, updateFollowupStatus } from '@/api/followups'
 import { getLessons } from '@/api/lessons'
 import { Button } from '@/components/ui/button'
@@ -58,6 +61,16 @@ function formatDate(iso: string | null | undefined): string {
   return formatDateUtil(iso)
 }
 
+function isSuggestedDifficulty(value: unknown): value is SuggestedDifficulty {
+  return (
+    !!value && typeof value === 'object' &&
+    typeof (value as SuggestedDifficulty).description === 'string' &&
+    typeof (value as SuggestedDifficulty).competency === 'string' &&
+    typeof (value as SuggestedDifficulty).subcategory === 'string' &&
+    typeof (value as SuggestedDifficulty).severity === 'string'
+  )
+}
+
 // Left panel section header
 function PanelSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -105,8 +118,11 @@ function ToggleSwitch({
 }
 
 export default function LogSession() {
-  const { id } = useParams<{ id: string }>()
+  const { id, sessionId } = useParams<{ id: string; sessionId?: string }>()
+  const isEditMode = !!sessionId
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const linkedLessonIdParam = searchParams.get('lessonId') ?? ''
   const queryClient = useQueryClient()
 
   // Form state
@@ -122,10 +138,11 @@ export default function LogSession() {
   const [topicTags, setTopicTags] = useState<TopicTag[]>([])
   const [reassessmentEnabled, setReassessmentEnabled] = useState(false)
   const [reassessmentLevel, setReassessmentLevel] = useState('')
-  const [selectedLessonId, setSelectedLessonId] = useState('')
+  const [selectedLessonId, setSelectedLessonId] = useState(linkedLessonIdParam)
   const [voiceNoteId, setVoiceNoteId] = useState<string | undefined>()
   const [secondaryOpen, setSecondaryOpen] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [suggestedDifficulties, setSuggestedDifficulties] = useState<SuggestedDifficulty[]>([])
 
   // Left panel interactive state
   const [checkedTodoIds, setCheckedTodoIds] = useState<Set<string>>(new Set())
@@ -141,6 +158,9 @@ export default function LogSession() {
   // Done state
   const [isDone, setIsDone] = useState(false)
   const [doneError, setDoneError] = useState<string | null>(null)
+
+  // Edit mode: track whether we've initialized form state from the fetched session
+  const [didInitEdit, setDidInitEdit] = useState(false)
 
   // Data fetching
   const { data: student, isLoading: studentLoading } = useQuery({
@@ -167,21 +187,75 @@ export default function LogSession() {
     enabled: !!id,
   })
 
+  const { data: editSession, isLoading: editSessionLoading, isError: editSessionError } = useQuery({
+    queryKey: ['session', id, sessionId],
+    queryFn: () => getSession(id!, sessionId!),
+    enabled: isEditMode && !!id && !!sessionId,
+  })
+
   const studentLessons = lessonsData?.items ?? []
-  const prevSession = sessions.find(s => !s.isCancelled) ?? null
-  const sessionNumber = sessions.filter(s => !s.isCancelled).length + 1
+  const nonCancelledSessions = sessions.filter(s => !s.isCancelled)
+
+  // In edit mode, "previous session" is the one before the edited session chronologically
+  const prevSession = isEditMode
+    ? (() => {
+        const idx = nonCancelledSessions.findIndex(s => s.id === sessionId)
+        return idx >= 0 && idx + 1 < nonCancelledSessions.length
+          ? nonCancelledSessions[idx + 1]
+          : null
+      })()
+    : nonCancelledSessions[0] ?? null
+
+  const editSessionRank = isEditMode
+    ? (() => { const i = nonCancelledSessions.findIndex(s => s.id === sessionId); return i >= 0 ? nonCancelledSessions.length - i : null })()
+    : null
+  const sessionNumber = isEditMode ? (editSessionRank ?? '?') : nonCancelledSessions.length + 1
   const pendingFollowups = allFollowups.filter(f => f.status === 'pending')
   const activeDifficulties = student?.difficulties.filter(d => d.status === 'Active') ?? []
   const pendingTodos = student?.teachingTodos.filter(t => t.status === 'Pending') ?? []
-  const showPrevHomework = prevSession !== null && prevSession.homeworkAssigned !== null
+  const showPrevHomework = (isEditMode && prevHomeworkStatus !== null) || (prevSession !== null && prevSession.homeworkAssigned !== null)
   const plannedForToday = prevSession?.nextSessionTopics ?? null
 
-  // Pre-populate "What Happened?" from planned-for-today
+  // Pre-populate "What Happened?" from planned-for-today (create mode only)
   const [didPrefill, setDidPrefill] = useState(false)
-  if (!didPrefill && !sessionsLoading && plannedForToday && actualContent === '') {
+  if (!isEditMode && !didPrefill && !sessionsLoading && plannedForToday && actualContent === '') {
     setActualContent(plannedForToday)
     setDidPrefill(true)
   }
+
+  // Edit mode: pre-populate form state from the fetched session
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!editSession || didInitEdit) return
+    setSessionDate(editSession.sessionDate?.split('T')[0] ?? todayISO())
+    setActualContent(editSession.actualContent ?? '')
+    setHomeworkAssigned(editSession.homeworkAssigned ?? '')
+    setPrevHomeworkStatus(editSession.previousHomeworkStatusName ?? null)
+    setNextSessionTopics(editSession.nextSessionTopics ?? '')
+    setGeneralNotes(editSession.generalNotes ?? '')
+    setIsCancelled(editSession.isCancelled)
+    setTopicTags(parseTopicTags(editSession.topicTags ?? '[]'))
+    setReassessmentEnabled(!!editSession.levelReassessmentSkill)
+    setReassessmentLevel(editSession.levelReassessmentLevel ?? '')
+    setSelectedLessonId(editSession.linkedLessonId ?? '')
+    const dur = editSession.duration
+    if (dur === 30 || dur === 45 || dur === 60 || dur === 90) {
+      setDurationChoice(String(dur))
+    } else if (dur) {
+      setDurationChoice('other')
+      setDurationOther(String(dur))
+    }
+    try {
+      const pairs = JSON.parse(editSession.mentionedDifficultyPairs || '[]') as { Competency: string; Subcategory: string }[]
+      setMentionedDifficultyKeys(new Set(pairs.map(p => `${p.Competency}|${p.Subcategory}`)))
+    } catch { /* empty */ }
+    try {
+      const parsed = JSON.parse(editSession.suggestedDifficulties || '[]') as unknown[]
+      setSuggestedDifficulties(Array.isArray(parsed) ? parsed.filter(isSuggestedDifficulty) : [])
+    } catch { setSuggestedDifficulties([]) }
+    setDidInitEdit(true)
+  }, [editSession, didInitEdit])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Autosave setup - keep ref current after every render (StudentForm pattern)
   const getFormDataRef = useRef<(() => CreateSessionLogRequest) | null>(null)
@@ -210,6 +284,7 @@ export default function LogSession() {
       isCancelled,
       status: 'Confirmed',
       mentionedDifficultyPairs: mentionedPairs,
+      suggestedDifficulties: suggestedDifficulties.length > 0 ? suggestedDifficulties : undefined,
       duration: dur,
       ...(voiceNoteId ? { voiceNoteId } : {}),
     })
@@ -217,10 +292,16 @@ export default function LogSession() {
     sessionDate, durationChoice, durationOther, isCancelled, prevHomeworkStatus,
     actualContent, homeworkAssigned, nextSessionTopics, generalNotes, topicTags,
     reassessmentEnabled, reassessmentLevel, selectedLessonId, voiceNoteId,
-    mentionedDifficultyKeys, activeDifficulties, plannedForToday,
+    mentionedDifficultyKeys, activeDifficulties, plannedForToday, suggestedDifficulties,
   ])
 
-  const { status: saveStatus, sessionId, scheduleTextSave, saveNow } = useSessionAutosave(id, getFormDataRef)
+  // Disable autosave in edit mode until the session data has loaded (prevents spurious createSession calls)
+  const autosaveStudentId = isEditMode ? (editSession ? id : undefined) : id
+  const { status: saveStatus, sessionId: autosavedSessionId, scheduleTextSave, saveNow } = useSessionAutosave(
+    autosaveStudentId,
+    getFormDataRef,
+    isEditMode ? editSession?.id : undefined,
+  )
 
   function markChangedAndSchedule() {
     setHasChanges(true)
@@ -238,7 +319,8 @@ export default function LogSession() {
     setDoneError(null)
 
     try {
-      let sid = sessionId
+      // In edit mode, fall back to the URL session ID if autosave hasn't tracked it yet
+      let sid = autosavedSessionId ?? (isEditMode ? sessionId ?? null : null)
       const hasSideEffects = !isCancelled && (
         checkedTodoIds.size > 0 || checkedFollowupIds.size > 0 ||
         newTodos.length > 0 || newFollowups.length > 0
@@ -252,6 +334,9 @@ export default function LogSession() {
           setIsDone(false)
           return
         }
+      } else if (sid && hasChanges) {
+        // Session already exists but there may be a pending debounced save — flush it
+        await saveNow()
       }
 
       if (sid && !isCancelled) {
@@ -335,7 +420,7 @@ export default function LogSession() {
     [actualContent, topicTags],
   )
 
-  if (studentLoading) {
+  if (studentLoading || editSessionLoading) {
     return (
       <div className="p-8 space-y-4" data-testid="log-session-loading">
         <Skeleton className="h-8 w-48" />
@@ -349,6 +434,14 @@ export default function LogSession() {
     return (
       <div className="p-8 text-sm text-zinc-500" data-testid="log-session-not-found">
         Student not found.
+      </div>
+    )
+  }
+
+  if (isEditMode && (editSessionError || (!editSessionLoading && !editSession))) {
+    return (
+      <div className="p-8 text-sm text-zinc-500" data-testid="log-session-edit-not-found">
+        Session not found.
       </div>
     )
   }
@@ -537,6 +630,38 @@ export default function LogSession() {
             )}
           </PanelSection>
         )}
+
+        {/* Suggested Difficulties (AI-extracted chips with dismiss) */}
+        {suggestedDifficulties.length > 0 && (
+          <PanelSection label="Suggested Difficulties">
+            <p className="text-[0.6875rem] text-zinc-400 -mt-1">From session notes — remove any that look wrong</p>
+            <div className="space-y-1">
+              {suggestedDifficulties.map((d, i) => (
+                <div
+                  key={`${d.competency}|${d.subcategory}|${i}`}
+                  className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm"
+                  data-testid="suggested-difficulty-chip"
+                >
+                  <div className="min-w-0">
+                    <span className="font-medium text-[#1A1B22]">{d.competency} / {d.subcategory}</span>
+                    {d.description && (
+                      <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{d.description}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSuggestedDifficulties(prev => prev.filter((_, j) => j !== i))}
+                    className="shrink-0 text-zinc-400 hover:text-zinc-700"
+                    aria-label="Remove difficulty"
+                    data-testid="remove-suggested-difficulty"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </PanelSection>
+        )}
       </aside>
 
       {/* ─── Right panel: Session Log Form ───────────────────────────── */}
@@ -649,12 +774,14 @@ export default function LogSession() {
             <>
               <div className="space-y-0.5">
                 <div className="flex items-baseline justify-between">
-                  <h1 className="font-headline text-2xl font-bold text-[#1A1B22]">What Happened?</h1>
+                  <h1 className="font-headline text-2xl font-bold text-[#1A1B22]" data-testid="page-heading">
+                    {isEditMode ? 'Edit Session' : 'What Happened?'}
+                  </h1>
                   <span className="text-xs text-zinc-400 shrink-0 ml-4">
-                    Session #{sessionNumber}&ensp;&middot;&ensp;{formatDate(sessionDate)}
+                    Session #{sessionNumber}&ensp;&middot;&ensp;{formatDate(isEditMode ? editSession?.sessionDate : sessionDate)}
                   </span>
                 </div>
-                <p className="text-sm text-zinc-400">Reflect on the session flow and student engagement.</p>
+                {!isEditMode && <p className="text-sm text-zinc-400">Reflect on the session flow and student engagement.</p>}
               </div>
 
               {/* Previous Homework Status */}
