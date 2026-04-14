@@ -3,6 +3,7 @@
 Out-of-scope observations logged by agents during implementation. Each row is something an agent noticed but did not fix because it was outside the current task's scope. These get batched into future GitHub issues by the PM.
 
 | Source issue | Date | Severity | Observation |
+| #724 | 2026-04-14 | info | CodeRabbit #739 flagged dual-casing risk in mentionedDifficultyPairs. Dismissed: SerializePairs uses CamelCaseOptions so both API and seeder produce lowercase keys. No mixed-casing rows exist. |
 | #724 | 2026-04-14 | medium | No seeded student has SkillLevelOverrides set; Skill Imbalance Analysis always shows empty state in visual review. Consider adding skill overrides to Ana Visual or Ana Seed for visual QA coverage. |
 | #721 | 2026-04-14 | low | Ana Seed has no SkillLevelOverrides in seeder so horizontal Skill Assessment badges on Profile tab cannot be visually verified. Consider adding skill overrides to Ana Seed seeder entry. |
 | #721 | 2026-04-14 | low | Ana Seed has PersonalNotes but no TeachingNotes in seeder; Teacher's Working Memory dark section only shows Sensitivities subsection. Consider adding TeachingNotes to Ana Seed for fuller visual verification. |
