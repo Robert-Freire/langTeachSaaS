@@ -229,7 +229,10 @@ public class SessionLogService : ISessionLogService
         entity.IsCancelled = request.IsCancelled;
         entity.Status = request.Status;
         entity.Duration = request.Duration;
-        entity.Title = request.Title;
+        entity.Title = request.Title ?? GenerateTitle(
+            request.PlannedContent ?? entity.PlannedContent,
+            request.ActualContent ?? entity.ActualContent,
+            request.SessionDate ?? entity.SessionDate);
         entity.UpdatedAt = DateTime.UtcNow;
 
         Student? studentForUpdate = null;
