@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import StudentForm from './StudentForm'
@@ -57,6 +57,19 @@ vi.mock('../lib/studentOptions', () => ({
     { value: 'high', label: 'High' },
   ],
 }))
+
+// Small language list for fast rendering in most tests (combobox with 60+ options is slow in CI).
+// Tests that specifically test the full language list use the real options — see describe block below.
+const SMALL_LANGUAGE_OPTIONS = [
+  { value: 'English', label: 'English' },
+  { value: 'Spanish', label: 'Spanish' },
+  { value: 'French', label: 'French' },
+]
+let _allLanguageOptions = SMALL_LANGUAGE_OPTIONS
+vi.mock('../lib/languages', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../lib/languages')>()
+  return { ...original, get ALL_LANGUAGE_OPTIONS() { return _allLanguageOptions } }
+})
 
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -357,7 +370,7 @@ describe('StudentForm', () => {
     expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
     expect(screen.getByTestId('difficulty-error')).toHaveTextContent('Both type and description are required')
     expect(mockCreateStudent).not.toHaveBeenCalled()
-  }, 15000)
+  })
 
   it('shows inline error for partial difficulty row (competency only) and blocks save', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
@@ -380,7 +393,7 @@ describe('StudentForm', () => {
 
     expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
     expect(mockCreateStudent).not.toHaveBeenCalled()
-  }, 15000)
+  })
 
   it('clears difficulty error when the row is completed', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
@@ -660,7 +673,7 @@ describe('StudentForm', () => {
         }),
       )
     })
-  }, 15000)
+  })
 
   it('renders Reason for Studying textarea', () => {
     renderNew()
@@ -878,4 +891,51 @@ describe('StudentForm', () => {
     renderNew()
     expect(screen.queryByTestId('section-nav')).not.toBeInTheDocument()
   })
+})
+
+describe('StudentForm – language combobox with full options', () => {
+  beforeAll(async () => {
+    const { ALL_LANGUAGE_OPTIONS } = await vi.importActual<typeof import('../lib/languages')>('../lib/languages')
+    _allLanguageOptions = ALL_LANGUAGE_OPTIONS as typeof SMALL_LANGUAGE_OPTIONS
+  })
+  afterAll(() => { _allLanguageOptions = SMALL_LANGUAGE_OPTIONS })
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUpdateStudent.mockResolvedValue({ id: 'stu-1' })
+    mockGetStudents.mockResolvedValue([])
+  })
+
+  it('allows selecting a language only in the full list (e.g. Welsh)', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockCreateStudent.mockResolvedValue({ id: 'new-id' })
+    renderNew()
+    await user.type(screen.getByTestId('student-name'), 'Test Student')
+    await user.click(screen.getByTestId('student-language'))
+    await user.type(screen.getByPlaceholderText('Search or type custom...'), 'Welsh')
+    await user.click(await screen.findByRole('option', { name: 'Welsh' }))
+    await user.click(screen.getByTestId('student-cefr'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await vi.waitFor(() => {
+      expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({ learningLanguage: 'Welsh' }))
+    })
+  }, 15000)
+
+  it('allows entering a custom language not in the predefined list', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    mockCreateStudent.mockResolvedValue({ id: 'new-id' })
+    renderNew()
+    await user.type(screen.getByTestId('student-name'), 'Test Student')
+    await user.click(screen.getByTestId('student-language'))
+    await user.type(screen.getByPlaceholderText('Search or type custom...'), 'Esperanto')
+    await user.click(await screen.findByTestId('add-custom-entry'))
+    await user.click(screen.getByTestId('student-cefr'))
+    await user.click(await screen.findByRole('option', { name: 'B1' }))
+    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await vi.waitFor(() => {
+      expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({ learningLanguage: 'Esperanto' }))
+    })
+  }, 15000)
 })
