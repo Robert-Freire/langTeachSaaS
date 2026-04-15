@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { updateStudent } from '../api/students'
 import type { StudentFormData } from '../api/students'
-import { type SaveStatus, DEBOUNCE_MS, IDLE_RESET_MS, RETRY_DELAY_MS, MAX_RETRIES } from './autosaveConstants'
+import { type SaveStatus, DEBOUNCE_MS, IDLE_RESET_MS, RETRY_DELAY_MS, MAX_RETRIES } from '../lib/autosaveConstants'
 
 interface UseStudentAutosaveResult {
   status: SaveStatus
