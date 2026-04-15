@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   DndContext,
@@ -469,7 +469,10 @@ export default function CourseDetail() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [addState, setAddState] = useState({ topic: '', grammarFocus: '', competencies: '' })
-  const [activeTab, setActiveTab] = useState<'curriculum' | 'suggestions'>('curriculum')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const activeTab: 'curriculum' | 'suggestions' =
+    tabParam === 'suggestions' ? 'suggestions' : 'curriculum'
 
   if (expandedForCourseId !== id) {
     setExpandedForCourseId(id)
@@ -701,7 +704,7 @@ export default function CourseDetail() {
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-gray-500 hover:text-gray-700',
           )}
-          onClick={() => setActiveTab('curriculum')}
+          onClick={() => setSearchParams({ tab: 'curriculum' })}
           data-testid="tab-curriculum"
         >
           Curriculum
@@ -713,7 +716,7 @@ export default function CourseDetail() {
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-gray-500 hover:text-gray-700',
           )}
-          onClick={() => setActiveTab('suggestions')}
+          onClick={() => setSearchParams({ tab: 'suggestions' })}
           data-testid="tab-suggestions"
         >
           Suggestions
