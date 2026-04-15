@@ -123,5 +123,4 @@ public class SessionHistoryService : ISessionHistoryService
     private static readonly JsonSerializerOptions JsonOptions =
         new() { PropertyNameCaseInsensitive = true };
 
-    private sealed record TopicTagEntry(string Tag, string? Category);
 }
