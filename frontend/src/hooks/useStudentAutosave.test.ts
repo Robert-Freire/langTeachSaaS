@@ -1,13 +1,23 @@
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-
-const mockUpdateStudent = vi.fn()
-vi.mock('../api/students', () => ({
-  updateStudent: (...args: unknown[]) => mockUpdateStudent(...args),
-}))
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, afterAll } from 'vitest'
+import { setupServer } from 'msw/node'
+import { http, HttpResponse } from 'msw'
 
 import { useStudentAutosave } from './useStudentAutosave'
 import type { StudentFormData } from '../api/students'
+
+const STUDENT_URL = 'http://localhost:5000/api/students/stu-1'
+
+const server = setupServer(
+  http.put(STUDENT_URL, () => HttpResponse.json({ id: 'stu-1' })),
+)
+
+beforeAll(() => server.listen())
+afterEach(() => {
+  server.resetHandlers()
+  vi.useRealTimers()
+})
+afterAll(() => server.close())
 
 const BASE_FORM_DATA: StudentFormData = {
   name: 'Ana',
@@ -27,12 +37,6 @@ function makeGetFormDataRef(data: StudentFormData | null = BASE_FORM_DATA) {
 describe('useStudentAutosave', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.clearAllMocks()
-    mockUpdateStudent.mockResolvedValue({ id: 'stu-1' })
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('starts with idle status', () => {
@@ -42,56 +46,98 @@ describe('useStudentAutosave', () => {
   })
 
   it('does not save when studentId is undefined', async () => {
+    let callCount = 0
+    server.use(
+      http.put(STUDENT_URL, () => {
+        callCount++
+        return HttpResponse.json({ id: 'stu-1' })
+      }),
+    )
     const ref = makeGetFormDataRef()
     const { result } = renderHook(() => useStudentAutosave(undefined, ref))
     act(() => { result.current.saveNow() })
     await vi.runAllTimersAsync()
-    expect(mockUpdateStudent).not.toHaveBeenCalled()
+    expect(callCount).toBe(0)
   })
 
   it('does not save when getFormData returns null (required fields missing)', async () => {
+    let callCount = 0
+    server.use(
+      http.put(STUDENT_URL, () => {
+        callCount++
+        return HttpResponse.json({ id: 'stu-1' })
+      }),
+    )
     const ref = makeGetFormDataRef(null)
     const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
     act(() => { result.current.saveNow() })
     await vi.runAllTimersAsync()
-    expect(mockUpdateStudent).not.toHaveBeenCalled()
+    expect(callCount).toBe(0)
   })
 
   it('saveNow calls updateStudent immediately with form data', async () => {
+    let capturedBody: unknown
+    server.use(
+      http.put(STUDENT_URL, async ({ request }) => {
+        capturedBody = await request.json()
+        return HttpResponse.json({ id: 'stu-1' })
+      }),
+    )
     const ref = makeGetFormDataRef()
     const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
     act(() => { result.current.saveNow() })
     await vi.runAllTimersAsync()
-    expect(mockUpdateStudent).toHaveBeenCalledWith('stu-1', BASE_FORM_DATA)
+    expect(capturedBody).toEqual(BASE_FORM_DATA)
   })
 
   it('saveNow merges override on top of form data', async () => {
+    let capturedBody: unknown
+    server.use(
+      http.put(STUDENT_URL, async ({ request }) => {
+        capturedBody = await request.json()
+        return HttpResponse.json({ id: 'stu-1' })
+      }),
+    )
     const ref = makeGetFormDataRef()
     const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
     act(() => { result.current.saveNow({ isActive: false }) })
     await vi.runAllTimersAsync()
-    expect(mockUpdateStudent).toHaveBeenCalledWith('stu-1', { ...BASE_FORM_DATA, isActive: false })
+    expect(capturedBody).toEqual({ ...BASE_FORM_DATA, isActive: false })
   })
 
   it('scheduleTextSave fires after 400ms debounce', async () => {
+    let callCount = 0
+    server.use(
+      http.put(STUDENT_URL, () => {
+        callCount++
+        return HttpResponse.json({ id: 'stu-1' })
+      }),
+    )
     const ref = makeGetFormDataRef()
     const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
     act(() => { result.current.scheduleTextSave() })
-    expect(mockUpdateStudent).not.toHaveBeenCalled()
+    expect(callCount).toBe(0)
     await act(async () => { await vi.advanceTimersByTimeAsync(400) })
-    expect(mockUpdateStudent).toHaveBeenCalledOnce()
+    expect(callCount).toBe(1)
   })
 
   it('scheduleTextSave resets timer on multiple calls', async () => {
+    let callCount = 0
+    server.use(
+      http.put(STUDENT_URL, () => {
+        callCount++
+        return HttpResponse.json({ id: 'stu-1' })
+      }),
+    )
     const ref = makeGetFormDataRef()
     const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
     act(() => { result.current.scheduleTextSave() })
     await act(async () => { await vi.advanceTimersByTimeAsync(200) })
     act(() => { result.current.scheduleTextSave() })
     await act(async () => { await vi.advanceTimersByTimeAsync(200) })
-    expect(mockUpdateStudent).not.toHaveBeenCalled()
+    expect(callCount).toBe(0)
     await act(async () => { await vi.advanceTimersByTimeAsync(200) })
-    expect(mockUpdateStudent).toHaveBeenCalledOnce()
+    expect(callCount).toBe(1)
   })
 
   it('transitions status idle -> saving -> saved -> idle', async () => {
@@ -99,7 +145,7 @@ describe('useStudentAutosave', () => {
     const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
     act(() => { result.current.saveNow() })
     expect(result.current.status).toBe('saving')
-    // Resolve the updateStudent promise but don't advance idle timer yet
+    // Resolve the network request but don't advance idle timer yet
     await act(async () => { await vi.advanceTimersByTimeAsync(0) })
     expect(result.current.status).toBe('saved')
     // Advance idle timer
@@ -108,7 +154,9 @@ describe('useStudentAutosave', () => {
   })
 
   it('sets error status when updateStudent rejects', async () => {
-    mockUpdateStudent.mockRejectedValue(new Error('Network error'))
+    server.use(
+      http.put(STUDENT_URL, () => new HttpResponse(null, { status: 500 })),
+    )
     const ref = makeGetFormDataRef()
     const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
     act(() => { result.current.saveNow() })
@@ -117,7 +165,13 @@ describe('useStudentAutosave', () => {
   })
 
   it('retries after error (up to 3 times)', async () => {
-    mockUpdateStudent.mockRejectedValue(new Error('Network error'))
+    let callCount = 0
+    server.use(
+      http.put(STUDENT_URL, () => {
+        callCount++
+        return new HttpResponse(null, { status: 500 })
+      }),
+    )
     const ref = makeGetFormDataRef()
     const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
     act(() => { result.current.saveNow() })
@@ -125,7 +179,7 @@ describe('useStudentAutosave', () => {
     for (let i = 0; i < 3; i++) {
       await act(async () => { await vi.runAllTimersAsync() })
     }
-    expect(mockUpdateStudent).toHaveBeenCalledTimes(4)
+    expect(callCount).toBe(4)
     expect(result.current.status).toBe('error')
   })
 })
