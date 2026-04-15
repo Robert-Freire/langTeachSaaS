@@ -1,5 +1,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const mockUpdateStudent = vi.fn()
 vi.mock('../api/students', () => ({
@@ -24,6 +26,12 @@ function makeGetFormDataRef(data: StudentFormData | null = BASE_FORM_DATA) {
   return ref as React.MutableRefObject<(() => StudentFormData | null) | null>
 }
 
+function makeWrapper() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: qc }, children)
+}
+
 describe('useStudentAutosave', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -37,13 +45,13 @@ describe('useStudentAutosave', () => {
 
   it('starts with idle status', () => {
     const ref = makeGetFormDataRef()
-    const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
+    const { result } = renderHook(() => useStudentAutosave('stu-1', ref), { wrapper: makeWrapper() })
     expect(result.current.status).toBe('idle')
   })
 
   it('does not save when studentId is undefined', async () => {
     const ref = makeGetFormDataRef()
-    const { result } = renderHook(() => useStudentAutosave(undefined, ref))
+    const { result } = renderHook(() => useStudentAutosave(undefined, ref), { wrapper: makeWrapper() })
     act(() => { result.current.saveNow() })
     await vi.runAllTimersAsync()
     expect(mockUpdateStudent).not.toHaveBeenCalled()
@@ -51,7 +59,7 @@ describe('useStudentAutosave', () => {
 
   it('does not save when getFormData returns null (required fields missing)', async () => {
     const ref = makeGetFormDataRef(null)
-    const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
+    const { result } = renderHook(() => useStudentAutosave('stu-1', ref), { wrapper: makeWrapper() })
     act(() => { result.current.saveNow() })
     await vi.runAllTimersAsync()
     expect(mockUpdateStudent).not.toHaveBeenCalled()
@@ -59,7 +67,7 @@ describe('useStudentAutosave', () => {
 
   it('saveNow calls updateStudent immediately with form data', async () => {
     const ref = makeGetFormDataRef()
-    const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
+    const { result } = renderHook(() => useStudentAutosave('stu-1', ref), { wrapper: makeWrapper() })
     act(() => { result.current.saveNow() })
     await vi.runAllTimersAsync()
     expect(mockUpdateStudent).toHaveBeenCalledWith('stu-1', BASE_FORM_DATA)
@@ -67,7 +75,7 @@ describe('useStudentAutosave', () => {
 
   it('saveNow merges override on top of form data', async () => {
     const ref = makeGetFormDataRef()
-    const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
+    const { result } = renderHook(() => useStudentAutosave('stu-1', ref), { wrapper: makeWrapper() })
     act(() => { result.current.saveNow({ isActive: false }) })
     await vi.runAllTimersAsync()
     expect(mockUpdateStudent).toHaveBeenCalledWith('stu-1', { ...BASE_FORM_DATA, isActive: false })
@@ -75,7 +83,7 @@ describe('useStudentAutosave', () => {
 
   it('scheduleTextSave fires after 400ms debounce', async () => {
     const ref = makeGetFormDataRef()
-    const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
+    const { result } = renderHook(() => useStudentAutosave('stu-1', ref), { wrapper: makeWrapper() })
     act(() => { result.current.scheduleTextSave() })
     expect(mockUpdateStudent).not.toHaveBeenCalled()
     await act(async () => { await vi.advanceTimersByTimeAsync(400) })
@@ -84,7 +92,7 @@ describe('useStudentAutosave', () => {
 
   it('scheduleTextSave resets timer on multiple calls', async () => {
     const ref = makeGetFormDataRef()
-    const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
+    const { result } = renderHook(() => useStudentAutosave('stu-1', ref), { wrapper: makeWrapper() })
     act(() => { result.current.scheduleTextSave() })
     await act(async () => { await vi.advanceTimersByTimeAsync(200) })
     act(() => { result.current.scheduleTextSave() })
@@ -94,12 +102,19 @@ describe('useStudentAutosave', () => {
     expect(mockUpdateStudent).toHaveBeenCalledOnce()
   })
 
-  it('transitions status idle -> saving -> saved -> idle', async () => {
+  it('transitions status saving -> saved after updateStudent resolves', async () => {
     const ref = makeGetFormDataRef()
-    const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
+    const { result } = renderHook(() => useStudentAutosave('stu-1', ref), { wrapper: makeWrapper() })
     act(() => { result.current.saveNow() })
-    expect(result.current.status).toBe('saving')
-    // Resolve the updateStudent promise but don't advance idle timer yet
+    // Flush the resolved promise — status should be 'saved'
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    expect(result.current.status).toBe('saved')
+  })
+
+  it('resets status to idle 2s after a successful save', async () => {
+    const ref = makeGetFormDataRef()
+    const { result } = renderHook(() => useStudentAutosave('stu-1', ref), { wrapper: makeWrapper() })
+    act(() => { result.current.saveNow() })
     await act(async () => { await vi.advanceTimersByTimeAsync(0) })
     expect(result.current.status).toBe('saved')
     // Advance idle timer
@@ -110,7 +125,7 @@ describe('useStudentAutosave', () => {
   it('sets error status when updateStudent rejects', async () => {
     mockUpdateStudent.mockRejectedValue(new Error('Network error'))
     const ref = makeGetFormDataRef()
-    const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
+    const { result } = renderHook(() => useStudentAutosave('stu-1', ref), { wrapper: makeWrapper() })
     act(() => { result.current.saveNow() })
     await act(async () => { await vi.runAllTimersAsync() })
     expect(result.current.status).toBe('error')
@@ -119,7 +134,7 @@ describe('useStudentAutosave', () => {
   it('retries after error (up to 3 times)', async () => {
     mockUpdateStudent.mockRejectedValue(new Error('Network error'))
     const ref = makeGetFormDataRef()
-    const { result } = renderHook(() => useStudentAutosave('stu-1', ref))
+    const { result } = renderHook(() => useStudentAutosave('stu-1', ref), { wrapper: makeWrapper() })
     act(() => { result.current.saveNow() })
     // 4 total calls: initial + 3 retries
     for (let i = 0; i < 3; i++) {
