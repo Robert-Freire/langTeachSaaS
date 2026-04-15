@@ -6,6 +6,12 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-04-13 during UI Redesign sprint triage. Actionable entries batched into #713 (deduplication), #713 (MaxLength redundancy). Remaining entries deleted (verified safe, intentional per spec, defensive-only, or consistent with existing patterns).*
 
+## #742 — 2026-04-15
+
+| Reviewer | Severity | Note |
+|---|---|---|
+| architecture-reviewer | minor | `useStudentAutosave` now uses `useMutation`; `useSessionAutosave` (identical API) still uses manual retry/status. Creates split-implementation pattern for structural peers. Filed #756 to apply same refactor to `useSessionAutosave`. |
+
 ## #724 — 2026-04-14
 
 | Reviewer | Severity | Note |

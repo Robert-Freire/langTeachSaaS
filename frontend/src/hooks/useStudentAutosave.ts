@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { updateStudent } from '../api/students'
 import type { StudentFormData } from '../api/students'
 import { type SaveStatus, DEBOUNCE_MS, IDLE_RESET_MS, RETRY_DELAY_MS, MAX_RETRIES } from '../lib/autosaveConstants'
@@ -30,60 +31,52 @@ export function useStudentAutosave(
   studentId: string | undefined,
   getFormData: React.MutableRefObject<(() => StudentFormData | null) | null>,
 ): UseStudentAutosaveResult {
-  const [status, setStatus] = useState<SaveStatus>('idle')
+  // Tracks whether we are currently showing 'saved' (vs 'idle' after the 2s window).
+  // React Query keeps isSuccess=true indefinitely; this flag handles the timed reset.
+  const [showSaved, setShowSaved] = useState(false)
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const retryCountRef = useRef(0)
-  const isMountedRef = useRef(true)
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: StudentFormData }) =>
+      updateStudent(id, data),
+    retry: MAX_RETRIES,
+    retryDelay: RETRY_DELAY_MS,
+    onSuccess: () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+      setShowSaved(true)
+      idleTimerRef.current = setTimeout(() => {
+        setShowSaved(false)
+        idleTimerRef.current = null
+      }, IDLE_RESET_MS)
+    },
+  })
 
   useEffect(() => {
-    isMountedRef.current = true
     return () => {
-      isMountedRef.current = false
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
     }
   }, [])
 
-  const doSave = useCallback(async (override?: Partial<StudentFormData>) => {
-    if (!studentId || !isMountedRef.current) return
+  // Derive status: React Query owns retry/error/pending; local state owns saved vs idle.
+  let status: SaveStatus = showSaved ? 'saved' : 'idle'
+  if (mutation.isPending) {
+    status = mutation.failureCount > 0 ? 'retrying' : 'saving'
+  } else if (mutation.isError) {
+    status = 'error'
+  }
 
+  const { mutate } = mutation
+
+  const doSave = useCallback((override?: Partial<StudentFormData>) => {
+    if (!studentId) return
     const baseData = getFormData.current?.()
-    if (!baseData) return  // required fields missing - blocked
-
+    if (!baseData) return
     const data = override ? { ...baseData, ...override } : baseData
-
-    if (!isMountedRef.current) return
-    setStatus('saving')
-
-    try {
-      await updateStudent(studentId, data)
-      retryCountRef.current = 0
-      if (retryTimerRef.current) { clearTimeout(retryTimerRef.current); retryTimerRef.current = null }
-      if (!isMountedRef.current) return
-      setStatus('saved')
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
-      idleTimerRef.current = setTimeout(() => {
-        if (isMountedRef.current) setStatus('idle')
-      }, IDLE_RESET_MS)
-    } catch {
-      if (!isMountedRef.current) return
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
-      if (retryCountRef.current < MAX_RETRIES) {
-        retryCountRef.current += 1
-        setStatus('retrying')
-        retryTimerRef.current = setTimeout(() => {
-          // eslint-disable-next-line react-hooks/immutability
-          if (isMountedRef.current) doSave()
-        }, RETRY_DELAY_MS)
-      } else {
-        setStatus('error')
-      }
-    }
-  }, [studentId, getFormData])
+    mutate({ id: studentId, data })
+  }, [studentId, getFormData, mutate])
 
   const scheduleTextSave = useCallback(() => {
     if (!studentId) return
