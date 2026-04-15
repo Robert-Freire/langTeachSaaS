@@ -250,5 +250,4 @@ public class DashboardService : IDashboardService
         }).ToList();
     }
 
-    private sealed record TopicTagEntry(string Tag, string? Category);
 }
