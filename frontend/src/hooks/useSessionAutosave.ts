@@ -1,12 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { createSession, updateSession, type CreateSessionLogRequest } from '../api/sessionLogs'
-
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'retrying' | 'error'
-
-const DEBOUNCE_MS = 400
-const IDLE_RESET_MS = 2000
-const RETRY_DELAY_MS = 3000
-const MAX_RETRIES = 3
+import { type SaveStatus, DEBOUNCE_MS, IDLE_RESET_MS, RETRY_DELAY_MS, MAX_RETRIES } from '../lib/autosaveConstants'
 
 interface UseSessionAutosaveResult {
   status: SaveStatus
