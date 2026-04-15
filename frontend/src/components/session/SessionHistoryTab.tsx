@@ -16,7 +16,8 @@ import {
 import { logger } from '../../lib/logger'
 import { Link, useNavigate } from 'react-router-dom'
 import { listSessions, deleteSession, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
-import { formatMonthDay } from '../../utils/formatDate'
+import { formatMonth, formatDay } from '../../utils/formatDate'
+import { getSessionTitle } from '../../lib/sessionUtils'
 import { HOMEWORK_STATUS_INFO } from '../../utils/homeworkStatusStyles'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -56,21 +57,6 @@ function tagCategoryClass(category?: string): string {
   return 'bg-[#B7C8E1] text-[#0B1C30]'
 }
 
-function formatMonth(dateStr: string | null): string {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
-}
-
-function formatDay(dateStr: string | null): string {
-  if (!dateStr) return ''
-  return String(new Date(dateStr).getDate())
-}
-
-function sessionTitle(session: SessionLog): string {
-  if (session.title) return session.title
-  if (session.sessionDate) return `Session, ${formatMonthDay(session.sessionDate)}`
-  return 'Session'
-}
 
 const HW_STATUS_FALLBACK = { icon: '—', color: 'text-zinc-400', label: 'N/A' }
 
@@ -154,7 +140,7 @@ function SessionEntry({
                     <h3
                       className={`font-bold text-sm text-[#1A1B22] ${isCancelled ? 'line-through text-zinc-500' : ''}`}
                     >
-                      {sessionTitle(session)}
+                      {getSessionTitle(session)}
                     </h3>
                     {isCancelled && (
                       <span
@@ -551,7 +537,7 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
       const q = searchQuery.toLowerCase()
       result = result.filter(
         (s) =>
-          sessionTitle(s).toLowerCase().includes(q) ||
+          getSessionTitle(s).toLowerCase().includes(q) ||
           (s.actualContent ?? '').toLowerCase().includes(q) ||
           (s.plannedContent ?? '').toLowerCase().includes(q),
       )

@@ -8,6 +8,7 @@ import { StudentFollowupsCard } from './StudentFollowupsCard'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { SectionHeader } from './SectionHeader'
 import { formatMonthYear } from '@/utils/formatDate'
+import { getDisplayTitle } from '@/lib/sessionUtils'
 import { rotatingPrompt } from '@/utils/rotatingPrompt'
 
 interface Props {
@@ -23,13 +24,6 @@ interface Props {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function getDisplayTitle(session: SessionLog): string {
-  if (session.title && session.title !== 'Session') return session.title
-  const fallback = session.actualContent || session.generalNotes || session.plannedContent
-  if (fallback) return fallback.slice(0, 55) + (fallback.length > 55 ? '...' : '')
-  return 'Session'
-}
 
 // ---------------------------------------------------------------------------
 // PedagogicalProfileCard
