@@ -498,5 +498,14 @@ describe('CourseDetail', () => {
       expect(screen.getByTestId('course-suggestions-panel')).toBeInTheDocument()
       expect(screen.queryByTestId('curriculum-list')).not.toBeInTheDocument()
     })
+
+    it('defaults to curriculum tab when URL has an unknown tab value', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />, '/courses/course-1?tab=foo')
+
+      await screen.findByTestId('course-title')
+      expect(screen.getByTestId('curriculum-list')).toBeInTheDocument()
+      expect(screen.queryByTestId('course-suggestions-panel')).not.toBeInTheDocument()
+    })
   })
 })

@@ -470,7 +470,9 @@ export default function CourseDetail() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [addState, setAddState] = useState({ topic: '', grammarFocus: '', competencies: '' })
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = (searchParams.get('tab') ?? 'curriculum') as 'curriculum' | 'suggestions'
+  const tabParam = searchParams.get('tab')
+  const activeTab: 'curriculum' | 'suggestions' =
+    tabParam === 'suggestions' ? 'suggestions' : 'curriculum'
 
   if (expandedForCourseId !== id) {
     setExpandedForCourseId(id)
