@@ -46,3 +46,15 @@ export function formatDateLong(iso: string): string {
 export function formatMonthDay(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
+
+/** Short month, uppercase: "APR" */
+export function formatMonth(dateStr: string | null): string {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
+}
+
+/** Day number as string: "15" */
+export function formatDay(dateStr: string | null): string {
+  if (!dateStr) return ''
+  return String(new Date(dateStr).getDate())
+}
