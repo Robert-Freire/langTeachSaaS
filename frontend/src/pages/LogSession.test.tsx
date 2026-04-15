@@ -371,6 +371,38 @@ describe('LogSession', () => {
     expect(screen.getByTestId('prev-hw-partial')).toBeDefined()
     expect(screen.getByTestId('prev-hw-notdone')).toBeDefined()
   })
+
+  it('shows Topics Covered without opening secondary section', async () => {
+    renderLogSession()
+    await screen.findByTestId('topics-covered-section')
+    expect(screen.queryByTestId('toggle-secondary')).toBeInTheDocument()
+    // Topics Covered is visible without clicking toggle-secondary
+    expect(screen.getByTestId('topics-covered-section')).toBeDefined()
+    expect(screen.getByTestId('topic-tags-input')).toBeDefined()
+  })
+
+  it('shows suggestion chips when narrative contains a known keyword', async () => {
+    renderLogSession()
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), {
+      target: { value: 'Revisamos el subjuntivo en oraciones temporales' },
+    })
+    await waitFor(() => {
+      expect(screen.getByTestId('topic-tag-suggestions')).toBeDefined()
+      expect(screen.getByTestId('tag-suggestion-subjuntivo')).toBeDefined()
+    })
+  })
+
+  it('does not show suggestion chips when narrative has no matching keywords', async () => {
+    renderLogSession()
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), {
+      target: { value: 'Hicimos ejercicios generales' },
+    })
+    await waitFor(() => {
+      expect(screen.queryByTestId('topic-tag-suggestions')).toBeNull()
+    })
+  })
 })
 
 const SESSION_ID = 'session-edit-1'

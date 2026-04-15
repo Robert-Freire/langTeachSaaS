@@ -213,6 +213,10 @@ public class SessionLogService : ISessionLogService
 
         var sanitizedDifficulties = SanitizeSuggestedDifficulties(request.SuggestedDifficulties, _logger);
 
+        var titlePlanned = request.PlannedContent ?? entity.PlannedContent;
+        var titleActual = request.ActualContent ?? entity.ActualContent;
+        var titleDate = request.SessionDate ?? entity.SessionDate;
+
         entity.SessionDate = request.SessionDate;
         entity.PlannedContent = request.PlannedContent;
         entity.ActualContent = request.ActualContent;
@@ -229,7 +233,7 @@ public class SessionLogService : ISessionLogService
         entity.IsCancelled = request.IsCancelled;
         entity.Status = request.Status;
         entity.Duration = request.Duration;
-        entity.Title = request.Title;
+        entity.Title = request.Title ?? GenerateTitle(titlePlanned, titleActual, titleDate);
         entity.UpdatedAt = DateTime.UtcNow;
 
         Student? studentForUpdate = null;

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -22,6 +22,7 @@ import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { TopicTagsInput } from '@/components/session/TopicTagsInput'
 import { AudioRecorder } from '@/components/audio/AudioRecorder'
 import { getObjectiveUrgency, getDaysRemaining } from '@/lib/objectiveUrgency'
+import { suggestTopicTags } from '@/lib/suggestTopicTags'
 import { formatDate as formatDateUtil } from '@/utils/formatDate'
 import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
@@ -412,6 +413,12 @@ export default function LogSession() {
   function removeFollowup(idx: number) {
     setNewFollowups(prev => prev.filter((_, i) => i !== idx))
   }
+
+  // Must be before early returns to satisfy Rules of Hooks
+  const tagSuggestions = useMemo(
+    () => suggestTopicTags(actualContent, topicTags),
+    [actualContent, topicTags],
+  )
 
   if (studentLoading || editSessionLoading) {
     return (
@@ -822,6 +829,36 @@ export default function LogSession() {
                 />
               </div>
 
+              {/* Topics Covered */}
+              <div className="space-y-1" data-testid="topics-covered-section">
+                <Label className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">Topics Covered</Label>
+                {tagSuggestions.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5" data-testid="topic-tag-suggestions">
+                    <span className="text-[0.6875rem] text-zinc-400 font-medium shrink-0">Suggested:</span>
+                    {tagSuggestions.map(suggestion => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => {
+                          const next = [...topicTags, { tag: suggestion }]
+                          setTopicTags(next)
+                          markChangedAndSaveNow({ topicTags: serializeTopicTags(next) })
+                        }}
+                        className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700 hover:bg-indigo-100 transition-colors"
+                        data-testid={`tag-suggestion-${suggestion}`}
+                      >
+                        <Plus className="h-3 w-3" />
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <TopicTagsInput
+                  value={topicTags}
+                  onChange={(tags) => { setTopicTags(tags); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
+                />
+              </div>
+
               {/* Homework Assigned */}
               <div className="space-y-1">
                 <Label htmlFor="homework-assigned" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">
@@ -948,15 +985,6 @@ export default function LogSession() {
                         }}
                       />
                     </div>
-                  </div>
-
-                  {/* Topics Covered */}
-                  <div className="space-y-1">
-                    <Label className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">Topics Covered</Label>
-                    <TopicTagsInput
-                      value={topicTags}
-                      onChange={(tags) => { setTopicTags(tags); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
-                    />
                   </div>
 
                   {/* Today's Context */}

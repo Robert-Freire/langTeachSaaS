@@ -1000,6 +1000,89 @@ public class SessionLogServiceTests : IDisposable
         result.Title.Should().Be("Session, unknown date");
     }
 
+    [Fact]
+    public async Task UpdateAsync_NullTitle_WithActualContent_AutoGeneratesTitleFromContent()
+    {
+        var created = await _sut.CreateAsync(_teacherId, _studentId, BaseRequest());
+
+        var update = new UpdateSessionLogRequest
+        {
+            ActualContent = "Subjunctive in time clauses",
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Title = null,
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, _studentId, created.Id, update);
+        result!.Title.Should().Be("Subjunctive in time clauses");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NullTitle_NullContent_FallsBackToEntityContent()
+    {
+        // Entity has content from create; update clears content but provides no title.
+        // Title should be generated from the entity's pre-existing content, not the date.
+        var created = await _sut.CreateAsync(_teacherId, _studentId, BaseRequest());
+
+        var update = new UpdateSessionLogRequest
+        {
+            IsCancelled = true,
+            ActualContent = null,
+            PlannedContent = null,
+            SessionDate = new DateTime(2026, 4, 10, 0, 0, 0, DateTimeKind.Utc),
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Title = null,
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, _studentId, created.Id, update);
+        result!.Title.Should().Be("Covered regular verbs only");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NullTitle_NullContentOnEntityToo_GeneratesDateFallback()
+    {
+        // Entity has no content; update also provides no content or title.
+        // Title should fall back to the session date.
+        var noContentRequest = new CreateSessionLogRequest
+        {
+            SessionDate = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc),
+            PlannedContent = null,
+            ActualContent = null,
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Title = "Placeholder",
+        };
+        var created = await _sut.CreateAsync(_teacherId, _studentId, noContentRequest);
+
+        var update = new UpdateSessionLogRequest
+        {
+            IsCancelled = true,
+            ActualContent = null,
+            PlannedContent = null,
+            SessionDate = new DateTime(2026, 4, 10, 0, 0, 0, DateTimeKind.Utc),
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Title = null,
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, _studentId, created.Id, update);
+        result!.Title.Should().NotBeNull();
+        result.Title.Should().StartWith("Session,");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithExplicitTitle_PreservesTitle()
+    {
+        var created = await _sut.CreateAsync(_teacherId, _studentId, BaseRequest());
+
+        var update = new UpdateSessionLogRequest
+        {
+            ActualContent = "Something else",
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Title = "My Custom Title",
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, _studentId, created.Id, update);
+        result!.Title.Should().Be("My Custom Title");
+    }
+
     // --- GenerateTitle unit tests ---
 
     [Theory]
