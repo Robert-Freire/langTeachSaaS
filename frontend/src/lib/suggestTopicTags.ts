@@ -47,17 +47,21 @@ const MAX_SUGGESTIONS = 5
  * Suggests topic tags from a session narrative via keyword matching.
  * Already-added tags (by label, case-insensitive) are excluded.
  */
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 export function suggestTopicTags(narrative: string, existing: TopicTag[]): string[] {
   if (!narrative.trim()) return []
 
-  const lower = narrative.toLowerCase()
   const existingLabels = new Set(existing.map(t => t.tag.toLowerCase()))
   const seen = new Set<string>()
   const suggestions: string[] = []
 
   for (const [keyword, label] of KEYWORDS) {
     if (suggestions.length >= MAX_SUGGESTIONS) break
-    if (lower.includes(keyword) && !existingLabels.has(label.toLowerCase()) && !seen.has(label)) {
+    const pattern = new RegExp('\\b' + escapeRegex(keyword) + '\\b', 'i')
+    if (pattern.test(narrative) && !existingLabels.has(label.toLowerCase()) && !seen.has(label)) {
       seen.add(label)
       suggestions.push(label)
     }

@@ -1017,9 +1017,40 @@ public class SessionLogServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateAsync_NullTitle_NullContent_GeneratesDateFallback()
+    public async Task UpdateAsync_NullTitle_NullContent_FallsBackToEntityContent()
     {
+        // Entity has content from create; update clears content but provides no title.
+        // Title should be generated from the entity's pre-existing content, not the date.
         var created = await _sut.CreateAsync(_teacherId, _studentId, BaseRequest());
+
+        var update = new UpdateSessionLogRequest
+        {
+            IsCancelled = true,
+            ActualContent = null,
+            PlannedContent = null,
+            SessionDate = new DateTime(2026, 4, 10, 0, 0, 0, DateTimeKind.Utc),
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Title = null,
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, _studentId, created.Id, update);
+        result!.Title.Should().Be("Covered regular verbs only");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NullTitle_NullContentOnEntityToo_GeneratesDateFallback()
+    {
+        // Entity has no content; update also provides no content or title.
+        // Title should fall back to the session date.
+        var noContentRequest = new CreateSessionLogRequest
+        {
+            SessionDate = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc),
+            PlannedContent = null,
+            ActualContent = null,
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Title = "Placeholder",
+        };
+        var created = await _sut.CreateAsync(_teacherId, _studentId, noContentRequest);
 
         var update = new UpdateSessionLogRequest
         {

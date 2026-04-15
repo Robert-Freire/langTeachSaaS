@@ -375,7 +375,7 @@ describe('LogSession', () => {
   it('shows Topics Covered without opening secondary section', async () => {
     renderLogSession()
     await screen.findByTestId('topics-covered-section')
-    expect(screen.queryByTestId('toggle-secondary')).toBeDefined()
+    expect(screen.queryByTestId('toggle-secondary')).toBeInTheDocument()
     // Topics Covered is visible without clicking toggle-secondary
     expect(screen.getByTestId('topics-covered-section')).toBeDefined()
     expect(screen.getByTestId('topic-tags-input')).toBeDefined()
