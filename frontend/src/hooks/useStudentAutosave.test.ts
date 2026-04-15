@@ -13,10 +13,7 @@ const server = setupServer(
 )
 
 beforeAll(() => server.listen())
-afterEach(() => {
-  server.resetHandlers()
-  vi.useRealTimers()
-})
+afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 const BASE_FORM_DATA: StudentFormData = {
@@ -37,6 +34,10 @@ function makeGetFormDataRef(data: StudentFormData | null = BASE_FORM_DATA) {
 describe('useStudentAutosave', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('starts with idle status', () => {
