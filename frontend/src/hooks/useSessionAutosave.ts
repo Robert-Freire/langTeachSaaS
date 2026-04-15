@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { createSession, updateSession, type CreateSessionLogRequest } from '../api/sessionLogs'
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'retrying' | 'error'
@@ -39,82 +40,78 @@ export function useSessionAutosave(
   getFormData: React.MutableRefObject<(() => CreateSessionLogRequest) | null>,
   initialSessionId?: string,
 ): UseSessionAutosaveResult {
-  const [status, setStatus] = useState<SaveStatus>('idle')
+  // Tracks whether we are currently showing 'saved' (vs 'idle' after the 2s window).
+  // React Query keeps isSuccess=true indefinitely; this flag handles the timed reset.
+  const [showSaved, setShowSaved] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(initialSessionId ?? null)
 
+  // sessionIdRef drives the create-vs-update decision inside mutationFn.
+  // It is kept in sync with sessionId state but is readable synchronously.
   const sessionIdRef = useRef<string | null>(initialSessionId ?? null)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const retryCountRef = useRef(0)
-  const isMountedRef = useRef(true)
 
-  useEffect(() => {
-    isMountedRef.current = true
-    return () => {
-      isMountedRef.current = false
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
-    }
-  }, [])
-
-  // Seed session ID for edit mode once it becomes available
+  // Seed session ID for edit mode once it becomes available (initialSessionId
+  // may arrive after mount when the page fetches session data asynchronously).
   useEffect(() => {
     if (initialSessionId && !sessionIdRef.current) {
       sessionIdRef.current = initialSessionId
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSessionId(initialSessionId)
     }
   }, [initialSessionId])
 
-  const doSave = useCallback(async (override?: Partial<CreateSessionLogRequest>): Promise<string | null> => {
-    if (!studentId || !isMountedRef.current) return null
+  const mutation = useMutation({
+    mutationFn: async ({ reqStudentId, data }: { reqStudentId: string; data: CreateSessionLogRequest }): Promise<string> => {
+      if (!sessionIdRef.current) {
+        const session = await createSession(reqStudentId, data)
+        sessionIdRef.current = session.id
+        setSessionId(session.id)
+        return session.id
+      }
+      await updateSession(reqStudentId, sessionIdRef.current, data)
+      return sessionIdRef.current
+    },
+    retry: MAX_RETRIES,
+    retryDelay: RETRY_DELAY_MS,
+    onSuccess: () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+      setShowSaved(true)
+      idleTimerRef.current = setTimeout(() => {
+        setShowSaved(false)
+        idleTimerRef.current = null
+      }, IDLE_RESET_MS)
+    },
+  })
 
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+    }
+  }, [])
+
+  // Derive status: React Query owns retry/error/pending; local state owns saved vs idle.
+  let status: SaveStatus = showSaved ? 'saved' : 'idle'
+  if (mutation.isPending) {
+    status = mutation.failureCount > 0 ? 'retrying' : 'saving'
+  } else if (mutation.isError) {
+    status = 'error'
+  }
+
+  const { mutateAsync } = mutation
+
+  const doSave = useCallback(async (override?: Partial<CreateSessionLogRequest>): Promise<string | null> => {
+    if (!studentId) return null
     const baseData = getFormData.current?.()
     if (!baseData) return null
-
     const data = override ? { ...baseData, ...override } : baseData
-
-    if (!isMountedRef.current) return null
-    setStatus('saving')
-
     try {
-      let id: string
-      if (!sessionIdRef.current) {
-        const session = await createSession(studentId, data)
-        id = session.id
-        sessionIdRef.current = id
-        if (isMountedRef.current) setSessionId(id)
-      } else {
-        await updateSession(studentId, sessionIdRef.current, data)
-        id = sessionIdRef.current
-      }
-
-      retryCountRef.current = 0
-      if (retryTimerRef.current) { clearTimeout(retryTimerRef.current); retryTimerRef.current = null }
-      if (!isMountedRef.current) return id
-      setStatus('saved')
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
-      idleTimerRef.current = setTimeout(() => {
-        if (isMountedRef.current) setStatus('idle')
-      }, IDLE_RESET_MS)
-      return id
+      return await mutateAsync({ reqStudentId: studentId, data })
     } catch {
-      if (!isMountedRef.current) return null
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
-      if (retryCountRef.current < MAX_RETRIES) {
-        retryCountRef.current += 1
-        setStatus('retrying')
-        retryTimerRef.current = setTimeout(() => {
-          // eslint-disable-next-line react-hooks/immutability
-          if (isMountedRef.current) void doSave(override)
-        }, RETRY_DELAY_MS)
-      } else {
-        setStatus('error')
-      }
       return null
     }
-  }, [studentId, getFormData])
+  }, [studentId, getFormData, mutateAsync])
 
   const scheduleTextSave = useCallback(() => {
     if (!studentId) return
