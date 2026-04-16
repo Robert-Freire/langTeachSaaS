@@ -60,6 +60,8 @@ function makeActiveStudent(overrides: Partial<dashboardApi.ActiveStudent> = {}):
     teachingTodosCount: 0,
     pendingTodos: [],
     cancelledSessionsLast30Days: 0,
+    nearestObjectiveDeadline: null,
+    lastHomeworkStatus: null,
     ...overrides,
   }
 }
