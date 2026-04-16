@@ -17,20 +17,52 @@ interface RosterSignal {
 }
 
 function buildRosterSignal(student: ActiveStudent): RosterSignal | null {
+  // 1. Cancelled 2x (highest priority)
   if (student.cancelledSessionsLast30Days >= 2) {
     return { label: 'Cancelled 2x', className: 'bg-[#1A1B22] text-white', redDot: true }
   }
+
   const now = Date.now()
+
+  // 2. EXAM Xw — upcoming objective deadline within 6 weeks
+  if (student.nearestObjectiveDeadline) {
+    const deadlineMs = new Date(student.nearestObjectiveDeadline).getTime()
+    const daysUntil = Math.ceil((deadlineMs - now) / (1000 * 60 * 60 * 24))
+    const weeksUntil = Math.ceil(daysUntil / 7)
+    if (daysUntil > 0 && weeksUntil <= 6) {
+      const label = daysUntil < 7 ? 'EXAM <1W' : `EXAM ${weeksUntil}W`
+      const className = daysUntil < 7 ? 'bg-red-600 text-white' : 'bg-[#3525CD] text-white'
+      return { label, className }
+    }
+  }
+
+  // 3. Returning after gap > 21 days with next session booked
   const lastSessionMs = student.lastSessionDate ? new Date(student.lastSessionDate).getTime() : null
   const lastSessionGapDays = lastSessionMs != null
     ? Math.floor((now - lastSessionMs) / (1000 * 60 * 60 * 24))
     : null
-  if (lastSessionGapDays != null && lastSessionGapDays >= 14 && !student.nextSessionDate) {
-    return { label: `Inactive ${lastSessionGapDays}d`, className: 'bg-amber-500 text-white' }
+  if (lastSessionGapDays != null && lastSessionGapDays > 21 && student.nextSessionDate != null) {
+    return { label: 'Returning', className: 'bg-violet-600 text-white' }
   }
+
+  // 4. Homework not done / partial
+  if (student.lastHomeworkStatus === 'NotDone') {
+    return { label: 'HMWK NOT DONE', className: 'bg-red-600 text-white' }
+  }
+  if (student.lastHomeworkStatus === 'Partial') {
+    return { label: 'HMWK PARTIAL', className: 'bg-amber-500 text-white' }
+  }
+
+  // 5. Review pending (pending teaching todos)
   if (student.pendingTodos.length > 0) {
     return { label: 'Review pending', className: 'bg-[#3525CD] text-white' }
   }
+
+  // 6. Inactive (>= 14 days no session, no next session)
+  if (lastSessionGapDays != null && lastSessionGapDays >= 14 && !student.nextSessionDate) {
+    return { label: `Inactive ${lastSessionGapDays}d`, className: 'bg-amber-500 text-white' }
+  }
+
   return null
 }
 

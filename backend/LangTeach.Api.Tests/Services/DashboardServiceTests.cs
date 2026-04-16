@@ -51,7 +51,8 @@ public class DashboardServiceTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private SessionLog MakeSession(Guid studentId, DateTime? sessionDate, bool isCancelled = false, bool isDeleted = false, string? generalNotes = null, string? plannedContent = null)
+    private SessionLog MakeSession(Guid studentId, DateTime? sessionDate, bool isCancelled = false, bool isDeleted = false, string? generalNotes = null, string? plannedContent = null,
+        HomeworkStatus previousHomeworkStatus = HomeworkStatus.NotApplicable, string? homeworkAssigned = null)
         => new()
         {
             Id = Guid.NewGuid(),
@@ -62,10 +63,19 @@ public class DashboardServiceTests : IDisposable
             IsDeleted = isDeleted,
             GeneralNotes = generalNotes,
             PlannedContent = plannedContent,
+            PreviousHomeworkStatus = previousHomeworkStatus,
+            HomeworkAssigned = homeworkAssigned,
             Status = SessionLogStatus.Confirmed,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
+
+    private void SetStudentObjectives(Guid studentId, string shortTermObjectivesJson)
+    {
+        var student = _db.Students.Find(studentId)!;
+        student.ShortTermObjectives = shortTermObjectivesJson;
+        _db.SaveChanges();
+    }
 
     [Fact]
     public async Task GetAsync_NoData_ReturnsEmptyDto()
@@ -560,5 +570,129 @@ public class DashboardServiceTests : IDisposable
         var result = await _sut.GetAsync(_teacherId);
 
         result.UpcomingThisWeek.Should().BeEmpty();
+    }
+
+    // NearestObjectiveDeadline tests
+
+    [Fact]
+    public async Task GetAsync_StudentWithNoObjectives_NearestDeadlineIsNull()
+    {
+        SetStudentObjectives(_studentId, "[]");
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.ActiveStudents[0].NearestObjectiveDeadline.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetAsync_StudentWithOnlyPastObjectives_NearestDeadlineIsNull()
+    {
+        var yesterday = DateTime.UtcNow.AddDays(-1).ToString("yyyy-MM-dd");
+        SetStudentObjectives(_studentId, $"[{{\"id\":\"o1\",\"text\":\"Past exam\",\"targetDate\":\"{yesterday}\"}}]");
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.ActiveStudents[0].NearestObjectiveDeadline.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetAsync_StudentWithFutureObjective_NearestDeadlineSet()
+    {
+        var in30Days = DateTime.UtcNow.AddDays(30).Date;
+        var dateStr = in30Days.ToString("yyyy-MM-dd");
+        SetStudentObjectives(_studentId, $"[{{\"id\":\"o1\",\"text\":\"Upcoming exam\",\"targetDate\":\"{dateStr}\"}}]");
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.ActiveStudents[0].NearestObjectiveDeadline.Should().NotBeNull();
+        result.ActiveStudents[0].NearestObjectiveDeadline!.Value.Date.Should().Be(in30Days);
+    }
+
+    [Fact]
+    public async Task GetAsync_StudentWithMultipleObjectives_ReturnsEarliest()
+    {
+        var in10Days = DateTime.UtcNow.AddDays(10).Date;
+        var in30Days = DateTime.UtcNow.AddDays(30).Date;
+        SetStudentObjectives(_studentId,
+            $"[{{\"id\":\"o1\",\"text\":\"Later exam\",\"targetDate\":\"{in30Days:yyyy-MM-dd}\"}}," +
+            $"{{\"id\":\"o2\",\"text\":\"Sooner exam\",\"targetDate\":\"{in10Days:yyyy-MM-dd}\"}}]");
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.ActiveStudents[0].NearestObjectiveDeadline!.Value.Date.Should().Be(in10Days);
+    }
+
+    // LastHomeworkStatus tests
+
+    [Fact]
+    public async Task GetAsync_NoSessions_LastHomeworkStatusIsNull()
+    {
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.ActiveStudents[0].LastHomeworkStatus.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetAsync_AllSessionsHomeworkNotApplicable_LastHomeworkStatusIsNull()
+    {
+        _db.SessionLogs.Add(MakeSession(_studentId, DateTime.UtcNow.AddDays(-7),
+            previousHomeworkStatus: HomeworkStatus.NotApplicable));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.ActiveStudents[0].LastHomeworkStatus.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetAsync_MostRecentSessionHomeworkDone_ReturnsDone()
+    {
+        _db.SessionLogs.Add(MakeSession(_studentId, DateTime.UtcNow.AddDays(-7),
+            previousHomeworkStatus: HomeworkStatus.Done));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.ActiveStudents[0].LastHomeworkStatus.Should().Be("Done");
+    }
+
+    [Fact]
+    public async Task GetAsync_MostRecentSessionHomeworkPartial_ReturnsPartial()
+    {
+        _db.SessionLogs.Add(MakeSession(_studentId, DateTime.UtcNow.AddDays(-7),
+            previousHomeworkStatus: HomeworkStatus.Partial));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.ActiveStudents[0].LastHomeworkStatus.Should().Be("Partial");
+    }
+
+    [Fact]
+    public async Task GetAsync_MostRecentSessionHomeworkNotDone_ReturnsNotDone()
+    {
+        _db.SessionLogs.Add(MakeSession(_studentId, DateTime.UtcNow.AddDays(-7),
+            previousHomeworkStatus: HomeworkStatus.NotDone));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.ActiveStudents[0].LastHomeworkStatus.Should().Be("NotDone");
+    }
+
+    [Fact]
+    public async Task GetAsync_MultipleSessions_LastHomeworkStatusFromMostRecent()
+    {
+        _db.SessionLogs.AddRange(
+            MakeSession(_studentId, DateTime.UtcNow.AddDays(-14),
+                previousHomeworkStatus: HomeworkStatus.Done),
+            MakeSession(_studentId, DateTime.UtcNow.AddDays(-7),
+                previousHomeworkStatus: HomeworkStatus.NotDone)
+        );
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.ActiveStudents[0].LastHomeworkStatus.Should().Be("NotDone");
     }
 }

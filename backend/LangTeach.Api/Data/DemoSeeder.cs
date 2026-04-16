@@ -422,7 +422,122 @@ public static class DemoSeeder
             await db.SaveChangesAsync();
         }
 
-        logger.LogInformation("Scenario students seeded (Ana Seed, Marco Seed, Clara Seed, Diego Seed).");
+        // Eva Seed — EXAM signal (deadline within 6 weeks)
+        await UpsertStudentAsync(db, teacherId, new Student
+        {
+            TeacherId           = teacherId,
+            Name                = "Eva Seed",
+            LearningLanguage    = "English",
+            CefrLevel           = "A2",
+            NativeLanguages     = """["French"]""",
+            LearningGoals       = "[]",
+            Interests           = "[]",
+            Difficulties        = "[]",
+            Weaknesses          = "[]",
+            PersonalNotes       = "[scenario-seed]",
+            IsActive            = true,
+            ShortTermObjectives = $"[{{\"id\":\"o1\",\"text\":\"Pass A2 DELE exam\",\"targetDate\":\"{now.AddDays(28):yyyy-MM-dd}\"}}]",
+        }, now);
+
+        // Petra Seed — Returning signal (gap > 21 days, next session booked)
+        var petra = await UpsertStudentAsync(db, teacherId, new Student
+        {
+            TeacherId        = teacherId,
+            Name             = "Petra Seed",
+            LearningLanguage = "English",
+            CefrLevel        = "B1",
+            NativeLanguages  = """["Czech"]""",
+            LearningGoals    = "[]",
+            Interests        = "[]",
+            Difficulties     = "[]",
+            Weaknesses       = "[]",
+            PersonalNotes    = "[scenario-seed]",
+            IsActive         = true,
+        }, now);
+
+        var petraSessionsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == petra.Id && !s.IsDeleted);
+        if (!petraSessionsExist)
+        {
+            db.SessionLogs.AddRange(
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = petra.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(-25),
+                    PlannedContent         = "Present perfect vs past simple.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                    IsDeleted              = false,
+                    CreatedAt              = now.AddDays(-25),
+                    UpdatedAt              = now.AddDays(-25),
+                },
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = petra.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(4),
+                    PlannedContent         = "Review and catch-up session.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                    IsDeleted              = false,
+                    IsCancelled            = false,
+                    CreatedAt              = now,
+                    UpdatedAt              = now,
+                }
+            );
+            await db.SaveChangesAsync();
+        }
+
+        // Hugo Seed — HMWK NOT DONE signal
+        var hugo = await UpsertStudentAsync(db, teacherId, new Student
+        {
+            TeacherId        = teacherId,
+            Name             = "Hugo Seed",
+            LearningLanguage = "English",
+            CefrLevel        = "A1",
+            NativeLanguages  = """["Dutch"]""",
+            LearningGoals    = "[]",
+            Interests        = "[]",
+            Difficulties     = "[]",
+            Weaknesses       = "[]",
+            PersonalNotes    = "[scenario-seed]",
+            IsActive         = true,
+        }, now);
+
+        var hugoSessionsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == hugo.Id && !s.IsDeleted);
+        if (!hugoSessionsExist)
+        {
+            db.SessionLogs.AddRange(
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = hugo.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(-14),
+                    PlannedContent         = "Basic greetings and introductions.",
+                    HomeworkAssigned       = "Write 5 sentences introducing yourself.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                    IsDeleted              = false,
+                    CreatedAt              = now.AddDays(-14),
+                    UpdatedAt              = now.AddDays(-14),
+                },
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = hugo.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(-5),
+                    PlannedContent         = "Numbers and days of the week.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotDone,
+                    IsDeleted              = false,
+                    CreatedAt              = now.AddDays(-5),
+                    UpdatedAt              = now.AddDays(-5),
+                }
+            );
+            await db.SaveChangesAsync();
+        }
+
+        logger.LogInformation("Scenario students seeded (Ana Seed, Marco Seed, Clara Seed, Diego Seed, Eva Seed, Petra Seed, Hugo Seed).");
     }
 
     private const string AnaVisualDifficulties =
