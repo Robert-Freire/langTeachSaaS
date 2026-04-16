@@ -167,34 +167,58 @@ describe('StudentProfileTab', () => {
       expect(screen.queryByTestId('reason-edit-btn')).not.toBeInTheDocument()
     })
 
-    it('switches to edit mode on pencil click', async () => {
+    it('switches to edit mode on trigger click', async () => {
       const onSave = vi.fn().mockResolvedValue(undefined)
       renderProfile(FULL_STUDENT, { onSaveReason: onSave })
-      fireEvent.click(screen.getByTestId('reason-edit-btn'))
+      fireEvent.click(screen.getByTestId('reason-edit-trigger'))
       expect(screen.getByTestId('reason-textarea')).toBeInTheDocument()
     })
 
-    it('calls onSaveReasonForStudying on save', async () => {
+    it('calls onSaveReasonForStudying on blur with trimmed value', async () => {
       const onSave = vi.fn().mockResolvedValue(undefined)
       renderProfile(FULL_STUDENT, { onSaveReason: onSave })
-      fireEvent.click(screen.getByTestId('reason-edit-btn'))
+      fireEvent.click(screen.getByTestId('reason-edit-trigger'))
       const textarea = screen.getByTestId('reason-textarea')
-      fireEvent.change(textarea, { target: { value: 'New reason' } })
-      fireEvent.click(screen.getByTestId('reason-save-btn'))
+      fireEvent.change(textarea, { target: { value: '  New reason  ' } })
+      fireEvent.blur(textarea)
       await waitFor(() => expect(onSave).toHaveBeenCalledWith('New reason'))
     })
 
-    it('cancels edit and restores original value', () => {
+    it('Escape exits edit mode and does not call onSave', async () => {
       const onSave = vi.fn().mockResolvedValue(undefined)
       renderProfile(FULL_STUDENT, { onSaveReason: onSave })
-      fireEvent.click(screen.getByTestId('reason-edit-btn'))
-      fireEvent.change(screen.getByTestId('reason-textarea'), { target: { value: 'Changed' } })
-      fireEvent.click(screen.getByTestId('reason-cancel-btn'))
+      fireEvent.click(screen.getByTestId('reason-edit-trigger'))
+      const textarea = screen.getByTestId('reason-textarea')
+      fireEvent.change(textarea, { target: { value: 'Changed' } })
+      fireEvent.keyDown(textarea, { key: 'Escape' })
+      // Edit mode exits: textarea gone, original quote restored
+      expect(screen.queryByTestId('reason-textarea')).not.toBeInTheDocument()
       expect(screen.getByTestId('reason-quote')).toHaveTextContent('Vive en Barcelona')
+      expect(onSave).not.toHaveBeenCalled()
+    })
+
+    it('shows SavedIndicator after successful save', async () => {
+      const onSave = vi.fn().mockResolvedValue(undefined)
+      renderProfile(FULL_STUDENT, { onSaveReason: onSave })
+      fireEvent.click(screen.getByTestId('reason-edit-trigger'))
+      const textarea = screen.getByTestId('reason-textarea')
+      fireEvent.change(textarea, { target: { value: 'New reason' } })
+      fireEvent.blur(textarea)
+      await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeInTheDocument())
+    })
+
+    it('shows error message when onSave rejects', async () => {
+      const onSave = vi.fn().mockRejectedValue(new Error('network'))
+      renderProfile(FULL_STUDENT, { onSaveReason: onSave })
+      fireEvent.click(screen.getByTestId('reason-edit-trigger'))
+      const textarea = screen.getByTestId('reason-textarea')
+      fireEvent.change(textarea, { target: { value: 'New reason' } })
+      fireEvent.blur(textarea)
+      await waitFor(() => expect(screen.getByTestId('reason-save-error')).toBeInTheDocument())
     })
   })
 
-  describe('Working Memory sidebar (right col top)', () => {
+  describe('Working Memory sidebar (right col top, always visible)', () => {
     it('shows identity fields when populated', () => {
       renderProfile(FULL_STUDENT)
       expect(screen.getByText('Rome, Italy')).toBeInTheDocument()
@@ -204,53 +228,62 @@ describe('StudentProfileTab', () => {
       expect(screen.getByText('Film student')).toBeInTheDocument()
     })
 
-    it('is hidden when no identity data (empty state collapse)', () => {
+    it('is always visible even when no identity data (unconditional render)', () => {
       renderProfile(EMPTY_STUDENT)
-      // section is not rendered when empty by default
-      expect(screen.queryByTestId('profile-about')).not.toBeInTheDocument()
-    })
-
-    it('shows empty state when revealed via show-all toggle', () => {
-      renderProfile(EMPTY_STUDENT)
-      const toggle = screen.getByTestId('show-empty-sections-btn')
-      fireEvent.click(toggle)
+      // TWM right sidebar is now always rendered, no need to click show-all
       expect(screen.getByTestId('profile-about')).toBeInTheDocument()
       expect(screen.getByText('No identity details added yet')).toBeInTheDocument()
     })
   })
 
-  describe('Interests section (right column)', () => {
-    it('renders interest tags', () => {
+  describe('Interests section (right column, always-editable)', () => {
+    it('renders interest chips', () => {
       renderProfile(FULL_STUDENT)
       const section = screen.getByTestId('profile-interests')
       expect(section).toBeInTheDocument()
       const tags = screen.getAllByTestId('interest-tag')
-      expect(tags.some((t) => t.textContent === 'cinema')).toBe(true)
+      expect(tags.some((t) => t.textContent?.includes('cinema'))).toBe(true)
     })
 
-    it('shows empty state when no interests', () => {
-      renderProfile(EMPTY_STUDENT)
-      expect(screen.getByText('No interests added yet')).toBeInTheDocument()
-    })
-
-    it('shows edit/add buttons when onSaveInterests provided', () => {
+    it('chip input is always visible without any interaction', () => {
       renderProfile(FULL_STUDENT, { onSaveInterests: vi.fn().mockResolvedValue(undefined) })
-      expect(screen.getByTestId('interests-edit-btn')).toBeInTheDocument()
-      expect(screen.getByTestId('interests-add-btn')).toBeInTheDocument()
-    })
-
-    it('enters edit mode and shows input', () => {
-      renderProfile(FULL_STUDENT, { onSaveInterests: vi.fn().mockResolvedValue(undefined) })
-      fireEvent.click(screen.getByTestId('interests-edit-btn'))
       expect(screen.getByTestId('interests-input')).toBeInTheDocument()
     })
 
-    it('calls onSaveInterests on save', async () => {
+    it('Enter key adds chip and calls onSave', async () => {
       const onSave = vi.fn().mockResolvedValue(undefined)
       renderProfile(FULL_STUDENT, { onSaveInterests: onSave })
-      fireEvent.click(screen.getByTestId('interests-edit-btn'))
-      fireEvent.click(screen.getByTestId('interests-save-btn'))
-      await waitFor(() => expect(onSave).toHaveBeenCalled())
+      const input = screen.getByTestId('interests-input')
+      fireEvent.change(input, { target: { value: 'gaming' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+      await waitFor(() => expect(onSave).toHaveBeenCalledWith(['cinema', 'cooking', 'gaming']))
+    })
+
+    it('comma key adds chip and calls onSave', async () => {
+      const onSave = vi.fn().mockResolvedValue(undefined)
+      renderProfile(FULL_STUDENT, { onSaveInterests: onSave })
+      const input = screen.getByTestId('interests-input')
+      fireEvent.change(input, { target: { value: 'gaming' } })
+      fireEvent.keyDown(input, { key: ',' })
+      await waitFor(() => expect(onSave).toHaveBeenCalledWith(['cinema', 'cooking', 'gaming']))
+    })
+
+    it('clicking × removes chip and calls onSave', async () => {
+      const onSave = vi.fn().mockResolvedValue(undefined)
+      renderProfile(FULL_STUDENT, { onSaveInterests: onSave })
+      const removeBtn = screen.getByTestId('interest-remove-cinema')
+      fireEvent.click(removeBtn)
+      await waitFor(() => expect(onSave).toHaveBeenCalledWith(['cooking']))
+    })
+
+    it('does not call onSave on each keystroke', () => {
+      const onSave = vi.fn().mockResolvedValue(undefined)
+      renderProfile(FULL_STUDENT, { onSaveInterests: onSave })
+      const input = screen.getByTestId('interests-input')
+      fireEvent.change(input, { target: { value: 'c' } })
+      fireEvent.change(input, { target: { value: 'co' } })
+      fireEvent.change(input, { target: { value: 'coo' } })
+      expect(onSave).not.toHaveBeenCalled()
     })
   })
 
@@ -597,22 +630,28 @@ describe('StudentProfileTab', () => {
   })
 
   describe('Empty state progressive disclosure', () => {
-    it('shows "show all sections" toggle when some sections are empty', () => {
+    it('shows "show all sections" toggle when left column dark TWM is empty', () => {
       renderProfile(EMPTY_STUDENT)
+      // EMPTY_STUDENT has no notes, so left column dark TWM is collapsed
       expect(screen.getByTestId('show-empty-sections-btn')).toBeInTheDocument()
     })
 
     it('does not show the toggle when all sections have data', () => {
       renderProfile(FULL_STUDENT)
-      // FULL_STUDENT has profession/birthYear/notes, so no sections collapsed
+      // FULL_STUDENT has notes, so left column dark TWM is visible
       expect(screen.queryByTestId('show-empty-sections-btn')).not.toBeInTheDocument()
     })
 
-    it('reveals hidden sections after clicking show-all', () => {
+    it('right sidebar TWM (profile-about) is always visible, not controlled by show-all', () => {
       renderProfile(EMPTY_STUDENT)
-      expect(screen.queryByTestId('profile-about')).not.toBeInTheDocument()
-      fireEvent.click(screen.getByTestId('show-empty-sections-btn'))
+      // TWM right sidebar is unconditionally rendered
       expect(screen.getByTestId('profile-about')).toBeInTheDocument()
+    })
+
+    it('reveals left column dark TWM after clicking show-all', () => {
+      renderProfile(EMPTY_STUDENT)
+      expect(screen.queryByTestId('profile-teachers-working-memory')).not.toBeInTheDocument()
+      fireEvent.click(screen.getByTestId('show-empty-sections-btn'))
       expect(screen.getByTestId('profile-teachers-working-memory')).toBeInTheDocument()
     })
 

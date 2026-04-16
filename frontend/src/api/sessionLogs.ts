@@ -76,6 +76,7 @@ export interface CreateSessionLogRequest {
   mentionedDifficultyPairs?: { Competency: string; Subcategory: string }[]
   suggestedDifficulties?: SuggestedDifficulty[]
   duration?: number | null
+  title?: string | null
   voiceNoteId?: string
   voiceNoteTranscription?: string
   rawExtractionJson?: string
@@ -151,6 +152,32 @@ export async function updateSession(
     data,
   )
   return res.data
+}
+
+export async function patchSessionField(
+  studentId: string,
+  session: SessionLog,
+  patch: Partial<Pick<UpdateSessionLogRequest, 'title' | 'actualContent' | 'duration' | 'nextSessionTopics'>>,
+): Promise<SessionLog> {
+  const payload: UpdateSessionLogRequest = {
+    sessionDate: session.sessionDate,
+    plannedContent: session.plannedContent,
+    actualContent: session.actualContent,
+    homeworkAssigned: session.homeworkAssigned,
+    previousHomeworkStatus: session.previousHomeworkStatusName || 'NotApplicable',
+    nextSessionTopics: session.nextSessionTopics,
+    generalNotes: session.generalNotes,
+    levelReassessmentSkill: session.levelReassessmentSkill,
+    levelReassessmentLevel: session.levelReassessmentLevel,
+    linkedLessonId: session.linkedLessonId,
+    topicTags: session.topicTags,
+    isCancelled: session.isCancelled,
+    status: session.statusName,
+    duration: session.duration,
+    title: session.title,
+    ...patch,
+  }
+  return updateSession(studentId, session.id, payload)
 }
 
 export async function deleteSession(studentId: string, sessionId: string): Promise<void> {

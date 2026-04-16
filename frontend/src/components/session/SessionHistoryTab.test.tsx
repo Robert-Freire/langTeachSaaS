@@ -15,6 +15,7 @@ vi.mock('react-router-dom', async (importOriginal) => {
 vi.mock('../../api/sessionLogs', () => ({
   listSessions: vi.fn(),
   deleteSession: vi.fn(),
+  patchSessionField: vi.fn(),
   updateSession: vi.fn(),
   createSession: vi.fn(),
   serializeTopicTags: vi.fn((tags) => JSON.stringify(tags)),
@@ -133,8 +134,9 @@ describe('SessionHistoryTab', () => {
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
     expect(screen.getByTestId('session-entry-detail')).toBeInTheDocument()
-    // actualContent appears exactly once (in the narrative section, not also in collapsed row)
-    expect(screen.getAllByText(/Covered basics and exercises/)).toHaveLength(1)
+    // collapsed snippet <p> gone; actualContent now appears in the editable narrative textarea
+    expect(screen.queryByText(/Covered basics and exercises/, { selector: 'p' })).not.toBeInTheDocument()
+    expect(screen.getByDisplayValue(/Covered basics and exercises/)).toBeInTheDocument()
     // plannedContent appears in the detail (since it differs from actualContent)
     expect(screen.getByText(/Preterito indefinido intro/)).toBeInTheDocument()
   })
@@ -187,39 +189,19 @@ describe('SessionHistoryTab', () => {
     expect(chips[1]).toHaveTextContent('viajes')
   })
 
-  it('shows kebab menu trigger in collapsed row', async () => {
+  it('does not show kebab trigger in the collapsed row', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
-    expect(screen.getByTestId('session-kebab-trigger')).toBeInTheDocument()
+    expect(screen.queryByTestId('session-kebab-trigger')).not.toBeInTheDocument()
   })
 
-  it('shows delete button in kebab menu', async () => {
+  it('shows delete button in expanded row', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
-    fireEvent.click(screen.getByTestId('session-kebab-trigger'))
-    expect(await screen.findByTestId('delete-session-button')).toBeInTheDocument()
-  })
-
-  it('shows edit button in kebab menu', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
-    wrapper()
-    await screen.findByTestId('session-entry')
-    fireEvent.click(screen.getByTestId('session-kebab-trigger'))
-    expect(await screen.findByTestId('edit-session-button')).toBeInTheDocument()
-  })
-
-  it('clicking edit button navigates to the edit session route', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
-    wrapper()
-    await screen.findByTestId('session-entry')
-    fireEvent.click(screen.getByTestId('session-kebab-trigger'))
-    const editBtn = await screen.findByTestId('edit-session-button')
-    fireEvent.click(editBtn)
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith(`/students/student-1/sessions/${SESSION_BASE.id}/edit`)
-    })
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    expect(await screen.findByTestId('delete-session-btn')).toBeInTheDocument()
   })
 
   it('does not call deleteSession when delete button is clicked without confirming', async () => {
@@ -227,8 +209,8 @@ describe('SessionHistoryTab', () => {
     vi.mocked(sessionLogsApi.deleteSession).mockResolvedValue(undefined)
     wrapper()
     await screen.findByTestId('session-entry')
-    fireEvent.click(screen.getByTestId('session-kebab-trigger'))
-    const deleteBtn = await screen.findByTestId('delete-session-button')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const deleteBtn = await screen.findByTestId('delete-session-btn')
     fireEvent.click(deleteBtn)
     // Dialog opens but we cancel
     const cancelBtn = await screen.findByRole('button', { name: /cancel/i })
@@ -241,8 +223,8 @@ describe('SessionHistoryTab', () => {
     vi.mocked(sessionLogsApi.deleteSession).mockResolvedValue(undefined)
     wrapper()
     await screen.findByTestId('session-entry')
-    fireEvent.click(screen.getByTestId('session-kebab-trigger'))
-    const deleteBtn = await screen.findByTestId('delete-session-button')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const deleteBtn = await screen.findByTestId('delete-session-btn')
     fireEvent.click(deleteBtn)
     const confirmBtn = await screen.findByTestId('confirm-delete-session')
     fireEvent.click(confirmBtn)
@@ -365,35 +347,33 @@ describe('SessionHistoryTab', () => {
     expect(screen.queryByTestId('next-session-topics-preview')).not.toBeInTheDocument()
   })
 
-  it('shows next session topics section with amber styling in expanded state', async () => {
+  it('shows next plan textarea with amber heading and value in expanded state', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    const section = screen.getByTestId('next-session-topics-section')
-    expect(section).toBeInTheDocument()
-    expect(section).toHaveTextContent('Planned for next class')
-    expect(section).toHaveTextContent('Review irregular verbs')
+    expect(screen.getByText('Planned for next class')).toBeInTheDocument()
+    const textarea = screen.getByTestId('session-next-plan-input')
+    expect(textarea).toBeInTheDocument()
+    expect(textarea).toHaveValue('Review irregular verbs')
   })
 
-  it('does not show next session topics section when nextSessionTopics is null', async () => {
+  it('does not show start-next-session-button when nextSessionTopics is null', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
       { ...SESSION_BASE, nextSessionTopics: null },
     ])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    expect(screen.queryByTestId('next-session-topics-section')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('start-next-session-button')).not.toBeInTheDocument()
   })
 
-  it('shows "Start next session" button inside the amber card when nextSessionTopics is non-empty', async () => {
+  it('shows "Start next session" button when nextSessionTopics is non-empty', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    const section = screen.getByTestId('next-session-topics-section')
-    const button = section.querySelector('[data-testid="start-next-session-button"]')
-    expect(button).not.toBeNull()
+    expect(screen.getByTestId('start-next-session-button')).toBeInTheDocument()
   })
 
   it('does not show "Start next session" button when nextSessionTopics is null', async () => {

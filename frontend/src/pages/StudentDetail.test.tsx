@@ -525,7 +525,8 @@ describe('StudentDetail - Profile tab sections', () => {
     await openProfileTab()
     // identity sidebar is collapsed (no data) — show-empty-sections toggle is visible instead
     await screen.findByTestId('show-empty-sections-btn')
-    expect(screen.queryByTestId('profile-about')).not.toBeInTheDocument()
+    // profile-about (Teacher's Working Memory) is always visible regardless of identity data
+    expect(screen.getByTestId('profile-about')).toBeInTheDocument()
     // these sections are always shown (inside Pedagogical Diagnostic card)
     expect(screen.getByText('No learning goals set')).toBeInTheDocument()
     expect(screen.getByText('No objectives set')).toBeInTheDocument()
