@@ -233,6 +233,39 @@ describe('SessionHistoryTab', () => {
     })
   })
 
+  it('blurring session title calls patchSessionField and shows saved indicator', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.patchSessionField).mockResolvedValue({ ...SESSION_BASE, title: 'New Title' })
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const titleInput = screen.getByTestId('session-title-input')
+    fireEvent.change(titleInput, { target: { value: 'New Title' } })
+    fireEvent.blur(titleInput)
+    await waitFor(() => {
+      expect(sessionLogsApi.patchSessionField).toHaveBeenCalledWith(
+        'student-1',
+        expect.objectContaining({ id: 'session-1' }),
+        { title: 'New Title' },
+      )
+    })
+    expect(await screen.findByTestId('saved-indicator')).toBeInTheDocument()
+  })
+
+  it('Escape on session narrative reverts value and does not call patchSessionField', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const narrativeInput = screen.getByTestId('session-narrative-input')
+    fireEvent.change(narrativeInput, { target: { value: 'Edited content' } })
+    fireEvent.keyDown(narrativeInput, { key: 'Escape' })
+    await waitFor(() => {
+      expect(sessionLogsApi.patchSessionField).not.toHaveBeenCalled()
+    })
+    expect(screen.getByDisplayValue('Covered basics and exercises')).toBeInTheDocument()
+  })
+
   it('shows separate action item and note counts when both are set', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
