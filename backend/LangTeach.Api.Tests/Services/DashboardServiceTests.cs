@@ -636,7 +636,8 @@ public class DashboardServiceTests : IDisposable
     public async Task GetAsync_AllSessionsHomeworkNotApplicable_LastHomeworkStatusIsNull()
     {
         _db.SessionLogs.Add(MakeSession(_studentId, DateTime.UtcNow.AddDays(-7),
-            previousHomeworkStatus: HomeworkStatus.NotApplicable));
+            previousHomeworkStatus: HomeworkStatus.NotApplicable,
+            homeworkAssigned: "Worksheet 3"));
         _db.SaveChanges();
 
         var result = await _sut.GetAsync(_teacherId);
@@ -648,7 +649,8 @@ public class DashboardServiceTests : IDisposable
     public async Task GetAsync_MostRecentSessionHomeworkDone_ReturnsDone()
     {
         _db.SessionLogs.Add(MakeSession(_studentId, DateTime.UtcNow.AddDays(-7),
-            previousHomeworkStatus: HomeworkStatus.Done));
+            previousHomeworkStatus: HomeworkStatus.Done,
+            homeworkAssigned: "Write 8 sentences"));
         _db.SaveChanges();
 
         var result = await _sut.GetAsync(_teacherId);
@@ -660,7 +662,8 @@ public class DashboardServiceTests : IDisposable
     public async Task GetAsync_MostRecentSessionHomeworkPartial_ReturnsPartial()
     {
         _db.SessionLogs.Add(MakeSession(_studentId, DateTime.UtcNow.AddDays(-7),
-            previousHomeworkStatus: HomeworkStatus.Partial));
+            previousHomeworkStatus: HomeworkStatus.Partial,
+            homeworkAssigned: "Reading exercise"));
         _db.SaveChanges();
 
         var result = await _sut.GetAsync(_teacherId);
@@ -672,7 +675,8 @@ public class DashboardServiceTests : IDisposable
     public async Task GetAsync_MostRecentSessionHomeworkNotDone_ReturnsNotDone()
     {
         _db.SessionLogs.Add(MakeSession(_studentId, DateTime.UtcNow.AddDays(-7),
-            previousHomeworkStatus: HomeworkStatus.NotDone));
+            previousHomeworkStatus: HomeworkStatus.NotDone,
+            homeworkAssigned: "Essay draft"));
         _db.SaveChanges();
 
         var result = await _sut.GetAsync(_teacherId);
@@ -685,9 +689,11 @@ public class DashboardServiceTests : IDisposable
     {
         _db.SessionLogs.AddRange(
             MakeSession(_studentId, DateTime.UtcNow.AddDays(-14),
-                previousHomeworkStatus: HomeworkStatus.Done),
+                previousHomeworkStatus: HomeworkStatus.Done,
+                homeworkAssigned: "Exercise A"),
             MakeSession(_studentId, DateTime.UtcNow.AddDays(-7),
-                previousHomeworkStatus: HomeworkStatus.NotDone)
+                previousHomeworkStatus: HomeworkStatus.NotDone,
+                homeworkAssigned: "Exercise B")
         );
         _db.SaveChanges();
 
