@@ -19,13 +19,18 @@ function ageBadge(createdAt: string): AgeBadgeInfo {
     dotColor: 'bg-emerald-500',
     badgeClassName: 'bg-emerald-100 text-emerald-700',
   }
+  if (days === 1) return {
+    label: 'YESTERDAY',
+    dotColor: 'bg-amber-400',
+    badgeClassName: 'bg-amber-100 text-amber-700',
+  }
   if (days <= 3) return {
-    label: `${days}D OLD`,
+    label: `${days} DAYS AGO`,
     dotColor: 'bg-amber-400',
     badgeClassName: 'bg-amber-100 text-amber-700',
   }
   return {
-    label: `${days}D OVERDUE`,
+    label: `${days} DAYS OVERDUE`,
     dotColor: 'bg-red-500',
     badgeClassName: 'bg-red-100 text-red-700',
   }

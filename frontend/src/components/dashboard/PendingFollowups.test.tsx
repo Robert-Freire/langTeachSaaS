@@ -60,15 +60,21 @@ describe('PendingFollowups', () => {
     expect(screen.getByTestId('followup-age-f1')).toHaveTextContent('TODAY')
   })
 
-  it('shows OVERDUE badge for followup more than 3 days old', () => {
+  it('shows DAYS OVERDUE badge for followup more than 3 days old', () => {
     const old = new Date(Date.now() - 7 * 86400000).toISOString()
     render(<PendingFollowups followups={[makeFollowup({ id: 'f1', createdAt: old })]} />)
-    expect(screen.getByTestId('followup-age-f1')).toHaveTextContent('OVERDUE')
+    expect(screen.getByTestId('followup-age-f1')).toHaveTextContent('DAYS OVERDUE')
   })
 
-  it('shows OLD badge for followup 1-3 days old', () => {
+  it('shows YESTERDAY badge for followup 1 day old', () => {
+    const yesterday = new Date(Date.now() - 1 * 86400000).toISOString()
+    render(<PendingFollowups followups={[makeFollowup({ id: 'f1', createdAt: yesterday })]} />)
+    expect(screen.getByTestId('followup-age-f1')).toHaveTextContent('YESTERDAY')
+  })
+
+  it('shows DAYS AGO badge for followup 2-3 days old', () => {
     const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString()
     render(<PendingFollowups followups={[makeFollowup({ id: 'f1', createdAt: twoDaysAgo })]} />)
-    expect(screen.getByTestId('followup-age-f1')).toHaveTextContent('OLD')
+    expect(screen.getByTestId('followup-age-f1')).toHaveTextContent('DAYS AGO')
   })
 })

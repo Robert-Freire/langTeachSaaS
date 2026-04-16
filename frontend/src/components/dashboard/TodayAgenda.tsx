@@ -1,3 +1,4 @@
+import type React from 'react'
 import { Link } from 'react-router-dom'
 import { CefrBadge } from './CefrBadge'
 import type { TodaySession, UpcomingSession } from '@/api/dashboard'
@@ -64,6 +65,30 @@ export function TodayAgenda({ sessions, nextSessionId, upcomingThisWeek }: Today
     )
   }
 
+  const now = new Date()
+
+  function sessionStatusChip(session: TodaySession, isNext: boolean): React.ReactNode {
+    if (isNext) {
+      return (
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[0.6875rem] font-bold font-inter uppercase tracking-[0.05em] shrink-0 bg-indigo-100 text-indigo-700">
+          NEXT SESSION
+        </span>
+      )
+    }
+    if (new Date(session.sessionDate) < now) {
+      return (
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[0.6875rem] font-bold font-inter uppercase tracking-[0.05em] shrink-0 bg-zinc-100 text-zinc-400">
+          DONE
+        </span>
+      )
+    }
+    return (
+      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[0.6875rem] font-bold font-inter uppercase tracking-[0.05em] shrink-0 bg-zinc-100 text-zinc-500">
+        SCHEDULED
+      </span>
+    )
+  }
+
   return (
     <div className="rounded-2xl bg-white p-5 shadow-[0_12px_40px_rgba(26,27,34,0.06)] ring-1 ring-[#C7C4D8]/20" data-testid="zone2-today-agenda">
       <h3 className="font-manrope text-[1.25rem] font-bold text-[#1A1B22] mb-4">Today's Agenda</h3>
@@ -92,6 +117,7 @@ export function TodayAgenda({ sessions, nextSessionId, upcomingThisWeek }: Today
                   {session.plannedContent}
                 </span>
               )}
+              {sessionStatusChip(session, isNext)}
             </Link>
           )
         })}
