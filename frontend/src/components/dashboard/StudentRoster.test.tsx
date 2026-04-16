@@ -102,9 +102,45 @@ describe('StudentRoster', () => {
         <StudentRoster students={[makeStudent({ nativeLanguages: [] })]} />
       </MemoryRouter>,
     )
-    // Multiple dashes may appear (Last, Next also show — for nulls in this case)
     const cells = screen.getAllByText('—')
     expect(cells.length).toBeGreaterThan(0)
+  })
+
+  it('shows paired last/next dates with arrow when both exist', () => {
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent({
+          lastSessionDate: new Date(Date.now() - 3 * 86400000).toISOString(),
+          nextSessionDate: new Date(Date.now() + 5 * 86400000).toISOString(),
+        })]} />
+      </MemoryRouter>,
+    )
+    const row = screen.getByTestId('zone3-student-row')
+    expect(row.textContent).toMatch(/→/)
+    // The → appears in the data cell, not just the nav link
+    const cells = row.querySelectorAll('td')
+    const lastNextCell = Array.from(cells).find(td => td.textContent?.includes('→'))
+    expect(lastNextCell).toBeTruthy()
+  })
+
+  it('shows only last date when no next session', () => {
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent({ nextSessionDate: null })]} />
+      </MemoryRouter>,
+    )
+    const row = screen.getByTestId('zone3-student-row')
+    // The data row itself should not contain →
+    expect(row.textContent).not.toMatch(/→/)
+  })
+
+  it('shows relative Today for last session today', () => {
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent({ lastSessionDate: new Date().toISOString(), nextSessionDate: null })]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Today')).toBeInTheDocument()
   })
 
   it('shows Review pending signal when student has pending todos', () => {

@@ -63,7 +63,7 @@ describe('TodayAgenda', () => {
     expect(screen.getByText('Carmen')).toBeInTheDocument()
   })
 
-  it('highlights the next session', () => {
+  it('highlights the next session and shows NEXT SESSION chip', () => {
     const session = makeSession({ sessionLogId: 'sl-next' })
     render(
       <MemoryRouter>
@@ -72,6 +72,33 @@ describe('TodayAgenda', () => {
     )
     const link = screen.getByRole('link', { name: /Ana/ })
     expect(link.className).toContain('border-l-indigo-600')
+    expect(screen.getByText('NEXT SESSION')).toBeInTheDocument()
+  })
+
+  it('shows DONE chip for past session', () => {
+    const pastSession = makeSession({
+      sessionLogId: 'sl-past',
+      sessionDate: new Date(Date.now() - 2 * 3600000).toISOString(),
+    })
+    render(
+      <MemoryRouter>
+        <TodayAgenda sessions={[pastSession]} nextSessionId={null} upcomingThisWeek={[]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('DONE')).toBeInTheDocument()
+  })
+
+  it('shows SCHEDULED chip for future session today', () => {
+    const futureSession = makeSession({
+      sessionLogId: 'sl-future',
+      sessionDate: new Date(Date.now() + 2 * 3600000).toISOString(),
+    })
+    render(
+      <MemoryRouter>
+        <TodayAgenda sessions={[futureSession]} nextSessionId={null} upcomingThisWeek={[]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('SCHEDULED')).toBeInTheDocument()
   })
 
   it('renders zone2-today-agenda testid', () => {

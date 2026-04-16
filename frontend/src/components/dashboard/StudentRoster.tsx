@@ -58,9 +58,17 @@ function sortStudents(students: ActiveStudent[], sortBy: SortOption): ActiveStud
   }
 }
 
-function formatDate(dateStr: string | null): string {
+function formatRelativeDate(dateStr: string | null): string {
   if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' })
+  const date = new Date(dateStr)
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const diffDays = Math.round((dateStart.getTime() - todayStart.getTime()) / 86400000)
+  if (diffDays === 0) return 'Today'
+  if (diffDays === -1) return 'Yesterday'
+  if (diffDays < 0 && diffDays >= -29) return `${Math.abs(diffDays)}d ago`
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -157,9 +165,8 @@ export function StudentRoster({ students }: StudentRosterProps) {
                 <th className="px-6 py-2 text-left text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">Name</th>
                 <th className="px-3 py-2 text-left text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">Level</th>
                 <th className="px-3 py-2 text-left text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 hidden sm:table-cell">L1</th>
-                <th className="px-3 py-2 text-left text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 hidden sm:table-cell">Last</th>
-                <th className="px-3 py-2 text-left text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 hidden sm:table-cell">Next</th>
-                <th className="px-3 py-2 text-left text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 hidden md:table-cell">Signal</th>
+                <th className="px-3 py-2 text-left text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 hidden sm:table-cell">Last / Next</th>
+                <th className="px-3 py-2 text-left text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 hidden md:table-cell">Activity Signal</th>
               </tr>
             </thead>
             <tbody>
@@ -188,10 +195,9 @@ export function StudentRoster({ students }: StudentRosterProps) {
                       {l1 ?? '—'}
                     </td>
                     <td className="px-3 py-2.5 text-zinc-500 hidden sm:table-cell">
-                      {formatDate(student.lastSessionDate)}
-                    </td>
-                    <td className="px-3 py-2.5 text-zinc-500 hidden sm:table-cell">
-                      {formatDate(student.nextSessionDate)}
+                      {student.nextSessionDate
+                        ? `${formatRelativeDate(student.lastSessionDate)} → ${formatRelativeDate(student.nextSessionDate)}`
+                        : formatRelativeDate(student.lastSessionDate)}
                     </td>
                     <td className="px-3 py-2.5 hidden md:table-cell">
                       {signal && (
