@@ -198,13 +198,25 @@ export default function Students() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const searchQuery = searchParams.get('q') ?? ''
   const cefrFilter = searchParams.get('level') ?? 'All'
   const sortBy = (searchParams.get('sort') as SortOption) ?? 'lastSession'
   const visibleCount = Number(searchParams.get('count') ?? PAGE_SIZE)
 
+  const [localSearch, setLocalSearch] = useState(() => searchParams.get('q') ?? '')
   const [sortOpen, setSortOpen] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev)
+        if (localSearch) { next.set('q', localSearch) } else { next.delete('q') }
+        next.delete('count')
+        return next
+      }, { replace: true })
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [localSearch, setSearchParams])
 
   useEffect(() => {
     if (!sortOpen) return
@@ -250,7 +262,7 @@ export default function Students() {
   const allStudents = studentsData?.items ?? []
 
   const filteredStudents = allStudents.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = s.name.toLowerCase().includes(localSearch.toLowerCase())
     const matchesCefr = cefrFilter === 'All' || s.cefrLevel === cefrFilter
     return matchesSearch && matchesCefr
   })
@@ -262,9 +274,9 @@ export default function Students() {
 
   function buildSubtitle(): string {
     const total = allStudents.length
-    if (searchQuery) {
+    if (localSearch) {
       const count = filteredStudents.length
-      return `Showing ${count} result${count === 1 ? '' : 's'} for '${searchQuery}'`
+      return `Showing ${count} result${count === 1 ? '' : 's'} for '${localSearch}'`
     }
     if (cefrFilter !== 'All') {
       const count = allStudents.filter(s => s.cefrLevel === cefrFilter).length
@@ -342,8 +354,8 @@ export default function Students() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 pointer-events-none" />
             <Input
               placeholder="Search students..."
-              value={searchQuery}
-              onChange={e => updateParam({ q: e.target.value, count: null })}
+              value={localSearch}
+              onChange={e => setLocalSearch(e.target.value)}
               className="pl-8 h-8 text-sm bg-white border-zinc-200 focus-visible:ring-indigo-500"
             />
           </div>
@@ -542,21 +554,21 @@ export default function Students() {
 
           {/* Pagination footer */}
           {sortedStudents.length > 0 && (
-            <div className="px-4 py-3 flex items-center border-t border-zinc-50 relative">
+            <div className="px-4 py-3 grid grid-cols-[1fr_auto_1fr] items-center border-t border-zinc-50">
               <span className="text-xs text-zinc-400">
                 Showing {Math.min(visibleCount, sortedStudents.length)} of {sortedStudents.length} student{sortedStudents.length === 1 ? '' : 's'}
               </span>
-              {visibleCount < sortedStudents.length && (
+              {visibleCount < sortedStudents.length ? (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => updateParam({ count: String(visibleCount + PAGE_SIZE) })}
                   data-testid="load-more"
-                  className="absolute left-1/2 -translate-x-1/2"
                 >
                   Load more
                 </Button>
-              )}
+              ) : <span />}
+              <span />
             </div>
           )}
         </div>
