@@ -202,11 +202,23 @@ export default function Students() {
   const sortBy = (searchParams.get('sort') as SortOption) ?? 'lastSession'
   const visibleCount = Number(searchParams.get('count') ?? PAGE_SIZE)
 
-  const [localSearch, setLocalSearch] = useState(() => searchParams.get('q') ?? '')
+  const qFromUrl = searchParams.get('q') ?? ''
+  const [localSearch, setLocalSearch] = useState(() => qFromUrl)
   const [sortOpen, setSortOpen] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
+  const didInitSearchRef = useRef(false)
 
+  // Sync input when URL changes via back/forward navigation
   useEffect(() => {
+    setLocalSearch(qFromUrl)
+  }, [qFromUrl])
+
+  // Debounce URL write; skip on mount to avoid wiping ?count from a shared URL
+  useEffect(() => {
+    if (!didInitSearchRef.current) {
+      didInitSearchRef.current = true
+      return
+    }
     const timer = setTimeout(() => {
       setSearchParams(prev => {
         const next = new URLSearchParams(prev)
