@@ -251,10 +251,18 @@ function MotivationHero({
   const lastSavedRef = useRef(student.reasonForStudying ?? '')
   const isRevertingRef = useRef(false)
 
-  // Keep lastSavedRef in sync with server state (no setState -- draft is set from prop when entering edit)
+  // Keep lastSavedRef in sync with server state when not editing; draft is set from prop on edit enter
   useEffect(() => {
-    lastSavedRef.current = student.reasonForStudying ?? ''
-  }, [student.reasonForStudying])
+    if (!editing) lastSavedRef.current = student.reasonForStudying ?? ''
+  }, [student.reasonForStudying, editing])
+
+  // Clear timers on unmount to avoid setState on unmounted component
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+    }
+  }, [])
 
   async function handleBlur() {
     if (!onSave || isRevertingRef.current) {
@@ -325,10 +333,10 @@ function MotivationHero({
               {student.reasonForStudying ? (
                 <div
                   className="flex items-start gap-2 cursor-pointer"
-                  onClick={() => { setDraft(student.reasonForStudying ?? ''); setEditing(true) }}
+                  onClick={() => { const v = student.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setDraft(student.reasonForStudying ?? ''); setEditing(true) } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
                   data-testid="reason-edit-trigger"
                 >
                   <p
@@ -350,10 +358,10 @@ function MotivationHero({
               ) : (
                 <div
                   className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => { setDraft(student.reasonForStudying ?? ''); setEditing(true) }}
+                  onClick={() => { const v = student.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setDraft(student.reasonForStudying ?? ''); setEditing(true) } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
                   data-testid="reason-edit-trigger"
                 >
                   <p className="font-manrope text-lg italic text-zinc-400 flex-1" data-testid="reason-quote">
@@ -414,6 +422,13 @@ function InterestsSection({
   const inputRef = useRef<HTMLInputElement>(null)
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+    }
+  }, [])
 
   async function commitAdd(value: string) {
     const trimmed = value.trim()

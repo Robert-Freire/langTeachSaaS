@@ -154,6 +154,10 @@ export async function updateSession(
   return res.data
 }
 
+function parseJsonArray<T>(json: string): T[] {
+  try { return JSON.parse(json) as T[] } catch { return [] }
+}
+
 export async function patchSessionField(
   studentId: string,
   session: SessionLog,
@@ -175,6 +179,9 @@ export async function patchSessionField(
     status: session.statusName,
     duration: session.duration,
     title: session.title,
+    // Preserve AI-generated fields so the PUT does not silently clear them
+    mentionedDifficultyPairs: parseJsonArray(session.mentionedDifficultyPairs),
+    suggestedDifficulties: parseJsonArray(session.suggestedDifficulties),
     ...patch,
   }
   return updateSession(studentId, session.id, payload)

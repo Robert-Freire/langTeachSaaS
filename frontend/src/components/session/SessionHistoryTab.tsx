@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ChevronDown,
@@ -84,6 +84,13 @@ function SessionEntry({
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isRevertingRef = useRef(false)
 
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+    }
+  }, [])
+
   const { mutate: softDelete, isPending: isDeleting } = useMutation({
     mutationFn: () => deleteSession(studentId, session.id),
     onSuccess: () => {
@@ -106,7 +113,18 @@ function SessionEntry({
     if (value === savedValue) return
     const patch: Record<string, string | number | null> = {}
     if (field === 'duration') {
-      patch[field] = value === '' ? null : Number(value)
+      if (value === '') {
+        patch[field] = null
+      } else {
+        const n = Number(value)
+        if (!Number.isFinite(n) || n < 0) {
+          setFieldError('Invalid duration')
+          if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+          errorTimerRef.current = setTimeout(() => setFieldError(null), 3000)
+          return
+        }
+        patch[field] = n
+      }
     } else {
       patch[field] = value || null
     }

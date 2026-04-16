@@ -344,8 +344,8 @@ test('student profile tab: motivation Escape reverts value', async ({ browser })
 
     // After escape, edit mode exits and original quote is visible
     await expect(page.getByTestId('reason-quote')).toBeVisible({ timeout: UI_TIMEOUT })
-    // SavedIndicator should NOT appear
-    await expect(page.getByTestId('saved-indicator')).not.toBeVisible()
+    // SavedIndicator should NOT appear — use toHaveCount(0) to avoid race with deferred mount
+    await expect(page.getByTestId('saved-indicator')).toHaveCount(0)
   } finally {
     await context.close()
   }
