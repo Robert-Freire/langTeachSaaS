@@ -256,13 +256,9 @@ public class DashboardService : IDashboardService
                 .Min();
             DateTime? nearestObjectiveDeadline = nearestDeadline == DateTime.MinValue ? null : nearestDeadline;
 
-            string? lastHomeworkStatus = r.LastHomeworkStatusRaw switch
-            {
-                (int)HomeworkStatus.NotDone => "NotDone",
-                (int)HomeworkStatus.Partial => "Partial",
-                (int)HomeworkStatus.Done    => "Done",
-                _ => null
-            };
+            string? lastHomeworkStatus = r.LastHomeworkStatusRaw.HasValue
+                ? ((HomeworkStatus)r.LastHomeworkStatusRaw.Value).ToString()
+                : null;
 
             return new ActiveStudentDto(
                 StudentId: r.Id,
