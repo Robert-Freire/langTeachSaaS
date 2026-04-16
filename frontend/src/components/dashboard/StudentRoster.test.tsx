@@ -17,6 +17,8 @@ function makeStudent(overrides: Partial<ActiveStudent> = {}): ActiveStudent {
     teachingTodosCount: 0,
     pendingTodos: [],
     cancelledSessionsLast30Days: 0,
+    nearestObjectiveDeadline: null,
+    lastHomeworkStatus: null,
     ...overrides,
   }
 }
@@ -202,5 +204,107 @@ describe('StudentRoster', () => {
     const rows = screen.getAllByTestId('zone3-student-row')
     expect(rows[0]).toHaveTextContent('Ana')
     expect(rows[1]).toHaveTextContent('Zara')
+  })
+
+  it('shows EXAM 4W signal when deadline within 6 weeks', () => {
+    const deadline = new Date(Date.now() + 28 * 86400000).toISOString()
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent({ nearestObjectiveDeadline: deadline, nextSessionDate: null })]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText(/EXAM \d+W/)).toBeInTheDocument()
+  })
+
+  it('shows EXAM <1W in red when deadline less than 1 week away', () => {
+    const deadline = new Date(Date.now() + 3 * 86400000).toISOString()
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent({ nearestObjectiveDeadline: deadline, nextSessionDate: null })]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('EXAM <1W')).toBeInTheDocument()
+  })
+
+  it('shows EXAM 1W in indigo when deadline is exactly 7 days away', () => {
+    const deadline = new Date(Date.now() + 7 * 86400000).toISOString()
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent({ nearestObjectiveDeadline: deadline, nextSessionDate: null })]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('EXAM 1W')).toBeInTheDocument()
+  })
+
+  it('does not show EXAM signal when deadline is beyond 6 weeks', () => {
+    const deadline = new Date(Date.now() + 50 * 86400000).toISOString()
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent({ nearestObjectiveDeadline: deadline, nextSessionDate: null })]} />
+      </MemoryRouter>,
+    )
+    expect(screen.queryByText(/EXAM/)).not.toBeInTheDocument()
+  })
+
+  it('shows Returning signal when gap > 21 days and next session booked', () => {
+    const student = makeStudent({
+      lastSessionDate: new Date(Date.now() - 25 * 86400000).toISOString(),
+      nextSessionDate: new Date(Date.now() + 3 * 86400000).toISOString(),
+    })
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[student]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Returning')).toBeInTheDocument()
+  })
+
+  it('shows HMWK NOT DONE signal when lastHomeworkStatus is NotDone', () => {
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent({ lastHomeworkStatus: 'NotDone' })]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('HMWK NOT DONE')).toBeInTheDocument()
+  })
+
+  it('shows HMWK PARTIAL signal when lastHomeworkStatus is Partial', () => {
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent({ lastHomeworkStatus: 'Partial' })]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('HMWK PARTIAL')).toBeInTheDocument()
+  })
+
+  it('EXAM signal takes priority over Returning', () => {
+    const deadline = new Date(Date.now() + 28 * 86400000).toISOString()
+    const student = makeStudent({
+      nearestObjectiveDeadline: deadline,
+      lastSessionDate: new Date(Date.now() - 25 * 86400000).toISOString(),
+      nextSessionDate: new Date(Date.now() + 3 * 86400000).toISOString(),
+    })
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[student]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText(/EXAM/)).toBeInTheDocument()
+    expect(screen.queryByText('Returning')).not.toBeInTheDocument()
+  })
+
+  it('Returning signal takes priority over HMWK NOT DONE', () => {
+    const student = makeStudent({
+      lastSessionDate: new Date(Date.now() - 25 * 86400000).toISOString(),
+      nextSessionDate: new Date(Date.now() + 3 * 86400000).toISOString(),
+      lastHomeworkStatus: 'NotDone',
+    })
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[student]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Returning')).toBeInTheDocument()
+    expect(screen.queryByText('HMWK NOT DONE')).not.toBeInTheDocument()
   })
 })

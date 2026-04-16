@@ -214,6 +214,7 @@ public class DashboardService : IDashboardService
                 s.NativeLanguages,
                 s.IsActive,
                 s.TeachingTodos,
+                s.ShortTermObjectives,
                 LastSessionDate = s.SessionLogs
                     .Where(sl => !sl.IsDeleted && sl.SessionDate.HasValue && sl.SessionDate.Value < now)
                     .Max(sl => (DateTime?)sl.SessionDate),
@@ -226,14 +227,39 @@ public class DashboardService : IDashboardService
                               && sl.IsCancelled
                               && sl.SessionDate.HasValue
                               && sl.SessionDate.Value >= cutoff30Days
-                              && sl.SessionDate.Value <= now)
+                              && sl.SessionDate.Value <= now),
+                LastHomeworkStatusRaw = s.SessionLogs
+                    .Where(sl => !sl.IsDeleted
+                              && sl.SessionDate.HasValue
+                              && sl.SessionDate.Value < now
+                              && sl.PreviousHomeworkStatus != HomeworkStatus.NotApplicable)
+                    .OrderByDescending(sl => sl.SessionDate)
+                    .Select(sl => (int?)sl.PreviousHomeworkStatus)
+                    .FirstOrDefault()
             })
             .ToListAsync(cancellationToken);
+
+        var todayDateOnly = DateOnly.FromDateTime(now);
 
         return rows.Select(r =>
         {
             var allTodos = JsonStorageHelper.DeserializeList<TeachingTodoDto>(r.TeachingTodos);
             var pendingTodos = allTodos.Where(t => t.Status == "pending").ToList();
+
+            // NearestObjectiveDeadline: earliest future targetDate from ShortTermObjectives JSON
+            // DefaultIfEmpty() on empty sequence returns DateTime.MinValue — treated as null below
+            var objectives = JsonStorageHelper.DeserializeList<ShortTermObjectiveDto>(r.ShortTermObjectives);
+            var nearestDeadline = objectives
+                .Where(o => o.TargetDate.HasValue && o.TargetDate.Value > todayDateOnly)
+                .Select(o => o.TargetDate!.Value.ToDateTime(TimeOnly.MinValue))
+                .DefaultIfEmpty()
+                .Min();
+            DateTime? nearestObjectiveDeadline = nearestDeadline == DateTime.MinValue ? null : nearestDeadline;
+
+            string? lastHomeworkStatus = r.LastHomeworkStatusRaw.HasValue
+                ? ((HomeworkStatus)r.LastHomeworkStatusRaw.Value).ToString()
+                : null;
+
             return new ActiveStudentDto(
                 StudentId: r.Id,
                 Name: r.Name,
@@ -245,7 +271,9 @@ public class DashboardService : IDashboardService
                 TotalSessions: r.TotalSessions,
                 TeachingTodosCount: allTodos.Count,
                 PendingTodos: pendingTodos,
-                CancelledSessionsLast30Days: r.CancelledSessionsLast30Days
+                CancelledSessionsLast30Days: r.CancelledSessionsLast30Days,
+                NearestObjectiveDeadline: nearestObjectiveDeadline,
+                LastHomeworkStatus: lastHomeworkStatus
             );
         }).ToList();
     }
