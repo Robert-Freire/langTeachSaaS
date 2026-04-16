@@ -374,16 +374,19 @@ function MotivationHero({
 
             {/* Interest chips pulled into banner */}
             {student.interests.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 lg:max-w-[180px]" data-testid="hero-interests">
-                {student.interests.map((interest) => (
-                  <span
-                    key={interest}
-                    className="inline-block bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full px-3 py-1"
-                    data-testid="hero-interest-tag"
-                  >
-                    {interest}
-                  </span>
-                ))}
+              <div className="flex flex-col gap-1.5 lg:max-w-[180px]" data-testid="hero-interests">
+                <p className="text-[0.6rem] font-bold uppercase tracking-widest text-indigo-500 opacity-70">Interests</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {student.interests.map((interest) => (
+                    <span
+                      key={interest}
+                      className="inline-block bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full px-3 py-1"
+                      data-testid="hero-interest-tag"
+                    >
+                      {interest}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
