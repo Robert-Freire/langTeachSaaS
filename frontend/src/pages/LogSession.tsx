@@ -52,6 +52,11 @@ function todayISO(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
 
+function nowTimeHHMM(): string {
+  const now = new Date()
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+}
+
 function getInitials(name: string): string {
   return name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
 }
@@ -75,7 +80,7 @@ function isSuggestedDifficulty(value: unknown): value is SuggestedDifficulty {
 function PanelSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">{label}</p>
+      <p className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">{label}</p>
       {children}
     </div>
   )
@@ -127,6 +132,7 @@ export default function LogSession() {
 
   // Form state
   const [sessionDate, setSessionDate] = useState(todayISO())
+  const [sessionTime, setSessionTime] = useState(nowTimeHHMM())
   const [durationChoice, setDurationChoice] = useState('60')
   const [durationOther, setDurationOther] = useState('')
   const [isCancelled, setIsCancelled] = useState(false)
@@ -148,12 +154,19 @@ export default function LogSession() {
   const [checkedTodoIds, setCheckedTodoIds] = useState<Set<string>>(new Set())
   const [checkedFollowupIds, setCheckedFollowupIds] = useState<Set<string>>(new Set())
   const [mentionedDifficultyKeys, setMentionedDifficultyKeys] = useState<Set<string>>(new Set())
+  const [workingMemoryExpanded, setWorkingMemoryExpanded] = useState(false)
+  const [expandedDifficulties, setExpandedDifficulties] = useState<Set<string>>(new Set())
 
   // Quick-add lists (applied on Done)
   const [newTodoText, setNewTodoText] = useState('')
   const [newTodos, setNewTodos] = useState<string[]>([])
   const [newFollowupText, setNewFollowupText] = useState('')
   const [newFollowups, setNewFollowups] = useState<string[]>([])
+
+  // Scroll gradient
+  const [showScrollGradient, setShowScrollGradient] = useState(false)
+  const scrollSentinelRef = useRef<HTMLDivElement>(null)
+  const asideRef = useRef<HTMLDivElement>(null)
 
   // Done state
   const [isDone, setIsDone] = useState(false)
@@ -228,7 +241,9 @@ export default function LogSession() {
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!editSession || didInitEdit) return
-    setSessionDate(editSession.sessionDate?.split('T')[0] ?? todayISO())
+    const [datePart, timePart] = (editSession.sessionDate ?? '').split('T')
+    setSessionDate(datePart || todayISO())
+    setSessionTime(timePart?.slice(0, 5) || nowTimeHHMM())
     setActualContent(editSession.actualContent ?? '')
     setHomeworkAssigned(editSession.homeworkAssigned ?? '')
     setPrevHomeworkStatus(editSession.previousHomeworkStatusName ?? null)
@@ -271,7 +286,7 @@ export default function LogSession() {
       .map(d => ({ Competency: d.competency, Subcategory: d.subcategory }))
 
     getFormDataRef.current = (): CreateSessionLogRequest => ({
-      sessionDate: sessionDate || null,
+      sessionDate: sessionDate ? `${sessionDate}T${sessionTime || '00:00'}:00` : null,
       actualContent: isCancelled ? null : (actualContent || null),
       plannedContent: plannedForToday || null,
       homeworkAssigned: isCancelled ? null : (homeworkAssigned || null),
@@ -290,7 +305,7 @@ export default function LogSession() {
       ...(voiceNoteId ? { voiceNoteId } : {}),
     })
   }, [
-    sessionDate, durationChoice, durationOther, isCancelled, prevHomeworkStatus,
+    sessionDate, sessionTime, durationChoice, durationOther, isCancelled, prevHomeworkStatus,
     actualContent, homeworkAssigned, nextSessionTopics, generalNotes, topicTags,
     reassessmentEnabled, reassessmentLevel, selectedLessonId, voiceNoteId,
     mentionedDifficultyKeys, activeDifficulties, plannedForToday, suggestedDifficulties,
@@ -446,6 +461,19 @@ export default function LogSession() {
     return () => document.removeEventListener('keydown', onKeyDown)
   }) // intentionally no deps: reads doneBusy/handleDone from closure each render
 
+  // Scroll gradient: observe sentinel at bottom of left panel
+  useEffect(() => {
+    const sentinel = scrollSentinelRef.current
+    const aside = asideRef.current
+    if (!sentinel || !aside) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowScrollGradient(!entry.isIntersecting),
+      { root: aside, threshold: 0 },
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [])
+
   // Must be before early returns to satisfy Rules of Hooks
   const tagSuggestions = useMemo(
     () => suggestTopicTags(actualContent, topicTags),
@@ -494,7 +522,8 @@ export default function LogSession() {
     <div className="flex h-full min-h-0" data-testid="log-session-page">
       {/* ─── Left panel: Student Context ──────────────────────────────── */}
       <aside
-        className="w-[35%] shrink-0 overflow-y-auto px-6 py-8 space-y-6"
+        ref={asideRef}
+        className="relative w-[35%] shrink-0 overflow-y-auto px-6 py-8 space-y-6"
         style={{ background: '#F4F2FD' }}
         data-testid="log-session-left-panel"
       >
@@ -521,6 +550,16 @@ export default function LogSession() {
               <Skeleton className="h-3 w-20 mt-1" />
             ) : (
               <p className="text-xs text-zinc-400 mt-0.5" data-testid="session-number">Session #{sessionNumber}</p>
+            )}
+            {Object.keys(student.skillLevelOverrides).length > 0 && (
+              <p className="text-xs text-zinc-400 mt-1" data-testid="skill-levels-row">
+                {Object.entries(student.skillLevelOverrides).map(([skill, level], i) => (
+                  <span key={skill}>
+                    {i > 0 && <span className="mx-1 text-zinc-300">|</span>}
+                    {skill} {level}
+                  </span>
+                ))}
+              </p>
             )}
           </div>
         </div>
@@ -612,10 +651,15 @@ export default function LogSession() {
         )}
 
         {/* Last Session */}
-        {prevSession && (
+        {prevSession ? (
           <PanelSection label={`Last Session (#${sessions.filter(s => !s.isCancelled).length})`}>
             <div className="rounded-lg bg-white px-3 py-2.5 space-y-1" style={{ boxShadow: '0 1px 4px rgba(26,27,34,0.06)' }}>
-              <p className="text-xs text-zinc-400">{formatDate(prevSession.sessionDate)}</p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-zinc-400">{formatDate(prevSession.sessionDate)}</p>
+                {prevSession.duration && (
+                  <p className="text-xs text-zinc-400">{prevSession.duration} min</p>
+                )}
+              </div>
               {prevSession.actualContent && (
                 <p className="text-sm text-[#1A1B22] line-clamp-3 leading-snug">
                   {prevSession.actualContent}
@@ -625,6 +669,42 @@ export default function LogSession() {
                 <p className="text-xs text-zinc-500">
                   <span className="font-medium">HW:</span> {prevSession.homeworkAssigned}
                 </p>
+              )}
+            </div>
+          </PanelSection>
+        ) : !isEditMode && !sessionsLoading ? (
+          <PanelSection label="Last Session">
+            <div
+              className="rounded-lg bg-white px-3 py-2.5 text-center"
+              style={{ boxShadow: '0 1px 4px rgba(26,27,34,0.06)' }}
+              data-testid="first-session-empty"
+            >
+              <p className="text-sm font-medium text-indigo-600">First session!</p>
+              <p className="text-xs text-zinc-400 mt-0.5">Great start with this student.</p>
+            </div>
+          </PanelSection>
+        ) : null}
+
+        {/* Working Memory (teacher notes) */}
+        {student.teachingNotes && (
+          <PanelSection label="Working Memory">
+            <div
+              className="rounded-lg bg-white px-3 py-2.5"
+              style={{ boxShadow: '0 1px 4px rgba(26,27,34,0.06)' }}
+              data-testid="working-memory-card"
+            >
+              <p className={`text-sm text-zinc-600 leading-snug whitespace-pre-wrap ${!workingMemoryExpanded ? 'line-clamp-4' : ''}`}>
+                {student.teachingNotes}
+              </p>
+              {student.teachingNotes.length > 200 && (
+                <button
+                  type="button"
+                  onClick={() => setWorkingMemoryExpanded(v => !v)}
+                  className="text-xs text-indigo-500 hover:text-indigo-700 mt-1"
+                  data-testid="working-memory-toggle"
+                >
+                  {workingMemoryExpanded ? 'Show less' : 'Show more'}
+                </button>
               )}
             </div>
           </PanelSection>
@@ -653,7 +733,21 @@ export default function LogSession() {
                       onChange={() => toggleDifficulty(key)}
                       className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-indigo-600 shrink-0"
                     />
-                    <span className="text-sm text-[#1A1B22] leading-snug">{d.description}</span>
+                    <span className="text-sm text-[#1A1B22] leading-snug">
+                      <span className={d.description.length > 80 && !expandedDifficulties.has(key) ? 'line-clamp-2' : ''}>
+                        {d.description}
+                      </span>
+                      {d.description.length > 80 && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); setExpandedDifficulties(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next }) }}
+                          className="text-xs text-indigo-500 hover:text-indigo-700 ml-1"
+                          data-testid="difficulty-expand-toggle"
+                        >
+                          {expandedDifficulties.has(key) ? 'less' : 'more'}
+                        </button>
+                      )}
+                    </span>
                   </label>
                 )
               })}
@@ -694,6 +788,19 @@ export default function LogSession() {
               ))}
             </div>
           </PanelSection>
+        )}
+
+        {/* Scroll sentinel */}
+        <div ref={scrollSentinelRef} className="h-px shrink-0" aria-hidden />
+
+        {/* Scroll gradient overlay */}
+        {showScrollGradient && (
+          <div
+            className="pointer-events-none absolute bottom-0 left-0 right-0 h-8"
+            style={{ background: 'linear-gradient(to top, #F4F2FD, transparent)' }}
+            data-testid="scroll-gradient"
+            aria-hidden
+          />
         )}
       </aside>
 
@@ -779,61 +886,78 @@ export default function LogSession() {
             </div>
           )}
 
-          {/* ── Compact metadata bar: Date / Duration / Cancelled ── */}
-          <div className="flex items-center gap-4 flex-wrap rounded-xl px-4 py-3" style={{ background: '#F4F2FD' }}>
-            <div className="flex items-center gap-2">
-              <Label htmlFor="session-date" className="text-xs font-semibold text-zinc-500 shrink-0">Date</Label>
+          {/* ── Compact metadata bar: 2x2 grid ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl px-4 py-3" style={{ background: '#F4F2FD' }}>
+            {/* Date */}
+            <div className="space-y-1">
+              <Label htmlFor="session-date" className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Date</Label>
               <Input
                 id="session-date"
                 type="date"
                 value={sessionDate}
                 onChange={e => { setSessionDate(e.target.value); markChangedAndSchedule() }}
-                className="text-sm bg-white h-7 px-2 py-0 w-36"
+                className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus:ring-2 focus:ring-indigo-500/20"
                 data-testid="session-date"
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <Label htmlFor="duration" className="text-xs font-semibold text-zinc-500 shrink-0">Duration</Label>
-              <Select value={durationChoice} onValueChange={(v) => { const val = v ?? durationChoice; setDurationChoice(val); markChangedAndSaveNow({ duration: val === 'other' ? null : parseInt(val, 10) }) }}>
-                <SelectTrigger id="duration" className="text-sm bg-white h-7 px-2 py-0 w-28" data-testid="duration-select">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DURATION_OPTIONS.map(o => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Time */}
+            <div className="space-y-1">
+              <Label htmlFor="session-time" className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Time</Label>
+              <Input
+                id="session-time"
+                type="time"
+                value={sessionTime}
+                onChange={e => { setSessionTime(e.target.value); markChangedAndSchedule() }}
+                className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus:ring-2 focus:ring-indigo-500/20"
+                data-testid="session-time"
+              />
             </div>
 
-            {durationChoice === 'other' && (
+            {/* Duration */}
+            <div className="space-y-1">
+              <Label htmlFor="duration" className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Duration</Label>
               <div className="flex items-center gap-2">
-                <Label htmlFor="duration-other" className="text-xs font-semibold text-zinc-500 shrink-0">Min</Label>
-                <Input
-                  id="duration-other"
-                  type="number"
-                  min="1"
-                  value={durationOther}
-                  onChange={e => { setDurationOther(e.target.value); markChangedAndSchedule() }}
-                  placeholder="e.g. 75"
-                  className="text-sm bg-white h-7 px-2 py-0 w-20"
-                  data-testid="duration-other"
+                <Select value={durationChoice} onValueChange={(v) => { const val = v ?? durationChoice; setDurationChoice(val); markChangedAndSaveNow({ duration: val === 'other' ? null : parseInt(val, 10) }) }}>
+                  <SelectTrigger id="duration" className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus:ring-2 focus:ring-indigo-500/20 flex-1" data-testid="duration-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DURATION_OPTIONS.map(o => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {durationChoice === 'other' && (
+                  <Input
+                    id="duration-other"
+                    type="number"
+                    min="1"
+                    value={durationOther}
+                    onChange={e => { setDurationOther(e.target.value); markChangedAndSchedule() }}
+                    placeholder="min"
+                    className="text-sm bg-zinc-100 border-none h-8 px-2.5 w-20 focus:ring-2 focus:ring-indigo-500/20"
+                    data-testid="duration-other"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Cancelled */}
+            <div className="space-y-1">
+              <Label htmlFor="cancelled-toggle" className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Status</Label>
+              <div className="flex items-center gap-2 h-8">
+                <Label htmlFor="cancelled-toggle" className="text-sm text-zinc-600 cursor-pointer select-none">
+                  Cancelled
+                </Label>
+                <ToggleSwitch
+                  id="cancelled-toggle"
+                  checked={isCancelled}
+                  onChange={(v) => { setIsCancelled(v); markChangedAndSaveNow({ isCancelled: v }) }}
+                  label="Cancelled"
+                  data-testid="cancelled-toggle"
                 />
               </div>
-            )}
-
-            <div className="flex items-center gap-2 ml-auto">
-              <Label htmlFor="cancelled-toggle" className="text-sm text-zinc-600 cursor-pointer select-none">
-                Cancelled
-              </Label>
-              <ToggleSwitch
-                id="cancelled-toggle"
-                checked={isCancelled}
-                onChange={(v) => { setIsCancelled(v); markChangedAndSaveNow({ isCancelled: v }) }}
-                label="Cancelled"
-                data-testid="cancelled-toggle"
-              />
             </div>
           </div>
 
@@ -855,7 +979,7 @@ export default function LogSession() {
               {/* Previous Homework Status */}
               {showPrevHomework && (
                 <div className="space-y-1.5">
-                  <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">
+                  <p className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">
                     Previous Homework
                   </p>
                   <div className="flex gap-2 flex-wrap" data-testid="prev-homework-status">
@@ -909,7 +1033,7 @@ export default function LogSession() {
 
               {/* Topics Covered */}
               <div className="space-y-1" data-testid="topics-covered-section">
-                <Label className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">Topics Covered</Label>
+                <Label className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">Topics Covered</Label>
                 {tagSuggestions.length > 0 && (
                   <div className="flex flex-wrap items-center gap-1.5" data-testid="topic-tag-suggestions">
                     <span className="text-[0.6875rem] text-zinc-400 font-medium shrink-0">Suggested:</span>
@@ -939,7 +1063,7 @@ export default function LogSession() {
 
               {/* Homework Assigned */}
               <div className="space-y-1">
-                <Label htmlFor="homework-assigned" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">
+                <Label htmlFor="homework-assigned" className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">
                   Homework Assigned
                 </Label>
                 <Input
@@ -954,7 +1078,7 @@ export default function LogSession() {
 
               {/* Next Session Plan */}
               <div className="space-y-1">
-                <Label htmlFor="next-session-topics" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">
+                <Label htmlFor="next-session-topics" className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">
                   Next Session Plan
                 </Label>
                 <Textarea
@@ -972,7 +1096,7 @@ export default function LogSession() {
               <div className="grid grid-cols-2 gap-4">
                 {/* Teaching Todos quick-add */}
                 <div className="space-y-2 rounded-xl p-4" style={{ background: '#F0EFFF' }}>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">New Teaching Todos</p>
+                  <p className="text-xs font-medium uppercase tracking-wider text-indigo-600">New Teaching Todos</p>
                   {newTodos.map((text, idx) => (
                     <div key={idx} className="flex items-center gap-2" data-testid="new-todo-item">
                       <span className="flex-1 text-sm text-[#1A1B22]">{text}</span>
@@ -1003,7 +1127,7 @@ export default function LogSession() {
 
                 {/* Followups quick-add */}
                 <div className="space-y-2 rounded-xl p-4" style={{ background: '#FFFBEB' }}>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">New Followups</p>
+                  <p className="text-xs font-medium uppercase tracking-wider text-amber-600">New Followups</p>
                   {newFollowups.map((text, idx) => (
                     <div key={idx} className="flex items-center gap-2" data-testid="new-followup-item">
                       <span className="flex-1 text-sm text-[#1A1B22]">{text}</span>
@@ -1048,7 +1172,7 @@ export default function LogSession() {
                 <div className="space-y-6">
                   {/* Today's Context */}
                   <div className="space-y-1">
-                    <Label htmlFor="general-notes" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">
+                    <Label htmlFor="general-notes" className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">
                       Today's Context
                     </Label>
                     <Textarea
@@ -1065,7 +1189,7 @@ export default function LogSession() {
                   {/* Link to Lesson Plan */}
                   {studentLessons.length > 0 && (
                     <div className="space-y-1">
-                      <Label htmlFor="linked-lesson" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">
+                      <Label htmlFor="linked-lesson" className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">
                         Link to Lesson Plan (optional)
                       </Label>
                       <Select
@@ -1127,7 +1251,7 @@ export default function LogSession() {
 
               {/* Topics Covered */}
               <div className="space-y-1 pt-4">
-                <Label className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">Topics Covered</Label>
+                <Label className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">Topics Covered</Label>
                 <TopicTagsInput
                   value={topicTags}
                   onChange={(tags) => { setTopicTags(tags); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
@@ -1136,7 +1260,7 @@ export default function LogSession() {
 
               {/* Today's Context */}
               <div className="space-y-1 pt-2">
-                <Label htmlFor="general-notes" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">
+                <Label htmlFor="general-notes" className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">
                   Notes
                 </Label>
                 <Textarea
