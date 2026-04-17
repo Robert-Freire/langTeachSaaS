@@ -23,7 +23,7 @@ import { TopicTagsInput } from '@/components/session/TopicTagsInput'
 import { AudioRecorder } from '@/components/audio/AudioRecorder'
 import { getObjectiveUrgency, getDaysRemaining } from '@/lib/objectiveUrgency'
 import { suggestTopicTags } from '@/lib/suggestTopicTags'
-import { formatDate as formatDateUtil } from '@/utils/formatDate'
+import { formatDate as formatDateUtil, relativeTime } from '@/utils/formatDate'
 import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
 
@@ -158,6 +158,7 @@ export default function LogSession() {
   // Done state
   const [isDone, setIsDone] = useState(false)
   const [doneError, setDoneError] = useState<string | null>(null)
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
 
   // Edit mode: track whether we've initialized form state from the fetched session
   const [didInitEdit, setDidInitEdit] = useState(false)
@@ -313,6 +314,21 @@ export default function LogSession() {
     void saveNow(override)
   }
 
+  const doneNavTarget = isEditMode ? `/students/${id}?tab=sessions` : `/students/${id}`
+
+  function handleBack() {
+    if (!hasChanges && !autosavedSessionId) {
+      navigate(doneNavTarget)
+      return
+    }
+    setShowDiscardConfirm(true)
+  }
+
+  function handleDiscard() {
+    setShowDiscardConfirm(false)
+    navigate(doneNavTarget)
+  }
+
   async function handleDone() {
     if (isDone) return
     setIsDone(true)
@@ -356,7 +372,7 @@ export default function LogSession() {
       queryClient.invalidateQueries({ queryKey: ['student', id] })
       queryClient.invalidateQueries({ queryKey: ['followups', id] })
 
-      navigate(`/students/${id}`)
+      navigate(doneNavTarget)
     } catch (err) {
       logger.error('LogSession', 'done handler failed', err)
       setDoneError('Something went wrong. Please try again.')
@@ -413,6 +429,18 @@ export default function LogSession() {
   function removeFollowup(idx: number) {
     setNewFollowups(prev => prev.filter((_, i) => i !== idx))
   }
+
+  // Ctrl+Enter / Cmd+Enter keyboard shortcut for Done
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !doneBusy) {
+        e.preventDefault()
+        void handleDone()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }) // intentionally no deps: reads doneBusy/handleDone from closure each render
 
   // Must be before early returns to satisfy Rules of Hooks
   const tagSuggestions = useMemo(
@@ -672,7 +700,7 @@ export default function LogSession() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={handleDone}
+              onClick={handleBack}
               disabled={doneBusy}
               className="p-1.5 rounded-lg text-zinc-400 hover:text-[#1A1B22] hover:bg-[#F4F2FD] transition-colors disabled:opacity-40"
               aria-label="Back to student"
@@ -682,7 +710,7 @@ export default function LogSession() {
             </button>
 
             {/* Autosave status indicator */}
-            <span className="text-xs flex items-center gap-1" data-testid="autosave-status">
+            <span className="text-xs flex items-center gap-1 shrink-0" data-testid="autosave-status">
               {saveStatus === 'saving' && (
                 <><Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" /><span className="text-zinc-400">Saving...</span></>
               )}
@@ -694,6 +722,9 @@ export default function LogSession() {
               )}
               {saveStatus === 'error' && (
                 <><RefreshCw className="h-3.5 w-3.5 text-red-500" /><span className="text-red-500">Couldn't save</span></>
+              )}
+              {isEditMode && saveStatus === 'idle' && editSession?.updatedAt && (
+                <span className="text-zinc-400">Last saved {relativeTime(editSession.updatedAt)}</span>
               )}
             </span>
 
@@ -710,6 +741,38 @@ export default function LogSession() {
               </Button>
             </div>
           </div>
+
+          {/* Inline discard confirmation */}
+          {showDiscardConfirm && (
+            <div
+              className="flex items-center gap-3 rounded-lg bg-amber-50 px-4 py-2.5 text-sm"
+              data-testid="discard-confirm-bar"
+            >
+              <span className="text-zinc-700">You have unsaved changes. Discard this session?</span>
+              <div className="ml-auto flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowDiscardConfirm(false)}
+                  className="text-zinc-600 hover:text-zinc-800"
+                  data-testid="keep-editing-btn"
+                >
+                  Keep Editing
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleDiscard}
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                  data-testid="discard-btn"
+                >
+                  Discard
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* ── Compact metadata bar: Date / Duration / Cancelled ── */}
           <div className="flex items-center gap-4 flex-wrap rounded-xl px-4 py-3" style={{ background: '#F4F2FD' }}>

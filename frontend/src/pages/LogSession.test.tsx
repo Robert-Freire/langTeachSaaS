@@ -262,16 +262,16 @@ describe('LogSession', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('done-btn'))
     })
-    await screen.findByTestId('student-detail')
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(`/students/${STUDENT_ID}`)
+    })
   })
 
-  it('back-button navigates back to student detail', async () => {
+  it('back-button navigates back to student detail when no changes', async () => {
     renderLogSession()
     await screen.findByTestId('back-button')
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('back-button'))
-    })
-    await screen.findByTestId('student-detail')
+    fireEvent.click(screen.getByTestId('back-button'))
+    expect(mockNavigate).toHaveBeenCalledWith(`/students/${STUDENT_ID}`)
   })
 
   it('shows autosave status indicator', async () => {
@@ -405,6 +405,12 @@ describe('LogSession', () => {
   })
 })
 
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>()
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 const SESSION_ID = 'session-edit-1'
 
 const EDIT_SESSION: SessionLog = {
@@ -507,6 +513,114 @@ describe('LogSession — edit mode', () => {
     fireEvent.click(screen.getByTestId('remove-suggested-difficulty'))
     await waitFor(() => {
       expect(screen.queryByTestId('suggested-difficulty-chip')).not.toBeInTheDocument()
+    })
+  })
+
+  it('Done in edit mode navigates to ?tab=sessions', async () => {
+    renderEditSession()
+    await screen.findByTestId('done-btn')
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('done-btn'))
+    })
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(`/students/${STUDENT_ID}?tab=sessions`)
+    })
+  })
+
+  it('shows "Last saved" in edit mode when idle', async () => {
+    const sessionWithTimestamp: SessionLog = {
+      ...EDIT_SESSION,
+      updatedAt: '2026-04-01T10:30:00Z',
+    }
+    vi.mocked(sessionLogsApi.getSession).mockResolvedValue(sessionWithTimestamp)
+    renderEditSession()
+    await screen.findByTestId('autosave-status')
+    await waitFor(() => {
+      expect(screen.getByTestId('autosave-status')).toHaveTextContent(/Last saved/)
+    })
+  })
+})
+
+describe('LogSession — back arrow behavior', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockNavigate.mockClear()
+    vi.mocked(studentsApi.getStudent).mockResolvedValue(SAMPLE_STUDENT)
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+    vi.mocked(sessionLogsApi.createSession).mockResolvedValue({
+      ...SAMPLE_SESSION,
+      id: 'new-session',
+    })
+    vi.mocked(sessionLogsApi.updateSession).mockResolvedValue({
+      ...SAMPLE_SESSION,
+      id: 'new-session',
+    })
+    vi.mocked(followupsApi.getFollowups).mockResolvedValue([])
+    vi.mocked(lessonsApi.getLessons).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
+  })
+
+  it('back arrow navigates away immediately when no changes made', async () => {
+    renderLogSession()
+    await screen.findByTestId('back-button')
+    fireEvent.click(screen.getByTestId('back-button'))
+    expect(mockNavigate).toHaveBeenCalledWith(`/students/${STUDENT_ID}`)
+  })
+
+  it('back arrow shows discard confirmation when changes exist', async () => {
+    renderLogSession()
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Some content' } })
+    fireEvent.click(screen.getByTestId('back-button'))
+    expect(screen.getByTestId('discard-confirm-bar')).toBeInTheDocument()
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('discard button navigates away without saving', async () => {
+    renderLogSession()
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Some content' } })
+    fireEvent.click(screen.getByTestId('back-button'))
+    fireEvent.click(screen.getByTestId('discard-btn'))
+    expect(mockNavigate).toHaveBeenCalledWith(`/students/${STUDENT_ID}`)
+  })
+
+  it('keep editing button hides the discard bar', async () => {
+    renderLogSession()
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Some content' } })
+    fireEvent.click(screen.getByTestId('back-button'))
+    fireEvent.click(screen.getByTestId('keep-editing-btn'))
+    expect(screen.queryByTestId('discard-confirm-bar')).not.toBeInTheDocument()
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+})
+
+describe('LogSession — Ctrl+Enter shortcut', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockNavigate.mockClear()
+    vi.mocked(studentsApi.getStudent).mockResolvedValue(SAMPLE_STUDENT)
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+    vi.mocked(sessionLogsApi.createSession).mockResolvedValue({
+      ...SAMPLE_SESSION,
+      id: 'new-session',
+    })
+    vi.mocked(sessionLogsApi.updateSession).mockResolvedValue({
+      ...SAMPLE_SESSION,
+      id: 'new-session',
+    })
+    vi.mocked(followupsApi.getFollowups).mockResolvedValue([])
+    vi.mocked(lessonsApi.getLessons).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
+  })
+
+  it('Ctrl+Enter triggers Done (navigates away)', async () => {
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+    await act(async () => {
+      fireEvent.keyDown(document, { key: 'Enter', ctrlKey: true })
+    })
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(`/students/${STUDENT_ID}`)
     })
   })
 })
