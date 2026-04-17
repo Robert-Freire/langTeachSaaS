@@ -30,7 +30,10 @@ test.beforeAll(async ({ browser }) => {
   const sessions: Array<{ id: string; sessionDate: string }> = await sessionsRes.json()
   if (!sessions.length) throw new Error('Diego Seed has no sessions. Run start-visual-stack.sh first.')
   // Sort descending by date, take most recent
-  sessions.sort((a, b) => b.sessionDate.localeCompare(a.sessionDate))
+  sessions.sort((a, b) => {
+    const byDate = b.sessionDate.localeCompare(a.sessionDate)
+    return byDate !== 0 ? byDate : a.id.localeCompare(b.id)
+  })
   sessionId = sessions[0].id
 
   await page.close()
