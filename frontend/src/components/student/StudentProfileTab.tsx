@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useBlurSave } from '../../hooks/useBlurSave'
 import { Pencil, X, Plus, Check, GraduationCap, ChevronDown } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import type { Student } from '@/api/students'
@@ -244,10 +245,7 @@ function MotivationHero({
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(student.reasonForStudying ?? '')
-  const [savedVisible, setSavedVisible] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { savedVisible, fieldError: saveError, onSaveSuccess, onSaveError } = useBlurSave()
   const lastSavedRef = useRef(student.reasonForStudying ?? '')
   const isRevertingRef = useRef(false)
 
@@ -255,14 +253,6 @@ function MotivationHero({
   useEffect(() => {
     if (!editing) lastSavedRef.current = student.reasonForStudying ?? ''
   }, [student.reasonForStudying, editing])
-
-  // Clear timers on unmount to avoid setState on unmounted component
-  useEffect(() => {
-    return () => {
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
-    }
-  }, [])
 
   async function handleBlur() {
     if (!onSave || isRevertingRef.current) {
@@ -273,15 +263,10 @@ function MotivationHero({
     try {
       await onSave(value)
       lastSavedRef.current = value
-      setSavedVisible(true)
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-      savedTimerRef.current = setTimeout(() => setSavedVisible(false), 1500)
-      setSaveError(null)
+      onSaveSuccess()
       setEditing(false)
     } catch {
-      setSaveError('Failed to save')
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
-      errorTimerRef.current = setTimeout(() => setSaveError(null), 3000)
+      onSaveError('Failed to save')
     }
   }
 
@@ -417,18 +402,8 @@ function InterestsSection({
 }) {
   const [chips, setChips] = useState<string[]>(student.interests)
   const [inputValue, setInputValue] = useState('')
-  const [savedVisible, setSavedVisible] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
+  const { savedVisible, fieldError: saveError, onSaveSuccess, onSaveError } = useBlurSave()
   const inputRef = useRef<HTMLInputElement>(null)
-  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
-    }
-  }, [])
 
   async function commitAdd(value: string) {
     const trimmed = value.trim()
@@ -438,15 +413,10 @@ function InterestsSection({
     setInputValue('')
     try {
       await onSave(next)
-      setSavedVisible(true)
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-      savedTimerRef.current = setTimeout(() => setSavedVisible(false), 1500)
-      setSaveError(null)
+      onSaveSuccess()
     } catch {
       setChips(chips) // revert
-      setSaveError('Failed to save')
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
-      errorTimerRef.current = setTimeout(() => setSaveError(null), 3000)
+      onSaveError('Failed to save')
     }
   }
 
@@ -456,15 +426,10 @@ function InterestsSection({
     setChips(next)
     try {
       await onSave(next)
-      setSavedVisible(true)
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-      savedTimerRef.current = setTimeout(() => setSavedVisible(false), 1500)
-      setSaveError(null)
+      onSaveSuccess()
     } catch {
       setChips(chips) // revert
-      setSaveError('Failed to save')
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
-      errorTimerRef.current = setTimeout(() => setSaveError(null), 3000)
+      onSaveError('Failed to save')
     }
   }
 
