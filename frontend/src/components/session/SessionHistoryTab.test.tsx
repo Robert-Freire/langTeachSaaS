@@ -646,4 +646,41 @@ describe('SessionHistoryTab', () => {
     const grid = detail.querySelector('.grid')
     expect(grid?.className).not.toContain('md:grid-cols-3')
   })
+
+  it('shows "Logged" timestamp in expanded session row', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const timestamps = screen.getByTestId('session-timestamps')
+    expect(timestamps).toHaveTextContent(/Logged/)
+  })
+
+  it('shows "Edited" timestamp when updatedAt differs from createdAt by more than 60s', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{
+      ...SESSION_BASE,
+      createdAt: '2026-03-30T10:00:00Z',
+      updatedAt: '2026-03-30T10:05:00Z',
+    }])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const timestamps = screen.getByTestId('session-timestamps')
+    expect(timestamps).toHaveTextContent(/Logged/)
+    expect(timestamps).toHaveTextContent(/Edited/)
+  })
+
+  it('does not show "Edited" when updatedAt is within 60s of createdAt', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{
+      ...SESSION_BASE,
+      createdAt: '2026-03-30T10:00:00Z',
+      updatedAt: '2026-03-30T10:00:30Z',
+    }])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const timestamps = screen.getByTestId('session-timestamps')
+    expect(timestamps).toHaveTextContent(/Logged/)
+    expect(timestamps).not.toHaveTextContent(/Edited/)
+  })
 })

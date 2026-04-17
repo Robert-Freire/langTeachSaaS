@@ -14,7 +14,7 @@ import {
 import { logger } from '../../lib/logger'
 import { Link, useNavigate } from 'react-router-dom'
 import { listSessions, deleteSession, patchSessionField, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
-import { formatMonth, formatDay } from '../../utils/formatDate'
+import { formatMonth, formatDay, relativeTime } from '../../utils/formatDate'
 import { getSessionTitle } from '../../lib/sessionUtils'
 import { HOMEWORK_STATUS_INFO } from '../../utils/homeworkStatusStyles'
 import { Button } from '@/components/ui/button'
@@ -495,6 +495,16 @@ function SessionEntry({
                 </div>
               )}
             </div>
+
+            {/* Session timestamps */}
+            {session.createdAt && (
+              <p className="mt-4 text-[0.6875rem] text-zinc-400" data-testid="session-timestamps">
+                Logged {relativeTime(session.createdAt)}
+                {session.updatedAt && Math.abs(new Date(session.updatedAt).getTime() - new Date(session.createdAt).getTime()) > 60000 && (
+                  <> &middot; Edited {relativeTime(session.updatedAt)}</>
+                )}
+              </p>
+            )}
 
             {/* Delete session button at bottom of expanded row */}
             <div className="mt-6 pt-4 border-t border-[#C7C4D8]/10">
