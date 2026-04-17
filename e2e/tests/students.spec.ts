@@ -1165,10 +1165,10 @@ test('Notes section nav link scrolls to Notes fields', async ({ browser }) => {
   await page.getByTestId('edit-profile-link').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
 
-  // Click Notes nav link and verify notes fields scroll into view
+  // Click Notes nav link and verify notes fields scroll into the viewport
   await page.getByTestId('section-nav-section-notes').click()
-  await expect(page.getByTestId('student-personal-notes')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
-  await expect(page.getByTestId('student-teaching-notes')).toBeVisible()
+  await expect(page.getByTestId('student-personal-notes')).toBeInViewport({ timeout: FEEDBACK_TIMEOUT })
+  await expect(page.getByTestId('student-teaching-notes')).toBeInViewport()
 
   // Cleanup
   await page.getByTestId('delete-student-btn').click()
