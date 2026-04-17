@@ -486,6 +486,38 @@ describe('LogSession — edit mode', () => {
     expect(screen.getByTestId('actual-content')).toHaveValue('Covered irregular preterite')
   })
 
+  it('pre-fills time from sessionDate in edit mode', async () => {
+    vi.mocked(sessionLogsApi.getSession).mockResolvedValue({
+      ...EDIT_SESSION,
+      sessionDate: '2026-04-01T14:30:00Z',
+    })
+    renderEditSession()
+    await screen.findByTestId('session-time')
+    expect((screen.getByTestId('session-time') as HTMLInputElement).value).toBe('14:30')
+  })
+
+  it('includes time in autosave payload when Done is clicked in edit mode', async () => {
+    vi.mocked(sessionLogsApi.getSession).mockResolvedValue({
+      ...EDIT_SESSION,
+      sessionDate: '2026-04-01T09:00:00Z',
+    })
+    renderEditSession()
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Updated' } })
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('done-btn'))
+    })
+    await waitFor(() => {
+      expect(sessionLogsApi.updateSession).toHaveBeenCalledWith(
+        STUDENT_ID,
+        SESSION_ID,
+        expect.objectContaining({
+          sessionDate: expect.stringContaining('T09:00'),
+        }),
+      )
+    })
+  })
+
   it('does not clobber actual content with plannedForToday in edit mode', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
       { ...EDIT_SESSION, id: 'other-session', nextSessionTopics: 'Should not appear' },
