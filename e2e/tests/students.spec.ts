@@ -1145,3 +1145,36 @@ test('partial difficulty row shows inline validation error and blocks save', asy
 
   await context.close()
 })
+
+test('Notes section nav link scrolls to Notes fields', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const studentName = `NotesNavTest_${Date.now()}`
+
+  // Create a student
+  await page.goto('/students/new')
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
+
+  // Navigate to edit
+  await page.getByTestId('edit-profile-link').click()
+  await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
+
+  // Click Notes nav link and verify notes fields scroll into the viewport
+  await page.getByTestId('section-nav-section-notes').click()
+  await expect(page.getByTestId('student-personal-notes')).toBeInViewport({ timeout: FEEDBACK_TIMEOUT })
+  await expect(page.getByTestId('student-teaching-notes')).toBeInViewport()
+
+  // Cleanup
+  await page.getByTestId('delete-student-btn').click()
+  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await page.getByTestId('confirm-delete').click()
+  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+
+  await context.close()
+})
