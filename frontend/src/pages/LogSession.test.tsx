@@ -392,7 +392,7 @@ describe('LogSession', () => {
     await screen.findByTestId('actual-content')
     expect(screen.getByTestId('audio-recorder')).toBeDefined()
     // audio recorder should be visible without toggling secondary
-    expect(screen.queryByTestId('voice-recorder-section')).toBeInTheDocument()
+    expect(screen.getByTestId('voice-recorder-section')).toBeDefined()
   })
 
   it('toggle button shows descriptor text when closed and changes on open', async () => {
