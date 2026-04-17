@@ -54,3 +54,5 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 |----------|--------|---------|
 | Low | Dashboard / Hero card | Mock teacher has no scheduled sessions, so Start Session CTA, adaptive urgency badge, structured Last Session Briefing (4 bullets), and warm homework card cannot be visually verified. Needs a future session seeded for the mock teacher. All code paths tested via unit tests. |
 | Low | Dashboard / Pending Followups | Mock teacher has no pending followups, so OVERDUE/OLD/TODAY badge designs and colored priority dots are unverified visually. Unit tests verify all badge variants. |
+| Low | Log Session / Toggle text | Toggle button text ('Show homework, cultural notes, error patterns...' / 'Hide additional sections') is below the fold in the visual spec screenshot. Verified by unit tests (38 pass) and e2e. |
+| Low | Log Session / Followup label | 'Open followups from previous sessions' label + subtitle not visually verified (Diego Seed has no open followups seeded). Verified by code review. |

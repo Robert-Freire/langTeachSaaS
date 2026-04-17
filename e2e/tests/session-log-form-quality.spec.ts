@@ -83,3 +83,37 @@ test('log session form quality: topics covered visible without secondary, sugges
     await context.close()
   }
 })
+
+test('audio recorder visible on log session page without toggling secondary', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    const studentName = `Audio Visible Test ${Date.now()}`
+    const createRes = await page.request.post(`${API_BASE}/api/students`, {
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+      data: {
+        name: studentName,
+        learningLanguage: 'Spanish',
+        cefrLevel: 'B1',
+        interests: [],
+        learningGoals: [],
+        weaknesses: [],
+        difficulties: [],
+      },
+    })
+    expect(createRes.ok()).toBeTruthy()
+    const student = await createRes.json()
+
+    await page.goto(`/students/${student.id}/log-session`)
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
+
+    // Voice recorder section visible without any toggle interaction
+    await expect(page.getByTestId('voice-recorder-section')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+
+    // Toggle button shows descriptor text
+    await expect(page.getByTestId('toggle-secondary')).toContainText('Show homework, cultural notes, error patterns...')
+  } finally {
+    await context.close()
+  }
+})
