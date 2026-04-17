@@ -486,6 +486,38 @@ describe('LogSession — edit mode', () => {
     expect(screen.getByTestId('actual-content')).toHaveValue('Covered irregular preterite')
   })
 
+  it('pre-fills time from sessionDate in edit mode', async () => {
+    vi.mocked(sessionLogsApi.getSession).mockResolvedValue({
+      ...EDIT_SESSION,
+      sessionDate: '2026-04-01T14:30:00Z',
+    })
+    renderEditSession()
+    await screen.findByTestId('session-time')
+    expect((screen.getByTestId('session-time') as HTMLInputElement).value).toBe('14:30')
+  })
+
+  it('includes time in autosave payload when Done is clicked in edit mode', async () => {
+    vi.mocked(sessionLogsApi.getSession).mockResolvedValue({
+      ...EDIT_SESSION,
+      sessionDate: '2026-04-01T09:00:00Z',
+    })
+    renderEditSession()
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Updated' } })
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('done-btn'))
+    })
+    await waitFor(() => {
+      expect(sessionLogsApi.updateSession).toHaveBeenCalledWith(
+        STUDENT_ID,
+        SESSION_ID,
+        expect.objectContaining({
+          sessionDate: expect.stringContaining('T09:00'),
+        }),
+      )
+    })
+  })
+
   it('does not clobber actual content with plannedForToday in edit mode', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
       { ...EDIT_SESSION, id: 'other-session', nextSessionTopics: 'Should not appear' },
@@ -618,6 +650,118 @@ describe('LogSession — back arrow behavior', () => {
     fireEvent.click(screen.getByTestId('keep-editing-btn'))
     expect(screen.queryByTestId('discard-confirm-bar')).not.toBeInTheDocument()
     expect(mockNavigate).not.toHaveBeenCalled()
+  })
+})
+
+describe('LogSession — left panel context + metadata polish', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(studentsApi.getStudent).mockResolvedValue(SAMPLE_STUDENT)
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+    vi.mocked(sessionLogsApi.createSession).mockResolvedValue({
+      ...SAMPLE_SESSION,
+      id: 'new-session',
+    })
+    vi.mocked(sessionLogsApi.updateSession).mockResolvedValue({
+      ...SAMPLE_SESSION,
+      id: 'new-session',
+    })
+    vi.mocked(followupsApi.getFollowups).mockResolvedValue([])
+    vi.mocked(lessonsApi.getLessons).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
+  })
+
+  it('shows "First session" empty state when no prior sessions in create mode', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+    renderLogSession()
+    await screen.findByTestId('first-session-empty')
+    expect(screen.getByText('First session!')).toBeInTheDocument()
+  })
+
+  it('shows last session card with duration when prior sessions exist', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SAMPLE_SESSION, actualContent: 'Covered ser vs estar', duration: 45 },
+    ])
+    renderLogSession()
+    await screen.findByTestId('log-session-left-panel')
+    expect(screen.getByText('45 min')).toBeInTheDocument()
+    expect(screen.getByText(/Covered ser vs estar/)).toBeInTheDocument()
+  })
+
+  it('shows skill level overrides when available', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...SAMPLE_STUDENT,
+      skillLevelOverrides: { Speaking: 'B1', Writing: 'A2' },
+    })
+    renderLogSession()
+    await screen.findByTestId('skill-levels-row')
+    expect(screen.getByTestId('skill-levels-row')).toHaveTextContent('Speaking B1')
+    expect(screen.getByTestId('skill-levels-row')).toHaveTextContent('Writing A2')
+  })
+
+  it('hides skill level row when no overrides', async () => {
+    renderLogSession()
+    await screen.findByTestId('session-number')
+    expect(screen.queryByTestId('skill-levels-row')).not.toBeInTheDocument()
+  })
+
+  it('shows working memory card when teachingNotes available', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...SAMPLE_STUDENT,
+      teachingNotes: 'Prefers visual examples. Struggles with subjunctive.',
+    })
+    renderLogSession()
+    await screen.findByTestId('working-memory-card')
+    expect(screen.getByText(/Prefers visual examples/)).toBeInTheDocument()
+  })
+
+  it('hides working memory card when teachingNotes is null', async () => {
+    renderLogSession()
+    await screen.findByTestId('log-session-left-panel')
+    expect(screen.queryByTestId('working-memory-card')).not.toBeInTheDocument()
+  })
+
+  it('shows expand toggle for long difficulty descriptions', async () => {
+    const longDesc = 'A'.repeat(100)
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...SAMPLE_STUDENT,
+      difficulties: [{
+        id: 'd1', description: longDesc, competency: 'Grammar',
+        subcategory: 'Verbs', severity: 'high', trend: 'stable', status: 'Active',
+      }],
+    })
+    renderLogSession()
+    await screen.findByTestId('difficulty-item')
+    expect(screen.getByTestId('difficulty-expand-toggle')).toBeInTheDocument()
+    expect(screen.getByTestId('difficulty-expand-toggle')).toHaveTextContent('more')
+  })
+
+  it('does not show expand toggle for short difficulty descriptions', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...SAMPLE_STUDENT,
+      difficulties: [{
+        id: 'd2', description: 'Short text', competency: 'Grammar',
+        subcategory: 'Articles', severity: 'low', trend: 'stable', status: 'Active',
+      }],
+    })
+    renderLogSession()
+    await screen.findByTestId('difficulty-item')
+    expect(screen.queryByTestId('difficulty-expand-toggle')).not.toBeInTheDocument()
+  })
+
+  it('renders time input defaulting to current time', async () => {
+    renderLogSession()
+    await screen.findByTestId('session-time')
+    const timeInput = screen.getByTestId('session-time') as HTMLInputElement
+    expect(timeInput.value).toMatch(/^\d{2}:\d{2}$/)
+  })
+
+  it('metadata bar has 2x2 grid layout with date, time, duration, and status', async () => {
+    renderLogSession()
+    await screen.findByTestId('session-date')
+    expect(screen.getByTestId('session-date')).toBeInTheDocument()
+    expect(screen.getByTestId('session-time')).toBeInTheDocument()
+    expect(screen.getByTestId('duration-select')).toBeInTheDocument()
+    expect(screen.getByTestId('cancelled-toggle')).toBeInTheDocument()
   })
 })
 
