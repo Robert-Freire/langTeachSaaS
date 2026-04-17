@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Plus, Trash2, TrendingUp, TrendingDown, Minus, Calendar, CheckCircle, Loader2, RefreshCw } from 'lucide-react'
+import { X, Plus, Trash2, TrendingUp, TrendingDown, Minus, Pencil, CheckCircle, Loader2, RefreshCw } from 'lucide-react'
 import { getStudent, createStudent, updateStudent, deleteStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem, type ShortTermObjective, type LearningGoalItem } from '../api/students'
 import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
@@ -67,6 +67,102 @@ const SCROLLSPY_IDS = [
   'section-commercial',
 ]
 
+function AutoResizeTextarea({
+  value,
+  onChange,
+  placeholder,
+  maxLength,
+  className,
+  'data-testid': testId,
+}: {
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
+  placeholder?: string
+  maxLength?: number
+  className?: string
+  'data-testid'?: string
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [value])
+  return (
+    <Textarea
+      ref={ref}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      maxLength={maxLength}
+      rows={1}
+      className={className}
+      data-testid={testId}
+    />
+  )
+}
+
+function ObjectiveRow({
+  obj,
+  autoFocus,
+  onUpdate,
+  onRemove,
+}: {
+  obj: ShortTermObjective
+  autoFocus: boolean
+  onUpdate: (id: string, field: 'text' | 'targetDate', value: string | null) => void
+  onRemove: (id: string) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus()
+  }, [autoFocus])
+
+  const urgency = getObjectiveUrgency(obj.targetDate)
+  return (
+    <div
+      className="flex flex-col sm:flex-row gap-2 sm:items-start border-l-4 border-amber-400 pl-3 rounded-r-lg bg-amber-50/40"
+      data-testid="objective-row"
+    >
+      <input
+        ref={inputRef}
+        value={obj.text}
+        onChange={(e) => onUpdate(obj.id, 'text', e.target.value)}
+        placeholder="e.g. Pass DELE B1 exam"
+        maxLength={500}
+        className="flex-1 h-9 rounded-md border border-zinc-200 bg-white px-3 py-1 text-sm text-[#1A1B22] focus:outline-none focus:ring-2 focus:ring-indigo-300"
+        data-testid="objective-text-input"
+      />
+      <div className="flex items-center gap-2">
+        <input
+          type="date"
+          value={obj.targetDate ?? ''}
+          onChange={(e) => onUpdate(obj.id, 'targetDate', e.target.value || null)}
+          className="h-9 rounded-md outline outline-1 outline-[#C7C4D8]/20 bg-white px-3 py-1 text-sm text-[#1A1B22] focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          data-testid="objective-date-input"
+        />
+        {urgency === 'critical' && obj.targetDate && (
+          <span className="text-xs font-semibold text-orange-600 shrink-0" data-testid="objective-near-date-warning">
+            NEAR DATE
+          </span>
+        )}
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={() => onRemove(obj.id)}
+        className="text-zinc-400 hover:text-red-600 h-9 w-9 shrink-0"
+        data-testid="remove-objective"
+        aria-label="Remove objective"
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  )
+}
+
 export default function StudentForm() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -105,6 +201,7 @@ export default function StudentForm() {
   const [editingCefrField, setEditingCefrField] = useState<string | null>(null)
   const [duplicateMsg, setDuplicateMsg] = useState<string | null>(null)
   const interestInputRef = useRef<HTMLInputElement>(null)
+  const [newObjectiveId, setNewObjectiveId] = useState<string | null>(null)
 
   // formDataRef is kept up-to-date by a useEffect so the autosave hook always
   // reads committed state (avoids stale closure issues with debounced saves).
@@ -377,7 +474,9 @@ export default function StudentForm() {
   }
 
   function addObjective() {
-    setShortTermObjectives((prev) => [...prev, { id: newId(), text: '', targetDate: null }])
+    const id = newId()
+    setNewObjectiveId(id)
+    setShortTermObjectives((prev) => [...prev, { id, text: '', targetDate: null }])
     if (isEdit) saveNow()
   }
 
@@ -662,11 +761,14 @@ export default function StudentForm() {
                           <button
                             type="button"
                             onClick={() => setEditingCefrField('cefrLevel')}
-                            className="block"
+                            className="relative group block cursor-pointer"
                             aria-label="Edit Teacher's Assessment level"
                             data-testid="student-cefr-badge"
                           >
-                            <CefrBadge level={cefrLevel} className="cursor-pointer hover:opacity-80 transition-opacity" />
+                            <CefrBadge level={cefrLevel} className="transition-opacity" />
+                            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-white shadow-sm border border-zinc-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true">
+                              <Pencil className="h-2.5 w-2.5 text-zinc-500" />
+                            </span>
                           </button>
                         ) : (
                           <Select
@@ -697,11 +799,21 @@ export default function StudentForm() {
                         <button
                           type="button"
                           onClick={() => setEditingCefrField('officialCefrLevel')}
-                          className="block"
+                          className="block cursor-pointer"
                           aria-label="Edit Official Level"
                           data-testid="student-official-cefr-badge"
                         >
-                          <CefrBadge level={officialCefrLevel} className="cursor-pointer hover:opacity-80 transition-opacity" />
+                          <CefrBadge level={officialCefrLevel} className="hover:opacity-80 transition-opacity" />
+                        </button>
+                      ) : !officialCefrLevel && editingCefrField !== 'officialCefrLevel' ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditingCefrField('officialCefrLevel')}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-zinc-400 border border-dashed border-zinc-300 hover:border-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer"
+                          aria-label="Set Official Level"
+                          data-testid="student-official-cefr-badge"
+                        >
+                          Not set
                         </button>
                       ) : (
                         <Select
@@ -723,46 +835,41 @@ export default function StudentForm() {
                       )}
                       <p className="text-xs text-zinc-400">Official exam result or external assessment.</p>
                     </div>
-                  </CardContent>
-                </Card>
 
-                {/* Languages card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Languages</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Native Languages */}
-                    <div className="space-y-1.5">
-                      <Label className="inline-flex items-center gap-1">Native Languages <FieldTooltip fieldKey="nativeLanguages" /></Label>
-                      <MultiSelect
-                        options={ALL_LANGUAGE_OPTIONS}
-                        selected={nativeLanguages}
-                        onChange={(vals) => { setNativeLanguages(vals); if (isEdit) saveNow({ nativeLanguages: vals }) }}
-                        placeholder="Select native languages (optional)"
-                        triggerId="student-native-language"
-                        chipTestId="native-lang-chip"
-                        maxItems={5}
-                        allowCustom={true}
-                        onDuplicate={() => showDuplicateMsg('Already added')}
-                      />
-                    </div>
+                    {/* Languages — merged into Basic Info card */}
+                    <div className="pt-4 border-t border-zinc-100 space-y-4">
+                      {/* Native Languages */}
+                      <div className="space-y-1.5">
+                        <Label className="inline-flex items-center gap-1">Native Languages <FieldTooltip fieldKey="nativeLanguages" /></Label>
+                        <MultiSelect
+                          options={ALL_LANGUAGE_OPTIONS}
+                          selected={nativeLanguages}
+                          onChange={(vals) => { setNativeLanguages(vals); if (isEdit) saveNow({ nativeLanguages: vals }) }}
+                          placeholder="Select native languages (optional)"
+                          triggerId="student-native-language"
+                          chipTestId="native-lang-chip"
+                          maxItems={5}
+                          allowCustom={true}
+                          onDuplicate={() => showDuplicateMsg('Already added')}
+                        />
+                      </div>
 
-                    {/* Spoken Languages */}
-                    <div className="space-y-1.5">
-                      <Label className="inline-flex items-center gap-1">Spoken Languages <FieldTooltip fieldKey="spokenLanguages" /></Label>
-                      <MultiSelect
-                        options={ALL_LANGUAGE_OPTIONS}
-                        selected={spokenLanguages}
-                        onChange={(vals) => { setSpokenLanguages(vals); if (isEdit) saveNow({ spokenLanguages: vals }) }}
-                        placeholder="Select spoken languages (optional)"
-                        triggerId="spoken-languages-container"
-                        chipTestId="spoken-lang-chip"
-                        allowCustom={true}
-                        onDuplicate={() => showDuplicateMsg('Already added')}
-                      />
-                      {duplicateMsg && <p className="text-xs text-amber-600" data-testid="duplicate-msg">{duplicateMsg}</p>}
-                      <p className="text-xs text-zinc-400">Other languages spoken. Flat list, no proficiency level.</p>
+                      {/* Spoken Languages */}
+                      <div className="space-y-1.5">
+                        <Label className="inline-flex items-center gap-1">Spoken Languages <FieldTooltip fieldKey="spokenLanguages" /></Label>
+                        <MultiSelect
+                          options={ALL_LANGUAGE_OPTIONS}
+                          selected={spokenLanguages}
+                          onChange={(vals) => { setSpokenLanguages(vals); if (isEdit) saveNow({ spokenLanguages: vals }) }}
+                          placeholder="Select spoken languages (optional)"
+                          triggerId="spoken-languages-container"
+                          chipTestId="spoken-lang-chip"
+                          allowCustom={true}
+                          onDuplicate={() => showDuplicateMsg('Already added')}
+                        />
+                        {duplicateMsg && <p className="text-xs text-amber-600" data-testid="duplicate-msg">{duplicateMsg}</p>}
+                        <p className="text-xs text-zinc-400">Other languages spoken. Flat list, no proficiency level.</p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -986,8 +1093,8 @@ export default function StudentForm() {
               </Card>
             </div>
 
-            {/* ── SECTION: Teaching Goals (Learning Goals + Short-Term Objectives) ── */}
-            <div id="section-teaching-goals">
+            {/* ── SECTION: Teaching Goals + Difficulties (2-column on desktop) ── */}
+            <div id="section-teaching-goals" className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Teaching Goals</CardTitle>
@@ -1022,51 +1129,15 @@ export default function StudentForm() {
                       </Button>
                     </div>
 
-                    {shortTermObjectives.map((obj) => {
-                      const urgency = getObjectiveUrgency(obj.targetDate)
-                      return (
-                        <div
-                          key={obj.id}
-                          className="flex flex-col sm:flex-row gap-2 sm:items-start border-l-4 border-orange-300 pl-3 rounded-r-lg bg-orange-50/30"
-                          data-testid="objective-row"
-                        >
-                          <Input
-                            value={obj.text}
-                            onChange={(e) => updateObjective(obj.id, 'text', e.target.value)}
-                            placeholder="e.g. Pass DELE B1 exam"
-                            maxLength={500}
-                            className="flex-1"
-                            data-testid="objective-text-input"
-                          />
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-zinc-400 shrink-0" aria-hidden="true" />
-                            <input
-                              type="date"
-                              value={obj.targetDate ?? ''}
-                              onChange={(e) => updateObjective(obj.id, 'targetDate', e.target.value || null)}
-                              className="h-9 rounded-md border border-zinc-200 bg-white px-3 py-1 text-sm text-[#1A1B22] focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                              data-testid="objective-date-input"
-                            />
-                            {urgency === 'critical' && obj.targetDate && (
-                              <span className="text-xs font-semibold text-orange-600 shrink-0" data-testid="objective-near-date-warning">
-                                NEAR DATE
-                              </span>
-                            )}
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeObjective(obj.id)}
-                            className="text-zinc-400 hover:text-red-600 h-9 w-9 shrink-0"
-                            data-testid="remove-objective"
-                            aria-label="Remove objective"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )
-                    })}
+                    {shortTermObjectives.map((obj) => (
+                      <ObjectiveRow
+                        key={obj.id}
+                        obj={obj}
+                        autoFocus={obj.id === newObjectiveId}
+                        onUpdate={updateObjective}
+                        onRemove={removeObjective}
+                      />
+                    ))}
 
                     {shortTermObjectives.length === 0 && (
                       <p className="text-xs text-zinc-400 italic" data-testid="objectives-empty">
@@ -1076,10 +1147,9 @@ export default function StudentForm() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
 
-            {/* ── SECTION: Difficulties (Weaknesses + Structured Difficulties) ── */}
-            <div id="section-difficulties">
+              {/* Difficulties — right column of the 2-col grid */}
+              <div id="section-difficulties">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Difficulties</CardTitle>
@@ -1181,12 +1251,12 @@ export default function StudentForm() {
                         className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_auto_1fr_auto_auto] sm:gap-2 sm:items-start"
                         data-testid="difficulty-row"
                       >
-                        <Input
+                        <AutoResizeTextarea
                           value={d.description}
                           onChange={(e) => updateDifficulty(d.id, 'description', e.target.value)}
                           placeholder="e.g. Confuses ser/estar in past tense"
                           maxLength={500}
-                          className="sm:col-span-1"
+                          className="sm:col-span-1 resize-none overflow-hidden min-h-[2.25rem]"
                           data-testid="difficulty-description"
                         />
 
@@ -1276,6 +1346,7 @@ export default function StudentForm() {
                   </div>
                 </CardContent>
               </Card>
+              </div>
             </div>
 
             {/* ── SECTION: Notes (2-column) ── */}
@@ -1287,12 +1358,11 @@ export default function StudentForm() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                      <Label className="inline-flex items-center gap-1">Personal notes <FieldTooltip fieldKey="personalNotes" /></Label>
-                      <p className="text-xs text-zinc-400">Sensitivities / life context.</p>
+                      <Label className="inline-flex items-center gap-1">Sensitivities / Life Context <FieldTooltip fieldKey="personalNotes" /></Label>
                       <Textarea
                         value={personalNotes}
                         onChange={(e) => { setPersonalNotes(e.target.value); if (isEdit) scheduleTextSave() }}
-                        placeholder="Optional personal notes..."
+                        placeholder="Sensitivities, life context, anything to be aware of..."
                         maxLength={2000}
                         rows={5}
                         className="resize-none w-full"
@@ -1300,12 +1370,11 @@ export default function StudentForm() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="inline-flex items-center gap-1">Teaching notes <FieldTooltip fieldKey="teachingNotes" /></Label>
-                      <p className="text-xs text-zinc-400">Learning style, teaching observations.</p>
+                      <Label className="inline-flex items-center gap-1">Pedagogical Observations <FieldTooltip fieldKey="teachingNotes" /></Label>
                       <Textarea
                         value={teachingNotes}
                         onChange={(e) => { setTeachingNotes(e.target.value); if (isEdit) scheduleTextSave() }}
-                        placeholder="Optional teaching notes..."
+                        placeholder="Learning style, teaching observations..."
                         maxLength={2000}
                         rows={5}
                         className="resize-none w-full"

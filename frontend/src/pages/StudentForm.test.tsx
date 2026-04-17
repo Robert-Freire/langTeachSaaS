@@ -1000,6 +1000,90 @@ describe('StudentForm', () => {
     expect(screen.getByTestId('difficulty-severity-bar')).toBeInTheDocument()
     expect(screen.getByTestId('difficulty-trend-indicator')).toBeInTheDocument()
   })
+
+  // ── Task 775: Layout and interaction polish ──
+
+  it('A1: Native/Spoken Languages fields appear inside Basic Info — no separate Languages card', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    const headings = screen.getAllByRole('heading').map((h) => h.textContent)
+    expect(headings).not.toContain('Languages')
+    expect(screen.getByTestId('student-native-language')).toBeInTheDocument()
+    expect(screen.getByTestId('spoken-languages-container')).toBeInTheDocument()
+  })
+
+  it('A2: section-teaching-goals and section-difficulties both exist in the DOM', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(document.getElementById('section-teaching-goals')).toBeInTheDocument()
+    expect(document.getElementById('section-difficulties')).toBeInTheDocument()
+  })
+
+  it('A3: Notes section uses Sensitivities/Life Context and Pedagogical Observations labels', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(screen.getByText('Sensitivities / Life Context')).toBeInTheDocument()
+    expect(screen.getByText('Pedagogical Observations')).toBeInTheDocument()
+  })
+
+  it('B4: Teacher\'s Assessment badge button contains a pencil icon', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    const badgeBtn = await screen.findByTestId('student-cefr-badge')
+    expect(badgeBtn.querySelector('.lucide-pencil')).toBeInTheDocument()
+  })
+
+  it('B5: clicking Add Objective focuses the new text input', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    await user.click(screen.getByTestId('add-objective'))
+    const inputs = screen.getAllByTestId('objective-text-input')
+    expect(inputs[inputs.length - 1]).toHaveFocus()
+  })
+
+  it('B6: difficulty description is a textarea element', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    await user.click(screen.getByTestId('add-difficulty'))
+    const desc = screen.getByTestId('difficulty-description')
+    expect(desc.tagName.toLowerCase()).toBe('textarea')
+  })
+
+  it('B7: objective rows use amber border class, not orange-300', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    await user.click(screen.getByTestId('add-objective'))
+    const row = screen.getByTestId('objective-row')
+    expect(row.className).toContain('amber')
+    expect(row.className).not.toContain('orange-300')
+  })
+
+  it('B8: no Lucide Calendar icon rendered adjacent to objective date input', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    await user.click(screen.getByTestId('add-objective'))
+    const row = screen.getByTestId('objective-row')
+    expect(row.querySelector('.lucide-calendar')).not.toBeInTheDocument()
+  })
+
+  it('B9: Official Level empty state renders ghost badge, clicking opens select', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    const user = userEvent.setup()
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    const ghostBadge = await screen.findByTestId('student-official-cefr-badge')
+    expect(ghostBadge).toHaveTextContent('Not set')
+    await user.click(ghostBadge)
+    expect(await screen.findByTestId('student-official-cefr')).toBeInTheDocument()
+  })
 })
 
 describe('StudentForm – language combobox with full options', () => {
