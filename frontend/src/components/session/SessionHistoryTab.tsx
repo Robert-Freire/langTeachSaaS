@@ -1,4 +1,5 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef } from 'react'
+import { useBlurSave } from '../../hooks/useBlurSave'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ChevronDown,
@@ -78,18 +79,8 @@ function SessionEntry({
   const [narrativeDraft, setNarrativeDraft] = useState(session.actualContent ?? '')
   const [durationDraft, setDurationDraft] = useState(session.duration?.toString() ?? '')
   const [nextPlanDraft, setNextPlanDraft] = useState(session.nextSessionTopics ?? '')
-  const [savedVisible, setSavedVisible] = useState(false)
-  const [fieldError, setFieldError] = useState<string | null>(null)
-  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { savedVisible, fieldError, onSaveSuccess, onSaveError } = useBlurSave()
   const isRevertingRef = useRef(false)
-
-  useEffect(() => {
-    return () => {
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
-    }
-  }, [])
 
   const { mutate: softDelete, isPending: isDeleting } = useMutation({
     mutationFn: () => deleteSession(studentId, session.id),
@@ -118,9 +109,7 @@ function SessionEntry({
       } else {
         const n = Number(value)
         if (!Number.isFinite(n) || n < 0) {
-          setFieldError('Invalid duration')
-          if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
-          errorTimerRef.current = setTimeout(() => setFieldError(null), 3000)
+          onSaveError('Invalid duration')
           return
         }
         patch[field] = n
@@ -131,15 +120,10 @@ function SessionEntry({
     try {
       await patchSessionField(studentId, session, patch as Parameters<typeof patchSessionField>[2])
       queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
-      setSavedVisible(true)
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-      savedTimerRef.current = setTimeout(() => setSavedVisible(false), 1500)
-      setFieldError(null)
+      onSaveSuccess()
     } catch (err) {
       logger.error('SessionHistoryTab', 'inline field save failed', err)
-      setFieldError('Failed to save')
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
-      errorTimerRef.current = setTimeout(() => setFieldError(null), 3000)
+      onSaveError('Failed to save')
     }
   }
 
