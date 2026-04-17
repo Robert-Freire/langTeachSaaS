@@ -2,8 +2,8 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowLeft, Plus, X, ChevronDown, ChevronUp,
-  Loader2, CheckCircle, RefreshCw, Mic,
+  ArrowLeft, Plus, X, ChevronDown,
+  Loader2, CheckCircle, RefreshCw,
 } from 'lucide-react'
 import { getStudent, appendTeachingTodo, updateTeachingTodo } from '@/api/students'
 import {
@@ -583,7 +583,8 @@ export default function LogSession() {
 
         {/* Pending Followups */}
         {pendingFollowups.length > 0 && (
-          <PanelSection label="Pending Followups">
+          <PanelSection label="Open followups from previous sessions">
+            <p className="text-xs text-zinc-400 -mt-1">Check items you addressed in this session</p>
             <div className="space-y-1.5">
               {pendingFollowups.map(f => (
                 <label
@@ -595,10 +596,10 @@ export default function LogSession() {
                     type="checkbox"
                     checked={checkedFollowupIds.has(f.id)}
                     onChange={() => toggleFollowup(f.id)}
-                    className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-500 shrink-0"
+                    className="mt-0.5 h-4 w-4 rounded border-amber-300 text-indigo-600 shrink-0"
                     data-testid="followup-checkbox"
                   />
-                  <span className={`text-sm leading-snug ${checkedFollowupIds.has(f.id) ? 'line-through text-zinc-400' : 'text-[#1A1B22]'}`}>
+                  <span className={`text-sm leading-snug transition-all duration-150 ${checkedFollowupIds.has(f.id) ? 'line-through text-zinc-400 opacity-60' : 'text-[#1A1B22]'}`}>
                     {f.text}
                     {f.dueDate && (
                       <span className="ml-1.5 text-xs text-amber-600">{formatDate(f.dueDate)}</span>
@@ -896,6 +897,16 @@ export default function LogSession() {
                 />
               </div>
 
+              {/* Voice Note */}
+              <div className="mt-3" data-testid="voice-recorder-section">
+                <AudioRecorder
+                  onVoiceNote={(note) => {
+                    setVoiceNoteId(note.id)
+                    markChangedAndSaveNow({ voiceNoteId: note.id })
+                  }}
+                />
+              </div>
+
               {/* Topics Covered */}
               <div className="space-y-1" data-testid="topics-covered-section">
                 <Label className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">Topics Covered</Label>
@@ -911,7 +922,7 @@ export default function LogSession() {
                           setTopicTags(next)
                           markChangedAndSaveNow({ topicTags: serializeTopicTags(next) })
                         }}
-                        className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700 hover:bg-indigo-100 transition-colors"
+                        className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 min-h-[36px] text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
                         data-testid={`tag-suggestion-${suggestion}`}
                       >
                         <Plus className="h-3 w-3" />
@@ -1029,31 +1040,12 @@ export default function LogSession() {
                 className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-indigo-600 transition-colors"
                 data-testid="toggle-secondary"
               >
-                {secondaryOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                {secondaryOpen ? 'Hide extra sections' : 'Show extra sections'}
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${secondaryOpen ? 'rotate-180' : ''}`} />
+                {secondaryOpen ? 'Hide additional sections' : 'Show homework, cultural notes, error patterns...'}
               </button>
 
               {secondaryOpen && (
                 <div className="space-y-6">
-                  {/* Voice Note - horizontal bar */}
-                  <div className="flex items-center gap-4 rounded-xl px-4 py-3 bg-white" style={{ boxShadow: '0 1px 4px rgba(26,27,34,0.06)' }}>
-                    <div className="flex items-center gap-2 text-zinc-600">
-                      <Mic className="h-4 w-4 text-indigo-500" />
-                      <div>
-                        <p className="text-sm font-medium text-[#1A1B22]">Voice Note</p>
-                        <p className="text-xs text-zinc-400">Capture thoughts via voice</p>
-                      </div>
-                    </div>
-                    <div className="ml-auto">
-                      <AudioRecorder
-                        onVoiceNote={(note) => {
-                          setVoiceNoteId(note.id)
-                          markChangedAndSaveNow({ voiceNoteId: note.id })
-                        }}
-                      />
-                    </div>
-                  </div>
-
                   {/* Today's Context */}
                   <div className="space-y-1">
                     <Label htmlFor="general-notes" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400">

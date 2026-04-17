@@ -387,6 +387,24 @@ describe('LogSession', () => {
     expect(screen.getByTestId('topic-tags-input')).toBeDefined()
   })
 
+  it('shows audio recorder without opening secondary section', async () => {
+    renderLogSession()
+    await screen.findByTestId('actual-content')
+    expect(screen.getByTestId('audio-recorder')).toBeDefined()
+    // audio recorder should be visible without toggling secondary
+    expect(screen.queryByTestId('voice-recorder-section')).toBeInTheDocument()
+  })
+
+  it('toggle button shows descriptor text when closed and changes on open', async () => {
+    renderLogSession()
+    const toggle = await screen.findByTestId('toggle-secondary')
+    expect(toggle).toHaveTextContent('Show homework, cultural notes, error patterns...')
+    fireEvent.click(toggle)
+    await waitFor(() => {
+      expect(screen.getByTestId('toggle-secondary')).toHaveTextContent('Hide additional sections')
+    })
+  })
+
   it('shows suggestion chips when narrative contains a known keyword', async () => {
     renderLogSession()
     await screen.findByTestId('actual-content')
