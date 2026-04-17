@@ -516,6 +516,14 @@ describe('LogSession — edit mode', () => {
     })
   })
 
+  it('back arrow in edit mode navigates away without discard confirmation when no changes', async () => {
+    renderEditSession()
+    await screen.findByTestId('back-button')
+    fireEvent.click(screen.getByTestId('back-button'))
+    expect(mockNavigate).toHaveBeenCalledWith(`/students/${STUDENT_ID}?tab=sessions`)
+    expect(screen.queryByTestId('discard-confirm-bar')).not.toBeInTheDocument()
+  })
+
   it('Done in edit mode navigates to ?tab=sessions', async () => {
     renderEditSession()
     await screen.findByTestId('done-btn')

@@ -317,7 +317,11 @@ export default function LogSession() {
   const doneNavTarget = isEditMode ? `/students/${id}?tab=sessions` : `/students/${id}`
 
   function handleBack() {
-    if (!hasChanges && !autosavedSessionId) {
+    // In edit mode, autosavedSessionId is seeded from the existing session,
+    // so only hasChanges determines whether the user made edits.
+    // In create mode, an autosavedSessionId means a session was created by autosave.
+    const isDirty = hasChanges || (!isEditMode && !!autosavedSessionId)
+    if (!isDirty) {
       navigate(doneNavTarget)
       return
     }
