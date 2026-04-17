@@ -67,6 +67,42 @@ const SCROLLSPY_IDS = [
   'section-commercial',
 ]
 
+function AutoResizeTextarea({
+  value,
+  onChange,
+  placeholder,
+  maxLength,
+  className,
+  'data-testid': testId,
+}: {
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
+  placeholder?: string
+  maxLength?: number
+  className?: string
+  'data-testid'?: string
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [value])
+  return (
+    <Textarea
+      ref={ref}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      maxLength={maxLength}
+      rows={1}
+      className={className}
+      data-testid={testId}
+    />
+  )
+}
+
 function ObjectiveRow({
   obj,
   autoFocus,
@@ -1215,17 +1251,11 @@ export default function StudentForm() {
                         className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_auto_1fr_auto_auto] sm:gap-2 sm:items-start"
                         data-testid="difficulty-row"
                       >
-                        <Textarea
+                        <AutoResizeTextarea
                           value={d.description}
-                          onChange={(e) => {
-                            const el = e.currentTarget
-                            el.style.height = 'auto'
-                            el.style.height = `${el.scrollHeight}px`
-                            updateDifficulty(d.id, 'description', e.target.value)
-                          }}
+                          onChange={(e) => updateDifficulty(d.id, 'description', e.target.value)}
                           placeholder="e.g. Confuses ser/estar in past tense"
                           maxLength={500}
-                          rows={1}
                           className="sm:col-span-1 resize-none overflow-hidden min-h-[2.25rem]"
                           data-testid="difficulty-description"
                         />
