@@ -811,7 +811,7 @@ public static class DemoSeeder
             }
         );
         await db.SaveChangesAsync();
-        logger.LogInformation("Teacher followups seeded: 4 entries across three age bands.");
+        logger.LogInformation("Teacher followups seeded: 4 entries across four age bands (today, -1d, -2d, -7d).");
     }
 
     private static async Task<Student> UpsertStudentAsync(AppDbContext db, Guid teacherId, Student incoming, DateTime now)
