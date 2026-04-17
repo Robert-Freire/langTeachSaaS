@@ -605,7 +605,7 @@ export default function StudentForm() {
       <div className={isEdit ? 'grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 items-start' : 'max-w-2xl space-y-6'}>
         <div className="space-y-6">
 
-          <form id="student-form" onSubmit={handleSubmit} className="space-y-6">
+          <form id="student-form" onSubmit={handleSubmit} className={`space-y-6${isEdit ? ' pb-[600px]' : ''}`}>
 
             {/* ── SECTION: Basic Info + Proficiency (2-column on desktop) ── */}
             <div id="section-basic" className="grid grid-cols-1 lg:grid-cols-[7fr_5fr] gap-6 items-start">
@@ -1412,7 +1412,7 @@ export default function StudentForm() {
         </div>
 
         {isEdit && id && (
-          <div className="space-y-4 lg:sticky lg:top-6" data-testid="form-sidebar">
+          <div className="space-y-4 lg:sticky lg:top-[76px]" data-testid="form-sidebar">
             <div
               className="bg-white rounded-2xl p-4"
               style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
