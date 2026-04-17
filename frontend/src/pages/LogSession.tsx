@@ -896,7 +896,7 @@ export default function LogSession() {
                 type="date"
                 value={sessionDate}
                 onChange={e => { setSessionDate(e.target.value); markChangedAndSchedule() }}
-                className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus:ring-2 focus:ring-indigo-500/20"
+                className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20"
                 data-testid="session-date"
               />
             </div>
@@ -909,7 +909,7 @@ export default function LogSession() {
                 type="time"
                 value={sessionTime}
                 onChange={e => { setSessionTime(e.target.value); markChangedAndSchedule() }}
-                className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus:ring-2 focus:ring-indigo-500/20"
+                className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20"
                 data-testid="session-time"
               />
             </div>
@@ -919,7 +919,7 @@ export default function LogSession() {
               <Label htmlFor="duration" className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Duration</Label>
               <div className="flex items-center gap-2">
                 <Select value={durationChoice} onValueChange={(v) => { const val = v ?? durationChoice; setDurationChoice(val); markChangedAndSaveNow({ duration: val === 'other' ? null : parseInt(val, 10) }) }}>
-                  <SelectTrigger id="duration" className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus:ring-2 focus:ring-indigo-500/20 flex-1" data-testid="duration-select">
+                  <SelectTrigger id="duration" className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 flex-1" data-testid="duration-select">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
