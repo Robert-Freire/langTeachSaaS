@@ -11,6 +11,12 @@ import * as lessonsApi from '@/api/lessons'
 import type { Student, TeachingTodo } from '@/api/students'
 import type { SessionLog } from '@/api/sessionLogs'
 
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>()
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 vi.mock('@/api/students', () => ({
   getStudent: vi.fn(),
   appendTeachingTodo: vi.fn().mockResolvedValue({}),
@@ -403,12 +409,6 @@ describe('LogSession', () => {
       expect(screen.queryByTestId('topic-tag-suggestions')).toBeNull()
     })
   })
-})
-
-const mockNavigate = vi.fn()
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react-router-dom')>()
-  return { ...actual, useNavigate: () => mockNavigate }
 })
 
 const SESSION_ID = 'session-edit-1'
