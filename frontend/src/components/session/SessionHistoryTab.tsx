@@ -1,21 +1,19 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ChevronDown,
   ChevronUp,
   Trash2,
-  Pencil,
   ExternalLink,
   PlayCircle,
   Search,
   Mic,
   CalendarDays,
   Filter,
-  MoreHorizontal,
 } from 'lucide-react'
 import { logger } from '../../lib/logger'
 import { Link, useNavigate } from 'react-router-dom'
-import { listSessions, deleteSession, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
+import { listSessions, deleteSession, patchSessionField, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
 import { formatMonth, formatDay } from '../../utils/formatDate'
 import { getSessionTitle } from '../../lib/sessionUtils'
 import { HOMEWORK_STATUS_INFO } from '../../utils/homeworkStatusStyles'
@@ -23,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { SavedIndicator } from '@/components/ui/SavedIndicator'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -63,19 +62,34 @@ const HW_STATUS_FALLBACK = { icon: '—', color: 'text-zinc-400', label: 'N/A' }
 function SessionEntry({
   session,
   studentId,
-  onEdit,
   onStartNextSession,
 }: {
   session: SessionLog
   studentId: string
-  onEdit: (session: SessionLog) => void
   onStartNextSession: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [kebabOpen, setKebabOpen] = useState(false)
   const queryClient = useQueryClient()
+
+  // Inline edit state — initialized from session prop
+  const [titleDraft, setTitleDraft] = useState(session.title ?? '')
+  const [narrativeDraft, setNarrativeDraft] = useState(session.actualContent ?? '')
+  const [durationDraft, setDurationDraft] = useState(session.duration?.toString() ?? '')
+  const [nextPlanDraft, setNextPlanDraft] = useState(session.nextSessionTopics ?? '')
+  const [savedVisible, setSavedVisible] = useState(false)
+  const [fieldError, setFieldError] = useState<string | null>(null)
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isRevertingRef = useRef(false)
+
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+    }
+  }, [])
 
   const { mutate: softDelete, isPending: isDeleting } = useMutation({
     mutationFn: () => deleteSession(studentId, session.id),
@@ -89,6 +103,45 @@ function SessionEntry({
       setDeleteError('Failed to delete session. Please try again.')
     },
   })
+
+  async function handleFieldBlur(
+    field: 'title' | 'actualContent' | 'duration' | 'nextSessionTopics',
+    value: string,
+    savedValue: string,
+  ) {
+    if (isRevertingRef.current) { isRevertingRef.current = false; return }
+    if (value === savedValue) return
+    const patch: Record<string, string | number | null> = {}
+    if (field === 'duration') {
+      if (value === '') {
+        patch[field] = null
+      } else {
+        const n = Number(value)
+        if (!Number.isFinite(n) || n < 0) {
+          setFieldError('Invalid duration')
+          if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+          errorTimerRef.current = setTimeout(() => setFieldError(null), 3000)
+          return
+        }
+        patch[field] = n
+      }
+    } else {
+      patch[field] = value || null
+    }
+    try {
+      await patchSessionField(studentId, session, patch as Parameters<typeof patchSessionField>[2])
+      queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+      setSavedVisible(true)
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      savedTimerRef.current = setTimeout(() => setSavedVisible(false), 1500)
+      setFieldError(null)
+    } catch (err) {
+      logger.error('SessionHistoryTab', 'inline field save failed', err)
+      setFieldError('Failed to save')
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+      errorTimerRef.current = setTimeout(() => setFieldError(null), 3000)
+    }
+  }
 
   const topicTags = parseTopicTags(session.topicTags)
   const hasActionItem = Boolean(session.nextSessionTopics)
@@ -112,208 +165,208 @@ function SessionEntry({
         className={`rounded-2xl ring-1 ring-[#C7C4D8]/10 overflow-hidden transition-all ${cardClass}`}
         data-testid="session-entry"
       >
-        {/* Header row: expand button + kebab menu */}
-        <div className="flex items-stretch">
-          {/* Main expand button */}
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            className="flex-1 min-w-0 text-left p-4 hover:bg-[#F4F2FD]/40 transition-colors"
-            aria-expanded={expanded}
-            data-testid="session-entry-toggle"
-          >
-            <div className="flex items-center gap-3">
-              {/* Left: date badge + title + snippet */}
-              <div className="flex items-start gap-3 min-w-0 flex-1">
-                {/* Date badge */}
-                <div
-                  className={`flex flex-col items-center justify-center shrink-0 rounded-xl w-12 h-12 ${
-                    isCancelled ? 'bg-zinc-200 text-zinc-500' : 'bg-[#E2DFFF] text-[#3525CD]'
-                  }`}
-                >
-                  <span className="text-[8px] font-bold uppercase leading-none">{formatMonth(session.sessionDate)}</span>
-                  <span className="text-lg font-extrabold leading-tight">{formatDay(session.sessionDate)}</span>
-                </div>
-
-                {/* Title + content */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <h3
-                      className={`font-bold text-sm text-[#1A1B22] ${isCancelled ? 'line-through text-zinc-500' : ''}`}
-                    >
-                      {getSessionTitle(session)}
-                    </h3>
-                    {isCancelled && (
-                      <span
-                        className="px-2 py-0.5 rounded bg-zinc-200 text-zinc-600 text-[9px] font-bold uppercase"
-                        data-testid="cancelled-badge"
-                      >
-                        Cancelled
-                      </span>
-                    )}
-                    {isDraft && !isCancelled && (
-                      <span
-                        className="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-[9px] font-bold uppercase"
-                        data-testid="draft-badge"
-                      >
-                        Pending review
-                      </span>
-                    )}
-                    {!isCancelled && !isDraft && (
-                      <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase">
-                        Completed
-                      </span>
-                    )}
-                    {hasActionItem && (
-                      <span className="inline-flex items-center gap-1 text-xs text-amber-600" data-testid="action-item-count">
-                        <span className="bg-amber-400 rounded-full w-1.5 h-1.5 shrink-0" />
-                        1 action item
-                        {expanded ? (
-                          <ChevronUp className="h-3 w-3 shrink-0" />
-                        ) : (
-                          <ChevronDown className="h-3 w-3 shrink-0" />
-                        )}
-                      </span>
-                    )}
-                    {hasNote && (
-                      <span className="inline-flex items-center gap-1 text-xs text-zinc-400" data-testid="general-note-count">
-                        <span className="bg-zinc-300 rounded-full w-1.5 h-1.5 shrink-0" />
-                        1 note
-                        {expanded ? (
-                          <ChevronUp className="h-3 w-3 shrink-0" />
-                        ) : (
-                          <ChevronDown className="h-3 w-3 shrink-0" />
-                        )}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Snippet -- actualContent, slightly more prominent when no title */}
-                  {!expanded && session.actualContent && (
-                    <p className={`line-clamp-${session.title ? '1' : '2'} ${session.title ? 'text-xs text-zinc-500' : 'text-xs text-zinc-600'}`}>
-                      {session.actualContent}
-                    </p>
-                  )}
-
-                  {/* Next session topics preview */}
-                  {!expanded && session.nextSessionTopics && (
-                    <p className="text-xs text-amber-700 line-clamp-1" data-testid="next-session-topics-preview">
-                      <span className="font-medium">Next:</span>{' '}
-                      {session.nextSessionTopics}
-                    </p>
-                  )}
-
-                  {/* Topic chips (collapsed) */}
-                  {!expanded && topicTags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {topicTags.slice(0, 4).map((tag, i) => (
-                        <span
-                          key={`${tag.tag}-${i}`}
-                          className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${tagCategoryClass(tag.category)}`}
-                        >
-                          {tag.tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+        {/* Header row: expand button only (no kebab) */}
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full text-left p-4 hover:bg-[#F4F2FD]/40 transition-colors"
+          aria-expanded={expanded}
+          data-testid="session-entry-toggle"
+        >
+          <div className="flex items-center gap-3">
+            {/* Left: date badge + title + snippet */}
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              {/* Date badge */}
+              <div
+                className={`flex flex-col items-center justify-center shrink-0 rounded-xl w-12 h-12 ${
+                  isCancelled ? 'bg-zinc-200 text-zinc-500' : 'bg-[#E2DFFF] text-[#3525CD]'
+                }`}
+              >
+                <span className="text-[8px] font-bold uppercase leading-none">{formatMonth(session.sessionDate)}</span>
+                <span className="text-lg font-extrabold leading-tight">{formatDay(session.sessionDate)}</span>
               </div>
 
-              {/* Right: hw status icon + duration + mic + chevron */}
-              <div className="flex items-center gap-2 shrink-0">
-                {/* Homework status icon */}
-                {showHwIcon && (
-                  <span
-                    className={`text-sm font-bold leading-none ${hwInfo.color}`}
-                    title={hwInfo.label}
-                    data-testid="hw-status-icon"
+              {/* Title + content */}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                  <h3
+                    className={`font-bold text-sm text-[#1A1B22] ${isCancelled ? 'line-through text-zinc-500' : ''}`}
                   >
-                    {hwInfo.icon}
-                  </span>
+                    {getSessionTitle(session)}
+                  </h3>
+                  {isCancelled && (
+                    <span
+                      className="px-2 py-0.5 rounded bg-zinc-200 text-zinc-600 text-[9px] font-bold uppercase"
+                      data-testid="cancelled-badge"
+                    >
+                      Cancelled
+                    </span>
+                  )}
+                  {isDraft && !isCancelled && (
+                    <span
+                      className="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-[9px] font-bold uppercase"
+                      data-testid="draft-badge"
+                    >
+                      Pending review
+                    </span>
+                  )}
+                  {!isCancelled && !isDraft && (
+                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase">
+                      Completed
+                    </span>
+                  )}
+                  {hasActionItem && (
+                    <span className="inline-flex items-center gap-1 text-xs text-amber-600" data-testid="action-item-count">
+                      <span className="bg-amber-400 rounded-full w-1.5 h-1.5 shrink-0" />
+                      1 action item
+                      {expanded ? (
+                        <ChevronUp className="h-3 w-3 shrink-0" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3 shrink-0" />
+                      )}
+                    </span>
+                  )}
+                  {hasNote && (
+                    <span className="inline-flex items-center gap-1 text-xs text-zinc-400" data-testid="general-note-count">
+                      <span className="bg-zinc-300 rounded-full w-1.5 h-1.5 shrink-0" />
+                      1 note
+                      {expanded ? (
+                        <ChevronUp className="h-3 w-3 shrink-0" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3 shrink-0" />
+                      )}
+                    </span>
+                  )}
+                </div>
+
+                {/* Snippet -- actualContent, slightly more prominent when no title */}
+                {!expanded && session.actualContent && (
+                  <p className={`line-clamp-${session.title ? '1' : '2'} ${session.title ? 'text-xs text-zinc-500' : 'text-xs text-zinc-600'}`}>
+                    {session.actualContent}
+                  </p>
                 )}
-                {(session.duration != null || isCancelled) && (
-                  <span className="text-xs text-zinc-400 font-medium" data-testid="duration-badge">
-                    {isCancelled ? '0' : session.duration} min
-                  </span>
+
+                {/* Next session topics preview */}
+                {!expanded && session.nextSessionTopics && (
+                  <p className="text-xs text-amber-700 line-clamp-1" data-testid="next-session-topics-preview">
+                    <span className="font-medium">Next:</span>{' '}
+                    {session.nextSessionTopics}
+                  </p>
                 )}
-                {session.hasVoiceNote && (
-                  <span className="text-zinc-400" data-testid="voice-note-icon">
-                    <Mic className="h-4 w-4" />
-                  </span>
-                )}
-                {expanded ? (
-                  <ChevronUp className="h-4 w-4 text-zinc-400" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 text-zinc-400" />
+
+                {/* Topic chips (collapsed) */}
+                {!expanded && topicTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {topicTags.slice(0, 4).map((tag, i) => (
+                      <span
+                        key={`${tag.tag}-${i}`}
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${tagCategoryClass(tag.category)}`}
+                      >
+                        {tag.tag}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
-          </button>
 
-          {/* Kebab menu - outside the expand button */}
-          <div className="flex items-center px-2 shrink-0">
-            <Popover open={kebabOpen} onOpenChange={setKebabOpen}>
-              <PopoverTrigger
-                render={
-                  <button
-                    className="p-1.5 rounded-lg hover:bg-[#F4F2FD] text-zinc-400 hover:text-zinc-600 transition-colors"
-                    aria-label="Session options"
-                    data-testid="session-kebab-trigger"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
-                }
-              />
-              <PopoverContent className="w-44 p-1" align="end" side="bottom">
-                <button
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-[#F4F2FD] text-[#1A1B22] transition-colors"
-                  onClick={() => {
-                    setKebabOpen(false)
-                    onEdit(session)
-                  }}
-                  data-testid="edit-session-button"
+            {/* Right: hw status icon + duration + mic + chevron */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Homework status icon */}
+              {showHwIcon && (
+                <span
+                  className={`text-sm font-bold leading-none ${hwInfo.color}`}
+                  title={hwInfo.label}
+                  data-testid="hw-status-icon"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit
-                </button>
-                <div className="h-px bg-[#C7C4D8]/20 my-1" />
-                <button
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-red-50 text-red-600 transition-colors"
-                  onClick={() => {
-                    setKebabOpen(false)
-                    setDeleteOpen(true)
-                  }}
-                  disabled={isDeleting}
-                  data-testid="delete-session-button"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Delete
-                </button>
-              </PopoverContent>
-            </Popover>
+                  {hwInfo.icon}
+                </span>
+              )}
+              {(session.duration != null || isCancelled) && (
+                <span className="text-xs text-zinc-400 font-medium" data-testid="duration-badge">
+                  {isCancelled ? '0' : session.duration} min
+                </span>
+              )}
+              {session.hasVoiceNote && (
+                <span className="text-zinc-400" data-testid="voice-note-icon">
+                  <Mic className="h-4 w-4" />
+                </span>
+              )}
+              {expanded ? (
+                <ChevronUp className="h-4 w-4 text-zinc-400" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-zinc-400" />
+              )}
+            </div>
           </div>
-        </div>
+        </button>
 
         {/* Expanded detail */}
         {expanded && (
           <div
             className="border-t border-[#C7C4D8]/10 p-5 bg-[#FBFAFF]"
             data-testid="session-entry-detail"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className={`grid grid-cols-1 gap-6 ${hasRightColumn ? 'md:grid-cols-3' : ''}`}>
-              {/* Left/full: narrative + tags + notes */}
-              <div className={`${hasRightColumn ? 'md:col-span-2' : ''} space-y-5`}>
-                {session.actualContent && (
-                  <div>
-                    <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
-                      Session Narrative
-                    </h4>
-                    <p className="text-sm leading-relaxed text-[#464455] italic whitespace-pre-wrap">
-                      &ldquo;{session.actualContent}&rdquo;
-                    </p>
-                  </div>
+            {/* Editable header row: title + saved indicator */}
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <input
+                type="text"
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={() => void handleFieldBlur('title', titleDraft, session.title ?? '')}
+                onKeyDown={(e) => { if (e.key === 'Escape') { isRevertingRef.current = true; setTitleDraft(session.title ?? ''); e.currentTarget.blur() } }}
+                placeholder="Session title..."
+                className="flex-1 text-sm font-bold text-[#1A1B22] bg-transparent border-b border-transparent hover:border-zinc-200 focus:border-indigo-300 focus:outline-none px-1 py-0.5 transition-colors"
+                data-testid="session-title-input"
+              />
+              <div className="flex items-center gap-2 shrink-0">
+                {fieldError && (
+                  <span className="text-xs text-red-500" data-testid="session-field-error">{fieldError}</span>
                 )}
+                <SavedIndicator visible={savedVisible} />
+              </div>
+            </div>
 
-                {/* Planned content (only if different from actual) */}
+            <div className={`grid grid-cols-1 gap-6 ${hasRightColumn ? 'md:grid-cols-3' : ''}`}>
+              {/* Left/full: narrative + duration + tags + notes */}
+              <div className={`${hasRightColumn ? 'md:col-span-2' : ''} space-y-5`}>
+                {/* Editable narrative */}
+                <div>
+                  <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
+                    Session Narrative
+                  </h4>
+                  <textarea
+                    value={narrativeDraft}
+                    onChange={(e) => setNarrativeDraft(e.target.value)}
+                    onBlur={() => void handleFieldBlur('actualContent', narrativeDraft, session.actualContent ?? '')}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { isRevertingRef.current = true; setNarrativeDraft(session.actualContent ?? ''); e.currentTarget.blur() } }}
+                    placeholder="What happened in this session..."
+                    rows={3}
+                    className="w-full text-sm leading-relaxed text-[#464455] italic bg-white border border-zinc-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-300 placeholder:text-zinc-300 placeholder:not-italic"
+                    data-testid="session-narrative-input"
+                  />
+                </div>
+
+                {/* Editable duration */}
+                <div className="flex items-center gap-2">
+                  <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest shrink-0">
+                    Duration
+                  </h4>
+                  <input
+                    type="number"
+                    min="0"
+                    value={durationDraft}
+                    onChange={(e) => setDurationDraft(e.target.value)}
+                    onBlur={() => void handleFieldBlur('duration', durationDraft, session.duration?.toString() ?? '')}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { isRevertingRef.current = true; setDurationDraft(session.duration?.toString() ?? ''); e.currentTarget.blur() } }}
+                    placeholder="60"
+                    className="w-16 text-sm text-[#1A1B22] bg-white border border-zinc-200 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                    data-testid="session-duration-input"
+                  />
+                  <span className="text-xs text-zinc-400">min</span>
+                </div>
+
+                {/* Planned content (read-only, only if different from actual) */}
                 {session.plannedContent && session.plannedContent !== session.actualContent && (
                   <div>
                     <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
@@ -344,7 +397,7 @@ function SessionEntry({
                   </div>
                 )}
 
-                {/* Teacher notes */}
+                {/* Teacher notes (read-only) */}
                 {session.generalNotes && (
                   <div className="p-4 rounded-xl bg-white border-l-4 border-[#4F46E5] ring-1 ring-[#C7C4D8]/10">
                     <h4 className="text-[10px] font-bold text-[#3525CD] uppercase tracking-widest mb-2">
@@ -377,7 +430,7 @@ function SessionEntry({
                 )}
               </div>
 
-              {/* Right: homework + next session plan (only rendered when needed) */}
+              {/* Right: homework + next session plan */}
               {hasRightColumn && (
                 <div className="space-y-5">
                   {/* Homework card */}
@@ -412,41 +465,60 @@ function SessionEntry({
                     </div>
                   ) : null}
 
-                  {/* Next session plan */}
-                  {session.nextSessionTopics && (
-                    <div
-                      className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
-                      data-testid="next-session-topics-section"
-                    >
-                      <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                        <CalendarDays className="h-3 w-3" />
-                        Planned for next class
-                      </p>
-                      <p className="text-sm text-amber-900 whitespace-pre-wrap">{session.nextSessionTopics}</p>
+                  {/* Next class plan (editable) */}
+                  <div>
+                    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                      <CalendarDays className="h-3 w-3" />
+                      Planned for next class
+                    </p>
+                    <textarea
+                      value={nextPlanDraft}
+                      onChange={(e) => setNextPlanDraft(e.target.value)}
+                      onBlur={() => void handleFieldBlur('nextSessionTopics', nextPlanDraft, session.nextSessionTopics ?? '')}
+                      onKeyDown={(e) => { if (e.key === 'Escape') { isRevertingRef.current = true; setNextPlanDraft(session.nextSessionTopics ?? ''); e.currentTarget.blur() } }}
+                      placeholder="What to cover next time..."
+                      rows={3}
+                      className="w-full text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-amber-300 placeholder:text-amber-300"
+                      data-testid="session-next-plan-input"
+                    />
+                    {session.nextSessionTopics && (
                       <button
-                        className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 hover:text-amber-900 transition-colors"
+                        className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 hover:text-amber-900 transition-colors"
                         onClick={() => onStartNextSession()}
                         data-testid="start-next-session-button"
                       >
                         <PlayCircle className="h-3.5 w-3.5" />
                         Start next session
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
+            </div>
+
+            {/* Delete session button at bottom of expanded row */}
+            <div className="mt-6 pt-4 border-t border-[#C7C4D8]/10">
+              <button
+                type="button"
+                onClick={() => setDeleteOpen(true)}
+                className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 transition-colors px-2 py-1 rounded hover:bg-red-50"
+                data-testid="delete-session-btn"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete session
+              </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Delete confirmation dialog - at root level, not inside footer */}
+      {/* Delete confirmation dialog */}
       <AlertDialog open={deleteOpen} onOpenChange={(open) => { setDeleteOpen(open); if (!open) setDeleteError(null) }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete session log?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this session?</AlertDialogTitle>
             <AlertDialogDescription>
-              This session record will be removed. This action cannot be undone.
+              This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -479,10 +551,6 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
   const [dateFrom, setDateFrom] = useState<string>('')
   const [dateTo, setDateTo] = useState<string>('')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-
-  function handleEdit(session: SessionLog) {
-    navigate(`/students/${studentId}/sessions/${session.id}/edit`)
-  }
 
   function handleStartNextSession() {
     navigate(`/students/${studentId}/log-session`)
@@ -789,7 +857,6 @@ export function SessionHistoryTab({ studentId }: SessionHistoryTabProps) {
               key={session.id}
               session={session}
               studentId={studentId}
-              onEdit={handleEdit}
               onStartNextSession={handleStartNextSession}
             />
           ))}

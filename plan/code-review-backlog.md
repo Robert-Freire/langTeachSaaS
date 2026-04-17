@@ -97,3 +97,4 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 |---|---|---|
 | architecture-reviewer | minor | `getInitials` is defined privately in Students.tsx, StudentDetail.tsx, and LogSession.tsx — three copies of the same two-word-initials helper. Should be extracted to `src/utils/initials.ts` in a cleanup pass. |
 | architecture-reviewer | minor | `formatRelativeDate` in Students.tsx reimplements day-relative logic already in `src/utils/formatDate.ts:relativeTime`. The time-of-day extension is new, but base logic should build on the shared util in a future refactor. |
+| t771 / architecture-reviewer | minor | SessionHistoryTab and StudentProfileTab hand-roll saved-timer + error-timer state instead of reusing useSessionAutosave/useStudentAutosave hooks. Hooks use debounce scheduling; blur-save pattern would need a new hook variant. Defer to cleanup. |

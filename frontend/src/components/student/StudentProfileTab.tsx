@@ -1,7 +1,6 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Pencil, X, Plus, Check, GraduationCap, ChevronDown } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import type { Student } from '@/api/students'
 import type { TeacherFollowup } from '@/api/followups'
 import { parseNotes } from './studentNoteUtils'
@@ -11,6 +10,7 @@ import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
 import { SectionHeader } from './SectionHeader'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { langCode } from './langUtils'
+import { SavedIndicator } from '@/components/ui/SavedIndicator'
 
 const SKILL_ORDER = ['Reading', 'Writing', 'Speaking', 'Listening']
 
@@ -233,6 +233,7 @@ function InlineAddDifficulty({
 
 // ------------------------------------------------------------------
 // Motivation Hero (banner with Manrope quote + interest chips inside)
+// Autosave on blur. No Save/Cancel buttons.
 // ------------------------------------------------------------------
 function MotivationHero({
   student,
@@ -243,26 +244,53 @@ function MotivationHero({
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(student.reasonForStudying ?? '')
-  const [saving, setSaving] = useState(false)
+  const [savedVisible, setSavedVisible] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastSavedRef = useRef(student.reasonForStudying ?? '')
+  const isRevertingRef = useRef(false)
 
-  async function handleSave() {
-    if (!onSave) return
+  // Keep lastSavedRef in sync with server state when not editing; draft is set from prop on edit enter
+  useEffect(() => {
+    if (!editing) lastSavedRef.current = student.reasonForStudying ?? ''
+  }, [student.reasonForStudying, editing])
+
+  // Clear timers on unmount to avoid setState on unmounted component
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+    }
+  }, [])
+
+  async function handleBlur() {
+    if (!onSave || isRevertingRef.current) {
+      isRevertingRef.current = false
+      return
+    }
     const value = draft.trim()
-    setSaving(true)
     try {
       await onSave(value)
-      setDraft(value)
+      lastSavedRef.current = value
+      setSavedVisible(true)
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      savedTimerRef.current = setTimeout(() => setSavedVisible(false), 1500)
+      setSaveError(null)
       setEditing(false)
     } catch {
-      // keep editor open
-    } finally {
-      setSaving(false)
+      setSaveError('Failed to save')
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+      errorTimerRef.current = setTimeout(() => setSaveError(null), 3000)
     }
   }
 
-  function handleCancel() {
-    setDraft(student.reasonForStudying ?? '')
-    setEditing(false)
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Escape') {
+      isRevertingRef.current = true
+      setDraft(lastSavedRef.current)
+      setEditing(false)
+    }
   }
 
   return (
@@ -274,51 +302,43 @@ function MotivationHero({
       <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-100/50 rounded-full -mr-20 -mt-20 pointer-events-none" />
 
       <div className="relative z-10">
-        <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-indigo-600 mb-3 opacity-70">
-          The Why / Motivation
-        </p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-indigo-600 opacity-70">
+            The Why / Motivation
+          </p>
+          <div className="flex items-center gap-2">
+            {saveError && (
+              <span className="text-xs text-red-500" data-testid="reason-save-error">{saveError}</span>
+            )}
+            <SavedIndicator visible={savedVisible} />
+          </div>
+        </div>
 
         {editing ? (
-          <div className="space-y-2">
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              className="w-full font-manrope text-xl italic text-[#1A1B22] bg-white border border-indigo-300 rounded-xl px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"
-              rows={3}
-              maxLength={512}
-              placeholder="Why is this student learning?"
-              autoFocus
-              data-testid="reason-textarea"
-            />
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white h-7 px-3 text-xs"
-                data-testid="reason-save-btn"
-              >
-                <Check className="h-3 w-3 mr-1" />
-                {saving ? 'Saving...' : 'Save'}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={handleCancel}
-                className="h-7 px-3 text-xs text-zinc-500"
-                data-testid="reason-cancel-btn"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            className="w-full font-manrope text-xl italic text-[#1A1B22] bg-white border border-indigo-300 rounded-xl px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            rows={3}
+            maxLength={512}
+            placeholder="Why is this student learning?"
+            autoFocus
+            data-testid="reason-textarea"
+          />
         ) : (
           <div className="flex flex-col lg:flex-row lg:items-start gap-4">
             <div className="flex-1 min-w-0">
               {student.reasonForStudying ? (
-                <div className="flex items-start gap-2">
+                <div
+                  className="flex items-start gap-2 cursor-pointer"
+                  onClick={() => { const v = student.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
+                  data-testid="reason-edit-trigger"
+                >
                   <p
                     className="font-manrope text-2xl font-extrabold text-primary italic leading-snug flex-1"
                     data-testid="reason-quote"
@@ -326,32 +346,35 @@ function MotivationHero({
                     &ldquo;{student.reasonForStudying}&rdquo;
                   </p>
                   {onSave && (
-                    <button
-                      type="button"
-                      onClick={() => setEditing(true)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-zinc-400 hover:text-indigo-600 rounded shrink-0 mt-1"
-                      aria-label="Edit reason for studying"
+                    <span
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-zinc-400 shrink-0 mt-1"
+                      aria-hidden="true"
                       data-testid="reason-edit-btn"
                     >
-                      <Pencil className="h-4 w-4" />
-                    </button>
+                      <Pencil className="h-3 w-3" />
+                    </span>
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
+                <div
+                  className="flex items-center gap-2 cursor-pointer"
+                  onClick={() => { const v = student.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
+                  data-testid="reason-edit-trigger"
+                >
                   <p className="font-manrope text-lg italic text-zinc-400 flex-1" data-testid="reason-quote">
                     Why is this student learning {student.learningLanguage}?
                   </p>
                   {onSave && (
-                    <button
-                      type="button"
-                      onClick={() => setEditing(true)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-zinc-400 hover:text-indigo-600 rounded shrink-0"
-                      aria-label="Edit reason for studying"
+                    <span
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-zinc-400 shrink-0"
+                      aria-hidden="true"
                       data-testid="reason-edit-btn"
                     >
-                      <Pencil className="h-4 w-4" />
-                    </button>
+                      <Pencil className="h-3 w-3" />
+                    </span>
                   )}
                 </div>
               )}
@@ -359,16 +382,19 @@ function MotivationHero({
 
             {/* Interest chips pulled into banner */}
             {student.interests.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 lg:max-w-[180px]" data-testid="hero-interests">
-                {student.interests.map((interest) => (
-                  <span
-                    key={interest}
-                    className="inline-block bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full px-3 py-1"
-                    data-testid="hero-interest-tag"
-                  >
-                    {interest}
-                  </span>
-                ))}
+              <div className="flex flex-col gap-1.5 lg:max-w-[180px]" data-testid="hero-interests">
+                <p className="text-[0.6rem] font-bold uppercase tracking-widest text-indigo-500 opacity-70">Interests</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {student.interests.map((interest) => (
+                    <span
+                      key={interest}
+                      className="inline-block bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full px-3 py-1"
+                      data-testid="hero-interest-tag"
+                    >
+                      {interest}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -379,7 +405,8 @@ function MotivationHero({
 }
 
 // ------------------------------------------------------------------
-// Interests section (right column, editable)
+// Interests section (right column, always-editable chip input)
+// Saves immediately on add (Enter/comma) or remove (×). No edit mode.
 // ------------------------------------------------------------------
 function InterestsSection({
   student,
@@ -388,157 +415,117 @@ function InterestsSection({
   student: Student
   onSave?: (value: string[]) => Promise<void>
 }) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState<string[]>(student.interests)
+  const [chips, setChips] = useState<string[]>(student.interests)
   const [inputValue, setInputValue] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [savedVisible, setSavedVisible] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  function handleAddInterest(value: string) {
-    const trimmed = value.trim()
-    if (trimmed && !draft.includes(trimmed)) {
-      setDraft((prev) => [...prev, trimmed])
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
     }
+  }, [])
+
+  async function commitAdd(value: string) {
+    const trimmed = value.trim()
+    if (!trimmed || chips.includes(trimmed) || !onSave) return
+    const next = [...chips, trimmed]
+    setChips(next)
     setInputValue('')
+    try {
+      await onSave(next)
+      setSavedVisible(true)
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      savedTimerRef.current = setTimeout(() => setSavedVisible(false), 1500)
+      setSaveError(null)
+    } catch {
+      setChips(chips) // revert
+      setSaveError('Failed to save')
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+      errorTimerRef.current = setTimeout(() => setSaveError(null), 3000)
+    }
+  }
+
+  async function commitRemove(item: string) {
+    if (!onSave) return
+    const next = chips.filter((c) => c !== item)
+    setChips(next)
+    try {
+      await onSave(next)
+      setSavedVisible(true)
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      savedTimerRef.current = setTimeout(() => setSavedVisible(false), 1500)
+      setSaveError(null)
+    } catch {
+      setChips(chips) // revert
+      setSaveError('Failed to save')
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+      errorTimerRef.current = setTimeout(() => setSaveError(null), 3000)
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
-      handleAddInterest(inputValue)
+      void commitAdd(inputValue)
     }
-    if (e.key === 'Backspace' && inputValue === '' && draft.length > 0) {
-      setDraft((prev) => prev.slice(0, -1))
+    if (e.key === 'Backspace' && inputValue === '' && chips.length > 0) {
+      void commitRemove(chips[chips.length - 1])
     }
-  }
-
-  function handleRemove(item: string) {
-    setDraft((prev) => prev.filter((i) => i !== item))
-  }
-
-  async function handleSave() {
-    if (!onSave) return
-    const trimmed = inputValue.trim()
-    const finalList = trimmed && !draft.includes(trimmed) ? [...draft, trimmed] : draft
-    setSaving(true)
-    try {
-      await onSave(finalList)
-      setDraft(finalList)
-      setEditing(false)
-      setInputValue('')
-    } catch {
-      // keep open
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  function handleCancel() {
-    setDraft(student.interests)
-    setInputValue('')
-    setEditing(false)
   }
 
   return (
     <section data-testid="profile-interests">
       <div className="flex items-center justify-between mb-3">
         <SectionHeader>Interests</SectionHeader>
-        {onSave && !editing && (
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={() => { setEditing(true); setTimeout(() => inputRef.current?.focus(), 50) }}
-              className="p-1 text-zinc-400 hover:text-indigo-600 rounded transition-colors"
-              aria-label="Edit interests"
-              data-testid="interests-edit-btn"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => { setEditing(true); setTimeout(() => inputRef.current?.focus(), 50) }}
-              className="p-1 text-zinc-400 hover:text-indigo-600 rounded transition-colors"
-              aria-label="Add interest"
-              data-testid="interests-add-btn"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {saveError && (
+            <span className="text-xs text-red-500" data-testid="interests-save-error">{saveError}</span>
+          )}
+          <SavedIndicator visible={savedVisible} />
+        </div>
       </div>
 
-      {editing ? (
-        <div className="space-y-2">
-          <div
-            className="flex flex-wrap gap-1.5 min-h-9 w-full rounded-md border border-indigo-300 bg-white px-3 py-2 cursor-text"
-            onClick={() => inputRef.current?.focus()}
+      <div
+        className="flex flex-wrap gap-1.5 min-h-9 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 cursor-text focus-within:border-indigo-300 transition-colors"
+        onClick={() => inputRef.current?.focus()}
+      >
+        {chips.map((interest) => (
+          <span
+            key={interest}
+            className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded px-2 py-0.5"
+            data-testid="interest-tag"
           >
-            {draft.map((interest) => (
-              <span
-                key={interest}
-                className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded px-2 py-0.5"
+            {interest}
+            {onSave && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); void commitRemove(interest) }}
+                className="text-indigo-400 hover:text-indigo-700"
+                aria-label={`Remove ${interest}`}
+                data-testid={`interest-remove-${interest}`}
               >
-                {interest}
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); handleRemove(interest) }}
-                  className="text-indigo-400 hover:text-indigo-700"
-                  aria-label={`Remove ${interest}`}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-            <input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onBlur={() => { if (inputValue.trim()) handleAddInterest(inputValue) }}
-              placeholder={draft.length === 0 ? 'Type and press Enter' : ''}
-              className="flex-1 min-w-16 outline-none text-sm bg-transparent placeholder:text-zinc-400"
-              data-testid="interests-input"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white h-7 px-3 text-xs"
-              data-testid="interests-save-btn"
-            >
-              <Check className="h-3 w-3 mr-1" />
-              {saving ? 'Saving...' : 'Save'}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={handleCancel}
-              className="h-7 px-3 text-xs text-zinc-500"
-              data-testid="interests-cancel-btn"
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      ) : student.interests.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
-          {student.interests.map((interest) => (
-            <span
-              key={interest}
-              className="inline-block bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full px-2.5 py-1"
-              data-testid="interest-tag"
-            >
-              {interest}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <EmptyState text="No interests added yet" />
-      )}
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </span>
+        ))}
+        {onSave && (
+          <input
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={chips.length === 0 ? 'Add interest...' : ''}
+            className="flex-1 min-w-16 outline-none text-sm bg-transparent placeholder:text-zinc-400"
+            data-testid="interests-input"
+          />
+        )}
+      </div>
     </section>
   )
 }
@@ -589,7 +576,8 @@ export function StudentProfileTab({
   const location = [student.cityOfResidence, student.countryOfResidence].filter(Boolean).join(', ')
   const origin = [student.cityOfOrigin, student.countryOfOrigin].filter(Boolean).join(', ')
 
-  const anySectionCollapsed = (!hasAbout || !hasWorkingMemory) && !showEmptySections
+  // TWM right sidebar is always visible; only left column dark card can be collapsed
+  const anySectionCollapsed = !hasWorkingMemory && !showEmptySections
 
   return (
     <div
@@ -904,29 +892,27 @@ export function StudentProfileTab({
             ============================================================ */}
         <div className="lg:col-span-4 space-y-6">
 
-          {/* 1. Working Memory sidebar (Profession, Born+age, Origin, Residence) */}
-          {(hasAbout || showEmptySections) && (
-            <section
-              className="bg-white rounded-xl p-5"
-              style={{ boxShadow: '0 2px 12px rgba(26,27,34,0.06)' }}
-              data-testid="profile-about"
-            >
-              <SectionHeader>Teacher&apos;s Working Memory</SectionHeader>
-              {hasAbout ? (
-                <div>
-                  {student.profession && <FieldValue label="Profession" value={student.profession} />}
-                  {student.birthYear != null && (() => {
-                    const age = new Date().getFullYear() - student.birthYear!
-                    return <FieldValue label="Born" value={`${student.birthYear} (${age})`} />
-                  })()}
-                  {origin && <FieldValue label="Origin" value={origin} />}
-                  {location && <FieldValue label="Residence" value={location} />}
-                </div>
-              ) : (
-                <EmptyState text="No identity details added yet" />
-              )}
-            </section>
-          )}
+          {/* 1. Teacher's Working Memory (always visible, unconditional) */}
+          <section
+            className="bg-white rounded-xl p-5"
+            style={{ boxShadow: '0 2px 12px rgba(26,27,34,0.06)' }}
+            data-testid="profile-about"
+          >
+            <SectionHeader>Teacher&apos;s Working Memory</SectionHeader>
+            {hasAbout ? (
+              <div>
+                {student.profession && <FieldValue label="Profession" value={student.profession} />}
+                {student.birthYear != null && (() => {
+                  const age = new Date().getFullYear() - student.birthYear!
+                  return <FieldValue label="Born" value={`${student.birthYear} (${age})`} />
+                })()}
+                {origin && <FieldValue label="Origin" value={origin} />}
+                {location && <FieldValue label="Residence" value={location} />}
+              </div>
+            ) : (
+              <EmptyState text="No identity details added yet" />
+            )}
+          </section>
 
           {/* 2. Language Ecosystem */}
           <section data-testid="profile-language-ecosystem">
@@ -1005,9 +991,9 @@ export function StudentProfileTab({
             </div>
           </section>
 
-          {/* 5. Teaching Todos */}
+          {/* 5. Ideas para Clases */}
           <section data-testid="profile-teaching-todos">
-            <SectionHeader>Teaching Todos</SectionHeader>
+            <SectionHeader>Ideas para Clases</SectionHeader>
             <TeachingTodosCard
               todos={student.teachingTodos}
               studentId={student.id}

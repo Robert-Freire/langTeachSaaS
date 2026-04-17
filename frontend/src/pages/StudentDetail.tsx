@@ -419,7 +419,7 @@ export default function StudentDetail() {
           <div className="flex items-center gap-2 shrink-0">
             <Link
               to={`/students/${student.id}/edit`}
-              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium bg-[#E8E7F1] text-[#3525CD] hover:bg-[#DDD9F5] transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
               data-testid="edit-profile-link"
             >
               <Pencil className="h-3.5 w-3.5" />
