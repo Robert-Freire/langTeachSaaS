@@ -462,6 +462,7 @@ export default function LogSession() {
   }) // intentionally no deps: reads doneBusy/handleDone from closure each render
 
   // Scroll gradient: observe sentinel at bottom of left panel
+  // Depends on loading state so the observer attaches after early-return skeleton is replaced by the real DOM
   useEffect(() => {
     const sentinel = scrollSentinelRef.current
     const aside = asideRef.current
@@ -472,7 +473,7 @@ export default function LogSession() {
     )
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [])
+  }, [studentLoading, editSessionLoading])
 
   // Must be before early returns to satisfy Rules of Hooks
   const tagSuggestions = useMemo(
