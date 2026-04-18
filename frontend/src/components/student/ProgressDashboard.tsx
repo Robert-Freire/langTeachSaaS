@@ -257,7 +257,7 @@ export function ProgressDashboard({ student, sessions }: Props) {
               </div>
 
               {(frequency || firstDate) && (
-                <div className="flex items-center gap-4 py-4 border-y border-zinc-200/60">
+                <div className="flex items-center gap-4 py-4">
                   {frequency && (
                     <div className="flex-1">
                       <p className="text-lg font-bold text-[#1A1B22]">{frequency}/wk</p>
@@ -353,7 +353,7 @@ export function ProgressDashboard({ student, sessions }: Props) {
                     return (
                       <div
                         key={d.id}
-                        className="flex items-center justify-between py-2 border-b border-zinc-50 last:border-0"
+                        className="flex items-center justify-between py-2"
                       >
                         <TooltipPrimitive.Root>
                           <TooltipPrimitive.Trigger

@@ -30,7 +30,8 @@ import { SectionHeader } from '@/components/student/SectionHeader'
 import { getFollowups } from '@/api/followups'
 import { FieldTooltip } from '@/components/FieldTooltip'
 import { PageHeader } from '@/components/PageHeader'
-import { CEFR_LEVELS } from '@/lib/cefr-colors'
+import { CEFR_LEVELS, cefrColors } from '@/lib/cefr-colors'
+import { cn } from '@/lib/utils'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { ALL_LANGUAGE_OPTIONS } from '@/lib/languages'
 import { useStudentAutosave } from '@/hooks/useStudentAutosave'
@@ -643,7 +644,7 @@ export default function StudentForm() {
       {isEdit && !isActive && (
         <div className="mt-2">
           <span
-            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-500 border border-zinc-200"
+            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-500"
             data-testid="inactive-badge"
           >
             Inactive
@@ -653,7 +654,7 @@ export default function StudentForm() {
 
       {/* Sticky section nav — edit mode only, renders below header so it sticks as header scrolls away */}
       {isEdit && (
-        <div className="sticky top-14 lg:top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-zinc-100 flex items-center gap-3 py-2 -mx-4 lg:-mx-6 px-4 lg:px-6 mt-4 mb-6" data-testid="section-nav">
+        <div className="sticky top-14 lg:top-0 z-30 bg-white/95 backdrop-blur-sm shadow-sm flex items-center gap-3 py-2 -mx-4 lg:-mx-6 px-4 lg:px-6 mt-4 mb-6" data-testid="section-nav">
           <nav className="flex items-center gap-1 overflow-x-auto shrink min-w-0" style={{ scrollbarWidth: 'none' }} aria-label="Form sections">
             {FORM_SECTIONS.map((s) => (
               <button
@@ -837,7 +838,7 @@ export default function StudentForm() {
                     </div>
 
                     {/* Languages — merged into Basic Info card */}
-                    <div className="pt-4 border-t border-zinc-100 space-y-4">
+                    <div className="pt-6 space-y-4">
                       {/* Native Languages */}
                       <div className="space-y-1.5">
                         <Label className="inline-flex items-center gap-1">Native Languages <FieldTooltip fieldKey="nativeLanguages" /></Label>
@@ -887,36 +888,30 @@ export default function StudentForm() {
                   <p className="text-xs text-zinc-400 mb-4">Override the general CEFR level per skill for AI generation. Leave empty to inherit the general level.</p>
                   <div className="grid grid-cols-2 gap-3">
                     {(['Reading', 'Writing', 'Speaking', 'Listening'] as const).map((skill) => (
-                      <div key={skill} className="space-y-1.5">
-                        <Label className="text-xs">{skill}</Label>
-                        {skillLevelOverrides[skill] && editingCefrField !== `skill-${skill}` ? (
-                          <button
-                            type="button"
-                            onClick={() => setEditingCefrField(`skill-${skill}`)}
-                            className="block"
-                            aria-label={`Edit ${skill} override`}
-                            data-testid={`skill-override-${skill.toLowerCase()}-badge`}
-                          >
-                            <CefrBadge level={skillLevelOverrides[skill]} className="cursor-pointer hover:opacity-80 transition-opacity" />
-                          </button>
-                        ) : (
-                          <Select
-                            value={skillLevelOverrides[skill] ?? ''}
-                            onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setSkillOverride(skill, next); setEditingCefrField(null); if (isEdit) { const nextOverrides = next ? { ...skillLevelOverrides, [skill]: next } : Object.fromEntries(Object.entries(skillLevelOverrides).filter(([k]) => k !== skill)); saveNow({ skillLevelOverrides: nextOverrides }) } }}
-                            open={editingCefrField === `skill-${skill}` || undefined}
-                            onOpenChange={(open) => { if (!open) setEditingCefrField(null) }}
-                          >
-                            <SelectTrigger data-testid={`skill-override-${skill.toLowerCase()}`} className="h-8 text-xs">
-                              <SelectValue placeholder="--" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">--</SelectItem>
-                              {CEFR_LEVELS.map((level) => (
-                                <SelectItem key={level} value={level}>{level}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
+                      <div key={skill} className="relative">
+                        <div
+                          aria-hidden="true"
+                          className={cn(
+                            'flex items-center justify-center rounded-md px-2 py-1 text-xs font-bold uppercase tracking-[0.05em] font-inter pointer-events-none select-none',
+                            skillLevelOverrides[skill] ? cefrColors(skillLevelOverrides[skill]) : 'bg-zinc-100 text-zinc-500',
+                          )}
+                        >
+                          {skill} {skillLevelOverrides[skill] || '--'}
+                        </div>
+                        <Select
+                          value={skillLevelOverrides[skill] ?? ''}
+                          onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setSkillOverride(skill, next); if (isEdit) { const nextOverrides = next ? { ...skillLevelOverrides, [skill]: next } : Object.fromEntries(Object.entries(skillLevelOverrides).filter(([k]) => k !== skill)); saveNow({ skillLevelOverrides: nextOverrides }) } }}
+                        >
+                          <SelectTrigger data-testid={`skill-override-${skill.toLowerCase()}`} className="absolute inset-0 !w-full !h-full opacity-0 cursor-pointer">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">--</SelectItem>
+                            {CEFR_LEVELS.map((level) => (
+                              <SelectItem key={level} value={level}>{level}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     ))}
                   </div>
@@ -1110,7 +1105,7 @@ export default function StudentForm() {
                   </div>
 
                   {/* Short-Term Objectives */}
-                  <div className="space-y-3 pt-2 border-t border-zinc-100">
+                  <div className="space-y-3 pt-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Short-Term Objectives</Label>
@@ -1225,7 +1220,7 @@ export default function StudentForm() {
                   </div>
 
                   {/* Structured Difficulties */}
-                  <div className="space-y-3 pt-2 border-t border-zinc-100">
+                  <div className="space-y-3 pt-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="inline-flex items-center gap-1">Specific Difficulties <FieldTooltip fieldKey="difficulties" /></Label>
@@ -1462,7 +1457,7 @@ export default function StudentForm() {
 
           {/* Danger zone — delete action at bottom of page */}
           {isEdit && id && (
-            <div className="pt-6 border-t border-zinc-100 space-y-2" data-testid="danger-zone">
+            <div className="pt-8 space-y-2" data-testid="danger-zone">
               {deleteError && (
                 <p className="text-sm text-red-600 font-medium" data-testid="delete-error">{deleteError}</p>
               )}

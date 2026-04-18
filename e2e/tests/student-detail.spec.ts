@@ -496,3 +496,29 @@ test('sessions tab: expanded row has delete button that opens confirmation dialo
     await context.close()
   }
 })
+
+test('sessions tab: expanded row has "Edit full session" link that navigates to log-session with sessionId', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  try {
+    await page.goto('/students')
+    await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+    await page.getByText('Diego Seed').first().click()
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+
+    await page.getByTestId('tab-sessions').click()
+    await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    await page.getByTestId('session-entry-toggle').first().click()
+    await expect(page.getByTestId('session-entry-detail').first()).toBeVisible({ timeout: UI_TIMEOUT })
+
+    const editLink = page.getByTestId('edit-full-session-link').first()
+    await expect(editLink).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(editLink).toHaveAttribute('href', /\/students\/[^/]+\/sessions\/[^/]+\/edit$/)
+
+    await editLink.click()
+    await expect(page).toHaveURL(/\/students\/[^/]+\/sessions\/[^/]+\/edit$/, { timeout: NAV_TIMEOUT })
+  } finally {
+    await context.close()
+  }
+})

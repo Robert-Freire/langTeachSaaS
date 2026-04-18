@@ -1,13 +1,15 @@
-import { type SessionLog } from '../api/sessionLogs'
+import { type SessionLog, parseTopicTags } from '../api/sessionLogs'
 import { formatMonthDay } from '../utils/formatDate'
 
 /**
  * Display title for a session in list/history views.
- * Returns the explicit title if set, falls back to "Session, Apr 5",
- * or "Session" if no date is available.
+ * Returns the explicit title if set, falls back to the first topic tag,
+ * then "Session, Apr 5", or "Session" if no date is available.
  */
 export function getSessionTitle(session: SessionLog): string {
   if (session.title) return session.title
+  const tags = parseTopicTags(session.topicTags)
+  if (tags.length > 0) return tags[0].tag
   if (session.sessionDate) return `Session, ${formatMonthDay(session.sessionDate)}`
   return 'Session'
 }

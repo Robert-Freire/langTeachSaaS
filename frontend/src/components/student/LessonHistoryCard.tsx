@@ -41,7 +41,7 @@ export function LessonHistoryCard({ studentId }: LessonHistoryCardProps) {
         {isLoading && (
           <div className="space-y-3">
             {[1, 2].map(i => (
-              <div key={i} className="border border-zinc-100 rounded-lg p-3 space-y-2">
+              <div key={i} className="rounded-lg p-3 space-y-2 bg-[#F4F2FD]/40">
                 <div className="flex items-center gap-2">
                   <Skeleton className="h-4 w-32" />
                   <Skeleton className="h-5 w-16 rounded-full" />
@@ -59,7 +59,7 @@ export function LessonHistoryCard({ studentId }: LessonHistoryCardProps) {
         {entries && entries.length > 0 && (
           <div className="space-y-4">
             {entries.map((entry) => (
-              <div key={entry.lessonId} className="border border-zinc-100 rounded-lg p-3 space-y-2" data-testid="lesson-history-entry">
+              <div key={entry.lessonId} className="rounded-lg p-3 space-y-2 bg-[#F4F2FD]/40" data-testid="lesson-history-entry">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Link
                     to={`/lessons/${entry.lessonId}`}
