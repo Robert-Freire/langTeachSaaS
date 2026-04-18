@@ -37,6 +37,7 @@ public static class DemoSeeder
         var alreadySeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.PersonalNotes == DemoTag);
         if (alreadySeeded)
         {
+            await SeedLargeRosterAsync(db, teacher.Id, logger);
             logger.LogInformation("Demo data already exists for teacher {Email} — skipping.", teacher.Email);
             return true;
         }
@@ -98,6 +99,7 @@ public static class DemoSeeder
         var sectionCount = lessons.Sum(l => l.Sections.Count);
         logger.LogInformation("Demo data seeded: {Students} students, {Lessons} lessons, {Sections} sections.",
             students.Count, lessons.Count, sectionCount);
+        await SeedLargeRosterAsync(db, teacher.Id, logger);
         return true;
     }
 

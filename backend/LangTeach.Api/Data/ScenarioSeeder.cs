@@ -136,8 +136,9 @@ public static class ScenarioSeeder
         var students = await db.Students.Where(s => studentIds.Contains(s.Id)).ToListAsync();
         foreach (var s in students)
         {
-            s.TeachingTodos = "[]";
-            s.UpdatedAt     = now;
+            s.TeachingTodos      = "[]";
+            s.ShortTermObjectives = null;
+            s.UpdatedAt          = now;
         }
 
         await db.SaveChangesAsync();
@@ -447,21 +448,21 @@ public static class ScenarioSeeder
         ruiSeed.ShortTermObjectives = $$"""[{"id":"o1","text":"Pass A2 DELE exam","targetDate":"{{now.AddDays(35):yyyy-MM-dd}}"}]""";
         ruiSeed.UpdatedAt = now;
 
-        // Sofia Seed: Returning signal (last session 25 days ago + upcoming session booked)
+        // Sofia Seed: Returning signal (last session 26 days ago + upcoming session booked)
         db.SessionLogs.AddRange(
             new SessionLog
             {
                 Id                     = Guid.NewGuid(),
                 StudentId              = sofiaSeed.Id,
                 TeacherId              = teacherId,
-                SessionDate            = now.AddDays(-25),
+                SessionDate            = now.AddDays(-26),
                 PlannedContent         = "Present perfect vs past simple",
                 PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
                 Duration               = 60,
                 IsDeleted              = false,
                 IsCancelled            = false,
-                CreatedAt              = now.AddDays(-25),
-                UpdatedAt              = now.AddDays(-25),
+                CreatedAt              = now.AddDays(-26),
+                UpdatedAt              = now.AddDays(-26),
             },
             new SessionLog
             {
