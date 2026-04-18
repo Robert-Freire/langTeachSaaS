@@ -258,6 +258,31 @@ if (seedIndex >= 0)
     return seeded ? 0 : 1;
 }
 
+// Scenario seed: dotnet LangTeach.Api.dll --seed-scenario <1-6> <auth0-user-id|email>
+var seedScenarioIndex = Array.IndexOf(args, "--seed-scenario");
+if (seedScenarioIndex >= 0)
+{
+    var scenarioStr  = seedScenarioIndex + 1 < args.Length ? args[seedScenarioIndex + 1] : null;
+    var teacherArg   = seedScenarioIndex + 2 < args.Length ? args[seedScenarioIndex + 2] : null;
+
+    if (!int.TryParse(scenarioStr, out var scenario) || scenario < 1 || scenario > 6)
+    {
+        Console.Error.WriteLine("Usage: --seed-scenario <1-6> <auth0-user-id|email>");
+        return 1;
+    }
+    if (string.IsNullOrWhiteSpace(teacherArg))
+    {
+        Console.Error.WriteLine("Usage: --seed-scenario <1-6> <auth0-user-id|email>");
+        return 1;
+    }
+
+    using var scenarioScope  = app.Services.CreateScope();
+    var scenarioDb     = scenarioScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var scenarioLogger = scenarioScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var seeded = await ScenarioSeeder.SeedScenarioAsync(scenarioDb, scenario, teacherArg, scenarioLogger);
+    return seeded ? 0 : 1;
+}
+
 // Visual seed: dotnet run -- --visual-seed <auth0-user-id|email>
 var visualSeedIndex = Array.IndexOf(args, "--visual-seed");
 if (visualSeedIndex >= 0)
