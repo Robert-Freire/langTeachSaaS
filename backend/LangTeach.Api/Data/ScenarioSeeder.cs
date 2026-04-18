@@ -1,0 +1,511 @@
+using LangTeach.Api.Data.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace LangTeach.Api.Data;
+
+/// <summary>
+/// Idempotent dashboard scenario seeder for dev/review use.
+/// Each call: wipe-then-reseed the 9 scenario students' sessions, followups, and todos.
+/// Does NOT touch DemoSeeder, production seeding paths, or any other students.
+/// </summary>
+public static class ScenarioSeeder
+{
+    private const string ScenarioTag = "[scenario-seed]";
+
+    // All students whose sessions, followups, and todos are managed by this seeder.
+    // Ana Visual, Ana Seed, Marco Seed, Clara Seed, Diego Seed already exist after --visual-seed.
+    // Marco B1, Carmen C1, Nadia B2, Hans B1 are created on first run.
+    private static readonly (string Name, string Cefr, string NativeLang, string LearningLang)[] ScenarioStudentDefs =
+    [
+        ("Ana Visual",  "B2", """["Ukrainian"]""",   "English"),
+        ("Marco B1",    "B1", """["Italian"]""",     "English"),
+        ("Carmen C1",   "C1", """["Spanish"]""",     "English"),
+        ("Nadia B2",    "B2", """["French"]""",      "English"),
+        ("Hans B1",     "B1", """["German"]""",      "English"),
+        ("Ana Seed",    "B1", """["Portuguese"]""",  "English"),
+        ("Marco Seed",  "A2", """["Italian"]""",     "English"),
+        ("Clara Seed",  "A1", """["German"]""",      "Spanish"),
+        ("Diego Seed",  "B2", """["Spanish"]""",     "English"),
+    ];
+
+    public static async Task<bool> SeedScenarioAsync(AppDbContext db, int scenario, string teacherLookup, ILogger logger)
+    {
+        if (scenario < 1 || scenario > 6)
+        {
+            logger.LogError("Invalid scenario {Scenario}. Valid range: 1-6.", scenario);
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(teacherLookup))
+        {
+            logger.LogError("Teacher lookup is required. Pass an Auth0 user ID or email.");
+            return false;
+        }
+        teacherLookup = teacherLookup.Trim();
+
+        var teacher = teacherLookup.StartsWith("auth0|", StringComparison.OrdinalIgnoreCase)
+            ? await db.Teachers.FirstOrDefaultAsync(t => t.Auth0UserId == teacherLookup)
+            : await db.Teachers.FirstOrDefaultAsync(t => t.Email == teacherLookup);
+
+        if (teacher is null)
+        {
+            logger.LogError("No teacher found for '{Lookup}'. Log in at least once before seeding.", teacherLookup);
+            return false;
+        }
+
+        var now = DateTime.UtcNow;
+
+        if (!teacher.IsApproved || !teacher.HasCompletedOnboarding)
+        {
+            teacher.IsApproved = true;
+            teacher.HasCompletedOnboarding = true;
+            teacher.UpdatedAt = now;
+        }
+        logger.LogInformation("Seeding scenario {Scenario} for teacher {Email}...", scenario, teacher.Email);
+
+        // Step 1: ensure all 9 scenario students exist
+        var students = await EnsureScenarioStudentsAsync(db, teacher.Id, now);
+
+        // Step 2: wipe sessions, followups, todos for the 9 students (full reset)
+        await WipeAsync(db, teacher.Id, students.Select(s => s.Id).ToArray(), now, logger);
+
+        // Step 3: seed data for the requested scenario
+        await SeedAsync(db, teacher.Id, students, scenario, now, logger);
+
+        logger.LogInformation("Scenario {Scenario} seeded successfully.", scenario);
+        return true;
+    }
+
+    // -------------------------------------------------------------------------
+    // Student bootstrap
+    // -------------------------------------------------------------------------
+
+    private static async Task<List<Student>> EnsureScenarioStudentsAsync(AppDbContext db, Guid teacherId, DateTime now)
+    {
+        var result = new List<Student>();
+
+        foreach (var (name, cefr, nativeLang, learningLang) in ScenarioStudentDefs)
+        {
+            var student = await db.Students.FirstOrDefaultAsync(
+                s => s.TeacherId == teacherId && s.Name == name && !s.IsDeleted);
+
+            if (student is null)
+            {
+                student = new Student
+                {
+                    Id               = Guid.NewGuid(),
+                    TeacherId        = teacherId,
+                    Name             = name,
+                    LearningLanguage = learningLang,
+                    CefrLevel        = cefr,
+                    NativeLanguages  = nativeLang,
+                    PersonalNotes    = ScenarioTag,
+                    IsActive         = true,
+                    CreatedAt        = now,
+                    UpdatedAt        = now,
+                };
+                db.Students.Add(student);
+                await db.SaveChangesAsync();
+            }
+
+            result.Add(student);
+        }
+
+        return result;
+    }
+
+    // -------------------------------------------------------------------------
+    // Wipe — runs before every scenario to guarantee idempotency.
+    // Deletes ALL sessions for the 9 students and ALL teacher followups (regardless
+    // of student) so that every scenario starts from a fully clean state. This is
+    // intentional: the tool is a complete DB state switcher for a dev/review teacher.
+    // -------------------------------------------------------------------------
+
+    private static async Task WipeAsync(AppDbContext db, Guid teacherId, Guid[] studentIds, DateTime now, ILogger logger)
+    {
+        var sessions = await db.SessionLogs.Where(sl => studentIds.Contains(sl.StudentId)).ToListAsync();
+        db.SessionLogs.RemoveRange(sessions);
+
+        var followups = await db.TeacherFollowups.Where(f => f.TeacherId == teacherId).ToListAsync();
+        db.TeacherFollowups.RemoveRange(followups);
+
+        var students = await db.Students.Where(s => studentIds.Contains(s.Id)).ToListAsync();
+        foreach (var s in students)
+        {
+            s.TeachingTodos = "[]";
+            s.UpdatedAt     = now;
+        }
+
+        await db.SaveChangesAsync();
+        logger.LogInformation("Wiped {Sessions} sessions and {Followups} followups for scenario students.",
+            sessions.Count, followups.Count);
+    }
+
+    // -------------------------------------------------------------------------
+    // Scenario dispatch
+    // -------------------------------------------------------------------------
+
+    private static async Task SeedAsync(AppDbContext db, Guid teacherId, List<Student> students,
+        int scenario, DateTime now, ILogger logger)
+    {
+        // Students ordered as defined in ScenarioStudentDefs
+        var anaVisual  = students[0];
+        var marcoB1    = students[1];
+        var carmenC1   = students[2];
+        var nadiaB2    = students[3];
+        var hansB1     = students[4];
+        var anaSeed    = students[5];
+        var marcoSeed  = students[6];
+        var claraSeed  = students[7];
+        var diegoSeed  = students[8];
+
+        switch (scenario)
+        {
+            case 1: await SeedScenario1Async(db, teacherId, anaVisual,  now, logger); break;
+            case 2: await SeedScenario2Async(db, teacherId, marcoB1, anaVisual, now, logger); break;
+            case 3: SeedScenario3(logger); break;
+            case 4: await SeedScenario4Async(db, teacherId, nadiaB2, now, logger); break;
+            case 5: await SeedScenario5Async(db, teacherId, anaSeed, marcoSeed, claraSeed, diegoSeed, now, logger); break;
+            case 6: await SeedScenario6Async(db, teacherId, hansB1, now, logger); break;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Scenario 1 — "Class in 20 minutes" (Ana Visual)
+    // Hero: "IN 20 MIN" badge · planned strip · full briefing card · "Partial" homework card
+    // Agenda: 3 rows with NEXT highlight
+    // -------------------------------------------------------------------------
+
+    private static async Task SeedScenario1Async(AppDbContext db, Guid teacherId, Student anaVisual,
+        DateTime now, ILogger logger)
+    {
+        // Past session (earlier today): populates briefing card sub-sections
+        var pastSession = new SessionLog
+        {
+            Id                     = Guid.NewGuid(),
+            StudentId              = anaVisual.Id,
+            TeacherId              = teacherId,
+            SessionDate            = now.Date.AddHours(8), // 08:00 today
+            TopicTags              = """[{"Tag":"Pretérito indefinido","Category":null},{"Tag":"Verbos reflexivos","Category":null}]""",
+            GeneralNotes           = "Good session, student struggled with reflexive verbs in past tense",
+            HomeworkAssigned       = "Write 10 sentences using reflexive verbs in past tense",
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Duration               = 60,
+            IsDeleted              = false,
+            CreatedAt              = now.Date.AddHours(8),
+            UpdatedAt              = now.Date.AddHours(8),
+        };
+        db.SessionLogs.Add(pastSession);
+        await db.SaveChangesAsync();
+
+        // Followup linked to the past session (populates "Promises made" in briefing)
+        db.TeacherFollowups.Add(new TeacherFollowup
+        {
+            Id                 = Guid.NewGuid(),
+            TeacherId          = teacherId,
+            StudentId          = anaVisual.Id,
+            Text               = "Send link to reflexive verb exercises",
+            Status             = "pending",
+            SourceSessionLogId = pastSession.Id,
+            CreatedAt          = pastSession.SessionDate!.Value,
+        });
+
+        // NEXT session (now + 20 min): hero shows "IN 20 MIN" badge
+        db.SessionLogs.Add(new SessionLog
+        {
+            Id                     = Guid.NewGuid(),
+            StudentId              = anaVisual.Id,
+            TeacherId              = teacherId,
+            SessionDate            = now.AddMinutes(20),
+            PlannedContent         = "Review homework + introduce imperfecto",
+            HomeworkAssigned       = "Complete exercises 3.1-3.4 in workbook",
+            PreviousHomeworkStatus = HomeworkStatus.Partial,
+            IsDeleted              = false,
+            CreatedAt              = now,
+            UpdatedAt              = now,
+        });
+
+        // Third session later today: 3rd agenda row
+        db.SessionLogs.Add(new SessionLog
+        {
+            Id                     = Guid.NewGuid(),
+            StudentId              = anaVisual.Id,
+            TeacherId              = teacherId,
+            SessionDate            = now.Date.AddHours(18), // 18:00 today
+            PlannedContent         = "Grammar consolidation: imperfecto vs indefinido",
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            IsDeleted              = false,
+            CreatedAt              = now,
+            UpdatedAt              = now,
+        });
+
+        await db.SaveChangesAsync();
+        logger.LogInformation("Scenario 1 seeded: Ana Visual, IN 20 MIN, 3 agenda rows, full briefing, Partial homework.");
+    }
+
+    // -------------------------------------------------------------------------
+    // Scenario 2 — "Session this week, quiet day" (Marco B1)
+    // Hero: zinc "IN 3D" · planned strip only (no briefing) · this-week agenda · "2D OLD" followup
+    // -------------------------------------------------------------------------
+
+    private static async Task SeedScenario2Async(AppDbContext db, Guid teacherId, Student marcoB1,
+        Student anaVisual, DateTime now, ILogger logger)
+    {
+        // Marco B1 session in 3 days — hero (no past sessions → briefing invisible)
+        db.SessionLogs.Add(new SessionLog
+        {
+            Id                     = Guid.NewGuid(),
+            StudentId              = marcoB1.Id,
+            TeacherId              = teacherId,
+            SessionDate            = now.Date.AddDays(3).AddHours(10),
+            PlannedContent         = "Subjuntivo en oraciones temporales",
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            IsDeleted              = false,
+            CreatedAt              = now,
+            UpdatedAt              = now,
+        });
+
+        // Ana Visual session in 4 days — second entry in this-week list
+        db.SessionLogs.Add(new SessionLog
+        {
+            Id                     = Guid.NewGuid(),
+            StudentId              = anaVisual.Id,
+            TeacherId              = teacherId,
+            SessionDate            = now.Date.AddDays(4).AddHours(10),
+            PlannedContent         = "Travel vocabulary review",
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            IsDeleted              = false,
+            CreatedAt              = now,
+            UpdatedAt              = now,
+        });
+
+        // Standalone followup created 2 days ago → "2D OLD" amber badge
+        db.TeacherFollowups.Add(new TeacherFollowup
+        {
+            Id        = Guid.NewGuid(),
+            TeacherId = teacherId,
+            StudentId = marcoB1.Id,
+            Text      = "Check Marco has textbook chapter 4 before next session",
+            Status    = "pending",
+            CreatedAt = now.AddDays(-2),
+        });
+
+        await db.SaveChangesAsync();
+        logger.LogInformation("Scenario 2 seeded: Marco B1 in 3 days, this-week fallback, 2D OLD followup.");
+    }
+
+    // -------------------------------------------------------------------------
+    // Scenario 3 — "Nothing scheduled" (Carmen C1)
+    // Hero: "No sessions scheduled" · Agenda: "No sessions this week" · Followups: "All caught up"
+    // No data to seed — all students' sessions and followups were wiped in step 2.
+    // -------------------------------------------------------------------------
+
+    private static void SeedScenario3(ILogger logger)
+    {
+        logger.LogInformation("Scenario 3 seeded: all empty states (no sessions, no followups).");
+    }
+
+    // -------------------------------------------------------------------------
+    // Scenario 4 — "Overdue followups" (Nadia B2)
+    // Followup zone: green "TODAY" · amber "2D OLD" · red "7D OVERDUE"
+    // -------------------------------------------------------------------------
+
+    private static async Task SeedScenario4Async(AppDbContext db, Guid teacherId, Student nadiaB2,
+        DateTime now, ILogger logger)
+    {
+        db.TeacherFollowups.AddRange(
+            new TeacherFollowup
+            {
+                Id        = Guid.NewGuid(),
+                TeacherId = teacherId,
+                StudentId = nadiaB2.Id,
+                Text      = "Check Nadia completed the listening exercises",
+                Status    = "pending",
+                CreatedAt = now, // today → green "TODAY"
+            },
+            new TeacherFollowup
+            {
+                Id        = Guid.NewGuid(),
+                TeacherId = teacherId,
+                StudentId = nadiaB2.Id,
+                Text      = "Send Nadia the verb conjugation reference sheet",
+                Status    = "pending",
+                CreatedAt = now.AddDays(-2), // 2 days ago → amber "2D OLD"
+            },
+            new TeacherFollowup
+            {
+                Id        = Guid.NewGuid(),
+                TeacherId = teacherId,
+                StudentId = nadiaB2.Id,
+                Text      = "Follow up on Nadia's pronunciation practice plan",
+                Status    = "pending",
+                CreatedAt = now.AddDays(-7), // 7 days ago → red "7D OVERDUE"
+            }
+        );
+
+        await db.SaveChangesAsync();
+        logger.LogInformation("Scenario 4 seeded: 3 followups with TODAY / 2D OLD / 7D OVERDUE badges.");
+    }
+
+    // -------------------------------------------------------------------------
+    // Scenario 5 — "Roster signals" (Ana Seed, Marco Seed, Clara Seed, Diego Seed)
+    // Signals: Cancelled 2x · Inactive 20d · Review pending · no signal
+    // -------------------------------------------------------------------------
+
+    private static async Task SeedScenario5Async(AppDbContext db, Guid teacherId,
+        Student anaSeed, Student marcoSeed, Student claraSeed, Student diegoSeed,
+        DateTime now, ILogger logger)
+    {
+        // Ana Seed: Cancelled 2x (2 cancelled sessions in last 30 days)
+        db.SessionLogs.AddRange(
+            new SessionLog
+            {
+                Id                     = Guid.NewGuid(),
+                StudentId              = anaSeed.Id,
+                TeacherId              = teacherId,
+                SessionDate            = now.AddDays(-20),
+                PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                IsCancelled            = true,
+                IsDeleted              = false,
+                CreatedAt              = now.AddDays(-20),
+                UpdatedAt              = now.AddDays(-20),
+            },
+            new SessionLog
+            {
+                Id                     = Guid.NewGuid(),
+                StudentId              = anaSeed.Id,
+                TeacherId              = teacherId,
+                SessionDate            = now.AddDays(-10),
+                PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                IsCancelled            = true,
+                IsDeleted              = false,
+                CreatedAt              = now.AddDays(-10),
+                UpdatedAt              = now.AddDays(-10),
+            }
+        );
+
+        // Marco Seed: Inactive 20d (last session 20 days ago, no next session)
+        db.SessionLogs.Add(new SessionLog
+        {
+            Id                     = Guid.NewGuid(),
+            StudentId              = marcoSeed.Id,
+            TeacherId              = teacherId,
+            SessionDate            = now.AddDays(-20),
+            PlannedContent         = "Daily routines vocabulary",
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            IsDeleted              = false,
+            IsCancelled            = false,
+            CreatedAt              = now.AddDays(-20),
+            UpdatedAt              = now.AddDays(-20),
+        });
+
+        // Clara Seed: Review pending (1 pending teaching todo)
+        var claraTodoId   = Guid.NewGuid();
+        var claraTodoDate = now.AddDays(-3).ToString("yyyy-MM-ddTHH:mm:ssZ");
+        claraSeed.TeachingTodos = $$"""[{"id":"{{claraTodoId}}","text":"Review Clara's subjunctive triggers — exercises not completed","createdAt":"{{claraTodoDate}}","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null}]""";
+        claraSeed.UpdatedAt = now;
+
+        // Diego Seed: no signal (recent past session + upcoming session, no todos)
+        db.SessionLogs.AddRange(
+            new SessionLog
+            {
+                Id                     = Guid.NewGuid(),
+                StudentId              = diegoSeed.Id,
+                TeacherId              = teacherId,
+                SessionDate            = now.AddDays(-3),
+                PlannedContent         = "Third conditional and mixed conditionals",
+                PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                IsDeleted              = false,
+                IsCancelled            = false,
+                CreatedAt              = now.AddDays(-3),
+                UpdatedAt              = now.AddDays(-3),
+            },
+            new SessionLog
+            {
+                Id                     = Guid.NewGuid(),
+                StudentId              = diegoSeed.Id,
+                TeacherId              = teacherId,
+                SessionDate            = now.AddDays(5),
+                PlannedContent         = "Academic writing — argument structure",
+                PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                IsDeleted              = false,
+                IsCancelled            = false,
+                CreatedAt              = now,
+                UpdatedAt              = now,
+            }
+        );
+
+        await db.SaveChangesAsync();
+        logger.LogInformation("Scenario 5 seeded: Cancelled 2x (Ana Seed) · Inactive 20d (Marco Seed) · Review pending (Clara Seed) · no signal (Diego Seed).");
+    }
+
+    // -------------------------------------------------------------------------
+    // Scenario 6 — "Full hero briefing" (Hans B1)
+    // Hero: zinc "IN 5D" · planned strip · all 4 briefing sub-sections · green "Completed" homework card
+    // -------------------------------------------------------------------------
+
+    private static async Task SeedScenario6Async(AppDbContext db, Guid teacherId, Student hansB1,
+        DateTime now, ILogger logger)
+    {
+        // Past session (7 days ago): all 4 briefing fields populated
+        var pastSession = new SessionLog
+        {
+            Id                     = Guid.NewGuid(),
+            StudentId              = hansB1.Id,
+            TeacherId              = teacherId,
+            SessionDate            = now.AddDays(-7),
+            TopicTags              = """[{"Tag":"Ser vs estar","Category":null},{"Tag":"Subjuntivo","Category":null}]""",
+            GeneralNotes           = "Strong session, needs more practice with subjunctive triggers",
+            HomeworkAssigned       = "Read article and summarize in Spanish",
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Duration               = 60,
+            IsDeleted              = false,
+            CreatedAt              = now.AddDays(-7),
+            UpdatedAt              = now.AddDays(-7),
+        };
+        db.SessionLogs.Add(pastSession);
+        await db.SaveChangesAsync();
+
+        // Followups linked to past session (populates "Promises made" in briefing)
+        db.TeacherFollowups.AddRange(
+            new TeacherFollowup
+            {
+                Id                 = Guid.NewGuid(),
+                TeacherId          = teacherId,
+                StudentId          = hansB1.Id,
+                Text               = "Find recording of native speaker conversation for Hans",
+                Status             = "pending",
+                SourceSessionLogId = pastSession.Id,
+                CreatedAt          = pastSession.SessionDate!.Value,
+            },
+            new TeacherFollowup
+            {
+                Id                 = Guid.NewGuid(),
+                TeacherId          = teacherId,
+                StudentId          = hansB1.Id,
+                Text               = "Prepare vocabulary list on travel for Hans",
+                Status             = "pending",
+                SourceSessionLogId = pastSession.Id,
+                CreatedAt          = pastSession.SessionDate!.Value,
+            }
+        );
+
+        // NEXT session in 5 days: hero shows "IN 5D"
+        db.SessionLogs.Add(new SessionLog
+        {
+            Id                     = Guid.NewGuid(),
+            StudentId              = hansB1.Id,
+            TeacherId              = teacherId,
+            SessionDate            = now.AddDays(5).Date.AddHours(10),
+            PlannedContent         = "Subjuntivo: triggers and common patterns",
+            HomeworkAssigned       = "Complete workbook p.45-47",
+            PreviousHomeworkStatus = HomeworkStatus.Done,
+            IsDeleted              = false,
+            CreatedAt              = now,
+            UpdatedAt              = now,
+        });
+
+        await db.SaveChangesAsync();
+        logger.LogInformation("Scenario 6 seeded: Hans B1, IN 5D, all 4 briefing sub-sections, Completed homework.");
+    }
+}
