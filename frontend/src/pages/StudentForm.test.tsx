@@ -1084,6 +1084,39 @@ describe('StudentForm', () => {
     await user.click(ghostBadge)
     expect(await screen.findByTestId('student-official-cefr')).toBeInTheDocument()
   })
+
+  it('C1: Skill Override pills show skill name with placeholder when no level set', async () => {
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(screen.getByText('Reading --')).toBeInTheDocument()
+    expect(screen.getByText('Writing --')).toBeInTheDocument()
+    expect(screen.getByText('Speaking --')).toBeInTheDocument()
+    expect(screen.getByText('Listening --')).toBeInTheDocument()
+  })
+
+  it('C2: Scrollspy nav uses shadow-sm, not border-b', async () => {
+    renderEdit()
+    const nav = await screen.findByTestId('section-nav')
+    expect(nav.className).toContain('shadow-sm')
+    expect(nav.className).not.toContain('border-b')
+  })
+
+  it('C3: Inactive badge has no border class', async () => {
+    mockGetStudent.mockResolvedValue({
+      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
+      interests: [], nativeLanguages: [], learningGoals: [],
+      weaknesses: [] as { description: string; weaknessType: string }[],
+      difficulties: [], personalNotes: null, teachingNotes: null,
+      shortTermObjectives: [], spokenLanguages: [], teachingTodos: [],
+      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
+      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
+      officialCefrLevel: null, isActive: false, isCorporate: false, rate: null,
+      skillLevelOverrides: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+    })
+    renderEdit()
+    const badge = await screen.findByTestId('inactive-badge')
+    expect(badge.className).not.toContain('border')
+  })
 })
 
 describe('StudentForm – language combobox with full options', () => {

@@ -427,6 +427,19 @@ describe('LogSession', () => {
       expect(screen.queryByTestId('topic-tag-suggestions')).toBeNull()
     })
   })
+
+  it('C5: topic tag suggestion chips have no border-indigo class', async () => {
+    renderLogSession()
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), {
+      target: { value: 'Revisamos el subjuntivo en oraciones temporales' },
+    })
+    await waitFor(() => {
+      const chip = screen.getByTestId('tag-suggestion-subjuntivo')
+      expect(chip.className).not.toContain('border-indigo')
+      expect(chip.className).toContain('bg-indigo-100')
+    })
+  })
 })
 
 const SESSION_ID = 'session-edit-1'
@@ -650,6 +663,15 @@ describe('LogSession — back arrow behavior', () => {
     fireEvent.click(screen.getByTestId('keep-editing-btn'))
     expect(screen.queryByTestId('discard-confirm-bar')).not.toBeInTheDocument()
     expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('C6: discard button has no red border class', async () => {
+    renderLogSession()
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Some content' } })
+    fireEvent.click(screen.getByTestId('back-button'))
+    const btn = screen.getByTestId('discard-btn')
+    expect(btn.className).not.toContain('border-red')
   })
 })
 
