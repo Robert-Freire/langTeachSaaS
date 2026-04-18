@@ -145,6 +145,29 @@ describe('StudentRoster', () => {
     expect(screen.getByText('Today')).toBeInTheDocument()
   })
 
+  it('shows only "Today" when last and next session are on the same day', () => {
+    const today = new Date().toISOString()
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent({ lastSessionDate: today, nextSessionDate: today })]} />
+      </MemoryRouter>,
+    )
+    // Should show "Today" but not "Today → Today"
+    const row = screen.getByTestId('zone3-student-row')
+    expect(row.textContent).not.toMatch(/Today.*→.*Today/)
+    expect(row.textContent).toContain('Today')
+  })
+
+  it('row has cursor-pointer class for full-row navigation', () => {
+    render(
+      <MemoryRouter>
+        <StudentRoster students={[makeStudent()]} />
+      </MemoryRouter>,
+    )
+    const row = screen.getByTestId('zone3-student-row')
+    expect(row.className).toContain('cursor-pointer')
+  })
+
   it('shows Review pending signal when student has pending todos', () => {
     const student = makeStudent({ pendingTodos: [
       { id: 't1', text: 'Todo 1', createdAt: new Date().toISOString(), status: 'pending', sourceSessionLogId: null, coveredInSessionLogId: null },

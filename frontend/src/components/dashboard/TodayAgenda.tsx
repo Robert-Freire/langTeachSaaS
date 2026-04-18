@@ -27,7 +27,10 @@ export function TodayAgenda({ sessions, nextSessionId, upcomingThisWeek }: Today
     if (upcomingThisWeek.length === 0) {
       return (
         <div className="rounded-2xl bg-white p-5 shadow-[0_12px_40px_rgba(26,27,34,0.06)] ring-1 ring-[#C7C4D8]/20" data-testid="zone2-today-agenda">
-          <h3 className="font-manrope text-[1.25rem] font-bold text-[#1A1B22] mb-2">Today's Agenda</h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-manrope text-[1.25rem] font-bold text-[#1A1B22]">Today's Agenda</h3>
+            <Link to="#" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 hover:text-zinc-600 font-inter transition-colors" data-testid="agenda-calendar-view">Calendar view</Link>
+          </div>
           <p className="text-sm text-zinc-400 font-inter py-4 text-center">No sessions this week</p>
         </div>
       )
@@ -35,9 +38,12 @@ export function TodayAgenda({ sessions, nextSessionId, upcomingThisWeek }: Today
 
     return (
       <div className="rounded-2xl bg-white p-5 shadow-[0_12px_40px_rgba(26,27,34,0.06)] ring-1 ring-[#C7C4D8]/20" data-testid="zone2-today-agenda">
-        <div className="flex items-baseline gap-2 mb-4">
-          <h3 className="font-manrope text-[1.25rem] font-bold text-[#1A1B22]">Today's Agenda</h3>
-          <span className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter">No sessions · This Week</span>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-baseline gap-2">
+            <h3 className="font-manrope text-[1.25rem] font-bold text-[#1A1B22]">Today's Agenda</h3>
+            <span className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter">No sessions · This Week</span>
+          </div>
+          <Link to="#" className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 hover:text-zinc-600 font-inter transition-colors" data-testid="agenda-calendar-view">Calendar view</Link>
         </div>
         <div className="space-y-2" data-testid="this-week-sessions">
           {upcomingThisWeek.map(session => (
@@ -91,7 +97,16 @@ export function TodayAgenda({ sessions, nextSessionId, upcomingThisWeek }: Today
 
   return (
     <div className="rounded-2xl bg-white p-5 shadow-[0_12px_40px_rgba(26,27,34,0.06)] ring-1 ring-[#C7C4D8]/20" data-testid="zone2-today-agenda">
-      <h3 className="font-manrope text-[1.25rem] font-bold text-[#1A1B22] mb-4">Today's Agenda</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-manrope text-[1.25rem] font-bold text-[#1A1B22]">Today's Agenda</h3>
+        <Link
+          to="#"
+          className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 hover:text-zinc-600 font-inter transition-colors"
+          data-testid="agenda-calendar-view"
+        >
+          Calendar view
+        </Link>
+      </div>
 
       <div className="space-y-2">
         {sessions.map(session => {

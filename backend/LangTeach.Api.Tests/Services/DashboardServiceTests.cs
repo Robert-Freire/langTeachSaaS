@@ -109,6 +109,39 @@ public class DashboardServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetAsync_NextSession_PopulatesTeachingLanguageAndTotalSessionCount()
+    {
+        var past1 = DateTime.UtcNow.AddDays(-14);
+        var past2 = DateTime.UtcNow.AddDays(-7);
+        var future = DateTime.UtcNow.AddDays(1);
+        _db.SessionLogs.Add(MakeSession(_studentId, past1));
+        _db.SessionLogs.Add(MakeSession(_studentId, past2));
+        _db.SessionLogs.Add(MakeSession(_studentId, future));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.NextSession!.TeachingLanguage.Should().Be("Spanish");
+        result.NextSession.TotalSessionCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task GetAsync_NextSession_ExcludesCancelledFromTotalSessionCount()
+    {
+        var past = DateTime.UtcNow.AddDays(-7);
+        var pastCancelled = DateTime.UtcNow.AddDays(-3);
+        var future = DateTime.UtcNow.AddDays(1);
+        _db.SessionLogs.Add(MakeSession(_studentId, past));
+        _db.SessionLogs.Add(MakeSession(_studentId, pastCancelled, isCancelled: true));
+        _db.SessionLogs.Add(MakeSession(_studentId, future));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.NextSession!.TotalSessionCount.Should().Be(1);
+    }
+
+    [Fact]
     public async Task GetAsync_FutureSessionWithPastSession_PopulatesLastSessionNotes()
     {
         var past = DateTime.UtcNow.AddDays(-7);

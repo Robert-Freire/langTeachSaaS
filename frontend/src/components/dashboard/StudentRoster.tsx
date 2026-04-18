@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ChevronsUpDown } from 'lucide-react'
 import { CefrBadge } from './CefrBadge'
 import type { ActiveStudent } from '@/api/dashboard'
@@ -110,6 +110,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ]
 
 export function StudentRoster({ students }: StudentRosterProps) {
+  const navigate = useNavigate()
   const [sortBy, setSortBy] = useState<SortOption>('lastSession')
   const [sortOpen, setSortOpen] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
@@ -209,8 +210,9 @@ export function StudentRoster({ students }: StudentRosterProps) {
                 return (
                   <tr
                     key={student.studentId}
-                    className="group hover:bg-[#F4F2FD] transition-colors"
+                    className="group hover:bg-[#ECEAFD] transition-colors cursor-pointer"
                     data-testid="zone3-student-row"
+                    onClick={() => navigate(`/students/${student.studentId}`)}
                   >
                     <td className="px-6 py-2.5">
                       <Link
@@ -228,7 +230,11 @@ export function StudentRoster({ students }: StudentRosterProps) {
                     </td>
                     <td className="px-3 py-2.5 text-zinc-500 hidden sm:table-cell">
                       {student.nextSessionDate
-                        ? `${formatRelativeDate(student.lastSessionDate)} → ${formatRelativeDate(student.nextSessionDate)}`
+                        ? (() => {
+                            const last = formatRelativeDate(student.lastSessionDate)
+                            const next = formatRelativeDate(student.nextSessionDate)
+                            return last === next ? last : `${last} → ${next}`
+                          })()
                         : formatRelativeDate(student.lastSessionDate)}
                     </td>
                     <td className="px-3 py-2.5 hidden md:table-cell">

@@ -31,6 +31,8 @@ function makeDashboard(overrides: Partial<DashboardData> = {}): DashboardData {
       lastSessionTopicTags: [],
       lastSessionHomework: null,
       lastSessionFollowups: [],
+      teachingLanguage: 'Spanish',
+      totalSessionCount: 5,
     },
     todaySessions: [
       {

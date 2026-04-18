@@ -19,6 +19,8 @@ function makeSession(overrides: Partial<NextSession> = {}): NextSession {
     lastSessionTopicTags: ['Subjuntivo', 'Concesivas'],
     lastSessionHomework: 'Redacción mi ciudad ideal',
     lastSessionFollowups: ['Prometí ejercicios de por/para'],
+    teachingLanguage: 'Spanish',
+    totalSessionCount: 14,
     ...overrides,
   }
 }
@@ -80,6 +82,26 @@ describe('NextSessionHero', () => {
       </MemoryRouter>,
     )
     expect(screen.getByRole('link', { name: /View profile/ })).toHaveAttribute('href', '/students/student-1')
+  })
+
+  it('shows identity subtitle with language and session count', () => {
+    render(
+      <MemoryRouter>
+        <NextSessionHero session={makeSession({ teachingLanguage: 'Spanish', totalSessionCount: 14 })} />
+      </MemoryRouter>,
+    )
+    const subtitle = screen.getByTestId('hero-identity-subtitle')
+    expect(subtitle).toHaveTextContent('Spanish')
+    expect(subtitle).toHaveTextContent('Session #14')
+  })
+
+  it('hides identity subtitle when no language and count is 0', () => {
+    render(
+      <MemoryRouter>
+        <NextSessionHero session={makeSession({ teachingLanguage: null, totalSessionCount: 0 })} />
+      </MemoryRouter>,
+    )
+    expect(screen.queryByTestId('hero-identity-subtitle')).not.toBeInTheDocument()
   })
 
   it('shows green gradient badge for session within 2 hours', () => {
