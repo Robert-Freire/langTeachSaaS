@@ -1,217 +1,247 @@
 # LangTeach SaaS — Design System
 
-**Status:** draft — awaiting user approval before implementation
-**Task:** T5.1
+**Authoritative reference for all UI work.** Any bot or developer implementing or reviewing a screen must read this first.
+
+Last updated: 2026-04-16
 
 ---
 
 ## 1. Design Direction
 
-**Theme: "Calm Professional"**
+**Theme: "Academic Atelier" (The Digital Curator)**
 
-Target users are professional language teachers managing students, lessons, and schedules. The interface should feel:
-- **Trustworthy and organised** — not playful or gamified (that's Duolingo territory)
-- **Clean and uncluttered** — teachers are busy; every element must earn its place
-- **Modern SaaS** — comparable to tools like Linear or Notion in feel, not legacy school software
+LangTeach is a tool for independent language teachers — professionals managing complex student relationships. The UI must feel like a high-end, bespoke workspace: authoritative, warm, and breathable. It is NOT a dashboard, NOT a school admin panel, NOT a consumer app.
 
-**Reference benchmarks:** Preply (professional tutor marketplace), Teachworks (school management), and modern SaaS admin dashboards built with shadcn/ui.
+Reference benchmark: a well-curated editorial tool. Think high-quality stationery, not SaaS boilerplate.
+
+**Three principles that override everything else:**
+- The teacher has 10 minutes before class. Every screen must answer its core question in under 60 seconds.
+- Show, don't explain. If a UI element needs a tooltip to be understood, the UI is wrong.
+- Consistency is kindness. Breaking rhythm breaks trust. If cards have a certain padding in one screen, they have it everywhere.
 
 ---
 
 ## 2. Color Palette
 
-All colors map to Tailwind CSS utility classes.
+### Core tokens
 
-### Brand Colors
+| Token | Value | Usage |
+|-------|-------|-------|
+| `primary` | `#3525CD` | Primary CTAs, active nav indicators, indigo accents |
+| `primary-container` | `#4F46E5` | Gradient endpoint for primary buttons |
+| `tertiary` | `#7E3000` | Warm encouragement, premium features ("leather-bound book" warmth) |
+| `on-surface` | `#1A1B22` | All body text — never use pure black `#000000` |
+| `error` | `#BA1A1A` | Error states — urgent but professional, not alarming |
 
-| Token | Tailwind class | Hex | Usage |
-|---|---|---|---|
-| Primary | `indigo-600` | `#4f46e5` | Buttons, active nav, links, focus rings |
-| Primary hover | `indigo-700` | `#4338ca` | Button hover state |
-| Primary light | `indigo-50` | `#eef2ff` | Selected row backgrounds, badge backgrounds |
+### Surface hierarchy (tonal layering — no borders)
 
-### Neutral (base of all surfaces and text)
+| Token | Value | Usage |
+|-------|-------|-------|
+| `surface` | `#FBF8FF` | Main app canvas / page background |
+| `surface-container-low` | `#F4F2FD` | Secondary sidebars, section backgrounds |
+| `surface-container-lowest` | `#FFFFFF` | Active workspace, main cards |
+| `outline-variant` | `#C7C4D8` | Ghost borders (accessibility only, at 20% opacity max) |
 
-| Token | Tailwind class | Hex | Usage |
-|---|---|---|---|
-| Background | `zinc-50` | `#fafafa` | Page background |
-| Surface | `white` | `#ffffff` | Cards, modals, form inputs |
-| Border | `zinc-200` | `#e4e4e7` | Dividers, input borders, card borders |
-| Text primary | `zinc-900` | `#18181b` | Headings, important labels |
-| Text secondary | `zinc-600` | `#52525b` | Body text, descriptions |
-| Text muted | `zinc-400` | `#a1a1aa` | Placeholders, disabled labels, captions |
+### The No-Line Rule
 
-### Sidebar
+**Borders between sections are forbidden.** Layout boundaries must be defined only through background color shifts (tonal layering). Exception: input fields may use `outline-variant` at 20% opacity for accessibility. Never use 1px solid borders to section content.
 
-| Token | Tailwind class | Hex | Usage |
-|---|---|---|---|
-| Sidebar bg | `zinc-900` | `#18181b` | Sidebar background |
-| Sidebar text | `zinc-400` | `#a1a1aa` | Inactive nav item text |
-| Sidebar text active | `white` | `#ffffff` | Active nav item text |
-| Sidebar item active bg | `zinc-800` | `#27272a` | Active nav item background |
-| Sidebar item hover bg | `zinc-800` | `#27272a` | Hover state |
+### Floating elements (modals, dropdowns)
 
-### Semantic
-
-| Token | Tailwind class | Hex | Usage |
-|---|---|---|---|
-| Success | `emerald-600` | `#059669` | Success badges, confirmations |
-| Success bg | `emerald-50` | `#ecfdf5` | Success alert background |
-| Warning | `amber-500` | `#f59e0b` | Warning badges |
-| Warning bg | `amber-50` | `#fffbeb` | Warning alert background |
-| Error | `red-600` | `#dc2626` | Error messages, destructive buttons |
-| Error bg | `red-50` | `#fef2f2` | Error alert background |
+Use glassmorphism: `surface-container-lowest` at 80% opacity + `backdrop-blur: 12px`.
 
 ---
 
 ## 3. Typography
 
-**Font family:** `Inter` (loaded via Google Fonts or `@fontsource/inter`)
-- Inter is the standard for modern SaaS. Excellent readability at small sizes. Already used by shadcn/ui defaults.
+Two fonts, used together deliberately.
 
-### Type Scale
+| Font | Role | Usage |
+|------|------|-------|
+| **Manrope** | Display / Headline | Section headers, card titles, empty state moments of delight |
+| **Inter** | UI / Body | All body text, form fields, navigation labels, metadata |
 
-| Role | Class | Size | Weight | Usage |
-|---|---|---|---|---|
-| Page title | `text-2xl font-semibold` | 24px | 600 | Page headings (h1) |
-| Section title | `text-lg font-semibold` | 18px | 600 | Card titles, section headers |
-| Body | `text-sm` | 14px | 400 | Default body text, form labels |
-| Caption | `text-xs` | 12px | 400 | Helper text, timestamps, metadata |
-| Label | `text-sm font-medium` | 14px | 500 | Form field labels |
+### Type scale
 
-**Line height:** `leading-normal` (1.5) for body, `leading-tight` (1.25) for headings.
-**Text color default:** `zinc-700` — slightly softer than pure black.
+| Role | Font | Size | Weight | Usage |
+|------|------|------|--------|-------|
+| Display-LG | Manrope | 3.5rem | — | Empty states, "moment of delight" screens |
+| Headline-MD | Manrope | 1.75rem | — | Dashboard section headers |
+| Title-SM | Inter | 1rem | Medium | Card titles, navigation labels |
+| Body-MD | Inter | 0.875rem | — | Student notes, curriculum descriptions, all body text |
+| Label-SM | Inter | 0.6875rem | All-caps, 0.05em tracking | CEFR indicators, metadata chips |
 
----
-
-## 4. Spacing Scale
-
-Use Tailwind's default 4px-base scale consistently. Key values:
-
-| Token | Value | Common usage |
-|---|---|---|
-| `p-2` | 8px | Tight padding (badges, small inputs) |
-| `p-4` | 16px | Standard card padding, form field spacing |
-| `p-6` | 24px | Card content area |
-| `gap-4` | 16px | Default gap between form rows |
-| `gap-6` | 24px | Gap between page sections |
-| `mb-8` | 32px | Space below page title before content |
+Text color: always `on-surface` (`#1A1B22`). Never `#000000`.
 
 ---
 
-## 5. Component Style Direction
+## 4. Elevation and Depth
+
+Depth comes from tonal layering, not shadows.
+
+- A `surface-container-lowest` (#FFF) card on a `surface-container-low` (#F4F2FD) background creates natural "lift" — no shadow needed.
+- For high-priority floating elements (student quick-view, modals): ambient shadow with `blur: 40px`, `y: 12px`, 6% opacity using `on-surface`. Feels like a soft glow, not a drop shadow.
+- **Overlapping elements are encouraged.** Let a card slightly overlap a header background to create three-dimensional space.
+
+---
+
+## 5. Components
 
 ### Buttons
 
-| Variant | Usage | Style |
-|---|---|---|
-| Primary | Main CTA (Save, Submit, Create) | `bg-indigo-600 text-white rounded-md` |
-| Secondary / Outline | Secondary action (Cancel, Edit) | `border border-zinc-200 bg-white text-zinc-700 rounded-md` |
-| Destructive | Irreversible actions (Delete) | `bg-red-600 text-white rounded-md` |
-| Ghost | Low-emphasis (sidebar items, icon buttons) | `bg-transparent hover:bg-zinc-100` |
+| Variant | When to use | Style |
+|---------|------------|-------|
+| Primary | Single main CTA per screen (Log Session, Save, Create) | Indigo gradient (`primary` → `primary-container`) at 135°, white text, `xl` (0.75rem) radius |
+| Secondary | Supporting actions on the same row as Primary (Edit Student) | `surface-container-high` background, `primary` text, no border |
+| Ghost | Low-emphasis icon buttons, sidebar items | Transparent background, `surface-container-low` on hover |
+| Destructive | Irreversible actions (Delete) | `error` color, confirm before executing |
 
-All buttons: `h-9 px-4 text-sm font-medium` — consistent height, no large/XL buttons by default.
+**Rule:** Primary and Secondary buttons on the same row must belong to the same visual family. A ghost button next to a filled primary is not allowed — use Secondary instead.
 
-### Forms
+All buttons: consistent height, no XL or oversized variants unless it's a full-width CTA on an empty state.
 
-- Labels above inputs, never inline or placeholder-only
-- Input style: `border border-zinc-200 rounded-md bg-white text-sm h-9`
-- Focus ring: `ring-2 ring-indigo-500 ring-offset-1`
-- Helper text: `text-xs text-zinc-500 mt-1`
-- Error state: `border-red-500` + red helper text below input
-- Form sections: group related fields in a card with `p-6`, title `text-lg font-semibold mb-4`
+### CEFR Badges
 
-### Cards
+Square-format badge with `md` (0.375rem) radius — not pill-shaped.
 
-- `bg-white border border-zinc-200 rounded-lg shadow-sm`
-- Header (optional): `px-6 py-4 border-b border-zinc-200`
-- Content: `p-6`
-- No heavy drop shadows — `shadow-sm` only
+| Level | Color token |
+|-------|------------|
+| A1, A2 | `secondary-container` (passive/learning) |
+| B1, B2 | `primary-fixed` (active/growing) |
+| C1, C2 | `tertiary-fixed` (mastery/professional) |
 
-### Tables
+Text: `Label-SM` bold (e.g. "B2").
 
-- Header row: `bg-zinc-50 text-xs font-medium text-zinc-500 uppercase tracking-wide`
-- Body row: `border-b border-zinc-100 text-sm text-zinc-700`
-- Row hover: `hover:bg-zinc-50`
-- No external border on the table itself — let the containing card provide the border
+### Cards and Lists
 
-### Badges / Status chips
+- No divider lines between list items.
+- Separation via 16px vertical gap.
+- List item hover: background shifts to `surface-container-highest` with `lg` (0.5rem) radius.
 
-- Small pill: `rounded-full text-xs font-medium px-2 py-0.5`
-- Active/Success: `bg-emerald-50 text-emerald-700`
-- Pending: `bg-amber-50 text-amber-700`
-- Inactive: `bg-zinc-100 text-zinc-600`
+### Form Inputs
 
----
+- Fill: `surface-container-lowest`.
+- Border: ghost border at 20% opacity only (accessibility). No full-opacity borders.
+- Focus: background stays white, ambient shadow increases slightly to "bring the field forward."
+- Labels: always above the input, never inline or placeholder-only.
+- Helper text: below the field, `Label-SM` in muted color.
 
-## 6. Layout Shell (AppShell)
+### Vocabulary Chips / Tags
 
-The standard page frame for all authenticated screens.
-
-```
-┌─────────────────────────────────────────────────────┐
-│  Sidebar (240px, zinc-900)  │  Top bar (56px)        │
-│                             │─────────────────────── │
-│  Logo                       │                        │
-│  ─────────────              │   Page title           │
-│  [icon] Dashboard           │                        │
-│  [icon] My Profile    ◀ active                       │
-│  [icon] Students            │   <page content>       │
-│  [icon] Lessons             │                        │
-│                             │                        │
-│  ─────────────              │                        │
-│  [avatar] Robert            │                        │
-│  [icon] Logout              │                        │
-└─────────────────────────────────────────────────────┘
-```
-
-- **Sidebar width:** 240px, fixed, full height
-- **Top bar height:** 56px — contains page title (left) and user avatar + logout (right)
-- **Main content:** `flex-1 overflow-y-auto p-6 bg-zinc-50`
-- **Nav items:** icon (16px) + label, `gap-3`, `py-2 px-3 rounded-md`
-- **Active item:** `bg-zinc-800 text-white`
-- **Logo area:** `px-6 py-5`, product name in `text-white font-semibold text-lg`
+- Background: `secondary-fixed-dim`, text: `on-secondary-fixed`.
+- Shape: `full` (9999px) roundedness — contrasts against the more architectural cards.
 
 ---
 
-## 7. Icon Library
+## 6. Layout Shell
 
-Use **Lucide React** (`lucide-react`) — already included with shadcn/ui. Size default: `h-4 w-4`. Nav icons: `h-5 w-5`.
+All authenticated screens render inside the AppShell: a fixed sidebar (left) + main content area (right).
 
----
-
-## 8. Component Library
-
-**shadcn/ui** — copy-paste components built on Radix UI + Tailwind CSS.
-
-Components to install for Phase 1:
-- `button`, `input`, `label`, `textarea`, `select`
-- `card`
-- `form` (React Hook Form integration)
-- `badge`
-- `avatar`
-- `separator`
-- `toast` (for save confirmations / errors)
-- `dialog` (for confirm-delete modals)
-- `table`
+- **Sidebar:** fixed width, `surface-container-low` background, Manrope logo area, Inter nav labels.
+- **Main content:** `flex-1 overflow-y-auto`, `surface` background, generous left/right margins.
+- **Asymmetric margins encouraged:** if left margin is 40px, try 64px right for editorial feel.
+- **Active nav item:** primary color indicator, not a background fill.
 
 ---
 
-## 9. Implementation Order (T5.1 steps)
+## 7. Icons
 
-1. Install Tailwind CSS + configure `tailwind.config.js` with Inter font and color overrides
-2. Install shadcn/ui and add the components listed above
-3. Build `AppShell` component (sidebar + top bar layout wrapper)
-4. Wire `AppShell` into React Router — all authenticated routes render inside it
-5. Restyle Teacher Profile page (T5) using the new components and this spec
-6. Playwright smoke test to confirm profile page still works
+**Lucide React** (`lucide-react`). Default size: `h-4 w-4`. Navigation: `h-5 w-5`.
 
 ---
 
-## Approval Checklist
+## 8. Interaction Patterns
 
-- [ ] Color palette approved
-- [ ] Typography approved
-- [ ] Layout shell (AppShell) approved
-- [ ] Component style direction approved
-- [ ] Ready to implement
+> These rules apply to every screen, new and existing. When building a UI, pick the correct pattern from below. Mixing patterns on the same screen for the same type of action is not allowed.
+
+### 8.1 The Three Permitted Edit/Save Patterns
+
+---
+
+**Pattern A — Autosave on blur** (single-value fields)
+
+Use for: text inputs, textareas, selects, date pickers, CEFR level selectors — any field holding one value.
+
+- Saves when the teacher clicks or tabs away (on blur).
+- No Save button. No Cancel button.
+- On save: show `<SavedIndicator />` (see 8.2), then hide after 1.5 seconds.
+- The teacher navigates away freely. There is no "unsaved changes" warning for single-value fields.
+
+Examples: Edit Student screen (all fields), Motivation banner, session title in inline edit.
+
+---
+
+**Pattern B — Immediate add for growing lists**
+
+Use for: chip inputs, todo lists, followup lists, learning goals, interest tags — any field that appends items.
+
+- A persistent (or one-tap-to-reveal) input is always accessible.
+- Item adds on Enter or a dedicated "+" / "Add" button.
+- Item appears immediately in the list.
+- Items removed with a × or delete icon per item.
+- No Save button. No Cancel button. No edit mode toggle.
+
+Examples: Teaching Todos / Ideas para Clases, Pending Followups, Interests chips, Learning Goals.
+
+---
+
+**Pattern C — Full-page edit form with Done**
+
+Use for: dedicated edit screens covering many fields at once.
+
+- All fields are editable simultaneously.
+- Each field uses Pattern A (autosave on blur) internally.
+- A single "Done" button (top right) navigates back. It is NOT a save trigger — saves have already happened field-by-field on blur.
+- No per-field or per-section Save/Cancel buttons.
+
+Examples: `/students/:id/edit`, `/sessions/:id/edit`.
+
+---
+
+### 8.2 SavedIndicator Component
+
+Every Pattern A save must show this feedback. Without visible confirmation, autosave creates anxiety.
+
+- **Location:** inline at the right edge of the field, or in the section card header.
+- **Content:** checkmark icon + "Saved" label in `Label-SM` muted color.
+- **Animation:** fade in 200ms ease-out → hold 1s → fade out 300ms.
+- **Implementation:** one shared `<SavedIndicator />` component. Never duplicate the logic.
+
+---
+
+### 8.3 Session Row Inline Edit
+
+Sessions are edited inline in their expanded row. No modal, no separate edit page, no kebab for edit.
+
+- Click row to expand.
+- In expanded state, fields (title, narrative, duration, next-class plan) become editable inputs (Pattern A each).
+- Collapsing the row triggers save.
+- Delete is accessible via a destructive icon in the expanded state or a confirmation prompt — never the primary affordance.
+- Double-click to edit is not permitted (too hidden for a professional tool).
+
+---
+
+### 8.4 What Is Explicitly Not Allowed
+
+- Save/Cancel button pairs on inline edits within detail screens.
+- Kebab menus containing only Edit + Delete. If Edit is the primary action, it must be directly accessible via a hover-reveal icon or the expanded state. Kebabs are for 3+ secondary actions.
+- Per-section Save buttons on full-page edit forms (Pattern C).
+- Mixing Pattern A and Pattern B on fields of the same semantic type on the same screen.
+
+---
+
+## 9. Empty States
+
+- Use `Display-LG` Manrope for the headline — this is a "moment of delight," not a dead end.
+- Include one clear call to action (Primary button or link).
+- Never show a blank white card with no content and no guidance.
+- "No results for X" states: show the search term back to the user, offer to clear the filter.
+
+---
+
+## 10. Motion
+
+- Transitions must communicate state changes, not decorate.
+- Default transition: 150ms ease-out on expand/collapse, hover states.
+- No animation is better than gratuitous animation.
+- Avoid transitions longer than 300ms for any interactive element.
