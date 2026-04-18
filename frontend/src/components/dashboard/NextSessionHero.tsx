@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Play } from 'lucide-react'
 import { CefrBadge } from './CefrBadge'
 import type { NextSession } from '@/api/dashboard'
 
@@ -105,21 +106,27 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
           <h2 className="font-manrope text-[1.75rem] font-bold text-[#1A1B22] leading-tight">
             {session.studentName}
           </h2>
+          {(session.teachingLanguage || session.totalSessionCount > 0) && (
+            <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mt-0.5" data-testid="hero-identity-subtitle">
+              {[session.teachingLanguage, session.totalSessionCount > 0 ? `Session #${session.totalSessionCount}` : null].filter(Boolean).join(' · ')}
+            </p>
+          )}
         </div>
         <div className="flex flex-col items-end gap-2">
           <CefrBadge level={session.studentCefrLevel} />
           <div className="flex items-center gap-3">
             <Link
               to={`/students/${session.studentId}`}
-              className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-indigo-600 hover:text-indigo-800 font-inter transition-colors"
+              className="inline-flex items-center rounded-xl border border-[#3525CD] px-3 py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-[#3525CD] font-inter transition-colors hover:bg-[#F4F2FD]"
             >
               View profile
             </Link>
             <Link
               to={`/students/${session.studentId}/log-session`}
-              className="inline-flex items-center rounded-xl bg-gradient-to-br from-[#3525CD] to-indigo-500 px-3 py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-white font-inter transition-opacity hover:opacity-90"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#3525CD] to-indigo-500 px-3 py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-white font-inter transition-opacity hover:opacity-90"
               data-testid="start-session-btn"
             >
+              <Play className="h-3 w-3 fill-white" />
               Start session
             </Link>
           </div>
@@ -172,7 +179,7 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
 
           {/* Homework status card */}
           {session.homeworkAssigned && (
-            <div className="rounded-xl bg-amber-50 border border-amber-100 p-4">
+            <div className="rounded-xl bg-amber-50 p-4">
               <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-amber-700 font-inter mb-1">
                 Homework pending &middot; <span className={hwStatus.color}>{hwStatus.label}</span>
               </p>

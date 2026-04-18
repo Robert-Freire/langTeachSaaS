@@ -24,6 +24,8 @@ export interface NextSession {
   lastSessionTopicTags: string[]
   lastSessionHomework: string | null
   lastSessionFollowups: string[]
+  teachingLanguage: string | null
+  totalSessionCount: number
 }
 
 export interface UpcomingSession {

@@ -1,6 +1,9 @@
 import type { TeacherFollowup } from '@/api/followups'
 import { updateFollowupStatus } from '@/api/followups'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
+
+const SEE_ALL_THRESHOLD = 5
 
 interface PendingFollowupsProps {
   followups: TeacherFollowup[]
@@ -53,17 +56,31 @@ export function PendingFollowups({ followups }: PendingFollowupsProps) {
   }
 
   const visible = followups.filter(f => !hidden.has(f.id))
+  const showSeeAll = visible.length > SEE_ALL_THRESHOLD
 
   return (
     <div className="rounded-2xl bg-white p-5 shadow-[0_12px_40px_rgba(26,27,34,0.06)] ring-1 ring-[#C7C4D8]/20" data-testid="zone2-pending-followups">
-      <h3 className="font-manrope text-[1.25rem] font-bold text-[#1A1B22] mb-4">Pending Followups</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-manrope text-[1.25rem] font-bold text-[#1A1B22]">Pending Followups</h3>
+        {showSeeAll && (
+          <a
+            href="#"
+            className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-indigo-600 hover:text-indigo-800 font-inter transition-colors"
+            data-testid="followups-see-all"
+          >
+            See all ({visible.length})
+          </a>
+        )}
+      </div>
 
       {visible.length === 0 ? (
         <p className="text-sm text-zinc-400 font-inter py-4 text-center">All caught up</p>
       ) : (
         <div className="space-y-2">
-          {visible.map(f => {
+          {visible.map((f, index) => {
             const badge = ageBadge(f.createdAt)
+            const prevStudentId = index > 0 ? visible[index - 1].studentId : null
+            const showChip = f.studentId && f.studentName && f.studentId !== prevStudentId
             return (
               <div
                 key={f.id}
@@ -72,14 +89,19 @@ export function PendingFollowups({ followups }: PendingFollowupsProps) {
                 <button
                   onClick={() => handleMarkDone(f.id)}
                   aria-label="Mark done"
-                  className={`mt-0.5 shrink-0 w-3.5 h-3.5 rounded-full border-2 ${badge.dotColor} border-transparent hover:opacity-80 transition-opacity`}
+                  title="Mark as done"
+                  className={`mt-0.5 shrink-0 w-3.5 h-3.5 rounded-full border-2 ${badge.dotColor} border-transparent hover:opacity-80 hover:scale-125 transition-all`}
                   data-testid={`followup-dot-${f.id}`}
                 />
                 <div className="flex-1 min-w-0">
-                  {f.studentName && (
-                    <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mb-0.5">
+                  {showChip && (
+                    <Link
+                      to={`/students/${f.studentId}`}
+                      className="block text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-indigo-600 hover:text-indigo-800 font-inter mb-0.5 transition-colors"
+                      data-testid={`followup-student-link-${f.id}`}
+                    >
                       {f.studentName}
-                    </p>
+                    </Link>
                   )}
                   <p className="text-sm text-[#1A1B22] font-inter">{f.text}</p>
                 </div>

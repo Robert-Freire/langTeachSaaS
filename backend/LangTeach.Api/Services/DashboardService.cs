@@ -79,6 +79,15 @@ public class DashboardService : IDashboardService
                 .ToListAsync(cancellationToken)
             : [];
 
+        var totalSessionCount = await _db.SessionLogs
+            .CountAsync(sl => sl.StudentId == next.StudentId
+                           && sl.TeacherId == teacherId
+                           && !sl.IsDeleted
+                           && !sl.IsCancelled
+                           && sl.SessionDate.HasValue
+                           && sl.SessionDate.Value <= now,
+                cancellationToken);
+
         return new NextSessionDto(
             SessionLogId: next.Id,
             StudentId: next.StudentId,
@@ -92,7 +101,9 @@ public class DashboardService : IDashboardService
             PreviousHomeworkStatus: next.PreviousHomeworkStatus.ToString(),
             LastSessionTopicTags: lastSessionTopicTags,
             LastSessionHomework: lastPast?.HomeworkAssigned,
-            LastSessionFollowups: lastSessionFollowups
+            LastSessionFollowups: lastSessionFollowups,
+            TeachingLanguage: string.IsNullOrWhiteSpace(next.Student.LearningLanguage) ? null : next.Student.LearningLanguage,
+            TotalSessionCount: totalSessionCount
         );
     }
 

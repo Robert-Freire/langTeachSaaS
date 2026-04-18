@@ -32,7 +32,9 @@ public record NextSessionDto(
     string? PreviousHomeworkStatus,
     List<string> LastSessionTopicTags,
     string? LastSessionHomework,
-    List<string> LastSessionFollowups
+    List<string> LastSessionFollowups,
+    string? TeachingLanguage,
+    int TotalSessionCount
 );
 
 public record UpcomingSessionDto(
