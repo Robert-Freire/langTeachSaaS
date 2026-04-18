@@ -876,9 +876,9 @@ export default function LogSession() {
                 <Button
                   type="button"
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
                   onClick={handleDiscard}
-                  className="text-red-600 border-red-200 hover:bg-red-50"
+                  className="text-red-600 hover:bg-red-50"
                   data-testid="discard-btn"
                 >
                   Discard
@@ -1047,7 +1047,7 @@ export default function LogSession() {
                           setTopicTags(next)
                           markChangedAndSaveNow({ topicTags: serializeTopicTags(next) })
                         }}
-                        className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 min-h-[36px] text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
+                        className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-3 py-1.5 min-h-[36px] text-sm font-medium text-indigo-700 hover:bg-indigo-200 transition-colors"
                         data-testid={`tag-suggestion-${suggestion}`}
                       >
                         <Plus className="h-3 w-3" />

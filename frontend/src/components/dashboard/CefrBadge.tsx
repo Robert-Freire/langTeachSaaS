@@ -1,17 +1,10 @@
 import { cn } from '@/lib/utils'
+import { cefrColors } from '@/lib/cefr-colors'
 
 interface CefrBadgeProps {
   level: string
   className?: string
   'data-testid'?: string
-}
-
-function cefrColors(level: string): string {
-  const prefix = level[0]?.toUpperCase()
-  if (prefix === 'A') return 'bg-[#DDE8F5] text-[#1A4B7A]'
-  if (prefix === 'B') return 'bg-[#ECEAFD] text-[#3525CD]'
-  if (prefix === 'C') return 'bg-[#F8E9D6] text-[#7E3000]'
-  return 'bg-zinc-100 text-zinc-700'
 }
 
 export function CefrBadge({ level, className, 'data-testid': dataTestId }: CefrBadgeProps) {
