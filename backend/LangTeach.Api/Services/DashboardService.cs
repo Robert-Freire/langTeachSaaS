@@ -84,6 +84,7 @@ public class DashboardService : IDashboardService
                            && sl.TeacherId == teacherId
                            && !sl.IsDeleted
                            && !sl.IsCancelled
+                           && sl.Status == SessionLogStatus.Confirmed
                            && sl.SessionDate.HasValue
                            && sl.SessionDate.Value <= now,
                 cancellationToken);

@@ -63,13 +63,13 @@ export function PendingFollowups({ followups }: PendingFollowupsProps) {
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-manrope text-[1.25rem] font-bold text-[#1A1B22]">Pending Followups</h3>
         {showSeeAll && (
-          <a
-            href="#"
+          <Link
+            to="#"
             className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-indigo-600 hover:text-indigo-800 font-inter transition-colors"
             data-testid="followups-see-all"
           >
             See all ({visible.length})
-          </a>
+          </Link>
         )}
       </div>
 
