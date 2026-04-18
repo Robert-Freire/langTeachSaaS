@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Search, UserPlus, Users, ChevronsUpDown } from 'lucide-react'
+import { Search, UserPlus, Users, ChevronsUpDown, ChevronDown } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { getStudents, type Student } from '../api/students'
 import { getDashboard, type ActiveStudent } from '../api/dashboard'
@@ -66,9 +66,11 @@ function formatRelativeDate(dateStr: string | null | undefined, showTime = false
       const dayAbbr = date.toLocaleDateString('en-GB', { weekday: 'short' })
       return `${dayAbbr} ${timeStr}`
     }
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
   }
   if (futureDays === 1) return 'Tomorrow'
-  return `in ${futureDays}d`
+  if (futureDays <= 6) return `in ${futureDays}d`
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
 // ── Signal badges ───────────────────────────────────────────────────────────
@@ -86,7 +88,6 @@ function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal
 
   if (!dash) return []
 
-  const signals: Signal[] = []
   const now = Date.now()
 
   const lastSessionMs = dash.lastSessionDate ? new Date(dash.lastSessionDate).getTime() : null
@@ -96,27 +97,11 @@ function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal
 
   const hasNextSession = !!dash.nextSessionDate
 
-  // RETURNING: was inactive 30+ days and now has a scheduled next session
-  const isReturning = lastSessionGapDays != null && lastSessionGapDays >= 30 && hasNextSession
-  if (isReturning) {
-    signals.push({ label: 'RETURNING', className: 'bg-[#1A1B22] text-white' })
-  } else if (lastSessionGapDays != null && lastSessionGapDays >= 14) {
-    // Inactive Xd: last session 14+ days ago and no upcoming session (or < 30d gap)
-    signals.push({ label: `Inactive ${lastSessionGapDays}d`, className: 'bg-amber-500 text-white' })
-  }
+  // Priority order: Cancelled 2x > Exam prep > RETURNING > Review pending > Inactive Xd > NEW
 
-  // Cancelled 2x
+  // Cancelled 2x (highest priority)
   if (dash.cancelledSessionsLast30Days >= 2) {
-    signals.push({ label: 'Cancelled 2x', className: 'bg-[#1A1B22] text-white', redDot: true })
-  }
-
-  // NEW: created in last 14 days with fewer than 3 sessions
-  if (student.createdAt) {
-    const createdMs = new Date(student.createdAt).getTime()
-    const daysSinceCreation = Math.floor((now - createdMs) / (1000 * 60 * 60 * 24))
-    if (daysSinceCreation <= 14 && dash.totalSessions < 3) {
-      signals.push({ label: 'NEW', className: 'bg-green-500 text-white' })
-    }
+    return [{ label: 'Cancelled 2x', className: 'bg-[#1A1B22] text-white', redDot: true }]
   }
 
   // Exam prep: short-term objective with targetDate within 6 weeks
@@ -128,15 +113,35 @@ function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal
     return msUntil >= 0 && msUntil <= sixWeeksMs
   })
   if (hasExamPrep) {
-    signals.push({ label: 'Exam prep', className: 'bg-[#3525CD] text-white' })
+    return [{ label: 'Exam prep', className: 'bg-[#3525CD] text-white' }]
+  }
+
+  // RETURNING: was inactive 21+ days and now has a scheduled next session
+  const isReturning = lastSessionGapDays != null && lastSessionGapDays >= 21 && hasNextSession
+  if (isReturning) {
+    return [{ label: 'RETURNING', className: 'bg-[#1A1B22] text-white' }]
   }
 
   // Review pending: has pending teaching todos
   if (dash.pendingTodos.length > 0) {
-    signals.push({ label: 'Review pending', className: 'bg-[#3525CD] text-white' })
+    return [{ label: 'Review pending', className: 'bg-[#3525CD] text-white' }]
   }
 
-  return signals
+  // Inactive Xd: last session 14+ days ago and no upcoming session
+  if (lastSessionGapDays != null && lastSessionGapDays >= 14) {
+    return [{ label: `Inactive ${lastSessionGapDays}d`, className: 'bg-amber-500 text-white' }]
+  }
+
+  // NEW: created in last 14 days with fewer than 3 sessions
+  if (student.createdAt) {
+    const createdMs = new Date(student.createdAt).getTime()
+    const daysSinceCreation = Math.floor((now - createdMs) / (1000 * 60 * 60 * 24))
+    if (daysSinceCreation <= 14 && dash.totalSessions < 3) {
+      return [{ label: 'NEW', className: 'bg-green-500 text-white' }]
+    }
+  }
+
+  return []
 }
 
 // ── Sort ────────────────────────────────────────────────────────────────────
@@ -190,7 +195,7 @@ const CEFR_FILTER_OPTIONS = ['All', ...CEFR_LEVELS] as const
 const PAGE_SIZE = 12
 
 const COL_CLASSES = 'grid-cols-[32px_minmax(160px,2fr)_80px_120px_110px_140px_1fr]'
-const TABLE_HEADERS = ['', 'Name', 'Level', 'Native Language', 'Last Session', 'Next Session', 'Alerts'] as const
+const TABLE_HEADERS = ['', 'Name', 'CEFR LEVEL', 'LANGUAGE', 'Last Session', 'Next Session', 'SIGNALS'] as const
 
 // ── Component ───────────────────────────────────────────────────────────────
 
@@ -207,6 +212,7 @@ export default function Students() {
   const [sortOpen, setSortOpen] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
   const didInitSearchRef = useRef(false)
+  const lastWrittenSearchRef = useRef(qFromUrl)
 
   // Sync input when URL changes via back/forward navigation
   useEffect(() => {
@@ -220,10 +226,12 @@ export default function Students() {
       return
     }
     const timer = setTimeout(() => {
+      const searchChanged = localSearch !== lastWrittenSearchRef.current
+      lastWrittenSearchRef.current = localSearch
       setSearchParams(prev => {
         const next = new URLSearchParams(prev)
         if (localSearch) { next.set('q', localSearch) } else { next.delete('q') }
-        next.delete('count')
+        if (searchChanged) next.delete('count')
         return next
       }, { replace: true })
     }, 300)
@@ -294,7 +302,7 @@ export default function Students() {
       const count = allStudents.filter(s => s.cefrLevel === cefrFilter).length
       return `Managing ${count} ${cefrFilter} learner${count === 1 ? '' : 's'} in your atelier`
     }
-    return `Managing ${total} language learner${total === 1 ? '' : 's'} in your atelier`
+    return `Managing ${total} active language learner${total === 1 ? '' : 's'} in your atelier`
   }
 
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? 'Last Session'
@@ -310,7 +318,7 @@ export default function Students() {
           <Skeleton className="h-8 w-32" />
         </div>
         <div className="bg-white rounded-xl overflow-hidden">
-          <div className={cn('grid gap-4 px-4 py-2 border-b border-zinc-100', COL_CLASSES)}>
+          <div className={cn('grid gap-4 px-4 py-2', COL_CLASSES)}>
             {TABLE_HEADERS.map((_h, i) => (
               <Skeleton key={i} className="h-3 w-full" />
             ))}
@@ -407,7 +415,7 @@ export default function Students() {
             {sortOpen && (
               <div
                 role="listbox"
-                className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-zinc-100 z-10 py-1"
+                className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg z-10 py-1"
               >
                 {SORT_OPTIONS.map(opt => (
                   <button
@@ -566,7 +574,7 @@ export default function Students() {
 
           {/* Pagination footer */}
           {sortedStudents.length > 0 && (
-            <div className="px-4 py-3 grid grid-cols-[1fr_auto_1fr] items-center border-t border-zinc-50">
+            <div className="px-4 py-3 grid grid-cols-[1fr_auto_1fr] items-center">
               <span className="text-xs text-zinc-400">
                 Showing {Math.min(visibleCount, sortedStudents.length)} of {sortedStudents.length} student{sortedStudents.length === 1 ? '' : 's'}
               </span>
@@ -578,6 +586,7 @@ export default function Students() {
                   data-testid="load-more"
                 >
                   Load more
+                  <ChevronDown className="h-3.5 w-3.5 ml-1" />
                 </Button>
               ) : <span />}
               <span />
