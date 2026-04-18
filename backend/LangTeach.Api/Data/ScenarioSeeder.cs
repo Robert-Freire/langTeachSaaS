@@ -53,13 +53,14 @@ public static class ScenarioSeeder
             return false;
         }
 
+        var now = DateTime.UtcNow;
+
         if (!teacher.IsApproved || !teacher.HasCompletedOnboarding)
         {
             teacher.IsApproved = true;
             teacher.HasCompletedOnboarding = true;
+            teacher.UpdatedAt = now;
         }
-
-        var now = DateTime.UtcNow;
         logger.LogInformation("Seeding scenario {Scenario} for teacher {Email}...", scenario, teacher.Email);
 
         // Step 1: ensure all 9 scenario students exist

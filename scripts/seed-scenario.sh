@@ -47,7 +47,7 @@ fi
 CONTAINER=$(MSYS_NO_PATHCONV=1 docker ps \
   --filter "status=running" \
   --format "{{.Names}}\t{{.Ports}}" \
-  | grep ":5000" \
+  | grep -E ':5000([^0-9]|$)' \
   | awk '{print $1}' \
   | head -1 || true)
 
