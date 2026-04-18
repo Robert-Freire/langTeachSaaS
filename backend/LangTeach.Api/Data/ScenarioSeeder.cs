@@ -194,7 +194,7 @@ public static class ScenarioSeeder
             StudentId              = anaVisual.Id,
             TeacherId              = teacherId,
             SessionDate            = now.Date.AddHours(8), // 08:00 today
-            TopicTags              = """[{"Tag":"Pretérito indefinido","Category":null},{"Tag":"Verbos reflexivos","Category":null}]""",
+            TopicTags              = """[{"tag":"Pretérito indefinido"},{"tag":"Verbos reflexivos"}]""",
             GeneralNotes           = "Good session, student struggled with reflexive verbs in past tense",
             HomeworkAssigned       = "Write 10 sentences using reflexive verbs in past tense",
             PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
@@ -516,7 +516,7 @@ public static class ScenarioSeeder
             StudentId              = hansB1.Id,
             TeacherId              = teacherId,
             SessionDate            = now.AddDays(-7),
-            TopicTags              = """[{"Tag":"Ser vs estar","Category":null},{"Tag":"Subjuntivo","Category":null}]""",
+            TopicTags              = """[{"tag":"Ser vs estar"},{"tag":"Subjuntivo"}]""",
             GeneralNotes           = "Strong session, needs more practice with subjunctive triggers",
             HomeworkAssigned       = "Read article and summarize in Spanish",
             PreviousHomeworkStatus = HomeworkStatus.NotApplicable,

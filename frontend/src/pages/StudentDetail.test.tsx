@@ -199,20 +199,20 @@ describe('StudentDetail', () => {
     expect(screen.getByTestId('official-cefr-badge')).toHaveTextContent('Official: B1')
   })
 
-  it('shows identity subtitle with L1, profession, and city', async () => {
+  it('shows identity subtitle with L1, learning language, profession, and city', async () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.getByTestId('student-header-subtitle')).toHaveTextContent('English speaker · Designer, Barcelona')
+    expect(screen.getByTestId('student-header-subtitle')).toHaveTextContent('English speaker, learning Spanish · Designer, Barcelona')
   })
 
-  it('omits L1 segment in subtitle when nativeLanguages is empty', async () => {
+  it('shows "Learning {language}" in subtitle when nativeLanguages is empty', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...MOCK_STUDENT,
       nativeLanguages: [],
     })
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.getByTestId('student-header-subtitle')).toHaveTextContent('Designer, Barcelona')
+    expect(screen.getByTestId('student-header-subtitle')).toHaveTextContent('Learning Spanish · Designer, Barcelona')
     expect(screen.getByTestId('student-header-subtitle')).not.toHaveTextContent('speaker')
   })
 
@@ -223,10 +223,10 @@ describe('StudentDetail', () => {
     })
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.getByTestId('student-header-subtitle')).toHaveTextContent('English speaker · Barcelona')
+    expect(screen.getByTestId('student-header-subtitle')).toHaveTextContent('English speaker, learning Spanish · Barcelona')
   })
 
-  it('hides subtitle entirely when L1, profession, and city are all absent', async () => {
+  it('shows subtitle with just learning language when L1, profession, and city are all absent', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...MOCK_STUDENT,
       nativeLanguages: [],
@@ -236,24 +236,7 @@ describe('StudentDetail', () => {
     })
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.queryByTestId('student-header-subtitle')).not.toBeInTheDocument()
-  })
-
-  it('shows origin/residence compact in metadata when cities are set', async () => {
-    wrapper()
-    await screen.findByTestId('student-detail-name')
-    expect(screen.getByTestId('student-header-location')).toHaveTextContent('London / Barcelona')
-  })
-
-  it('does not render location element when no city data', async () => {
-    vi.mocked(studentsApi.getStudent).mockResolvedValue({
-      ...MOCK_STUDENT,
-      cityOfOrigin: null,
-      cityOfResidence: null,
-    })
-    wrapper()
-    await screen.findByTestId('student-detail-name')
-    expect(screen.queryByTestId('student-header-location')).not.toBeInTheDocument()
+    expect(screen.getByTestId('student-header-subtitle')).toHaveTextContent('Learning Spanish')
   })
 
   it('tab click updates URL search param', async () => {
@@ -291,18 +274,20 @@ describe('StudentDetail - Header badges', () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue(MOCK_STUDENT)
   })
 
-  it('shows Active + Private badge for active non-corporate student', async () => {
+  it('shows separate Active and Private badges for active non-corporate student', async () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.getByTestId('student-status-badge')).toHaveTextContent(/Active/i)
-    expect(screen.getByTestId('student-status-badge')).toHaveTextContent(/Private/i)
+    expect(screen.getByTestId('student-status-badge')).toHaveTextContent('Active')
+    expect(screen.getByTestId('student-status-badge')).not.toHaveTextContent(/Private/i)
+    expect(screen.getByTestId('student-type-badge')).toHaveTextContent('Private')
   })
 
-  it('shows Active + Corporate badge for active corporate student', async () => {
+  it('shows separate Active and Corporate badges for active corporate student', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...MOCK_STUDENT, isCorporate: true })
     wrapper()
     await screen.findByTestId('student-detail-name')
-    expect(screen.getByTestId('student-status-badge')).toHaveTextContent(/Corporate/i)
+    expect(screen.getByTestId('student-status-badge')).toHaveTextContent('Active')
+    expect(screen.getByTestId('student-type-badge')).toHaveTextContent('Corporate')
   })
 
   it('shows Inactive badge for inactive student', async () => {
@@ -310,6 +295,7 @@ describe('StudentDetail - Header badges', () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
     expect(screen.getByTestId('student-status-badge')).toHaveTextContent(/Inactive/i)
+    expect(screen.queryByTestId('student-type-badge')).not.toBeInTheDocument()
   })
 
   it('does not show next session pill when no future sessions', async () => {

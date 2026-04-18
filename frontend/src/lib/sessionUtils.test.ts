@@ -37,13 +37,23 @@ describe('getSessionTitle', () => {
     expect(getSessionTitle(makeSession({ title: 'Past Simple' }))).toBe('Past Simple')
   })
 
-  it('returns date-based fallback when no title but date exists', () => {
+  it('returns first topic tag when no title but tags present', () => {
+    const result = getSessionTitle(makeSession({ topicTags: '[{"tag":"Ser vs estar"},{"tag":"Subjuntivo"}]' }))
+    expect(result).toBe('Ser vs estar')
+  })
+
+  it('returns date-based fallback when no title and no tags but date exists', () => {
     const result = getSessionTitle(makeSession({ sessionDate: '2026-04-15T12:00:00Z' }))
     expect(result).toMatch(/^Session,/)
   })
 
-  it('returns "Session" when no title and no date', () => {
+  it('returns "Session" when no title, no tags, and no date', () => {
     expect(getSessionTitle(makeSession())).toBe('Session')
+  })
+
+  it('uses explicit title over topic tags', () => {
+    const result = getSessionTitle(makeSession({ title: 'Past Simple', topicTags: '[{"tag":"Subjuntivo"}]' }))
+    expect(result).toBe('Past Simple')
   })
 })
 
