@@ -549,4 +549,42 @@ describe('Students page', () => {
 
     expect(screen.getByText("Showing 1 result for 'Ana'")).toBeInTheDocument()
   })
+
+  it('shows only highest-priority signal when student matches multiple conditions', async () => {
+    // Student has Cancelled 2x AND is inactive 22d with next session (RETURNING) — should show Cancelled 2x only
+    const lastSession = new Date(Date.now() - 22 * 24 * 60 * 60 * 1000).toISOString()
+    const nextSession = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ id: 'abc-123' })])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
+      activeStudents: [makeActiveStudent({
+        studentId: 'abc-123',
+        lastSessionDate: lastSession,
+        nextSessionDate: nextSession,
+        cancelledSessionsLast30Days: 2,
+      })],
+    })
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText('Cancelled 2x')).toBeInTheDocument()
+    expect(screen.queryByText('RETURNING')).not.toBeInTheDocument()
+  })
+
+  it('shows absolute date format for next session more than 6 days in the future', async () => {
+    const futureDate = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000)
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ id: 'abc-123' })])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
+      activeStudents: [makeActiveStudent({ studentId: 'abc-123', nextSessionDate: futureDate.toISOString() })],
+    })
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    const expectedDate = futureDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    expect(screen.getByText(expectedDate)).toBeInTheDocument()
+    expect(screen.queryByText(/in \d+d/)).not.toBeInTheDocument()
+  })
 })
