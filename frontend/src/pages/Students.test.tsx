@@ -157,12 +157,13 @@ describe('Students page', () => {
     expect(badge.className).not.toContain('rounded-full')
   })
 
-  it('renders ALERTS column header (not SIGNALS)', async () => {
+  it('renders SIGNALS, CEFR LEVEL and LANGUAGE column headers', async () => {
     vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse([makeStudent()]))
     wrapper(<Students />)
     await screen.findByTestId('student-name')
-    expect(screen.getByText('Alerts')).toBeInTheDocument()
-    expect(screen.queryByText('Signals')).not.toBeInTheDocument()
+    expect(screen.getByText('SIGNALS')).toBeInTheDocument()
+    expect(screen.getByText('CEFR LEVEL')).toBeInTheDocument()
+    expect(screen.getByText('LANGUAGE')).toBeInTheDocument()
   })
 
   it('filters students by name when search query is entered', async () => {
@@ -450,6 +451,22 @@ describe('Students page', () => {
     expect(screen.queryByText(/Inactive/)).not.toBeInTheDocument()
   })
 
+  it('shows RETURNING badge for student inactive 22 days who has upcoming session (threshold is 21d)', async () => {
+    const lastSession = new Date(Date.now() - 22 * 24 * 60 * 60 * 1000).toISOString()
+    const nextSession = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ id: 'abc-123' })])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
+      activeStudents: [makeActiveStudent({ studentId: 'abc-123', lastSessionDate: lastSession, nextSessionDate: nextSession })],
+    })
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText('RETURNING')).toBeInTheDocument()
+    expect(screen.queryByText(/Inactive/)).not.toBeInTheDocument()
+  })
+
   it('shows load more button when students exceed page size and loads more on click', async () => {
     const students = Array.from({ length: 13 }, (_, i) =>
       makeStudent({ id: `s${i}`, name: `Student ${String(i).padStart(2, '0')}` })
@@ -491,7 +508,7 @@ describe('Students page', () => {
     expect(screen.getByText('Showing 1 of 1 student')).toBeInTheDocument()
   })
 
-  it('subtitle shows total count without "active" when no filter is active', async () => {
+  it('subtitle shows total count including "active" qualifier when no filter is active', async () => {
     vi.mocked(studentsApi.getStudents).mockResolvedValue(
       makeListResponse([
         makeStudent({ id: 'a', name: 'Ana' }),
@@ -500,7 +517,7 @@ describe('Students page', () => {
     )
     wrapper(<Students />)
     await screen.findAllByTestId('student-name')
-    expect(screen.getByText('Managing 2 language learners in your atelier')).toBeInTheDocument()
+    expect(screen.getByText('Managing 2 active language learners in your atelier')).toBeInTheDocument()
   })
 
   it('subtitle updates when CEFR filter is active', async () => {
@@ -531,5 +548,43 @@ describe('Students page', () => {
     fireEvent.change(input, { target: { value: 'Ana' } })
 
     expect(screen.getByText("Showing 1 result for 'Ana'")).toBeInTheDocument()
+  })
+
+  it('shows only highest-priority signal when student matches multiple conditions', async () => {
+    // Student has Cancelled 2x AND is inactive 22d with next session (RETURNING) — should show Cancelled 2x only
+    const lastSession = new Date(Date.now() - 22 * 24 * 60 * 60 * 1000).toISOString()
+    const nextSession = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ id: 'abc-123' })])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
+      activeStudents: [makeActiveStudent({
+        studentId: 'abc-123',
+        lastSessionDate: lastSession,
+        nextSessionDate: nextSession,
+        cancelledSessionsLast30Days: 2,
+      })],
+    })
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByText('Cancelled 2x')).toBeInTheDocument()
+    expect(screen.queryByText('RETURNING')).not.toBeInTheDocument()
+  })
+
+  it('shows absolute date format for next session more than 6 days in the future', async () => {
+    const futureDate = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000)
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(
+      makeListResponse([makeStudent({ id: 'abc-123' })])
+    )
+    vi.mocked(dashboardApi.getDashboard).mockResolvedValue({
+      nextSession: null, todaySessions: [], pendingFollowups: [], upcomingThisWeek: [],
+      activeStudents: [makeActiveStudent({ studentId: 'abc-123', nextSessionDate: futureDate.toISOString() })],
+    })
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    const expectedDate = futureDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    expect(screen.getByText(expectedDate)).toBeInTheDocument()
+    expect(screen.queryByText(/in \d+d/)).not.toBeInTheDocument()
   })
 })
