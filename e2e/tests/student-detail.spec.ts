@@ -514,9 +514,10 @@ test('sessions tab: expanded row has "Edit full session" link that navigates to 
 
     const editLink = page.getByTestId('edit-full-session-link').first()
     await expect(editLink).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(editLink).toHaveAttribute('href', /\/students\/[^/]+\/sessions\/[^/]+\/edit$/)
 
     await editLink.click()
-    await expect(page).toHaveURL(/\/students\/[^/]+\/log-session\?sessionId=/, { timeout: NAV_TIMEOUT })
+    await expect(page).toHaveURL(/\/students\/[^/]+\/sessions\/[^/]+\/edit$/, { timeout: NAV_TIMEOUT })
   } finally {
     await context.close()
   }

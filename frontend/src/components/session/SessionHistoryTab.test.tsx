@@ -691,6 +691,6 @@ describe('SessionHistoryTab', () => {
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
     const link = screen.getByTestId('edit-full-session-link')
     expect(link).toBeInTheDocument()
-    expect(link).toHaveAttribute('href', '/students/student-1/log-session?sessionId=session-1')
+    expect(link).toHaveAttribute('href', '/students/student-1/sessions/session-1/edit')
   })
 })

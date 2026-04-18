@@ -494,7 +494,7 @@ function SessionEntry({
             {/* Action row at bottom of expanded session */}
             <div className="mt-6 pt-4 border-t border-[#C7C4D8]/10 flex items-center gap-3">
               <Link
-                to={`/students/${studentId}/log-session?sessionId=${session.id}`}
+                to={`/students/${studentId}/sessions/${session.id}/edit`}
                 className="inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700 transition-colors px-2 py-1 rounded hover:bg-indigo-50"
                 data-testid="edit-full-session-link"
               >
