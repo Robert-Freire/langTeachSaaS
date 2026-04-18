@@ -29,7 +29,7 @@ function getInitials(name: string): string {
     .toUpperCase()
 }
 
-function buildIdentitySubtitle(student: Student): string | null {
+function buildIdentitySubtitle(student: Student): string {
   const segments: string[] = []
   if (student.nativeLanguages.length > 0) {
     segments.push(`${student.nativeLanguages[0]} speaker, learning ${student.learningLanguage}`)
