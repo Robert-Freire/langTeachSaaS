@@ -11,6 +11,7 @@ import {
   Mic,
   CalendarDays,
   Filter,
+  Pencil,
 } from 'lucide-react'
 import { logger } from '../../lib/logger'
 import { Link, useNavigate } from 'react-router-dom'
@@ -490,8 +491,16 @@ function SessionEntry({
               </p>
             )}
 
-            {/* Delete session button at bottom of expanded row */}
-            <div className="mt-6 pt-4 border-t border-[#C7C4D8]/10">
+            {/* Action row at bottom of expanded session */}
+            <div className="mt-6 pt-4 border-t border-[#C7C4D8]/10 flex items-center gap-3">
+              <Link
+                to={`/students/${studentId}/log-session?sessionId=${session.id}`}
+                className="inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700 transition-colors px-2 py-1 rounded hover:bg-indigo-50"
+                data-testid="edit-full-session-link"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Edit full session
+              </Link>
               <button
                 type="button"
                 onClick={() => setDeleteOpen(true)}

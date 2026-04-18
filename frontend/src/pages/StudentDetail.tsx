@@ -32,14 +32,16 @@ function getInitials(name: string): string {
 function buildIdentitySubtitle(student: Student): string | null {
   const segments: string[] = []
   if (student.nativeLanguages.length > 0) {
-    segments.push(`${student.nativeLanguages[0]} speaker`)
+    segments.push(`${student.nativeLanguages[0]} speaker, learning ${student.learningLanguage}`)
+  } else {
+    segments.push(`Learning ${student.learningLanguage}`)
   }
   const profCityParts: string[] = []
   if (student.profession) profCityParts.push(student.profession)
   const city = student.cityOfResidence ?? student.cityOfOrigin
   if (city) profCityParts.push(city)
   if (profCityParts.length > 0) segments.push(profCityParts.join(', '))
-  return segments.length > 0 ? segments.join(' \u00b7 ') : null
+  return segments.join(' \u00b7 ')
 }
 
 function calcSessionFrequency(sessions: SessionLog[]): string | null {
@@ -318,32 +320,48 @@ export default function StudentDetail() {
             </div>
 
             <div className="min-w-0">
-              <h1
-                className="font-manrope text-[1.75rem] font-bold text-[#1A1B22] leading-tight truncate"
-                data-testid="student-detail-name"
-              >
-                {student.name}
-              </h1>
-
-              {/* Identity subtitle: L1 speaker · Profession, City */}
-              {identitySubtitle && (
-                <p
-                  className="text-sm text-zinc-500 mt-0.5 truncate"
-                  data-testid="student-header-subtitle"
+              {/* Line 1: name + CEFR badge(s) */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1
+                  className="font-manrope text-[1.75rem] font-bold text-[#1A1B22] leading-tight truncate"
+                  data-testid="student-detail-name"
                 >
-                  {identitySubtitle}
-                </p>
-              )}
+                  {student.name}
+                </h1>
+                <CefrBadge level={student.cefrLevel} data-testid="cefr-badge" />
+                {student.officialCefrLevel && (
+                  <span data-testid="official-cefr-badge" className="inline-flex items-center gap-1">
+                    <span className="text-[0.6875rem] text-zinc-500 uppercase tracking-[0.05em]">Official: </span>
+                    <CefrBadge level={student.officialCefrLevel} />
+                  </span>
+                )}
+              </div>
 
-              {/* Status badges */}
+              {/* Line 2: identity subtitle (L1 speaker, learning English · Profession, City) */}
+              <p
+                className="text-sm text-zinc-500 mt-0.5 truncate"
+                data-testid="student-header-subtitle"
+              >
+                {identitySubtitle}
+              </p>
+
+              {/* Line 3: status badges + next session */}
               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                 {student.isActive ? (
-                  <span
-                    className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] bg-[#E8E7F1] text-[#464455]"
-                    data-testid="student-status-badge"
-                  >
-                    Active{' '}&bull;{' '}{student.isCorporate ? 'Corporate' : 'Private'}
-                  </span>
+                  <>
+                    <span
+                      className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] bg-green-100 text-green-700"
+                      data-testid="student-status-badge"
+                    >
+                      Active
+                    </span>
+                    <span
+                      className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] bg-indigo-100 text-indigo-700"
+                      data-testid="student-type-badge"
+                    >
+                      {student.isCorporate ? 'Corporate' : 'Private'}
+                    </span>
+                  </>
                 ) : (
                   <span
                     className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] bg-zinc-100 text-zinc-500"
@@ -373,42 +391,6 @@ export default function StudentDetail() {
                   {sessionFrequency}
                 </span>
               )}
-
-              {/* Metadata row */}
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                {/* Teacher CEFR level */}
-                <CefrBadge level={student.cefrLevel} data-testid="cefr-badge" />
-
-                {/* Official CEFR level */}
-                {student.officialCefrLevel && (
-                  <span data-testid="official-cefr-badge" className="inline-flex items-center gap-1">
-                    <span className="text-[0.6875rem] text-zinc-500 uppercase tracking-[0.05em]">Official: </span>
-                    <CefrBadge level={student.officialCefrLevel} />
-                  </span>
-                )}
-
-                {/* Learning language */}
-                <span className="text-[0.6875rem] uppercase tracking-[0.05em] text-zinc-500 font-medium">
-                  {student.learningLanguage}
-                </span>
-
-                {/* Native languages */}
-                {student.nativeLanguages.length > 0 && (
-                  <span className="text-[0.6875rem] uppercase tracking-[0.05em] text-zinc-400 font-medium">
-                    Native: {student.nativeLanguages.join(', ')}
-                  </span>
-                )}
-
-                {/* Origin / Residence compact */}
-                {(student.cityOfOrigin || student.cityOfResidence) && (
-                  <span
-                    className="text-[0.6875rem] text-zinc-400 font-medium"
-                    data-testid="student-header-location"
-                  >
-                    {[student.cityOfOrigin, student.cityOfResidence].filter(Boolean).join(' / ')}
-                  </span>
-                )}
-              </div>
 
               {/* Primary Objective — compact, in header */}
               <HeaderObjective student={student} />

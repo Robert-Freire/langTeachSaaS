@@ -46,7 +46,7 @@ export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Pr
   const parsedTeachingNotes = parseNotes(student.teachingNotes)
 
   return (
-    <Card className="border-zinc-200" data-testid="student-profile-overview">
+    <Card data-testid="student-profile-overview">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Pedagogical Profile</CardTitle>
       </CardHeader>

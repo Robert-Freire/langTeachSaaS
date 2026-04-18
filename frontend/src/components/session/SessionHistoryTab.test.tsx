@@ -683,4 +683,14 @@ describe('SessionHistoryTab', () => {
     expect(timestamps).toHaveTextContent(/Logged/)
     expect(timestamps).not.toHaveTextContent(/Edited/)
   })
+
+  it('expanded row shows "Edit full session" link pointing to log-session with sessionId', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const link = screen.getByTestId('edit-full-session-link')
+    expect(link).toBeInTheDocument()
+    expect(link).toHaveAttribute('href', '/students/student-1/log-session?sessionId=session-1')
+  })
 })
