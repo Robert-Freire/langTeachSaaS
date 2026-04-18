@@ -7,6 +7,7 @@ public static class DemoSeeder
 {
     private const string DemoTag = "[demo]";
     private const string VisualTag = "[visual-seed]";
+    private const string RosterTag = "[roster-seed]";
 
     public static async Task<bool> SeedAsync(AppDbContext db, string teacherLookup, ILogger logger)
     {
@@ -36,6 +37,7 @@ public static class DemoSeeder
         var alreadySeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.PersonalNotes == DemoTag);
         if (alreadySeeded)
         {
+            await SeedLargeRosterAsync(db, teacher.Id, logger);
             logger.LogInformation("Demo data already exists for teacher {Email} — skipping.", teacher.Email);
             return true;
         }
@@ -97,6 +99,7 @@ public static class DemoSeeder
         var sectionCount = lessons.Sum(l => l.Sections.Count);
         logger.LogInformation("Demo data seeded: {Students} students, {Lessons} lessons, {Sections} sections.",
             students.Count, lessons.Count, sectionCount);
+        await SeedLargeRosterAsync(db, teacher.Id, logger);
         return true;
     }
 
@@ -136,6 +139,7 @@ public static class DemoSeeder
             await EnsureAnaVisualExtrasAsync(db, teacher.Id, logger);
             await SeedScenarioStudentsAsync(db, teacher.Id, logger);
             await SeedAnaVisualSessionLogAsync(db, teacher.Id, logger);
+            await SeedLargeRosterAsync(db, teacher.Id, logger);
             logger.LogInformation("Visual seed data already exists for teacher {Email}; scenario students refreshed.", teacher.Email);
             return true;
         }
@@ -230,6 +234,7 @@ public static class DemoSeeder
 
         await SeedScenarioStudentsAsync(db, teacher.Id, logger);
         await SeedAnaVisualSessionLogAsync(db, teacher.Id, logger);
+        await SeedLargeRosterAsync(db, teacher.Id, logger);
 
         return true;
     }
@@ -812,6 +817,61 @@ public static class DemoSeeder
         );
         await db.SaveChangesAsync();
         logger.LogInformation("Teacher followups seeded: 4 entries across four age bands (today, -1d, -2d, -7d).");
+    }
+
+    // -------------------------------------------------------------------------
+    // Large roster — 30 realistic students (Eastern European, learning Spanish)
+    // Tagged [roster-seed]; idempotent via tag guard.
+    // -------------------------------------------------------------------------
+
+    private static async Task SeedLargeRosterAsync(AppDbContext db, Guid teacherId, ILogger logger)
+    {
+        var rosterSeeded = await db.Students.AnyAsync(s => s.TeacherId == teacherId && s.PersonalNotes == RosterTag);
+        if (rosterSeeded)
+        {
+            logger.LogInformation("Large roster already seeded for teacher — skipping.");
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+
+        var roster = new List<Student>
+        {
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Nataliya",  LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Ukrainian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Kateryna",  LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Ukrainian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Oksana",    LearningLanguage = "Spanish", CefrLevel = "A1", NativeLanguages = """["Ukrainian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Olha",      LearningLanguage = "Spanish", CefrLevel = "B2", NativeLanguages = """["Ukrainian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Iryna",     LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Ukrainian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Svitlana",  LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Ukrainian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Yana",      LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Bulgarian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Gergana",   LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Bulgarian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Milena",    LearningLanguage = "Spanish", CefrLevel = "B2", NativeLanguages = """["Bulgarian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Ralitsa",   LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Bulgarian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Kristina",  LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Bulgarian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Natasha",   LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Russian"]""",     PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Alina",     LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Russian"]""",     PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Darya",     LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Russian"]""",     PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Irina",     LearningLanguage = "Spanish", CefrLevel = "B2", NativeLanguages = """["Russian"]""",     PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Anna",      LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Polish"]""",      PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Marta",     LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Polish"]""",      PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Monika",    LearningLanguage = "Spanish", CefrLevel = "B2", NativeLanguages = """["Polish"]""",      PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Joanna",    LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Polish"]""",      PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Agnieszka", LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Polish"]""",      PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Zuzana",    LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Slovak"]""",      PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Jana",      LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Czech"]""",       PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Elena",     LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Romanian"]""",    PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Noemi",     LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Romanian"]""",    PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Karolina",  LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Hungarian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Maria",     LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Greek"]""",       PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Jelena",    LearningLanguage = "Spanish", CefrLevel = "B2", NativeLanguages = """["Serbian"]""",     PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Inga",      LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Lithuanian"]""",  PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Kristine",  LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Latvian"]""",     PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Aino",      LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Estonian"]""",    PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+        };
+
+        db.Students.AddRange(roster);
+        await db.SaveChangesAsync();
+        logger.LogInformation("Large roster seeded: {Count} students with L1 data.", roster.Count);
     }
 
     private static async Task<Student> UpsertStudentAsync(AppDbContext db, Guid teacherId, Student incoming, DateTime now)
