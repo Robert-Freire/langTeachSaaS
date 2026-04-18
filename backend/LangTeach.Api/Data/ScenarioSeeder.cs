@@ -15,6 +15,7 @@ public static class ScenarioSeeder
     // All students whose sessions, followups, and todos are managed by this seeder.
     // Ana Visual, Ana Seed, Marco Seed, Clara Seed, Diego Seed already exist after --visual-seed.
     // Marco B1, Carmen C1, Nadia B2, Hans B1 are created on first run.
+    // Rui Seed, Sofia Seed, Sonia Seed created on first run (scenario 5 signal coverage).
     private static readonly (string Name, string Cefr, string NativeLang, string LearningLang)[] ScenarioStudentDefs =
     [
         ("Ana Visual",  "B2", """["Ukrainian"]""",   "English"),
@@ -26,6 +27,9 @@ public static class ScenarioSeeder
         ("Marco Seed",  "A2", """["Italian"]""",     "English"),
         ("Clara Seed",  "A1", """["German"]""",      "Spanish"),
         ("Diego Seed",  "B2", """["Spanish"]""",     "English"),
+        ("Rui Seed",    "A2", """["Romanian"]""",    "English"),
+        ("Sofia Seed",  "B2", """["Portuguese"]""",  "English"),
+        ("Sonia Seed",  "B1", """["Greek"]""",       "English"),
     ];
 
     public static async Task<bool> SeedScenarioAsync(AppDbContext db, int scenario, string teacherLookup, ILogger logger)
@@ -158,6 +162,9 @@ public static class ScenarioSeeder
         var marcoSeed  = students[6];
         var claraSeed  = students[7];
         var diegoSeed  = students[8];
+        var ruiSeed    = students[9];
+        var sofiaSeed  = students[10];
+        var soniaSeed  = students[11];
 
         switch (scenario)
         {
@@ -165,7 +172,7 @@ public static class ScenarioSeeder
             case 2: await SeedScenario2Async(db, teacherId, marcoB1, anaVisual, now, logger); break;
             case 3: SeedScenario3(logger); break;
             case 4: await SeedScenario4Async(db, teacherId, nadiaB2, now, logger); break;
-            case 5: await SeedScenario5Async(db, teacherId, anaSeed, marcoSeed, claraSeed, diegoSeed, now, logger); break;
+            case 5: await SeedScenario5Async(db, teacherId, anaSeed, marcoSeed, claraSeed, diegoSeed, ruiSeed, sofiaSeed, soniaSeed, now, logger); break;
             case 6: await SeedScenario6Async(db, teacherId, hansB1, now, logger); break;
         }
     }
@@ -354,6 +361,7 @@ public static class ScenarioSeeder
 
     private static async Task SeedScenario5Async(AppDbContext db, Guid teacherId,
         Student anaSeed, Student marcoSeed, Student claraSeed, Student diegoSeed,
+        Student ruiSeed, Student sofiaSeed, Student soniaSeed,
         DateTime now, ILogger logger)
     {
         // Ana Seed: Cancelled 2x (2 cancelled sessions in last 30 days)
@@ -435,8 +443,61 @@ public static class ScenarioSeeder
             }
         );
 
+        // Rui Seed: EXAM signal (objective deadline 35 days from now)
+        ruiSeed.ShortTermObjectives = $$"""[{"id":"o1","text":"Pass A2 DELE exam","targetDate":"{{now.AddDays(35):yyyy-MM-dd}}"}]""";
+        ruiSeed.UpdatedAt = now;
+
+        // Sofia Seed: Returning signal (last session 25 days ago + upcoming session booked)
+        db.SessionLogs.AddRange(
+            new SessionLog
+            {
+                Id                     = Guid.NewGuid(),
+                StudentId              = sofiaSeed.Id,
+                TeacherId              = teacherId,
+                SessionDate            = now.AddDays(-25),
+                PlannedContent         = "Present perfect vs past simple",
+                PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                Duration               = 60,
+                IsDeleted              = false,
+                IsCancelled            = false,
+                CreatedAt              = now.AddDays(-25),
+                UpdatedAt              = now.AddDays(-25),
+            },
+            new SessionLog
+            {
+                Id                     = Guid.NewGuid(),
+                StudentId              = sofiaSeed.Id,
+                TeacherId              = teacherId,
+                SessionDate            = now.AddDays(4),
+                PlannedContent         = "Review and catch-up session",
+                PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                IsDeleted              = false,
+                IsCancelled            = false,
+                CreatedAt              = now,
+                UpdatedAt              = now,
+            }
+        );
+
+        // Sonia Seed: HMWK PARTIAL signal (most recent past session has Partial homework status)
+        db.SessionLogs.Add(new SessionLog
+        {
+            Id                     = Guid.NewGuid(),
+            StudentId              = soniaSeed.Id,
+            TeacherId              = teacherId,
+            SessionDate            = now.AddDays(-5),
+            PlannedContent         = "Phrasal verbs in context",
+            HomeworkAssigned       = "Complete exercises 2.1-2.3 in workbook",
+            PreviousHomeworkStatus = HomeworkStatus.Partial,
+            Duration               = 60,
+            IsDeleted              = false,
+            IsCancelled            = false,
+            CreatedAt              = now.AddDays(-5),
+            UpdatedAt              = now.AddDays(-5),
+        });
+
         await db.SaveChangesAsync();
-        logger.LogInformation("Scenario 5 seeded: Cancelled 2x (Ana Seed) · Inactive 20d (Marco Seed) · Review pending (Clara Seed) · no signal (Diego Seed).");
+        logger.LogInformation(
+            "Scenario 5 seeded: Cancelled 2x (Ana Seed) · Inactive 20d (Marco Seed) · Review pending (Clara Seed) · no signal (Diego Seed) · EXAM 5W (Rui Seed) · Returning (Sofia Seed) · HMWK PARTIAL (Sonia Seed).");
     }
 
     // -------------------------------------------------------------------------
