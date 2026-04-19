@@ -812,14 +812,14 @@ describe('StudentForm', () => {
     renderEdit()
     await screen.findByRole('heading', { name: 'Edit Student' })
     expect(screen.getByTestId('toggle-is-active')).toBeInTheDocument()
-    expect(screen.getByTestId('toggle-is-corporate')).toBeInTheDocument()
+    expect(screen.getByTestId('type-private')).toBeInTheDocument()
     expect(screen.getByTestId('student-rate')).toBeInTheDocument()
   })
 
   it('does not render commercial section in create mode', () => {
     renderNew()
     expect(screen.queryByTestId('toggle-is-active')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('toggle-is-corporate')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('type-private')).not.toBeInTheDocument()
     expect(screen.queryByTestId('student-rate')).not.toBeInTheDocument()
   })
 

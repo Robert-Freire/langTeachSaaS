@@ -82,7 +82,7 @@ export function StudentFollowupsCard({ followups, studentId, onFollowupChange, e
                   <p className="text-sm text-[#1A1B22]">{f.text}</p>
                   {isOverdue && (
                     <p className="text-[0.6875rem] font-semibold text-red-600" data-testid={`followup-overdue-${f.id}`}>
-                      Overdue ({days} days)
+                      Pending for {days} days
                     </p>
                   )}
                 </div>
