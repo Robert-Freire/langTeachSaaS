@@ -19,7 +19,7 @@ public class UpdateStudentRequest
     public List<string> Interests { get; set; } = [];
 
     // Each element validated server-side against StudentService.AllowedNativeLanguages.
-    // Must stay in sync with NATIVE_LANGUAGES in frontend/src/lib/languages.ts.
+    // Must stay in sync with ALL_LANGUAGES in frontend/src/lib/languages.ts.
     [MaxCollectionCount(5)]
     [MaxStringLengthEach(50)]
     public List<string> NativeLanguages { get; set; } = [];

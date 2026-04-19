@@ -10,11 +10,33 @@ namespace LangTeach.Api.Services;
 
 public class StudentService : IStudentService
 {
-    // Must stay in sync with NATIVE_LANGUAGES in frontend/src/lib/languages.ts.
+    // Must stay in sync with ALL_LANGUAGES in frontend/src/lib/languages.ts.
     private static readonly HashSet<string> AllowedNativeLanguages =
     [
-        "English", "Spanish", "French", "German", "Italian",
-        "Portuguese", "Mandarin", "Japanese", "Arabic", "Catalan", "Other"
+        "Afrikaans", "Albanian", "Amharic", "Arabic", "Armenian", "Azerbaijani",
+        "Basque", "Belarusian", "Bengali", "Bosnian", "Bulgarian",
+        "Catalan", "Chinese (Cantonese)", "Chinese (Mandarin)", "Croatian", "Czech",
+        "Danish", "Dutch",
+        "English", "Estonian",
+        "Farsi", "Finnish", "French",
+        "Galician", "Georgian", "German", "Greek", "Gujarati",
+        "Hebrew", "Hindi", "Hungarian",
+        "Icelandic", "Indonesian", "Italian",
+        "Japanese",
+        "Kannada", "Kazakh", "Korean",
+        "Latvian", "Lithuanian",
+        "Macedonian", "Malay", "Maltese", "Mandarin", "Marathi",
+        "Nepali", "Norwegian",
+        "Pashto", "Polish", "Portuguese", "Punjabi",
+        "Romanian", "Russian",
+        "Serbian", "Sinhalese", "Slovak", "Slovenian", "Somali", "Spanish", "Swahili", "Swedish",
+        "Tagalog", "Tamil", "Telugu", "Thai", "Turkish",
+        "Ukrainian", "Urdu", "Uzbek",
+        "Vietnamese",
+        "Welsh",
+        "Yoruba",
+        "Zulu",
+        "Other"
     ];
 
     private static readonly HashSet<string> AllowedStatuses =

@@ -80,10 +80,18 @@ public class StudentServiceTests : IDisposable
     [InlineData("Italian")]
     [InlineData("Portuguese")]
     [InlineData("Mandarin")]
+    [InlineData("Chinese (Mandarin)")]
     [InlineData("Japanese")]
     [InlineData("Arabic")]
     [InlineData("Catalan")]
     [InlineData("Other")]
+    [InlineData("Ukrainian")]
+    [InlineData("Russian")]
+    [InlineData("Polish")]
+    [InlineData("Romanian")]
+    [InlineData("Hindi")]
+    [InlineData("Korean")]
+    [InlineData("Turkish")]
     public async Task CreateAsync_AllNativeLanguages_AreAccepted(string language)
     {
         var result = await _sut.CreateAsync(_teacherId, BaseRequest([language]));
