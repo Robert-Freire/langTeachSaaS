@@ -28,8 +28,10 @@ import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
 
 const DURATION_OPTIONS = [
+  { value: '25', label: '25 min' },
   { value: '30', label: '30 min' },
   { value: '45', label: '45 min' },
+  { value: '50', label: '50 min' },
   { value: '60', label: '60 min' },
   { value: '90', label: '90 min' },
   { value: 'other', label: 'Other' },
@@ -133,7 +135,7 @@ export default function LogSession() {
   // Form state
   const [sessionDate, setSessionDate] = useState(todayISO())
   const [sessionTime, setSessionTime] = useState(nowTimeHHMM())
-  const [durationChoice, setDurationChoice] = useState('60')
+  const [durationChoice, setDurationChoice] = useState('50')
   const [durationOther, setDurationOther] = useState('')
   const [isCancelled, setIsCancelled] = useState(false)
   const [prevHomeworkStatus, setPrevHomeworkStatus] = useState<string | null>(null)
@@ -248,9 +250,13 @@ export default function LogSession() {
     setReassessmentLevel(editSession.levelReassessmentLevel ?? '')
     setSelectedLessonId(editSession.linkedLessonId ?? '')
     const dur = editSession.duration
-    if (dur === 30 || dur === 45 || dur === 60 || dur === 90) {
+    if (dur === null || dur === undefined) {
+      setDurationChoice('other')
+      setDurationOther('')
+    } else if ([25, 30, 45, 50, 60, 90].includes(dur)) {
       setDurationChoice(String(dur))
-    } else if (dur) {
+      setDurationOther('')
+    } else {
       setDurationChoice('other')
       setDurationOther(String(dur))
     }

@@ -178,10 +178,19 @@ describe('LogSession', () => {
     expect(screen.getByTestId('session-date')).toHaveValue(today)
   })
 
-  it('duration defaults to 60', async () => {
+  it('duration defaults to 50', async () => {
     renderLogSession()
     await screen.findByTestId('duration-select')
-    expect(screen.getByTestId('duration-select')).toHaveTextContent(/60/)
+    expect(screen.getByTestId('duration-select')).toHaveTextContent(/50/)
+  })
+
+  it('duration dropdown includes 25 and 50 min options', async () => {
+    const user = userEvent.setup()
+    renderLogSession()
+    await screen.findByTestId('duration-select')
+    await user.click(screen.getByTestId('duration-select'))
+    expect(await screen.findByRole('option', { name: '25 min' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '50 min' })).toBeInTheDocument()
   })
 
   it('reveals custom duration input when "Other" selected', async () => {
@@ -247,7 +256,7 @@ describe('LogSession', () => {
           actualContent: 'Great session',
           isCancelled: false,
           status: 'Confirmed',
-          duration: 60,
+          duration: 50,
         }),
       )
     })
@@ -489,6 +498,21 @@ describe('LogSession — edit mode', () => {
     renderEditSession()
     await screen.findByTestId('actual-content')
     expect(screen.getByTestId('actual-content')).toHaveValue('Covered irregular preterite')
+  })
+
+  it.each([25, 50])('pre-selects duration %i in edit mode', async (dur) => {
+    vi.mocked(sessionLogsApi.getSession).mockResolvedValue({ ...EDIT_SESSION, duration: dur })
+    renderEditSession()
+    await screen.findByTestId('duration-select')
+    expect(screen.getByTestId('duration-select')).toHaveTextContent(String(dur))
+  })
+
+  it('shows Other with empty input when session has null duration', async () => {
+    vi.mocked(sessionLogsApi.getSession).mockResolvedValue({ ...EDIT_SESSION, duration: null })
+    renderEditSession()
+    await screen.findByTestId('duration-select')
+    expect(screen.getByTestId('duration-select')).toHaveTextContent(/other/i)
+    expect(screen.getByTestId('duration-other')).toHaveValue(null)
   })
 
   it('pre-fills time from sessionDate in edit mode', async () => {
