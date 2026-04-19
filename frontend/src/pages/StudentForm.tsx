@@ -48,7 +48,6 @@ import {
 
 const FORM_SECTIONS = [
   { id: 'section-basic', label: 'Basic Info' },
-  { id: 'section-background', label: 'Background' },
   { id: 'section-teaching-goals', label: 'Teaching Goals' },
   { id: 'section-difficulties', label: 'Difficulties' },
   { id: 'section-notes', label: 'Notes' },
@@ -60,7 +59,6 @@ const FORM_SECTIONS = [
 // so it shares the same scroll position and basic highlights both.
 const SCROLLSPY_IDS = [
   'section-basic',
-  'section-background',
   'section-teaching-goals',
   'section-difficulties',
   'section-notes',
@@ -712,11 +710,10 @@ export default function StudentForm() {
 
           <form id="student-form" onSubmit={handleSubmit} className="space-y-6">
 
-            {/* ── SECTION: Basic Info + Skill Overrides (2-column on desktop) ── */}
-            <div id="section-basic" className="grid grid-cols-1 lg:grid-cols-[7fr_5fr] gap-6 items-start">
-              <div className="space-y-6">
-                {/* Basic Info card */}
-                <Card>
+            {/* ── SECTION: Basic Info + Personal Background (2-column on desktop) ── */}
+            <div id="section-basic" className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+              {/* Basic Info card */}
+              <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Basic Info</CardTitle>
                   </CardHeader>
@@ -842,6 +839,41 @@ export default function StudentForm() {
                       <p className="text-xs text-zinc-400">Official exam result or external assessment.</p>
                     </div>
 
+                    {/* Skill Overrides — inline in Basic Info, below Official Level */}
+                    <div id="section-proficiency" className="pt-4 space-y-2">
+                      <Label className="inline-flex items-center gap-1 text-xs font-medium text-zinc-500">Skill Overrides <FieldTooltip fieldKey="skillLevelOverrides" /></Label>
+                      <p className="text-xs text-zinc-400">Override the general CEFR level per skill for AI generation. Leave empty to inherit the general level.</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-sm">
+                        {(['Reading', 'Writing', 'Speaking', 'Listening'] as const).map((skill) => (
+                          <div key={skill} className="relative">
+                            <div
+                              aria-hidden="true"
+                              className={cn(
+                                'flex items-center justify-center rounded-md px-2 py-1 text-xs font-bold uppercase tracking-[0.05em] font-inter pointer-events-none select-none',
+                                skillLevelOverrides[skill] ? cefrColors(skillLevelOverrides[skill]) : 'bg-zinc-100 text-zinc-500',
+                              )}
+                            >
+                              {skill} {skillLevelOverrides[skill] || '--'}
+                            </div>
+                            <Select
+                              value={skillLevelOverrides[skill] ?? ''}
+                              onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setSkillOverride(skill, next); if (isEdit) { const nextOverrides = next ? { ...skillLevelOverrides, [skill]: next } : Object.fromEntries(Object.entries(skillLevelOverrides).filter(([k]) => k !== skill)); saveNow({ skillLevelOverrides: nextOverrides }) } }}
+                            >
+                              <SelectTrigger data-testid={`skill-override-${skill.toLowerCase()}`} className="absolute inset-0 !w-full !h-full opacity-0 cursor-pointer">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">--</SelectItem>
+                                {CEFR_LEVELS.map((level) => (
+                                  <SelectItem key={level} value={level}>{level}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Languages — merged into Basic Info card */}
                     <div className="pt-6 space-y-4">
                       {/* Native Languages */}
@@ -879,53 +911,9 @@ export default function StudentForm() {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
 
-              {/* Skill Overrides — right column, beside Basic Info */}
-              <div id="section-proficiency">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base inline-flex items-center gap-1">Skill Overrides <FieldTooltip fieldKey="skillLevelOverrides" /></CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs text-zinc-400 mb-4">Override the general CEFR level per skill for AI generation. Leave empty to inherit the general level.</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      {(['Reading', 'Writing', 'Speaking', 'Listening'] as const).map((skill) => (
-                        <div key={skill} className="relative">
-                          <div
-                            aria-hidden="true"
-                            className={cn(
-                              'flex items-center justify-center rounded-md px-2 py-1 text-xs font-bold uppercase tracking-[0.05em] font-inter pointer-events-none select-none',
-                              skillLevelOverrides[skill] ? cefrColors(skillLevelOverrides[skill]) : 'bg-zinc-100 text-zinc-500',
-                            )}
-                          >
-                            {skill} {skillLevelOverrides[skill] || '--'}
-                          </div>
-                          <Select
-                            value={skillLevelOverrides[skill] ?? ''}
-                            onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setSkillOverride(skill, next); if (isEdit) { const nextOverrides = next ? { ...skillLevelOverrides, [skill]: next } : Object.fromEntries(Object.entries(skillLevelOverrides).filter(([k]) => k !== skill)); saveNow({ skillLevelOverrides: nextOverrides }) } }}
-                          >
-                            <SelectTrigger data-testid={`skill-override-${skill.toLowerCase()}`} className="absolute inset-0 !w-full !h-full opacity-0 cursor-pointer">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">--</SelectItem>
-                              {CEFR_LEVELS.map((level) => (
-                                <SelectItem key={level} value={level}>{level}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-
-            {/* ── SECTION: Personal Background ── */}
-            <div id="section-background" className="space-y-6">
-              <Card>
+              {/* Personal Background — right column, beside Basic Info */}
+              <Card id="section-background">
                 <CardHeader>
                   <CardTitle className="text-base">Personal Background</CardTitle>
                 </CardHeader>
@@ -1021,7 +1009,10 @@ export default function StudentForm() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
 
+            {/* ── SECTION: Reason for Studying + Interests (2-column on desktop) ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Reason for Studying</CardTitle>
@@ -1092,8 +1083,8 @@ export default function StudentForm() {
               </Card>
             </div>
 
-            {/* ── SECTION: Teaching Goals + Difficulties (2-column on desktop) ── */}
-            <div id="section-teaching-goals" className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* ── SECTION: Teaching Goals (full width) ── */}
+            <div id="section-teaching-goals">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Teaching Goals</CardTitle>
@@ -1146,9 +1137,10 @@ export default function StudentForm() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
 
-              {/* Difficulties — right column of the 2-col grid */}
-              <div id="section-difficulties">
+            {/* ── SECTION: Difficulties (full width) ── */}
+            <div id="section-difficulties">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Difficulties</CardTitle>
@@ -1345,7 +1337,6 @@ export default function StudentForm() {
                   </div>
                 </CardContent>
               </Card>
-              </div>
             </div>
 
             {/* ── SECTION: Notes (2-column) ── */}
