@@ -435,11 +435,11 @@ describe('StudentProfileTab', () => {
       expect(screen.getByTestId('objective-overdue-label')).toBeInTheDocument()
     })
 
-    it('shows Critical label for objective within 6 weeks', () => {
+    it('shows Critical label for objective within 3 days', () => {
       const student = {
         ...FULL_STUDENT,
         shortTermObjectives: [
-          { id: 'obj-1', text: 'Critical objective', targetDate: dateOffset(20) },
+          { id: 'obj-1', text: 'Critical objective', targetDate: dateOffset(2) },
         ],
       }
       renderProfile(student)
