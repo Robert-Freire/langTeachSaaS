@@ -318,6 +318,12 @@ export default function StudentForm() {
     const container = document.querySelector('main')
     if (!container) return
     function onScroll() {
+      // If scrolled to bottom, highlight last section
+      const atBottom = container!.scrollHeight - container!.scrollTop - container!.clientHeight < 2
+      if (atBottom) {
+        setActiveSection(SCROLLSPY_IDS[SCROLLSPY_IDS.length - 1])
+        return
+      }
       const offset = 80
       let current = SCROLLSPY_IDS[0]
       for (const sid of SCROLLSPY_IDS) {
@@ -1381,7 +1387,7 @@ export default function StudentForm() {
 
             {/* ── SECTION: Commercial Info (edit only) ── */}
             {isEdit && (
-              <div id="section-commercial" className="min-h-[60vh]">
+              <div id="section-commercial">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Commercial Info</CardTitle>
