@@ -178,10 +178,19 @@ describe('LogSession', () => {
     expect(screen.getByTestId('session-date')).toHaveValue(today)
   })
 
-  it('duration defaults to 60', async () => {
+  it('duration defaults to 50', async () => {
     renderLogSession()
     await screen.findByTestId('duration-select')
-    expect(screen.getByTestId('duration-select')).toHaveTextContent(/60/)
+    expect(screen.getByTestId('duration-select')).toHaveTextContent(/50/)
+  })
+
+  it('duration dropdown includes 25 and 50 min options', async () => {
+    const user = userEvent.setup()
+    renderLogSession()
+    await screen.findByTestId('duration-select')
+    await user.click(screen.getByTestId('duration-select'))
+    expect(await screen.findByRole('option', { name: '25 min' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '50 min' })).toBeInTheDocument()
   })
 
   it('reveals custom duration input when "Other" selected', async () => {
@@ -247,7 +256,7 @@ describe('LogSession', () => {
           actualContent: 'Great session',
           isCancelled: false,
           status: 'Confirmed',
-          duration: 60,
+          duration: 50,
         }),
       )
     })
