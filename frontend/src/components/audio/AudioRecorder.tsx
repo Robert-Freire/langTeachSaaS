@@ -139,10 +139,10 @@ export function AudioRecorder({ onVoiceNote, disabled }: AudioRecorderProps) {
         <div className="flex gap-2">
           <Button
             type="button"
-            variant="outline"
             size="sm"
             onClick={startRecording}
             disabled={isDisabled}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
             data-testid="record-button"
           >
             <Mic className="h-4 w-4 mr-1" />
