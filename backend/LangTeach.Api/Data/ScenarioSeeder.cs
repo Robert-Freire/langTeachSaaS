@@ -675,7 +675,7 @@ public static class ScenarioSeeder
             PreviousHomeworkStatus = HomeworkStatus.Done,
             Duration               = 75,
             NextSessionTopics      = "Review written paragraph homework; continue with imperfect subjunctive; introduce conditional + si clauses",
-            SuggestedDifficulties  = """[{"competency":"Grammar","subcategory":"Mood selection","text":"Student occasionally defaulted to indicative after 'esperar que' in oral production"},{"competency":"Pronunciation","subcategory":"Stress patterns","text":"Inconsistent stress on subjunctive verb endings (-e vs -a)"}]""",
+            SuggestedDifficulties  = """[{"competency":"Grammar","subcategory":"Mood selection","description":"Student occasionally defaulted to indicative after 'esperar que' in oral production","severity":"medium"},{"competency":"Pronunciation","subcategory":"Stress patterns","description":"Inconsistent stress on subjunctive verb endings (-e vs -a)","severity":"low"}]""",
             IsDeleted              = false,
             CreatedAt              = now.AddDays(-4),
             UpdatedAt              = now.AddDays(-4),
