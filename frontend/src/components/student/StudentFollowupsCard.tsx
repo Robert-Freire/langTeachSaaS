@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { Plus } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import type { TeacherFollowup } from '@/api/followups'
 import { createFollowup, updateFollowupStatus } from '@/api/followups'
@@ -122,10 +123,10 @@ export function StudentFollowupsCard({ followups, studentId, onFollowupChange, e
           type="button"
           onClick={handleAdd}
           disabled={createMutation.isPending || !newText.trim()}
-          className="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-40 transition-colors"
+          className="shrink-0 rounded-lg bg-amber-500 p-1.5 text-white hover:bg-amber-600 disabled:opacity-40 transition-colors"
           data-testid="followup-add-btn"
         >
-          Add
+          <Plus className="h-4 w-4" />
         </button>
       </div>
     </div>

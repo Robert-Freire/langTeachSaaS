@@ -1,19 +1,27 @@
 export type UrgencyStatus = 'overdue' | 'critical' | 'normal'
 
+const MS_PER_DAY = 86_400_000
+
+function calendarDaysRemaining(targetDate: string): number {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(targetDate)
+  if (!match) return 0
+  const today = new Date()
+  const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
+  const dueUtc = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+  return Math.floor((dueUtc - todayUtc) / MS_PER_DAY)
+}
+
 /**
  * Returns the urgency status for a short-term objective based on its target date.
  * - 'overdue': past due
- * - 'critical': due within 6 weeks (42 days)
- * - 'normal': more than 6 weeks away or no date
+ * - 'critical': due within 3 days (shows NEAR DATE badge)
+ * - 'normal': more than 3 days away or no date
  */
 export function getObjectiveUrgency(targetDate: string | null): UrgencyStatus {
   if (!targetDate) return 'normal'
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const due = new Date(targetDate + 'T00:00:00')
-  const diffDays = Math.floor((due.getTime() - today.getTime()) / 86400000)
+  const diffDays = calendarDaysRemaining(targetDate)
   if (diffDays < 0) return 'overdue'
-  if (diffDays <= 42) return 'critical'
+  if (diffDays <= 3) return 'critical'
   return 'normal'
 }
 
@@ -22,10 +30,7 @@ export function getObjectiveUrgency(targetDate: string | null): UrgencyStatus {
  */
 export function getDaysRemaining(targetDate: string | null): number | null {
   if (!targetDate) return null
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const due = new Date(targetDate + 'T00:00:00')
-  return Math.floor((due.getTime() - today.getTime()) / 86400000)
+  return calendarDaysRemaining(targetDate)
 }
 
 export function formatDaysRemaining(days: number): string {

@@ -27,12 +27,12 @@ describe('getObjectiveUrgency', () => {
     expect(getObjectiveUrgency(dateString(0))).toBe('critical')
   })
 
-  it('returns critical for date within 42 days', () => {
-    expect(getObjectiveUrgency(dateString(42))).toBe('critical')
+  it('returns critical for date within 3 days', () => {
+    expect(getObjectiveUrgency(dateString(3))).toBe('critical')
   })
 
-  it('returns normal for date beyond 42 days', () => {
-    expect(getObjectiveUrgency(dateString(43))).toBe('normal')
+  it('returns normal for date beyond 3 days', () => {
+    expect(getObjectiveUrgency(dateString(4))).toBe('normal')
   })
 })
 
