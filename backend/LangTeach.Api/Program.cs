@@ -265,14 +265,14 @@ if (seedScenarioIndex >= 0)
     var scenarioStr  = seedScenarioIndex + 1 < args.Length ? args[seedScenarioIndex + 1] : null;
     var teacherArg   = seedScenarioIndex + 2 < args.Length ? args[seedScenarioIndex + 2] : null;
 
-    if (!int.TryParse(scenarioStr, out var scenario) || scenario < 1 || scenario > 6)
+    if (!int.TryParse(scenarioStr, out var scenario) || scenario < 1 || scenario > 7)
     {
-        Console.Error.WriteLine("Usage: --seed-scenario <1-6> <auth0-user-id|email>");
+        Console.Error.WriteLine("Usage: --seed-scenario <1-7> <auth0-user-id|email>");
         return 1;
     }
     if (string.IsNullOrWhiteSpace(teacherArg))
     {
-        Console.Error.WriteLine("Usage: --seed-scenario <1-6> <auth0-user-id|email>");
+        Console.Error.WriteLine("Usage: --seed-scenario <1-7> <auth0-user-id|email>");
         return 1;
     }
 
