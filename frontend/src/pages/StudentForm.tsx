@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Plus, Trash2, TrendingUp, TrendingDown, Minus, Pencil, CheckCircle, Loader2, RefreshCw } from 'lucide-react'
+import { X, Plus, Trash2, Pencil, CheckCircle, Loader2, RefreshCw } from 'lucide-react'
 import { getStudent, createStudent, updateStudent, deleteStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem, type ShortTermObjective, type LearningGoalItem } from '../api/students'
 import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
@@ -48,20 +48,17 @@ import {
 
 const FORM_SECTIONS = [
   { id: 'section-basic', label: 'Basic Info' },
-  { id: 'section-background', label: 'Background' },
-  { id: 'section-proficiency', label: 'Proficiency' },
   { id: 'section-teaching-goals', label: 'Teaching Goals' },
   { id: 'section-difficulties', label: 'Difficulties' },
   { id: 'section-notes', label: 'Notes' },
   { id: 'section-commercial', label: 'Commercial' },
 ]
 
-// Scrollspy tracks these in order. section-proficiency is now below section-basic
-// (Skill Overrides moved lower per Stitch placement), so it gets its own Y position.
+// Scrollspy tracks these in DOM order (top to bottom).
+// section-proficiency is inside the section-basic grid (right column),
+// so it shares the same scroll position and basic highlights both.
 const SCROLLSPY_IDS = [
   'section-basic',
-  'section-proficiency',
-  'section-background',
   'section-teaching-goals',
   'section-difficulties',
   'section-notes',
@@ -319,6 +316,12 @@ export default function StudentForm() {
     const container = document.querySelector('main')
     if (!container) return
     function onScroll() {
+      // If scrolled to bottom, highlight last section
+      const atBottom = container!.scrollHeight - container!.scrollTop - container!.clientHeight < 2
+      if (atBottom) {
+        setActiveSection(SCROLLSPY_IDS[SCROLLSPY_IDS.length - 1])
+        return
+      }
       const offset = 80
       let current = SCROLLSPY_IDS[0]
       for (const sid of SCROLLSPY_IDS) {
@@ -705,13 +708,12 @@ export default function StudentForm() {
       <div className={isEdit ? 'grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 items-start' : 'max-w-2xl space-y-6'}>
         <div className="space-y-6">
 
-          <form id="student-form" onSubmit={handleSubmit} className={`space-y-6${isEdit ? ' pb-[600px]' : ''}`}>
+          <form id="student-form" onSubmit={handleSubmit} className="space-y-6">
 
-            {/* ── SECTION: Basic Info + Proficiency (2-column on desktop) ── */}
-            <div id="section-basic" className="grid grid-cols-1 lg:grid-cols-[7fr_5fr] gap-6 items-start">
-              <div className="space-y-6">
-                {/* Basic Info card */}
-                <Card>
+            {/* ── SECTION: Basic Info + Personal Background (2-column on desktop) ── */}
+            <div id="section-basic" className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+              {/* Basic Info card */}
+              <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Basic Info</CardTitle>
                   </CardHeader>
@@ -837,6 +839,41 @@ export default function StudentForm() {
                       <p className="text-xs text-zinc-400">Official exam result or external assessment.</p>
                     </div>
 
+                    {/* Skill Overrides — inline in Basic Info, below Official Level */}
+                    <div id="section-proficiency" className="pt-4 space-y-2">
+                      <Label className="inline-flex items-center gap-1 text-xs font-medium text-zinc-500">Skill Overrides <FieldTooltip fieldKey="skillLevelOverrides" /></Label>
+                      <p className="text-xs text-zinc-400">Override the general CEFR level per skill for AI generation. Leave empty to inherit the general level.</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-sm">
+                        {(['Reading', 'Writing', 'Speaking', 'Listening'] as const).map((skill) => (
+                          <div key={skill} className="relative">
+                            <div
+                              aria-hidden="true"
+                              className={cn(
+                                'flex items-center justify-center rounded-md px-2 py-1 text-xs font-bold uppercase tracking-[0.05em] font-inter pointer-events-none select-none',
+                                skillLevelOverrides[skill] ? cefrColors(skillLevelOverrides[skill]) : 'bg-zinc-100 text-zinc-500',
+                              )}
+                            >
+                              {skill} {skillLevelOverrides[skill] || '--'}
+                            </div>
+                            <Select
+                              value={skillLevelOverrides[skill] ?? ''}
+                              onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setSkillOverride(skill, next); if (isEdit) { const nextOverrides = next ? { ...skillLevelOverrides, [skill]: next } : Object.fromEntries(Object.entries(skillLevelOverrides).filter(([k]) => k !== skill)); saveNow({ skillLevelOverrides: nextOverrides }) } }}
+                            >
+                              <SelectTrigger data-testid={`skill-override-${skill.toLowerCase()}`} className="absolute inset-0 !w-full !h-full opacity-0 cursor-pointer">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">--</SelectItem>
+                                {CEFR_LEVELS.map((level) => (
+                                  <SelectItem key={level} value={level}>{level}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Languages — merged into Basic Info card */}
                     <div className="pt-6 space-y-4">
                       {/* Native Languages */}
@@ -874,54 +911,9 @@ export default function StudentForm() {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
-            </div>
 
-            {/* Skill Overrides — below the 2-column grid, placed in right column position */}
-            <div id="section-proficiency" className="grid grid-cols-1 lg:grid-cols-[7fr_5fr] gap-6">
-              <div /> {/* empty left column to push Skill Overrides to the right */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base inline-flex items-center gap-1">Skill Overrides <FieldTooltip fieldKey="skillLevelOverrides" /></CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-zinc-400 mb-4">Override the general CEFR level per skill for AI generation. Leave empty to inherit the general level.</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {(['Reading', 'Writing', 'Speaking', 'Listening'] as const).map((skill) => (
-                      <div key={skill} className="relative">
-                        <div
-                          aria-hidden="true"
-                          className={cn(
-                            'flex items-center justify-center rounded-md px-2 py-1 text-xs font-bold uppercase tracking-[0.05em] font-inter pointer-events-none select-none',
-                            skillLevelOverrides[skill] ? cefrColors(skillLevelOverrides[skill]) : 'bg-zinc-100 text-zinc-500',
-                          )}
-                        >
-                          {skill} {skillLevelOverrides[skill] || '--'}
-                        </div>
-                        <Select
-                          value={skillLevelOverrides[skill] ?? ''}
-                          onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setSkillOverride(skill, next); if (isEdit) { const nextOverrides = next ? { ...skillLevelOverrides, [skill]: next } : Object.fromEntries(Object.entries(skillLevelOverrides).filter(([k]) => k !== skill)); saveNow({ skillLevelOverrides: nextOverrides }) } }}
-                        >
-                          <SelectTrigger data-testid={`skill-override-${skill.toLowerCase()}`} className="absolute inset-0 !w-full !h-full opacity-0 cursor-pointer">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none__">--</SelectItem>
-                            {CEFR_LEVELS.map((level) => (
-                              <SelectItem key={level} value={level}>{level}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* ── SECTION: Personal Background ── */}
-            <div id="section-background" className="space-y-6">
-              <Card>
+              {/* Personal Background — right column, beside Basic Info */}
+              <Card id="section-background">
                 <CardHeader>
                   <CardTitle className="text-base">Personal Background</CardTitle>
                 </CardHeader>
@@ -1017,7 +1009,10 @@ export default function StudentForm() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
 
+            {/* ── SECTION: Reason for Studying + Interests (2-column on desktop) ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Reason for Studying</CardTitle>
@@ -1088,8 +1083,8 @@ export default function StudentForm() {
               </Card>
             </div>
 
-            {/* ── SECTION: Teaching Goals + Difficulties (2-column on desktop) ── */}
-            <div id="section-teaching-goals" className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* ── SECTION: Teaching Goals (full width) ── */}
+            <div id="section-teaching-goals">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Teaching Goals</CardTitle>
@@ -1142,9 +1137,10 @@ export default function StudentForm() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
 
-              {/* Difficulties — right column of the 2-col grid */}
-              <div id="section-difficulties">
+            {/* ── SECTION: Difficulties (full width) ── */}
+            <div id="section-difficulties">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Difficulties</CardTitle>
@@ -1297,34 +1293,7 @@ export default function StudentForm() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      {/* Severity bar + trend indicator */}
-                      {(d.severity || d.trend) && (
-                        <div className="flex items-center gap-3 pl-1" data-testid="difficulty-visual-indicators">
-                          {d.severity && (
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs text-zinc-400">Severity</span>
-                              <div className="w-16 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full ${
-                                    d.severity === 'high' ? 'bg-red-500 w-full' :
-                                    d.severity === 'medium' ? 'bg-amber-500 w-2/3' :
-                                    'bg-green-500 w-1/3'
-                                  }`}
-                                  data-testid="difficulty-severity-bar"
-                                />
-                              </div>
-                            </div>
-                          )}
-                          {d.trend && (
-                            <div className="flex items-center gap-1" data-testid="difficulty-trend-indicator">
-                              {d.trend === 'improving' && <TrendingUp className="h-3.5 w-3.5 text-green-500" />}
-                              {d.trend === 'worsening' && <TrendingDown className="h-3.5 w-3.5 text-red-500" />}
-                              {d.trend === 'stable' && <Minus className="h-3.5 w-3.5 text-zinc-400" />}
-                              <span className="text-xs text-zinc-400 capitalize">{d.trend}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      {/* Severity bar + trend indicator hidden until teacher-editable (see backlog) */}
                       {errors[`difficulty-${d.id}`] && (
                         <p className="text-xs text-red-600" data-testid="difficulty-error">
                           {errors[`difficulty-${d.id}`]}
@@ -1341,7 +1310,6 @@ export default function StudentForm() {
                   </div>
                 </CardContent>
               </Card>
-              </div>
             </div>
 
             {/* ── SECTION: Notes (2-column) ── */}
@@ -1388,64 +1356,64 @@ export default function StudentForm() {
                   <CardHeader>
                     <CardTitle className="text-base">Commercial Info</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* IsActive toggle */}
-                    <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg">
-                      <div>
-                        <Label className="text-sm font-medium cursor-pointer" htmlFor="toggle-is-active">Account Status</Label>
-                        <p className="text-xs text-zinc-400 mt-0.5">{isActive ? 'Active' : 'Inactive'}</p>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
+                      {/* Account Status toggle */}
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium" htmlFor="toggle-is-active">Status</Label>
+                        <button
+                          id="toggle-is-active"
+                          type="button"
+                          role="switch"
+                          aria-checked={isActive}
+                          onClick={() => { const next = !isActive; setIsActive(next); if (isEdit) saveNow({ isActive: next }) }}
+                          data-testid="toggle-is-active"
+                          className={`flex items-center gap-2 text-sm font-medium transition-colors ${isActive ? 'text-[#1A1B22]' : 'text-zinc-400'}`}
+                          aria-label="Toggle active status"
+                        >
+                          <span className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${isActive ? 'bg-indigo-600' : 'bg-zinc-300'}`}>
+                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${isActive ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                          </span>
+                          {isActive ? 'Active' : 'Inactive'}
+                        </button>
                       </div>
-                      <button
-                        id="toggle-is-active"
-                        type="button"
-                        role="switch"
-                        aria-checked={isActive}
-                        onClick={() => { const next = !isActive; setIsActive(next); if (isEdit) saveNow({ isActive: next }) }}
-                        data-testid="toggle-is-active"
-                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${isActive ? 'bg-indigo-600' : 'bg-zinc-300'}`}
-                        aria-label="Toggle active status"
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isActive ? 'translate-x-6' : 'translate-x-1'}`}
-                        />
-                      </button>
-                    </div>
 
-                    {/* IsCorporate toggle */}
-                    <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg">
-                      <div>
-                        <Label className="text-sm font-medium cursor-pointer" htmlFor="toggle-is-corporate">Student Type</Label>
-                        <p className="text-xs text-zinc-400 mt-0.5">{isCorporate ? 'Corporate' : 'Private'}</p>
+                      {/* Student Type segmented control */}
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium">Type</Label>
+                        <div className="inline-flex rounded-lg bg-zinc-100 p-0.5" role="radiogroup" aria-label="Student type">
+                          {(['Private', 'Corporate'] as const).map((type) => {
+                            const selected = type === 'Corporate' ? isCorporate : !isCorporate
+                            return (
+                              <button
+                                key={type}
+                                type="button"
+                                role="radio"
+                                aria-checked={selected}
+                                onClick={() => { const next = type === 'Corporate'; setIsCorporate(next); if (isEdit) saveNow({ isCorporate: next }) }}
+                                data-testid={`type-${type.toLowerCase()}`}
+                                className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${selected ? 'bg-white text-[#1A1B22] shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+                              >
+                                {type}
+                              </button>
+                            )
+                          })}
+                        </div>
                       </div>
-                      <button
-                        id="toggle-is-corporate"
-                        type="button"
-                        role="switch"
-                        aria-checked={isCorporate}
-                        onClick={() => { const next = !isCorporate; setIsCorporate(next); if (isEdit) saveNow({ isCorporate: next }) }}
-                        data-testid="toggle-is-corporate"
-                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${isCorporate ? 'bg-indigo-600' : 'bg-zinc-300'}`}
-                        aria-label="Toggle corporate status"
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isCorporate ? 'translate-x-6' : 'translate-x-1'}`}
-                        />
-                      </button>
-                    </div>
 
-                    {/* Rate */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="rate">Hourly Rate</Label>
-                      <Input
-                        id="rate"
-                        value={rate}
-                        onChange={(e) => { setRate(e.target.value); if (isEdit) scheduleTextSave() }}
-                        placeholder="e.g. 45/hr"
-                        maxLength={50}
-                        className="max-w-[200px]"
-                        data-testid="student-rate"
-                      />
-                      <p className="text-xs text-zinc-400">Free text. No billing frequency tracked.</p>
+                      {/* Rate */}
+                      <div className="space-y-1.5">
+                        <Label htmlFor="rate">Rate</Label>
+                        <Input
+                          id="rate"
+                          value={rate}
+                          onChange={(e) => { setRate(e.target.value); if (isEdit) scheduleTextSave() }}
+                          placeholder="e.g. 45/hr"
+                          maxLength={50}
+                          className="max-w-[160px]"
+                          data-testid="student-rate"
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

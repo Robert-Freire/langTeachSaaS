@@ -69,7 +69,7 @@ describe('StudentFollowupsCard', () => {
     const oldDate = new Date(Date.now() - 10 * 86400000).toISOString()
     renderCard({ followups: [makeFollowup({ id: 'f1', createdAt: oldDate })], onFollowupChange })
     expect(screen.getByTestId('followup-overdue-f1')).toBeInTheDocument()
-    expect(screen.getByTestId('followup-overdue-f1').textContent).toMatch(/Overdue \(\d+ days\)/)
+    expect(screen.getByTestId('followup-overdue-f1').textContent).toMatch(/Pending for \d+ days/)
   })
 
   it('calls createFollowup when add button clicked', async () => {

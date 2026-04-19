@@ -893,6 +893,24 @@ export default function LogSession() {
             </div>
           )}
 
+          {/* Voice recorder: primary alternative to filling the entire form manually */}
+          <div
+            className="flex items-center gap-3 rounded-xl px-4 py-3"
+            style={{ background: '#EEF0FD' }}
+            data-testid="voice-recorder-section"
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-indigo-800">Record your session</p>
+              <p className="text-xs text-indigo-600/70">Speak freely. The recording will be transcribed and used to fill in all the fields below.</p>
+            </div>
+            <AudioRecorder
+              onVoiceNote={(note) => {
+                setVoiceNoteId(note.id)
+                markChangedAndSaveNow({ voiceNoteId: note.id })
+              }}
+            />
+          </div>
+
           {/* ── Compact metadata bar: 2x2 grid ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl px-4 py-3" style={{ background: '#F4F2FD' }}>
             {/* Date */}
@@ -1024,16 +1042,6 @@ export default function LogSession() {
                   rows={6}
                   className="resize-none text-sm bg-white"
                   data-testid="actual-content"
-                />
-              </div>
-
-              {/* Voice Note */}
-              <div className="mt-3" data-testid="voice-recorder-section">
-                <AudioRecorder
-                  onVoiceNote={(note) => {
-                    setVoiceNoteId(note.id)
-                    markChangedAndSaveNow({ voiceNoteId: note.id })
-                  }}
                 />
               </div>
 
@@ -1171,7 +1179,7 @@ export default function LogSession() {
                 data-testid="toggle-secondary"
               >
                 <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${secondaryOpen ? 'rotate-180' : ''}`} />
-                {secondaryOpen ? 'Hide additional sections' : 'Show homework, cultural notes, error patterns...'}
+                {secondaryOpen ? 'Hide additional sections' : 'Show notes, lesson link, level reassessment...'}
               </button>
 
               {secondaryOpen && (
