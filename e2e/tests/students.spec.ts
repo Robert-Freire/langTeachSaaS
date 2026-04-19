@@ -844,9 +844,17 @@ test('teaching todos: toggle persists after reload and can be toggled back to pe
   await page.goto(detailUrl)
   await expect(page.getByTestId('teaching-todos-card')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
-  // Add a todo
+  const waitForTodoWrite = () =>
+    page.waitForResponse(
+      (r) => r.request().method() !== 'GET' && r.url().includes('/teaching-todos') && r.ok(),
+      { timeout: FEEDBACK_TIMEOUT }
+    )
+
+  // Add a todo (wait for server confirm before reading id)
+  const addDone = waitForTodoWrite()
   await page.getByTestId('todo-add-input').fill('ser vs estar reminder')
   await page.getByTestId('todo-add-btn').click()
+  await addDone
   await expect(page.getByTestId('teaching-todos-list')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
   // Get the todo id
@@ -855,7 +863,9 @@ test('teaching todos: toggle persists after reload and can be toggled back to pe
   const todoId = toggleTestId!.replace('todo-toggle-', '')
 
   // Toggle to covered — this previously returned 400
+  const coverDone = waitForTodoWrite()
   await toggleBtn.click()
+  await coverDone
   await expect(page.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
 
   // Reload and verify persistence
@@ -864,7 +874,9 @@ test('teaching todos: toggle persists after reload and can be toggled back to pe
   await expect(page.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
 
   // Toggle back to pending
+  const pendingDone = waitForTodoWrite()
   await page.getByTestId(`todo-toggle-${todoId}`).click()
+  await pendingDone
   await expect(page.getByTestId(`todo-text-${todoId}`)).not.toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
 
   // Reload again and verify pending state persists
