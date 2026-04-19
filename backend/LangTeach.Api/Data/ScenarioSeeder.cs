@@ -415,7 +415,7 @@ public static class ScenarioSeeder
         // Clara Seed: Review pending (1 pending teaching todo)
         var claraTodoId   = Guid.NewGuid();
         var claraTodoDate = now.AddDays(-3).ToString("yyyy-MM-ddTHH:mm:ssZ");
-        claraSeed.TeachingTodos = $$"""[{"id":"{{claraTodoId}}","text":"Review Clara's subjunctive triggers — exercises not completed","createdAt":"{{claraTodoDate}}","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null}]""";
+        claraSeed.TeachingTodos = $$"""[{"id":"{{claraTodoId}}","text":"Review Clara's subjunctive triggers — exercises not completed","createdAt":"{{claraTodoDate}}","sourceSessionLogId":null,"status":"Pending","coveredInSessionLogId":null}]""";
         claraSeed.UpdatedAt = now;
 
         // Diego Seed: no signal (recent past session + upcoming session, no todos)
@@ -595,7 +595,7 @@ public static class ScenarioSeeder
         var todoId2 = Guid.NewGuid();
         var todoDate1 = now.AddDays(-5).ToString("yyyy-MM-ddTHH:mm:ssZ");
         var todoDate2 = now.AddDays(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");
-        anaVisual.TeachingTodos = $$"""[{"id":"{{todoId1}}","text":"Prepare a set of subjunctive trigger cards for next class","createdAt":"{{todoDate1}}","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null},{"id":"{{todoId2}}","text":"Find an authentic news article about Latin American culture at B2 level","createdAt":"{{todoDate2}}","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null}]""";
+        anaVisual.TeachingTodos = $$"""[{"id":"{{todoId1}}","text":"Prepare a set of subjunctive trigger cards for next class","createdAt":"{{todoDate1}}","sourceSessionLogId":null,"status":"Pending","coveredInSessionLogId":null},{"id":"{{todoId2}}","text":"Find an authentic news article about Latin American culture at B2 level","createdAt":"{{todoDate2}}","sourceSessionLogId":null,"status":"Pending","coveredInSessionLogId":null}]""";
 
         anaVisual.ShortTermObjectives = $$"""[{"id":"obj1","text":"Master subjunctive in nominal clauses (WEIRDO verbs)","targetDate":"{{now.AddDays(-3):yyyy-MM-dd}}"},{"id":"obj2","text":"Achieve confident use of ser vs estar in all tenses","targetDate":"{{now.AddDays(5):yyyy-MM-dd}}"},{"id":"obj3","text":"Build travel and business vocabulary to 500 items","targetDate":"{{now.AddDays(28):yyyy-MM-dd}}"}]""";
 

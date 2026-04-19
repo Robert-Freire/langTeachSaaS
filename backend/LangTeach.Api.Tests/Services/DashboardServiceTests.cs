@@ -260,8 +260,8 @@ public class DashboardServiceTests : IDisposable
     public async Task GetAsync_ActiveStudents_ReturnsPendingTodos()
     {
         _db.Students.First(s => s.Id == _studentId).TeachingTodos =
-            "[{\"id\":\"t1\",\"text\":\"Focus on subjunctive\",\"createdAt\":\"2026-04-01T10:00:00Z\",\"status\":\"pending\",\"sourceSessionLogId\":null,\"coveredInSessionLogId\":null}," +
-            "{\"id\":\"t2\",\"text\":\"Review homework\",\"createdAt\":\"2026-04-02T10:00:00Z\",\"status\":\"covered\",\"sourceSessionLogId\":null,\"coveredInSessionLogId\":null}]";
+            "[{\"id\":\"t1\",\"text\":\"Focus on subjunctive\",\"createdAt\":\"2026-04-01T10:00:00Z\",\"status\":\"Pending\",\"sourceSessionLogId\":null,\"coveredInSessionLogId\":null}," +
+            "{\"id\":\"t2\",\"text\":\"Review homework\",\"createdAt\":\"2026-04-02T10:00:00Z\",\"status\":\"Covered\",\"sourceSessionLogId\":null,\"coveredInSessionLogId\":null}]";
         _db.SaveChanges();
 
         var result = await _sut.GetAsync(_teacherId);
@@ -271,7 +271,7 @@ public class DashboardServiceTests : IDisposable
         student.PendingTodos.Should().HaveCount(1);
         student.PendingTodos[0].Id.Should().Be("t1");
         student.PendingTodos[0].Text.Should().Be("Focus on subjunctive");
-        student.PendingTodos[0].Status.Should().Be("pending");
+        student.PendingTodos[0].Status.Should().Be("Pending");
     }
 
     [Fact]

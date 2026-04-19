@@ -44,10 +44,21 @@ public class StudentService : IStudentService
         "Active", "Covered"
     ];
 
-    private static readonly HashSet<string> AllowedTodoStatuses =
-    [
-        "pending", "covered", "dismissed"
-    ];
+    private static readonly Dictionary<string, string> CanonicalTodoStatuses =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Pending"] = "Pending",
+            ["Covered"] = "Covered",
+            ["Dismissed"] = "Dismissed",
+        };
+
+    private static string NormalizeTodoStatus(string? status)
+    {
+        if (!string.IsNullOrWhiteSpace(status) && CanonicalTodoStatuses.TryGetValue(status, out var canonical))
+            return canonical;
+        throw new ValidationException(
+            $"Todo status '{status}' is not valid. Allowed: {string.Join(", ", CanonicalTodoStatuses.Values)}.");
+    }
 
     private static readonly HashSet<string> AllowedWeaknessTypes =
         new(StringComparer.OrdinalIgnoreCase) { "grammatical", "lexical", "orthographic" };
@@ -399,7 +410,7 @@ public class StudentService : IStudentService
             request.Text,
             DateTime.UtcNow,
             request.SourceSessionLogId,
-            "pending",
+            "Pending",
             null);
 
         todos.Add(newTodo);
@@ -421,8 +432,7 @@ public class StudentService : IStudentService
         if (student is null)
             return null;
 
-        if (!AllowedTodoStatuses.Contains(request.Status))
-            throw new ValidationException($"Todo status '{request.Status}' is not valid. Allowed: {string.Join(", ", AllowedTodoStatuses)}.");
+        var canonicalStatus = NormalizeTodoStatus(request.Status);
 
         var todos = JsonStorageHelper.DeserializeList<TeachingTodoDto>(student.TeachingTodos);
         var index = todos.FindIndex(t => t.Id == todoId);
@@ -430,7 +440,7 @@ public class StudentService : IStudentService
         if (index < 0)
             return null;
 
-        var updated = todos[index] with { Status = request.Status, CoveredInSessionLogId = request.CoveredInSessionLogId };
+        var updated = todos[index] with { Status = canonicalStatus, CoveredInSessionLogId = request.CoveredInSessionLogId };
         if (request.Text is not null)
         {
             if (string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > 500)
@@ -443,7 +453,7 @@ public class StudentService : IStudentService
 
         await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Teaching todo updated. TeacherId={TeacherId} StudentId={StudentId} TodoId={TodoId} Status={Status}",
-            teacherId, student.Id, todoId, request.Status);
+            teacherId, student.Id, todoId, canonicalStatus);
 
         return MapToDto(student);
     }
@@ -486,8 +496,8 @@ public class StudentService : IStudentService
                 throw new ValidationException($"Duplicate teaching todo Id '{t.Id}'.");
             if (string.IsNullOrWhiteSpace(t.Text) || t.Text.Length > 500)
                 throw new ValidationException("Each teaching todo Text must be between 1 and 500 characters.");
-            if (string.IsNullOrWhiteSpace(t.Status) || !AllowedTodoStatuses.Contains(t.Status))
-                throw new ValidationException($"Teaching todo status '{t.Status}' is not valid. Allowed: {string.Join(", ", AllowedTodoStatuses)}.");
+            if (string.IsNullOrWhiteSpace(t.Status) || !CanonicalTodoStatuses.ContainsKey(t.Status))
+                throw new ValidationException($"Teaching todo status '{t.Status}' is not valid. Allowed: {string.Join(", ", CanonicalTodoStatuses.Values)}.");
         }
     }
 
