@@ -507,6 +507,14 @@ describe('LogSession — edit mode', () => {
     expect(screen.getByTestId('duration-select')).toHaveTextContent(String(dur))
   })
 
+  it('shows Other with empty input when session has null duration', async () => {
+    vi.mocked(sessionLogsApi.getSession).mockResolvedValue({ ...EDIT_SESSION, duration: null })
+    renderEditSession()
+    await screen.findByTestId('duration-select')
+    expect(screen.getByTestId('duration-select')).toHaveTextContent(/other/i)
+    expect(screen.getByTestId('duration-other')).toHaveValue(null)
+  })
+
   it('pre-fills time from sessionDate in edit mode', async () => {
     vi.mocked(sessionLogsApi.getSession).mockResolvedValue({
       ...EDIT_SESSION,

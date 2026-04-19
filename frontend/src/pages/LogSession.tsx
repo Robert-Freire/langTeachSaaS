@@ -250,9 +250,13 @@ export default function LogSession() {
     setReassessmentLevel(editSession.levelReassessmentLevel ?? '')
     setSelectedLessonId(editSession.linkedLessonId ?? '')
     const dur = editSession.duration
-    if (dur === 25 || dur === 30 || dur === 45 || dur === 50 || dur === 60 || dur === 90) {
+    if (dur === null || dur === undefined) {
+      setDurationChoice('other')
+      setDurationOther('')
+    } else if ([25, 30, 45, 50, 60, 90].includes(dur)) {
       setDurationChoice(String(dur))
-    } else if (dur) {
+      setDurationOther('')
+    } else {
       setDurationChoice('other')
       setDurationOther(String(dur))
     }
