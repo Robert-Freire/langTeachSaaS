@@ -390,7 +390,7 @@ describe('LogSession', () => {
   it('toggle button shows descriptor text when closed and changes on open', async () => {
     renderLogSession()
     const toggle = await screen.findByTestId('toggle-secondary')
-    expect(toggle).toHaveTextContent('Show homework, cultural notes, error patterns...')
+    expect(toggle).toHaveTextContent('Show notes, lesson link, level reassessment...')
     fireEvent.click(toggle)
     await waitFor(() => {
       expect(screen.getByTestId('toggle-secondary')).toHaveTextContent('Hide additional sections')

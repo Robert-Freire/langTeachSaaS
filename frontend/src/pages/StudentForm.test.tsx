@@ -980,8 +980,8 @@ describe('StudentForm', () => {
     })
   })
 
-  // AC6: difficulty rows with severity/trend data render the visual indicators
-  it('renders difficulty visual indicators when severity and trend are set', async () => {
+  // AC6: difficulty severity/trend indicators are hidden (not teacher-editable)
+  it('does not render difficulty severity/trend visual indicators', async () => {
     mockGetStudent.mockResolvedValue({
       id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
       interests: [], nativeLanguages: [], learningGoals: [],
@@ -996,9 +996,9 @@ describe('StudentForm', () => {
     })
     renderEdit()
     await screen.findByRole('heading', { name: 'Edit Student' })
-    expect(await screen.findByTestId('difficulty-visual-indicators')).toBeInTheDocument()
-    expect(screen.getByTestId('difficulty-severity-bar')).toBeInTheDocument()
-    expect(screen.getByTestId('difficulty-trend-indicator')).toBeInTheDocument()
+    expect(screen.queryByTestId('difficulty-visual-indicators')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('difficulty-severity-bar')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('difficulty-trend-indicator')).not.toBeInTheDocument()
   })
 
   // ── Task 775: Layout and interaction polish ──

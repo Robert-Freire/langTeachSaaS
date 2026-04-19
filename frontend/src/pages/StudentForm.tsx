@@ -437,7 +437,7 @@ export default function StudentForm() {
   function addDifficulty() {
     setDifficulties((prev) => [
       ...prev,
-      { id: newId(), description: '', competency: '', subcategory: '', status: 'Active' },
+      { id: newId(), description: '', competency: '', subcategory: '', severity: 'medium', trend: 'stable', status: 'Active' },
     ])
     if (isEdit) saveNow()
   }
