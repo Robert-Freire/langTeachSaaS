@@ -34,9 +34,9 @@ public static class ScenarioSeeder
 
     public static async Task<bool> SeedScenarioAsync(AppDbContext db, int scenario, string teacherLookup, ILogger logger)
     {
-        if (scenario < 1 || scenario > 6)
+        if (scenario < 1 || scenario > 7)
         {
-            logger.LogError("Invalid scenario {Scenario}. Valid range: 1-6.", scenario);
+            logger.LogError("Invalid scenario {Scenario}. Valid range: 1-7.", scenario);
             return false;
         }
 
@@ -136,9 +136,12 @@ public static class ScenarioSeeder
         var students = await db.Students.Where(s => studentIds.Contains(s.Id)).ToListAsync();
         foreach (var s in students)
         {
-            s.TeachingTodos      = "[]";
-            s.ShortTermObjectives = null;
-            s.UpdatedAt          = now;
+            s.TeachingTodos       = "[]";
+            s.ShortTermObjectives = "[]";
+            s.Difficulties        = "[]";
+            s.TeachingNotes       = null;
+            s.SkillLevelOverrides = "{}";
+            s.UpdatedAt           = now;
         }
 
         await db.SaveChangesAsync();
@@ -175,6 +178,7 @@ public static class ScenarioSeeder
             case 4: await SeedScenario4Async(db, teacherId, nadiaB2, now, logger); break;
             case 5: await SeedScenario5Async(db, teacherId, anaSeed, marcoSeed, claraSeed, diegoSeed, ruiSeed, sofiaSeed, soniaSeed, now, logger); break;
             case 6: await SeedScenario6Async(db, teacherId, hansB1, now, logger); break;
+            case 7: await SeedScenario7Async(db, teacherId, anaVisual, marcoB1, now, logger); break;
         }
     }
 
@@ -569,5 +573,148 @@ public static class ScenarioSeeder
 
         await db.SaveChangesAsync();
         logger.LogInformation("Scenario 6 seeded: Hans B1, IN 5D, all 4 briefing sub-sections, Completed homework.");
+    }
+
+    // -------------------------------------------------------------------------
+    // Scenario 7 — "Log Session Test" (Ana Visual + Marco B1)
+    // Full log-session left-panel coverage: todos, objectives, difficulties,
+    // followups, working memory, skill overrides, multi-session history.
+    // Marco B1 gets a past session with homework for Previous Homework section.
+    // Clara Seed stays empty (wiped by step 2).
+    // -------------------------------------------------------------------------
+
+    private static async Task SeedScenario7Async(AppDbContext db, Guid teacherId,
+        Student anaVisual, Student marcoB1, DateTime now, ILogger logger)
+    {
+        // ---- Ana Visual: student-level context data ----
+
+        anaVisual.TeachingNotes = "Ana is a motivated B2 student who has studied Spanish for 3 years. She works as a translator and uses Spanish professionally. Main challenges: subjunctive triggers, ser vs estar in extended discourse, and maintaining gender agreement in complex sentences. She responds well to authentic text examples and prefers inductive grammar discovery over explicit rule-teaching. Avoid metalinguistic jargon; use discovery questions instead.";
+        anaVisual.SkillLevelOverrides = """{"Reading":"B2","Writing":"B1"}""";
+
+        var todoId1 = Guid.NewGuid();
+        var todoId2 = Guid.NewGuid();
+        var todoDate1 = now.AddDays(-5).ToString("yyyy-MM-ddTHH:mm:ssZ");
+        var todoDate2 = now.AddDays(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");
+        anaVisual.TeachingTodos = $$"""[{"id":"{{todoId1}}","text":"Prepare a set of subjunctive trigger cards for next class","createdAt":"{{todoDate1}}","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null},{"id":"{{todoId2}}","text":"Find an authentic news article about Latin American culture at B2 level","createdAt":"{{todoDate2}}","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null}]""";
+
+        anaVisual.ShortTermObjectives = $$"""[{"id":"obj1","text":"Master subjunctive in nominal clauses (WEIRDO verbs)","targetDate":"{{now.AddDays(-3):yyyy-MM-dd}}"},{"id":"obj2","text":"Achieve confident use of ser vs estar in all tenses","targetDate":"{{now.AddDays(5):yyyy-MM-dd}}"},{"id":"obj3","text":"Build travel and business vocabulary to 500 items","targetDate":"{{now.AddDays(28):yyyy-MM-dd}}"}]""";
+
+        anaVisual.Difficulties = """[{"id":"diff1","description":"Confusion between ser and estar with adjectives that change meaning","competency":"Grammar","subcategory":"Copular verbs","severity":"medium","trend":"stable","status":"Active"},{"id":"diff2","description":"Inconsistent use of subjunctive mood after expressions of doubt, desire, and emotion; often defaults to indicative even when the subjunctive trigger is explicitly present in the clause","competency":"Grammar","subcategory":"Mood selection","severity":"high","trend":"improving","status":"Active"}]""";
+
+        anaVisual.UpdatedAt = now;
+
+        // ---- Ana Visual: past sessions (build history for left-panel context) ----
+
+        // Session 1 (20 days ago): establishes baseline history
+        var session1 = new SessionLog
+        {
+            Id                     = Guid.NewGuid(),
+            StudentId              = anaVisual.Id,
+            TeacherId              = teacherId,
+            SessionDate            = now.AddDays(-20),
+            ActualContent          = "Introduced present subjunctive: formation rules and first WEIRDO triggers (wish/want verbs). Student completed gap-fill exercises with 70% accuracy.",
+            TopicTags              = """[{"tag":"Subjuntivo presente"},{"tag":"Verbos de deseo"}]""",
+            GeneralNotes           = "Good energy today. Student is motivated but needs more exposure to natural contexts.",
+            HomeworkAssigned       = null,
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Duration               = 60,
+            NextSessionTopics      = "Review session 1 exercises; introduce doubt and emotion triggers",
+            IsDeleted              = false,
+            CreatedAt              = now.AddDays(-20),
+            UpdatedAt              = now.AddDays(-20),
+        };
+        db.SessionLogs.Add(session1);
+        await db.SaveChangesAsync();
+
+        // Session 2 (12 days ago): has homework, nextSessionTopics feeds session 3
+        var session2 = new SessionLog
+        {
+            Id                     = Guid.NewGuid(),
+            StudentId              = anaVisual.Id,
+            TeacherId              = teacherId,
+            SessionDate            = now.AddDays(-12),
+            ActualContent          = "Covered doubt and emotion subjunctive triggers. Worked through authentic dialogue extracts. Student showed good recognition but production still inconsistent.",
+            TopicTags              = """[{"tag":"Subjuntivo presente"},{"tag":"Expresiones de duda"},{"tag":"Expresiones de emoción"}]""",
+            GeneralNotes           = "Student arrived slightly tired from work. Recommend keeping the next session lighter on new grammar.",
+            HomeworkAssigned       = "Complete workbook p.34 exercises 1-4 on subjunctive triggers",
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Duration               = 60,
+            NextSessionTopics      = "Check homework p.34; practice subjunctive in storytelling; introduce imperfect subjunctive if time allows",
+            IsDeleted              = false,
+            CreatedAt              = now.AddDays(-12),
+            UpdatedAt              = now.AddDays(-12),
+        };
+        db.SessionLogs.Add(session2);
+        await db.SaveChangesAsync();
+
+        // Followup from session 2 (linked)
+        db.TeacherFollowups.Add(new TeacherFollowup
+        {
+            Id                 = Guid.NewGuid(),
+            TeacherId          = teacherId,
+            StudentId          = anaVisual.Id,
+            Text               = "Send Ana the link to the RAE online subjunctive guide",
+            Status             = "pending",
+            DueDate            = DateOnly.FromDateTime(now.AddDays(3)),
+            SourceSessionLogId = session2.Id,
+            CreatedAt          = session2.SessionDate!.Value,
+        });
+
+        // Session 3 (4 days ago, most recent confirmed session)
+        // This is the "last session" that feeds the new log-session panel
+        var session3 = new SessionLog
+        {
+            Id                     = Guid.NewGuid(),
+            StudentId              = anaVisual.Id,
+            TeacherId              = teacherId,
+            SessionDate            = now.AddDays(-4),
+            ActualContent          = "Reviewed homework (mostly correct). Practiced subjunctive in storytelling context using picture prompts. Introduced imperfect subjunctive formation briefly at end of session.",
+            TopicTags              = """[{"tag":"Subjuntivo pasado"},{"tag":"Narración"},{"tag":"Ser vs estar"}]""",
+            GeneralNotes           = "Best session so far — Ana was very engaged with the storytelling activity. Production accuracy notably better.",
+            HomeworkAssigned       = "Write a short paragraph (150 words) about a wish you had as a child, using subjunctive",
+            PreviousHomeworkStatus = HomeworkStatus.Done,
+            Duration               = 75,
+            NextSessionTopics      = "Review written paragraph homework; continue with imperfect subjunctive; introduce conditional + si clauses",
+            SuggestedDifficulties  = """[{"competency":"Grammar","subcategory":"Mood selection","description":"Student occasionally defaulted to indicative after 'esperar que' in oral production","severity":"medium"},{"competency":"Pronunciation","subcategory":"Stress patterns","description":"Inconsistent stress on subjunctive verb endings (-e vs -a)","severity":"low"}]""",
+            IsDeleted              = false,
+            CreatedAt              = now.AddDays(-4),
+            UpdatedAt              = now.AddDays(-4),
+        };
+        db.SessionLogs.Add(session3);
+        await db.SaveChangesAsync();
+
+        // Standalone followup (not linked to a session)
+        db.TeacherFollowups.Add(new TeacherFollowup
+        {
+            Id        = Guid.NewGuid(),
+            TeacherId = teacherId,
+            StudentId = anaVisual.Id,
+            Text      = "Check if Ana's company offers Spanish conversation groups she could join",
+            Status    = "pending",
+            CreatedAt = now.AddDays(-2),
+        });
+
+        // ---- Marco B1: one past session WITH homework (for Previous Homework section) ----
+
+        var marcoSession = new SessionLog
+        {
+            Id                     = Guid.NewGuid(),
+            StudentId              = marcoB1.Id,
+            TeacherId              = teacherId,
+            SessionDate            = now.AddDays(-7),
+            ActualContent          = "Covered subjunctive in temporal clauses with cuando, hasta que, en cuanto. Student did well with recognition tasks.",
+            TopicTags              = """[{"tag":"Subjuntivo temporal"},{"tag":"Conjunciones temporales"}]""",
+            HomeworkAssigned       = "Write 5 sentences using subjunctive with temporal conjunctions from p.67 of textbook",
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Duration               = 60,
+            NextSessionTopics      = "Review homework; practice subjunctive vs indicative in temporal clauses with real news extracts",
+            IsDeleted              = false,
+            CreatedAt              = now.AddDays(-7),
+            UpdatedAt              = now.AddDays(-7),
+        };
+        db.SessionLogs.Add(marcoSession);
+
+        await db.SaveChangesAsync();
+        logger.LogInformation("Scenario 7 seeded: Ana Visual full log-session context (todos, objectives, difficulties, followups, 3 past sessions) · Marco B1 past session with homework.");
     }
 }

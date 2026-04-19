@@ -108,13 +108,13 @@ function ToggleSwitch({
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       data-testid={testId}
-      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
         checked ? 'bg-indigo-600' : 'bg-zinc-300'
       }`}
     >
       <span
-        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-          checked ? 'translate-x-4' : 'translate-x-1'
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+          checked ? 'translate-x-6' : 'translate-x-1'
         }`}
       />
       <span className="sr-only">{label}</span>
@@ -226,16 +226,9 @@ export default function LogSession() {
   const sessionNumber = isEditMode ? (editSessionRank ?? '?') : nonCancelledSessions.length + 1
   const pendingFollowups = allFollowups.filter(f => f.status === 'pending')
   const activeDifficulties = student?.difficulties.filter(d => d.status === 'Active') ?? []
-  const pendingTodos = student?.teachingTodos.filter(t => t.status === 'Pending') ?? []
+  const pendingTodos = student?.teachingTodos.filter(t => t.status.toLowerCase() === 'pending') ?? []
   const showPrevHomework = (isEditMode && prevHomeworkStatus !== null) || (prevSession !== null && prevSession.homeworkAssigned !== null)
   const plannedForToday = prevSession?.nextSessionTopics ?? null
-
-  // Pre-populate "What Happened?" from planned-for-today (create mode only)
-  const [didPrefill, setDidPrefill] = useState(false)
-  if (!isEditMode && !didPrefill && !sessionsLoading && plannedForToday && actualContent === '') {
-    setActualContent(plannedForToday)
-    setDidPrefill(true)
-  }
 
   // Edit mode: pre-populate form state from the fetched session
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -493,8 +486,15 @@ export default function LogSession() {
 
   if (!student) {
     return (
-      <div className="p-8 text-sm text-zinc-500" data-testid="log-session-not-found">
-        Student not found.
+      <div className="p-8 flex flex-col gap-3" data-testid="log-session-not-found">
+        <p className="text-sm text-zinc-500">Student not found.</p>
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="self-start text-sm text-indigo-600 hover:underline"
+        >
+          Go back
+        </button>
       </div>
     )
   }
@@ -606,7 +606,7 @@ export default function LogSession() {
                     type="checkbox"
                     checked={checkedTodoIds.has(todo.id)}
                     onChange={() => toggleTodo(todo.id)}
-                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-indigo-600 shrink-0"
+                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-indigo-600 shrink-0"
                     data-testid="teaching-todo-checkbox"
                   />
                   <span className={`text-sm leading-snug ${checkedTodoIds.has(todo.id) ? 'line-through text-zinc-400' : 'text-[#1A1B22]'}`}>
@@ -636,7 +636,7 @@ export default function LogSession() {
                     type="checkbox"
                     checked={checkedFollowupIds.has(f.id)}
                     onChange={() => toggleFollowup(f.id)}
-                    className="mt-0.5 h-4 w-4 rounded border-amber-300 text-indigo-600 shrink-0"
+                    className="mt-0.5 h-4 w-4 rounded border-amber-300 accent-amber-500 shrink-0"
                     data-testid="followup-checkbox"
                   />
                   <span className={`text-sm leading-snug transition-all duration-150 ${checkedFollowupIds.has(f.id) ? 'line-through text-zinc-400 opacity-60' : 'text-[#1A1B22]'}`}>
@@ -732,7 +732,7 @@ export default function LogSession() {
                       type="checkbox"
                       checked={mentionedDifficultyKeys.has(key)}
                       onChange={() => toggleDifficulty(key)}
-                      className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-indigo-600 shrink-0"
+                      className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-indigo-600 shrink-0"
                     />
                     <span className="text-sm text-[#1A1B22] leading-snug">
                       <span className={d.description.length > 80 && !expandedDifficulties.has(key) ? 'line-clamp-2' : ''}>
@@ -946,7 +946,6 @@ export default function LogSession() {
 
             {/* Cancelled */}
             <div className="space-y-1">
-              <Label htmlFor="cancelled-toggle" className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Status</Label>
               <div className="flex items-center gap-2 h-8">
                 <Label htmlFor="cancelled-toggle" className="text-sm text-zinc-600 cursor-pointer select-none">
                   Cancelled
@@ -1116,11 +1115,11 @@ export default function LogSession() {
                       value={newTodoText}
                       onChange={e => setNewTodoText(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTodo() } }}
-                      placeholder="Add todo..."
+                      placeholder="Add a teaching idea..."
                       className="text-sm bg-white flex-1"
                       data-testid="new-todo-input"
                     />
-                    <Button type="button" variant="ghost" size="sm" onClick={addTodo} className="text-indigo-600 hover:bg-indigo-50">
+                    <Button type="button" size="sm" onClick={addTodo} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
@@ -1151,7 +1150,7 @@ export default function LogSession() {
                       className="text-sm bg-white flex-1"
                       data-testid="new-followup-input"
                     />
-                    <Button type="button" variant="ghost" size="sm" onClick={addFollowup} className="text-amber-600 hover:bg-amber-50">
+                    <Button type="button" size="sm" onClick={addFollowup} className="bg-amber-500 hover:bg-amber-600 text-white">
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
@@ -1174,7 +1173,7 @@ export default function LogSession() {
                   {/* Today's Context */}
                   <div className="space-y-1">
                     <Label htmlFor="general-notes" className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">
-                      Today's Context
+                      Notes
                     </Label>
                     <Textarea
                       id="general-notes"
