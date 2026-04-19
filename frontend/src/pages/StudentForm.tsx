@@ -49,18 +49,17 @@ import {
 const FORM_SECTIONS = [
   { id: 'section-basic', label: 'Basic Info' },
   { id: 'section-background', label: 'Background' },
-  { id: 'section-proficiency', label: 'Proficiency' },
   { id: 'section-teaching-goals', label: 'Teaching Goals' },
   { id: 'section-difficulties', label: 'Difficulties' },
   { id: 'section-notes', label: 'Notes' },
   { id: 'section-commercial', label: 'Commercial' },
 ]
 
-// Scrollspy tracks these in order. section-proficiency is now below section-basic
-// (Skill Overrides moved lower per Stitch placement), so it gets its own Y position.
+// Scrollspy tracks these in DOM order (top to bottom).
+// section-proficiency is inside the section-basic grid (right column),
+// so it shares the same scroll position and basic highlights both.
 const SCROLLSPY_IDS = [
   'section-basic',
-  'section-proficiency',
   'section-background',
   'section-teaching-goals',
   'section-difficulties',
@@ -705,9 +704,9 @@ export default function StudentForm() {
       <div className={isEdit ? 'grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 items-start' : 'max-w-2xl space-y-6'}>
         <div className="space-y-6">
 
-          <form id="student-form" onSubmit={handleSubmit} className={`space-y-6${isEdit ? ' pb-[600px]' : ''}`}>
+          <form id="student-form" onSubmit={handleSubmit} className="space-y-6">
 
-            {/* ── SECTION: Basic Info + Proficiency (2-column on desktop) ── */}
+            {/* ── SECTION: Basic Info + Skill Overrides (2-column on desktop) ── */}
             <div id="section-basic" className="grid grid-cols-1 lg:grid-cols-[7fr_5fr] gap-6 items-start">
               <div className="space-y-6">
                 {/* Basic Info card */}
@@ -875,48 +874,47 @@ export default function StudentForm() {
                   </CardContent>
                 </Card>
               </div>
-            </div>
 
-            {/* Skill Overrides — below the 2-column grid, placed in right column position */}
-            <div id="section-proficiency" className="grid grid-cols-1 lg:grid-cols-[7fr_5fr] gap-6">
-              <div /> {/* empty left column to push Skill Overrides to the right */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base inline-flex items-center gap-1">Skill Overrides <FieldTooltip fieldKey="skillLevelOverrides" /></CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-zinc-400 mb-4">Override the general CEFR level per skill for AI generation. Leave empty to inherit the general level.</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {(['Reading', 'Writing', 'Speaking', 'Listening'] as const).map((skill) => (
-                      <div key={skill} className="relative">
-                        <div
-                          aria-hidden="true"
-                          className={cn(
-                            'flex items-center justify-center rounded-md px-2 py-1 text-xs font-bold uppercase tracking-[0.05em] font-inter pointer-events-none select-none',
-                            skillLevelOverrides[skill] ? cefrColors(skillLevelOverrides[skill]) : 'bg-zinc-100 text-zinc-500',
-                          )}
-                        >
-                          {skill} {skillLevelOverrides[skill] || '--'}
+              {/* Skill Overrides — right column, beside Basic Info */}
+              <div id="section-proficiency">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base inline-flex items-center gap-1">Skill Overrides <FieldTooltip fieldKey="skillLevelOverrides" /></CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-zinc-400 mb-4">Override the general CEFR level per skill for AI generation. Leave empty to inherit the general level.</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {(['Reading', 'Writing', 'Speaking', 'Listening'] as const).map((skill) => (
+                        <div key={skill} className="relative">
+                          <div
+                            aria-hidden="true"
+                            className={cn(
+                              'flex items-center justify-center rounded-md px-2 py-1 text-xs font-bold uppercase tracking-[0.05em] font-inter pointer-events-none select-none',
+                              skillLevelOverrides[skill] ? cefrColors(skillLevelOverrides[skill]) : 'bg-zinc-100 text-zinc-500',
+                            )}
+                          >
+                            {skill} {skillLevelOverrides[skill] || '--'}
+                          </div>
+                          <Select
+                            value={skillLevelOverrides[skill] ?? ''}
+                            onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setSkillOverride(skill, next); if (isEdit) { const nextOverrides = next ? { ...skillLevelOverrides, [skill]: next } : Object.fromEntries(Object.entries(skillLevelOverrides).filter(([k]) => k !== skill)); saveNow({ skillLevelOverrides: nextOverrides }) } }}
+                          >
+                            <SelectTrigger data-testid={`skill-override-${skill.toLowerCase()}`} className="absolute inset-0 !w-full !h-full opacity-0 cursor-pointer">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">--</SelectItem>
+                              {CEFR_LEVELS.map((level) => (
+                                <SelectItem key={level} value={level}>{level}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
-                        <Select
-                          value={skillLevelOverrides[skill] ?? ''}
-                          onValueChange={(v) => { const next = !v || v === '__none__' ? '' : v; setSkillOverride(skill, next); if (isEdit) { const nextOverrides = next ? { ...skillLevelOverrides, [skill]: next } : Object.fromEntries(Object.entries(skillLevelOverrides).filter(([k]) => k !== skill)); saveNow({ skillLevelOverrides: nextOverrides }) } }}
-                        >
-                          <SelectTrigger data-testid={`skill-override-${skill.toLowerCase()}`} className="absolute inset-0 !w-full !h-full opacity-0 cursor-pointer">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none__">--</SelectItem>
-                            {CEFR_LEVELS.map((level) => (
-                              <SelectItem key={level} value={level}>{level}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* ── SECTION: Personal Background ── */}
@@ -1383,7 +1381,7 @@ export default function StudentForm() {
 
             {/* ── SECTION: Commercial Info (edit only) ── */}
             {isEdit && (
-              <div id="section-commercial">
+              <div id="section-commercial" className="min-h-[60vh]">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Commercial Info</CardTitle>
