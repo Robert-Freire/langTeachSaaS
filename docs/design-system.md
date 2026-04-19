@@ -245,3 +245,87 @@ Sessions are edited inline in their expanded row. No modal, no separate edit pag
 - Default transition: 150ms ease-out on expand/collapse, hover states.
 - No animation is better than gratuitous animation.
 - Avoid transitions longer than 300ms for any interactive element.
+
+---
+
+## 11. Cross-Screen Control Specifications
+
+> These specs are **binding**. Every bot implementing or modifying a screen must use these exact controls. Do not invent new variants. If a control is not listed here, check existing screens for the pattern before creating something new.
+
+### 11.1 List-Add Controls (Pattern B visual spec)
+
+All growing lists (todos, followups, interests, goals) use the same structural pattern:
+
+- **Input:** `<Input>` component from `@/components/ui/input` (never raw `<input>`), tinted background matching the list's color family.
+- **Add trigger:** Enter key AND a filled icon button with `<Plus>` icon (no text label, icon only).
+- **Button style:** `rounded-lg`, filled with the list's accent color, `p-1.5`.
+- **Layout:** input and button in a `flex gap-2` row.
+- **Placeholder:** use the canonical placeholder for each list type (see 11.3).
+
+### 11.2 Color Families
+
+Each list type has a fixed color family. Use these exact values everywhere the list appears.
+
+| List type | Input bg | Button bg | Container bg (when used) | Accent color |
+|-----------|----------|-----------|--------------------------|-------------|
+| Teaching Todos | `bg-indigo-50` | `bg-indigo-600` | `#F0EFFF` | indigo |
+| Followups | `bg-amber-50` | `bg-amber-500` | `#FFFBEB` | amber |
+| Interests | `bg-white` | n/a (Enter-to-add) | n/a | indigo chips |
+
+### 11.3 Canonical Placeholders and Labels
+
+| Concept | Placeholder | Section label | DB field |
+|---------|-------------|---------------|----------|
+| Teaching Todos | "Add a teaching idea..." | "Teaching Todos" | `teachingTodos` (student) |
+| Followups | "Add followup..." | "Pending Followups" | `followups` (separate entity) |
+| Session notes | n/a | "Notes" (never "Today's Context") | `generalNotes` |
+| Next session | n/a | "Next Session Plan" | `nextSessionTopics` |
+| Cancelled toggle | n/a | "Cancelled" (not under a "Status" heading) | `isCancelled` |
+
+### 11.4 Item Lifecycle Controls
+
+Todos and followups have statuses. The visual indicator for each status must be identical across every screen.
+
+**Teaching Todos:**
+
+| Status | Toggle control | Text style |
+|--------|---------------|------------|
+| Pending | Square button `w-4 h-4 rounded border-2 border-indigo-400`, empty | Normal `text-[#1A1B22]` |
+| Covered | Square button `w-4 h-4 rounded border-2 bg-green-500 border-green-500`, white check icon | `line-through text-zinc-400` |
+| Dismissed | Square button `w-4 h-4 rounded border-2 border-zinc-300 bg-zinc-100`, empty | `line-through text-zinc-400` |
+
+Reference implementation: `TeachingTodosCard.tsx`.
+
+**Followups:**
+
+| Status | Toggle control | Text style |
+|--------|---------------|------------|
+| Pending | Circle `w-3 h-3 rounded-full border-2 border-amber-400 bg-amber-100` | Normal `text-[#1A1B22]` |
+| Done | Circle `w-3 h-3 rounded-full bg-emerald-500`, no border | `line-through text-zinc-500`, reduced opacity |
+
+Reference implementation: `StudentFollowupsCard.tsx`.
+
+**Rules:**
+- Never use native HTML `<input type="checkbox">` for todo or followup items. Always use the custom toggle controls above.
+- LogSession left panel must use these same controls when displaying existing items to check off.
+- When an item is checked in a transactional context (LogSession), show the completed visual immediately (green fill for todos, emerald for followups). The helper text below the list communicates that the status change commits on Done.
+
+### 11.5 Toggle Switches
+
+One size, everywhere. Do not create local toggle switch components.
+
+- **Dimensions:** `h-6 w-11` track, `h-4 w-4` thumb.
+- **Colors:** active `bg-indigo-600`, inactive `bg-zinc-300`.
+- **Focus ring:** `focus-visible:ring-2 focus-visible:ring-indigo-600`.
+- **Thumb position:** inactive `translate-x-1`, active `translate-x-6`.
+
+The LogSession local `ToggleSwitch` component (`h-5 w-9`, thumb `h-3.5 w-3.5`) must be replaced with these dimensions or use a shared component.
+
+### 11.6 LogSession Staging Exception
+
+LogSession stages new todos and followups locally before committing on Done. This is the only behavioral difference from other screens. Visual rules:
+
+- The **add input row** must still follow 11.1 (same `<Input>`, same filled Plus button, same color family).
+- New items (not yet committed) are displayed as plain text with an X remove button. They do not have status toggles because they are always pending by definition.
+- Existing items (from the left panel) use the full lifecycle controls from 11.4.
+- The colored container backgrounds (`#F0EFFF` for todos, `#FFFBEB` for followups) are permitted in LogSession to visually separate the "new items" area from the form fields.

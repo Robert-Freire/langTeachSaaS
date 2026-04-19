@@ -31,3 +31,8 @@ click fuera de la modal in edit session close without asking nor saving
 Add today in datepicker, use two digits dates.
 
 Add to-dos/objectives
+
+-------------
+Incluir libros en el estudiante
+Ideas para clases del comportamiento de la UI tienen que parecerse más a cómo se comporta con follow-ups. No funciona bien el click y no tiene sentido que uno pueda eliminarlo y otro no. 
+En duración de sesiones, añadí el 50 y 25 y 50 es la de por defecto. 
