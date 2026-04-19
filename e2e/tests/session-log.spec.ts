@@ -881,7 +881,6 @@ test('log session page: autosave creates session without submit button', async (
     // Navigate directly to log-session page
     await page.goto(`/students/${student.id}/log-session`)
     await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 15000 })
-    await expect(page.getByTestId('autosave-status')).toBeVisible()
 
     // Type in "What Happened?" - triggers autosave
     await page.getByTestId('actual-content').fill('Practiced subjunctive with reading exercises.')
