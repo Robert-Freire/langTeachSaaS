@@ -3,8 +3,8 @@ export type UrgencyStatus = 'overdue' | 'critical' | 'normal'
 /**
  * Returns the urgency status for a short-term objective based on its target date.
  * - 'overdue': past due
- * - 'critical': due within 6 weeks (42 days)
- * - 'normal': more than 6 weeks away or no date
+ * - 'critical': due within 3 days (shows NEAR DATE badge)
+ * - 'normal': more than 3 days away or no date
  */
 export function getObjectiveUrgency(targetDate: string | null): UrgencyStatus {
   if (!targetDate) return 'normal'
@@ -13,7 +13,7 @@ export function getObjectiveUrgency(targetDate: string | null): UrgencyStatus {
   const due = new Date(targetDate + 'T00:00:00')
   const diffDays = Math.floor((due.getTime() - today.getTime()) / 86400000)
   if (diffDays < 0) return 'overdue'
-  if (diffDays <= 42) return 'critical'
+  if (diffDays <= 3) return 'critical'
   return 'normal'
 }
 
