@@ -163,7 +163,7 @@ public static class DemoSeeder
 
         var students = new List<Student>
         {
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", NativeLanguages = """["Portuguese"]""", PersonalNotes = VisualTag, LearningGoals = AnaVisualLearningGoals, ShortTermObjectives = AnaVisualShortTermObjectives, SkillLevelOverrides = AnaVisualSkillLevelOverrides, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", Difficulties = AnaVisualDifficulties, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", NativeLanguages = """["Portuguese","Ukrainian"]""", PersonalNotes = VisualTag, LearningGoals = AnaVisualLearningGoals, ShortTermObjectives = AnaVisualShortTermObjectives, SkillLevelOverrides = AnaVisualSkillLevelOverrides, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", Difficulties = AnaVisualDifficulties, CreatedAt = now, UpdatedAt = now },
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Visual", LearningLanguage = "English", CefrLevel = "A2", NativeLanguages = """["Italian"]""", PersonalNotes = VisualTag, CreatedAt = now, UpdatedAt = now },
         };
         db.Students.AddRange(students);
@@ -727,16 +727,20 @@ public static class DemoSeeder
             s => s.TeacherId == teacherId && s.Name == "Ana Visual" && !s.IsDeleted);
         if (anaVisual is null) return;
 
+        const string AnaVisualNativeLanguages = """["Portuguese","Ukrainian"]""";
+
         if (anaVisual.LearningGoals      == AnaVisualLearningGoals &&
             anaVisual.ShortTermObjectives == AnaVisualShortTermObjectives &&
-            anaVisual.SkillLevelOverrides == AnaVisualSkillLevelOverrides) return;
+            anaVisual.SkillLevelOverrides == AnaVisualSkillLevelOverrides &&
+            anaVisual.NativeLanguages     == AnaVisualNativeLanguages) return;
 
         anaVisual.LearningGoals      = AnaVisualLearningGoals;
         anaVisual.ShortTermObjectives = AnaVisualShortTermObjectives;
         anaVisual.SkillLevelOverrides = AnaVisualSkillLevelOverrides;
+        anaVisual.NativeLanguages     = AnaVisualNativeLanguages;
         anaVisual.UpdatedAt           = DateTime.UtcNow;
         await db.SaveChangesAsync();
-        logger.LogInformation("Ana Visual goals and skill overrides backfilled.");
+        logger.LogInformation("Ana Visual goals, skill overrides, and native languages backfilled.");
     }
 
     private static async Task SeedAnaVisualSessionLogAsync(AppDbContext db, Guid teacherId, ILogger logger)

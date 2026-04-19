@@ -1178,3 +1178,47 @@ test('Notes section nav link scrolls to Notes fields', async ({ browser }) => {
 
   await context.close()
 })
+
+test('Ukrainian native language saves and persists after reload', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const studentName = `Ukrainian Test ${Date.now()}`
+
+  // Create a student
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: UI_TIMEOUT })
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'A2' }).click()
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
+
+  // Navigate to edit
+  await page.getByTestId('edit-profile-link').click()
+  await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
+
+  // Select Ukrainian as native language
+  await page.getByTestId('student-native-language').click()
+  await page.getByRole('option', { name: 'Ukrainian' }).click()
+  await page.keyboard.press('Escape')
+
+  // Wait for autosave to complete without error
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('autosave-status')).not.toContainText("Couldn't save")
+
+  // Reload and verify chip persists
+  await page.reload()
+  await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: NAV_TIMEOUT })
+  await expect(page.getByTestId('native-lang-chip').filter({ hasText: 'Ukrainian' })).toBeVisible({ timeout: UI_TIMEOUT })
+
+  // Cleanup
+  await page.getByTestId('delete-student-btn').click()
+  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await page.getByTestId('confirm-delete').click()
+  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+
+  await context.close()
+})
