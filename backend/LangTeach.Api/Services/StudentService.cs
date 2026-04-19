@@ -45,9 +45,7 @@ public class StudentService : IStudentService
     ];
 
     private static readonly HashSet<string> AllowedTodoStatuses =
-    [
-        "Pending", "Covered", "Dismissed"
-    ];
+        new(StringComparer.OrdinalIgnoreCase) { "Pending", "Covered", "Dismissed" };
 
     private static readonly HashSet<string> AllowedWeaknessTypes =
         new(StringComparer.OrdinalIgnoreCase) { "grammatical", "lexical", "orthographic" };
