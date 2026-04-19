@@ -500,6 +500,13 @@ describe('LogSession — edit mode', () => {
     expect(screen.getByTestId('actual-content')).toHaveValue('Covered irregular preterite')
   })
 
+  it.each([25, 50])('pre-selects duration %i in edit mode', async (dur) => {
+    vi.mocked(sessionLogsApi.getSession).mockResolvedValue({ ...EDIT_SESSION, duration: dur })
+    renderEditSession()
+    await screen.findByTestId('duration-select')
+    expect(screen.getByTestId('duration-select')).toHaveTextContent(String(dur))
+  })
+
   it('pre-fills time from sessionDate in edit mode', async () => {
     vi.mocked(sessionLogsApi.getSession).mockResolvedValue({
       ...EDIT_SESSION,
