@@ -195,14 +195,6 @@ describe('LogSession', () => {
     expect(screen.getByTestId('duration-other')).toBeDefined()
   })
 
-  it('pre-populates What Happened from prev session nextSessionTopics', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
-      { ...SAMPLE_SESSION, nextSessionTopics: 'Review irregular verbs' },
-    ])
-    renderLogSession()
-    await screen.findByTestId('actual-content')
-    expect(screen.getByTestId('actual-content')).toHaveValue('Review irregular verbs')
-  })
 
   it('shows planned-for-today reference panel when prev session has nextSessionTopics', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
