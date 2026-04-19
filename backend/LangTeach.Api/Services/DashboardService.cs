@@ -256,7 +256,7 @@ public class DashboardService : IDashboardService
         return rows.Select(r =>
         {
             var allTodos = JsonStorageHelper.DeserializeList<TeachingTodoDto>(r.TeachingTodos);
-            var pendingTodos = allTodos.Where(t => t.Status == "pending").ToList();
+            var pendingTodos = allTodos.Where(t => t.Status == "Pending").ToList();
 
             // NearestObjectiveDeadline: earliest future targetDate from ShortTermObjectives JSON
             // DefaultIfEmpty() on empty sequence returns DateTime.MinValue — treated as null below

@@ -309,7 +309,7 @@ public class StudentServiceTests : IDisposable
 
     // TeachingTodos tests
 
-    private static TeachingTodoDto MakeTodo(string id, string text = "Work on ser/estar", string status = "pending") =>
+    private static TeachingTodoDto MakeTodo(string id, string text = "Work on ser/estar", string status = "Pending") =>
         new(id, text, DateTime.UtcNow, null, status, null);
 
     [Fact]
@@ -342,9 +342,9 @@ public class StudentServiceTests : IDisposable
             TeachingTodos = [MakeTodo("todo-1")],
         });
 
-        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1", new UpdateTeachingTodoDto("covered", null, null));
+        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1", new UpdateTeachingTodoDto("Covered", null, null));
 
-        result!.TeachingTodos.Single().Status.Should().Be("covered");
+        result!.TeachingTodos.Single().Status.Should().Be("Covered");
     }
 
     [Fact]
@@ -357,9 +357,9 @@ public class StudentServiceTests : IDisposable
             TeachingTodos = [MakeTodo("todo-1")],
         });
 
-        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1", new UpdateTeachingTodoDto("dismissed", null, null));
+        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1", new UpdateTeachingTodoDto("Dismissed", null, null));
 
-        result!.TeachingTodos.Single().Status.Should().Be("dismissed");
+        result!.TeachingTodos.Single().Status.Should().Be("Dismissed");
     }
 
     [Fact]
@@ -398,7 +398,7 @@ public class StudentServiceTests : IDisposable
     {
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
 
-        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "nonexistent-id", new UpdateTeachingTodoDto("covered", null, null));
+        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "nonexistent-id", new UpdateTeachingTodoDto("Covered", null, null));
 
         result.Should().BeNull();
     }
@@ -423,7 +423,7 @@ public class StudentServiceTests : IDisposable
 
         result!.TeachingTodos.Should().HaveCount(1);
         result.TeachingTodos[0].Text.Should().Be("Trabajar ser/estar");
-        result.TeachingTodos[0].Status.Should().Be("pending");
+        result.TeachingTodos[0].Status.Should().Be("Pending");
         result.TeachingTodos[0].Id.Should().NotBeNullOrEmpty();
     }
 
@@ -479,7 +479,7 @@ public class StudentServiceTests : IDisposable
         });
 
         var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1",
-            new UpdateTeachingTodoDto("pending", null, "Updated text"));
+            new UpdateTeachingTodoDto("Pending", null, "Updated text"));
 
         result!.TeachingTodos.Single().Text.Should().Be("Updated text");
     }
@@ -495,7 +495,7 @@ public class StudentServiceTests : IDisposable
         });
 
         var act = () => _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1",
-            new UpdateTeachingTodoDto("pending", null, new string('x', 501)));
+            new UpdateTeachingTodoDto("Pending", null, new string('x', 501)));
 
         await act.Should().ThrowAsync<ValidationException>();
     }

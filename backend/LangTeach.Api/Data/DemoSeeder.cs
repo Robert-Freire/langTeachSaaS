@@ -257,7 +257,7 @@ public static class DemoSeeder
             Weaknesses         = """["Listening to fast native speech","Idiomatic expressions"]""",
             PersonalNotes      = "[scenario-seed]",
             TeachingNotes      = "Responds well to visual aids. Prefers structured grammar drills over free conversation. Review subjunctive triggers next session.",
-            TeachingTodos      = """[{"id":"a1b2c3d4-0000-0000-0000-000000000010","text":"Review subjunctive trigger verbs — she confuses querer vs desear contexts","createdAt":"2026-04-10T10:00:00Z","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null}]""",
+            TeachingTodos      = """[{"id":"a1b2c3d4-0000-0000-0000-000000000010","text":"Review subjunctive trigger verbs — she confuses querer vs desear contexts","createdAt":"2026-04-10T10:00:00Z","sourceSessionLogId":null,"status":"Pending","coveredInSessionLogId":null}]""",
             SkillLevelOverrides = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""",
             BirthYear          = 1992,
             Profession         = "Marketing Manager",
@@ -511,7 +511,7 @@ public static class DemoSeeder
             Difficulties     = "[]",
             Weaknesses       = "[]",
             PersonalNotes    = "[scenario-seed]",
-            TeachingTodos    = """[{"id":"a1b2c3d4-0000-0000-0000-000000000011","text":"Check if introduction homework sentences were completed before next session","createdAt":"2026-04-10T10:00:00Z","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null}]""",
+            TeachingTodos    = """[{"id":"a1b2c3d4-0000-0000-0000-000000000011","text":"Check if introduction homework sentences were completed before next session","createdAt":"2026-04-10T10:00:00Z","sourceSessionLogId":null,"status":"Pending","coveredInSessionLogId":null}]""",
             IsActive         = true,
         }, now);
 

@@ -821,6 +821,73 @@ test('teaching todos: add, toggle covered, verify ordering on overview tab', asy
   await context.close()
 })
 
+test('teaching todos: toggle persists after reload and can be toggled back to pending', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const studentName = `TodoPersist_${Date.now()}`
+
+  // Create a student
+  await page.goto('/students/new')
+  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: UI_TIMEOUT })
+  await page.getByTestId('student-name').fill(studentName)
+  await page.getByTestId('student-language').click()
+  await page.getByRole('option', { name: 'Spanish' }).click()
+  await page.getByTestId('student-cefr').click()
+  await page.getByRole('option', { name: 'B1' }).click()
+  await page.getByRole('button', { name: 'Save Student' }).click()
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
+  const detailUrl = page.url()
+
+  // Navigate to edit student and add a todo via the sidebar card
+  await page.getByTestId('edit-profile-link').click()
+  await expect(page).toHaveURL(/\/edit$/, { timeout: UI_TIMEOUT })
+  await page.goto(detailUrl)
+  await expect(page.getByTestId('teaching-todos-card')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+
+  // Add a todo
+  await page.getByTestId('todo-add-input').fill('ser vs estar reminder')
+  await page.getByTestId('todo-add-btn').click()
+  await expect(page.getByTestId('teaching-todos-list')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+
+  // Get the todo id
+  const toggleBtn = page.getByTestId(/^todo-toggle-/).first()
+  const toggleTestId = await toggleBtn.getAttribute('data-testid')
+  const todoId = toggleTestId!.replace('todo-toggle-', '')
+
+  // Toggle to covered — this previously returned 400
+  await toggleBtn.click()
+  await expect(page.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
+
+  // Reload and verify persistence
+  await page.reload()
+  await expect(page.getByTestId('teaching-todos-card')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await expect(page.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
+
+  // Toggle back to pending
+  await page.getByTestId(`todo-toggle-${todoId}`).click()
+  await expect(page.getByTestId(`todo-text-${todoId}`)).not.toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
+
+  // Reload again and verify pending state persists
+  await page.reload()
+  await expect(page.getByTestId('teaching-todos-card')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await expect(page.getByTestId(`todo-text-${todoId}`)).not.toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
+
+  // Cleanup
+  await page.goto('/students')
+  const row = page.locator('[data-testid^="student-row-"]').filter({
+    has: page.getByTestId('student-name').filter({ hasText: studentName })
+  })
+  await row.click()
+  await page.getByTestId('edit-profile-link').click()
+  await expect(page).toHaveURL(/\/edit$/, { timeout: UI_TIMEOUT })
+  await page.getByTestId('delete-student-btn').click()
+  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await page.getByTestId('confirm-delete').click()
+  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+
+  await context.close()
+})
+
 test('log session page: create session from full-page form and redirect back', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()

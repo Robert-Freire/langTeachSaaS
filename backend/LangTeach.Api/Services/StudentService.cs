@@ -46,7 +46,7 @@ public class StudentService : IStudentService
 
     private static readonly HashSet<string> AllowedTodoStatuses =
     [
-        "pending", "covered", "dismissed"
+        "Pending", "Covered", "Dismissed"
     ];
 
     private static readonly HashSet<string> AllowedWeaknessTypes =
@@ -399,7 +399,7 @@ public class StudentService : IStudentService
             request.Text,
             DateTime.UtcNow,
             request.SourceSessionLogId,
-            "pending",
+            "Pending",
             null);
 
         todos.Add(newTodo);
