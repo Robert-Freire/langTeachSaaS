@@ -990,7 +990,7 @@ export default function LogSession() {
             </div>
           )}
           {extractionError && !isExtracting && (
-            <p className="px-1 text-xs text-amber-600" data-testid="extraction-error">{extractionError}</p>
+            <p className="px-1 text-xs text-red-500" data-testid="extraction-error">{extractionError}</p>
           )}
 
           {/* ── Compact metadata bar: 2x2 grid ── */}
