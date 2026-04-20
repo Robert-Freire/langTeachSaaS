@@ -29,6 +29,7 @@ vi.mock('@/api/sessionLogs', () => ({
   listSessions: vi.fn(),
   createSession: vi.fn(),
   updateSession: vi.fn(),
+  extractSessionReflection: vi.fn(),
   parseTopicTags: vi.fn((raw: string) => {
     try { return JSON.parse(raw) as unknown[] } catch { return [] }
   }),
@@ -51,8 +52,13 @@ vi.mock('@/components/session/TopicTagsInput', () => ({
   ),
 }))
 
+let capturedOnVoiceNote: ((note: { id: string; transcription: string | null }) => void) | null = null
+
 vi.mock('@/components/audio/AudioRecorder', () => ({
-  AudioRecorder: () => <div data-testid="audio-recorder" />,
+  AudioRecorder: ({ onVoiceNote }: { onVoiceNote: (note: { id: string; transcription: string | null }) => void }) => {
+    capturedOnVoiceNote = onVoiceNote
+    return <div data-testid="audio-recorder" />
+  },
 }))
 
 const STUDENT_ID = 'student-abc'
@@ -830,5 +836,143 @@ describe('LogSession — Ctrl+Enter shortcut', () => {
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith(`/students/${STUDENT_ID}`)
     })
+  })
+})
+
+describe('LogSession — voice note extraction', () => {
+  const EXTRACTED = {
+    sessionTitle: 'Pretérito perfecto y viajes',
+    whatWasCovered: 'Repasamos el pretérito perfecto.',
+    areasToImprove: null,
+    emotionalSignals: null,
+    homeworkAssigned: null,
+    nextLessonIdeas: null,
+    suggestedDifficulties: [],
+    topicTags: [{ tag: 'pretérito perfecto' }, { tag: 'vocabulario de viajes' }],
+    rawExtractionJson: '{"sessionTitle":"Pretérito perfecto y viajes"}',
+    durationMinutes: null,
+    isCancelled: null,
+    previousHomeworkStatus: null,
+    teachingTodos: [],
+    teacherFollowups: [],
+    levelReassessment: null,
+    difficultiesWorkedOn: [],
+  }
+
+  beforeEach(() => {
+    capturedOnVoiceNote = null
+    vi.clearAllMocks()
+    vi.mocked(studentsApi.getStudent).mockResolvedValue(SAMPLE_STUDENT)
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+    vi.mocked(sessionLogsApi.createSession).mockResolvedValue({ ...SAMPLE_SESSION, id: 'new-session' })
+    vi.mocked(sessionLogsApi.updateSession).mockResolvedValue({ ...SAMPLE_SESSION, id: 'new-session' })
+    vi.mocked(followupsApi.getFollowups).mockResolvedValue([])
+    vi.mocked(lessonsApi.getLessons).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
+  })
+
+  it('shows loading indicator while extraction is in progress', async () => {
+    let resolveExtract!: () => void
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockReturnValue(
+      new Promise(resolve => { resolveExtract = () => resolve(EXTRACTED) })
+    )
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: 'La sesión fue bien.' })
+    })
+
+    expect(screen.getByTestId('extracting-indicator')).toBeDefined()
+
+    await act(async () => { resolveExtract() })
+    await waitFor(() => {
+      expect(screen.queryByTestId('extracting-indicator')).toBeNull()
+    })
+  })
+
+  it('populates actualContent and topicTags from extraction response', async () => {
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue(EXTRACTED)
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: 'La sesión fue bien.' })
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('extracting-indicator')).toBeNull()
+    })
+
+    const contentField = screen.getByTestId('actual-content') as HTMLTextAreaElement
+    expect(contentField.value).toBe('Repasamos el pretérito perfecto.')
+  })
+
+  it('includes voiceNoteTranscription and rawExtractionJson in the save payload', async () => {
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue(EXTRACTED)
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: 'La sesión fue bien.' })
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('extracting-indicator')).toBeNull()
+    })
+
+    // Autosave triggers createSession; verify voice note fields are in the payload
+    await waitFor(() => {
+      expect(sessionLogsApi.createSession).toHaveBeenCalled()
+    })
+    const calls = vi.mocked(sessionLogsApi.createSession).mock.calls
+    const lastPayload = calls[calls.length - 1][1]
+    expect(lastPayload.voiceNoteId).toBe('note-1')
+    expect(lastPayload.voiceNoteTranscription).toBe('La sesión fue bien.')
+    expect(lastPayload.rawExtractionJson).toBe('{"sessionTitle":"Pretérito perfecto y viajes"}')
+  })
+
+  it('does NOT overwrite actualContent already typed by the teacher', async () => {
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue(EXTRACTED)
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    const contentField = screen.getByTestId('actual-content') as HTMLTextAreaElement
+    await userEvent.type(contentField, 'Already written.')
+
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: 'La sesión fue bien.' })
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('extracting-indicator')).toBeNull()
+    })
+
+    expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Already written.')
+  })
+
+  it('shows extraction error message when extraction fails', async () => {
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockRejectedValue(new Error('API error'))
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: 'La sesión fue bien.' })
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('extraction-error')).toBeDefined()
+    })
+    expect(screen.queryByTestId('extracting-indicator')).toBeNull()
+  })
+
+  it('skips extraction when transcription is null', async () => {
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: null })
+    })
+
+    expect(sessionLogsApi.extractSessionReflection).not.toHaveBeenCalled()
   })
 })

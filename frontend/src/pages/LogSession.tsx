@@ -8,6 +8,7 @@ import {
 import { getStudent, appendTeachingTodo, updateTeachingTodo } from '@/api/students'
 import {
   getSession, listSessions, parseTopicTags, serializeTopicTags,
+  extractSessionReflection,
   type TopicTag, type CreateSessionLogRequest, type SuggestedDifficulty,
 } from '@/api/sessionLogs'
 import { getFollowups, createFollowup, updateFollowupStatus } from '@/api/followups'
@@ -148,6 +149,11 @@ export default function LogSession() {
   const [reassessmentLevel, setReassessmentLevel] = useState('')
   const [selectedLessonId, setSelectedLessonId] = useState(linkedLessonIdParam)
   const [voiceNoteId, setVoiceNoteId] = useState<string | undefined>()
+  const [voiceNoteTranscription, setVoiceNoteTranscription] = useState<string | undefined>()
+  const [rawExtractionJson, setRawExtractionJson] = useState<string | undefined>()
+  const [sessionTitle, setSessionTitle] = useState<string | undefined>()
+  const [isExtracting, setIsExtracting] = useState(false)
+  const [extractionError, setExtractionError] = useState<string | null>(null)
   const [secondaryOpen, setSecondaryOpen] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [suggestedDifficulties, setSuggestedDifficulties] = useState<SuggestedDifficulty[]>([])
@@ -301,13 +307,17 @@ export default function LogSession() {
       mentionedDifficultyPairs: mentionedPairs,
       suggestedDifficulties: suggestedDifficulties.length > 0 ? suggestedDifficulties : undefined,
       duration: dur,
+      title: sessionTitle || null,
       ...(voiceNoteId ? { voiceNoteId } : {}),
+      ...(voiceNoteTranscription ? { voiceNoteTranscription } : {}),
+      ...(rawExtractionJson ? { rawExtractionJson } : {}),
     })
   }, [
     sessionDate, sessionTime, durationChoice, durationOther, isCancelled, prevHomeworkStatus,
     actualContent, homeworkAssigned, nextSessionTopics, generalNotes, topicTags,
     reassessmentEnabled, reassessmentLevel, selectedLessonId, voiceNoteId,
     mentionedDifficultyKeys, activeDifficulties, plannedForToday, suggestedDifficulties,
+    sessionTitle, voiceNoteTranscription, rawExtractionJson,
   ])
 
   // Disable autosave in edit mode until the session data has loaded (prevents spurious createSession calls)
@@ -906,10 +916,97 @@ export default function LogSession() {
             <AudioRecorder
               onVoiceNote={(note) => {
                 setVoiceNoteId(note.id)
-                markChangedAndSaveNow({ voiceNoteId: note.id })
+                setExtractionError(null)
+                const transcription = note.transcription
+                if (!transcription || !id) {
+                  markChangedAndSaveNow({ voiceNoteId: note.id })
+                  return
+                }
+                setVoiceNoteTranscription(transcription)
+                setIsExtracting(true)
+                extractSessionReflection(id, transcription)
+                  .then(extracted => {
+                    // Build the save override from extracted values before touching state.
+                    // getFormDataRef reads stale state until the next render, so we must
+                    // pass extracted fields directly in the override to avoid a stale save.
+                    // Blank-only: current state values here are pre-extraction (state hasn't flushed).
+                    const saveOverride: Partial<CreateSessionLogRequest> = {
+                      voiceNoteId: note.id,
+                      voiceNoteTranscription: transcription,
+                    }
+                    const json = extracted.rawExtractionJson ?? null
+                    if (json) {
+                      saveOverride.rawExtractionJson = json
+                      setRawExtractionJson(json)
+                    }
+                    if (extracted.sessionTitle) {
+                      const next = sessionTitle || extracted.sessionTitle
+                      saveOverride.title = next
+                      setSessionTitle(next)
+                    }
+                    if (extracted.whatWasCovered) {
+                      const next = actualContent || extracted.whatWasCovered
+                      saveOverride.actualContent = next
+                      setActualContent(next)
+                    }
+                    if (extracted.areasToImprove || extracted.emotionalSignals) {
+                      const combined = [extracted.areasToImprove, extracted.emotionalSignals].filter(Boolean).join(' ')
+                      const next = generalNotes || combined
+                      saveOverride.generalNotes = next
+                      setGeneralNotes(next)
+                    }
+                    if (extracted.homeworkAssigned) {
+                      const next = homeworkAssigned || extracted.homeworkAssigned
+                      saveOverride.homeworkAssigned = next
+                      setHomeworkAssigned(next)
+                    }
+                    if (extracted.nextLessonIdeas) {
+                      const next = nextSessionTopics || extracted.nextLessonIdeas
+                      saveOverride.nextSessionTopics = next
+                      setNextSessionTopics(next)
+                    }
+                    if (extracted.topicTags && extracted.topicTags.length > 0) {
+                      const existing = new Set(topicTags.map(t => t.tag.toLowerCase()))
+                      const merged = [...topicTags, ...extracted.topicTags.filter(t => !existing.has(t.tag.toLowerCase()))]
+                      saveOverride.topicTags = serializeTopicTags(merged)
+                      setTopicTags(merged)
+                    }
+                    if (extracted.suggestedDifficulties && extracted.suggestedDifficulties.length > 0 && suggestedDifficulties.length === 0) {
+                      saveOverride.suggestedDifficulties = extracted.suggestedDifficulties
+                      setSuggestedDifficulties(extracted.suggestedDifficulties)
+                    }
+                    if (extracted.durationMinutes) {
+                      const dur = extracted.durationMinutes
+                      const presets = ['25', '30', '45', '50', '60', '90']
+                      if (durationChoice === '50') {
+                        const newChoice = presets.includes(String(dur)) ? String(dur) : 'other'
+                        saveOverride.duration = dur
+                        setDurationChoice(newChoice)
+                        if (newChoice === 'other') setDurationOther(String(dur))
+                      }
+                    }
+                    markChangedAndSaveNow(saveOverride)
+                  })
+                  .catch((err: unknown) => {
+                    logger.error('LogSession', 'Voice note extraction failed', err)
+                    setExtractionError('Could not analyse the recording. Fields were not filled in automatically.')
+                    markChangedAndSaveNow({ voiceNoteId: note.id, voiceNoteTranscription: transcription })
+                  })
+                  .finally(() => setIsExtracting(false))
               }}
             />
           </div>
+
+          {/* Extraction status */}
+          {isExtracting && (
+            <div className="flex items-center gap-2 px-1 text-xs text-indigo-600" data-testid="extracting-indicator">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Analysing session...</span>
+            </div>
+          )}
+          {extractionError && !isExtracting && (
+            <p className="px-1 text-xs text-red-500" data-testid="extraction-error">{extractionError}</p>
+          )}
 
           {/* ── Compact metadata bar: 2x2 grid ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl px-4 py-3" style={{ background: '#F4F2FD' }}>
