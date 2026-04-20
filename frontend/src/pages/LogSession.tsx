@@ -1142,7 +1142,7 @@ export default function LogSession() {
 
               {/* Difficulties Observed (AI-extracted from voice note) */}
               {suggestedDifficulties.length > 0 && (
-                <div className="space-y-2" data-testid="difficulties-observed-section">
+                <div className="space-y-1" data-testid="difficulties-observed-section">
                   <Label className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">Difficulties Observed</Label>
                   <p className="text-[0.6875rem] text-zinc-400 -mt-1">Detected from your notes — remove any that don't match what you observed</p>
                   <div className="space-y-1">
