@@ -8,6 +8,7 @@ import {
 import { getStudent, appendTeachingTodo, updateTeachingTodo } from '@/api/students'
 import {
   getSession, listSessions, parseTopicTags, serializeTopicTags,
+  extractSessionReflection,
   type TopicTag, type CreateSessionLogRequest, type SuggestedDifficulty,
 } from '@/api/sessionLogs'
 import { getFollowups, createFollowup, updateFollowupStatus } from '@/api/followups'
@@ -148,6 +149,11 @@ export default function LogSession() {
   const [reassessmentLevel, setReassessmentLevel] = useState('')
   const [selectedLessonId, setSelectedLessonId] = useState(linkedLessonIdParam)
   const [voiceNoteId, setVoiceNoteId] = useState<string | undefined>()
+  const [voiceNoteTranscription, setVoiceNoteTranscription] = useState<string | undefined>()
+  const [rawExtractionJson, setRawExtractionJson] = useState<string | undefined>()
+  const [sessionTitle, setSessionTitle] = useState<string | undefined>()
+  const [isExtracting, setIsExtracting] = useState(false)
+  const [extractionError, setExtractionError] = useState<string | null>(null)
   const [secondaryOpen, setSecondaryOpen] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [suggestedDifficulties, setSuggestedDifficulties] = useState<SuggestedDifficulty[]>([])
@@ -301,13 +307,17 @@ export default function LogSession() {
       mentionedDifficultyPairs: mentionedPairs,
       suggestedDifficulties: suggestedDifficulties.length > 0 ? suggestedDifficulties : undefined,
       duration: dur,
+      title: sessionTitle || null,
       ...(voiceNoteId ? { voiceNoteId } : {}),
+      ...(voiceNoteTranscription ? { voiceNoteTranscription } : {}),
+      ...(rawExtractionJson ? { rawExtractionJson } : {}),
     })
   }, [
     sessionDate, sessionTime, durationChoice, durationOther, isCancelled, prevHomeworkStatus,
     actualContent, homeworkAssigned, nextSessionTopics, generalNotes, topicTags,
     reassessmentEnabled, reassessmentLevel, selectedLessonId, voiceNoteId,
     mentionedDifficultyKeys, activeDifficulties, plannedForToday, suggestedDifficulties,
+    sessionTitle, voiceNoteTranscription, rawExtractionJson,
   ])
 
   // Disable autosave in edit mode until the session data has loaded (prevents spurious createSession calls)
@@ -906,10 +916,82 @@ export default function LogSession() {
             <AudioRecorder
               onVoiceNote={(note) => {
                 setVoiceNoteId(note.id)
-                markChangedAndSaveNow({ voiceNoteId: note.id })
+                setExtractionError(null)
+                const transcription = note.transcription
+                if (!transcription || !id) {
+                  markChangedAndSaveNow({ voiceNoteId: note.id })
+                  return
+                }
+                setVoiceNoteTranscription(transcription)
+                setIsExtracting(true)
+                extractSessionReflection(id, transcription)
+                  .then(extracted => {
+                    // Apply blank-only: only set if the field is still empty at resolution time
+                    if (extracted.sessionTitle) {
+                      setSessionTitle(prev => prev || extracted.sessionTitle!)
+                    }
+                    if (extracted.whatWasCovered) {
+                      setActualContent(prev => prev || extracted.whatWasCovered!)
+                    }
+                    if (extracted.areasToImprove || extracted.emotionalSignals) {
+                      const combined = [extracted.areasToImprove, extracted.emotionalSignals].filter(Boolean).join(' ')
+                      setGeneralNotes(prev => prev || combined)
+                    }
+                    if (extracted.homeworkAssigned) {
+                      setHomeworkAssigned(prev => prev || extracted.homeworkAssigned!)
+                    }
+                    if (extracted.nextLessonIdeas) {
+                      setNextSessionTopics(prev => prev || extracted.nextLessonIdeas!)
+                    }
+                    if (extracted.topicTags && extracted.topicTags.length > 0) {
+                      setTopicTags(prev => {
+                        const existing = new Set(prev.map(t => t.tag.toLowerCase()))
+                        const newTags = extracted.topicTags!.filter(t => !existing.has(t.tag.toLowerCase()))
+                        return [...prev, ...newTags]
+                      })
+                    }
+                    if (extracted.suggestedDifficulties && extracted.suggestedDifficulties.length > 0) {
+                      setSuggestedDifficulties(prev => prev.length === 0 ? extracted.suggestedDifficulties : prev)
+                    }
+                    if (extracted.durationMinutes) {
+                      const dur = extracted.durationMinutes
+                      setDurationChoice(prev => {
+                        if (prev !== '50') return prev // already changed by user
+                        const presets = ['25', '30', '45', '50', '60', '90']
+                        return presets.includes(String(dur)) ? String(dur) : 'other'
+                      })
+                      if (!['25', '30', '45', '50', '60', '90'].includes(String(dur))) {
+                        setDurationOther(prev => prev || String(dur))
+                      }
+                    }
+                    const json = extracted.rawExtractionJson ?? null
+                    if (json) setRawExtractionJson(json)
+                    markChangedAndSaveNow({
+                      voiceNoteId: note.id,
+                      voiceNoteTranscription: transcription,
+                      ...(json ? { rawExtractionJson: json } : {}),
+                    })
+                  })
+                  .catch((err: unknown) => {
+                    logger.error('LogSession', 'Voice note extraction failed', err)
+                    setExtractionError('Could not analyse the recording. Fields were not filled in automatically.')
+                    markChangedAndSaveNow({ voiceNoteId: note.id, voiceNoteTranscription: transcription })
+                  })
+                  .finally(() => setIsExtracting(false))
               }}
             />
           </div>
+
+          {/* Extraction status */}
+          {isExtracting && (
+            <div className="flex items-center gap-2 px-1 text-xs text-indigo-600" data-testid="extracting-indicator">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Analysing session...</span>
+            </div>
+          )}
+          {extractionError && !isExtracting && (
+            <p className="px-1 text-xs text-amber-600" data-testid="extraction-error">{extractionError}</p>
+          )}
 
           {/* ── Compact metadata bar: 2x2 grid ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl px-4 py-3" style={{ background: '#F4F2FD' }}>
