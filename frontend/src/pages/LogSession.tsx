@@ -157,6 +157,7 @@ export default function LogSession() {
   const [secondaryOpen, setSecondaryOpen] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [suggestedDifficulties, setSuggestedDifficulties] = useState<SuggestedDifficulty[]>([])
+  const [newDifficultyText, setNewDifficultyText] = useState('')
 
   // Left panel interactive state
   const [checkedTodoIds, setCheckedTodoIds] = useState<Set<string>>(new Set())
@@ -1140,38 +1141,71 @@ export default function LogSession() {
                 />
               </div>
 
-              {/* Difficulties Observed (AI-extracted from voice note) */}
-              {suggestedDifficulties.length > 0 && (
-                <div className="space-y-1" data-testid="difficulties-observed-section">
-                  <Label className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">Difficulties Observed</Label>
-                  <p className="text-[0.6875rem] text-zinc-400 -mt-1">Detected from your notes — remove any that don't match what you observed</p>
-                  <div className="space-y-1">
-                    {suggestedDifficulties.map((d, i) => (
-                      <div
-                        key={`${d.competency}|${d.subcategory}|${i}`}
-                        className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm"
-                        data-testid="suggested-difficulty-chip"
-                      >
-                        <div className="min-w-0">
-                          <span className="font-medium text-[#1A1B22]">{d.competency} / {d.subcategory}</span>
-                          {d.description && (
-                            <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{d.description}</p>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setSuggestedDifficulties(prev => prev.filter((_, j) => j !== i))}
-                          className="shrink-0 text-zinc-400 hover:text-zinc-700"
-                          aria-label="Remove difficulty"
-                          data-testid="remove-suggested-difficulty"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
+              {/* Difficulties Observed — always visible; populated by AI voice extraction or manual add */}
+              <div className="space-y-1" data-testid="difficulties-observed-section">
+                <Label className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">Difficulties Observed</Label>
+                <p className="text-[0.6875rem] text-zinc-400 -mt-1">Add any difficulties you observed — detected from voice notes or added manually</p>
+                <div className="space-y-1">
+                  {suggestedDifficulties.map((d, i) => (
+                    <div
+                      key={`${d.competency}|${d.subcategory}|${i}`}
+                      className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm"
+                      data-testid="suggested-difficulty-chip"
+                    >
+                      <div className="min-w-0">
+                        {d.competency || d.subcategory
+                          ? <span className="font-medium text-[#1A1B22]">{d.competency} / {d.subcategory}</span>
+                          : <span className="font-medium text-[#1A1B22]">{d.description}</span>
+                        }
+                        {(d.competency || d.subcategory) && d.description && (
+                          <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{d.description}</p>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() => setSuggestedDifficulties(prev => prev.filter((_, j) => j !== i))}
+                        className="shrink-0 text-zinc-400 hover:text-zinc-700"
+                        aria-label="Remove difficulty"
+                        data-testid="remove-suggested-difficulty"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              )}
+                <div className="flex gap-2 pt-0.5">
+                  <Input
+                    value={newDifficultyText}
+                    onChange={e => setNewDifficultyText(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        const text = newDifficultyText.trim()
+                        if (!text) return
+                        setSuggestedDifficulties(prev => [...prev, { competency: '', subcategory: '', description: text, severity: 'Medium' }])
+                        setNewDifficultyText('')
+                      }
+                    }}
+                    placeholder="Note a difficulty observed..."
+                    className="text-sm bg-white flex-1"
+                    data-testid="new-difficulty-input"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      const text = newDifficultyText.trim()
+                      if (!text) return
+                      setSuggestedDifficulties(prev => [...prev, { competency: '', subcategory: '', description: text, severity: 'Medium' }])
+                      setNewDifficultyText('')
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                    data-testid="add-difficulty-btn"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
 
               {/* Homework Assigned */}
               <div className="space-y-1">
