@@ -738,7 +738,7 @@ export default function LogSession() {
 
         {/* Active Difficulties */}
         {activeDifficulties.length > 0 && (
-          <PanelSection label="Active Difficulties">
+          <PanelSection label="Student Difficulties">
             <div className="space-y-1.5">
               {activeDifficulties.map(d => {
                 const key = `${d.competency}|${d.subcategory}`
@@ -772,38 +772,6 @@ export default function LogSession() {
             {mentionedDifficultyKeys.size > 0 && (
               <p className="text-[0.6875rem] text-indigo-500 mt-1">Checked items will be recorded as worked on today</p>
             )}
-          </PanelSection>
-        )}
-
-        {/* Suggested Difficulties (AI-extracted chips with dismiss) */}
-        {suggestedDifficulties.length > 0 && (
-          <PanelSection label="Suggested Difficulties">
-            <p className="text-[0.6875rem] text-zinc-400 -mt-1">From session notes — remove any that look wrong</p>
-            <div className="space-y-1">
-              {suggestedDifficulties.map((d, i) => (
-                <div
-                  key={`${d.competency}|${d.subcategory}|${i}`}
-                  className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm"
-                  data-testid="suggested-difficulty-chip"
-                >
-                  <div className="min-w-0">
-                    <span className="font-medium text-[#1A1B22]">{d.competency} / {d.subcategory}</span>
-                    {d.description && (
-                      <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{d.description}</p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSuggestedDifficulties(prev => prev.filter((_, j) => j !== i))}
-                    className="shrink-0 text-zinc-400 hover:text-zinc-700"
-                    aria-label="Remove difficulty"
-                    data-testid="remove-suggested-difficulty"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
           </PanelSection>
         )}
 
@@ -1171,6 +1139,39 @@ export default function LogSession() {
                   onChange={(tags) => { setTopicTags(tags); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
                 />
               </div>
+
+              {/* Difficulties Observed (AI-extracted from voice note) */}
+              {suggestedDifficulties.length > 0 && (
+                <div className="space-y-2" data-testid="difficulties-observed-section">
+                  <Label className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">Difficulties Observed</Label>
+                  <p className="text-[0.6875rem] text-zinc-400 -mt-1">Detected from your notes — remove any that don't match what you observed</p>
+                  <div className="space-y-1">
+                    {suggestedDifficulties.map((d, i) => (
+                      <div
+                        key={`${d.competency}|${d.subcategory}|${i}`}
+                        className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm"
+                        data-testid="suggested-difficulty-chip"
+                      >
+                        <div className="min-w-0">
+                          <span className="font-medium text-[#1A1B22]">{d.competency} / {d.subcategory}</span>
+                          {d.description && (
+                            <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{d.description}</p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSuggestedDifficulties(prev => prev.filter((_, j) => j !== i))}
+                          className="shrink-0 text-zinc-400 hover:text-zinc-700"
+                          aria-label="Remove difficulty"
+                          data-testid="remove-suggested-difficulty"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Homework Assigned */}
               <div className="space-y-1">
