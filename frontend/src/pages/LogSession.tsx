@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { TopicTagsInput } from '@/components/session/TopicTagsInput'
 import { AudioRecorder } from '@/components/audio/AudioRecorder'
+import { COMPETENCY_OPTIONS } from '@/lib/studentOptions'
 import { getObjectiveUrgency, getDaysRemaining } from '@/lib/objectiveUrgency'
 import { suggestTopicTags } from '@/lib/suggestTopicTags'
 import { formatDate as formatDateUtil, relativeTime } from '@/utils/formatDate'
@@ -157,7 +158,7 @@ export default function LogSession() {
   const [secondaryOpen, setSecondaryOpen] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [suggestedDifficulties, setSuggestedDifficulties] = useState<SuggestedDifficulty[]>([])
-  const [newDifficultyText, setNewDifficultyText] = useState('')
+  const [newDifficulty, setNewDifficulty] = useState({ description: '', competency: '', subcategory: '' })
 
   // Left panel interactive state
   const [checkedTodoIds, setCheckedTodoIds] = useState<Set<string>>(new Set())
@@ -1173,37 +1174,55 @@ export default function LogSession() {
                     </div>
                   ))}
                 </div>
-                <div className="flex gap-2 pt-0.5">
+                <div className="space-y-1.5 pt-0.5" data-testid="new-difficulty-form">
                   <Input
-                    value={newDifficultyText}
-                    onChange={e => setNewDifficultyText(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        const text = newDifficultyText.trim()
-                        if (!text) return
-                        setSuggestedDifficulties(prev => [...prev, { competency: '', subcategory: '', description: text, severity: 'Medium' }])
-                        setNewDifficultyText('')
-                      }
-                    }}
-                    placeholder="Note a difficulty observed..."
-                    className="text-sm bg-white flex-1"
+                    value={newDifficulty.description}
+                    onChange={e => setNewDifficulty(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="e.g. Confuses ser/estar in past tense"
+                    className="text-sm bg-white"
                     data-testid="new-difficulty-input"
                   />
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => {
-                      const text = newDifficultyText.trim()
-                      if (!text) return
-                      setSuggestedDifficulties(prev => [...prev, { competency: '', subcategory: '', description: text, severity: 'Medium' }])
-                      setNewDifficultyText('')
-                    }}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                    data-testid="add-difficulty-btn"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-1.5">
+                    <Select
+                      value={newDifficulty.competency || undefined}
+                      onValueChange={v => setNewDifficulty(prev => ({ ...prev, competency: v }))}
+                    >
+                      <SelectTrigger className="text-sm bg-white w-[140px] shrink-0" data-testid="new-difficulty-competency">
+                        <SelectValue placeholder="Competency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COMPETENCY_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      value={newDifficulty.subcategory}
+                      onChange={e => setNewDifficulty(prev => ({ ...prev, subcategory: e.target.value }))}
+                      placeholder="Subcategory (e.g. ser/estar)"
+                      className="text-sm bg-white flex-1"
+                      data-testid="new-difficulty-subcategory"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        const desc = newDifficulty.description.trim()
+                        if (!desc) return
+                        setSuggestedDifficulties(prev => [...prev, {
+                          competency: newDifficulty.competency,
+                          subcategory: newDifficulty.subcategory,
+                          description: desc,
+                          severity: 'Medium',
+                        }])
+                        setNewDifficulty({ description: '', competency: '', subcategory: '' })
+                      }}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
+                      data-testid="add-difficulty-btn"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
