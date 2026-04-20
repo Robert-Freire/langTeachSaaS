@@ -926,51 +926,66 @@ export default function LogSession() {
                 setIsExtracting(true)
                 extractSessionReflection(id, transcription)
                   .then(extracted => {
-                    // Apply blank-only: only set if the field is still empty at resolution time
+                    // Build the save override from extracted values before touching state.
+                    // getFormDataRef reads stale state until the next render, so we must
+                    // pass extracted fields directly in the override to avoid a stale save.
+                    // Blank-only: current state values here are pre-extraction (state hasn't flushed).
+                    const saveOverride: Partial<CreateSessionLogRequest> = {
+                      voiceNoteId: note.id,
+                      voiceNoteTranscription: transcription,
+                    }
+                    const json = extracted.rawExtractionJson ?? null
+                    if (json) {
+                      saveOverride.rawExtractionJson = json
+                      setRawExtractionJson(json)
+                    }
                     if (extracted.sessionTitle) {
-                      setSessionTitle(prev => prev || extracted.sessionTitle!)
+                      const next = sessionTitle || extracted.sessionTitle
+                      saveOverride.title = next
+                      setSessionTitle(next)
                     }
                     if (extracted.whatWasCovered) {
-                      setActualContent(prev => prev || extracted.whatWasCovered!)
+                      const next = actualContent || extracted.whatWasCovered
+                      saveOverride.actualContent = next
+                      setActualContent(next)
                     }
                     if (extracted.areasToImprove || extracted.emotionalSignals) {
                       const combined = [extracted.areasToImprove, extracted.emotionalSignals].filter(Boolean).join(' ')
-                      setGeneralNotes(prev => prev || combined)
+                      const next = generalNotes || combined
+                      saveOverride.generalNotes = next
+                      setGeneralNotes(next)
                     }
                     if (extracted.homeworkAssigned) {
-                      setHomeworkAssigned(prev => prev || extracted.homeworkAssigned!)
+                      const next = homeworkAssigned || extracted.homeworkAssigned
+                      saveOverride.homeworkAssigned = next
+                      setHomeworkAssigned(next)
                     }
                     if (extracted.nextLessonIdeas) {
-                      setNextSessionTopics(prev => prev || extracted.nextLessonIdeas!)
+                      const next = nextSessionTopics || extracted.nextLessonIdeas
+                      saveOverride.nextSessionTopics = next
+                      setNextSessionTopics(next)
                     }
                     if (extracted.topicTags && extracted.topicTags.length > 0) {
-                      setTopicTags(prev => {
-                        const existing = new Set(prev.map(t => t.tag.toLowerCase()))
-                        const newTags = extracted.topicTags!.filter(t => !existing.has(t.tag.toLowerCase()))
-                        return [...prev, ...newTags]
-                      })
+                      const existing = new Set(topicTags.map(t => t.tag.toLowerCase()))
+                      const merged = [...topicTags, ...extracted.topicTags.filter(t => !existing.has(t.tag.toLowerCase()))]
+                      saveOverride.topicTags = serializeTopicTags(merged)
+                      setTopicTags(merged)
                     }
-                    if (extracted.suggestedDifficulties && extracted.suggestedDifficulties.length > 0) {
-                      setSuggestedDifficulties(prev => prev.length === 0 ? extracted.suggestedDifficulties : prev)
+                    if (extracted.suggestedDifficulties && extracted.suggestedDifficulties.length > 0 && suggestedDifficulties.length === 0) {
+                      saveOverride.suggestedDifficulties = extracted.suggestedDifficulties
+                      setSuggestedDifficulties(extracted.suggestedDifficulties)
                     }
                     if (extracted.durationMinutes) {
                       const dur = extracted.durationMinutes
-                      setDurationChoice(prev => {
-                        if (prev !== '50') return prev // already changed by user
-                        const presets = ['25', '30', '45', '50', '60', '90']
-                        return presets.includes(String(dur)) ? String(dur) : 'other'
-                      })
-                      if (!['25', '30', '45', '50', '60', '90'].includes(String(dur))) {
-                        setDurationOther(prev => prev || String(dur))
+                      const presets = ['25', '30', '45', '50', '60', '90']
+                      if (durationChoice === '50') {
+                        const newChoice = presets.includes(String(dur)) ? String(dur) : 'other'
+                        saveOverride.duration = dur
+                        setDurationChoice(newChoice)
+                        if (newChoice === 'other') setDurationOther(String(dur))
                       }
                     }
-                    const json = extracted.rawExtractionJson ?? null
-                    if (json) setRawExtractionJson(json)
-                    markChangedAndSaveNow({
-                      voiceNoteId: note.id,
-                      voiceNoteTranscription: transcription,
-                      ...(json ? { rawExtractionJson: json } : {}),
-                    })
+                    markChangedAndSaveNow(saveOverride)
                   })
                   .catch((err: unknown) => {
                     logger.error('LogSession', 'Voice note extraction failed', err)

@@ -74,6 +74,10 @@ test('voice upload: extracted fields pre-fill form, Confirm saves as Confirmed',
   await expect(page.getByTestId('session-entry')).toBeVisible()
   expect(await page.getByTestId('draft-badge').count()).toBe(0)
 
+  // Expand session entry and verify extracted title was saved
+  await page.getByTestId('session-entry-toggle').click()
+  await expect(page.getByTestId('session-title-input')).toHaveValue('[Extracted] Session title', { timeout: 5000 })
+
   await context.close()
 })
 
