@@ -1185,7 +1185,7 @@ export default function LogSession() {
                   <div className="flex gap-1.5">
                     <Select
                       value={newDifficulty.competency || undefined}
-                      onValueChange={v => setNewDifficulty(prev => ({ ...prev, competency: v }))}
+                      onValueChange={v => setNewDifficulty(prev => ({ ...prev, competency: v ?? '' }))}
                     >
                       <SelectTrigger className="text-sm bg-white w-[140px] shrink-0" data-testid="new-difficulty-competency">
                         <SelectValue placeholder="Competency" />
