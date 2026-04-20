@@ -1164,7 +1164,10 @@ export default function LogSession() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => setSuggestedDifficulties(prev => prev.filter((_, j) => j !== i))}
+                        onClick={() => {
+                          setSuggestedDifficulties(prev => prev.filter((_, j) => j !== i))
+                          markChangedAndSchedule()
+                        }}
                         className="shrink-0 text-zinc-400 hover:text-zinc-700"
                         aria-label="Remove difficulty"
                         data-testid="remove-suggested-difficulty"
@@ -1206,18 +1209,21 @@ export default function LogSession() {
                     <Button
                       type="button"
                       size="sm"
+                      disabled={!newDifficulty.description.trim() || !newDifficulty.competency}
                       onClick={() => {
                         const desc = newDifficulty.description.trim()
-                        if (!desc) return
-                        setSuggestedDifficulties(prev => [...prev, {
+                        if (!desc || !newDifficulty.competency) return
+                        const next = [...suggestedDifficulties, {
                           competency: newDifficulty.competency,
                           subcategory: newDifficulty.subcategory,
                           description: desc,
                           severity: 'Medium',
-                        }])
+                        }]
+                        setSuggestedDifficulties(next)
                         setNewDifficulty({ description: '', competency: '', subcategory: '' })
+                        markChangedAndSaveNow({ suggestedDifficulties: next })
                       }}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 disabled:opacity-50"
                       data-testid="add-difficulty-btn"
                     >
                       <Plus className="h-4 w-4" />
