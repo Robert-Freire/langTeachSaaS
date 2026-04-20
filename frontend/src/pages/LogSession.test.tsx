@@ -907,6 +907,30 @@ describe('LogSession — voice note extraction', () => {
     expect(contentField.value).toBe('Repasamos el pretérito perfecto.')
   })
 
+  it('includes voiceNoteTranscription and rawExtractionJson in the save payload', async () => {
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue(EXTRACTED)
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: 'La sesión fue bien.' })
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('extracting-indicator')).toBeNull()
+    })
+
+    // Autosave triggers createSession; verify voice note fields are in the payload
+    await waitFor(() => {
+      expect(sessionLogsApi.createSession).toHaveBeenCalled()
+    })
+    const calls = vi.mocked(sessionLogsApi.createSession).mock.calls
+    const lastPayload = calls[calls.length - 1][1]
+    expect(lastPayload.voiceNoteId).toBe('note-1')
+    expect(lastPayload.voiceNoteTranscription).toBe('La sesión fue bien.')
+    expect(lastPayload.rawExtractionJson).toBe('{"sessionTitle":"Pretérito perfecto y viajes"}')
+  })
+
   it('does NOT overwrite actualContent already typed by the teacher', async () => {
     vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue(EXTRACTED)
     renderLogSession()

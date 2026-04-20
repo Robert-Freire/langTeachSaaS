@@ -54,10 +54,12 @@ test('voice upload: extracted fields pre-fill form, Confirm saves as Confirmed',
   // StubReflectionExtractionService returns "[Extracted] ..." values
   await expect(page.getByTestId('submit-session-log')).toHaveText('Confirm', { timeout: 20000 })
 
-  // Verify extracted fields are pre-filled
+  // Verify extracted fields are pre-filled (title, topic tag, content, homework, next session)
   await expect(page.getByTestId('actual-content')).toHaveValue('[Extracted] What was covered')
   await expect(page.getByTestId('homework-assigned')).toHaveValue('[Extracted] Homework assigned')
   await expect(page.getByTestId('next-session-topics')).toHaveValue('[Extracted] Next lesson ideas')
+  // title is saved silently; topic tag chip appears in TopicTagsInput
+  await expect(page.getByTestId('topic-tag-remove-0')).toBeVisible({ timeout: 5000 })
 
   // Confirm — submits and transitions Draft → Confirmed
   await page.getByTestId('submit-session-log').click()
