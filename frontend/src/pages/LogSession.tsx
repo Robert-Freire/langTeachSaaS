@@ -949,11 +949,12 @@ export default function LogSession() {
                       saveOverride.suggestedDifficulties = extracted.suggestedDifficulties
                       setSuggestedDifficulties(extracted.suggestedDifficulties)
                     }
-                    if (extracted.sessionDate) {
-                      setSessionDate(extracted.sessionDate)
-                    }
-                    if (extracted.sessionStartTime) {
-                      setSessionTime(extracted.sessionStartTime)
+                    const nextDate = extracted.sessionDate || sessionDate
+                    const nextTime = extracted.sessionStartTime || sessionTime
+                    if (extracted.sessionDate) setSessionDate(extracted.sessionDate)
+                    if (extracted.sessionStartTime) setSessionTime(extracted.sessionStartTime)
+                    if (extracted.sessionDate || extracted.sessionStartTime) {
+                      saveOverride.sessionDate = `${nextDate}T${nextTime || '00:00'}:00`
                     }
                     if (extracted.durationMinutes) {
                       const dur = extracted.durationMinutes

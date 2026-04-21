@@ -168,7 +168,9 @@ public class ReflectionExtractionService : IReflectionExtractionService
     {
         var raw = GetStringOrNull(root, key);
         if (raw is null) return null;
-        return Regex.IsMatch(raw, @"^\d{2}:\d{2}$") ? raw : null;
+        return TimeOnly.TryParseExact(raw, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _)
+            ? raw
+            : null;
     }
 
     private static List<string> ParseStringArray(JsonElement root, string key)
