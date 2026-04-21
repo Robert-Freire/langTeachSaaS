@@ -16,7 +16,7 @@ import {
 import { logger } from '../../lib/logger'
 import { Link, useNavigate } from 'react-router-dom'
 import { listSessions, deleteSession, patchSessionField, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
-import { formatMonth, formatDay, relativeTime } from '../../utils/formatDate'
+import { formatMonth, formatDay, relativeTime, todayLocalDateStr } from '../../utils/formatDate'
 import { getSessionTitle } from '../../lib/sessionUtils'
 import { HOMEWORK_STATUS_INFO } from '../../utils/homeworkStatusStyles'
 import { Button } from '@/components/ui/button'
@@ -137,6 +137,11 @@ function SessionEntry({
   const isDraft = session.statusName === 'Draft'
   const showHwIcon = Boolean(hwStatus && hwStatus !== 'NotApplicable')
 
+  // Single-tenant beta: sessionDate may be UTC ISO (e.g. "2026-05-17T00:00:00Z"); slice(0,10)
+  // yields the UTC date, which is compared against the local date from todayLocalDateStr().
+  // Acceptable for now (one timezone); revisit when multi-timezone support is added.
+  const isScheduled = !isCancelled && !isDraft && session.sessionDate != null && session.sessionDate.slice(0, 10) > todayLocalDateStr()
+
   // Right column is only needed when there's actual homework content or a next plan
   const hasRightColumn = Boolean(session.homeworkAssigned) || Boolean(session.nextSessionTopics)
 
@@ -195,9 +200,15 @@ function SessionEntry({
                     </span>
                   )}
                   {!isCancelled && !isDraft && (
-                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase">
-                      Completed
-                    </span>
+                    isScheduled ? (
+                      <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-600 text-[9px] font-bold uppercase" data-testid="scheduled-badge">
+                        Scheduled
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase" data-testid="completed-badge">
+                        Completed
+                      </span>
+                    )
                   )}
                   {hasActionItem && (
                     <span className="inline-flex items-center gap-1 text-xs text-amber-600" data-testid="action-item-count">

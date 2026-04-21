@@ -25,7 +25,7 @@ import { AudioRecorder } from '@/components/audio/AudioRecorder'
 import { COMPETENCY_OPTIONS } from '@/lib/studentOptions'
 import { getObjectiveUrgency, getDaysRemaining } from '@/lib/objectiveUrgency'
 import { suggestTopicTags } from '@/lib/suggestTopicTags'
-import { formatDate as formatDateUtil, relativeTime } from '@/utils/formatDate'
+import { formatDate as formatDateUtil, relativeTime, todayLocalDateStr } from '@/utils/formatDate'
 import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
 
@@ -51,10 +51,7 @@ const CEFR_SUBLEVELS = [
   'C1.1','C1.2','C2.1','C2.2',
 ]
 
-function todayISO(): string {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-}
+const todayISO = todayLocalDateStr
 
 function nowTimeHHMM(): string {
   const now = new Date()
