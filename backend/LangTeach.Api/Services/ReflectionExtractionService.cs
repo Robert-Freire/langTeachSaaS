@@ -126,7 +126,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
         return result;
     }
 
-    private static ExtractedTextFieldDto? ParseTextFieldOrNull(JsonElement root, string key)
+    private ExtractedTextFieldDto? ParseTextFieldOrNull(JsonElement root, string key)
     {
         if (!root.TryGetProperty(key, out var prop)) return null;
         if (prop.ValueKind == JsonValueKind.Null) return null;
@@ -134,7 +134,11 @@ public class ReflectionExtractionService : IReflectionExtractionService
         {
             var value = GetStringOrNull(prop, "value");
             var mode = GetStringOrNull(prop, "mode") ?? "skip";
-            if (mode is not ("append" or "replace" or "skip")) mode = "skip";
+            if (mode is not ("append" or "replace" or "skip"))
+            {
+                _logger.LogWarning("Unrecognized extraction mode '{Mode}' for key '{Key}', defaulting to skip", mode, key);
+                mode = "skip";
+            }
             return new ExtractedTextFieldDto(value, mode);
         }
         // Legacy fallback: plain string response from AI (treat as replace)
