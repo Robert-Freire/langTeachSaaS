@@ -139,7 +139,6 @@ export default function LogSession() {
   const [sessionTime, setSessionTime] = useState(nowTimeHHMM())
   const [durationChoice, setDurationChoice] = useState('50')
   const durationChoiceRef = useRef('50')
-  durationChoiceRef.current = durationChoice
   const [durationOther, setDurationOther] = useState('')
   const [isCancelled, setIsCancelled] = useState(false)
   const [prevHomeworkStatus, setPrevHomeworkStatus] = useState<string | null>(null)
@@ -281,6 +280,9 @@ export default function LogSession() {
     setDidInitEdit(true)
   }, [editSession, didInitEdit])
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Keep durationChoiceRef current so async extraction callbacks read the latest value, not a stale closure
+  useEffect(() => { durationChoiceRef.current = durationChoice }, [durationChoice])
 
   // Autosave setup - keep ref current after every render (StudentForm pattern)
   const getFormDataRef = useRef<(() => CreateSessionLogRequest) | null>(null)
