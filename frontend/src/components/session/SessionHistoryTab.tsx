@@ -16,7 +16,7 @@ import {
 import { logger } from '../../lib/logger'
 import { Link, useNavigate } from 'react-router-dom'
 import { listSessions, deleteSession, patchSessionField, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
-import { formatMonth, formatDay, relativeTime } from '../../utils/formatDate'
+import { formatMonth, formatDay, relativeTime, todayLocalDateStr } from '../../utils/formatDate'
 import { getSessionTitle } from '../../lib/sessionUtils'
 import { HOMEWORK_STATUS_INFO } from '../../utils/homeworkStatusStyles'
 import { Button } from '@/components/ui/button'
@@ -137,9 +137,7 @@ function SessionEntry({
   const isDraft = session.statusName === 'Draft'
   const showHwIcon = Boolean(hwStatus && hwStatus !== 'NotApplicable')
 
-  const today = new Date()
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-  const isScheduled = !isCancelled && !isDraft && session.sessionDate != null && session.sessionDate.slice(0, 10) > todayStr
+  const isScheduled = !isCancelled && !isDraft && session.sessionDate != null && session.sessionDate.slice(0, 10) > todayLocalDateStr()
 
   // Right column is only needed when there's actual homework content or a next plan
   const hasRightColumn = Boolean(session.homeworkAssigned) || Boolean(session.nextSessionTopics)

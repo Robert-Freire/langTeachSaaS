@@ -58,3 +58,9 @@ export function formatDay(dateStr: string | null): string {
   if (!dateStr) return ''
   return String(new Date(dateStr).getDate())
 }
+
+/** Returns today's local date as a YYYY-MM-DD string (for comparisons against sessionDate). */
+export function todayLocalDateStr(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
