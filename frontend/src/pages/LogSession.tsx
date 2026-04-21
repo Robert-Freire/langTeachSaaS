@@ -928,10 +928,11 @@ export default function LogSession() {
                       setActualContent(nextActualContent)
                     }
                     if (extracted.areasToImprove || extracted.emotionalSignals) {
-                      const combinedNew = [extracted.areasToImprove?.value, extracted.emotionalSignals].filter(Boolean).join(' ')
-                      const mode = extracted.areasToImprove?.mode ?? 'replace'
-                      const nextGeneralNotes = mode === 'skip' ? null
-                        : mode === 'append' && generalNotes ? `${generalNotes} ${combinedNew}` : combinedNew
+                      const combinedValue = [extracted.areasToImprove?.value, extracted.emotionalSignals].filter(Boolean).join(' ')
+                      const combinedField = combinedValue
+                        ? { value: combinedValue, mode: extracted.areasToImprove?.mode ?? 'replace' }
+                        : null
+                      const nextGeneralNotes = applyMode(generalNotes, combinedField)
                       if (nextGeneralNotes !== null) {
                         saveOverride.generalNotes = nextGeneralNotes
                         setGeneralNotes(nextGeneralNotes)
