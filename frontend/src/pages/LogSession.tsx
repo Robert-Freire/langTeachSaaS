@@ -139,6 +139,7 @@ export default function LogSession() {
   const [sessionTime, setSessionTime] = useState(nowTimeHHMM())
   const [durationChoice, setDurationChoice] = useState('50')
   const durationChoiceRef = useRef('50')
+  const latestFieldsRef = useRef({ actualContent: '', generalNotes: '', homeworkAssigned: '', nextSessionTopics: '' })
   const [durationOther, setDurationOther] = useState('')
   const [isCancelled, setIsCancelled] = useState(false)
   const [prevHomeworkStatus, setPrevHomeworkStatus] = useState<string | null>(null)
@@ -283,6 +284,10 @@ export default function LogSession() {
 
   // Keep durationChoiceRef current so async extraction callbacks read the latest value, not a stale closure
   useEffect(() => { durationChoiceRef.current = durationChoice }, [durationChoice])
+  // Keep latestFieldsRef current so append-mode extraction reads the current field values, not stale closure values
+  useEffect(() => {
+    latestFieldsRef.current = { actualContent, generalNotes, homeworkAssigned, nextSessionTopics }
+  }, [actualContent, generalNotes, homeworkAssigned, nextSessionTopics])
 
   // Autosave setup - keep ref current after every render (StudentForm pattern)
   const getFormDataRef = useRef<(() => CreateSessionLogRequest) | null>(null)
@@ -922,28 +927,31 @@ export default function LogSession() {
                       if (field.mode === 'replace') return field.value
                       return existing ? `${existing} ${field.value}` : field.value
                     }
-                    const nextActualContent = applyMode(actualContent, extracted.whatWasCovered)
+                    const { actualContent: curActualContent, generalNotes: curGeneralNotes,
+                            homeworkAssigned: curHomeworkAssigned, nextSessionTopics: curNextSessionTopics } = latestFieldsRef.current
+                    const nextActualContent = applyMode(curActualContent, extracted.whatWasCovered)
                     if (nextActualContent !== null) {
                       saveOverride.actualContent = nextActualContent
                       setActualContent(nextActualContent)
                     }
                     if (extracted.areasToImprove || extracted.emotionalSignals) {
-                      const combinedValue = [extracted.areasToImprove?.value, extracted.emotionalSignals].filter(Boolean).join(' ')
-                      const combinedField = combinedValue
-                        ? { value: combinedValue, mode: extracted.areasToImprove?.mode ?? 'replace' }
-                        : null
-                      const nextGeneralNotes = applyMode(generalNotes, combinedField)
+                      // emotionalSignals has no mode; always include it. Only include areasToImprove value if mode != 'skip'.
+                      const areasValue = extracted.areasToImprove?.mode !== 'skip' ? extracted.areasToImprove?.value : null
+                      const combinedValue = [areasValue, extracted.emotionalSignals].filter(Boolean).join(' ')
+                      const effectiveMode = areasValue ? (extracted.areasToImprove?.mode ?? 'replace') : 'replace'
+                      const combinedField = combinedValue ? { value: combinedValue, mode: effectiveMode } : null
+                      const nextGeneralNotes = applyMode(curGeneralNotes, combinedField)
                       if (nextGeneralNotes !== null) {
                         saveOverride.generalNotes = nextGeneralNotes
                         setGeneralNotes(nextGeneralNotes)
                       }
                     }
-                    const nextHomeworkAssigned = applyMode(homeworkAssigned, extracted.homeworkAssigned)
+                    const nextHomeworkAssigned = applyMode(curHomeworkAssigned, extracted.homeworkAssigned)
                     if (nextHomeworkAssigned !== null) {
                       saveOverride.homeworkAssigned = nextHomeworkAssigned
                       setHomeworkAssigned(nextHomeworkAssigned)
                     }
-                    const nextSessionTopicsNext = applyMode(nextSessionTopics, extracted.nextLessonIdeas)
+                    const nextSessionTopicsNext = applyMode(curNextSessionTopics, extracted.nextLessonIdeas)
                     if (nextSessionTopicsNext !== null) {
                       saveOverride.nextSessionTopics = nextSessionTopicsNext
                       setNextSessionTopics(nextSessionTopicsNext)

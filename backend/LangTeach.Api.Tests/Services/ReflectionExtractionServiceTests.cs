@@ -684,4 +684,17 @@ public class ReflectionExtractionServiceTests
         result.WhatWasCovered!.Value.Should().Be("Some content");
         result.WhatWasCovered.Mode.Should().Be("skip");
     }
+
+    [Theory]
+    [InlineData("""{"whatWasCovered": { "value": null, "mode": "replace" }}""")]
+    [InlineData("""{"whatWasCovered": { "value": "", "mode": "replace" }}""")]
+    [InlineData("""{"whatWasCovered": { "value": "   ", "mode": "replace" }}""")]
+    public void ParseResponse_ObjectFormWithNullOrEmptyValue_ReturnsNullDto(string json)
+    {
+        var sut = CreateSut("{}");
+
+        var result = sut.ParseResponse(json);
+
+        result.WhatWasCovered.Should().BeNull();
+    }
 }

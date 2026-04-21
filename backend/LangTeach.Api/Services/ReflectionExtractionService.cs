@@ -139,7 +139,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 _logger.LogWarning("Unrecognized extraction mode '{Mode}' for key '{Key}', defaulting to skip", mode, key);
                 mode = "skip";
             }
-            return new ExtractedTextFieldDto(value, mode);
+            return value is null ? null : new ExtractedTextFieldDto(value, mode);
         }
         // Legacy fallback: plain string response from AI (treat as replace)
         if (prop.ValueKind == JsonValueKind.String)
