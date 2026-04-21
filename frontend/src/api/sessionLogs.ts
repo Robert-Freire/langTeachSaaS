@@ -57,6 +57,7 @@ export interface ExtractedReflection {
   durationMinutes?: number | null
   isCancelled?: boolean | null
   difficultiesWorkedOn?: string[] | null
+  sessionStartTime?: string | null
 }
 
 export interface CreateSessionLogRequest {

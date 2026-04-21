@@ -45,7 +45,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
-                IsCancelled: null, DifficultiesWorkedOn: []);
+                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null);
         }
 
         return ParseResponse(response.Content);
@@ -76,7 +76,8 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 LevelReassessment: ParseCefrLevel(root, "levelReassessment"),
                 DurationMinutes: GetIntOrNull(root, "durationMinutes"),
                 IsCancelled: GetBoolOrNull(root, "isCancelled"),
-                DifficultiesWorkedOn: ParseStringArray(root, "difficultiesWorkedOn")
+                DifficultiesWorkedOn: ParseStringArray(root, "difficultiesWorkedOn"),
+                SessionStartTime: GetHhMmOrNull(root, "sessionStartTime")
             );
         }
         catch (Exception ex)
@@ -89,7 +90,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
-                IsCancelled: null, DifficultiesWorkedOn: []);
+                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null);
         }
     }
 
@@ -161,6 +162,15 @@ public class ReflectionExtractionService : IReflectionExtractionService
     {
         if (!root.TryGetProperty(key, out var prop)) return null;
         return prop.ValueKind is JsonValueKind.True or JsonValueKind.False ? prop.GetBoolean() : null;
+    }
+
+    private static string? GetHhMmOrNull(JsonElement root, string key)
+    {
+        var raw = GetStringOrNull(root, key);
+        if (raw is null) return null;
+        return TimeOnly.TryParseExact(raw, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _)
+            ? raw
+            : null;
     }
 
     private static List<string> ParseStringArray(JsonElement root, string key)

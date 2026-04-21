@@ -545,6 +545,43 @@ public class ReflectionExtractionServiceTests
     }
 
     [Fact]
+    public void ParseResponse_ExtractsSessionStartTime()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"suggestedDifficulties":[],"sessionStartTime":"09:30"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionStartTime.Should().Be("09:30");
+    }
+
+    [Fact]
+    public void ParseResponse_SessionStartTimeIsNullWhenAbsent()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"suggestedDifficulties":[]}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionStartTime.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("9:30")]
+    [InlineData("9am")]
+    [InlineData("morning")]
+    [InlineData("09:30:00")]
+    public void ParseResponse_SessionStartTimeIsNullWhenNotHhMm(string raw)
+    {
+        var sut = CreateSut("{}");
+        var json = $$"""{"suggestedDifficulties":[],"sessionStartTime":"{{raw}}"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionStartTime.Should().BeNull();
+    }
+
+    [Fact]
     public async Task ExtractAsync_PassesDifficultiesToContext()
     {
         var difficulties = new List<string> { "Subjuntivo en concesivas", "Ser vs Estar" };

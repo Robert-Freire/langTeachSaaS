@@ -20,7 +20,7 @@ public class StubReflectionExtractionService : IReflectionExtractionService
             EmotionalSignals: "[Extracted] Emotional signals",
             HomeworkAssigned: "[Extracted] Homework assigned",
             NextLessonIdeas: "[Extracted] Next lesson ideas",
-            SessionDate: null,
+            SessionDate: "2026-01-15",
             SuggestedDifficulties: [],
             RawExtractionJson: null,
             SessionTitle: "[Extracted] Session title",
@@ -31,7 +31,8 @@ public class StubReflectionExtractionService : IReflectionExtractionService
             LevelReassessment: null,
             DurationMinutes: null,
             IsCancelled: null,
-            DifficultiesWorkedOn: []
+            DifficultiesWorkedOn: [],
+            SessionStartTime: "09:00"
         ));
     }
 }

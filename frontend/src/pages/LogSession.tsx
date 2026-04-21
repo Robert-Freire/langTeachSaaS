@@ -138,6 +138,7 @@ export default function LogSession() {
   const [sessionDate, setSessionDate] = useState(todayISO())
   const [sessionTime, setSessionTime] = useState(nowTimeHHMM())
   const [durationChoice, setDurationChoice] = useState('50')
+  const durationChoiceRef = useRef('50')
   const [durationOther, setDurationOther] = useState('')
   const [isCancelled, setIsCancelled] = useState(false)
   const [prevHomeworkStatus, setPrevHomeworkStatus] = useState<string | null>(null)
@@ -279,6 +280,9 @@ export default function LogSession() {
     setDidInitEdit(true)
   }, [editSession, didInitEdit])
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Keep durationChoiceRef current so async extraction callbacks read the latest value, not a stale closure
+  useEffect(() => { durationChoiceRef.current = durationChoice }, [durationChoice])
 
   // Autosave setup - keep ref current after every render (StudentForm pattern)
   const getFormDataRef = useRef<(() => CreateSessionLogRequest) | null>(null)
@@ -945,10 +949,17 @@ export default function LogSession() {
                       saveOverride.suggestedDifficulties = extracted.suggestedDifficulties
                       setSuggestedDifficulties(extracted.suggestedDifficulties)
                     }
+                    const nextDate = extracted.sessionDate || sessionDate
+                    const nextTime = extracted.sessionStartTime || sessionTime
+                    if (extracted.sessionDate) setSessionDate(extracted.sessionDate)
+                    if (extracted.sessionStartTime) setSessionTime(extracted.sessionStartTime)
+                    if (extracted.sessionDate || extracted.sessionStartTime) {
+                      saveOverride.sessionDate = `${nextDate}T${nextTime || '00:00'}:00`
+                    }
                     if (extracted.durationMinutes) {
                       const dur = extracted.durationMinutes
                       const presets = ['25', '30', '45', '50', '60', '90']
-                      if (durationChoice === '50') {
+                      if (durationChoiceRef.current === '50') {
                         const newChoice = presets.includes(String(dur)) ? String(dur) : 'other'
                         saveOverride.duration = dur
                         setDurationChoice(newChoice)

@@ -60,6 +60,9 @@ test('voice upload: extracted fields pre-fill form, Confirm saves as Confirmed',
   await expect(page.getByTestId('next-session-topics')).toHaveValue('[Extracted] Next lesson ideas')
   // title is saved silently; topic tag chip appears in TopicTagsInput
   await expect(page.getByTestId('topic-tag-remove-0')).toBeVisible({ timeout: 5000 })
+  // Stub returns sessionDate='2026-01-15' and sessionStartTime='09:00'
+  await expect(page.getByTestId('session-date')).toHaveValue('2026-01-15')
+  await expect(page.getByTestId('session-time')).toHaveValue('09:00')
 
   // Confirm — submits and transitions Draft → Confirmed
   await page.getByTestId('submit-session-log').click()
