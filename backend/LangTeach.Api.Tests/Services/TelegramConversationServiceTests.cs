@@ -309,7 +309,8 @@ public class TelegramConversationServiceTests : IDisposable
             LevelReassessment: null,
             DurationMinutes: null,
             IsCancelled: null,
-            DifficultiesWorkedOn: []);
+            DifficultiesWorkedOn: [],
+            SessionStartTime: null);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco worked on ser/estar today"), CancellationToken.None);
 
@@ -344,7 +345,8 @@ public class TelegramConversationServiceTests : IDisposable
             LevelReassessment: null,
             DurationMinutes: null,
             IsCancelled: null,
-            DifficultiesWorkedOn: []);
+            DifficultiesWorkedOn: [],
+            SessionStartTime: null);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco trabajamos ser vs estar"), CancellationToken.None);
 
@@ -379,7 +381,8 @@ public class TelegramConversationServiceTests : IDisposable
             LevelReassessment: null,
             DurationMinutes: null,
             IsCancelled: null,
-            DifficultiesWorkedOn: []);
+            DifficultiesWorkedOn: [],
+            SessionStartTime: null);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco el pasado lunes trabajamos los condicionales"), CancellationToken.None);
 
@@ -444,7 +447,8 @@ public class TelegramConversationServiceTests : IDisposable
                 LevelReassessment: null,
                 DurationMinutes: null,
                 IsCancelled: null,
-                DifficultiesWorkedOn: []);
+                DifficultiesWorkedOn: [],
+                SessionStartTime: null);
             return Task.FromResult(result);
         }
     }

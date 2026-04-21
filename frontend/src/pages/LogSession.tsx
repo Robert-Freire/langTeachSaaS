@@ -138,6 +138,8 @@ export default function LogSession() {
   const [sessionDate, setSessionDate] = useState(todayISO())
   const [sessionTime, setSessionTime] = useState(nowTimeHHMM())
   const [durationChoice, setDurationChoice] = useState('50')
+  const durationChoiceRef = useRef('50')
+  durationChoiceRef.current = durationChoice
   const [durationOther, setDurationOther] = useState('')
   const [isCancelled, setIsCancelled] = useState(false)
   const [prevHomeworkStatus, setPrevHomeworkStatus] = useState<string | null>(null)
@@ -945,10 +947,16 @@ export default function LogSession() {
                       saveOverride.suggestedDifficulties = extracted.suggestedDifficulties
                       setSuggestedDifficulties(extracted.suggestedDifficulties)
                     }
+                    if (extracted.sessionDate) {
+                      setSessionDate(extracted.sessionDate)
+                    }
+                    if (extracted.sessionStartTime) {
+                      setSessionTime(extracted.sessionStartTime)
+                    }
                     if (extracted.durationMinutes) {
                       const dur = extracted.durationMinutes
                       const presets = ['25', '30', '45', '50', '60', '90']
-                      if (durationChoice === '50') {
+                      if (durationChoiceRef.current === '50') {
                         const newChoice = presets.includes(String(dur)) ? String(dur) : 'other'
                         saveOverride.duration = dur
                         setDurationChoice(newChoice)

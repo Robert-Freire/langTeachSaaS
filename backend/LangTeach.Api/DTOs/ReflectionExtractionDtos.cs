@@ -35,5 +35,6 @@ public record ExtractedReflectionDto(
     string? LevelReassessment,
     int? DurationMinutes,
     bool? IsCancelled,
-    List<string> DifficultiesWorkedOn
+    List<string> DifficultiesWorkedOn,
+    string? SessionStartTime
 );

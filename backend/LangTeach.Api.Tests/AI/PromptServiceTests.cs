@@ -3212,6 +3212,7 @@ public class PromptServiceTests
         request.SystemPrompt.Should().Contain("durationMinutes");
         request.SystemPrompt.Should().Contain("isCancelled");
         request.SystemPrompt.Should().Contain("difficultiesWorkedOn");
+        request.SystemPrompt.Should().Contain("sessionStartTime");
     }
 
     [Fact]
