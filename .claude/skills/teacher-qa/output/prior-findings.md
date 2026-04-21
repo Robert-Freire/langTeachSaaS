@@ -151,3 +151,25 @@ These are structural issues for the **Pedagogical Quality** sprint to address:
 | Nadia B2 AR: cuyo relative pronoun exercise explicitly addresses gender/number agreement (the documented weakness) | Nadia B2.1 |
 | Weakness injection block appears early in exercises prompt (not buried after format constraints) | All personas with weaknesses |
 | STUDENT ERROR PROFILE in lesson plan correctly enumerates top 2 weaknesses | All personas with weaknesses |
+
+---
+
+## From: #823 - Voice note extraction append/replace/skip mode (2026-04-21, PR #827)
+
+### Extraction prompt change
+
+The reflection extraction prompt now returns a structured object for 4 text fields instead of a plain string:
+
+- `whatWasCovered`: `{ "value": string, "mode": "append" | "replace" | "skip" }`
+- `areasToImprove`: same shape
+- `homeworkAssigned`: same shape
+- `nextLessonIdeas`: same shape
+
+**Signal words for mode selection:**
+- `"append"`: "además", "también", "y también cubrimos", "y otra cosa"
+- `"replace"`: "me equivoqué", "en realidad", "no, mejor dicho", "quiero decir", "corrijo"
+- `"skip"`: no update needed
+
+**Fields unchanged:** `sessionTitle` (always plain string, always replaces), `topicTags` (always array, always merges+deduplicates), `emotionalSignals` (plain string, combined into generalNotes).
+
+**Verify:** If a teacher voice note returns mode "append" for nextLessonIdeas, the existing field content should be concatenated with the extracted value, not ignored or replaced.
