@@ -290,11 +290,11 @@ public class TelegramConversationServiceTests : IDisposable
         var student = await CreateStudentAsync("Marco");
 
         _extractionService.Result = new ExtractedReflectionDto(
-            WhatWasCovered: "ser vs estar",
-            AreasToImprove: "needs more practice with preterite",
+            WhatWasCovered: new ExtractedTextFieldDto("ser vs estar", "replace"),
+            AreasToImprove: new ExtractedTextFieldDto("needs more practice with preterite", "replace"),
             EmotionalSignals: "engaged",
-            HomeworkAssigned: "complete exercises 3 and 4",
-            NextLessonIdeas: "past tenses review",
+            HomeworkAssigned: new ExtractedTextFieldDto("complete exercises 3 and 4", "replace"),
+            NextLessonIdeas: new ExtractedTextFieldDto("past tenses review", "replace"),
             SessionDate: null,
             SuggestedDifficulties: new List<SuggestedDifficultyDto>
             {
@@ -329,7 +329,7 @@ public class TelegramConversationServiceTests : IDisposable
         var student = await CreateStudentAsync("Marco");
 
         _extractionService.Result = new ExtractedReflectionDto(
-            WhatWasCovered: "ser vs estar",
+            WhatWasCovered: new ExtractedTextFieldDto("ser vs estar", "replace"),
             AreasToImprove: null,
             EmotionalSignals: null,
             HomeworkAssigned: null,
@@ -365,7 +365,7 @@ public class TelegramConversationServiceTests : IDisposable
         var student = await CreateStudentAsync("Marco");
 
         _extractionService.Result = new ExtractedReflectionDto(
-            WhatWasCovered: "condicionales",
+            WhatWasCovered: new ExtractedTextFieldDto("condicionales", "replace"),
             AreasToImprove: null,
             EmotionalSignals: null,
             HomeworkAssigned: null,
@@ -432,7 +432,7 @@ public class TelegramConversationServiceTests : IDisposable
             // Default: echo input into AreasToImprove so existing tests asserting GeneralNotes == raw text keep passing.
             var result = Result ?? new ExtractedReflectionDto(
                 WhatWasCovered: null,
-                AreasToImprove: text,
+                AreasToImprove: new ExtractedTextFieldDto(text, "replace"),
                 EmotionalSignals: null,
                 HomeworkAssigned: null,
                 NextLessonIdeas: null,

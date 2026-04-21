@@ -73,11 +73,12 @@ public class ReflectionExtractionServiceTests
 
         var result = sut.ParseResponse(json);
 
-        result.WhatWasCovered.Should().Be("Past tense verbs");
-        result.AreasToImprove.Should().Be("Irregular verbs");
+        result.WhatWasCovered!.Value.Should().Be("Past tense verbs");
+        result.WhatWasCovered.Mode.Should().Be("replace"); // legacy plain-string fallback
+        result.AreasToImprove!.Value.Should().Be("Irregular verbs");
         result.EmotionalSignals.Should().Be("Very engaged");
-        result.HomeworkAssigned.Should().Be("Exercises 1-5");
-        result.NextLessonIdeas.Should().Be("Present perfect");
+        result.HomeworkAssigned!.Value.Should().Be("Exercises 1-5");
+        result.NextLessonIdeas!.Value.Should().Be("Present perfect");
         result.SessionDate.Should().BeNull();
         result.SuggestedDifficulties.Should().BeEmpty();
     }
@@ -181,7 +182,7 @@ public class ReflectionExtractionServiceTests
 
         var result = sut.ParseResponse(json);
 
-        result.WhatWasCovered.Should().Be("Ser vs estar");
+        result.WhatWasCovered!.Value.Should().Be("Ser vs estar");
         result.AreasToImprove.Should().BeNull();
         result.EmotionalSignals.Should().BeNull();
         result.HomeworkAssigned.Should().BeNull();
@@ -229,7 +230,7 @@ public class ReflectionExtractionServiceTests
 
         var result = await sut.ExtractAsync("We practiced vocabulary today.");
 
-        result.WhatWasCovered.Should().Be("Vocab");
+        result.WhatWasCovered!.Value.Should().Be("Vocab");
         result.SuggestedDifficulties.Should().BeEmpty();
         captured.Should().NotBeNull();
         captured!.Model.Should().Be(ClaudeModel.Haiku);
@@ -267,7 +268,7 @@ public class ReflectionExtractionServiceTests
         var result = sut.ParseResponse(json);
 
         result.SessionDate.Should().Be("2026-04-08");
-        result.WhatWasCovered.Should().Be("los condicionales");
+        result.WhatWasCovered!.Value.Should().Be("los condicionales");
     }
 
     [Fact]
@@ -607,5 +608,80 @@ public class ReflectionExtractionServiceTests
         captured.Should().NotBeNull();
         captured!.SystemPrompt.Should().Contain("Subjuntivo en concesivas");
         captured.SystemPrompt.Should().Contain("Ser vs Estar");
+    }
+
+    [Fact]
+    public void ParseResponse_ParsesModeAppend()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "whatWasCovered": { "value": "Present perfect", "mode": "append" },
+              "nextLessonIdeas": { "value": "Subjunctive", "mode": "append" }
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.WhatWasCovered!.Value.Should().Be("Present perfect");
+        result.WhatWasCovered.Mode.Should().Be("append");
+        result.NextLessonIdeas!.Value.Should().Be("Subjunctive");
+        result.NextLessonIdeas.Mode.Should().Be("append");
+    }
+
+    [Fact]
+    public void ParseResponse_ParsesModeReplace()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "homeworkAssigned": { "value": "Page 5 exercises", "mode": "replace" },
+              "areasToImprove": { "value": "Verb conjugation", "mode": "replace" }
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.HomeworkAssigned!.Value.Should().Be("Page 5 exercises");
+        result.HomeworkAssigned.Mode.Should().Be("replace");
+        result.AreasToImprove!.Value.Should().Be("Verb conjugation");
+        result.AreasToImprove.Mode.Should().Be("replace");
+    }
+
+    [Fact]
+    public void ParseResponse_ParsesModeSkip()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"whatWasCovered": { "value": "Past tense", "mode": "skip" }}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.WhatWasCovered!.Mode.Should().Be("skip");
+    }
+
+    [Fact]
+    public void ParseResponse_HandlesLegacyStringFallback_TreatsAsReplace()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"whatWasCovered": "Plain string value", "homeworkAssigned": "Homework text"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.WhatWasCovered!.Value.Should().Be("Plain string value");
+        result.WhatWasCovered.Mode.Should().Be("replace");
+        result.HomeworkAssigned!.Value.Should().Be("Homework text");
+        result.HomeworkAssigned.Mode.Should().Be("replace");
+    }
+
+    [Fact]
+    public void ParseResponse_InvalidModeDefaultsToSkip()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"whatWasCovered": { "value": "Some content", "mode": "unknown" }}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.WhatWasCovered!.Value.Should().Be("Some content");
+        result.WhatWasCovered.Mode.Should().Be("skip");
     }
 }

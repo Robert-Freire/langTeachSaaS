@@ -9,6 +9,8 @@ public class ExtractReflectionRequest
     public string Text { get; set; } = string.Empty;
 }
 
+public record ExtractedTextFieldDto(string? Value, string Mode); // Mode: "append" | "replace" | "skip"
+
 public record SuggestedDifficultyDto(
     string Description,
     string Competency,
@@ -19,11 +21,11 @@ public record SuggestedDifficultyDto(
 public record TopicTagDto(string Tag, string? Category);
 
 public record ExtractedReflectionDto(
-    string? WhatWasCovered,
-    string? AreasToImprove,
+    ExtractedTextFieldDto? WhatWasCovered,
+    ExtractedTextFieldDto? AreasToImprove,
     string? EmotionalSignals,
-    string? HomeworkAssigned,
-    string? NextLessonIdeas,
+    ExtractedTextFieldDto? HomeworkAssigned,
+    ExtractedTextFieldDto? NextLessonIdeas,
     string? SessionDate,
     List<SuggestedDifficultyDto> SuggestedDifficulties,
     string? RawExtractionJson,

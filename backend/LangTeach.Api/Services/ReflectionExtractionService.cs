@@ -60,11 +60,11 @@ public class ReflectionExtractionService : IReflectionExtractionService
             var root = doc.RootElement;
 
             return new ExtractedReflectionDto(
-                WhatWasCovered: GetStringOrNull(root, "whatWasCovered"),
-                AreasToImprove: GetStringOrNull(root, "areasToImprove"),
+                WhatWasCovered: ParseTextFieldOrNull(root, "whatWasCovered"),
+                AreasToImprove: ParseTextFieldOrNull(root, "areasToImprove"),
                 EmotionalSignals: GetStringOrNull(root, "emotionalSignals"),
-                HomeworkAssigned: GetStringOrNull(root, "homeworkAssigned"),
-                NextLessonIdeas: GetStringOrNull(root, "nextLessonIdeas"),
+                HomeworkAssigned: ParseTextFieldOrNull(root, "homeworkAssigned"),
+                NextLessonIdeas: ParseTextFieldOrNull(root, "nextLessonIdeas"),
                 SessionDate: GetIsoDateOrNull(root, "sessionDate"),
                 SuggestedDifficulties: ParseSuggestedDifficulties(root),
                 RawExtractionJson: cleaned,
@@ -124,6 +124,26 @@ public class ReflectionExtractionService : IReflectionExtractionService
         }
 
         return result;
+    }
+
+    private static ExtractedTextFieldDto? ParseTextFieldOrNull(JsonElement root, string key)
+    {
+        if (!root.TryGetProperty(key, out var prop)) return null;
+        if (prop.ValueKind == JsonValueKind.Null) return null;
+        if (prop.ValueKind == JsonValueKind.Object)
+        {
+            var value = GetStringOrNull(prop, "value");
+            var mode = GetStringOrNull(prop, "mode") ?? "skip";
+            if (mode is not ("append" or "replace" or "skip")) mode = "skip";
+            return new ExtractedTextFieldDto(value, mode);
+        }
+        // Legacy fallback: plain string response from AI (treat as replace)
+        if (prop.ValueKind == JsonValueKind.String)
+        {
+            var value = prop.GetString();
+            return string.IsNullOrWhiteSpace(value) ? null : new ExtractedTextFieldDto(value, "replace");
+        }
+        return null;
     }
 
     private static string? GetStringOrNull(JsonElement root, string key)

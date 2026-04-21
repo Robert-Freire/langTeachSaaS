@@ -914,30 +914,38 @@ export default function LogSession() {
                       setRawExtractionJson(json)
                     }
                     if (extracted.sessionTitle) {
-                      const next = sessionTitle || extracted.sessionTitle
-                      saveOverride.title = next
-                      setSessionTitle(next)
+                      saveOverride.title = extracted.sessionTitle
+                      setSessionTitle(extracted.sessionTitle)
                     }
-                    if (extracted.whatWasCovered) {
-                      const next = actualContent || extracted.whatWasCovered
-                      saveOverride.actualContent = next
-                      setActualContent(next)
+                    const applyMode = (existing: string, field: { value: string | null; mode: string } | null): string | null => {
+                      if (!field || !field.value || field.mode === 'skip') return null
+                      if (field.mode === 'replace') return field.value
+                      return existing ? `${existing} ${field.value}` : field.value
+                    }
+                    const nextActualContent = applyMode(actualContent, extracted.whatWasCovered)
+                    if (nextActualContent !== null) {
+                      saveOverride.actualContent = nextActualContent
+                      setActualContent(nextActualContent)
                     }
                     if (extracted.areasToImprove || extracted.emotionalSignals) {
-                      const combined = [extracted.areasToImprove, extracted.emotionalSignals].filter(Boolean).join(' ')
-                      const next = generalNotes || combined
-                      saveOverride.generalNotes = next
-                      setGeneralNotes(next)
+                      const combinedNew = [extracted.areasToImprove?.value, extracted.emotionalSignals].filter(Boolean).join(' ')
+                      const mode = extracted.areasToImprove?.mode ?? 'replace'
+                      const nextGeneralNotes = mode === 'skip' ? null
+                        : mode === 'append' && generalNotes ? `${generalNotes} ${combinedNew}` : combinedNew
+                      if (nextGeneralNotes !== null) {
+                        saveOverride.generalNotes = nextGeneralNotes
+                        setGeneralNotes(nextGeneralNotes)
+                      }
                     }
-                    if (extracted.homeworkAssigned) {
-                      const next = homeworkAssigned || extracted.homeworkAssigned
-                      saveOverride.homeworkAssigned = next
-                      setHomeworkAssigned(next)
+                    const nextHomeworkAssigned = applyMode(homeworkAssigned, extracted.homeworkAssigned)
+                    if (nextHomeworkAssigned !== null) {
+                      saveOverride.homeworkAssigned = nextHomeworkAssigned
+                      setHomeworkAssigned(nextHomeworkAssigned)
                     }
-                    if (extracted.nextLessonIdeas) {
-                      const next = nextSessionTopics || extracted.nextLessonIdeas
-                      saveOverride.nextSessionTopics = next
-                      setNextSessionTopics(next)
+                    const nextSessionTopicsNext = applyMode(nextSessionTopics, extracted.nextLessonIdeas)
+                    if (nextSessionTopicsNext !== null) {
+                      saveOverride.nextSessionTopics = nextSessionTopicsNext
+                      setNextSessionTopics(nextSessionTopicsNext)
                     }
                     if (extracted.topicTags && extracted.topicTags.length > 0) {
                       const existing = new Set(topicTags.map(t => t.tag.toLowerCase()))
