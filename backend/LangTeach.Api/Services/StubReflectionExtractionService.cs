@@ -15,11 +15,11 @@ public class StubReflectionExtractionService : IReflectionExtractionService
     {
         _logger.LogInformation("StubReflectionExtractionService.ExtractAsync called with {Length} chars", text.Length);
         return Task.FromResult(new ExtractedReflectionDto(
-            WhatWasCovered: new ExtractedTextFieldDto("[Extracted] What was covered", "replace"),
-            AreasToImprove: new ExtractedTextFieldDto("[Extracted] Areas to improve", "replace"),
+            WhatWasCovered: new ExtractedTextFieldDto("[Extracted] What was covered", ExtractionMode.Replace),
+            AreasToImprove: new ExtractedTextFieldDto("[Extracted] Areas to improve", ExtractionMode.Replace),
             EmotionalSignals: "[Extracted] Emotional signals",
-            HomeworkAssigned: new ExtractedTextFieldDto("[Extracted] Homework assigned", "replace"),
-            NextLessonIdeas: new ExtractedTextFieldDto("[Extracted] Next lesson ideas", "append"),
+            HomeworkAssigned: new ExtractedTextFieldDto("[Extracted] Homework assigned", ExtractionMode.Replace),
+            NextLessonIdeas: new ExtractedTextFieldDto("[Extracted] Next lesson ideas", ExtractionMode.Append),
             SessionDate: "2026-01-15",
             SuggestedDifficulties: [],
             RawExtractionJson: null,

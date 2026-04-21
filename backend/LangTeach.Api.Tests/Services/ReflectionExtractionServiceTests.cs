@@ -1,5 +1,6 @@
 using FluentAssertions;
 using LangTeach.Api.AI;
+using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -74,7 +75,7 @@ public class ReflectionExtractionServiceTests
         var result = sut.ParseResponse(json);
 
         result.WhatWasCovered!.Value.Should().Be("Past tense verbs");
-        result.WhatWasCovered.Mode.Should().Be("replace"); // legacy plain-string fallback
+        result.WhatWasCovered.Mode.Should().Be(ExtractionMode.Replace); // legacy plain-string fallback
         result.AreasToImprove!.Value.Should().Be("Irregular verbs");
         result.EmotionalSignals.Should().Be("Very engaged");
         result.HomeworkAssigned!.Value.Should().Be("Exercises 1-5");
@@ -436,17 +437,17 @@ public class ReflectionExtractionServiceTests
     }
 
     [Theory]
-    [InlineData("Done")]
-    [InlineData("Partial")]
-    [InlineData("NotDone")]
-    public void ParseResponse_ExtractsPreviousHomeworkStatus_ValidValues(string status)
+    [InlineData("Done", ExtractedHomeworkStatus.Done)]
+    [InlineData("Partial", ExtractedHomeworkStatus.Partial)]
+    [InlineData("NotDone", ExtractedHomeworkStatus.NotDone)]
+    public void ParseResponse_ExtractsPreviousHomeworkStatus_ValidValues(string jsonValue, ExtractedHomeworkStatus expected)
     {
         var sut = CreateSut("{}");
-        var json = $$"""{"suggestedDifficulties":[],"previousHomeworkStatus":"{{status}}"}""";
+        var json = $$"""{"suggestedDifficulties":[],"previousHomeworkStatus":"{{jsonValue}}"}""";
 
         var result = sut.ParseResponse(json);
 
-        result.PreviousHomeworkStatus.Should().Be(status);
+        result.PreviousHomeworkStatus.Should().Be(expected);
     }
 
     [Fact]
@@ -624,9 +625,9 @@ public class ReflectionExtractionServiceTests
         var result = sut.ParseResponse(json);
 
         result.WhatWasCovered!.Value.Should().Be("Present perfect");
-        result.WhatWasCovered.Mode.Should().Be("append");
+        result.WhatWasCovered.Mode.Should().Be(ExtractionMode.Append);
         result.NextLessonIdeas!.Value.Should().Be("Subjunctive");
-        result.NextLessonIdeas.Mode.Should().Be("append");
+        result.NextLessonIdeas.Mode.Should().Be(ExtractionMode.Append);
     }
 
     [Fact]
@@ -643,9 +644,9 @@ public class ReflectionExtractionServiceTests
         var result = sut.ParseResponse(json);
 
         result.HomeworkAssigned!.Value.Should().Be("Page 5 exercises");
-        result.HomeworkAssigned.Mode.Should().Be("replace");
+        result.HomeworkAssigned.Mode.Should().Be(ExtractionMode.Replace);
         result.AreasToImprove!.Value.Should().Be("Verb conjugation");
-        result.AreasToImprove.Mode.Should().Be("replace");
+        result.AreasToImprove.Mode.Should().Be(ExtractionMode.Replace);
     }
 
     [Fact]
@@ -656,7 +657,7 @@ public class ReflectionExtractionServiceTests
 
         var result = sut.ParseResponse(json);
 
-        result.WhatWasCovered!.Mode.Should().Be("skip");
+        result.WhatWasCovered!.Mode.Should().Be(ExtractionMode.Skip);
     }
 
     [Fact]
@@ -668,9 +669,9 @@ public class ReflectionExtractionServiceTests
         var result = sut.ParseResponse(json);
 
         result.WhatWasCovered!.Value.Should().Be("Plain string value");
-        result.WhatWasCovered.Mode.Should().Be("replace");
+        result.WhatWasCovered.Mode.Should().Be(ExtractionMode.Replace);
         result.HomeworkAssigned!.Value.Should().Be("Homework text");
-        result.HomeworkAssigned.Mode.Should().Be("replace");
+        result.HomeworkAssigned.Mode.Should().Be(ExtractionMode.Replace);
     }
 
     [Fact]
@@ -682,7 +683,7 @@ public class ReflectionExtractionServiceTests
         var result = sut.ParseResponse(json);
 
         result.WhatWasCovered!.Value.Should().Be("Some content");
-        result.WhatWasCovered.Mode.Should().Be("skip");
+        result.WhatWasCovered.Mode.Should().Be(ExtractionMode.Skip);
     }
 
     [Theory]

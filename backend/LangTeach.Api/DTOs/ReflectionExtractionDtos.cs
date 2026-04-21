@@ -1,6 +1,19 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace LangTeach.Api.DTOs;
+
+public sealed class CamelCaseStringEnumConverter : JsonStringEnumConverter
+{
+    public CamelCaseStringEnumConverter() : base(JsonNamingPolicy.CamelCase) { }
+}
+
+[JsonConverter(typeof(CamelCaseStringEnumConverter))]
+public enum ExtractionMode { Append, Replace, Skip }
+
+[JsonConverter(typeof(CamelCaseStringEnumConverter))]
+public enum ExtractedHomeworkStatus { Done, Partial, NotDone }
 
 public class ExtractReflectionRequest
 {
@@ -9,7 +22,7 @@ public class ExtractReflectionRequest
     public string Text { get; set; } = string.Empty;
 }
 
-public record ExtractedTextFieldDto(string? Value, string Mode); // Mode: "append" | "replace" | "skip"
+public record ExtractedTextFieldDto(string? Value, ExtractionMode Mode);
 
 public record SuggestedDifficultyDto(
     string Description,
@@ -31,7 +44,7 @@ public record ExtractedReflectionDto(
     string? RawExtractionJson,
     string? SessionTitle,
     List<TopicTagDto> TopicTags,
-    string? PreviousHomeworkStatus,
+    ExtractedHomeworkStatus? PreviousHomeworkStatus,
     List<string> TeachingTodos,
     List<string> TeacherFollowups,
     string? LevelReassessment,
