@@ -693,4 +693,42 @@ describe('SessionHistoryTab', () => {
     expect(link).toBeInTheDocument()
     expect(link).toHaveAttribute('href', '/students/student-1/sessions/session-1/edit')
   })
+
+  it('shows Scheduled badge for a Confirmed session with a far-future date', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, sessionDate: '2099-01-15T00:00:00Z' },
+    ])
+    wrapper()
+    expect(await screen.findByTestId('scheduled-badge')).toBeInTheDocument()
+    expect(screen.getByTestId('scheduled-badge')).toHaveTextContent('Scheduled')
+    expect(screen.queryByTestId('completed-badge')).not.toBeInTheDocument()
+  })
+
+  it('shows Completed badge for a Confirmed session with a past date', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, sessionDate: '2020-06-10T00:00:00Z' },
+    ])
+    wrapper()
+    expect(await screen.findByTestId('completed-badge')).toBeInTheDocument()
+    expect(screen.getByTestId('completed-badge')).toHaveTextContent('Completed')
+    expect(screen.queryByTestId('scheduled-badge')).not.toBeInTheDocument()
+  })
+
+  it('does not show Scheduled badge for a Draft session with a future date', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, sessionDate: '2099-01-15T00:00:00Z', status: 1, statusName: 'Draft' as const },
+    ])
+    wrapper()
+    expect(await screen.findByTestId('draft-badge')).toBeInTheDocument()
+    expect(screen.queryByTestId('scheduled-badge')).not.toBeInTheDocument()
+  })
+
+  it('does not show Scheduled badge for a cancelled session with a future date', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, sessionDate: '2099-01-15T00:00:00Z', isCancelled: true },
+    ])
+    wrapper()
+    expect(await screen.findByTestId('cancelled-badge')).toBeInTheDocument()
+    expect(screen.queryByTestId('scheduled-badge')).not.toBeInTheDocument()
+  })
 })

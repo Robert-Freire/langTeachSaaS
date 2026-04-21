@@ -842,7 +842,7 @@ describe('LogSession — Ctrl+Enter shortcut', () => {
 describe('LogSession — voice note extraction', () => {
   const EXTRACTED = {
     sessionTitle: 'Pretérito perfecto y viajes',
-    whatWasCovered: 'Repasamos el pretérito perfecto.',
+    whatWasCovered: { value: 'Repasamos el pretérito perfecto.', mode: 'replace' as const },
     areasToImprove: null,
     emotionalSignals: null,
     homeworkAssigned: null,
@@ -931,8 +931,11 @@ describe('LogSession — voice note extraction', () => {
     expect(lastPayload.rawExtractionJson).toBe('{"sessionTitle":"Pretérito perfecto y viajes"}')
   })
 
-  it('does NOT overwrite actualContent already typed by the teacher', async () => {
-    vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue(EXTRACTED)
+  it('does NOT overwrite actualContent when extraction mode is skip', async () => {
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+      ...EXTRACTED,
+      whatWasCovered: { value: 'Repasamos el pretérito perfecto.', mode: 'skip' as const },
+    })
     renderLogSession()
     await screen.findByTestId('log-session-page')
 
@@ -974,5 +977,64 @@ describe('LogSession — voice note extraction', () => {
     })
 
     expect(sessionLogsApi.extractSessionReflection).not.toHaveBeenCalled()
+  })
+
+  it('populates date picker from extracted sessionDate', async () => {
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+      ...EXTRACTED,
+      sessionDate: '2026-01-15',
+    })
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: 'La clase fue el 15 de enero.' })
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('extracting-indicator')).toBeNull()
+    })
+
+    const dateInput = screen.getByTestId('session-date') as HTMLInputElement
+    expect(dateInput.value).toBe('2026-01-15')
+  })
+
+  it('populates time picker from extracted sessionStartTime', async () => {
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+      ...EXTRACTED,
+      sessionStartTime: '09:30',
+    })
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: 'La clase fue a las 9 y media.' })
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('extracting-indicator')).toBeNull()
+    })
+
+    const timeInput = screen.getByTestId('session-time') as HTMLInputElement
+    expect(timeInput.value).toBe('09:30')
+  })
+
+  it('applies extracted durationMinutes when duration is at default', async () => {
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+      ...EXTRACTED,
+      durationMinutes: 60,
+    })
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: 'Clase de 60 minutos.' })
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('extracting-indicator')).toBeNull()
+    })
+
+    expect(screen.getByTestId('duration-select')).toHaveTextContent('60')
   })
 })

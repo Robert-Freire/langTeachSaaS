@@ -45,7 +45,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
-                IsCancelled: null, DifficultiesWorkedOn: []);
+                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null);
         }
 
         return ParseResponse(response.Content);
@@ -60,11 +60,11 @@ public class ReflectionExtractionService : IReflectionExtractionService
             var root = doc.RootElement;
 
             return new ExtractedReflectionDto(
-                WhatWasCovered: GetStringOrNull(root, "whatWasCovered"),
-                AreasToImprove: GetStringOrNull(root, "areasToImprove"),
+                WhatWasCovered: ParseTextFieldOrNull(root, "whatWasCovered"),
+                AreasToImprove: ParseTextFieldOrNull(root, "areasToImprove"),
                 EmotionalSignals: GetStringOrNull(root, "emotionalSignals"),
-                HomeworkAssigned: GetStringOrNull(root, "homeworkAssigned"),
-                NextLessonIdeas: GetStringOrNull(root, "nextLessonIdeas"),
+                HomeworkAssigned: ParseTextFieldOrNull(root, "homeworkAssigned"),
+                NextLessonIdeas: ParseTextFieldOrNull(root, "nextLessonIdeas"),
                 SessionDate: GetIsoDateOrNull(root, "sessionDate"),
                 SuggestedDifficulties: ParseSuggestedDifficulties(root),
                 RawExtractionJson: cleaned,
@@ -76,7 +76,8 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 LevelReassessment: ParseCefrLevel(root, "levelReassessment"),
                 DurationMinutes: GetIntOrNull(root, "durationMinutes"),
                 IsCancelled: GetBoolOrNull(root, "isCancelled"),
-                DifficultiesWorkedOn: ParseStringArray(root, "difficultiesWorkedOn")
+                DifficultiesWorkedOn: ParseStringArray(root, "difficultiesWorkedOn"),
+                SessionStartTime: GetHhMmOrNull(root, "sessionStartTime")
             );
         }
         catch (Exception ex)
@@ -89,7 +90,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
-                IsCancelled: null, DifficultiesWorkedOn: []);
+                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null);
         }
     }
 
@@ -123,6 +124,30 @@ public class ReflectionExtractionService : IReflectionExtractionService
         }
 
         return result;
+    }
+
+    private ExtractedTextFieldDto? ParseTextFieldOrNull(JsonElement root, string key)
+    {
+        if (!root.TryGetProperty(key, out var prop)) return null;
+        if (prop.ValueKind == JsonValueKind.Null) return null;
+        if (prop.ValueKind == JsonValueKind.Object)
+        {
+            var value = GetStringOrNull(prop, "value");
+            var mode = GetStringOrNull(prop, "mode") ?? "skip";
+            if (mode is not ("append" or "replace" or "skip"))
+            {
+                _logger.LogWarning("Unrecognized extraction mode '{Mode}' for key '{Key}', defaulting to skip", mode, key);
+                mode = "skip";
+            }
+            return value is null ? null : new ExtractedTextFieldDto(value, mode);
+        }
+        // Legacy fallback: plain string response from AI (treat as replace)
+        if (prop.ValueKind == JsonValueKind.String)
+        {
+            var value = prop.GetString();
+            return string.IsNullOrWhiteSpace(value) ? null : new ExtractedTextFieldDto(value, "replace");
+        }
+        return null;
     }
 
     private static string? GetStringOrNull(JsonElement root, string key)
@@ -161,6 +186,15 @@ public class ReflectionExtractionService : IReflectionExtractionService
     {
         if (!root.TryGetProperty(key, out var prop)) return null;
         return prop.ValueKind is JsonValueKind.True or JsonValueKind.False ? prop.GetBoolean() : null;
+    }
+
+    private static string? GetHhMmOrNull(JsonElement root, string key)
+    {
+        var raw = GetStringOrNull(root, key);
+        if (raw is null) return null;
+        return TimeOnly.TryParseExact(raw, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _)
+            ? raw
+            : null;
     }
 
     private static List<string> ParseStringArray(JsonElement root, string key)
