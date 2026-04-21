@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { TopicTagsInput } from '@/components/session/TopicTagsInput'
 import { AudioRecorder } from '@/components/audio/AudioRecorder'
+import { COMPETENCY_OPTIONS } from '@/lib/studentOptions'
 import { getObjectiveUrgency, getDaysRemaining } from '@/lib/objectiveUrgency'
 import { suggestTopicTags } from '@/lib/suggestTopicTags'
 import { formatDate as formatDateUtil, relativeTime } from '@/utils/formatDate'
@@ -157,6 +158,7 @@ export default function LogSession() {
   const [secondaryOpen, setSecondaryOpen] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [suggestedDifficulties, setSuggestedDifficulties] = useState<SuggestedDifficulty[]>([])
+  const [newDifficulty, setNewDifficulty] = useState({ description: '', competency: '', subcategory: '' })
 
   // Left panel interactive state
   const [checkedTodoIds, setCheckedTodoIds] = useState<Set<string>>(new Set())
@@ -738,7 +740,7 @@ export default function LogSession() {
 
         {/* Active Difficulties */}
         {activeDifficulties.length > 0 && (
-          <PanelSection label="Active Difficulties">
+          <PanelSection label="Student Difficulties">
             <div className="space-y-1.5">
               {activeDifficulties.map(d => {
                 const key = `${d.competency}|${d.subcategory}`
@@ -772,38 +774,6 @@ export default function LogSession() {
             {mentionedDifficultyKeys.size > 0 && (
               <p className="text-[0.6875rem] text-indigo-500 mt-1">Checked items will be recorded as worked on today</p>
             )}
-          </PanelSection>
-        )}
-
-        {/* Suggested Difficulties (AI-extracted chips with dismiss) */}
-        {suggestedDifficulties.length > 0 && (
-          <PanelSection label="Suggested Difficulties">
-            <p className="text-[0.6875rem] text-zinc-400 -mt-1">From session notes — remove any that look wrong</p>
-            <div className="space-y-1">
-              {suggestedDifficulties.map((d, i) => (
-                <div
-                  key={`${d.competency}|${d.subcategory}|${i}`}
-                  className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm"
-                  data-testid="suggested-difficulty-chip"
-                >
-                  <div className="min-w-0">
-                    <span className="font-medium text-[#1A1B22]">{d.competency} / {d.subcategory}</span>
-                    {d.description && (
-                      <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{d.description}</p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSuggestedDifficulties(prev => prev.filter((_, j) => j !== i))}
-                    className="shrink-0 text-zinc-400 hover:text-zinc-700"
-                    aria-label="Remove difficulty"
-                    data-testid="remove-suggested-difficulty"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
           </PanelSection>
         )}
 
@@ -1170,6 +1140,96 @@ export default function LogSession() {
                   value={topicTags}
                   onChange={(tags) => { setTopicTags(tags); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
                 />
+              </div>
+
+              {/* Difficulties Observed — always visible; populated by AI voice extraction or manual add */}
+              <div className="space-y-1" data-testid="difficulties-observed-section">
+                <Label className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">Difficulties Observed</Label>
+                <p className="text-[0.6875rem] text-zinc-400 -mt-1">Add any difficulties you observed — detected from voice notes or added manually</p>
+                <div className="space-y-1">
+                  {suggestedDifficulties.map((d, i) => (
+                    <div
+                      key={`${d.competency}|${d.subcategory}|${i}`}
+                      className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm"
+                      data-testid="suggested-difficulty-chip"
+                    >
+                      <div className="min-w-0">
+                        {d.competency || d.subcategory
+                          ? <span className="font-medium text-[#1A1B22]">{d.competency} / {d.subcategory}</span>
+                          : <span className="font-medium text-[#1A1B22]">{d.description}</span>
+                        }
+                        {(d.competency || d.subcategory) && d.description && (
+                          <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{d.description}</p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSuggestedDifficulties(prev => prev.filter((_, j) => j !== i))
+                          markChangedAndSchedule()
+                        }}
+                        className="shrink-0 text-zinc-400 hover:text-zinc-700"
+                        aria-label="Remove difficulty"
+                        data-testid="remove-suggested-difficulty"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-1.5 pt-0.5" data-testid="new-difficulty-form">
+                  <Input
+                    value={newDifficulty.description}
+                    onChange={e => setNewDifficulty(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="e.g. Confuses ser/estar in past tense"
+                    className="text-sm bg-white"
+                    data-testid="new-difficulty-input"
+                  />
+                  <div className="flex gap-1.5">
+                    <Select
+                      value={newDifficulty.competency || undefined}
+                      onValueChange={v => setNewDifficulty(prev => ({ ...prev, competency: v ?? '' }))}
+                    >
+                      <SelectTrigger className="text-sm bg-white w-[140px] shrink-0" data-testid="new-difficulty-competency">
+                        <SelectValue placeholder="Competency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COMPETENCY_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      value={newDifficulty.subcategory}
+                      onChange={e => setNewDifficulty(prev => ({ ...prev, subcategory: e.target.value }))}
+                      placeholder="Subcategory (e.g. ser/estar)"
+                      className="text-sm bg-white flex-1"
+                      data-testid="new-difficulty-subcategory"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={!newDifficulty.description.trim() || !newDifficulty.competency}
+                      onClick={() => {
+                        const desc = newDifficulty.description.trim()
+                        if (!desc || !newDifficulty.competency) return
+                        const next = [...suggestedDifficulties, {
+                          competency: newDifficulty.competency,
+                          subcategory: newDifficulty.subcategory,
+                          description: desc,
+                          severity: 'Medium',
+                        }]
+                        setSuggestedDifficulties(next)
+                        setNewDifficulty({ description: '', competency: '', subcategory: '' })
+                        markChangedAndSaveNow({ suggestedDifficulties: next })
+                      }}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 disabled:opacity-50"
+                      data-testid="add-difficulty-btn"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               {/* Homework Assigned */}
