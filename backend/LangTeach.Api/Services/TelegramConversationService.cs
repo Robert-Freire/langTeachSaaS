@@ -238,15 +238,15 @@ public class TelegramConversationService : ITelegramConversationService
         // Mirror of SessionLogDialog.tsx:316-346 — join AreasToImprove + EmotionalSignals into GeneralNotes,
         // map the rest onto their structured fields.
         var generalNotes = string.Join("\n",
-            new[] { extracted.AreasToImprove, extracted.EmotionalSignals }
+            new[] { extracted.AreasToImprove?.Value, extracted.EmotionalSignals }
                 .Where(s => !string.IsNullOrWhiteSpace(s)));
 
         return new CreateSessionLogRequest
         {
             SessionDate = ParseSessionDate(extracted.SessionDate),
-            ActualContent = extracted.WhatWasCovered,
-            HomeworkAssigned = extracted.HomeworkAssigned,
-            NextSessionTopics = extracted.NextLessonIdeas,
+            ActualContent = extracted.WhatWasCovered?.Value,
+            HomeworkAssigned = extracted.HomeworkAssigned?.Value,
+            NextSessionTopics = extracted.NextLessonIdeas?.Value,
             GeneralNotes = string.IsNullOrEmpty(generalNotes) ? null : generalNotes,
             SuggestedDifficulties = extracted.SuggestedDifficulties.Count > 0
                 ? extracted.SuggestedDifficulties

@@ -842,7 +842,7 @@ describe('LogSession — Ctrl+Enter shortcut', () => {
 describe('LogSession — voice note extraction', () => {
   const EXTRACTED = {
     sessionTitle: 'Pretérito perfecto y viajes',
-    whatWasCovered: 'Repasamos el pretérito perfecto.',
+    whatWasCovered: { value: 'Repasamos el pretérito perfecto.', mode: 'replace' as const },
     areasToImprove: null,
     emotionalSignals: null,
     homeworkAssigned: null,
@@ -931,8 +931,11 @@ describe('LogSession — voice note extraction', () => {
     expect(lastPayload.rawExtractionJson).toBe('{"sessionTitle":"Pretérito perfecto y viajes"}')
   })
 
-  it('does NOT overwrite actualContent already typed by the teacher', async () => {
-    vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue(EXTRACTED)
+  it('does NOT overwrite actualContent when extraction mode is skip', async () => {
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+      ...EXTRACTED,
+      whatWasCovered: { value: 'Repasamos el pretérito perfecto.', mode: 'skip' as const },
+    })
     renderLogSession()
     await screen.findByTestId('log-session-page')
 

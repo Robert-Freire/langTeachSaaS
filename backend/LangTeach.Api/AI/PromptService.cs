@@ -1523,11 +1523,27 @@ public class PromptService : IPromptService
             - teacherFollowups: operational actions the teacher owes the student (send, share, confirm). Signal: "Le tengo que mandar/enviar/dar X", "Prometí enviar X".
 
             Respond ONLY with a valid JSON object using these exact keys:
-            - whatWasCovered: string or null
-            - areasToImprove: string or null (narrative summary of student difficulties and struggles — prose, not a list)
+            - whatWasCovered: object or null. When present, the object has two keys: "value" (string) and "mode" (one of "append", "replace", or "skip").
+                Set mode to "append" if the teacher adds to existing coverage notes (signal words: "además", "también", "y también cubrimos", "también hicimos").
+                Set mode to "replace" if the teacher corrects or restates what was covered (signal words: "me equivoqué", "en realidad", "no, mejor dicho", "quiero decir", "corrijo").
+                Set mode to "skip" if this field should not be updated.
+                Return null if nothing about session content is mentioned.
+            - areasToImprove: object or null. When present, the object has two keys: "value" (string, narrative summary of student difficulties and struggles — prose, not a list) and "mode" (one of "append", "replace", or "skip").
+                Set mode to "append" if teacher adds new difficulties to existing notes (signal words: "además", "también tiene problemas con", "y otra cosa").
+                Set mode to "replace" if teacher corrects prior notes (signal words: "me equivoqué", "en realidad", "no, mejor").
+                Set mode to "skip" if this field should not be updated.
+                Return null if no difficulties or areas to improve are mentioned.
             - emotionalSignals: string or null (student attitude, mood, motivation, engagement signals)
-            - homeworkAssigned: string or null
-            - nextLessonIdeas: string or null
+            - homeworkAssigned: object or null. When present, the object has two keys: "value" (string) and "mode" (one of "append", "replace", or "skip").
+                Set mode to "append" if teacher adds homework to existing assignments (signal words: "además", "también tienen que", "y también").
+                Set mode to "replace" if teacher corrects the homework (signal words: "me equivoqué", "en realidad", "no, mejor", corrections).
+                Set mode to "skip" if this field should not be updated.
+                Return null if no homework is mentioned.
+            - nextLessonIdeas: object or null. When present, the object has two keys: "value" (string) and "mode" (one of "append", "replace", or "skip").
+                Set mode to "append" if teacher adds ideas to existing next-session plans (signal words: "además", "también", "y otra cosa", "y en la próxima").
+                Set mode to "replace" if teacher corrects prior plans (signal words: "me equivoqué", "en realidad", "no, mejor", corrections).
+                Set mode to "skip" if this field should not be updated.
+                Return null if no next-session ideas are mentioned.
             - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) of the session being described. Resolve date references using today's date and day of week: "hoy"/"today" = today, "ayer"/"yesterday" = yesterday, "el lunes pasado"/"el pasado lunes" = the most recent Monday before today (not the Monday of this week if today is Monday), "el martes pasado"/"el pasado martes" = the most recent Tuesday before today, and so on for any weekday. Always pick the last occurrence of the named weekday strictly before today. Null if no date is mentioned.
             - sessionStartTime: string or null — 24-hour time (HH:MM) when the session started (e.g. "09:00", "18:30"). Null if not mentioned.
             - sessionTitle: string or null — a concise title (under 60 chars) for this session derived from what was covered. Examples: "Subjunctive in time clauses", "Pasado compuesto — revisión". Null if no content is mentioned.

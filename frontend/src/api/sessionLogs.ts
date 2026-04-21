@@ -39,12 +39,17 @@ export interface SuggestedDifficulty {
   severity: string
 }
 
+export interface ExtractedTextField {
+  value: string | null
+  mode: 'append' | 'replace' | 'skip'
+}
+
 export interface ExtractedReflection {
-  whatWasCovered: string | null
-  areasToImprove: string | null
+  whatWasCovered: ExtractedTextField | null
+  areasToImprove: ExtractedTextField | null
   emotionalSignals: string | null
-  homeworkAssigned: string | null
-  nextLessonIdeas: string | null
+  homeworkAssigned: ExtractedTextField | null
+  nextLessonIdeas: ExtractedTextField | null
   sessionDate?: string | null
   sessionTitle?: string | null
   suggestedDifficulties: SuggestedDifficulty[]

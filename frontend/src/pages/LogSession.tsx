@@ -139,6 +139,7 @@ export default function LogSession() {
   const [sessionTime, setSessionTime] = useState(nowTimeHHMM())
   const [durationChoice, setDurationChoice] = useState('50')
   const durationChoiceRef = useRef('50')
+  const latestFieldsRef = useRef({ actualContent: '', generalNotes: '', homeworkAssigned: '', nextSessionTopics: '' })
   const [durationOther, setDurationOther] = useState('')
   const [isCancelled, setIsCancelled] = useState(false)
   const [prevHomeworkStatus, setPrevHomeworkStatus] = useState<string | null>(null)
@@ -283,6 +284,10 @@ export default function LogSession() {
 
   // Keep durationChoiceRef current so async extraction callbacks read the latest value, not a stale closure
   useEffect(() => { durationChoiceRef.current = durationChoice }, [durationChoice])
+  // Keep latestFieldsRef current so append-mode extraction reads the current field values, not stale closure values
+  useEffect(() => {
+    latestFieldsRef.current = { actualContent, generalNotes, homeworkAssigned, nextSessionTopics }
+  }, [actualContent, generalNotes, homeworkAssigned, nextSessionTopics])
 
   // Autosave setup - keep ref current after every render (StudentForm pattern)
   const getFormDataRef = useRef<(() => CreateSessionLogRequest) | null>(null)
@@ -914,30 +919,42 @@ export default function LogSession() {
                       setRawExtractionJson(json)
                     }
                     if (extracted.sessionTitle) {
-                      const next = sessionTitle || extracted.sessionTitle
-                      saveOverride.title = next
-                      setSessionTitle(next)
+                      saveOverride.title = extracted.sessionTitle
+                      setSessionTitle(extracted.sessionTitle)
                     }
-                    if (extracted.whatWasCovered) {
-                      const next = actualContent || extracted.whatWasCovered
-                      saveOverride.actualContent = next
-                      setActualContent(next)
+                    const applyMode = (existing: string, field: { value: string | null; mode: string } | null): string | null => {
+                      if (!field || !field.value || field.mode === 'skip') return null
+                      if (field.mode === 'replace') return field.value
+                      return existing ? `${existing} ${field.value}` : field.value
+                    }
+                    const { actualContent: curActualContent, generalNotes: curGeneralNotes,
+                            homeworkAssigned: curHomeworkAssigned, nextSessionTopics: curNextSessionTopics } = latestFieldsRef.current
+                    const nextActualContent = applyMode(curActualContent, extracted.whatWasCovered)
+                    if (nextActualContent !== null) {
+                      saveOverride.actualContent = nextActualContent
+                      setActualContent(nextActualContent)
                     }
                     if (extracted.areasToImprove || extracted.emotionalSignals) {
-                      const combined = [extracted.areasToImprove, extracted.emotionalSignals].filter(Boolean).join(' ')
-                      const next = generalNotes || combined
-                      saveOverride.generalNotes = next
-                      setGeneralNotes(next)
+                      // emotionalSignals has no mode; always include it. Only include areasToImprove value if mode != 'skip'.
+                      const areasValue = extracted.areasToImprove?.mode !== 'skip' ? extracted.areasToImprove?.value : null
+                      const combinedValue = [areasValue, extracted.emotionalSignals].filter(Boolean).join(' ')
+                      const effectiveMode = areasValue ? (extracted.areasToImprove?.mode ?? 'replace') : 'replace'
+                      const combinedField = combinedValue ? { value: combinedValue, mode: effectiveMode } : null
+                      const nextGeneralNotes = applyMode(curGeneralNotes, combinedField)
+                      if (nextGeneralNotes !== null) {
+                        saveOverride.generalNotes = nextGeneralNotes
+                        setGeneralNotes(nextGeneralNotes)
+                      }
                     }
-                    if (extracted.homeworkAssigned) {
-                      const next = homeworkAssigned || extracted.homeworkAssigned
-                      saveOverride.homeworkAssigned = next
-                      setHomeworkAssigned(next)
+                    const nextHomeworkAssigned = applyMode(curHomeworkAssigned, extracted.homeworkAssigned)
+                    if (nextHomeworkAssigned !== null) {
+                      saveOverride.homeworkAssigned = nextHomeworkAssigned
+                      setHomeworkAssigned(nextHomeworkAssigned)
                     }
-                    if (extracted.nextLessonIdeas) {
-                      const next = nextSessionTopics || extracted.nextLessonIdeas
-                      saveOverride.nextSessionTopics = next
-                      setNextSessionTopics(next)
+                    const nextSessionTopicsNext = applyMode(curNextSessionTopics, extracted.nextLessonIdeas)
+                    if (nextSessionTopicsNext !== null) {
+                      saveOverride.nextSessionTopics = nextSessionTopicsNext
+                      setNextSessionTopics(nextSessionTopicsNext)
                     }
                     if (extracted.topicTags && extracted.topicTags.length > 0) {
                       const existing = new Set(topicTags.map(t => t.tag.toLowerCase()))
