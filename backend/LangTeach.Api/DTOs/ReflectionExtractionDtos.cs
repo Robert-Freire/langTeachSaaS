@@ -4,6 +4,9 @@ using System.Text.Json.Serialization;
 
 namespace LangTeach.Api.DTOs;
 
+// These extraction enums use camelCase (not PascalCase) because the AI prompt contract
+// specifies lowercase values ("append", "replace", "skip"). Other domain enums in the
+// project use PascalCase via plain JsonStringEnumConverter — do not change this.
 public sealed class CamelCaseStringEnumConverter : JsonStringEnumConverter
 {
     public CamelCaseStringEnumConverter() : base(JsonNamingPolicy.CamelCase) { }

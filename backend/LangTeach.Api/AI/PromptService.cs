@@ -1549,7 +1549,7 @@ public class PromptService : IPromptService
             - sessionTitle: string or null — a concise title (under 60 chars) for this session derived from what was covered. Examples: "Subjunctive in time clauses", "Pasado compuesto — revisión". Null if no content is mentioned.
             - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
             - topicTags: array of objects with "tag" (string) and "category" (string or null) — topics, grammar structures, vocabulary areas covered. Each tag as a concise noun phrase. Empty array if none mentioned.
-            - previousHomeworkStatus: "Done" | "Partial" | "NotDone" | null — whether the student completed homework from the previous session. Null if not mentioned.
+            - previousHomeworkStatus: "done" | "partial" | "notDone" | null — whether the student completed homework from the previous session. Null if not mentioned.
             - teachingTodos: array of strings — pedagogical ideas for future sessions (see distinction above). Empty array if none.
             - teacherFollowups: array of strings — operational actions owed by the teacher (see distinction above). Empty array if none.
             - levelReassessment: CEFR level string (e.g. "B1", "B2+") or null — if the teacher mentions reassessing or updating the student's level. Null if not mentioned.
