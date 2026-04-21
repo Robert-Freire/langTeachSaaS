@@ -168,7 +168,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
     {
         var raw = GetStringOrNull(root, key);
         if (raw is null) return null;
-        return System.Text.RegularExpressions.Regex.IsMatch(raw, @"^\d{2}:\d{2}$") ? raw : null;
+        return Regex.IsMatch(raw, @"^\d{2}:\d{2}$") ? raw : null;
     }
 
     private static List<string> ParseStringArray(JsonElement root, string key)
