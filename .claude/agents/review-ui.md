@@ -95,37 +95,66 @@ If tests fail:
 - **Seed data errors** (e.g., "No [visual-seed] student found"): Report as BLOCKED with instructions to check `start-visual-stack.sh` and `DemoSeeder.cs`.
 - **Other failures**: Collect screenshots from whatever succeeded and continue analysis.
 
-### 2. Analyze screenshots
+### 2. Read the design system
 
-Read each screenshot in `e2e/screenshots/` with the Read tool. For each, check only:
+Before analyzing screenshots, read `docs/design-system.md` in full. This is the authoritative spec. Keep it in mind for step 3.
 
-- **Renders correctly**: No blank pages, missing content, broken layouts, or error states
-- **Layout**: No overflow, clipping, or misalignment. Content uses available width well.
-- **Visual consistency**: Components match the rest of the app (same button styles, card styles, spacing)
-- **Readability**: Text is readable, contrast is sufficient, hierarchy is clear
+### 3. Analyze screenshots
+
+Read each screenshot in `e2e/screenshots/` with the Read tool. For each, check:
+
+**Render quality:**
+- No blank pages, missing content, broken layouts, or error states
+- No overflow, clipping, or misalignment. Content uses available width well.
+- Text is readable, contrast is sufficient, hierarchy is clear
+
+**Design system compliance (per `docs/design-system.md`):**
+
+Check visible elements against these rules. Only flag what you can actually see in the screenshot:
+
+- **Colors:** Primary CTAs use indigo gradient. No pure `#000000` text. Surface hierarchy (off-white canvas, white cards). No visible heavy borders between sections (no-line rule).
+- **CEFR badges:** Square with `md` radius, NOT pill-shaped.
+- **Buttons:** Ghost button never paired with a filled Primary on the same row. Correct variant for the context.
+- **Lists:** No divider lines between items. 16px gap separation.
+- **Form inputs:** Labels above the field, not placeholder-only. No full-opacity borders.
+- **Interaction patterns:** Edit screens use autosave (no Save/Cancel button pairs on inline fields). Growing lists use the immediate-add pattern (no form submit for adding items). Full-page edit forms have a single Done button, not per-section Save.
+- **List-Add controls (Teaching Todos, Followups):** Same `<Input>` component, filled Plus button, correct color family per section 11.2.
+- **Todo/Followup toggles:** Custom square (todos) or circle (followups) controls, never native checkboxes.
+- **Toggle switches:** `h-6 w-11` track, `h-4 w-4` thumb. Indigo when active.
+
+**Design system gaps:**
+If a UI pattern or component is visible that is NOT covered by `docs/design-system.md`, flag it as a GAP (not a violation). Gaps need a Vera discussion before the pattern can be used elsewhere.
 
 Only report actual problems. Do not narrate what looks fine.
 
-### 3. Clean up
+### 4. Clean up
 
 Tear down the e2e stack. Do not delete any spec files.
 
 ## Report
 
-Your **final response** must be under 1500 characters:
+Your **final response** must be under 2000 characters:
 
 ```
 VERDICT: PASS | NEEDS WORK
 
-ISSUES:
+ISSUES (render/layout):
 - [1] <page>: <one-line description>
-- [2] <page>: <one-line description>
+
+VIOLATIONS (design system rules broken):
+- [1] <page>: <rule from design-system.md> — <what was seen>
+
+GAPS (pattern not covered by design-system.md — needs Vera discussion):
+- [1] <page>: <component or pattern> — <describe what you saw>
 
 NOTES:
-<any skipped routes or caveats>
+<any skipped routes or caveats, including smoke pass skips>
 ```
 
-Omit ISSUES if none. PASS means all changed screens render correctly and look polished.
+Omit any section that has no entries.
+
+PASS means all changed screens render correctly and have no design system violations. Gaps alone do not block — they are informational.
+NEEDS WORK if there are render issues or design system violations.
 
 ## Windows / Git Bash: path mangling
 
@@ -134,8 +163,8 @@ Prefix any `docker exec` command containing Linux paths with `MSYS_NO_PATHCONV=1
 ## Rules
 
 - Only screenshot changed screens. No regression screenshots of unrelated pages.
-- No interaction captures (hover, focus, form states). Just rendered pages.
 - No UX guidelines check. No cross-page consistency audit.
+- No interaction captures (hover, focus, form states). Just rendered pages.
 - Do NOT modify or create spec files. Only run existing ones.
 - Do NOT modify source code.
 - Be specific: "the Save button is clipped at the bottom" not "layout issues".
