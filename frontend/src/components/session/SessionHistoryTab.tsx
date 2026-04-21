@@ -137,6 +137,10 @@ function SessionEntry({
   const isDraft = session.statusName === 'Draft'
   const showHwIcon = Boolean(hwStatus && hwStatus !== 'NotApplicable')
 
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const isScheduled = !isCancelled && !isDraft && session.sessionDate != null && session.sessionDate.slice(0, 10) > todayStr
+
   // Right column is only needed when there's actual homework content or a next plan
   const hasRightColumn = Boolean(session.homeworkAssigned) || Boolean(session.nextSessionTopics)
 
@@ -195,9 +199,15 @@ function SessionEntry({
                     </span>
                   )}
                   {!isCancelled && !isDraft && (
-                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase">
-                      Completed
-                    </span>
+                    isScheduled ? (
+                      <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-600 text-[9px] font-bold uppercase" data-testid="scheduled-badge">
+                        Scheduled
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase" data-testid="completed-badge">
+                        Completed
+                      </span>
+                    )
                   )}
                   {hasActionItem && (
                     <span className="inline-flex items-center gap-1 text-xs text-amber-600" data-testid="action-item-count">
