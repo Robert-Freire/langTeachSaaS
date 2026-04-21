@@ -137,6 +137,9 @@ function SessionEntry({
   const isDraft = session.statusName === 'Draft'
   const showHwIcon = Boolean(hwStatus && hwStatus !== 'NotApplicable')
 
+  // Single-tenant beta: sessionDate may be UTC ISO (e.g. "2026-05-17T00:00:00Z"); slice(0,10)
+  // yields the UTC date, which is compared against the local date from todayLocalDateStr().
+  // Acceptable for now (one timezone); revisit when multi-timezone support is added.
   const isScheduled = !isCancelled && !isDraft && session.sessionDate != null && session.sessionDate.slice(0, 10) > todayLocalDateStr()
 
   // Right column is only needed when there's actual homework content or a next plan
