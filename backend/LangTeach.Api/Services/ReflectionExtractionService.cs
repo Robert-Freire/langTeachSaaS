@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using LangTeach.Api.AI;
-using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Helpers;
 
@@ -133,11 +132,11 @@ public class ReflectionExtractionService : IReflectionExtractionService
         if (prop.ValueKind == JsonValueKind.Object)
         {
             var value = GetStringOrNull(prop, "value");
-            var mode = GetStringOrNull(prop, "mode") ?? "skip";
-            if (mode is not ("append" or "replace" or "skip"))
+            var modeStr = GetStringOrNull(prop, "mode") ?? "skip";
+            if (!Enum.TryParse<ExtractionMode>(modeStr, ignoreCase: true, out var mode))
             {
-                _logger.LogWarning("Unrecognized extraction mode '{Mode}' for key '{Key}', defaulting to skip", mode, key);
-                mode = "skip";
+                _logger.LogWarning("Unrecognized extraction mode '{Mode}' for key '{Key}', defaulting to skip", modeStr, key);
+                mode = ExtractionMode.Skip;
             }
             return value is null ? null : new ExtractedTextFieldDto(value, mode);
         }
@@ -145,7 +144,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
         if (prop.ValueKind == JsonValueKind.String)
         {
             var value = prop.GetString();
-            return string.IsNullOrWhiteSpace(value) ? null : new ExtractedTextFieldDto(value, "replace");
+            return string.IsNullOrWhiteSpace(value) ? null : new ExtractedTextFieldDto(value, ExtractionMode.Replace);
         }
         return null;
     }
@@ -232,12 +231,12 @@ public class ReflectionExtractionService : IReflectionExtractionService
         return result;
     }
 
-    private static string? ParseHomeworkStatus(JsonElement root)
+    private static ExtractedHomeworkStatus? ParseHomeworkStatus(JsonElement root)
     {
         var raw = GetStringOrNull(root, "previousHomeworkStatus");
         if (raw is null) return null;
-        return Enum.TryParse<HomeworkStatus>(raw, out var parsed) && parsed != HomeworkStatus.NotApplicable
-            ? raw
+        return Enum.TryParse<ExtractedHomeworkStatus>(raw, ignoreCase: true, out var parsed)
+            ? parsed
             : null;
     }
 

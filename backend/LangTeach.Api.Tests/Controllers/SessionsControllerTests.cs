@@ -70,12 +70,12 @@ public class SessionsControllerTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var dto = await response.Content.ReadFromJsonAsync<ExtractedReflectionDto>();
         dto!.WhatWasCovered!.Value.Should().Be("[Extracted] What was covered");
-        dto.WhatWasCovered.Mode.Should().Be("replace");
+        dto.WhatWasCovered.Mode.Should().Be(ExtractionMode.Replace);
         dto.AreasToImprove!.Value.Should().Be("[Extracted] Areas to improve");
         dto.EmotionalSignals.Should().Be("[Extracted] Emotional signals");
         dto.HomeworkAssigned!.Value.Should().Be("[Extracted] Homework assigned");
         dto.NextLessonIdeas!.Value.Should().Be("[Extracted] Next lesson ideas");
-        dto.NextLessonIdeas.Mode.Should().Be("append");
+        dto.NextLessonIdeas.Mode.Should().Be(ExtractionMode.Append);
     }
 
     [Fact]
