@@ -16,8 +16,10 @@ public class StudentService : IStudentService
     static StudentService()
     {
         using var stream = Assembly.GetExecutingAssembly()
-            .GetManifestResourceStream("LangTeach.Api.languages.json")!;
-        var languages = JsonSerializer.Deserialize<string[]>(stream)!;
+            .GetManifestResourceStream("LangTeach.Api.languages.json")
+            ?? throw new InvalidOperationException("StudentService: could not load languages.json embedded resource.");
+        var languages = JsonSerializer.Deserialize<string[]>(stream)
+            ?? throw new InvalidOperationException("StudentService: languages.json is empty or invalid.");
         AllowedNativeLanguages = new HashSet<string>(languages, StringComparer.Ordinal);
     }
 
