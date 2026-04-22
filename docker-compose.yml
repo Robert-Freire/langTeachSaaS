@@ -67,8 +67,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
       target: dev
     container_name: langteach-frontend
     ports:
@@ -76,6 +76,7 @@ services:
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/.env.local:/app/.env.local:ro
+      - ./data:/data:ro
     depends_on:
       - api
 
