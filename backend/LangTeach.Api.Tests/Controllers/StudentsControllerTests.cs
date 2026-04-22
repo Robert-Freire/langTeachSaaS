@@ -437,6 +437,27 @@ public class StudentsControllerTests
     }
 
     [Fact]
+    public async Task UpdateTeachingTodo_WithCapitalizedPendingStatus_Succeeds()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|todo-capitalized-status-test", "todo-capitalized-status@example.com");
+        var student = await CreateStudentAsync(client, "Todo Capitalized Status Student");
+
+        var appendResponse = await client.PostAsJsonAsync(
+            $"/api/students/{student.Id}/teaching-todos",
+            new CreateTeachingTodoDto("Practicar subjuntivo", null));
+        appendResponse.EnsureSuccessStatusCode();
+        var withTodo = await appendResponse.Content.ReadFromJsonAsync<StudentDto>();
+        var todoId = withTodo!.TeachingTodos[0].Id;
+
+        // "Pending" capitalized should be accepted (OrdinalIgnoreCase)
+        var updateResponse = await client.PatchAsJsonAsync(
+            $"/api/students/{student.Id}/teaching-todos/{todoId}",
+            new UpdateTeachingTodoDto("Pending", null, null));
+
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
     public async Task Create_WithNestedLearningGoals_RoundTripsHierarchy()
     {
         var client = _factory.CreateAuthenticatedClient("auth0|nested-goals-test", "nested-goals@example.com");
