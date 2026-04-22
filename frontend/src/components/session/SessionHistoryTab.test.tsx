@@ -15,7 +15,6 @@ vi.mock('react-router-dom', async (importOriginal) => {
 vi.mock('../../api/sessionLogs', () => ({
   listSessions: vi.fn(),
   deleteSession: vi.fn(),
-  patchSessionField: vi.fn(),
   updateSession: vi.fn(),
   createSession: vi.fn(),
   serializeTopicTags: vi.fn((tags) => JSON.stringify(tags)),
