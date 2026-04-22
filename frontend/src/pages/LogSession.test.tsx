@@ -238,10 +238,14 @@ describe('LogSession', () => {
     expect(cb.checked).toBe(true)
   })
 
-  it('shows STATUS label above the cancelled toggle in create mode', async () => {
+  it('shows Cancelled toggle aligned with Date/Time/Duration cells (spacer present)', async () => {
     renderLogSession()
     await screen.findByTestId('cancelled-toggle')
-    expect(screen.getByText('Status')).toBeInTheDocument()
+    // The Cancelled toggle cell uses an invisible spacer so its toggle row aligns
+    // with the input rows in the Date, Time, and Duration cells.
+    // Design-system 11.3: Cancelled toggle must NOT be under a "Status" heading.
+    expect(screen.queryByText('Status')).not.toBeInTheDocument()
+    expect(screen.getByTestId('cancelled-toggle')).toBeInTheDocument()
   })
 
   it('hides form fields when cancelled toggle is clicked', async () => {

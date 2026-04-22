@@ -1059,9 +1059,9 @@ export default function LogSession() {
               </div>
             </div>
 
-            {/* Cancelled */}
+            {/* Cancelled — spacer matches the label height of Date/Time/Duration cells */}
             <div className="space-y-1">
-              <Label className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Status</Label>
+              <span className="block text-xs invisible" aria-hidden="true">&nbsp;</span>
               <div className="flex items-center gap-2 h-8">
                 <Label htmlFor="cancelled-toggle" className="text-sm text-zinc-600 cursor-pointer select-none">
                   Cancelled
