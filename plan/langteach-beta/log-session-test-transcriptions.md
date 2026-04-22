@@ -45,7 +45,7 @@ The AI extraction (`/api/students/{id}/sessions/extract`) returns an `ExtractedR
 | `actualContent` | "Repasamos el pretérito perfecto compuesto y su diferencia con el indefinido. Vocabulario de viajes." |
 | `generalNotes` | "Atenta durante toda la clase. Sin problemas destacables." |
 | `homeworkAssigned` | null |
-| `nextSessionTopics` | null |
+| `nextSessionTopics` | null |cc
 | `title` | "Pretérito perfecto compuesto y vocabulario de viajes" |
 | `topicTags` | [{tag: "pretérito perfecto"}, {tag: "pretérito indefinido"}, {tag: "vocabulario de viajes"}] |
 | `suggestedDifficulties` | [] |

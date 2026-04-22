@@ -4,10 +4,11 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-04-21)
+## In-Flight Tasks (2026-04-22)
 
 | Task | Issue | PR | Status |
 |------|-------|----|--------|
+| t833 | #833 Bug batch: validation case, countdown stale, difficulty toast | #842 | MERGED |
 | t826 | #826 ExtractionMode enum refactor | #831 | PR open, CI pending |
 | t824 | #824 Future session SCHEDULED badge | #828 | MERGED |
 | t823 | #823 Voice note extraction append/replace/skip mode | #827 | PR open, CI pending |
