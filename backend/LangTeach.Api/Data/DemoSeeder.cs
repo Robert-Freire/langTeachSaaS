@@ -137,7 +137,7 @@ public static class DemoSeeder
         if (studentsSeeded && coursesSeeded)
         {
             await db.SaveChangesAsync(); // persist any approval/onboarding updates
-            await FixAnaVisualNameAsync(db, teacher.Id, now);
+            await EnsureAnaVisualNameAsync(db, teacher.Id, logger);
             await EnsureAnaVisualDifficultiesAsync(db, teacher.Id, logger);
             await EnsureAnaVisualExtrasAsync(db, teacher.Id, logger);
             await SeedScenarioStudentsAsync(db, teacher.Id, logger);
@@ -774,17 +774,20 @@ public static class DemoSeeder
         logger.LogInformation("Ana Visual goals, skill overrides, native languages, and spoken languages backfilled.");
     }
 
-    private static async Task FixAnaVisualNameAsync(AppDbContext db, Guid teacherId, DateTime now)
+    private static async Task EnsureAnaVisualNameAsync(AppDbContext db, Guid teacherId, ILogger logger)
     {
         var corrupted = await db.Students
             .Where(s => s.TeacherId == teacherId && s.Name.StartsWith("Ana Visual") && s.Name != "Ana Visual" && !s.IsDeleted)
             .ToListAsync();
+        if (corrupted.Count == 0) return;
+
         foreach (var s in corrupted)
         {
             s.Name = "Ana Visual";
-            s.UpdatedAt = now;
+            s.UpdatedAt = DateTime.UtcNow;
         }
-        if (corrupted.Count > 0) await db.SaveChangesAsync();
+        await db.SaveChangesAsync();
+        logger.LogInformation("Corrected {Count} corrupted 'Ana Visual*' name(s) to 'Ana Visual'.", corrupted.Count);
     }
 
     private static async Task SeedAnaVisualSessionLogAsync(AppDbContext db, Guid teacherId, ILogger logger)
