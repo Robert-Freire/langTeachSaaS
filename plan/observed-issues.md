@@ -4,6 +4,8 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 | Source issue | Date | Severity | Observation |
 | #834 | 2026-04-22 | low | EnsureAnaVisualExtrasAsync.UpdatedAt uses DateTime.UtcNow inline instead of caller's now (pre-existing inconsistency, not introduced by this task) |
+| #848 | 2026-04-22 | low | session-log-voice.spec.ts tests at lines 34-85, 118-151, 232-272 still reference session-log-dialog/submit-session-log (old modal path removed in prior sprint); not updated in #835 e2e rewrite; pre-existing failure |
+| #848 | 2026-04-22 | low | Issue #848 AC requested visible STATUS label above Cancelled toggle; design-system.md 11.3 prohibits this; AC was fulfilled via invisible spacer for alignment instead |
 | #838 | 2026-04-22 | low | LogSession: checkboxes in Teaching Todos/Followups left panel use native input instead of design-system custom controls (pre-existing) |
 | #838 | 2026-04-22 | low | LogSession: local ToggleSwitch focus ring uses ring-indigo-500 instead of ring-indigo-600 (pre-existing, design-system 11.5) |
 | #837 | 2026-04-22 | low | TeachingTodosCard.tsx has local relativeTime duplicating formatDate.ts — filed #860 |
