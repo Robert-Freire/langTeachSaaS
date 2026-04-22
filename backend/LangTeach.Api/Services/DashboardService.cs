@@ -229,6 +229,7 @@ public class DashboardService : IDashboardService
                 TeachingTodosCount = s.TeacherFollowups.Count(f => f.Kind == "pedagogical"),
                 PendingTodos = s.TeacherFollowups
                     .Where(f => f.Kind == "pedagogical" && f.Status == "pending")
+                    .OrderBy(f => f.CreatedAt)
                     .Select(f => new TeachingTodoDto(
                         f.Id.ToString(), f.Text, f.CreatedAt,
                         f.SourceSessionLogId != null ? f.SourceSessionLogId.ToString() : null,

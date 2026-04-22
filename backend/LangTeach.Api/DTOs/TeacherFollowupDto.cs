@@ -22,6 +22,7 @@ public record CreateTeacherFollowupRequest(
     Guid? StudentId,
     DateOnly? DueDate,
     Guid? SourceSessionLogId,
+    [MinLength(1, ErrorMessage = "Kind must be 'pedagogical' or 'operational'.")]
     [RegularExpression("^(pedagogical|operational)$",
         ErrorMessage = "Kind must be 'pedagogical' or 'operational'.")]
     string? Kind = null);

@@ -400,6 +400,7 @@ public class StudentService : IStudentService
 
         if (!studentExists) return null;
 
+        var sourceSessionLogId = await ResolveSessionLogIdAsync(teacherId, studentId, request.SourceSessionLogId, cancellationToken);
         var followup = new TeacherFollowup
         {
             Id = Guid.NewGuid(),
@@ -409,7 +410,7 @@ public class StudentService : IStudentService
             Status = "pending",
             Kind = "pedagogical",
             CreatedAt = DateTime.UtcNow,
-            SourceSessionLogId = Guid.TryParse(request.SourceSessionLogId, out var sid) ? sid : null,
+            SourceSessionLogId = sourceSessionLogId,
         };
         _db.TeacherFollowups.Add(followup);
         await _db.SaveChangesAsync(cancellationToken);
@@ -437,9 +438,8 @@ public class StudentService : IStudentService
                 throw new ValidationException("Todo text must be between 1 and 500 characters.");
             followup.Text = request.Text;
         }
-        if (request.CoveredInSessionLogId is not null &&
-            Guid.TryParse(request.CoveredInSessionLogId, out var covGuid))
-            followup.CoveredInSessionLogId = covGuid;
+        if (request.CoveredInSessionLogId is not null)
+            followup.CoveredInSessionLogId = await ResolveSessionLogIdAsync(teacherId, studentId, request.CoveredInSessionLogId, cancellationToken);
         followup.CompletedAt = followup.Status is "done" or "covered" ? DateTime.UtcNow : null;
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -466,6 +466,29 @@ public class StudentService : IStudentService
             teacherId, studentId, todoGuid);
 
         return await GetByIdAsync(teacherId, studentId, cancellationToken);
+    }
+
+    private async Task<Guid?> ResolveSessionLogIdAsync(
+        Guid teacherId,
+        Guid studentId,
+        string? rawId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(rawId)) return null;
+        if (!Guid.TryParse(rawId, out var id))
+            throw new ValidationException("Session log id is not valid.");
+
+        var exists = await _db.SessionLogs.AnyAsync(
+            s => s.Id == id &&
+                 s.TeacherId == teacherId &&
+                 s.StudentId == studentId &&
+                 !s.IsDeleted,
+            cancellationToken);
+
+        if (!exists)
+            throw new ValidationException("Session log does not belong to this student.");
+
+        return id;
     }
 
     private static Dictionary<string, string> NormalizeSkillLevelOverrides(Dictionary<string, string> overrides)
