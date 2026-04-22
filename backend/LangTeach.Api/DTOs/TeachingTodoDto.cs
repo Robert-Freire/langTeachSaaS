@@ -15,6 +15,9 @@ public record CreateTeachingTodoDto(
     string? SourceSessionLogId);
 
 public record UpdateTeachingTodoDto(
-    [Required] string Status,
+    [Required]
+    [RegularExpression("^(Pending|Done|Covered|Dismissed|pending|done|covered|dismissed)$",
+        ErrorMessage = "Status must be 'pending', 'done', 'covered', or 'dismissed'.")]
+    string Status,
     string? CoveredInSessionLogId,
     [MaxLength(500)] string? Text);

@@ -1518,10 +1518,6 @@ public class PromptService : IPromptService
 
             Today is {today.DayOfWeek}, {today:yyyy-MM-dd}.
             {difficultiesSection}
-            TeachingTodo vs TeacherFollowup distinction:
-            - teachingTodos: pedagogical ideas the teacher intends to work on WITH the student in future sessions. Signal: "Tengo que trabajar X con el/ella", "Hay que practicar X".
-            - teacherFollowups: operational actions the teacher owes the student (send, share, confirm). Signal: "Le tengo que mandar/enviar/dar X", "Prometí enviar X".
-
             Respond ONLY with a valid JSON object using these exact keys:
             - whatWasCovered: object or null. When present, the object has two keys: "value" (string) and "mode" (one of "append", "replace", or "skip").
                 Set mode to "append" if the teacher adds to existing coverage notes (signal words: "además", "también", "y también cubrimos", "también hicimos").
@@ -1550,8 +1546,8 @@ public class PromptService : IPromptService
             - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
             - topicTags: array of objects with "tag" (string) and "category" (string or null) — topics, grammar structures, vocabulary areas covered. Each tag as a concise noun phrase. Empty array if none mentioned.
             - previousHomeworkStatus: "done" | "partial" | "notDone" | null — whether the student completed homework from the previous session. Null if not mentioned.
-            - teachingTodos: array of strings — pedagogical ideas for future sessions (see distinction above). Empty array if none.
-            - teacherFollowups: array of strings — operational actions owed by the teacher (see distinction above). Empty array if none.
+            - teachingTodos: array of strings — pedagogical ideas for future sessions (grammar points to revisit, vocabulary to practise, skills to develop; e.g. "hay que practicar el subjuntivo"). Empty array if none.
+            - teacherFollowups: array of strings — operational actions owed by the teacher (send materials, book a test, contact a school; e.g. "le tengo que mandar ejercicios"). Empty array if none.
             - levelReassessment: CEFR level string (e.g. "B1", "B2+") or null — if the teacher mentions reassessing or updating the student's level. Null if not mentioned.
             - durationMinutes: integer or null — session duration in minutes. Null if not mentioned.
             - isCancelled: true | false | null — true only if the session was cancelled or the student did not show up. Null if not mentioned.
