@@ -39,6 +39,11 @@ test('log session from student detail page', async ({ browser }) => {
   await page.getByTestId('log-session-button').click()
   await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
+  // Date defaults to today and duration defaults to 50 min
+  const todayIso = new Date().toISOString().split('T')[0]
+  await expect(page.getByTestId('session-date')).toHaveValue(todayIso)
+  await expect(page.getByTestId('duration-select')).toBeVisible()
+
   // Fill in what happened
   await page.getByTestId('actual-content').fill('Practiced preterito indefinido with reading exercises.')
 
@@ -455,7 +460,7 @@ test('un-cancel a session removes the Cancelled badge', async ({ browser }) => {
 
   await page.getByTestId('done-btn').click()
   // Edit mode navigates to ?tab=sessions
-  await expect(page).toHaveURL(new RegExp(`/students/${student.id}`), { timeout: UI_TIMEOUT })
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}(\\?tab=sessions)?$`), { timeout: UI_TIMEOUT })
 
   // Badge should be gone
   await page.getByRole('tab', { name: /history/i }).click()
