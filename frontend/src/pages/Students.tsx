@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { cn } from '@/lib/utils'
-import { relativeTime } from '@/utils/formatDate'
+import { calendarRelativeDay } from '@/utils/formatDate'
 import { getInitials } from '@/utils/nameUtils'
 
 // ── Avatar helpers ──────────────────────────────────────────────────────────
@@ -59,8 +59,8 @@ function formatRelativeDate(dateStr: string | null | undefined, showTime = false
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
   }
 
-  // Past / today — delegate base bucketing to shared util
-  const base = relativeTime(dateStr)
+  // Past / today — delegate calendar-day bucketing to shared util
+  const base = calendarRelativeDay(dateStr)
   if (base === 'today') {
     if (showTime) {
       const t = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
