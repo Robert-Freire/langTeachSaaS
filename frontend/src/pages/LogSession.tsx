@@ -135,6 +135,8 @@ export default function LogSession() {
   const [durationChoice, setDurationChoice] = useState('50')
   const durationChoiceRef = useRef('50')
   const latestFieldsRef = useRef({ actualContent: '', generalNotes: '', homeworkAssigned: '', nextSessionTopics: '' })
+  const sessionDateRef = useRef(sessionDate)
+  const sessionTimeRef = useRef(sessionTime)
   const [durationOther, setDurationOther] = useState('')
   const [isCancelled, setIsCancelled] = useState(false)
   const [prevHomeworkStatus, setPrevHomeworkStatus] = useState<string | null>(null)
@@ -182,6 +184,8 @@ export default function LogSession() {
 
   // Edit mode: track whether we've initialized form state from the fetched session
   const [didInitEdit, setDidInitEdit] = useState(false)
+  // Create mode: track whether we've pre-populated actualContent from plannedForToday
+  const [didInitContent, setDidInitContent] = useState(false)
 
   // Data fetching
   const { data: student, isLoading: studentLoading } = useQuery({
@@ -284,6 +288,19 @@ export default function LogSession() {
   useEffect(() => {
     latestFieldsRef.current = { actualContent, generalNotes, homeworkAssigned, nextSessionTopics }
   }, [actualContent, generalNotes, homeworkAssigned, nextSessionTopics])
+  // Keep sessionDateRef and sessionTimeRef current so extraction callbacks read the value the teacher
+  // may have edited while extraction was in flight, not the stale closure value from when extraction started
+  useEffect(() => { sessionDateRef.current = sessionDate }, [sessionDate])
+  useEffect(() => { sessionTimeRef.current = sessionTime }, [sessionTime])
+
+  // In create mode, pre-populate actualContent from the previous session's planned topics once data loads
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (isEditMode || didInitContent || sessionsLoading) return
+    setDidInitContent(true)
+    if (plannedForToday) setActualContent(prev => prev || plannedForToday)
+  }, [isEditMode, didInitContent, sessionsLoading, plannedForToday])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Autosave setup - keep ref current after every render (StudentForm pattern)
   const getFormDataRef = useRef<(() => CreateSessionLogRequest) | null>(null)
@@ -962,8 +979,8 @@ export default function LogSession() {
                       saveOverride.suggestedDifficulties = extracted.suggestedDifficulties
                       setSuggestedDifficulties(extracted.suggestedDifficulties)
                     }
-                    const nextDate = extracted.sessionDate || sessionDate
-                    const nextTime = extracted.sessionStartTime || sessionTime
+                    const nextDate = extracted.sessionDate || sessionDateRef.current
+                    const nextTime = extracted.sessionStartTime || sessionTimeRef.current
                     if (extracted.sessionDate) setSessionDate(extracted.sessionDate)
                     if (extracted.sessionStartTime) setSessionTime(extracted.sessionStartTime)
                     if (extracted.sessionDate || extracted.sessionStartTime) {
