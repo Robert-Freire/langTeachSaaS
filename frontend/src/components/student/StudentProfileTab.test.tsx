@@ -493,6 +493,19 @@ describe('StudentProfileTab', () => {
       expect(screen.getByText('subjuntivo')).toBeInTheDocument()
     })
 
+    it('shows description as muted secondary line when subcategory and description are both set', () => {
+      renderProfile(FULL_STUDENT)
+      // d1 has subcategory 'subjuntivo' and description 'Subjuntivo en concesivas'
+      expect(screen.getByText('subjuntivo')).toBeInTheDocument()
+      expect(screen.getByText('Subjuntivo en concesivas')).toBeInTheDocument()
+    })
+
+    it('shows description as primary text when subcategory is empty', () => {
+      renderProfile(FULL_STUDENT)
+      // d2 has empty subcategory and description 'Registro formal'
+      expect(screen.getByText('Registro formal')).toBeInTheDocument()
+    })
+
     it('renders trend badge with capitalized value', () => {
       renderProfile(FULL_STUDENT)
       expect(screen.getByText('Stable')).toBeInTheDocument()

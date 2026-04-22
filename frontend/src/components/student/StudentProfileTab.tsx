@@ -718,7 +718,14 @@ export function StudentProfileTab({
                               return (
                                 <tr key={d.id} data-testid="difficulty-row" className="hover:bg-[#FAFAFA] transition-colors">
                                   <td className="px-4 py-3 font-semibold text-[#1A1B22] align-top">{d.competency}</td>
-                                  <td className="px-4 py-3 text-zinc-600 align-top">{d.subcategory || d.description}</td>
+                                  <td className="px-4 py-3 text-zinc-600 align-top">
+                                    <div>
+                                      <span>{d.subcategory || d.description}</span>
+                                      {d.subcategory && d.description && (
+                                        <span className="block text-xs text-zinc-400 mt-0.5">{d.description}</span>
+                                      )}
+                                    </div>
+                                  </td>
                                   <td className="px-4 py-3 align-top">
                                     <span className={`inline-block text-xs font-bold rounded px-1.5 py-0.5 ${trendColor}`}>
                                       {trendLabel}
