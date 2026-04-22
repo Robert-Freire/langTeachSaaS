@@ -200,7 +200,7 @@ public class GenerateController : ControllerBase
             StudentReasonForStudying: student?.ReasonForStudying,
             StudentSpokenLanguages: student?.SpokenLanguages.ToArray(),
             StudentProfession: student?.Profession,
-            StudentBirthYear: student?.BirthYear,
+            StudentAge: student?.GetAge(),
             StudentCountryOfOrigin: student?.CountryOfOrigin,
             StudentCountryOfResidence: student?.CountryOfResidence,
             StudentOfficialCefrLevel: student?.OfficialCefrLevel
@@ -367,7 +367,7 @@ public class GenerateController : ControllerBase
             StudentReasonForStudying: student?.ReasonForStudying,
             StudentSpokenLanguages: student?.SpokenLanguages.ToArray(),
             StudentProfession: student?.Profession,
-            StudentBirthYear: student?.BirthYear,
+            StudentAge: student?.GetAge(),
             StudentCountryOfOrigin: student?.CountryOfOrigin,
             StudentCountryOfResidence: student?.CountryOfResidence,
             StudentOfficialCefrLevel: student?.OfficialCefrLevel
