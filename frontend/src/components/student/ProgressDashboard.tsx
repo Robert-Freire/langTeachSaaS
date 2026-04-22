@@ -3,15 +3,13 @@ import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import type { Student } from '@/api/students'
 import type { SessionLog } from '@/api/sessionLogs'
+import { CEFR_ORDER } from '@/utils/cefrUtils'
 
 interface Props {
   student: Student
   sessions: SessionLog[]
 }
 
-const CEFR_ORDER: Record<string, number> = {
-  A1: 1, A2: 2, B1: 3, B2: 4, C1: 5, C2: 6,
-}
 
 const SKILL_ORDER = ['Reading', 'Writing', 'Speaking', 'Listening']
 

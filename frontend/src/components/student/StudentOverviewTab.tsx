@@ -8,6 +8,7 @@ import { StudentFollowupsCard } from './StudentFollowupsCard'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { SectionHeader } from './SectionHeader'
 import { formatMonthYear } from '@/utils/formatDate'
+import { CEFR_ORDER } from '@/utils/cefrUtils'
 import { getDisplayTitle } from '@/lib/sessionUtils'
 import { rotatingPrompt } from '@/utils/rotatingPrompt'
 
@@ -29,12 +30,9 @@ interface Props {
 // PedagogicalProfileCard
 // ---------------------------------------------------------------------------
 
-const CEFR_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
-
 function cefrBarWidth(level: string): number {
-  const idx = CEFR_ORDER.indexOf(level.toUpperCase())
-  if (idx === -1) return 0
-  return Math.round(((idx + 1) / CEFR_ORDER.length) * 100)
+  const num = CEFR_ORDER[level.toUpperCase()] ?? 0
+  return Math.round((num / 6) * 100)
 }
 
 function cefrBarColor(level: string): string {
