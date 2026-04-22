@@ -94,6 +94,7 @@ public class PromptServiceTests
         var request = _sut.BuildLessonPlanPrompt(ctx);
 
         request.SystemPrompt.Should().Contain("Native language: Portuguese");
+        request.SystemPrompt.Split("Native language: Portuguese", StringSplitOptions.None).Length.Should().Be(2);
         request.SystemPrompt.Should().NotContain("The student's native language is Portuguese");
     }
 
