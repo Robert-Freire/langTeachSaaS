@@ -953,3 +953,98 @@ test('log session page: Done navigates back without saving if no changes made', 
     await context.close()
   }
 })
+
+test('session title: typing a title saves it and appears in session list and edit mode', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    const studentName = `Title Test Student ${Date.now()}`
+    const createRes = await page.request.post(`${API_BASE}/api/students`, {
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+      data: {
+        name: studentName,
+        learningLanguage: 'Spanish',
+        cefrLevel: 'B1',
+        interests: [],
+        learningGoals: [],
+        weaknesses: [],
+        difficulties: [],
+      },
+    })
+    expect(createRes.ok()).toBeTruthy()
+    const student = await createRes.json() as { id: string }
+
+    await page.goto(`/students/${student.id}/log-session`)
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
+
+    // Title input is visible with correct placeholder
+    const titleInput = page.getByTestId('log-session-title-input')
+    await expect(titleInput).toBeVisible()
+    await expect(titleInput).toHaveAttribute('placeholder', 'What did you work on? (optional)')
+    await expect(titleInput).toHaveAttribute('maxlength', '120')
+
+    // Type a title and session content
+    await titleInput.fill('Present tense practice')
+    await page.getByTestId('actual-content').fill('Covered present tense conjugations.')
+    await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+
+    await page.getByTestId('done-btn').click()
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
+
+    // Session list shows the typed title
+    await page.getByRole('tab', { name: /history/i }).click()
+    const entry = page.getByTestId('session-entry').first()
+    await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(entry).toContainText('Present tense practice')
+
+    // Open edit mode and verify title is pre-populated
+    await entry.getByTestId('session-entry-toggle').click()
+    await entry.getByTestId('edit-full-session-link').click()
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByTestId('log-session-title-input')).toHaveValue('Present tense practice')
+  } finally {
+    await context.close()
+  }
+})
+
+test('session title: blank title shows date fallback in session list', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    const studentName = `No Title Student ${Date.now()}`
+    const createRes = await page.request.post(`${API_BASE}/api/students`, {
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+      data: {
+        name: studentName,
+        learningLanguage: 'Spanish',
+        cefrLevel: 'B1',
+        interests: [],
+        learningGoals: [],
+        weaknesses: [],
+        difficulties: [],
+      },
+    })
+    expect(createRes.ok()).toBeTruthy()
+    const student = await createRes.json() as { id: string }
+
+    await page.goto(`/students/${student.id}/log-session`)
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
+
+    // Leave title blank, fill content
+    await page.getByTestId('actual-content').fill('Covered vocabulary.')
+    await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+
+    await page.getByTestId('done-btn').click()
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
+
+    // Session list shows date fallback (contains "Session,")
+    await page.getByRole('tab', { name: /history/i }).click()
+    const entry = page.getByTestId('session-entry').first()
+    await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(entry).toContainText('Session,')
+  } finally {
+    await context.close()
+  }
+})

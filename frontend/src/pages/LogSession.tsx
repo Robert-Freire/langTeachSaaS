@@ -254,6 +254,7 @@ export default function LogSession() {
     setReassessmentEnabled(!!editSession.levelReassessmentSkill)
     setReassessmentLevel(editSession.levelReassessmentLevel ?? '')
     setSelectedLessonId(editSession.linkedLessonId ?? '')
+    setSessionTitle(editSession.title ?? undefined)
     const dur = editSession.duration
     if (dur === null || dur === undefined) {
       setDurationChoice('other')
@@ -1073,6 +1074,22 @@ export default function LogSession() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Session Title */}
+          <div className="space-y-1">
+            <Label htmlFor="session-title" className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">
+              Title <span className="normal-case tracking-normal font-normal">(optional)</span>
+            </Label>
+            <Input
+              id="session-title"
+              value={sessionTitle ?? ''}
+              onChange={e => { setSessionTitle(e.target.value || undefined); markChangedAndSchedule() }}
+              placeholder="What did you work on? (optional)"
+              maxLength={120}
+              className="text-sm bg-white"
+              data-testid="log-session-title-input"
+            />
           </div>
 
           {/* ── Editorial headline + Previous HW + What Happened ── */}
