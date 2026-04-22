@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
+import { NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
 
 const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 
@@ -33,24 +34,24 @@ test('log session from student detail page', async ({ browser }) => {
   const student = await createRes.json()
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
 
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Fill in what happened
   await page.getByTestId('actual-content').fill('Practiced preterito indefinido with reading exercises.')
 
   // Autosave should trigger and complete
-  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: 10000 })
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
 
   // Click Done to navigate back
   await page.getByTestId('done-btn').click()
-  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
   // Session should appear in history
   await page.getByRole('tab', { name: /history/i }).click()
-  await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()
 })
@@ -86,12 +87,12 @@ test('log session page: prev homework status shows when prev session has homewor
   })
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Previous homework status should appear since prior session had homework
-  await expect(page.getByTestId('prev-homework-status')).toBeVisible({ timeout: 8000 })
+  await expect(page.getByTestId('prev-homework-status')).toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()
 })
@@ -126,11 +127,11 @@ test('expand session entry shows full detail without duplicating preview content
   })
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByRole('tab', { name: /history/i }).click()
 
   const entry = page.getByTestId('session-entry').first()
-  await expect(entry).toBeVisible({ timeout: 10000 })
+  await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Collapsed: preview content visible
   await expect(entry.getByText(/Preterito indefinido intro/)).toBeVisible()
@@ -179,17 +180,17 @@ test('delete session requires confirmation dialog', async ({ browser }) => {
   })
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByRole('tab', { name: /history/i }).click()
 
   const entry = page.getByTestId('session-entry').first()
-  await expect(entry).toBeVisible({ timeout: 10000 })
+  await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
   await entry.getByTestId('session-entry-toggle').click()
 
   // Click delete — confirmation dialog should appear
   await entry.getByTestId('delete-session-btn').click()
   const confirmBtn = page.getByTestId('confirm-delete-session')
-  await expect(confirmBtn).toBeVisible({ timeout: 5000 })
+  await expect(confirmBtn).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
   // Cancel — session should remain
   await page.getByRole('button', { name: /cancel/i }).click()
@@ -198,11 +199,11 @@ test('delete session requires confirmation dialog', async ({ browser }) => {
 
   // Delete again and confirm
   await entry.getByTestId('delete-session-btn').click()
-  await expect(confirmBtn).toBeVisible({ timeout: 5000 })
+  await expect(confirmBtn).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
   await confirmBtn.click()
 
   // Session entry should be removed from the list
-  await expect(page.getByTestId('session-history-empty')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-history-empty')).toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()
 })
@@ -227,9 +228,9 @@ test('topic tag category dropdown has all four curriculum-aligned options', asyn
   const student = await createRes.json() as { id: string }
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Open the category dropdown and verify all four options exist
   await page.getByTestId('topic-tag-category').click()
@@ -265,9 +266,9 @@ test('future session date is accepted and appears in history', async ({ browser 
   const student = await createRes.json() as { id: string }
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Set a future date (tomorrow)
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
@@ -276,14 +277,14 @@ test('future session date is accepted and appears in history', async ({ browser 
   await page.getByTestId('actual-content').fill('Planned grammar session')
 
   // Autosave should complete -- no validation error for future dates
-  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: 10000 })
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
 
   await page.getByTestId('done-btn').click()
-  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
   // Session appears in history
   await page.getByRole('tab', { name: /history/i }).click()
-  await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()
 })
@@ -325,13 +326,13 @@ test('selecting a lesson in log session page links it to the session', async ({ 
   const lesson = await createLessonRes.json() as { id: string }
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Linked lesson selector is inside the secondary section
   await page.getByTestId('toggle-secondary').click()
-  await expect(page.getByTestId('linked-lesson')).toBeVisible({ timeout: 8000 })
+  await expect(page.getByTestId('linked-lesson')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Select the lesson
   await page.getByTestId('linked-lesson').click()
@@ -339,9 +340,9 @@ test('selecting a lesson in log session page links it to the session', async ({ 
 
   // Save — session should have the lesson linked
   await page.getByTestId('actual-content').fill('Covered subjunctive intro.')
-  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: 10000 })
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
   await page.getByTestId('done-btn').click()
-  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
   // Verify via API that lesson was linked
   const sessionsRes = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions`, {
@@ -391,9 +392,9 @@ test('cancelled session shows Cancelled badge and is excluded from summary count
 
   // Cancelled badge visible in history
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByRole('tab', { name: /history/i }).click()
-  await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: UI_TIMEOUT })
   await expect(page.getByTestId('cancelled-badge')).toBeVisible()
 
   // Summary count = 1 (only the non-cancelled session)
@@ -434,31 +435,31 @@ test('un-cancel a session removes the Cancelled badge', async ({ browser }) => {
 
   // View history -- badge present
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByRole('tab', { name: /history/i }).click()
-  await expect(page.getByTestId('cancelled-badge')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('cancelled-badge')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Open expanded view and click "Edit full session"
   const entry = page.getByTestId('session-entry').first()
   await entry.getByTestId('session-entry-toggle').click()
   await entry.getByTestId('edit-full-session-link').click()
-  await expect(page).toHaveURL(new RegExp(`/students/${student.id}/sessions/${session.id}/edit`), { timeout: 10000 })
-  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}/sessions/${session.id}/edit`), { timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Cancelled toggle should be checked
   await expect(page.getByTestId('cancelled-toggle')).toBeChecked()
 
   // Uncheck cancelled -- autosave fires immediately (saveNow)
   await page.getByTestId('cancelled-toggle').click()
-  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: 10000 })
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
 
   await page.getByTestId('done-btn').click()
   // Edit mode navigates to ?tab=sessions
-  await expect(page).toHaveURL(new RegExp(`/students/${student.id}`), { timeout: 10000 })
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}`), { timeout: UI_TIMEOUT })
 
   // Badge should be gone
   await page.getByRole('tab', { name: /history/i }).click()
-  await expect(page.getByTestId('cancelled-badge')).toBeHidden({ timeout: 5000 })
+  await expect(page.getByTestId('cancelled-badge')).toBeHidden({ timeout: FEEDBACK_TIMEOUT })
 
   // Verify via API -- session is no longer cancelled
   const updated = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions/${session.id}`, {
@@ -500,12 +501,12 @@ test('summary header appears on history tab after logging a session', async ({ b
   })
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
 
   // Navigate to History tab
   await page.getByRole('tab', { name: /history/i }).click()
 
-  await expect(page.getByTestId('session-summary-header')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-summary-header')).toBeVisible({ timeout: UI_TIMEOUT })
   await expect(page.getByTestId('session-summary-action-items-toggle')).toBeVisible()
 
   // Expand action items
@@ -650,13 +651,13 @@ test('lesson dropdown in session log shows only lessons for the selected student
 
   // Open log session page for student A
   await page.goto(`/students/${studentA.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(`Student A ${ts}`, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(`Student A ${ts}`, { timeout: NAV_TIMEOUT })
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Linked lesson selector is inside the secondary section
   await page.getByTestId('toggle-secondary').click()
-  await expect(page.getByTestId('linked-lesson')).toBeVisible({ timeout: 8000 })
+  await expect(page.getByTestId('linked-lesson')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Open the lesson dropdown
   await page.getByTestId('linked-lesson').click()
@@ -689,10 +690,10 @@ test('unsaved-changes guard: back button with data shows discard confirmation', 
   const student = await createRes.json()
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
 
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Enter some data to make the form dirty
   await page.getByTestId('actual-content').fill('We covered the present tense.')
@@ -701,11 +702,11 @@ test('unsaved-changes guard: back button with data shows discard confirmation', 
   await page.getByTestId('back-button').click()
 
   // Discard confirmation bar should appear
-  await expect(page.getByTestId('discard-confirm-bar')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('discard-confirm-bar')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
   // Click Discard — form should navigate back
   await page.getByTestId('discard-btn').click()
-  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 5000 })
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: FEEDBACK_TIMEOUT })
 
   await context.close()
 })
@@ -731,19 +732,19 @@ test('unsaved-changes guard: Keep editing returns to the form', async ({ browser
   const student = await createRes.json()
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
 
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   await page.getByTestId('actual-content').fill('Some notes.')
   await page.getByTestId('back-button').click()
-  await expect(page.getByTestId('discard-confirm-bar')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('discard-confirm-bar')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
   await page.getByTestId('keep-editing-btn').click()
 
   // Form stays open with data intact
-  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
   await expect(page.getByTestId('actual-content')).toHaveValue('Some notes.')
 
   await context.close()
@@ -785,20 +786,20 @@ test('start next session button navigates to log session page with planned topic
 
   // Navigate to student page, go to Sessions tab
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByRole('tab', { name: /history/i }).click()
 
   // Expand the session entry
-  await expect(page.getByTestId('session-entry')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-entry')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.getByTestId('session-entry-toggle').click()
-  await expect(page.getByTestId('session-entry-detail')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('session-entry-detail')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
   // "Start next session" button should be visible
-  await expect(page.getByTestId('start-next-session-button')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('start-next-session-button')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
   // Click it -- navigates to log-session page
   await page.getByTestId('start-next-session-button').click()
-  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
   await expect(page).toHaveURL(new RegExp(`/students/${student.id}/log-session`))
 
   // Planned topics from the previous session appear as a reference in the left panel
@@ -806,13 +807,13 @@ test('start next session button navigates to log session page with planned topic
 
   // Log the next session
   await page.getByTestId('actual-content').fill('Covered irregular verbs')
-  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: 10000 })
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
   await page.getByTestId('done-btn').click()
-  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
   // Two sessions should now be present
   await page.getByRole('tab', { name: /history/i }).click()
-  await expect(page.getByTestId('session-entry')).toHaveCount(2, { timeout: 10000 })
+  await expect(page.getByTestId('session-entry')).toHaveCount(2, { timeout: UI_TIMEOUT })
 
   // Original session still shows its NextSessionTopics preview
   const previews = page.getByTestId('next-session-topics-preview')
@@ -843,16 +844,16 @@ test('unsaved-changes guard: back button on empty form navigates without confirm
   const student = await createRes.json()
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
 
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Click back without entering data
   await page.getByTestId('back-button').click()
 
   // Navigates back immediately, no confirmation
-  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 5000 })
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: FEEDBACK_TIMEOUT })
   await expect(page.getByTestId('discard-confirm-bar')).not.toBeVisible()
 
   await context.close()
@@ -883,17 +884,17 @@ test('log session page: autosave creates session without submit button', async (
 
     // Navigate directly to log-session page
     await page.goto(`/students/${student.id}/log-session`)
-    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 15000 })
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
 
     // Type in "What Happened?" - triggers autosave
     await page.getByTestId('actual-content').fill('Practiced subjunctive with reading exercises.')
 
     // Wait for autosave to complete (status shows "All changes saved")
-    await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: 5000 })
+    await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: FEEDBACK_TIMEOUT })
 
     // Click Done to navigate back
     await page.getByTestId('done-btn').click()
-    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
     // Verify session was created in the API
     const sessionsRes = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions`, {
@@ -930,11 +931,11 @@ test('log session page: Done navigates back without saving if no changes made', 
     const student = await createRes.json()
 
     await page.goto(`/students/${student.id}/log-session`)
-    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 15000 })
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
 
     // Click Done without typing anything
     await page.getByTestId('done-btn').click()
-    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
     // No session should have been created
     const sessionsRes = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions`, {
