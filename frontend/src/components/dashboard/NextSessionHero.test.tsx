@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { render, screen, act } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { NextSessionHero } from './NextSessionHero'
 import type { NextSession } from '@/api/dashboard'
@@ -24,6 +24,10 @@ function makeSession(overrides: Partial<NextSession> = {}): NextSession {
     ...overrides,
   }
 }
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 describe('NextSessionHero', () => {
   it('renders empty state when no session', () => {
@@ -178,5 +182,25 @@ describe('NextSessionHero', () => {
     )
     expect(screen.queryByText('Topics')).not.toBeInTheDocument()
     expect(screen.queryByText('Promises made')).not.toBeInTheDocument()
+  })
+
+  it('refreshes countdown badge after 60 seconds', async () => {
+    vi.useFakeTimers()
+    // Session is 45 minutes away — renders as "IN 45 MIN"
+    const sessionDate = new Date(Date.now() + 45 * 60000).toISOString()
+    render(
+      <MemoryRouter>
+        <NextSessionHero session={makeSession({ sessionDate })} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText(/IN 45 MIN/)).toBeInTheDocument()
+
+    // Advance 61 seconds so the 60s interval fires and Date.now() moves forward
+    await act(async () => {
+      vi.advanceTimersByTime(61000)
+    })
+
+    // Badge label should now reflect the reduced time (~44 min)
+    expect(screen.getByText(/IN 44 MIN/)).toBeInTheDocument()
   })
 })

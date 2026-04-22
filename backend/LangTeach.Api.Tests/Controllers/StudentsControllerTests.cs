@@ -365,6 +365,27 @@ public class StudentsControllerTests
     }
 
     [Fact]
+    public async Task Create_WithLowercaseDifficultyStatus_Succeeds()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|difficulty-lowercase-status-test", "difficulty-lowercase-status@example.com");
+
+        var request = new CreateStudentRequest
+        {
+            Name = "Lowercase Status",
+            LearningLanguage = "English",
+            CefrLevel = "A1",
+            Difficulties =
+            [
+                new DifficultyDto("d1", "some description", "Grammar", "", "high", "stable", "active"),
+            ],
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact]
     public async Task Create_WithEmptyDifficulties_Succeeds()
     {
         var client = _factory.CreateAuthenticatedClient("auth0|difficulty-empty-test", "difficulty-empty@example.com");
@@ -413,6 +434,27 @@ public class StudentsControllerTests
         var response = await client.DeleteAsync($"/api/students/{student.Id}/teaching-todos/nonexistent-id");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateTeachingTodo_WithCapitalizedPendingStatus_Succeeds()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|todo-capitalized-status-test", "todo-capitalized-status@example.com");
+        var student = await CreateStudentAsync(client, "Todo Capitalized Status Student");
+
+        var appendResponse = await client.PostAsJsonAsync(
+            $"/api/students/{student.Id}/teaching-todos",
+            new CreateTeachingTodoDto("Practicar subjuntivo", null));
+        appendResponse.EnsureSuccessStatusCode();
+        var withTodo = await appendResponse.Content.ReadFromJsonAsync<StudentDto>();
+        var todoId = withTodo!.TeachingTodos[0].Id;
+
+        // "Pending" capitalized should be accepted (OrdinalIgnoreCase)
+        var updateResponse = await client.PatchAsJsonAsync(
+            $"/api/students/{student.Id}/teaching-todos/{todoId}",
+            new UpdateTeachingTodoDto("Pending", null, null));
+
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]

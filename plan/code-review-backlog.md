@@ -6,6 +6,12 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-04-13 during UI Redesign sprint triage. Actionable entries batched into #713 (deduplication), #713 (MaxLength redundancy). Remaining entries deleted (verified safe, intentional per spec, defensive-only, or consistent with existing patterns).*
 
+## #833 — 2026-04-22
+
+| Reviewer | Severity | Note |
+|---|---|---|
+| architecture-reviewer | minor | `toggleDifficultyStatus` is the only mutation in `StudentDetail.tsx` that sets inline error state; all others only log. Inconsistency is intentional (discrete toggle vs autosave fields have different UX needs) but worth aligning if additional discrete mutations are added to that file. |
+
 ## #742 — 2026-04-15
 
 | Reviewer | Severity | Note |
