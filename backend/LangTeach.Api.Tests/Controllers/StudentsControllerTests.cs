@@ -365,6 +365,27 @@ public class StudentsControllerTests
     }
 
     [Fact]
+    public async Task Create_WithLowercaseDifficultyStatus_Succeeds()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|difficulty-lowercase-status-test", "difficulty-lowercase-status@example.com");
+
+        var request = new CreateStudentRequest
+        {
+            Name = "Lowercase Status",
+            LearningLanguage = "English",
+            CefrLevel = "A1",
+            Difficulties =
+            [
+                new DifficultyDto("d1", "some description", "Grammar", "", "high", "stable", "active"),
+            ],
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact]
     public async Task Create_WithEmptyDifficulties_Succeeds()
     {
         var client = _factory.CreateAuthenticatedClient("auth0|difficulty-empty-test", "difficulty-empty@example.com");

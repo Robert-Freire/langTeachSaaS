@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Play } from 'lucide-react'
 import { CefrBadge } from './CefrBadge'
@@ -64,6 +65,12 @@ function homeworkStatusLabel(status: string | null): { label: string; color: str
 }
 
 export function NextSessionHero({ session }: NextSessionHeroProps) {
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60000)
+    return () => clearInterval(id)
+  }, [])
+
   if (!session) {
     return (
       <div

@@ -98,6 +98,7 @@ function renderProfile(
   student: Student,
   opts?: {
     onToggle?: (id: string, status: 'Active' | 'Covered') => void
+    difficultyToggleError?: string | null
     onSaveReason?: (value: string) => Promise<void>
     onSaveInterests?: (value: string[]) => Promise<void>
     onSaveLearningGoal?: (text: string) => Promise<void>
@@ -113,6 +114,7 @@ function renderProfile(
         <StudentProfileTab
           student={student}
           onStudentChange={() => {}}
+          difficultyToggleError={opts?.difficultyToggleError}
           onToggleDifficultyStatus={opts?.onToggle}
           onSaveReasonForStudying={opts?.onSaveReason}
           onSaveInterests={opts?.onSaveInterests}
@@ -664,6 +666,21 @@ describe('StudentProfileTab', () => {
       renderProfile(EMPTY_STUDENT)
       fireEvent.click(screen.getByTestId('show-empty-sections-btn'))
       expect(screen.queryByTestId('show-empty-sections-btn')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('difficulty toggle error', () => {
+    it('shows error message when difficultyToggleError is set', () => {
+      renderProfile(FULL_STUDENT, {
+        difficultyToggleError: 'Could not update difficulty status. Please try again.',
+      })
+      expect(screen.getByTestId('difficulty-toggle-error')).toBeInTheDocument()
+      expect(screen.getByText('Could not update difficulty status. Please try again.')).toBeInTheDocument()
+    })
+
+    it('does not show error message when difficultyToggleError is null', () => {
+      renderProfile(FULL_STUDENT, { difficultyToggleError: null })
+      expect(screen.queryByTestId('difficulty-toggle-error')).not.toBeInTheDocument()
     })
   })
 })

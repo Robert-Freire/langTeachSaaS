@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, NotebookPen, Pencil, CalendarClock } from 'lucide-react'
@@ -113,6 +113,7 @@ export default function StudentDetail() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') ?? 'overview'
+  const [difficultyToggleError, setDifficultyToggleError] = useState<string | null>(null)
 
 
   const { data: student, isLoading, isError } = useQuery({
@@ -175,6 +176,7 @@ export default function StudentDetail() {
 
   const { mutate: toggleDifficultyStatus } = useMutation({
     mutationFn: (vars: { difficultyId: string; status: 'Active' | 'Covered' }) => {
+      setDifficultyToggleError(null)
       const updated = student!.difficulties.map((d) =>
         d.id === vars.difficultyId ? { ...d, status: vars.status } : d
       )
@@ -185,6 +187,7 @@ export default function StudentDetail() {
     },
     onError: (err) => {
       logger.error('StudentDetail', 'Failed to update difficulty status', err)
+      setDifficultyToggleError('Could not update difficulty status. Please try again.')
     },
   })
 
@@ -461,6 +464,7 @@ export default function StudentDetail() {
           followups={followups}
           onFollowupChange={onFollowupChange}
           onStudentChange={onStudentChange}
+          difficultyToggleError={difficultyToggleError}
           onToggleDifficultyStatus={(difficultyId, status) =>
             toggleDifficultyStatus({ difficultyId, status })
           }

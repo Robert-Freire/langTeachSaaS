@@ -20,6 +20,7 @@ interface Props {
   followups?: TeacherFollowup[]
   onFollowupChange?: () => void
   onStudentChange: () => void
+  difficultyToggleError?: string | null
   onToggleDifficultyStatus?: (id: string, status: 'Active' | 'Covered') => void
   onSaveReasonForStudying?: (value: string) => Promise<void>
   onSaveInterests?: (value: string[]) => Promise<void>
@@ -516,6 +517,7 @@ export function StudentProfileTab({
   followups = [],
   onFollowupChange,
   onStudentChange,
+  difficultyToggleError,
   onToggleDifficultyStatus,
   onSaveReasonForStudying,
   onSaveInterests,
@@ -685,6 +687,9 @@ export function StudentProfileTab({
                   <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">Focus Areas &amp; Difficulties</p>
                   {onSaveDifficulty && <InlineAddDifficulty onSave={onSaveDifficulty} />}
                 </div>
+                {difficultyToggleError && (
+                  <span className="text-xs text-red-500 mb-2 block" data-testid="difficulty-toggle-error">{difficultyToggleError}</span>
+                )}
                 {student.difficulties.length === 0 && student.weaknesses.length === 0 ? (
                   <EmptyState text="No focus areas tracked" />
                 ) : (
