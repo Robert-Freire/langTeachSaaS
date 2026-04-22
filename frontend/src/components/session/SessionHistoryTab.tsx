@@ -1,5 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
-import { useBlurSave } from '../../hooks/useBlurSave'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ChevronDown,
@@ -15,7 +14,7 @@ import {
 } from 'lucide-react'
 import { logger } from '../../lib/logger'
 import { Link, useNavigate } from 'react-router-dom'
-import { listSessions, deleteSession, patchSessionField, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
+import { listSessions, deleteSession, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
 import { formatMonth, formatDay, relativeTime, todayLocalDateStr } from '../../utils/formatDate'
 import { getSessionTitle } from '../../lib/sessionUtils'
 import { HOMEWORK_STATUS_INFO } from '../../utils/homeworkStatusStyles'
@@ -23,7 +22,6 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { SavedIndicator } from '@/components/ui/SavedIndicator'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -75,14 +73,6 @@ function SessionEntry({
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
-  // Inline edit state — initialized from session prop
-  const [titleDraft, setTitleDraft] = useState(session.title ?? '')
-  const [narrativeDraft, setNarrativeDraft] = useState(session.actualContent ?? '')
-  const [durationDraft, setDurationDraft] = useState(session.duration?.toString() ?? '')
-  const [nextPlanDraft, setNextPlanDraft] = useState(session.nextSessionTopics ?? '')
-  const { savedVisible, fieldError, onSaveSuccess, onSaveError } = useBlurSave()
-  const isRevertingRef = useRef(false)
-
   const { mutate: softDelete, isPending: isDeleting } = useMutation({
     mutationFn: () => deleteSession(studentId, session.id),
     onSuccess: () => {
@@ -95,38 +85,6 @@ function SessionEntry({
       setDeleteError('Failed to delete session. Please try again.')
     },
   })
-
-  async function handleFieldBlur(
-    field: 'title' | 'actualContent' | 'duration' | 'nextSessionTopics',
-    value: string,
-    savedValue: string,
-  ) {
-    if (isRevertingRef.current) { isRevertingRef.current = false; return }
-    if (value === savedValue) return
-    const patch: Record<string, string | number | null> = {}
-    if (field === 'duration') {
-      if (value === '') {
-        patch[field] = null
-      } else {
-        const n = Number(value)
-        if (!Number.isFinite(n) || n < 0) {
-          onSaveError('Invalid duration')
-          return
-        }
-        patch[field] = n
-      }
-    } else {
-      patch[field] = value || null
-    }
-    try {
-      await patchSessionField(studentId, session, patch as Parameters<typeof patchSessionField>[2])
-      queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
-      onSaveSuccess()
-    } catch (err) {
-      logger.error('SessionHistoryTab', 'inline field save failed', err)
-      onSaveError('Failed to save')
-    }
-  }
 
   const topicTags = parseTopicTags(session.topicTags)
   const hasActionItem = Boolean(session.nextSessionTopics)
@@ -303,64 +261,35 @@ function SessionEntry({
             data-testid="session-entry-detail"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Editable header row: title + saved indicator */}
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <input
-                type="text"
-                value={titleDraft}
-                onChange={(e) => setTitleDraft(e.target.value)}
-                onBlur={() => void handleFieldBlur('title', titleDraft, session.title ?? '')}
-                onKeyDown={(e) => { if (e.key === 'Escape') { isRevertingRef.current = true; setTitleDraft(session.title ?? ''); e.currentTarget.blur() } }}
-                placeholder="Session title..."
-                className="flex-1 text-sm font-bold text-[#1A1B22] bg-transparent border-b border-transparent hover:border-zinc-200 focus:border-indigo-300 focus:outline-none px-1 py-0.5 transition-colors"
-                data-testid="session-title-input"
-              />
-              <div className="flex items-center gap-2 shrink-0">
-                {fieldError && (
-                  <span className="text-xs text-red-500" data-testid="session-field-error">{fieldError}</span>
-                )}
-                <SavedIndicator visible={savedVisible} />
+            {/* Title (read-only) */}
+            {session.title && (
+              <div className="mb-4">
+                <p className="text-sm font-bold text-[#1A1B22]" data-testid="session-title-display">{session.title}</p>
               </div>
-            </div>
+            )}
 
             <div className={`grid grid-cols-1 gap-6 ${hasRightColumn ? 'md:grid-cols-3' : ''}`}>
               {/* Left/full: narrative + duration + tags + notes */}
               <div className={`${hasRightColumn ? 'md:col-span-2' : ''} space-y-5`}>
-                {/* Editable narrative */}
-                <div>
-                  <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
-                    Session Narrative
-                  </h4>
-                  <textarea
-                    value={narrativeDraft}
-                    onChange={(e) => setNarrativeDraft(e.target.value)}
-                    onBlur={() => void handleFieldBlur('actualContent', narrativeDraft, session.actualContent ?? '')}
-                    onKeyDown={(e) => { if (e.key === 'Escape') { isRevertingRef.current = true; setNarrativeDraft(session.actualContent ?? ''); e.currentTarget.blur() } }}
-                    placeholder="What happened in this session..."
-                    rows={3}
-                    className="w-full text-sm leading-relaxed text-[#464455] italic bg-white border border-zinc-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-300 placeholder:text-zinc-300 placeholder:not-italic"
-                    data-testid="session-narrative-input"
-                  />
-                </div>
+                {/* Session narrative (read-only) */}
+                {session.actualContent && (
+                  <div>
+                    <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
+                      Session Narrative
+                    </h4>
+                    <p className="text-sm leading-relaxed text-[#464455] italic whitespace-pre-wrap" data-testid="session-narrative-display">{session.actualContent}</p>
+                  </div>
+                )}
 
-                {/* Editable duration */}
-                <div className="flex items-center gap-2">
-                  <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest shrink-0">
-                    Duration
-                  </h4>
-                  <input
-                    type="number"
-                    min="0"
-                    value={durationDraft}
-                    onChange={(e) => setDurationDraft(e.target.value)}
-                    onBlur={() => void handleFieldBlur('duration', durationDraft, session.duration?.toString() ?? '')}
-                    onKeyDown={(e) => { if (e.key === 'Escape') { isRevertingRef.current = true; setDurationDraft(session.duration?.toString() ?? ''); e.currentTarget.blur() } }}
-                    placeholder="60"
-                    className="w-16 text-sm text-[#1A1B22] bg-white border border-zinc-200 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                    data-testid="session-duration-input"
-                  />
-                  <span className="text-xs text-zinc-400">min</span>
-                </div>
+                {/* Duration (read-only) */}
+                {session.duration != null && (
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest shrink-0">
+                      Duration
+                    </h4>
+                    <span className="text-sm text-[#1A1B22]" data-testid="session-duration-display">{session.duration} min</span>
+                  </div>
+                )}
 
                 {/* Planned content (read-only, only if different from actual) */}
                 {session.plannedContent && session.plannedContent !== session.actualContent && (
@@ -461,23 +390,14 @@ function SessionEntry({
                     </div>
                   ) : null}
 
-                  {/* Next class plan (editable) */}
-                  <div>
-                    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                      <CalendarDays className="h-3 w-3" />
-                      Planned for next class
-                    </p>
-                    <textarea
-                      value={nextPlanDraft}
-                      onChange={(e) => setNextPlanDraft(e.target.value)}
-                      onBlur={() => void handleFieldBlur('nextSessionTopics', nextPlanDraft, session.nextSessionTopics ?? '')}
-                      onKeyDown={(e) => { if (e.key === 'Escape') { isRevertingRef.current = true; setNextPlanDraft(session.nextSessionTopics ?? ''); e.currentTarget.blur() } }}
-                      placeholder="What to cover next time..."
-                      rows={3}
-                      className="w-full text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-amber-300 placeholder:text-amber-300"
-                      data-testid="session-next-plan-input"
-                    />
-                    {session.nextSessionTopics && (
+                  {/* Next class plan (read-only) */}
+                  {session.nextSessionTopics && (
+                    <div>
+                      <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                        <CalendarDays className="h-3 w-3" />
+                        Planned for next class
+                      </p>
+                      <p className="text-sm text-amber-900 whitespace-pre-wrap" data-testid="session-next-plan-display">{session.nextSessionTopics}</p>
                       <button
                         className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 hover:text-amber-900 transition-colors"
                         onClick={() => onStartNextSession()}
@@ -486,8 +406,8 @@ function SessionEntry({
                         <PlayCircle className="h-3.5 w-3.5" />
                         Start next session
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
