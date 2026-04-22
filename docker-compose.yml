@@ -25,6 +25,11 @@ services:
       - "1434:1433"
     volumes:
       - sqlserver-data:/var/opt/mssql
+      - ./docker/mssql.conf:/var/opt/mssql/mssql.conf:ro
+    deploy:
+      resources:
+        limits:
+          memory: 2g
     healthcheck:
       test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${SA_PASSWORD}" -C -Q "SELECT 1" || exit 1
       interval: 10s

@@ -37,8 +37,10 @@ public class TelegramConversationServiceTests : IDisposable
         _extractionService = new FakeReflectionExtractionService();
 
         var difficultyService = new DifficultyTrendService(_db, NullLogger<DifficultyTrendService>.Instance);
-        var sessionLogService = new SessionLogService(_db, difficultyService, NullLogger<SessionLogService>.Instance);
-        var studentService = new StudentService(_db, NullLogger<StudentService>.Instance);
+        var profileSvc = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogySvc = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, profileSvc);
+        var sessionLogService = new SessionLogService(_db, difficultyService, pedagogySvc, NullLogger<SessionLogService>.Instance);
+        var studentService = new StudentService(_db, NullLogger<StudentService>.Instance, pedagogySvc);
 
         _sut = new TelegramConversationService(
             _db,
@@ -264,8 +266,10 @@ public class TelegramConversationServiceTests : IDisposable
         // Create a conversation service that uses a throwing transcription service
         var throwingTranscription = new ThrowingTranscriptionService();
         var difficultyService = new DifficultyTrendService(_db, NullLogger<DifficultyTrendService>.Instance);
-        var sessionLogService = new SessionLogService(_db, difficultyService, NullLogger<SessionLogService>.Instance);
-        var studentService = new StudentService(_db, NullLogger<StudentService>.Instance);
+        var profileSvc = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogySvc = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, profileSvc);
+        var sessionLogService = new SessionLogService(_db, difficultyService, pedagogySvc, NullLogger<SessionLogService>.Instance);
+        var studentService = new StudentService(_db, NullLogger<StudentService>.Instance, pedagogySvc);
         var sut = new TelegramConversationService(
             _db, _stateStore, _botService, throwingTranscription,
             sessionLogService, studentService, _extractionService,
@@ -286,16 +290,27 @@ public class TelegramConversationServiceTests : IDisposable
         var student = await CreateStudentAsync("Marco");
 
         _extractionService.Result = new ExtractedReflectionDto(
-            WhatWasCovered: "ser vs estar",
-            AreasToImprove: "needs more practice with preterite",
+            WhatWasCovered: new ExtractedTextFieldDto("ser vs estar", ExtractionMode.Replace),
+            AreasToImprove: new ExtractedTextFieldDto("needs more practice with preterite", ExtractionMode.Replace),
             EmotionalSignals: "engaged",
-            HomeworkAssigned: "complete exercises 3 and 4",
-            NextLessonIdeas: "past tenses review",
+            HomeworkAssigned: new ExtractedTextFieldDto("complete exercises 3 and 4", ExtractionMode.Replace),
+            NextLessonIdeas: new ExtractedTextFieldDto("past tenses review", ExtractionMode.Replace),
             SessionDate: null,
             SuggestedDifficulties: new List<SuggestedDifficultyDto>
             {
                 new("confuses ser and estar", "Grammar", "Copulas", "Medium")
-            });
+            },
+            RawExtractionJson: null,
+            SessionTitle: null,
+            TopicTags: [],
+            PreviousHomeworkStatus: null,
+            TeachingTodos: [],
+            TeacherFollowups: [],
+            LevelReassessment: null,
+            DurationMinutes: null,
+            IsCancelled: null,
+            DifficultiesWorkedOn: [],
+            SessionStartTime: null);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco worked on ser/estar today"), CancellationToken.None);
 
@@ -308,19 +323,66 @@ public class TelegramConversationServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task TextMessage_MatchedStudent_WritesVoiceNoteApplicationRow()
+    {
+        LinkTeacher();
+        var student = await CreateStudentAsync("Marco");
+
+        _extractionService.Result = new ExtractedReflectionDto(
+            WhatWasCovered: new ExtractedTextFieldDto("ser vs estar", ExtractionMode.Replace),
+            AreasToImprove: null,
+            EmotionalSignals: null,
+            HomeworkAssigned: null,
+            NextLessonIdeas: null,
+            SessionDate: null,
+            SuggestedDifficulties: new List<SuggestedDifficultyDto>(),
+            RawExtractionJson: "{\"whatWasCovered\":\"ser vs estar\"}",
+            SessionTitle: null,
+            TopicTags: [],
+            PreviousHomeworkStatus: null,
+            TeachingTodos: [],
+            TeacherFollowups: [],
+            LevelReassessment: null,
+            DurationMinutes: null,
+            IsCancelled: null,
+            DifficultiesWorkedOn: [],
+            SessionStartTime: null);
+
+        await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco trabajamos ser vs estar"), CancellationToken.None);
+
+        var log = await _db.SessionLogs.SingleAsync(s => s.StudentId == student.Id);
+        var application = await _db.VoiceNoteApplications.SingleAsync(a => a.SessionLogId == log.Id);
+        application.VoiceNoteId.Should().BeNull();
+        application.Transcription.Should().Be("Marco trabajamos ser vs estar");
+        application.RawExtractionJson.Should().Be("{\"whatWasCovered\":\"ser vs estar\"}");
+        application.ApplicationType.Should().Be(ApplicationType.Create);
+    }
+
+    [Fact]
     public async Task TextMessage_MatchedStudent_UsesExtractedSessionDate()
     {
         LinkTeacher();
         var student = await CreateStudentAsync("Marco");
 
         _extractionService.Result = new ExtractedReflectionDto(
-            WhatWasCovered: "condicionales",
+            WhatWasCovered: new ExtractedTextFieldDto("condicionales", ExtractionMode.Replace),
             AreasToImprove: null,
             EmotionalSignals: null,
             HomeworkAssigned: null,
             NextLessonIdeas: null,
             SessionDate: "2026-04-06",
-            SuggestedDifficulties: new List<SuggestedDifficultyDto>());
+            SuggestedDifficulties: new List<SuggestedDifficultyDto>(),
+            RawExtractionJson: null,
+            SessionTitle: null,
+            TopicTags: [],
+            PreviousHomeworkStatus: null,
+            TeachingTodos: [],
+            TeacherFollowups: [],
+            LevelReassessment: null,
+            DurationMinutes: null,
+            IsCancelled: null,
+            DifficultiesWorkedOn: [],
+            SessionStartTime: null);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco el pasado lunes trabajamos los condicionales"), CancellationToken.None);
 
@@ -358,7 +420,7 @@ public class TelegramConversationServiceTests : IDisposable
         public Exception? ThrowOnNext { get; set; }
         public string? LastInput { get; private set; }
 
-        public Task<ExtractedReflectionDto> ExtractAsync(string text, CancellationToken ct = default)
+        public Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, CancellationToken ct = default)
         {
             LastInput = text;
             if (ThrowOnNext is not null)
@@ -370,12 +432,23 @@ public class TelegramConversationServiceTests : IDisposable
             // Default: echo input into AreasToImprove so existing tests asserting GeneralNotes == raw text keep passing.
             var result = Result ?? new ExtractedReflectionDto(
                 WhatWasCovered: null,
-                AreasToImprove: text,
+                AreasToImprove: new ExtractedTextFieldDto(text, ExtractionMode.Replace),
                 EmotionalSignals: null,
                 HomeworkAssigned: null,
                 NextLessonIdeas: null,
                 SessionDate: null,
-                SuggestedDifficulties: new List<SuggestedDifficultyDto>());
+                SuggestedDifficulties: new List<SuggestedDifficultyDto>(),
+                RawExtractionJson: null,
+                SessionTitle: null,
+                TopicTags: [],
+                PreviousHomeworkStatus: null,
+                TeachingTodos: [],
+                TeacherFollowups: [],
+                LevelReassessment: null,
+                DurationMinutes: null,
+                IsCancelled: null,
+                DifficultiesWorkedOn: [],
+                SessionStartTime: null);
             return Task.FromResult(result);
         }
     }

@@ -186,3 +186,63 @@ test('session log dialog shows active difficulties checkboxes', async ({ browser
 
   await context.close()
 })
+
+test('taxonomy: Interaction and Mediation competencies accepted; Fluency rejected; critical severity accepted', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  const base = {
+    name: `[QA] Taxonomy Test ${Date.now()}`,
+    learningLanguage: 'Spanish',
+    cefrLevel: 'B1',
+    interests: [],
+    learningGoals: [],
+    weaknesses: [],
+    notes: null,
+  }
+
+  // Interaction + critical severity must be accepted
+  const interactionRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      ...base,
+      difficulties: [
+        { id: 'i1', description: 'Struggles with turn-taking in discussions', competency: 'Interaction', subcategory: 'turn-taking', severity: 'critical', trend: 'stable', status: 'Active' },
+      ],
+    },
+  })
+  expect(interactionRes.status()).toBe(201)
+  const interactionStudent = await interactionRes.json()
+  createdStudentIds.push(interactionStudent.id)
+  expect(interactionStudent.difficulties[0].competency).toBe('Interaction')
+  expect(interactionStudent.difficulties[0].severity).toBe('critical')
+
+  // Mediation competency must be accepted
+  const mediationRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      ...base,
+      difficulties: [
+        { id: 'm1', description: 'Cannot summarise texts for others', competency: 'Mediation', subcategory: 'summarising', severity: 'medium', trend: 'stable', status: 'Active' },
+      ],
+    },
+  })
+  expect(mediationRes.status()).toBe(201)
+  const mediationStudent = await mediationRes.json()
+  createdStudentIds.push(mediationStudent.id)
+  expect(mediationStudent.difficulties[0].competency).toBe('Mediation')
+
+  // Fluency competency must be rejected (removed from taxonomy)
+  const fluencyRes = await page.request.post(`${API_BASE}/api/students`, {
+    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+    data: {
+      ...base,
+      difficulties: [
+        { id: 'f1', description: 'Speaks too slowly', competency: 'Fluency', subcategory: 'speed', severity: 'low', trend: 'stable', status: 'Active' },
+      ],
+    },
+  })
+  expect(fluencyRes.status()).toBe(400)
+
+  await context.close()
+})

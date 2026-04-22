@@ -1,30 +1,36 @@
 using FluentAssertions;
 using LangTeach.Api.AI;
+using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LangTeach.Api.Tests.Services;
 
-file sealed class ConfigurableClaudeClient : IClaudeClient
+// FakePromptService, ConfigurableClaudeClient are defined in CurriculumGenerationServiceTests.cs (internal scope)
+
+file sealed class NullContentSchemas : IContentSchemaService
+{
+    public static readonly NullContentSchemas Instance = new();
+    public string? GetSchema(string contentType) => null;
+}
+
+file sealed class ReflectionClaudeClient : IClaudeClient
 {
     private readonly Func<ClaudeRequest, ClaudeResponse>? _handler;
     private readonly Exception? _exception;
+    private readonly string? _fixedJson;
     public ClaudeRequest? LastRequest { get; private set; }
 
-    public ConfigurableClaudeClient(Func<ClaudeRequest, ClaudeResponse> handler)
-    {
-        _handler = handler;
-    }
-
-    public ConfigurableClaudeClient(Exception exception)
-    {
-        _exception = exception;
-    }
+    public ReflectionClaudeClient(Func<ClaudeRequest, ClaudeResponse> handler) => _handler = handler;
+    public ReflectionClaudeClient(Exception exception) => _exception = exception;
+    public ReflectionClaudeClient(string fixedJson) => _fixedJson = fixedJson;
 
     public Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default)
     {
         LastRequest = request;
         if (_exception is not null) throw _exception;
+        if (_fixedJson is not null)
+            return Task.FromResult(new ClaudeResponse(_fixedJson, "claude-haiku", 10, 20));
         return Task.FromResult(_handler!(request));
     }
 
@@ -37,9 +43,19 @@ file sealed class ConfigurableClaudeClient : IClaudeClient
 
 public class ReflectionExtractionServiceTests
 {
+    private static readonly ISectionProfileService ProfileService =
+        new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+
+    private static readonly IPedagogyConfigService PedagogyService =
+        new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, ProfileService);
+
+    private static readonly IPromptService FakePrompts = new FakePromptService();
+
     private static ReflectionExtractionService CreateSut(string fixedJson) =>
         new(
-            new ConfigurableClaudeClient(_ => new ClaudeResponse(fixedJson, "claude-haiku", 10, 20)),
+            new ReflectionClaudeClient(fixedJson),
+            FakePrompts,
+            PedagogyService,
             NullLogger<ReflectionExtractionService>.Instance);
 
     [Fact]
@@ -58,11 +74,12 @@ public class ReflectionExtractionServiceTests
 
         var result = sut.ParseResponse(json);
 
-        result.WhatWasCovered.Should().Be("Past tense verbs");
-        result.AreasToImprove.Should().Be("Irregular verbs");
+        result.WhatWasCovered!.Value.Should().Be("Past tense verbs");
+        result.WhatWasCovered.Mode.Should().Be(ExtractionMode.Replace); // legacy plain-string fallback
+        result.AreasToImprove!.Value.Should().Be("Irregular verbs");
         result.EmotionalSignals.Should().Be("Very engaged");
-        result.HomeworkAssigned.Should().Be("Exercises 1-5");
-        result.NextLessonIdeas.Should().Be("Present perfect");
+        result.HomeworkAssigned!.Value.Should().Be("Exercises 1-5");
+        result.NextLessonIdeas!.Value.Should().Be("Present perfect");
         result.SessionDate.Should().BeNull();
         result.SuggestedDifficulties.Should().BeEmpty();
     }
@@ -166,7 +183,7 @@ public class ReflectionExtractionServiceTests
 
         var result = sut.ParseResponse(json);
 
-        result.WhatWasCovered.Should().Be("Ser vs estar");
+        result.WhatWasCovered!.Value.Should().Be("Ser vs estar");
         result.AreasToImprove.Should().BeNull();
         result.EmotionalSignals.Should().BeNull();
         result.HomeworkAssigned.Should().BeNull();
@@ -203,18 +220,18 @@ public class ReflectionExtractionServiceTests
     public async Task ExtractAsync_CallsClaudeWithHaikuModel()
     {
         ClaudeRequest? captured = null;
-        var client = new ConfigurableClaudeClient(r =>
+        var client = new ReflectionClaudeClient(r =>
         {
             captured = r;
             return new ClaudeResponse(
                 """{"whatWasCovered":"Vocab","areasToImprove":null,"emotionalSignals":null,"homeworkAssigned":null,"nextLessonIdeas":null}""",
                 "claude-haiku", 10, 20);
         });
-        var sut = new ReflectionExtractionService(client, NullLogger<ReflectionExtractionService>.Instance);
+        var sut = new ReflectionExtractionService(client, FakePrompts, PedagogyService, NullLogger<ReflectionExtractionService>.Instance);
 
         var result = await sut.ExtractAsync("We practiced vocabulary today.");
 
-        result.WhatWasCovered.Should().Be("Vocab");
+        result.WhatWasCovered!.Value.Should().Be("Vocab");
         result.SuggestedDifficulties.Should().BeEmpty();
         captured.Should().NotBeNull();
         captured!.Model.Should().Be(ClaudeModel.Haiku);
@@ -223,39 +240,14 @@ public class ReflectionExtractionServiceTests
     [Fact]
     public async Task ExtractAsync_WhenClaudeFails_ReturnsAllNulls()
     {
-        var client = new ConfigurableClaudeClient(new HttpRequestException("network error"));
-        var sut = new ReflectionExtractionService(client, NullLogger<ReflectionExtractionService>.Instance);
+        var client = new ReflectionClaudeClient(new HttpRequestException("network error"));
+        var sut = new ReflectionExtractionService(client, FakePrompts, PedagogyService, NullLogger<ReflectionExtractionService>.Instance);
 
         var result = await sut.ExtractAsync("some text");
 
         result.WhatWasCovered.Should().BeNull();
         result.AreasToImprove.Should().BeNull();
         result.SessionDate.Should().BeNull();
-    }
-
-    [Fact]
-    public void BuildSystemPrompt_ContainsLanguagePreservationInstruction()
-    {
-        var today = new DateOnly(2026, 4, 11);
-        var prompt = ReflectionExtractionService.BuildSystemPrompt(today);
-
-        prompt.Should().Contain("translate");
-        prompt.Should().Contain("sessionDate");
-        prompt.Should().Contain("2026-04-11");
-    }
-
-    [Fact]
-    public void BuildSystemPrompt_InjectsDayOfWeekAndDate()
-    {
-        var today = new DateOnly(2026, 4, 11); // Saturday
-        var prompt = ReflectionExtractionService.BuildSystemPrompt(today);
-
-        prompt.Should().Contain("Saturday");
-        prompt.Should().Contain("2026-04-11");
-        prompt.Should().Contain("hoy");
-        prompt.Should().Contain("ayer");
-        prompt.Should().Contain("el pasado lunes");
-        prompt.Should().Contain("el lunes pasado");
     }
 
     [Fact]
@@ -277,7 +269,7 @@ public class ReflectionExtractionServiceTests
         var result = sut.ParseResponse(json);
 
         result.SessionDate.Should().Be("2026-04-08");
-        result.WhatWasCovered.Should().Be("los condicionales");
+        result.WhatWasCovered!.Value.Should().Be("los condicionales");
     }
 
     [Fact]
@@ -329,5 +321,381 @@ public class ReflectionExtractionServiceTests
         var result = sut.ParseResponse(json);
 
         result.SessionDate.Should().BeNull();
+    }
+
+    [Fact]
+    public void ParseResponse_ReturnsRawExtractionJson()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"whatWasCovered":"ser vs estar"}""";
+
+        var result = sut.ParseResponse(json);
+
+        // RawExtractionJson stores the fence-stripped (cleaned) content, which equals json when no fences present
+        result.RawExtractionJson.Should().Be(json);
+    }
+
+    [Fact]
+    public void ParseResponse_StripsFencesBeforeStoringRawExtractionJson()
+    {
+        var sut = CreateSut("{}");
+        var fenced = "```json\n{\"whatWasCovered\":\"ser vs estar\"}\n```";
+        var expected = "{\"whatWasCovered\":\"ser vs estar\"}";
+
+        var result = sut.ParseResponse(fenced);
+
+        result.RawExtractionJson.Should().Be(expected);
+    }
+
+    [Fact]
+    public void ParseResponse_InvalidJson_ReturnsNullRawExtractionJson()
+    {
+        var sut = CreateSut("{}");
+
+        var result = sut.ParseResponse("not valid json");
+
+        result.RawExtractionJson.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ExtractAsync_ClaudeApiSuccess_RawExtractionJsonMatchesResponse()
+    {
+        var rawJson = """{"whatWasCovered":"verbos irregulares"}""";
+        var sut = new ReflectionExtractionService(
+            new ReflectionClaudeClient(rawJson),
+            FakePrompts,
+            PedagogyService,
+            NullLogger<ReflectionExtractionService>.Instance);
+
+        var result = await sut.ExtractAsync("Hoy trabajamos los verbos", ct: CancellationToken.None);
+
+        result.RawExtractionJson.Should().Be(rawJson);
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsSessionTitle()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+                "whatWasCovered": "Preterite tense",
+                "areasToImprove": null,
+                "emotionalSignals": null,
+                "homeworkAssigned": null,
+                "nextLessonIdeas": null,
+                "sessionDate": null,
+                "sessionTitle": "Preterite vs Imperfect",
+                "suggestedDifficulties": []
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionTitle.Should().Be("Preterite vs Imperfect");
+    }
+
+    [Fact]
+    public void ParseResponse_SessionTitleIsNullWhenAbsent()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"whatWasCovered":"something","suggestedDifficulties":[]}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionTitle.Should().BeNull();
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsTopicTags()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "topicTags": [
+                {"tag": "Subjuntivo presente", "category": "Grammar"},
+                {"tag": "Vocabulario de restaurante"}
+              ]
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.TopicTags.Should().HaveCount(2);
+        result.TopicTags[0].Tag.Should().Be("Subjuntivo presente");
+        result.TopicTags[0].Category.Should().Be("Grammar");
+        result.TopicTags[1].Tag.Should().Be("Vocabulario de restaurante");
+        result.TopicTags[1].Category.Should().BeNull();
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsTopicTags_EmptyWhenAbsent()
+    {
+        var sut = CreateSut("{}");
+        var result = sut.ParseResponse("""{"suggestedDifficulties":[]}""");
+        result.TopicTags.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("Done", ExtractedHomeworkStatus.Done)]
+    [InlineData("Partial", ExtractedHomeworkStatus.Partial)]
+    [InlineData("NotDone", ExtractedHomeworkStatus.NotDone)]
+    public void ParseResponse_ExtractsPreviousHomeworkStatus_ValidValues(string jsonValue, ExtractedHomeworkStatus expected)
+    {
+        var sut = CreateSut("{}");
+        var json = $$"""{"suggestedDifficulties":[],"previousHomeworkStatus":"{{jsonValue}}"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.PreviousHomeworkStatus.Should().Be(expected);
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsPreviousHomeworkStatus_InvalidValue_ReturnsNull()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"suggestedDifficulties":[],"previousHomeworkStatus":"maybe"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.PreviousHomeworkStatus.Should().BeNull();
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsTeachingTodos()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "teachingTodos": ["Trabajar conectores adversativos", "Practicar el subjuntivo en concesivas"]
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.TeachingTodos.Should().BeEquivalentTo(["Trabajar conectores adversativos", "Practicar el subjuntivo en concesivas"]);
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsTeacherFollowups()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "teacherFollowups": ["Enviar el PDF de conectores", "Mandar el audio de la clase"]
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.TeacherFollowups.Should().BeEquivalentTo(["Enviar el PDF de conectores", "Mandar el audio de la clase"]);
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsLevelReassessmentDurationIsCancelled()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "levelReassessment": "B2",
+              "durationMinutes": 60,
+              "isCancelled": true
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.LevelReassessment.Should().Be("B2");
+        result.DurationMinutes.Should().Be(60);
+        result.IsCancelled.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("B1", "B1")]
+    [InlineData("A2+", "A2+")]
+    [InlineData("C1", "C1")]
+    [InlineData("Intermediate", null)]
+    [InlineData("B3", null)]
+    [InlineData("", null)]
+    public void ParseResponse_ValidatesCefrLevelReassessment(string input, string? expected)
+    {
+        var sut = CreateSut("{}");
+        var json = $$"""{"suggestedDifficulties":[],"levelReassessment":"{{input}}"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.LevelReassessment.Should().Be(expected);
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsDifficultiesWorkedOn()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "difficultiesWorkedOn": ["Subjuntivo en oraciones temporales", "Ser vs Estar"]
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.DifficultiesWorkedOn.Should().BeEquivalentTo(["Subjuntivo en oraciones temporales", "Ser vs Estar"]);
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsSessionStartTime()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"suggestedDifficulties":[],"sessionStartTime":"09:30"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionStartTime.Should().Be("09:30");
+    }
+
+    [Fact]
+    public void ParseResponse_SessionStartTimeIsNullWhenAbsent()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"suggestedDifficulties":[]}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionStartTime.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("9:30")]
+    [InlineData("9am")]
+    [InlineData("morning")]
+    [InlineData("09:30:00")]
+    public void ParseResponse_SessionStartTimeIsNullWhenNotHhMm(string raw)
+    {
+        var sut = CreateSut("{}");
+        var json = $$"""{"suggestedDifficulties":[],"sessionStartTime":"{{raw}}"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionStartTime.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ExtractAsync_PassesDifficultiesToContext()
+    {
+        var difficulties = new List<string> { "Subjuntivo en concesivas", "Ser vs Estar" };
+        ClaudeRequest? captured = null;
+        var client = new ReflectionClaudeClient(req =>
+        {
+            captured = req;
+            return new ClaudeResponse("""{"suggestedDifficulties":[],"topicTags":[],"teachingTodos":[],"teacherFollowups":[],"difficultiesWorkedOn":[]}""", "claude-haiku", 10, 50);
+        });
+        var realPrompts = new PromptService(
+            new SectionProfileService(NullLogger<SectionProfileService>.Instance),
+            PedagogyService,
+            NullLogger<PromptService>.Instance,
+            NullContentSchemas.Instance);
+        var sut = new ReflectionExtractionService(
+            client,
+            realPrompts,
+            PedagogyService,
+            NullLogger<ReflectionExtractionService>.Instance);
+
+        await sut.ExtractAsync("text", difficulties);
+
+        captured.Should().NotBeNull();
+        captured!.SystemPrompt.Should().Contain("Subjuntivo en concesivas");
+        captured.SystemPrompt.Should().Contain("Ser vs Estar");
+    }
+
+    [Fact]
+    public void ParseResponse_ParsesModeAppend()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "whatWasCovered": { "value": "Present perfect", "mode": "append" },
+              "nextLessonIdeas": { "value": "Subjunctive", "mode": "append" }
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.WhatWasCovered!.Value.Should().Be("Present perfect");
+        result.WhatWasCovered.Mode.Should().Be(ExtractionMode.Append);
+        result.NextLessonIdeas!.Value.Should().Be("Subjunctive");
+        result.NextLessonIdeas.Mode.Should().Be(ExtractionMode.Append);
+    }
+
+    [Fact]
+    public void ParseResponse_ParsesModeReplace()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "homeworkAssigned": { "value": "Page 5 exercises", "mode": "replace" },
+              "areasToImprove": { "value": "Verb conjugation", "mode": "replace" }
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.HomeworkAssigned!.Value.Should().Be("Page 5 exercises");
+        result.HomeworkAssigned.Mode.Should().Be(ExtractionMode.Replace);
+        result.AreasToImprove!.Value.Should().Be("Verb conjugation");
+        result.AreasToImprove.Mode.Should().Be(ExtractionMode.Replace);
+    }
+
+    [Fact]
+    public void ParseResponse_ParsesModeSkip()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"whatWasCovered": { "value": "Past tense", "mode": "skip" }}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.WhatWasCovered!.Mode.Should().Be(ExtractionMode.Skip);
+    }
+
+    [Fact]
+    public void ParseResponse_HandlesLegacyStringFallback_TreatsAsReplace()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"whatWasCovered": "Plain string value", "homeworkAssigned": "Homework text"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.WhatWasCovered!.Value.Should().Be("Plain string value");
+        result.WhatWasCovered.Mode.Should().Be(ExtractionMode.Replace);
+        result.HomeworkAssigned!.Value.Should().Be("Homework text");
+        result.HomeworkAssigned.Mode.Should().Be(ExtractionMode.Replace);
+    }
+
+    [Fact]
+    public void ParseResponse_InvalidModeDefaultsToSkip()
+    {
+        var sut = CreateSut("{}");
+        var json = """{"whatWasCovered": { "value": "Some content", "mode": "unknown" }}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.WhatWasCovered!.Value.Should().Be("Some content");
+        result.WhatWasCovered.Mode.Should().Be(ExtractionMode.Skip);
+    }
+
+    [Theory]
+    [InlineData("""{"whatWasCovered": { "value": null, "mode": "replace" }}""")]
+    [InlineData("""{"whatWasCovered": { "value": "", "mode": "replace" }}""")]
+    [InlineData("""{"whatWasCovered": { "value": "   ", "mode": "replace" }}""")]
+    public void ParseResponse_ObjectFormWithNullOrEmptyValue_ReturnsNullDto(string json)
+    {
+        var sut = CreateSut("{}");
+
+        var result = sut.ParseResponse(json);
+
+        result.WhatWasCovered.Should().BeNull();
     }
 }

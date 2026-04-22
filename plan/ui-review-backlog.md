@@ -4,4 +4,4 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 
 ---
 
-*Cleared 2026-04-08 during Adaptive Replanning sprint close. 1 entry (weakness chip rendering) resolved via DemoSeeder fix; tracked in #603.*
+*Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Seeder coverage gaps batched into #834. UX polish items (combobox summary, Focus Areas description) batched into #840. Remaining entries deleted (intentional per Stitch spec, covered by unit tests, or pre-existing infrastructure).*

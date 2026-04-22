@@ -18,10 +18,10 @@ test.beforeAll(async ({ browser }) => {
   const res = await page.request.get(`${API_BASE}/api/students`, { headers: AUTH_HEADER })
   expect(res.ok()).toBeTruthy()
   const body = await res.json()
-  const students: Array<{ notes?: string; name?: string; id: string }> = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
+  const students: Array<{ personalNotes?: string; name?: string; id: string }> = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
 
   // [visual-seed] student -- no sessions (for empty-state screenshot)
-  const visual = students.find((s) => s.notes === '[visual-seed]')
+  const visual = students.find((s) => s.personalNotes === '[visual-seed]')
   if (!visual) throw new Error('No [visual-seed] student found. Run start-visual-stack.sh first.')
   studentId = visual.id
 
@@ -50,7 +50,7 @@ test('@visual student detail page', async ({ browser }) => {
   await context.close()
 })
 
-test('@visual session log dialog - initial state', async ({ browser }) => {
+test('@visual log session button navigates to full page', async ({ browser }) => {
   fs.mkdirSync('screenshots', { recursive: true })
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
@@ -60,34 +60,15 @@ test('@visual session log dialog - initial state', async ({ browser }) => {
   await page.goto(`/students/${studentId}`)
   await expect(page.getByTestId('log-session-button')).toBeVisible({ timeout: NAV_TIMEOUT })
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: UI_TIMEOUT })
-  await expect(page.getByTestId('session-date')).toBeVisible()
-  await page.screenshot({ path: 'screenshots/session-log-dialog.png', fullPage: true })
+  await expect(page).toHaveURL(/\/students\/[^/]+\/log-session$/, { timeout: NAV_TIMEOUT })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.screenshot({ path: 'screenshots/log-session-navigation.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()
 })
 
-test('@visual session log dialog - reassessment toggle on', async ({ browser }) => {
-  fs.mkdirSync('screenshots', { recursive: true })
-  const context = await createMockAuthContext(browser)
-  const page = await context.newPage()
-  const consoleErrors: string[] = []
-  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
-
-  await page.goto(`/students/${studentId}`)
-  await expect(page.getByTestId('log-session-button')).toBeVisible({ timeout: NAV_TIMEOUT })
-  await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: UI_TIMEOUT })
-  await page.getByTestId('reassessment-toggle').click()
-  await expect(page.getByTestId('reassessment-skill')).toBeVisible()
-  await page.screenshot({ path: 'screenshots/session-log-dialog-reassessment.png', fullPage: true })
-
-  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
-  await context.close()
-})
-
-test('@visual student detail overview - with sessions', async ({ browser }) => {
+test('@visual student detail sessions tab - with sessions', async ({ browser }) => {
   fs.mkdirSync('screenshots', { recursive: true })
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
@@ -96,8 +77,47 @@ test('@visual student detail overview - with sessions', async ({ browser }) => {
 
   await page.goto(`/students/${studentWithSessionsId}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
-  await expect(page.getByTestId('session-summary-header')).toBeVisible({ timeout: UI_TIMEOUT })
-  await page.screenshot({ path: 'screenshots/student-detail-overview-sessions.png', fullPage: true })
+  await page.getByTestId('tab-sessions').click()
+  await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.screenshot({ path: 'screenshots/student-detail-sessions-tab.png', fullPage: true })
+
+  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
+  await context.close()
+})
+
+test('@visual student detail profile tab - right sidebar visible', async ({ browser }) => {
+  fs.mkdirSync('screenshots', { recursive: true })
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const consoleErrors: string[] = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
+
+  await page.goto(`/students/${studentWithSessionsId}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await page.getByTestId('tab-profile').click()
+  await expect(page.getByTestId('student-profile-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('profile-about')).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.screenshot({ path: 'screenshots/student-detail-profile-tab.png', fullPage: true })
+
+  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
+  await context.close()
+})
+
+test('@visual student detail sessions tab - expanded row with editable fields', async ({ browser }) => {
+  fs.mkdirSync('screenshots', { recursive: true })
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const consoleErrors: string[] = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
+
+  await page.goto(`/students/${studentWithSessionsId}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await page.getByTestId('tab-sessions').click()
+  await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.getByTestId('session-entry-toggle').first().click()
+  await expect(page.getByTestId('session-entry-detail').first()).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('session-title-input').first()).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.screenshot({ path: 'screenshots/student-detail-session-expanded.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()

@@ -335,12 +335,14 @@ public class CourseService : ICourseService
             TargetExam: req.TargetExam,
             ExamDate: req.ExamDate,
             StudentName: student?.Name,
-            StudentNativeLanguage: student?.NativeLanguage,
+            StudentNativeLanguage: student is not null
+                ? JsonStorageHelper.DeserializeList<string>(student.NativeLanguages).FirstOrDefault()
+                : null,
             StudentInterests: student is not null
                 ? JsonStorageHelper.DeserializeList<string>(student.Interests).ToArray()
                 : null,
             StudentGoals: student is not null
-                ? JsonStorageHelper.DeserializeList<string>(student.LearningGoals).ToArray()
+                ? LearningGoalHelper.FlattenGoals(student.LearningGoals)
                 : null,
             TemplateLevel: string.IsNullOrWhiteSpace(req.TemplateLevel) ? null : req.TemplateLevel,
             TemplateUnits: null,

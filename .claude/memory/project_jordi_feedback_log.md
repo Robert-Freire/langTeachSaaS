@@ -280,6 +280,23 @@ Jordi showed a Preply post-class AI report (lesson summary, vocabulary, errors, 
 
 Raw: `feedback/raw/2026-04-06_jordi_robert_call_app-walkthrough.txt`
 
+## Feedback Round 14 (2026-04-09, two voice notes via Robert)
+
+Source: Two WhatsApp voice notes forwarded by Robert via email (msg UIDs 506 and 507), evening of 2026-04-09.
+
+| # | Feedback | Roadmap fit | Status |
+|---|----------|-------------|--------|
+| 68 | **Topic notes surfacing ("ideas para proximas clases" mechanism)**: When things come up mid-class ("tengo que trabajar pronunciacion con este", "diferencia articulo determinado/indeterminado"), he wants to jot them as forward-looking notes. Problem with current flow: tagging them to a session makes them disappear as newer sessions bury them; putting them in the student profile feels wrong because they emerge from classes, not from onboarding. Wants a surface that highlights these the same way the "color resalta para la proxima clase" already does. Can be attached to a session AND surface on the student history/profile. | Directly validates the "ideas para proximas clases" feature in the current sprint story. Strong reinforcement of Round 12 #53. Confirms: the field must live on the student as an accumulating list, visually prominent, even though entries are captured during a session. | **Reinforced** (Round 12 #53) |
+| 69 | **Session date should default to today**: Don't require typing the date every time a session is created. | Current sprint: student profile / session log polish | **New, actionable** |
+| 70 | **Session date should accept 2-digit year**: Allow "26" instead of requiring "2026". | Current sprint: form UX polish | **New, minor** |
+| 71 | **BUG, URGENT: cannot create a new session ("no puedo crear nuevas clases")**: The only button visible is "Start next session" / "New next session" and clicking it appears to overwrite the previous session instead of creating a new one. He wants to create the session for April 19, cannot. Explicitly flagged as the most important item: "mira sobre todo lo ultimo, por favor." Likely regression from #582 (Round 13 #65): "Start next session" flow replacing vs creating. | Hotfix candidate. Blocks Jordi's actual workflow. | **URGENT, needs repro** |
+
+Raw:
+- `feedback/raw/2026-04-09_jordi_whatsapp_WA0005_topic-notes-visibility.txt`
+- `feedback/raw/2026-04-09_jordi_whatsapp_WA0000_session-date-and-create-bug.txt`
+
+Note: Per feedback_reply_before_acting, do not create issues for #68-#70 yet. Reply with summary + planned issues, wait 4 days. Item #71 is a blocker bug and should be investigated and fixed on a hotfix branch regardless of the 4-day rule.
+
 ## Open items (internal, do not chase Jordi)
 
 - ~~Awaiting: course programs for all levels~~ RECEIVED

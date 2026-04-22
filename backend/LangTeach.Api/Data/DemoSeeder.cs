@@ -7,6 +7,7 @@ public static class DemoSeeder
 {
     private const string DemoTag = "[demo]";
     private const string VisualTag = "[visual-seed]";
+    private const string RosterTag = "[roster-seed]";
 
     public static async Task<bool> SeedAsync(AppDbContext db, string teacherLookup, ILogger logger)
     {
@@ -33,9 +34,10 @@ public static class DemoSeeder
             logger.LogInformation("Approved teacher {Email}.", teacher.Email);
         }
 
-        var alreadySeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.Notes == DemoTag);
+        var alreadySeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.PersonalNotes == DemoTag);
         if (alreadySeeded)
         {
+            await SeedLargeRosterAsync(db, teacher.Id, logger);
             logger.LogInformation("Demo data already exists for teacher {Email} — skipping.", teacher.Email);
             return true;
         }
@@ -46,11 +48,11 @@ public static class DemoSeeder
 
         var students = new List<Student>
         {
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Souza",        LearningLanguage = "English", CefrLevel = "B2", Interests = """["travel","cooking"]""",    Notes = DemoTag, CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Rossi",      LearningLanguage = "English", CefrLevel = "A2", Interests = """["football","music"]""",    Notes = DemoTag, CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Yuki Tanaka",      LearningLanguage = "English", CefrLevel = "B1", Interests = """["technology","anime"]""",  Notes = DemoTag, CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Fatima Al-Hassan", LearningLanguage = "English", CefrLevel = "C1", Interests = """["literature","history"]""", Notes = DemoTag, CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Carlos Mendez",    LearningLanguage = "English", CefrLevel = "A1", Interests = """["business","travel"]""",   Notes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Souza",        LearningLanguage = "English", CefrLevel = "B2", NativeLanguages = """["Portuguese"]""", Interests = """["travel","cooking"]""",    PersonalNotes = DemoTag, TeachingTodos = """[{"id":"a1b2c3d4-0000-0000-0000-000000000001","text":"Trabajar la diferencia entre artículo determinado e indeterminado","createdAt":"2026-04-09T10:00:00Z","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null},{"id":"a1b2c3d4-0000-0000-0000-000000000002","text":"Repasar pretérito en narraciones personales","createdAt":"2026-04-09T10:05:00Z","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null}]""", CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Rossi",      LearningLanguage = "English", CefrLevel = "A2", NativeLanguages = """["Italian"]""",   Interests = """["football","music"]""",    PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Yuki Tanaka",      LearningLanguage = "English", CefrLevel = "B1", NativeLanguages = """["Japanese"]""",  Interests = """["technology","anime"]""",  PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Fatima Al-Hassan", LearningLanguage = "English", CefrLevel = "C1", NativeLanguages = """["Arabic"]""",    Interests = """["literature","history"]""", PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Carlos Mendez",    LearningLanguage = "English", CefrLevel = "A1", NativeLanguages = """["Spanish"]""",   Interests = """["business","travel"]""",   PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
         };
 
         db.Students.AddRange(students);
@@ -97,6 +99,7 @@ public static class DemoSeeder
         var sectionCount = lessons.Sum(l => l.Sections.Count);
         logger.LogInformation("Demo data seeded: {Students} students, {Lessons} lessons, {Sections} sections.",
             students.Count, lessons.Count, sectionCount);
+        await SeedLargeRosterAsync(db, teacher.Id, logger);
         return true;
     }
 
@@ -126,13 +129,17 @@ public static class DemoSeeder
             logger.LogInformation("Approved teacher {Email}.", teacher.Email);
         }
 
-        var studentsSeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.Notes == VisualTag);
+        var studentsSeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.PersonalNotes == VisualTag);
         var coursesSeeded  = await db.Courses.AnyAsync(c => c.TeacherId == teacher.Id && c.Description == VisualTag);
 
         if (studentsSeeded && coursesSeeded)
         {
             await db.SaveChangesAsync(); // persist any approval/onboarding updates
+            await EnsureAnaVisualDifficultiesAsync(db, teacher.Id, logger);
+            await EnsureAnaVisualExtrasAsync(db, teacher.Id, logger);
             await SeedScenarioStudentsAsync(db, teacher.Id, logger);
+            await SeedAnaVisualSessionLogAsync(db, teacher.Id, logger);
+            await SeedLargeRosterAsync(db, teacher.Id, logger);
             logger.LogInformation("Visual seed data already exists for teacher {Email}; scenario students refreshed.", teacher.Email);
             return true;
         }
@@ -141,7 +148,7 @@ public static class DemoSeeder
         if (studentsSeeded || coursesSeeded)
         {
             logger.LogInformation("Partial visual seed detected for teacher {Email}, cleaning up.", teacher.Email);
-            var partialStudents = await db.Students.Where(s => s.TeacherId == teacher.Id && s.Notes == VisualTag).ToListAsync();
+            var partialStudents = await db.Students.Where(s => s.TeacherId == teacher.Id && s.PersonalNotes == VisualTag).ToListAsync();
             db.Students.RemoveRange(partialStudents);
             var partialCourses = await db.Courses.Where(c => c.TeacherId == teacher.Id && c.Description == VisualTag).ToListAsync();
             db.Courses.RemoveRange(partialCourses);
@@ -156,8 +163,8 @@ public static class DemoSeeder
 
         var students = new List<Student>
         {
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", Notes = VisualTag, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", CreatedAt = now, UpdatedAt = now },
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Visual", LearningLanguage = "English", CefrLevel = "A2", Notes = VisualTag, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", NativeLanguages = """["Portuguese","Ukrainian"]""", PersonalNotes = VisualTag, LearningGoals = AnaVisualLearningGoals, ShortTermObjectives = AnaVisualShortTermObjectives, SkillLevelOverrides = AnaVisualSkillLevelOverrides, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", Difficulties = AnaVisualDifficulties, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Visual", LearningLanguage = "English", CefrLevel = "A2", NativeLanguages = """["Italian"]""", PersonalNotes = VisualTag, CreatedAt = now, UpdatedAt = now },
         };
         db.Students.AddRange(students);
 
@@ -226,6 +233,8 @@ public static class DemoSeeder
             students.Count, entries.Count);
 
         await SeedScenarioStudentsAsync(db, teacher.Id, logger);
+        await SeedAnaVisualSessionLogAsync(db, teacher.Id, logger);
+        await SeedLargeRosterAsync(db, teacher.Id, logger);
 
         return true;
     }
@@ -237,16 +246,29 @@ public static class DemoSeeder
         // Ana Seed — rich-profile scenario
         await UpsertStudentAsync(db, teacherId, new Student
         {
-            TeacherId        = teacherId,
-            Name             = "Ana Seed",
-            LearningLanguage = "English",
-            CefrLevel        = "B1",
-            NativeLanguage   = "Portuguese",
-            LearningGoals    = """["Improve conversational fluency","Prepare for job interviews in English"]""",
-            Interests        = """["literature","travel","photography"]""",
-            Difficulties     = """["False friends with Portuguese","Subjunctive mood"]""",
-            Weaknesses       = """["Listening to fast native speech","Idiomatic expressions"]""",
-            Notes            = "[scenario-seed]",
+            TeacherId          = teacherId,
+            Name               = "Ana Seed",
+            LearningLanguage   = "English",
+            CefrLevel          = "B1",
+            NativeLanguages    = """["Portuguese"]""",
+            LearningGoals      = """["Improve conversational fluency","Prepare for job interviews in English"]""",
+            Interests          = """["literature","travel","photography"]""",
+            Difficulties       = """["False friends with Portuguese","Subjunctive mood"]""",
+            Weaknesses         = """["Listening to fast native speech","Idiomatic expressions"]""",
+            PersonalNotes      = "[scenario-seed]",
+            TeachingNotes      = "Responds well to visual aids. Prefers structured grammar drills over free conversation. Review subjunctive triggers next session.",
+            TeachingTodos      = """[{"id":"a1b2c3d4-0000-0000-0000-000000000010","text":"Review subjunctive trigger verbs — she confuses querer vs desear contexts","createdAt":"2026-04-10T10:00:00Z","sourceSessionLogId":null,"status":"Pending","coveredInSessionLogId":null}]""",
+            SkillLevelOverrides = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""",
+            BirthYear          = 1992,
+            Profession         = "Marketing Manager",
+            CountryOfOrigin    = "Brazil",
+            CityOfOrigin       = "São Paulo",
+            CountryOfResidence = "Spain",
+            CityOfResidence    = "Barcelona",
+            ReasonForStudying  = "Career advancement and relocation to an English-speaking country",
+            IsActive           = true,
+            SpokenLanguages    = """["Portuguese","Spanish"]""",
+            ShortTermObjectives = """[{"id":"o1","text":"Pass B2 Cambridge exam","targetDate":"2026-06-30"},{"id":"o2","text":"Prepare for job interview in English","targetDate":null}]""",
         }, now);
 
         // Marco Seed — excel-imported scenario
@@ -256,42 +278,51 @@ public static class DemoSeeder
             Name             = "Marco Seed",
             LearningLanguage = "English",
             CefrLevel        = "A2",
-            NativeLanguage   = null,
+            NativeLanguages  = """["Italian"]""",
             LearningGoals    = "[]",
             Interests        = "[]",
             Difficulties     = "[]",
             Weaknesses       = "[]",
-            Notes            = "[Excel import 2026-01-15]\nCurrent level: A2\nObjectives: Business English, travel vocabulary\nDifficulties: Pronunciation, articles",
+            PersonalNotes    = "[Excel import 2026-01-15]\nCurrent level: A2\nObjectives: Business English, travel vocabulary\nDifficulties: Pronunciation, articles",
         }, now);
 
         // Clara Seed — minimal scenario
-        await UpsertStudentAsync(db, teacherId, new Student
+        var clara = await UpsertStudentAsync(db, teacherId, new Student
         {
             TeacherId        = teacherId,
             Name             = "Clara Seed",
             LearningLanguage = "Spanish",
             CefrLevel        = "A1",
-            NativeLanguage   = null,
+            NativeLanguages  = """["German"]""",
             LearningGoals    = "[]",
             Interests        = "[]",
             Difficulties     = "[]",
             Weaknesses       = "[]",
-            Notes            = null,
+            PersonalNotes    = null,
         }, now);
 
         // Diego Seed — with-history scenario
         var diego = await UpsertStudentAsync(db, teacherId, new Student
         {
-            TeacherId        = teacherId,
-            Name             = "Diego Seed",
-            LearningLanguage = "English",
-            CefrLevel        = "B2",
-            NativeLanguage   = "Spanish",
-            LearningGoals    = """["Achieve C1 certification","Improve academic writing"]""",
-            Interests        = """["history","cinema","chess"]""",
-            Difficulties     = """[{"id":"d1","description":"Third conditional structures","competency":"Grammar","subcategory":"Conditionals","severity":"medium","status":"Active","trend":"stable"},{"id":"d2","description":"Academic vocabulary range","competency":"Vocabulary","subcategory":"Academic","severity":"high","status":"Active","trend":"worsening"},{"id":"d3","description":"Reading speed","competency":"Reading","subcategory":"Comprehension","severity":"low","status":"Covered","trend":"improving"}]""",
-            Weaknesses       = "[]",
-            Notes            = "[scenario-seed]",
+            TeacherId           = teacherId,
+            Name                = "Diego Seed",
+            LearningLanguage    = "English",
+            CefrLevel           = "B2",
+            NativeLanguages     = """["Spanish"]""",
+            LearningGoals       = """["Achieve C1 certification","Improve academic writing"]""",
+            Interests           = """["history","cinema","chess"]""",
+            Difficulties        = """[{"id":"d1","description":"Third conditional structures","competency":"Grammar","subcategory":"Conditionals","severity":"medium","status":"Active","trend":"stable"},{"id":"d2","description":"Academic vocabulary range","competency":"Vocabulary","subcategory":"Academic","severity":"high","status":"Active","trend":"worsening"},{"id":"d3","description":"Reading speed","competency":"Discourse","subcategory":"Comprehension","severity":"low","status":"Covered","trend":"improving"}]""",
+            Weaknesses          = "[]",
+            PersonalNotes       = "[scenario-seed]",
+            BirthYear           = 1988,
+            Profession          = "University Professor",
+            CountryOfOrigin     = "Argentina",
+            CountryOfResidence  = "Spain",
+            IsActive            = true,
+            IsCorporate         = true,
+            Rate                = "30 euros",
+            SpokenLanguages     = """["French"]""",
+            ShortTermObjectives = """[{"id":"o1","text":"Complete C1 exam preparation course","targetDate":"2026-09-01"}]""",
         }, now);
 
         // Flush all upserted student updates before checking session logs
@@ -372,6 +403,7 @@ public static class DemoSeeder
                     NextSessionTopics       = "Second and third conditional",
                     GeneralNotes            = "Student is strong on reading, needs more speaking practice.",
                     TopicTags               = """["grammar","conditionals"]""",
+                    Duration                = 60,
                     LinkedLessonId          = diegoLessonId != Guid.Empty ? diegoLessonId : null,
                     IsDeleted               = false,
                     CreatedAt               = now.AddDays(-14),
@@ -390,6 +422,7 @@ public static class DemoSeeder
                     NextSessionTopics       = "Third conditional and mixed conditionals",
                     GeneralNotes            = "Homework was excellent — all correct. Speed of production is improving.",
                     TopicTags               = """["grammar","conditionals"]""",
+                    Duration                = 60,
                     IsDeleted               = false,
                     CreatedAt               = now.AddDays(-7),
                     UpdatedAt               = now.AddDays(-7),
@@ -398,7 +431,451 @@ public static class DemoSeeder
             await db.SaveChangesAsync();
         }
 
-        logger.LogInformation("Scenario students seeded (Ana Seed, Marco Seed, Clara Seed, Diego Seed).");
+        // Eva Seed — EXAM signal (deadline within 6 weeks)
+        var eva = await UpsertStudentAsync(db, teacherId, new Student
+        {
+            TeacherId           = teacherId,
+            Name                = "Eva Seed",
+            LearningLanguage    = "English",
+            CefrLevel           = "A2",
+            NativeLanguages     = """["French"]""",
+            LearningGoals       = "[]",
+            Interests           = "[]",
+            Difficulties        = "[]",
+            Weaknesses          = "[]",
+            PersonalNotes       = "[scenario-seed]",
+            IsActive            = true,
+            ShortTermObjectives = $"[{{\"id\":\"o1\",\"text\":\"Pass A2 DELE exam\",\"targetDate\":\"{now.AddDays(28):yyyy-MM-dd}\"}}]",
+        }, now);
+
+        // Petra Seed — Returning signal (gap > 21 days, next session booked)
+        var petra = await UpsertStudentAsync(db, teacherId, new Student
+        {
+            TeacherId        = teacherId,
+            Name             = "Petra Seed",
+            LearningLanguage = "English",
+            CefrLevel        = "B1",
+            NativeLanguages  = """["Czech"]""",
+            LearningGoals    = "[]",
+            Interests        = "[]",
+            Difficulties     = "[]",
+            Weaknesses       = "[]",
+            PersonalNotes    = "[scenario-seed]",
+            IsActive         = true,
+        }, now);
+
+        var petraSessionsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == petra.Id && !s.IsDeleted);
+        if (!petraSessionsExist)
+        {
+            db.SessionLogs.AddRange(
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = petra.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(-25),
+                    PlannedContent         = "Present perfect vs past simple.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                    Duration               = 60,
+                    IsDeleted              = false,
+                    CreatedAt              = now.AddDays(-25),
+                    UpdatedAt              = now.AddDays(-25),
+                },
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = petra.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(4),
+                    PlannedContent         = "Review and catch-up session.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                    IsDeleted              = false,
+                    IsCancelled            = false,
+                    CreatedAt              = now,
+                    UpdatedAt              = now,
+                }
+            );
+            await db.SaveChangesAsync();
+        }
+
+        // Hugo Seed — HMWK NOT DONE signal + Review pending badge
+        var hugo = await UpsertStudentAsync(db, teacherId, new Student
+        {
+            TeacherId        = teacherId,
+            Name             = "Hugo Seed",
+            LearningLanguage = "English",
+            CefrLevel        = "A1",
+            NativeLanguages  = """["Dutch"]""",
+            LearningGoals    = "[]",
+            Interests        = "[]",
+            Difficulties     = "[]",
+            Weaknesses       = "[]",
+            PersonalNotes    = "[scenario-seed]",
+            TeachingTodos    = """[{"id":"a1b2c3d4-0000-0000-0000-000000000011","text":"Check if introduction homework sentences were completed before next session","createdAt":"2026-04-10T10:00:00Z","sourceSessionLogId":null,"status":"Pending","coveredInSessionLogId":null}]""",
+            IsActive         = true,
+        }, now);
+
+        var hugoSessionsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == hugo.Id && !s.IsDeleted);
+        if (!hugoSessionsExist)
+        {
+            db.SessionLogs.AddRange(
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = hugo.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(-14),
+                    PlannedContent         = "Basic greetings and introductions.",
+                    HomeworkAssigned       = "Write 5 sentences introducing yourself.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                    Duration               = 60,
+                    IsDeleted              = false,
+                    CreatedAt              = now.AddDays(-14),
+                    UpdatedAt              = now.AddDays(-14),
+                },
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = hugo.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(-5),
+                    PlannedContent         = "Numbers and days of the week.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotDone,
+                    Duration               = 60,
+                    IsDeleted              = false,
+                    CreatedAt              = now.AddDays(-5),
+                    UpdatedAt              = now.AddDays(-5),
+                }
+            );
+            await db.SaveChangesAsync();
+        }
+
+        // Nataliya Seed — Cancelled 2x signal; clean data (no test artifacts)
+        var nataliya = await UpsertStudentAsync(db, teacherId, new Student
+        {
+            TeacherId          = teacherId,
+            Name               = "Nataliya Seed",
+            LearningLanguage   = "Spanish",
+            CefrLevel          = "A2",
+            NativeLanguages    = """["Ukrainian"]""",
+            LearningGoals      = """["Travel to Spain", "Improve everyday Spanish vocabulary"]""",
+            Interests          = """["travel","cooking","cinema"]""",
+            Difficulties       = "[]",
+            Weaknesses         = "[]",
+            PersonalNotes      = "[scenario-seed]",
+            ReasonForStudying  = "Planning a trip to Spain and wants to communicate confidently.",
+            IsActive           = true,
+        }, now);
+
+        var nataliyaSessionsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == nataliya.Id && !s.IsDeleted);
+        if (!nataliyaSessionsExist)
+        {
+            db.SessionLogs.AddRange(
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = nataliya.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(-20),
+                    PlannedContent         = "Greetings and asking for directions in Spanish.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                    Duration               = 60,
+                    IsCancelled            = true,
+                    IsDeleted              = false,
+                    CreatedAt              = now.AddDays(-20),
+                    UpdatedAt              = now.AddDays(-20),
+                },
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = nataliya.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(-10),
+                    PlannedContent         = "Numbers, dates, and telling the time.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                    Duration               = 60,
+                    IsCancelled            = true,
+                    IsDeleted              = false,
+                    CreatedAt              = now.AddDays(-10),
+                    UpdatedAt              = now.AddDays(-10),
+                }
+            );
+            await db.SaveChangesAsync();
+        }
+
+        // Clara Seed — second Cancelled 2x student
+        var claraSessionsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == clara.Id && !s.IsDeleted);
+        if (!claraSessionsExist)
+        {
+            db.SessionLogs.AddRange(
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = clara.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(-18),
+                    PlannedContent         = "Basic Spanish greetings and alphabet.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                    Duration               = 60,
+                    IsCancelled            = true,
+                    IsDeleted              = false,
+                    CreatedAt              = now.AddDays(-18),
+                    UpdatedAt              = now.AddDays(-18),
+                },
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = clara.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(-8),
+                    PlannedContent         = "Numbers and simple questions in Spanish.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                    Duration               = 60,
+                    IsCancelled            = true,
+                    IsDeleted              = false,
+                    CreatedAt              = now.AddDays(-8),
+                    UpdatedAt              = now.AddDays(-8),
+                }
+            );
+            await db.SaveChangesAsync();
+        }
+
+        // Diego Seed — add upcoming session to achieve clean state (last session 7 days ago + next session)
+        var diegoUpcomingExists = await db.SessionLogs.AnyAsync(
+            s => s.StudentId == diego.Id && !s.IsDeleted && !s.IsCancelled && s.SessionDate > now);
+        if (!diegoUpcomingExists)
+        {
+            db.SessionLogs.Add(new SessionLog
+            {
+                Id                     = Guid.NewGuid(),
+                StudentId              = diego.Id,
+                TeacherId              = teacherId,
+                SessionDate            = now.AddDays(5),
+                PlannedContent         = "Third conditional and mixed conditionals.",
+                PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                IsDeleted              = false,
+                IsCancelled            = false,
+                CreatedAt              = now,
+                UpdatedAt              = now,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        // Eva Seed — add recent + upcoming sessions for second clean state student
+        var evaSessionsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == eva.Id && !s.IsDeleted);
+        if (!evaSessionsExist)
+        {
+            db.SessionLogs.AddRange(
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = eva.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(-3),
+                    PlannedContent         = "A2 vocabulary for everyday situations.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                    Duration               = 60,
+                    IsDeleted              = false,
+                    IsCancelled            = false,
+                    CreatedAt              = now.AddDays(-3),
+                    UpdatedAt              = now.AddDays(-3),
+                },
+                new SessionLog
+                {
+                    Id                     = Guid.NewGuid(),
+                    StudentId              = eva.Id,
+                    TeacherId              = teacherId,
+                    SessionDate            = now.AddDays(5),
+                    PlannedContent         = "Exam practice: listening and reading exercises.",
+                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                    IsDeleted              = false,
+                    IsCancelled            = false,
+                    CreatedAt              = now,
+                    UpdatedAt              = now,
+                }
+            );
+            await db.SaveChangesAsync();
+        }
+
+        await SeedTeacherFollowupsAsync(db, teacherId, logger);
+
+        logger.LogInformation("Scenario students seeded (Ana Seed, Marco Seed, Clara Seed, Diego Seed, Eva Seed, Petra Seed, Hugo Seed, Nataliya Seed).");
+    }
+
+    private const string AnaVisualDifficulties =
+        """[{"id":"av1","description":"Separable vs inseparable phrasal verbs","competency":"Grammar","subcategory":"Phrasal verbs","severity":"medium","status":"Active","trend":"stable"},{"id":"av2","description":"Travel collocations","competency":"Vocabulary","subcategory":"Travel","severity":"low","status":"Active","trend":"improving"},{"id":"av3","description":"Word stress in multi-syllable words","competency":"Pronunciation","subcategory":"Word stress","severity":"medium","status":"Active","trend":"stable"}]""";
+
+    private static async Task EnsureAnaVisualDifficultiesAsync(AppDbContext db, Guid teacherId, ILogger logger)
+    {
+        var anaVisual = await db.Students.FirstOrDefaultAsync(
+            s => s.TeacherId == teacherId && s.Name == "Ana Visual" && !s.IsDeleted);
+        if (anaVisual is null || anaVisual.Difficulties == AnaVisualDifficulties) return;
+
+        anaVisual.Difficulties = AnaVisualDifficulties;
+        anaVisual.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        logger.LogInformation("Ana Visual difficulties backfilled.");
+    }
+
+    private const string AnaVisualLearningGoals      = """["Pass DELE B1 exam","Improve conversational fluency for travel"]""";
+    private const string AnaVisualShortTermObjectives = """[{"id":"o1","text":"Complete B1 grammar review by June 2026","targetDate":"2026-06-01"}]""";
+    private const string AnaVisualSkillLevelOverrides = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""";
+
+    private static async Task EnsureAnaVisualExtrasAsync(AppDbContext db, Guid teacherId, ILogger logger)
+    {
+        var anaVisual = await db.Students.FirstOrDefaultAsync(
+            s => s.TeacherId == teacherId && s.Name == "Ana Visual" && !s.IsDeleted);
+        if (anaVisual is null) return;
+
+        const string AnaVisualNativeLanguages = """["Portuguese","Ukrainian"]""";
+
+        if (anaVisual.LearningGoals      == AnaVisualLearningGoals &&
+            anaVisual.ShortTermObjectives == AnaVisualShortTermObjectives &&
+            anaVisual.SkillLevelOverrides == AnaVisualSkillLevelOverrides &&
+            anaVisual.NativeLanguages     == AnaVisualNativeLanguages) return;
+
+        anaVisual.LearningGoals      = AnaVisualLearningGoals;
+        anaVisual.ShortTermObjectives = AnaVisualShortTermObjectives;
+        anaVisual.SkillLevelOverrides = AnaVisualSkillLevelOverrides;
+        anaVisual.NativeLanguages     = AnaVisualNativeLanguages;
+        anaVisual.UpdatedAt           = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        logger.LogInformation("Ana Visual goals, skill overrides, and native languages backfilled.");
+    }
+
+    private static async Task SeedAnaVisualSessionLogAsync(AppDbContext db, Guid teacherId, ILogger logger)
+    {
+        var anaVisual = await db.Students.FirstOrDefaultAsync(
+            s => s.TeacherId == teacherId && s.Name == "Ana Visual" && !s.IsDeleted);
+        if (anaVisual is null) return;
+
+        var logExists = await db.SessionLogs.AnyAsync(s => s.StudentId == anaVisual.Id && !s.IsDeleted);
+        if (logExists) return;
+
+        var now = DateTime.UtcNow;
+        db.SessionLogs.Add(new SessionLog
+        {
+            Id                       = Guid.NewGuid(),
+            StudentId                = anaVisual.Id,
+            TeacherId                = teacherId,
+            SessionDate              = now.AddDays(-7),
+            PlannedContent           = "Phrasal verbs in travel contexts and reading comprehension.",
+            ActualContent            = "Practised 12 travel phrasal verbs; read a passage about airport experiences.",
+            HomeworkAssigned         = "Write a short paragraph using at least 5 phrasal verbs from today.",
+            PreviousHomeworkStatus   = HomeworkStatus.Done,
+            NextSessionTopics        = "Collocations with travel vocabulary",
+            GeneralNotes             = "Student struggles with separable vs inseparable phrasal verbs. Good effort overall.",
+            TopicTags                = """["vocabulary","phrasal verbs"]""",
+            MentionedDifficultyPairs = """[{"competency":"Grammar","subcategory":"Phrasal verbs"},{"competency":"Vocabulary","subcategory":"Travel"}]""",
+            SuggestedDifficulties    = """[{"description":"Confuses separable and inseparable phrasal verbs","competency":"Grammar","subcategory":"Phrasal verbs","severity":"medium"}]""",
+            IsDeleted                = false,
+            CreatedAt                = now.AddDays(-7),
+            UpdatedAt                = now.AddDays(-7),
+        });
+        await db.SaveChangesAsync();
+        logger.LogInformation("Ana Visual session log seeded.");
+    }
+
+    private const string FollowupSeedAnaText = "Follow up on Ana's job interview preparation";
+
+    private static async Task SeedTeacherFollowupsAsync(AppDbContext db, Guid teacherId, ILogger logger)
+    {
+        var alreadySeeded = await db.TeacherFollowups.AnyAsync(
+            f => f.TeacherId == teacherId && f.Text == FollowupSeedAnaText);
+        if (alreadySeeded) return;
+
+        var now = DateTime.UtcNow;
+        db.TeacherFollowups.AddRange(
+            new TeacherFollowup
+            {
+                Id        = Guid.NewGuid(),
+                TeacherId = teacherId,
+                Text      = FollowupSeedAnaText,
+                Status    = "pending",
+                CreatedAt = now,
+            },
+            new TeacherFollowup
+            {
+                Id        = Guid.NewGuid(),
+                TeacherId = teacherId,
+                Text      = "Check Diego's essay draft and give written feedback",
+                Status    = "pending",
+                CreatedAt = now.AddDays(-1),
+            },
+            new TeacherFollowup
+            {
+                Id        = Guid.NewGuid(),
+                TeacherId = teacherId,
+                Text      = "Send Marco extra vocabulary exercises for daily routines",
+                Status    = "pending",
+                CreatedAt = now.AddDays(-2),
+            },
+            new TeacherFollowup
+            {
+                Id        = Guid.NewGuid(),
+                TeacherId = teacherId,
+                Text      = "Review Clara's progress and plan next unit",
+                Status    = "pending",
+                CreatedAt = now.AddDays(-7),
+            }
+        );
+        await db.SaveChangesAsync();
+        logger.LogInformation("Teacher followups seeded: 4 entries across four age bands (today, -1d, -2d, -7d).");
+    }
+
+    // -------------------------------------------------------------------------
+    // Large roster — 30 realistic students (Eastern European, learning Spanish)
+    // Tagged [roster-seed]; idempotent via tag guard.
+    // -------------------------------------------------------------------------
+
+    private static async Task SeedLargeRosterAsync(AppDbContext db, Guid teacherId, ILogger logger)
+    {
+        var rosterSeeded = await db.Students.AnyAsync(s => s.TeacherId == teacherId && s.PersonalNotes == RosterTag);
+        if (rosterSeeded)
+        {
+            logger.LogInformation("Large roster already seeded for teacher — skipping.");
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+
+        var roster = new List<Student>
+        {
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Nataliya",  LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Ukrainian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Kateryna",  LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Ukrainian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Oksana",    LearningLanguage = "Spanish", CefrLevel = "A1", NativeLanguages = """["Ukrainian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Olha",      LearningLanguage = "Spanish", CefrLevel = "B2", NativeLanguages = """["Ukrainian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Iryna",     LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Ukrainian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Svitlana",  LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Ukrainian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Yana",      LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Bulgarian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Gergana",   LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Bulgarian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Milena",    LearningLanguage = "Spanish", CefrLevel = "B2", NativeLanguages = """["Bulgarian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Ralitsa",   LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Bulgarian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Kristina",  LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Bulgarian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Natasha",   LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Russian"]""",     PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Alina",     LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Russian"]""",     PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Darya",     LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Russian"]""",     PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Irina",     LearningLanguage = "Spanish", CefrLevel = "B2", NativeLanguages = """["Russian"]""",     PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Anna",      LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Polish"]""",      PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Marta",     LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Polish"]""",      PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Monika",    LearningLanguage = "Spanish", CefrLevel = "B2", NativeLanguages = """["Polish"]""",      PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Joanna",    LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Polish"]""",      PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Agnieszka", LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Polish"]""",      PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Zuzana",    LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Slovak"]""",      PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Jana",      LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Czech"]""",       PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Elena",     LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Romanian"]""",    PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Noemi",     LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Romanian"]""",    PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Karolina",  LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Hungarian"]""",   PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Maria",     LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Greek"]""",       PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Jelena",    LearningLanguage = "Spanish", CefrLevel = "B2", NativeLanguages = """["Serbian"]""",     PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Inga",      LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Lithuanian"]""",  PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Kristine",  LearningLanguage = "Spanish", CefrLevel = "B1", NativeLanguages = """["Latvian"]""",     PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacherId, Name = "Aino",      LearningLanguage = "Spanish", CefrLevel = "A2", NativeLanguages = """["Estonian"]""",    PersonalNotes = RosterTag, IsActive = true, CreatedAt = now, UpdatedAt = now },
+        };
+
+        db.Students.AddRange(roster);
+        await db.SaveChangesAsync();
+        logger.LogInformation("Large roster seeded: {Count} students with L1 data.", roster.Count);
     }
 
     private static async Task<Student> UpsertStudentAsync(AppDbContext db, Guid teacherId, Student incoming, DateTime now)
@@ -408,15 +885,31 @@ public static class DemoSeeder
 
         if (existing is not null)
         {
-            existing.LearningLanguage = incoming.LearningLanguage;
-            existing.CefrLevel        = incoming.CefrLevel;
-            existing.NativeLanguage   = incoming.NativeLanguage;
-            existing.LearningGoals    = incoming.LearningGoals;
-            existing.Interests        = incoming.Interests;
-            existing.Difficulties     = incoming.Difficulties;
-            existing.Weaknesses       = incoming.Weaknesses;
-            existing.Notes            = incoming.Notes;
-            existing.UpdatedAt        = now;
+            existing.LearningLanguage      = incoming.LearningLanguage;
+            existing.CefrLevel             = incoming.CefrLevel;
+            existing.NativeLanguages       = incoming.NativeLanguages;
+            existing.LearningGoals         = incoming.LearningGoals;
+            existing.Interests             = incoming.Interests;
+            existing.Difficulties          = incoming.Difficulties;
+            existing.Weaknesses            = incoming.Weaknesses;
+            existing.PersonalNotes         = incoming.PersonalNotes;
+            existing.TeachingNotes         = incoming.TeachingNotes;
+            existing.TeachingTodos         = incoming.TeachingTodos;
+            existing.SkillLevelOverrides   = incoming.SkillLevelOverrides;
+            existing.BirthYear             = incoming.BirthYear;
+            existing.Profession            = incoming.Profession;
+            existing.CountryOfOrigin       = incoming.CountryOfOrigin;
+            existing.CityOfOrigin          = incoming.CityOfOrigin;
+            existing.CountryOfResidence    = incoming.CountryOfResidence;
+            existing.CityOfResidence       = incoming.CityOfResidence;
+            existing.ReasonForStudying     = incoming.ReasonForStudying;
+            existing.OfficialCefrLevel     = incoming.OfficialCefrLevel;
+            existing.ShortTermObjectives   = incoming.ShortTermObjectives;
+            existing.IsActive              = incoming.IsActive;
+            existing.IsCorporate           = incoming.IsCorporate;
+            existing.Rate                  = incoming.Rate;
+            existing.SpokenLanguages       = incoming.SpokenLanguages;
+            existing.UpdatedAt             = now;
             return existing;
         }
 

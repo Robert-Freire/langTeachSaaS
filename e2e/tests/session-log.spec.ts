@@ -854,3 +854,93 @@ test('unsaved-changes guard: empty form closes without confirmation', async ({ b
 
   await context.close()
 })
+
+// ── Log Session full-page autosave flow (t727) ──────────────────────────────
+
+test('log session page: autosave creates session without submit button', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    const studentName = `Autosave Test Student ${Date.now()}`
+    const createRes = await page.request.post(`${API_BASE}/api/students`, {
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+      data: {
+        name: studentName,
+        learningLanguage: 'Spanish',
+        cefrLevel: 'B1',
+        interests: [],
+        learningGoals: [],
+        weaknesses: [],
+        difficulties: [],
+      },
+    })
+    expect(createRes.ok()).toBeTruthy()
+    const student = await createRes.json()
+
+    // Navigate directly to log-session page
+    await page.goto(`/students/${student.id}/log-session`)
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 15000 })
+
+    // Type in "What Happened?" - triggers autosave
+    await page.getByTestId('actual-content').fill('Practiced subjunctive with reading exercises.')
+
+    // Wait for autosave to complete (status shows "All changes saved")
+    await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: 5000 })
+
+    // Click Done to navigate back
+    await page.getByTestId('done-btn').click()
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
+
+    // Verify session was created in the API
+    const sessionsRes = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions`, {
+      headers: { Authorization: 'Bearer test-token' },
+    })
+    expect(sessionsRes.ok()).toBeTruthy()
+    const sessions = await sessionsRes.json()
+    expect(sessions.length).toBeGreaterThan(0)
+    expect(sessions[0].actualContent).toBe('Practiced subjunctive with reading exercises.')
+  } finally {
+    await context.close()
+  }
+})
+
+test('log session page: Done navigates back without saving if no changes made', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    const studentName = `No Change Test ${Date.now()}`
+    const createRes = await page.request.post(`${API_BASE}/api/students`, {
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+      data: {
+        name: studentName,
+        learningLanguage: 'Spanish',
+        cefrLevel: 'A2',
+        interests: [],
+        learningGoals: [],
+        weaknesses: [],
+        difficulties: [],
+      },
+    })
+    expect(createRes.ok()).toBeTruthy()
+    const student = await createRes.json()
+
+    await page.goto(`/students/${student.id}/log-session`)
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 15000 })
+
+    // Click Done without typing anything
+    await page.getByTestId('done-btn').click()
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
+
+    // No session should have been created
+    const sessionsRes = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions`, {
+      headers: { Authorization: 'Bearer test-token' },
+    })
+    expect(sessionsRes.ok()).toBeTruthy()
+    const sessions = await sessionsRes.json()
+    expect(sessions.length).toBe(0)
+  } finally {
+    await context.close()
+  }
+})

@@ -10,20 +10,24 @@ const BASE_STUDENT: Student = {
   learningLanguage: 'Spanish',
   cefrLevel: 'A1',
   interests: [],
-  notes: null,
-  nativeLanguage: null,
+  personalNotes: null, teachingNotes: null,
+  nativeLanguages: [],
   learningGoals: [],
   weaknesses: [],
   difficulties: [],
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
+  birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
+  countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
+  officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
+  rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
 }
 
 const FULL_STUDENT: Student = {
   ...BASE_STUDENT,
-  nativeLanguage: 'Italian',
+  nativeLanguages: ['Italian'],
   interests: ['football', 'cooking'],
-  learningGoals: ['get a job in Barcelona'],
+  learningGoals: [{ id: '1', text: 'get a job in Barcelona', children: [] }],
   weaknesses: [{ description: 'ser vs estar', weaknessType: 'grammatical' as const }],
   difficulties: [
     { id: 'x', description: 'subjunctive', competency: 'Grammar', subcategory: '', severity: 'high', trend: 'stable', status: 'Active' },
@@ -48,7 +52,7 @@ describe('computeProfileCompleteness', () => {
   it('returns 33% when cefrLevel + one additional field are populated', () => {
     const { score, missingFields } = computeProfileCompleteness({
       ...BASE_STUDENT,
-      nativeLanguage: 'Italian',
+      nativeLanguages: ['Italian'],
     })
     expect(score).toBe(33) // 2/6 rounded
     expect(missingFields).toHaveLength(4)
@@ -66,7 +70,7 @@ describe('computeProfileCompleteness', () => {
   it('lists missing field names', () => {
     const { missingFields } = computeProfileCompleteness({
       ...BASE_STUDENT,
-      nativeLanguage: 'Italian',
+      nativeLanguages: ['Italian'],
     })
     expect(missingFields).toContain('interests')
     expect(missingFields).toContain('learning goals')

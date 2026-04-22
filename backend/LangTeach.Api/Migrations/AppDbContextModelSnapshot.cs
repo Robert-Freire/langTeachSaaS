@@ -481,6 +481,9 @@ namespace LangTeach.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("Duration")
+                        .HasColumnType("int");
+
                     b.Property<string>("GeneralNotes")
                         .HasColumnType("nvarchar(max)");
 
@@ -535,6 +538,10 @@ namespace LangTeach.Api.Migrations
                     b.Property<Guid>("TeacherId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Title")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
                     b.Property<string>("TopicTags")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -564,8 +571,23 @@ namespace LangTeach.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int?>("BirthYear")
+                        .HasColumnType("int");
+
                     b.Property<string>("CefrLevel")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CityOfOrigin")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CityOfResidence")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CountryOfOrigin")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CountryOfResidence")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
@@ -578,6 +600,12 @@ namespace LangTeach.Api.Migrations
                     b.Property<string>("Interests")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsCorporate")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
@@ -596,10 +624,27 @@ namespace LangTeach.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("NativeLanguage")
+                    b.Property<string>("NativeLanguages")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Notes")
+                    b.Property<string>("OfficialCefrLevel")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PersonalNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Profession")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Rate")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReasonForStudying")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ShortTermObjectives")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SkillLevelOverrides")
@@ -608,8 +653,19 @@ namespace LangTeach.Api.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasDefaultValue("{}");
 
+                    b.Property<string>("SpokenLanguages")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid>("TeacherId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TeachingNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TeachingTodos")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -670,6 +726,54 @@ namespace LangTeach.Api.Migrations
                     b.ToTable("Teachers");
                 });
 
+            modelBuilder.Entity("LangTeach.Api.Data.Models.TeacherFollowup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly?>("DueDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid?>("SourceSessionLogId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(450)")
+                        .HasDefaultValue("pending");
+
+                    b.Property<Guid?>("StudentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TeacherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceSessionLogId");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("TeacherId", "Status");
+
+                    b.HasIndex("TeacherId", "StudentId");
+
+                    b.ToTable("TeacherFollowups");
+                });
+
             modelBuilder.Entity("LangTeach.Api.Data.Models.TeacherSettings", b =>
                 {
                     b.Property<Guid>("Id")
@@ -708,7 +812,6 @@ namespace LangTeach.Api.Migrations
             modelBuilder.Entity("LangTeach.Api.Data.Models.TelegramLink", b =>
                 {
                     b.Property<long>("ChatId")
-                        .ValueGeneratedNever()
                         .HasColumnType("bigint");
 
                     b.Property<DateTime>("CreatedAt")
@@ -765,6 +868,39 @@ namespace LangTeach.Api.Migrations
                     b.HasIndex("TeacherId", "CreatedAt");
 
                     b.ToTable("VoiceNotes");
+                });
+
+            modelBuilder.Entity("LangTeach.Api.Data.Models.VoiceNoteApplication", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ApplicationType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RawExtractionJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("SessionLogId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Transcription")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("VoiceNoteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionLogId");
+
+                    b.HasIndex("VoiceNoteId");
+
+                    b.ToTable("VoiceNoteApplications");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Course", b =>
@@ -961,6 +1097,31 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("Teacher");
                 });
 
+            modelBuilder.Entity("LangTeach.Api.Data.Models.TeacherFollowup", b =>
+                {
+                    b.HasOne("LangTeach.Api.Data.Models.SessionLog", "SourceSessionLog")
+                        .WithMany()
+                        .HasForeignKey("SourceSessionLogId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("LangTeach.Api.Data.Models.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("LangTeach.Api.Data.Models.Teacher", "Teacher")
+                        .WithMany()
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SourceSessionLog");
+
+                    b.Navigation("Student");
+
+                    b.Navigation("Teacher");
+                });
+
             modelBuilder.Entity("LangTeach.Api.Data.Models.TeacherSettings", b =>
                 {
                     b.HasOne("LangTeach.Api.Data.Models.Teacher", "Teacher")
@@ -990,6 +1151,24 @@ namespace LangTeach.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Teacher");
+                });
+
+            modelBuilder.Entity("LangTeach.Api.Data.Models.VoiceNoteApplication", b =>
+                {
+                    b.HasOne("LangTeach.Api.Data.Models.SessionLog", "SessionLog")
+                        .WithMany()
+                        .HasForeignKey("SessionLogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LangTeach.Api.Data.Models.VoiceNote", "VoiceNote")
+                        .WithMany()
+                        .HasForeignKey("VoiceNoteId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("SessionLog");
+
+                    b.Navigation("VoiceNote");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Course", b =>

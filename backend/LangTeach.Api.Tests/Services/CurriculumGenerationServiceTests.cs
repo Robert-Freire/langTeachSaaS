@@ -32,6 +32,10 @@ internal sealed class FakePromptService : IPromptService
         return Dummy();
     }
 
+    public ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx) => Dummy();
+    public ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx) => Dummy();
+    public ClaudeRequest BuildCurriculumValidationPrompt(CurriculumValidationContext ctx) => Dummy();
+
     public CurriculumContext? LastCurriculumContext { get; private set; }
 
     private static ClaudeRequest Dummy() =>

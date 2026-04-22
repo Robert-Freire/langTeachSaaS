@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
@@ -11,6 +12,7 @@ public class SessionLogService : ISessionLogService
 {
     private readonly AppDbContext _db;
     private readonly IDifficultyTrendService _trendService;
+    private readonly IPedagogyConfigService _pedagogy;
     private readonly ILogger<SessionLogService> _logger;
 
     private static readonly HashSet<string> ValidSkills = new(StringComparer.OrdinalIgnoreCase)
@@ -27,10 +29,11 @@ public class SessionLogService : ISessionLogService
     private static readonly JsonSerializerOptions CamelCaseOptions =
         new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public SessionLogService(AppDbContext db, IDifficultyTrendService trendService, ILogger<SessionLogService> logger)
+    public SessionLogService(AppDbContext db, IDifficultyTrendService trendService, IPedagogyConfigService pedagogy, ILogger<SessionLogService> logger)
     {
         _db = db;
         _trendService = trendService;
+        _pedagogy = pedagogy;
         _logger = logger;
     }
 
@@ -43,14 +46,19 @@ public class SessionLogService : ISessionLogService
         if (!studentExists)
             throw new KeyNotFoundException($"Student {studentId} not found.");
 
-        var sessions = await _db.SessionLogs
+        var rawSessions = await _db.SessionLogs
             .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
             .OrderBy(sl => sl.SessionDate.HasValue)
             .ThenByDescending(sl => sl.SessionDate)
-            .Select(sl => ToDto(sl))
             .ToListAsync(cancellationToken);
 
-        return sessions;
+        var sessionIds = rawSessions.Select(sl => sl.Id).ToList();
+        var voiceNoteSessionIds = await _db.VoiceNoteApplications
+            .Where(vna => sessionIds.Contains(vna.SessionLogId))
+            .Select(vna => vna.SessionLogId)
+            .ToHashSetAsync(cancellationToken);
+
+        return rawSessions.Select(sl => ToDto(sl, voiceNoteSessionIds.Contains(sl.Id))).ToList();
     }
 
     public async Task<SessionLogDto?> GetByIdAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default)
@@ -59,7 +67,12 @@ public class SessionLogService : ISessionLogService
             .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.Student.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken);
 
-        return session is null ? null : ToDto(session);
+        if (session is null) return null;
+
+        var hasVoiceNote = await _db.VoiceNoteApplications
+            .AnyAsync(vna => vna.SessionLogId == session.Id, cancellationToken);
+
+        return ToDto(session, hasVoiceNote);
     }
 
     public async Task<SessionLogDto> CreateAsync(Guid teacherId, Guid studentId, CreateSessionLogRequest request, CancellationToken cancellationToken = default)
@@ -95,6 +108,16 @@ public class SessionLogService : ISessionLogService
                 throw new KeyNotFoundException($"Lesson {request.LinkedLessonId.Value} not found.");
         }
 
+        if (request.VoiceNoteId.HasValue)
+        {
+            var voiceNoteExists = await _db.VoiceNotes.AnyAsync(
+                v => v.Id == request.VoiceNoteId.Value && v.TeacherId == teacherId,
+                cancellationToken);
+
+            if (!voiceNoteExists)
+                throw new KeyNotFoundException($"VoiceNote {request.VoiceNoteId.Value} not found.");
+        }
+
         var now = DateTime.UtcNow;
         var sanitizedDifficulties = SanitizeSuggestedDifficulties(request.SuggestedDifficulties, _logger);
         var entity = new SessionLog
@@ -117,11 +140,27 @@ public class SessionLogService : ISessionLogService
             SuggestedDifficulties = SerializeSuggestedDifficulties(sanitizedDifficulties),
             IsCancelled = request.IsCancelled,
             Status = request.Status,
+            Duration = request.Duration,
+            Title = request.Title ?? GenerateTitle(request.PlannedContent, request.ActualContent, request.SessionDate),
             CreatedAt = now,
             UpdatedAt = now
         };
 
         _db.SessionLogs.Add(entity);
+
+        if (request.VoiceNoteId.HasValue || request.VoiceNoteTranscription is not null || request.RawExtractionJson is not null)
+        {
+            _db.VoiceNoteApplications.Add(new VoiceNoteApplication
+            {
+                Id = Guid.NewGuid(),
+                SessionLogId = entity.Id,
+                VoiceNoteId = request.VoiceNoteId,
+                Transcription = request.VoiceNoteTranscription,
+                RawExtractionJson = request.RawExtractionJson,
+                ApplicationType = ApplicationType.Create,
+                AppliedAt = now
+            });
+        }
 
         if (request.LevelReassessmentSkill is not null && request.LevelReassessmentLevel is not null)
             PropagateReassessment(student, request.LevelReassessmentSkill, request.LevelReassessmentLevel, _logger);
@@ -174,6 +213,10 @@ public class SessionLogService : ISessionLogService
 
         var sanitizedDifficulties = SanitizeSuggestedDifficulties(request.SuggestedDifficulties, _logger);
 
+        var titlePlanned = request.PlannedContent ?? entity.PlannedContent;
+        var titleActual = request.ActualContent ?? entity.ActualContent;
+        var titleDate = request.SessionDate ?? entity.SessionDate;
+
         entity.SessionDate = request.SessionDate;
         entity.PlannedContent = request.PlannedContent;
         entity.ActualContent = request.ActualContent;
@@ -189,6 +232,8 @@ public class SessionLogService : ISessionLogService
         entity.SuggestedDifficulties = SerializeSuggestedDifficulties(sanitizedDifficulties);
         entity.IsCancelled = request.IsCancelled;
         entity.Status = request.Status;
+        entity.Duration = request.Duration;
+        entity.Title = request.Title ?? GenerateTitle(titlePlanned, titleActual, titleDate);
         entity.UpdatedAt = DateTime.UtcNow;
 
         Student? studentForUpdate = null;
@@ -220,7 +265,10 @@ public class SessionLogService : ISessionLogService
         try { await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken); }
         catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session update", studentId); }
 
-        return ToDto(entity);
+        var hasVoiceNote = await _db.VoiceNoteApplications
+            .AnyAsync(vna => vna.SessionLogId == entity.Id, cancellationToken);
+
+        return ToDto(entity, hasVoiceNote);
     }
 
     public async Task<bool> SoftDeleteAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default)
@@ -340,7 +388,7 @@ public class SessionLogService : ISessionLogService
         );
     }
 
-    private static SessionLogDto ToDto(SessionLog sl) => new(
+    private static SessionLogDto ToDto(SessionLog sl, bool hasVoiceNote = false) => new(
         sl.Id,
         sl.StudentId,
         sl.TeacherId,
@@ -362,8 +410,25 @@ public class SessionLogService : ISessionLogService
         sl.Status,
         sl.Status.ToString(),
         sl.MentionedDifficultyPairs,
-        sl.SuggestedDifficulties
+        sl.SuggestedDifficulties,
+        sl.Duration,
+        sl.Title,
+        hasVoiceNote
     );
+
+    internal static string GenerateTitle(string? plannedContent, string? actualContent, DateTime? sessionDate)
+    {
+        var content = !string.IsNullOrWhiteSpace(actualContent) ? actualContent : plannedContent;
+        if (!string.IsNullOrWhiteSpace(content))
+        {
+            var firstLine = content.Split('\n', StringSplitOptions.RemoveEmptyEntries)[0].Trim();
+            if (firstLine.Length <= 60) return firstLine;
+            var cut = firstLine.LastIndexOf(' ', 59);
+            return cut > 0 ? firstLine[..cut] : firstLine[..60];
+        }
+        var date = sessionDate?.ToString("MMM d", CultureInfo.InvariantCulture) ?? "unknown date";
+        return $"Session, {date}";
+    }
 
     private static string SerializePairs(List<DifficultyPairDto>? pairs) =>
         pairs is null or { Count: 0 } ? "[]" : JsonStorageHelper.Serialize(pairs);
@@ -374,15 +439,17 @@ public class SessionLogService : ISessionLogService
 
     // Filter out entries with invalid competency/severity before storing or upserting,
     // so the SessionLog column never contains data that would silently break on rehydration.
-    private static List<SuggestedDifficultyDto> SanitizeSuggestedDifficulties(
+    private List<SuggestedDifficultyDto> SanitizeSuggestedDifficulties(
         List<SuggestedDifficultyDto>? items, ILogger logger)
     {
         if (items is null or { Count: 0 }) return [];
+        var validCompetencies = _pedagogy.GetValidDifficultyCompetencies();
+        var validSeverities = _pedagogy.GetValidDifficultySeverities();
         var result = new List<SuggestedDifficultyDto>(items.Count);
         foreach (var item in items)
         {
-            if (!DifficultyConstants.ValidCompetencies.Contains(item.Competency) ||
-                !DifficultyConstants.ValidSeverities.Contains(item.Severity))
+            if (!validCompetencies.Contains(item.Competency) ||
+                !validSeverities.Contains(item.Severity))
             {
                 logger.LogWarning("Dropping suggested difficulty with invalid fields: Competency={Competency}, Severity={Severity}", item.Competency, item.Severity);
                 continue;
@@ -392,12 +459,14 @@ public class SessionLogService : ISessionLogService
         return result;
     }
 
-    private static void UpsertDifficulties(Student student, List<SuggestedDifficultyDto> suggested, ILogger logger)
+    private void UpsertDifficulties(Student student, List<SuggestedDifficultyDto> suggested, ILogger logger)
     {
+        var validCompetencies = _pedagogy.GetValidDifficultyCompetencies();
+        var validSeverities = _pedagogy.GetValidDifficultySeverities();
         var existing = JsonStorageHelper.DeserializeList<DifficultyDto>(student.Difficulties);
         foreach (var s in suggested)
         {
-            if (!DifficultyConstants.ValidCompetencies.Contains(s.Competency) || !DifficultyConstants.ValidSeverities.Contains(s.Severity))
+            if (!validCompetencies.Contains(s.Competency) || !validSeverities.Contains(s.Severity))
             {
                 logger.LogWarning("Skipping suggested difficulty with invalid fields: Competency={Competency}, Severity={Severity}", s.Competency, s.Severity);
                 continue;

@@ -21,7 +21,9 @@ public class StudentServiceTests : IDisposable
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _db = new AppDbContext(options);
-        _sut = new StudentService(_db, NullLogger<StudentService>.Instance);
+        var profileSvc = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogySvc = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, profileSvc);
+        _sut = new StudentService(_db, NullLogger<StudentService>.Instance, pedagogySvc);
 
         _db.Teachers.Add(new Teacher
         {
@@ -38,34 +40,34 @@ public class StudentServiceTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private static CreateStudentRequest BaseRequest(string? nativeLanguage = null) => new()
+    private static CreateStudentRequest BaseRequest(List<string>? nativeLanguages = null) => new()
     {
         Name = "Test Student",
         LearningLanguage = "Spanish",
         CefrLevel = "B1",
-        NativeLanguage = nativeLanguage,
+        NativeLanguages = nativeLanguages ?? [],
     };
 
     [Fact]
     public async Task CreateAsync_CatalanNativeLanguage_Succeeds()
     {
-        var result = await _sut.CreateAsync(_teacherId, BaseRequest("Catalan"));
+        var result = await _sut.CreateAsync(_teacherId, BaseRequest(["Catalan"]));
 
-        result.NativeLanguage.Should().Be("Catalan");
+        result.NativeLanguages.Should().BeEquivalentTo(["Catalan"]);
     }
 
     [Fact]
-    public async Task CreateAsync_NullNativeLanguage_Succeeds()
+    public async Task CreateAsync_EmptyNativeLanguages_Succeeds()
     {
-        var result = await _sut.CreateAsync(_teacherId, BaseRequest(null));
+        var result = await _sut.CreateAsync(_teacherId, BaseRequest([]));
 
-        result.NativeLanguage.Should().BeNull();
+        result.NativeLanguages.Should().BeEmpty();
     }
 
     [Fact]
     public async Task CreateAsync_UnknownNativeLanguage_ThrowsValidationException()
     {
-        var act = () => _sut.CreateAsync(_teacherId, BaseRequest("Klingon"));
+        var act = () => _sut.CreateAsync(_teacherId, BaseRequest(["Klingon"]));
 
         await act.Should().ThrowAsync<ValidationException>();
     }
@@ -78,14 +80,469 @@ public class StudentServiceTests : IDisposable
     [InlineData("Italian")]
     [InlineData("Portuguese")]
     [InlineData("Mandarin")]
+    [InlineData("Chinese (Mandarin)")]
     [InlineData("Japanese")]
     [InlineData("Arabic")]
     [InlineData("Catalan")]
     [InlineData("Other")]
+    [InlineData("Ukrainian")]
+    [InlineData("Russian")]
+    [InlineData("Polish")]
+    [InlineData("Romanian")]
+    [InlineData("Hindi")]
+    [InlineData("Korean")]
+    [InlineData("Turkish")]
     public async Task CreateAsync_AllNativeLanguages_AreAccepted(string language)
     {
-        var result = await _sut.CreateAsync(_teacherId, BaseRequest(language));
+        var result = await _sut.CreateAsync(_teacherId, BaseRequest([language]));
 
-        result.NativeLanguage.Should().Be(language);
+        result.NativeLanguages.Should().BeEquivalentTo([language]);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ReturnsNewProfileFields()
+    {
+        var request = BaseRequest();
+        request.BirthYear = 1990;
+        request.Profession = "Engineer";
+        request.CountryOfOrigin = "Brazil";
+        request.CountryOfResidence = "Spain";
+        request.IsActive = true;
+        request.IsCorporate = true;
+        request.Rate = "25 euros";
+        request.SpokenLanguages = ["French"];
+        var created = await _sut.CreateAsync(_teacherId, request);
+
+        var result = await _sut.GetByIdAsync(_teacherId, created.Id);
+
+        result.Should().NotBeNull();
+        result!.BirthYear.Should().Be(1990);
+        result.Profession.Should().Be("Engineer");
+        result.CountryOfOrigin.Should().Be("Brazil");
+        result.CountryOfResidence.Should().Be("Spain");
+        result.IsActive.Should().BeTrue();
+        result.IsCorporate.Should().BeTrue();
+        result.Rate.Should().Be("25 euros");
+        result.SpokenLanguages.Should().BeEquivalentTo(["French"]);
+    }
+
+    [Fact]
+    public async Task ListAsync_ReturnsIsActiveIsCorporateRate()
+    {
+        var request = BaseRequest();
+        request.IsActive = false;
+        request.IsCorporate = true;
+        request.Rate = "40 euros";
+        await _sut.CreateAsync(_teacherId, request);
+
+        var result = await _sut.ListAsync(_teacherId, new LangTeach.Api.DTOs.StudentListQuery());
+
+        var student = result.Items.Single();
+        student.IsActive.Should().BeFalse();
+        student.IsCorporate.Should().BeTrue();
+        student.Rate.Should().Be("40 euros");
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShortTermObjectives_RoundTrip()
+    {
+        var objectives = new List<ShortTermObjectiveDto>
+        {
+            new("o1", "Pass B2 exam", new DateOnly(2026, 6, 30)),
+            new("o2", "Read a novel in Spanish", null),
+        };
+        var request = BaseRequest();
+        request.ShortTermObjectives = objectives;
+
+        var result = await _sut.CreateAsync(_teacherId, request);
+
+        result.ShortTermObjectives.Should().HaveCount(2);
+        result.ShortTermObjectives[0].Id.Should().Be("o1");
+        result.ShortTermObjectives[0].Text.Should().Be("Pass B2 exam");
+        result.ShortTermObjectives[0].TargetDate.Should().Be(new DateOnly(2026, 6, 30));
+        result.ShortTermObjectives[1].Id.Should().Be("o2");
+        result.ShortTermObjectives[1].TargetDate.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ClearsShortTermObjectives()
+    {
+        var createRequest = BaseRequest();
+        createRequest.ShortTermObjectives = [new("o1", "Initial objective", null)];
+        var created = await _sut.CreateAsync(_teacherId, createRequest);
+
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.CefrLevel,
+            ShortTermObjectives = [],
+        };
+        var updated = await _sut.UpdateAsync(_teacherId, created.Id, updateRequest);
+
+        updated!.ShortTermObjectives.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CreateAsync_SpokenLanguages_RoundTrip()
+    {
+        var request = BaseRequest();
+        request.SpokenLanguages = ["French", "Italian"];
+
+        var result = await _sut.CreateAsync(_teacherId, request);
+
+        result.SpokenLanguages.Should().BeEquivalentTo(["French", "Italian"]);
+    }
+
+    [Fact]
+    public async Task CreateAsync_SkillLevelOverrides_RoundTrip()
+    {
+        var request = BaseRequest();
+        request.SkillLevelOverrides = new Dictionary<string, string>
+        {
+            { "Reading", "B2" },
+            { "Listening", "A2" },
+        };
+
+        var result = await _sut.CreateAsync(_teacherId, request);
+
+        result.SkillLevelOverrides.Should().ContainKey("Reading").WhoseValue.Should().Be("B2");
+        result.SkillLevelOverrides.Should().ContainKey("Listening").WhoseValue.Should().Be("A2");
+        result.SkillLevelOverrides.Should().NotContainKey("Writing");
+    }
+
+    [Fact]
+    public async Task CreateAsync_SkillLevelOverrides_InvalidKey_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.SkillLevelOverrides = new Dictionary<string, string> { { "Pronunciation", "B1" } };
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>().WithMessage("*Pronunciation*");
+    }
+
+    [Fact]
+    public async Task CreateAsync_SkillLevelOverrides_InvalidValue_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.SkillLevelOverrides = new Dictionary<string, string> { { "Reading", "X1" } };
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>().WithMessage("*X1*");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_SkillLevelOverrides_RoundTrip()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        var update = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.CefrLevel,
+            SkillLevelOverrides = new Dictionary<string, string> { { "Speaking", "C1" } },
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, created.Id, update);
+
+        result!.SkillLevelOverrides.Should().ContainKey("Speaking").WhoseValue.Should().Be("C1");
+    }
+
+    [Fact]
+    public async Task CreateAsync_BirthYearOutOfRange_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.BirthYear = 1900;
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_BirthYearFuture_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.BirthYear = DateTime.UtcNow.Year + 1;
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShortTermObjective_EmptyId_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.ShortTermObjectives = [new("", "Some text", null)];
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShortTermObjective_TextTooLong_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.ShortTermObjectives = [new("o1", new string('x', 201), null)];
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShortTermObjectives_ExceedsCap_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.ShortTermObjectives = Enumerable.Range(1, 11)
+            .Select(i => new ShortTermObjectiveDto($"o{i}", $"Objective {i}", null))
+            .ToList();
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    // TeachingTodos tests
+
+    private static TeachingTodoDto MakeTodo(string id, string text = "Work on ser/estar", string status = "Pending") =>
+        new(id, text, DateTime.UtcNow, null, status, null);
+
+    [Fact]
+    public async Task TeachingTodos_JsonRoundTrip_Succeeds()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.CefrLevel,
+            TeachingTodos = [MakeTodo("todo-1", "Repasar pretérito"), MakeTodo("todo-2", "Artículo determinado")],
+        };
+
+        var updated = await _sut.UpdateAsync(_teacherId, created.Id, updateRequest);
+
+        updated!.TeachingTodos.Should().HaveCount(2);
+        updated.TeachingTodos[0].Id.Should().Be("todo-1");
+        updated.TeachingTodos[0].Text.Should().Be("Repasar pretérito");
+        updated.TeachingTodos[1].Id.Should().Be("todo-2");
+    }
+
+    [Fact]
+    public async Task TeachingTodos_StatusTransition_Covered_Succeeds()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        await _sut.UpdateAsync(_teacherId, created.Id, new UpdateStudentRequest
+        {
+            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
+            TeachingTodos = [MakeTodo("todo-1")],
+        });
+
+        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1", new UpdateTeachingTodoDto("Covered", null, null));
+
+        result!.TeachingTodos.Single().Status.Should().Be("Covered");
+    }
+
+    [Fact]
+    public async Task TeachingTodos_StatusTransition_Dismissed_Succeeds()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        await _sut.UpdateAsync(_teacherId, created.Id, new UpdateStudentRequest
+        {
+            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
+            TeachingTodos = [MakeTodo("todo-1")],
+        });
+
+        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1", new UpdateTeachingTodoDto("Dismissed", null, null));
+
+        result!.TeachingTodos.Single().Status.Should().Be("Dismissed");
+    }
+
+    [Fact]
+    public async Task TeachingTodos_MaxEnforced_ThrowsValidation()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        var todos = Enumerable.Range(1, 51).Select(i => MakeTodo($"t{i}", $"Todo {i}")).ToList();
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
+            TeachingTodos = todos,
+        };
+
+        var act = () => _sut.UpdateAsync(_teacherId, created.Id, updateRequest);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task TeachingTodos_InvalidStatus_ThrowsValidation()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
+            TeachingTodos = [MakeTodo("todo-1", "Some text", "invalid-status")],
+        };
+
+        var act = () => _sut.UpdateAsync(_teacherId, created.Id, updateRequest);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task UpdateTeachingTodoAsync_UnknownTodoId_ReturnsNull()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+
+        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "nonexistent-id", new UpdateTeachingTodoDto("Covered", null, null));
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task AppendTeachingTodoAsync_WrongTeacher_ReturnsNull()
+    {
+        var otherTeacherId = Guid.NewGuid();
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+
+        var result = await _sut.AppendTeachingTodoAsync(otherTeacherId, created.Id, new CreateTeachingTodoDto("Some text", null));
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task AppendTeachingTodoAsync_AppendsEntryWithPendingStatus()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+
+        var result = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Trabajar ser/estar", null));
+
+        result!.TeachingTodos.Should().HaveCount(1);
+        result.TeachingTodos[0].Text.Should().Be("Trabajar ser/estar");
+        result.TeachingTodos[0].Status.Should().Be("Pending");
+        result.TeachingTodos[0].Id.Should().NotBeNullOrEmpty();
+    }
+
+    // DeleteTeachingTodoAsync tests
+
+    [Fact]
+    public async Task DeleteTeachingTodoAsync_RemovesTodo_ReturnsUpdatedStudent()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        await _sut.UpdateAsync(_teacherId, created.Id, new UpdateStudentRequest
+        {
+            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
+            TeachingTodos = [MakeTodo("todo-1"), MakeTodo("todo-2")],
+        });
+
+        var result = await _sut.DeleteTeachingTodoAsync(_teacherId, created.Id, "todo-1");
+
+        result!.TeachingTodos.Should().HaveCount(1);
+        result.TeachingTodos[0].Id.Should().Be("todo-2");
+    }
+
+    [Fact]
+    public async Task DeleteTeachingTodoAsync_UnknownTodoId_ReturnsNull()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+
+        var result = await _sut.DeleteTeachingTodoAsync(_teacherId, created.Id, "nonexistent-id");
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DeleteTeachingTodoAsync_WrongTeacher_ReturnsNull()
+    {
+        var otherTeacherId = Guid.NewGuid();
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+
+        var result = await _sut.DeleteTeachingTodoAsync(otherTeacherId, created.Id, "todo-1");
+
+        result.Should().BeNull();
+    }
+
+    // UpdateTeachingTodoAsync text-edit tests
+
+    [Fact]
+    public async Task UpdateTeachingTodoAsync_WithText_UpdatesText()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        await _sut.UpdateAsync(_teacherId, created.Id, new UpdateStudentRequest
+        {
+            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
+            TeachingTodos = [MakeTodo("todo-1", "Original text")],
+        });
+
+        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1",
+            new UpdateTeachingTodoDto("Pending", null, "Updated text"));
+
+        result!.TeachingTodos.Single().Text.Should().Be("Updated text");
+    }
+
+    [Fact]
+    public async Task UpdateTeachingTodoAsync_TextTooLong_ThrowsValidation()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        await _sut.UpdateAsync(_teacherId, created.Id, new UpdateStudentRequest
+        {
+            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
+            TeachingTodos = [MakeTodo("todo-1")],
+        });
+
+        var act = () => _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1",
+            new UpdateTeachingTodoDto("Pending", null, new string('x', 501)));
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithLegacyFlatStringLearningGoals_DeserializesBackwardCompat()
+    {
+        // Simulate a student row saved with the old flat-string JSON format
+        var student = new Student
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = _teacherId,
+            Name = "Legacy Goals Student",
+            LearningLanguage = "Spanish",
+            CefrLevel = "B1",
+            LearningGoals = """["travel","work"]""",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        _db.Students.Add(student);
+        await _db.SaveChangesAsync();
+
+        var result = (await _sut.ListAsync(_teacherId, new StudentListQuery(), CancellationToken.None)).Items;
+
+        var legacy = result.Single(s => s.Id == student.Id);
+        legacy.LearningGoals.Should().HaveCount(2);
+        legacy.LearningGoals.Select(g => g.Text).Should().BeEquivalentTo(["travel", "work"]);
+        legacy.LearningGoals.Should().AllSatisfy(g => g.Children.Should().BeEmpty());
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithThreeLevelNestedGoal_ThrowsValidation()
+    {
+        var request = BaseRequest();
+        request.LearningGoals =
+        [
+            new LearningGoalDto(Guid.NewGuid().ToString(), "Level 1",
+            [
+                new LearningGoalDto(Guid.NewGuid().ToString(), "Level 2",
+                [
+                    new LearningGoalDto(Guid.NewGuid().ToString(), "Level 3 — not allowed", []),
+                ]),
+            ]),
+        ];
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
     }
 }

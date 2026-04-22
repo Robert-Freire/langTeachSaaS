@@ -153,13 +153,17 @@ describe('Onboarding', () => {
       learningLanguage: 'English',
       cefrLevel: 'B1',
       interests: [],
-      notes: null,
-      nativeLanguage: null,
+      personalNotes: null, teachingNotes: null,
+      nativeLanguages: [],
       learningGoals: [],
       weaknesses: [],
       difficulties: [],
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-01T00:00:00Z',
+      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
+      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
+      officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
+      rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
     }
     mockGetStudents.mockResolvedValue({ items: [mockStudent], totalCount: 1, page: 1, pageSize: 1 })
 
@@ -280,13 +284,17 @@ describe('Onboarding', () => {
       learningLanguage: 'English',
       cefrLevel: 'B1',
       interests: [],
-      notes: null,
-      nativeLanguage: null,
+      personalNotes: null, teachingNotes: null,
+      nativeLanguages: [],
       learningGoals: [],
       weaknesses: [],
       difficulties: [],
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-01T00:00:00Z',
+      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
+      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
+      officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
+      rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
     }
     mockGetStudents.mockResolvedValue({ items: [mockStudent], totalCount: 1, page: 1, pageSize: 1 })
 

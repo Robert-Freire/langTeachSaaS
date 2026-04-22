@@ -183,6 +183,8 @@ else
     builder.Services.AddScoped<IReplanSuggestionService, ReplanSuggestionService>();
 builder.Services.AddScoped<IDifficultyTrendService, DifficultyTrendService>();
 builder.Services.AddScoped<ISessionLogService, SessionLogService>();
+builder.Services.AddScoped<ITeacherFollowupService, TeacherFollowupService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IProgressService, ProgressService>();
 builder.Services.AddScoped<ISessionHistoryService, SessionHistoryService>();
 builder.Services.AddScoped<ICurriculumGenerationService, CurriculumGenerationService>();
@@ -253,6 +255,31 @@ if (seedIndex >= 0)
     var seedDb     = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
     var seedLogger = seedScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var seeded = await DemoSeeder.SeedAsync(seedDb, teacherLookup, seedLogger);
+    return seeded ? 0 : 1;
+}
+
+// Scenario seed: dotnet LangTeach.Api.dll --seed-scenario <1-6> <auth0-user-id|email>
+var seedScenarioIndex = Array.IndexOf(args, "--seed-scenario");
+if (seedScenarioIndex >= 0)
+{
+    var scenarioStr  = seedScenarioIndex + 1 < args.Length ? args[seedScenarioIndex + 1] : null;
+    var teacherArg   = seedScenarioIndex + 2 < args.Length ? args[seedScenarioIndex + 2] : null;
+
+    if (!int.TryParse(scenarioStr, out var scenario) || scenario < 1 || scenario > 7)
+    {
+        Console.Error.WriteLine("Usage: --seed-scenario <1-7> <auth0-user-id|email>");
+        return 1;
+    }
+    if (string.IsNullOrWhiteSpace(teacherArg))
+    {
+        Console.Error.WriteLine("Usage: --seed-scenario <1-7> <auth0-user-id|email>");
+        return 1;
+    }
+
+    using var scenarioScope  = app.Services.CreateScope();
+    var scenarioDb     = scenarioScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var scenarioLogger = scenarioScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var seeded = await ScenarioSeeder.SeedScenarioAsync(scenarioDb, scenario, teacherArg, scenarioLogger);
     return seeded ? 0 : 1;
 }
 

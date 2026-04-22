@@ -15,19 +15,63 @@ export interface Difficulty {
   status: string
 }
 
+export interface ShortTermObjective {
+  id: string
+  text: string
+  targetDate: string | null
+}
+
+export interface LearningGoalItem {
+  id: string
+  text: string
+  children: LearningGoalItem[]
+}
+
+export interface TeachingTodo {
+  id: string
+  text: string
+  createdAt: string
+  sourceSessionLogId: string | null
+  status: string
+  coveredInSessionLogId: string | null
+}
+
 export interface Student {
   id: string
   name: string
   learningLanguage: string
   cefrLevel: string
   interests: string[]
-  notes: string | null
-  nativeLanguage: string | null
-  learningGoals: string[]
+  personalNotes: string | null
+  teachingNotes: string | null
+  nativeLanguages: string[]
+  learningGoals: LearningGoalItem[]
   weaknesses: StudentWeaknessItem[]
   difficulties: Difficulty[]
   createdAt: string
   updatedAt: string
+  // Identity fields
+  birthYear: number | null
+  profession: string | null
+  countryOfOrigin: string | null
+  cityOfOrigin: string | null
+  countryOfResidence: string | null
+  cityOfResidence: string | null
+  reasonForStudying: string | null
+  // Level fields
+  officialCefrLevel: string | null
+  // Plan fields
+  shortTermObjectives: ShortTermObjective[]
+  // Commercial fields
+  isActive: boolean
+  isCorporate: boolean
+  rate: string | null
+  // Language fields
+  spokenLanguages: string[]
+  // Teaching fields
+  teachingTodos: TeachingTodo[]
+  // Skill override fields
+  skillLevelOverrides: Record<string, string>
 }
 
 export interface StudentListResponse {
@@ -42,11 +86,27 @@ export interface StudentFormData {
   learningLanguage: string
   cefrLevel: string
   interests: string[]
-  notes?: string | null
-  nativeLanguage?: string | null
-  learningGoals: string[]
+  personalNotes?: string | null
+  teachingNotes?: string | null
+  nativeLanguages?: string[]
+  learningGoals: LearningGoalItem[]
   weaknesses: StudentWeaknessItem[]
   difficulties: Difficulty[]
+  birthYear?: number | null
+  profession?: string | null
+  countryOfOrigin?: string | null
+  cityOfOrigin?: string | null
+  countryOfResidence?: string | null
+  cityOfResidence?: string | null
+  reasonForStudying?: string | null
+  officialCefrLevel?: string | null
+  shortTermObjectives?: ShortTermObjective[]
+  isActive?: boolean
+  isCorporate?: boolean
+  rate?: string | null
+  spokenLanguages?: string[]
+  teachingTodos?: TeachingTodo[]
+  skillLevelOverrides?: Record<string, string>
 }
 
 export async function getStudents(params?: {
@@ -94,5 +154,24 @@ export interface LessonHistoryEntry {
 
 export async function getLessonHistory(studentId: string): Promise<LessonHistoryEntry[]> {
   const res = await apiClient.get<LessonHistoryEntry[]>(`/api/students/${studentId}/lesson-history`)
+  return res.data
+}
+
+export async function appendTeachingTodo(studentId: string, text: string): Promise<Student> {
+  const res = await apiClient.post<Student>(`/api/students/${studentId}/teaching-todos`, { text })
+  return res.data
+}
+
+export async function updateTeachingTodo(
+  studentId: string,
+  todoId: string,
+  update: { status: string; text?: string; coveredInSessionLogId?: string | null }
+): Promise<Student> {
+  const res = await apiClient.patch<Student>(`/api/students/${studentId}/teaching-todos/${todoId}`, update)
+  return res.data
+}
+
+export async function deleteTeachingTodo(studentId: string, todoId: string): Promise<Student> {
+  const res = await apiClient.delete<Student>(`/api/students/${studentId}/teaching-todos/${todoId}`)
   return res.data
 }

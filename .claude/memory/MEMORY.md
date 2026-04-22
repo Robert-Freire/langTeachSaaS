@@ -44,12 +44,18 @@
 - [Never defer without a GitHub issue](feedback_never_defer_without_issue.md) — every deferral needs a GitHub issue immediately
 - [Never run frontend locally](feedback_no_local_frontend_dev.md) — frontend in Docker only; never start Vite on host
 - [No parallel background agents](feedback_background_agent_polling.md) — notifications unreliable; run all agents sequentially in foreground
+- [Review agent retired](feedback_review_agent_retired.md)
+- [Vera screen review procedure](feedback_vera_screen_review_procedure.md) — Chrome + Stitch + code + behavior doc + feedback2 + issues; always read component code before writing findings — CodeRabbit handles line-level code review; no pre-push `review` agent
 - [Stop on infrastructure gaps](feedback_stop_on_infra_gaps.md) — if backend can't fulfill an AC, stop and ask; don't invent frontend workarounds
 - [Review findings must become issues](feedback_review_findings_must_be_issues.md) — file GitHub issues for all sprint-close findings before closing
 - [Task status format is script-parsed](feedback_task_status_format_stability.md) — don't change memory format without updating scripts that parse it
 - [State sprint branch name at merge green light](feedback_sprint_merge_branch_name.md) — always say the branch name (e.g. sprint/post-class-tracking) when approving merge
+- [Issue creation discipline](feedback_issue_creation_discipline.md) — all decisions made, all labels set (incl size), no open choices; checklist at .claude/procedures/issue-management.md
 
 ## Reference
+- [Screen behavior docs (Vera)](reference_screen_behavior_docs.md) — per-screen state logic + test scenarios at `plan/langteach-beta/scenarios-by-screen.vera/`
+- [UI redesign feedback 2](reference_ui_redesign_feedback2.md) — actionable post-impl fixes at `plan/ui-redesign-feedback2.md`; issues #763 #764 created; students list / log session / edit student not yet reviewed
+- [Azure resources (dev)](reference_azure_resources.md) — vault `kv-lt-dev-5ba22u`, RG `rg-langteach-dev`, full resource table
 - [Token usage tracking](reference_token_usage_tracking.md) — check ~/.claude/logs/usage-log.jsonl; snippets in ~/.claude/usage-guide.md
 - [Audio transcription method](reference_audio_transcription.md) — local transcription: Whisper + ffmpeg
 - [Gmail bot account access](reference_gmail_bot_access.md) — IMAP/SMTP for robert.freire.bot@gmail.com; use curl
@@ -59,3 +65,5 @@
 - [Pedagogy reviewer: Isaac](reference_pedagogy_reviewer_isaac.md) — pedagogy-reviewer agent = Isaac
 - [Software architect: Sophy](reference_sophy_architect.md) — architect agent: data models, drift review
 - [Architecture reviewer: Arch](reference_arch_reviewer.md) — architecture-reviewer agent = Arch
+- [UX designer: Vera](reference_vera_ux_designer.md) — /vera skill for interaction design, screen review, layout decisions
+- [Student Profile Field Guide](reference_student_field_guide.md) — docs/student-profile-field-guide.md is source of truth for student fields; sync on changes

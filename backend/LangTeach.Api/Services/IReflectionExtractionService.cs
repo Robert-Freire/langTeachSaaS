@@ -4,5 +4,5 @@ namespace LangTeach.Api.Services;
 
 public interface IReflectionExtractionService
 {
-    Task<ExtractedReflectionDto> ExtractAsync(string text, CancellationToken ct = default);
+    Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, CancellationToken ct = default);
 }

@@ -11,8 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
-import { LANGUAGES, NATIVE_LANGUAGES } from '@/lib/languages'
+import { LANGUAGES, NATIVE_LANGUAGE_OPTIONS } from '@/lib/languages'
 
 interface OnboardingStep2Props {
   onNext: (student: Student) => void
@@ -25,7 +26,7 @@ export default function OnboardingStep2({ onNext, onBack, onSkip }: OnboardingSt
   const [name, setName] = useState('')
   const [learningLanguage, setLearningLanguage] = useState('')
   const [cefrLevel, setCefrLevel] = useState('')
-  const [nativeLanguage, setNativeLanguage] = useState('')
+  const [nativeLanguages, setNativeLanguages] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const { mutate, isPending } = useMutation({
@@ -63,7 +64,7 @@ export default function OnboardingStep2({ onNext, onBack, onSkip }: OnboardingSt
       learningGoals: [],
       weaknesses: [],
       difficulties: [],
-      nativeLanguage: nativeLanguage || null,
+      nativeLanguages,
     })
   }
 
@@ -116,17 +117,17 @@ export default function OnboardingStep2({ onNext, onBack, onSkip }: OnboardingSt
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="nativeLanguage">Native language (optional)</Label>
-        <Select value={nativeLanguage} onValueChange={(v) => setNativeLanguage(v ?? '')}>
-          <SelectTrigger className="max-w-sm" id="nativeLanguage" data-testid="onboarding-native-language">
-            <SelectValue placeholder="Select language" />
-          </SelectTrigger>
-          <SelectContent>
-            {NATIVE_LANGUAGES.map(lang => (
-              <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Label>Native languages (optional)</Label>
+        <MultiSelect
+          options={NATIVE_LANGUAGE_OPTIONS}
+          selected={nativeLanguages}
+          onChange={setNativeLanguages}
+          placeholder="Select native languages"
+          triggerId="onboarding-native-language"
+          chipTestId="onboarding-native-lang-chip"
+          maxItems={5}
+          allowCustom={false}
+        />
       </div>
 
       {error && <p className="text-sm text-red-600" data-testid="step2-error">{error}</p>}

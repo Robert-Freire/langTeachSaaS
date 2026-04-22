@@ -203,10 +203,16 @@ public class TelegramConversationService : ITelegramConversationService
     private async Task<CreateSessionLogRequest> BuildSessionLogRequestAsync(
         long chatId, Guid teacherId, Guid studentId, string notes, CancellationToken ct)
     {
+        var student = await _studentService.GetByIdAsync(teacherId, studentId, ct);
+        var knownDifficulties = student?.Difficulties
+            .Select(d => d.Description)
+            .Where(d => !string.IsNullOrWhiteSpace(d))
+            .ToList();
+
         ExtractedReflectionDto? extracted = null;
         try
         {
-            extracted = await _extractionService.ExtractAsync(notes, ct);
+            extracted = await _extractionService.ExtractAsync(notes, knownDifficulties, ct);
         }
         catch (OperationCanceledException)
         {
@@ -224,26 +230,30 @@ public class TelegramConversationService : ITelegramConversationService
             return new CreateSessionLogRequest
             {
                 SessionDate = DateTime.UtcNow.Date,
-                GeneralNotes = notes
+                GeneralNotes = notes,
+                VoiceNoteTranscription = notes
             };
         }
 
         // Mirror of SessionLogDialog.tsx:316-346 — join AreasToImprove + EmotionalSignals into GeneralNotes,
         // map the rest onto their structured fields.
         var generalNotes = string.Join("\n",
-            new[] { extracted.AreasToImprove, extracted.EmotionalSignals }
+            new[] { extracted.AreasToImprove?.Value, extracted.EmotionalSignals }
                 .Where(s => !string.IsNullOrWhiteSpace(s)));
 
         return new CreateSessionLogRequest
         {
             SessionDate = ParseSessionDate(extracted.SessionDate),
-            ActualContent = extracted.WhatWasCovered,
-            HomeworkAssigned = extracted.HomeworkAssigned,
-            NextSessionTopics = extracted.NextLessonIdeas,
+            ActualContent = extracted.WhatWasCovered?.Value,
+            HomeworkAssigned = extracted.HomeworkAssigned?.Value,
+            NextSessionTopics = extracted.NextLessonIdeas?.Value,
             GeneralNotes = string.IsNullOrEmpty(generalNotes) ? null : generalNotes,
             SuggestedDifficulties = extracted.SuggestedDifficulties.Count > 0
                 ? extracted.SuggestedDifficulties
-                : null
+                : null,
+            Title = extracted.SessionTitle is { Length: > 120 } t ? t[..120] : extracted.SessionTitle,
+            VoiceNoteTranscription = notes,
+            RawExtractionJson = extracted.RawExtractionJson
         };
     }
 

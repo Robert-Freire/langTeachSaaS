@@ -19,6 +19,8 @@ import Courses from './pages/Courses'
 import CourseNew from './pages/CourseNew'
 import CourseDetail from './pages/CourseDetail'
 import StudentDetail from './pages/StudentDetail'
+import LogSession from './pages/LogSession'
+import Sessions from './pages/Sessions'
 import Onboarding from './pages/Onboarding'
 
 const queryClient = new QueryClient()
@@ -51,6 +53,9 @@ export default function App() {
                   <Route path="/students" element={<Students />} />
                   <Route path="/students/new" element={<StudentForm />} />
                   <Route path="/students/:id/edit" element={<StudentForm />} />
+                  <Route path="/students/:id/log-session" element={<LogSession />} />
+                  <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+                  <Route path="/sessions" element={<Sessions />} />
                   <Route path="/students/:id" element={<StudentDetail />} />
                   <Route path="/lessons" element={<Lessons />} />
                   <Route path="/lessons/new" element={<LessonNew />} />

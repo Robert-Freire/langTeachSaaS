@@ -1,45 +1,36 @@
 ---
-name: LangTeach SaaS — Design System Decisions
-description: UI design choices, rationale, and conventions established in T5.1
+name: LangTeach SaaS — Design System
+description: Where to find UI/UX standards; current design system is Academic Atelier (Stitch)
 type: project
 ---
 
-## Component Library
-- **shadcn/ui** + **Tailwind CSS v4** + **@tailwindcss/vite**
-- Components live in `frontend/src/components/ui/` (copy-paste, not a package)
-- `cn()` utility from `@/lib/utils` — always use for className merging (clsx + tailwind-merge)
-- Icon library: **Lucide React** (`lucide-react`) — default size `h-4 w-4`, nav icons `h-5 w-5`
-- Font: **Geist Variable** (installed by shadcn init, replaces Inter from original spec)
+## Authoritative Reference
 
-## Color Palette (CSS variables in `src/index.css`)
-- **Primary**: indigo-600 `oklch(0.511 0.262 276.966)` — buttons, active nav, badge selections
-- **Ring**: indigo-500 `oklch(0.585 0.233 277.117)` — focus rings
-- Neutrals: zinc scale throughout (zinc-50 background, zinc-200 borders, zinc-600 body text)
-- Semantic: emerald-600 success, amber-500 warning, red-600 error
+**`docs/design-system.md`** is the single source of truth for all UI work. Read it before implementing or reviewing any screen. It covers:
+- Visual standards (colors, typography, elevation, components)
+- Interaction patterns (autosave, list add, session inline edit)
+- What is explicitly not allowed (Save/Cancel on inline edits, kebab-only-for-edit, etc.)
 
-## Layout (AppShell — `src/components/AppShell.tsx`)
-- **Sidebar**: white bg, `border-r border-zinc-200`, 240px wide
-  - Rationale: tried zinc-900 (too stark) and indigo-950 (better but still too contrasty) — light sidebar won
-  - "LangTeach" logo: `text-indigo-600 font-bold` wordmark (no icon yet — deferred to T9.1)
-  - Active nav item: `bg-indigo-50 text-indigo-700` + indigo icon
-  - Inactive: `text-zinc-600 hover:bg-zinc-50`
-- **Content area**: `bg-zinc-50`, padding `p-6`
+## Design System: Academic Atelier
 
-## Component Conventions
-- Cards: `bg-white border border-zinc-200 rounded-lg` (shadcn Card default)
-- Buttons: primary uses `bg-indigo-600 hover:bg-indigo-700` explicitly (shadcn primary maps to CSS var)
-- Toggle badges (languages, CEFR, style): button wrapping Badge, `aria-pressed` for state + testability
-  - Selected: `bg-indigo-600 text-white`
-  - Unselected: `bg-white text-zinc-600 border-zinc-200`
-- Form fields: Label above Input, `max-w-sm` width, grouped in Cards with CardHeader/CardContent
+The current design system is "Academic Atelier" (also called the Stitch design system), established during the UI Redesign sprint. NOT the original shadcn/zinc system from T5.1.
 
-## Infrastructure Notes
-- `.npmrc` has `legacy-peer-deps=true` — required because `@tailwindcss/vite` peer dep doesn't yet list Vite 8
-- `frontend/Dockerfile` copies `.npmrc` before `npm ci` for the same reason
-- `tsconfig.app.json` and `tsconfig.json` both have `baseUrl` + `paths` for `@/` alias
-- `@testing-library/dom` added explicitly to devDeps (peer dep of @testing-library/react, not auto-installed)
+Key characteristics:
+- **No-Line Rule**: no 1px borders between sections; use tonal layering (background color shifts) instead
+- **Tonal surface hierarchy**: `surface` (#FBF8FF) → `surface-container-low` (#F4F2FD) → `surface-container-lowest` (#FFF)
+- **Primary color**: indigo `#3525CD` with gradient to `#4F46E5` on primary buttons
+- **Fonts**: Manrope (display/headlines) + Inter (UI/body)
+- **CEFR badges**: square format (not pill), color-coded by level group (A/B/C)
 
-## Deferred
-- T9.1: proper logo/icon — defer until T6-T8 done and brand personality is clearer
-- Dark mode: shadcn supports it via `.dark` class, not wired up yet
-- Mobile responsiveness: basic usability only, full pass deferred
+Stitch mockup files per screen: `plan/langteach-beta/stitch-design-system/`
+
+## Interaction Pattern Standard (set 2026-04-16)
+
+Three permitted patterns -- see `docs/design-system.md` section 8 for full rules:
+- **Pattern A**: Autosave on blur for single-value fields (no Save/Cancel buttons)
+- **Pattern B**: Immediate-add for growing lists (+ button, no Save/Cancel)
+- **Pattern C**: Full-page edit form with Done button (Done = navigation, not save)
+
+Every autosave must show a `<SavedIndicator />` component (fade-in "Saved ✓", 1.5s).
+
+**Why:** the app had three inconsistent save models on the same screen. The standard was set to eliminate all Save/Cancel buttons from inline edits on the student detail Profile tab.

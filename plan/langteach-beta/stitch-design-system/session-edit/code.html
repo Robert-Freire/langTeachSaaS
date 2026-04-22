@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Log Session | LangTeach</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#eeedf7",
+                        "outline": "#777587",
+                        "on-surface-variant": "#464555",
+                        "on-primary-fixed": "#0f0069",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb695",
+                        "on-tertiary-container": "#ffd2be",
+                        "secondary-container": "#d0e1fb",
+                        "secondary-fixed": "#d3e4fe",
+                        "outline-variant": "#c7c4d8",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "on-error": "#ffffff",
+                        "on-background": "#1a1b22",
+                        "surface-container-highest": "#e3e1ec",
+                        "inverse-primary": "#c3c0ff",
+                        "surface-variant": "#e3e1ec",
+                        "on-secondary-container": "#54647a",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#e2dfff",
+                        "surface-tint": "#4d44e3",
+                        "on-tertiary-fixed": "#351000",
+                        "primary-container": "#4f46e5",
+                        "surface-dim": "#dad9e3",
+                        "background": "#fbf8ff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffdbcc",
+                        "tertiary-container": "#a44100",
+                        "on-tertiary-fixed-variant": "#7b2f00",
+                        "inverse-surface": "#2f3038",
+                        "surface-bright": "#fbf8ff",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "surface": "#fbf8ff",
+                        "error": "#ba1a1a",
+                        "primary": "#3525cd",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "on-primary-container": "#dad7ff",
+                        "surface-container-low": "#f4f2fd",
+                        "surface-container-high": "#e8e7f1",
+                        "on-secondary-fixed": "#0b1c30",
+                        "secondary": "#505f76",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "tertiary": "#7e3000",
+                        "on-surface": "#1a1b22",
+                        "inverse-on-surface": "#f1effa"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+        .cefr-badge { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+        select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; -webkit-appearance: none; -moz-appearance: none; appearance: none; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- Sidebar Navigation -->
+<aside class="h-screen w-64 flex-col fixed left-0 top-0 bg-indigo-50/50 dark:bg-zinc-900 flex flex-col py-8 px-6 z-50">
+<div class="mb-10">
+<h1 class="text-xl font-bold tracking-tight text-indigo-900 dark:text-indigo-100">The Atelier</h1>
+<p class="text-[0.6875rem] font-bold tracking-wider uppercase text-zinc-500 mt-1">Digital Curator</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 dark:text-zinc-400 hover:bg-indigo-50 dark:hover:bg-zinc-800/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 dark:text-zinc-400 hover:bg-indigo-50 dark:hover:bg-zinc-800/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="text-sm font-medium">Students</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-indigo-700 dark:text-indigo-300 font-semibold bg-white/80 dark:bg-zinc-800 rounded-lg transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="text-sm font-medium">Sessions</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 dark:text-zinc-400 hover:bg-indigo-50 dark:hover:bg-zinc-800/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="text-sm font-medium">Courses</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 dark:text-zinc-400 hover:bg-indigo-50 dark:hover:bg-zinc-800/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="class">class</span>
+<span class="text-sm font-medium">Lessons</span>
+</a>
+</nav>
+<div class="mt-auto space-y-2">
+<button class="w-full flex items-center justify-center gap-2 bg-gradient-to-br from-primary to-primary-container text-white py-3 rounded-xl font-semibold mb-6 hover:opacity-90 transition-all active:scale-95">
+<span class="material-symbols-outlined text-lg" data-icon="add">add</span>
+<span class="text-sm">New Session</span>
+</button>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 dark:text-zinc-400 hover:bg-indigo-50 dark:hover:bg-zinc-800/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 dark:text-zinc-400 hover:bg-indigo-50 dark:hover:bg-zinc-800/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="text-sm font-medium">Help</span>
+</a>
+</div>
+</aside>
+<!-- Top App Bar -->
+<header class="flex justify-between items-center h-20 px-8 ml-64 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md docked full-width top-0 sticky z-40 shadow-sm dark:shadow-none">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-indigo-700 cursor-pointer" data-icon="arrow_back">arrow_back</span>
+<h2 class="text-lg font-bold text-indigo-900 dark:text-zinc-100">Log Session</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-full text-sm focus:ring-2 focus:ring-primary/20 w-64" placeholder="Search sessions..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-zinc-500 hover:text-indigo-600 transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="bg-gradient-to-br from-primary to-primary-container text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md hover:opacity-90 active:opacity-80 transition-all">
+                Save Log
+            </button>
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high">
+<img alt="Educator Profile" data-alt="Portrait of a professional educator with a friendly smile in a modern office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfxEdc95Xi6phh_SrYkT8htJm6rbaHmBm0j9llP7FIoo_tAMv0eAh3P7-28LNoFuV0UOLNM6QuRaPiWYupT0cGxUT7Gaif-jk2WpHZLI-tjlqziuduVB5X8MoidTGGFkJLe4MWJrjv8_Ov9ISpp8-Ibg8EsXjp1Y3ESOweDxmYMOi97OMhl9WnTJzpKlrNJ0-6xAbDpS0LFvlvqNfRxAZ7nzLLX9nD1rCZr6jetoT6PBShpM-2rCQKJ3WL-34VG3ukScCLdmCbdZUf"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Grid -->
+<main class="ml-64 p-8 flex gap-8">
+<!-- Left Column: Student Context Panel -->
+<aside class="w-80 shrink-0 space-y-6">
+<div class="bg-surface-container-low rounded-xl p-6 border-l-4 border-indigo-600">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-12 h-12 rounded-lg overflow-hidden bg-white">
+<img alt="Student Profile" data-alt="Close-up portrait of a student named Ana Martins looking thoughtful" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6V47xk9TTHh8EpMIqco0jE8PDjnG7z4_lJ9jNCjumGtNCzhsZq97coYXGRWbMqutlUmk2Xie7407cjr-PciDv2sw9NuoGyMzmNPOHU0jDvkSde9OCI5xmpPwztIO-lr4Z43SEppnPue7rr0X8ByijvWu44330tzNhbjs4iniKz7xk5KMDwVCLW7kJjJMwzKrHwl0r04HrGHBoOTxvQzsYviSIMXDiI6qfMNaviL8GjlU8CJ1nXiZURv4dKtRditO5Vv2Eo4YIIdbW"/>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">Ana Martins</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="cefr-badge bg-primary-fixed text-on-primary-fixed-variant rounded-md text-[0.6875rem] font-bold">B1</span>
+<span class="text-xs text-zinc-500">Portuguese</span>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<div class="pb-4 border-b border-outline-variant/20">
+<p class="text-[0.6875rem] font-bold tracking-wider uppercase text-zinc-400 mb-2">Short-Term Objectives</p>
+<ul class="space-y-2">
+<li class="flex flex-col">
+<span class="text-sm font-medium text-indigo-900 leading-tight">DELE B2 Preparation</span>
+<span class="text-[10px] font-bold text-amber-600 uppercase">Target: June 15 (4 weeks left)</span>
+</li>
+<li class="flex flex-col">
+<span class="text-sm font-medium text-indigo-900 leading-tight">Master Imperfect vs Preterite</span>
+<span class="text-[10px] font-bold text-red-600 uppercase">OVERDUE: Oct 20</span>
+</li>
+</ul>
+</div>
+<div>
+<p class="text-[0.6875rem] font-bold tracking-wider uppercase text-zinc-400 mb-3">Teaching Todos</p>
+<ul class="space-y-3">
+<li class="flex items-start gap-3">
+<input class="mt-1 rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-sm text-on-surface-variant">Review subjunctive triggers</span>
+</li>
+<li class="flex items-start gap-3">
+<input class="mt-1 rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-sm text-on-surface-variant">Check homework (Past Perfect)</span>
+</li>
+</ul>
+</div>
+<div class="bg-surface-container-highest/50 rounded-lg p-3">
+<p class="text-[0.6875rem] font-bold tracking-wider uppercase text-zinc-500 mb-2">Last Session (#14)</p>
+<p class="text-xs text-on-surface-variant leading-relaxed italic">"Ana struggled with irregular participles but showed improvement in auditory comprehension."</p>
+</div>
+</div>
+</div>
+<!-- Planned for Today Reference -->
+<div class="bg-tertiary-fixed/30 rounded-xl p-5 border border-tertiary-fixed-dim/20">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="event_note">event_note</span>
+<h4 class="text-xs font-bold uppercase tracking-widest text-tertiary">Planned for Today</h4>
+</div>
+<ul class="space-y-2">
+<li class="flex gap-2 text-sm text-on-tertiary-fixed-variant">
+<span class="text-tertiary">•</span> Focus on narrating past events
+                </li>
+<li class="flex gap-2 text-sm text-on-tertiary-fixed-variant">
+<span class="text-tertiary">•</span> Intro to 'Por' vs 'Para'
+                </li>
+</ul>
+</div>
+<!-- Active Difficulties Section -->
+<div class="bg-red-50/50 dark:bg-red-950/20 rounded-xl p-5 border border-red-100 dark:border-red-900/30">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-red-600 text-sm" data-icon="report_problem">report_problem</span>
+<h4 class="text-xs font-bold uppercase tracking-widest text-red-700 dark:text-red-400">Active Difficulties</h4>
+</div>
+<ul class="space-y-3">
+<li class="flex items-center gap-3">
+<input class="rounded border-red-200 text-red-600 focus:ring-red-500" type="checkbox"/>
+<span class="text-sm text-red-900 dark:text-red-100">Ser vs Estar</span>
+</li>
+<li class="flex items-center gap-3">
+<input class="rounded border-red-200 text-red-600 focus:ring-red-500" type="checkbox"/>
+<span class="text-sm text-red-900 dark:text-red-100">Indefinido irregulares</span>
+</li>
+</ul>
+</div>
+</aside>
+<!-- Right Column: Main Log Form -->
+<section class="flex-1 space-y-8">
+<!-- Narrative Section -->
+<div class="bg-surface-container-lowest rounded-2xl p-8 shadow-sm">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="text-xl font-bold text-on-surface">What Happened?</h3>
+<p class="text-sm text-zinc-500 mt-1">Reflect on the session flow and student engagement.</p>
+</div>
+<div class="flex items-start gap-4 text-right">
+<div class="flex flex-col items-end gap-3">
+<div>
+<span class="text-[0.6875rem] font-bold text-zinc-400 uppercase tracking-wider">Session #15</span>
+<p class="text-xs text-zinc-500">October 24, 2023</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex flex-col items-end">
+<label class="text-[10px] uppercase font-bold text-zinc-400 mb-1">Duration</label>
+<select class="text-xs bg-surface-container-low border-none rounded-lg py-1 px-2 focus:ring-2 focus:ring-primary/20 cursor-pointer">
+<option>30 min</option>
+<option>45 min</option>
+<option selected="">60 min</option>
+<option>90 min</option>
+</select>
+</div>
+<div class="flex flex-col items-end">
+<label class="text-[10px] uppercase font-bold text-zinc-400 mb-1">Cancelled</label>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-error"></div>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+<textarea class="w-full h-48 bg-transparent border-none focus:ring-0 text-on-surface-variant placeholder:text-zinc-300 resize-none leading-relaxed text-md mb-4" placeholder="Write your session narrative here... Ana was very engaged today. We spent more time on 'Por' than planned because..."></textarea>
+<div class="bg-surface-container-low rounded-lg p-3 flex items-center gap-3 select-none">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="lightbulb">lightbulb</span>
+<p class="text-xs text-on-surface-variant">Reference: <span class="font-semibold italic">Narrating past events, Por vs Para</span></p>
+</div>
+</div>
+<!-- Audio & Transcription -->
+<div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<button class="w-12 h-12 rounded-full bg-error/10 text-error flex items-center justify-center hover:bg-error/20 transition-colors">
+<span class="material-symbols-outlined" data-icon="mic">mic</span>
+</button>
+<div>
+<p class="text-sm font-bold">Voice Note</p>
+<p class="text-xs text-zinc-400">Capture thoughts via voice</p>
+</div>
+</div>
+<div class="h-8 w-px bg-outline-variant/30"></div>
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
+</button>
+<p class="text-xs font-medium">Upload Audio</p>
+</div>
+</div>
+<div class="flex items-center gap-2 text-primary-container">
+<span class="material-symbols-outlined text-sm animate-pulse" data-icon="settings_voice">settings_voice</span>
+<span class="text-[0.6875rem] font-bold uppercase tracking-widest">Transcription Ready</span>
+</div>
+</div>
+<!-- Planning Row -->
+<div class="grid grid-cols-2 gap-6">
+<div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
+<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-2">
+<label class="text-[0.6875rem] font-bold text-zinc-400 uppercase tracking-wider block">Previous Homework Status</label>
+<div class="flex bg-surface-container-low p-1 rounded-lg">
+<button class="flex-1 text-[10px] font-bold py-1 px-2 rounded-md hover:bg-white/50 transition-colors">DONE</button>
+<button class="flex-1 text-[10px] font-bold py-1 px-2 rounded-md bg-white shadow-sm text-primary">PARTIAL</button>
+<button class="flex-1 text-[10px] font-bold py-1 px-2 rounded-md hover:bg-white/50 transition-colors">NOT DONE</button>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-[0.6875rem] font-bold text-zinc-400 uppercase tracking-wider block">Homework Assigned Today</label>
+<input class="w-full border-none bg-surface-container-low rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20" placeholder="e.g. Workbook Page 42, Exercise A &amp; B" type="text"/>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
+<label class="text-[0.6875rem] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Next Session Plan</label>
+<textarea class="w-full h-[104px] border-none bg-surface-container-low rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 resize-none" placeholder="Outline main goals for Session #16..."></textarea>
+</div>
+</div>
+<!-- Task Capture Placement (Repositioned) -->
+<div class="grid grid-cols-2 gap-6">
+<!-- Action Items -->
+<div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
+<h4 class="text-sm font-bold text-on-surface mb-4">Teaching Todos</h4>
+<div class="space-y-3">
+<div class="flex items-center gap-2 bg-indigo-50/50 p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="add_task">add_task</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full py-0" placeholder="Add new todo..." type="text"/>
+</div>
+<p class="text-[0.6875rem] text-zinc-400 uppercase font-bold px-2">Active</p>
+<div class="space-y-2">
+<div class="flex items-center justify-between px-2">
+<span class="text-sm text-zinc-600">Prepare subjunctive drills</span>
+<span class="material-symbols-outlined text-zinc-300 text-sm" data-icon="drag_indicator">drag_indicator</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Follow-ups -->
+<div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
+<h4 class="text-sm font-bold text-on-surface mb-4">Pending Followups</h4>
+<div class="space-y-3">
+<div class="flex items-center gap-2 bg-tertiary-fixed/20 p-2 rounded-lg">
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="notifications_active">notifications_active</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full py-0" placeholder="Add followup..." type="text"/>
+</div>
+<p class="text-[0.6875rem] text-zinc-400 uppercase font-bold px-2">Scheduled</p>
+<div class="space-y-2">
+<div class="flex items-center justify-between px-2">
+<span class="text-sm text-zinc-600">Send PDF on 'Para' usage</span>
+<span class="text-[0.6875rem] text-tertiary-container font-bold">In 2 days</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Secondary Fields Section -->
+<div class="pt-8 pb-12 border-t border-outline-variant/20 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+<div class="space-y-6">
+<div class="space-y-3">
+<p class="text-[0.6875rem] font-bold text-zinc-400 uppercase tracking-wider">Topics Covered</p>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-secondary-fixed text-on-secondary-fixed rounded-full text-xs font-medium flex items-center gap-1">Grammar <span class="material-symbols-outlined text-[10px] cursor-pointer" data-icon="close">close</span></span>
+<span class="px-3 py-1 bg-secondary-fixed text-on-secondary-fixed rounded-full text-xs font-medium flex items-center gap-1">Prepositions <span class="material-symbols-outlined text-[10px] cursor-pointer" data-icon="close">close</span></span>
+<button class="w-6 h-6 rounded-full border border-dashed border-outline text-outline flex items-center justify-center hover:border-primary hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+</button>
+</div>
+</div>
+<div class="space-y-3">
+<label class="text-[0.6875rem] font-bold text-zinc-400 uppercase tracking-wider block">Link to lesson plan (optional)</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm" data-icon="search">search</span>
+<input class="w-full pl-9 pr-4 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20" placeholder="Search lessons..." type="text"/>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<div class="space-y-3">
+<p class="text-[0.6875rem] font-bold text-zinc-400 uppercase tracking-wider">Today's Context</p>
+<textarea class="w-full h-32 bg-surface-container-low border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 resize-none placeholder:text-zinc-400" placeholder="Observations on mood, energy levels, and general context..."></textarea>
+</div>
+<div class="flex items-center gap-4 pt-2">
+<div class="flex flex-col gap-1">
+<p class="text-[0.6875rem] font-bold text-zinc-400 uppercase tracking-wider">Level Check</p>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-highest rounded-full peer peer-focus:ring-4 peer-focus:ring-primary/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+<span class="ml-3 text-xs font-medium text-zinc-500">Flag for Reassessment</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+</body></html>

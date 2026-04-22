@@ -4,18 +4,4 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 ---
 
-*Cleared 2026-04-08 during Adaptive Replanning sprint close. All entries deleted (low/info severity, all already deferred with sound reasoning) or batched into #603-#609.*
-
-## #623 — 2026-04-09
-
-| Reviewer | Severity | Note |
-|---|---|---|
-| architecture-reviewer | minor | `FakeReflectionExtractionService` is a private inner class in `TelegramConversationServiceTests`; project convention is top-level stub files in `Services/` folder (`StubReflectionExtractionService.cs`, `StubTelegramBotService.cs`, etc.). Single-class scope for now; extract if another test class needs it. |
-
-## #620 — 2026-04-09
-
-| Reviewer | Severity | Note |
-|---|---|---|
-| review | minor | `TelegramBotService.DownloadFileAsync:45` interpolates Telegram-supplied `file_path` into a URL without `Uri.EscapeDataString`. Defensive only — Telegram's documented file_path format is safe. |
-| architecture-reviewer | minor | `TelegramBotServiceTests.cs` uses static `BuildService` factory instead of constructor + `IDisposable` (sibling pattern in `VoiceNoteServiceTests`/`TelegramConversationServiceTests`). Matches the closer reference `ClaudeApiClientUnitTests.cs`, which also uses a static `BuildClient` factory for HttpClient-based service tests. No cleanup needed. |
-
+*Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Actionable entries batched into #833 (bug batch: todo validation + countdown + difficulty feedback), #837 (deduplication: getInitials/formatRelativeDate/CEFR_ORDER). Remaining entries deleted (verified safe, intentional per spec, already tracked in #737/#707/#644/#714/#715/#716/#683/#741/#742/#756/#809/#657, or consistent with existing patterns).*

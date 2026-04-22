@@ -35,7 +35,7 @@ export function StudentCoursesCard({ studentId }: StudentCoursesCardProps) {
         {isLoading && (
           <div className="space-y-3">
             {[1, 2].map(i => (
-              <div key={i} className="border border-zinc-100 rounded-lg p-3 space-y-2">
+              <div key={i} className="rounded-lg p-3 space-y-2 bg-[#F4F2FD]/40">
                 <Skeleton className="h-4 w-40" />
                 <Skeleton className="h-3 w-24" />
               </div>
@@ -60,7 +60,7 @@ export function StudentCoursesCard({ studentId }: StudentCoursesCardProps) {
             {courses!.map(course => (
               <div
                 key={course.id}
-                className="flex items-center justify-between rounded-lg border border-zinc-100 p-3 cursor-pointer hover:bg-zinc-50 transition-colors"
+                className="flex items-center justify-between rounded-lg p-3 cursor-pointer bg-[#F4F2FD]/40 hover:bg-[#F4F2FD]/70 transition-colors"
                 data-testid={`student-course-row-${course.id}`}
                 onClick={() => navigate(`/courses/${course.id}`)}
               >

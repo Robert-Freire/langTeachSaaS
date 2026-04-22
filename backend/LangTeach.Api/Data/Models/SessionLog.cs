@@ -25,6 +25,9 @@ public class SessionLog
     public string TopicTags { get; set; } = "[]";
     public string MentionedDifficultyPairs { get; set; } = "[]";
     public string SuggestedDifficulties { get; set; } = "[]";
+    public int? Duration { get; set; }
+    public string? Title { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

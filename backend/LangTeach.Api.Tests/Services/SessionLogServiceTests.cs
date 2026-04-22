@@ -22,7 +22,9 @@ public class SessionLogServiceTests : IDisposable
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _db = new AppDbContext(options);
-        _sut = new SessionLogService(_db, new NullDifficultyTrendService(), NullLogger<SessionLogService>.Instance);
+        var profileService = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, profileService);
+        _sut = new SessionLogService(_db, new NullDifficultyTrendService(), pedagogy, NullLogger<SessionLogService>.Instance);
 
         _db.Teachers.Add(new Teacher
         {
@@ -208,6 +210,48 @@ public class SessionLogServiceTests : IDisposable
         result.Should().HaveCount(2);
         result[0].SessionDate.Should().Be(newer);
         result[1].SessionDate.Should().Be(older);
+    }
+
+    [Fact]
+    public async Task ListAsync_HasVoiceNote_TrueWhenVoiceNoteApplicationExists()
+    {
+        var sessionId = Guid.NewGuid();
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = sessionId, StudentId = _studentId, TeacherId = _teacherId,
+            SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        _db.VoiceNoteApplications.Add(new VoiceNoteApplication
+        {
+            Id = Guid.NewGuid(),
+            SessionLogId = sessionId,
+            ApplicationType = ApplicationType.Create,
+            AppliedAt = DateTime.UtcNow,
+        });
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.ListAsync(_teacherId, _studentId);
+
+        result.Should().HaveCount(1);
+        result[0].HasVoiceNote.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ListAsync_HasVoiceNote_FalseWhenNoVoiceNoteApplication()
+    {
+        _db.SessionLogs.Add(new SessionLog
+        {
+            Id = Guid.NewGuid(), StudentId = _studentId, TeacherId = _teacherId,
+            SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.ListAsync(_teacherId, _studentId);
+
+        result.Should().HaveCount(1);
+        result[0].HasVoiceNote.Should().BeFalse();
     }
 
     [Fact]
@@ -775,6 +819,301 @@ public class SessionLogServiceTests : IDisposable
 
         result.Should().NotBeNull();
         result!.IsCancelled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithVoiceNoteFields_WritesVoiceNoteApplicationRow()
+    {
+        var voiceNoteId = Guid.NewGuid();
+        _db.VoiceNotes.Add(new VoiceNote
+        {
+            Id = voiceNoteId,
+            TeacherId = _teacherId,
+            BlobPath = "teachers/test/file.webm",
+            OriginalFileName = "file.webm",
+            ContentType = "audio/webm",
+            SizeBytes = 1024,
+            DurationSeconds = 0,
+            CreatedAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+
+        var request = new CreateSessionLogRequest
+        {
+            SessionDate = new DateTime(2026, 4, 1, 10, 0, 0, DateTimeKind.Utc),
+            PreviousHomeworkStatus = HomeworkStatus.Done,
+            VoiceNoteId = voiceNoteId,
+            VoiceNoteTranscription = "Hoy trabajamos los verbos irregulares",
+            RawExtractionJson = "{\"whatWasCovered\":\"verbos irregulares\"}"
+        };
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+
+        var application = await _db.VoiceNoteApplications
+            .SingleAsync(a => a.SessionLogId == result.Id);
+        application.VoiceNoteId.Should().Be(voiceNoteId);
+        application.Transcription.Should().Be("Hoy trabajamos los verbos irregulares");
+        application.RawExtractionJson.Should().Be("{\"whatWasCovered\":\"verbos irregulares\"}");
+        application.ApplicationType.Should().Be(ApplicationType.Create);
+        application.AppliedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithoutVoiceNoteFields_WritesNoVoiceNoteApplicationRow()
+    {
+        var result = await _sut.CreateAsync(_teacherId, _studentId, BaseRequest());
+
+        var count = await _db.VoiceNoteApplications
+            .CountAsync(a => a.SessionLogId == result.Id);
+        count.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task CreateAsync_VoiceNoteIdBelongsToOtherTeacher_ThrowsKeyNotFoundException()
+    {
+        var otherVoiceNoteId = Guid.NewGuid();
+        _db.VoiceNotes.Add(new VoiceNote
+        {
+            Id = otherVoiceNoteId,
+            TeacherId = _otherTeacherId,
+            BlobPath = "teachers/other/file.webm",
+            OriginalFileName = "file.webm",
+            ContentType = "audio/webm",
+            SizeBytes = 512,
+            DurationSeconds = 0,
+            CreatedAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+
+        var request = new CreateSessionLogRequest
+        {
+            SessionDate = new DateTime(2026, 4, 1, 10, 0, 0, DateTimeKind.Utc),
+            PreviousHomeworkStatus = HomeworkStatus.Done,
+            VoiceNoteId = otherVoiceNoteId
+        };
+
+        var act = () => _sut.CreateAsync(_teacherId, _studentId, request);
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_TelegramFlow_WritesVoiceNoteApplicationWithNullVoiceNoteId()
+    {
+        var request = new CreateSessionLogRequest
+        {
+            SessionDate = new DateTime(2026, 4, 1, 10, 0, 0, DateTimeKind.Utc),
+            PreviousHomeworkStatus = HomeworkStatus.Done,
+            VoiceNoteTranscription = "Marco hizo los deberes y repasamos el subjuntivo",
+            RawExtractionJson = "{\"whatWasCovered\":\"subjuntivo\"}"
+        };
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+
+        var application = await _db.VoiceNoteApplications
+            .SingleAsync(a => a.SessionLogId == result.Id);
+        application.VoiceNoteId.Should().BeNull();
+        application.Transcription.Should().Be("Marco hizo los deberes y repasamos el subjuntivo");
+        application.ApplicationType.Should().Be(ApplicationType.Create);
+    }
+
+    // --- Duration and Title ---
+
+    [Fact]
+    public async Task CreateAsync_WithDuration_PersistsDuration()
+    {
+        var request = BaseRequest();
+        request.Duration = 60;
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Duration.Should().Be(60);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithExplicitTitle_PreservesTitle()
+    {
+        var request = BaseRequest();
+        request.Title = "Subjunctive in Time Clauses";
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Title.Should().Be("Subjunctive in Time Clauses");
+    }
+
+    [Fact]
+    public async Task CreateAsync_NullTitle_WithActualContent_GeneratesTitleFromFirstLine()
+    {
+        var request = BaseRequest();
+        request.Title = null;
+        request.ActualContent = "Ser vs Estar: discussed key differences\nStudent struggled with copulas";
+        request.PlannedContent = null;
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Title.Should().Be("Ser vs Estar: discussed key differences");
+    }
+
+    [Fact]
+    public async Task CreateAsync_NullTitle_PrefersActualContentOverPlanned()
+    {
+        var request = BaseRequest();
+        request.Title = null;
+        request.ActualContent = "Actual topic";
+        request.PlannedContent = "Planned topic";
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Title.Should().Be("Actual topic");
+    }
+
+    [Fact]
+    public async Task CreateAsync_NullTitle_WithOnlyPlannedContent_GeneratesTitleFromPlanned()
+    {
+        var request = BaseRequest();
+        request.Title = null;
+        request.ActualContent = null;
+        request.PlannedContent = "Preterite tense review";
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Title.Should().Be("Preterite tense review");
+    }
+
+    [Fact]
+    public async Task CreateAsync_NullTitle_NoContent_WithDate_GeneratesDateFallback()
+    {
+        var request = BaseRequest();
+        request.Title = null;
+        request.ActualContent = null;
+        request.PlannedContent = null;
+        request.SessionDate = new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc);
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Title.Should().Be("Session, Apr 5");
+    }
+
+    [Fact]
+    public async Task CreateAsync_NullTitle_NoContent_NoDate_GeneratesUnknownDateFallback()
+    {
+        var request = BaseRequest();
+        request.Title = null;
+        request.ActualContent = null;
+        request.PlannedContent = null;
+        request.SessionDate = null;
+
+        var result = await _sut.CreateAsync(_teacherId, _studentId, request);
+        result.Title.Should().Be("Session, unknown date");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NullTitle_WithActualContent_AutoGeneratesTitleFromContent()
+    {
+        var created = await _sut.CreateAsync(_teacherId, _studentId, BaseRequest());
+
+        var update = new UpdateSessionLogRequest
+        {
+            ActualContent = "Subjunctive in time clauses",
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Title = null,
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, _studentId, created.Id, update);
+        result!.Title.Should().Be("Subjunctive in time clauses");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NullTitle_NullContent_FallsBackToEntityContent()
+    {
+        // Entity has content from create; update clears content but provides no title.
+        // Title should be generated from the entity's pre-existing content, not the date.
+        var created = await _sut.CreateAsync(_teacherId, _studentId, BaseRequest());
+
+        var update = new UpdateSessionLogRequest
+        {
+            IsCancelled = true,
+            ActualContent = null,
+            PlannedContent = null,
+            SessionDate = new DateTime(2026, 4, 10, 0, 0, 0, DateTimeKind.Utc),
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Title = null,
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, _studentId, created.Id, update);
+        result!.Title.Should().Be("Covered regular verbs only");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NullTitle_NullContentOnEntityToo_GeneratesDateFallback()
+    {
+        // Entity has no content; update also provides no content or title.
+        // Title should fall back to the session date.
+        var noContentRequest = new CreateSessionLogRequest
+        {
+            SessionDate = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc),
+            PlannedContent = null,
+            ActualContent = null,
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Title = "Placeholder",
+        };
+        var created = await _sut.CreateAsync(_teacherId, _studentId, noContentRequest);
+
+        var update = new UpdateSessionLogRequest
+        {
+            IsCancelled = true,
+            ActualContent = null,
+            PlannedContent = null,
+            SessionDate = new DateTime(2026, 4, 10, 0, 0, 0, DateTimeKind.Utc),
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Title = null,
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, _studentId, created.Id, update);
+        result!.Title.Should().NotBeNull();
+        result.Title.Should().StartWith("Session,");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithExplicitTitle_PreservesTitle()
+    {
+        var created = await _sut.CreateAsync(_teacherId, _studentId, BaseRequest());
+
+        var update = new UpdateSessionLogRequest
+        {
+            ActualContent = "Something else",
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            Title = "My Custom Title",
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, _studentId, created.Id, update);
+        result!.Title.Should().Be("My Custom Title");
+    }
+
+    // --- GenerateTitle unit tests ---
+
+    [Theory]
+    [InlineData("Short title", null, "Short title")]
+    [InlineData("Multiline\nSecond line", null, "Multiline")]
+    public void GenerateTitle_ShortFirstLine_ReturnsAsIs(string planned, string? actual, string expected)
+    {
+        SessionLogService.GenerateTitle(planned, actual, null).Should().Be(expected);
+    }
+
+    [Fact]
+    public void GenerateTitle_LongFirstLine_TruncatesAtWordBoundary()
+    {
+        var longLine = "This is a very long session title that exceeds sixty characters in total length here";
+        // 60th char is within "characters", last space before 60 is before "characters"
+        var result = SessionLogService.GenerateTitle(longLine, null, null);
+        (result.Length <= 60).Should().BeTrue("title must fit in 60 chars");
+        result.Should().NotEndWith(" ");
+    }
+
+    [Fact]
+    public void GenerateTitle_NoContent_UsesSessionDateFallback()
+    {
+        var date = new DateTime(2026, 4, 5, 0, 0, 0, DateTimeKind.Utc);
+        SessionLogService.GenerateTitle(null, null, date).Should().Be("Session, Apr 5");
+    }
+
+    [Fact]
+    public void GenerateTitle_NoContent_NoDate_UsesUnknownDate()
+    {
+        SessionLogService.GenerateTitle(null, null, null).Should().Be("Session, unknown date");
     }
 }
 

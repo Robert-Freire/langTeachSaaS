@@ -27,6 +27,9 @@ export interface SessionLog {
   statusName: 'Draft' | 'Confirmed'
   mentionedDifficultyPairs: string
   suggestedDifficulties: string
+  duration: number | null
+  title: string | null
+  hasVoiceNote: boolean
 }
 
 export interface SuggestedDifficulty {
@@ -36,14 +39,30 @@ export interface SuggestedDifficulty {
   severity: string
 }
 
+export interface ExtractedTextField {
+  value: string | null
+  mode: 'append' | 'replace' | 'skip'
+}
+
 export interface ExtractedReflection {
-  whatWasCovered: string | null
-  areasToImprove: string | null
+  whatWasCovered: ExtractedTextField | null
+  areasToImprove: ExtractedTextField | null
   emotionalSignals: string | null
-  homeworkAssigned: string | null
-  nextLessonIdeas: string | null
+  homeworkAssigned: ExtractedTextField | null
+  nextLessonIdeas: ExtractedTextField | null
   sessionDate?: string | null
+  sessionTitle?: string | null
   suggestedDifficulties: SuggestedDifficulty[]
+  rawExtractionJson?: string | null
+  topicTags?: TopicTag[] | null
+  previousHomeworkStatus?: string | null
+  teachingTodos?: string[] | null
+  teacherFollowups?: string[] | null
+  levelReassessment?: string | null
+  durationMinutes?: number | null
+  isCancelled?: boolean | null
+  difficultiesWorkedOn?: string[] | null
+  sessionStartTime?: string | null
 }
 
 export interface CreateSessionLogRequest {
@@ -62,6 +81,11 @@ export interface CreateSessionLogRequest {
   status?: 'Draft' | 'Confirmed'
   mentionedDifficultyPairs?: { Competency: string; Subcategory: string }[]
   suggestedDifficulties?: SuggestedDifficulty[]
+  duration?: number | null
+  title?: string | null
+  voiceNoteId?: string
+  voiceNoteTranscription?: string
+  rawExtractionJson?: string
 }
 
 export type UpdateSessionLogRequest = CreateSessionLogRequest
@@ -82,7 +106,21 @@ export async function getSessionSummary(studentId: string): Promise<StudentSessi
 
 export function parseTopicTags(raw: string): TopicTag[] {
   try {
-    return JSON.parse(raw) as TopicTag[]
+    const parsed: unknown[] = JSON.parse(raw) as unknown[]
+    if (!Array.isArray(parsed)) return []
+    return parsed.flatMap((item): TopicTag[] => {
+      if (typeof item === 'string') {
+        const tag = item.trim()
+        return tag ? [{ tag }] : []
+      }
+      if (item && typeof item === 'object' && 'tag' in item) {
+        const maybeTag = (item as { tag?: unknown }).tag
+        if (typeof maybeTag !== 'string' || maybeTag.trim() === '') return []
+        const maybeCategory = (item as { category?: unknown }).category
+        return [{ tag: maybeTag.trim(), ...(typeof maybeCategory === 'string' ? { category: maybeCategory } : {}) }]
+      }
+      return []
+    })
   } catch {
     return []
   }
@@ -90,6 +128,11 @@ export function parseTopicTags(raw: string): TopicTag[] {
 
 export function serializeTopicTags(tags: TopicTag[]): string {
   return JSON.stringify(tags)
+}
+
+export async function getSession(studentId: string, sessionId: string): Promise<SessionLog> {
+  const res = await apiClient.get<SessionLog>(`/api/students/${studentId}/sessions/${sessionId}`)
+  return res.data
 }
 
 export async function listSessions(studentId: string): Promise<SessionLog[]> {
@@ -115,6 +158,39 @@ export async function updateSession(
     data,
   )
   return res.data
+}
+
+function parseJsonArray<T>(json: string): T[] {
+  try { return JSON.parse(json) as T[] } catch { return [] }
+}
+
+export async function patchSessionField(
+  studentId: string,
+  session: SessionLog,
+  patch: Partial<Pick<UpdateSessionLogRequest, 'title' | 'actualContent' | 'duration' | 'nextSessionTopics'>>,
+): Promise<SessionLog> {
+  const payload: UpdateSessionLogRequest = {
+    sessionDate: session.sessionDate,
+    plannedContent: session.plannedContent,
+    actualContent: session.actualContent,
+    homeworkAssigned: session.homeworkAssigned,
+    previousHomeworkStatus: session.previousHomeworkStatusName || 'NotApplicable',
+    nextSessionTopics: session.nextSessionTopics,
+    generalNotes: session.generalNotes,
+    levelReassessmentSkill: session.levelReassessmentSkill,
+    levelReassessmentLevel: session.levelReassessmentLevel,
+    linkedLessonId: session.linkedLessonId,
+    topicTags: session.topicTags,
+    isCancelled: session.isCancelled,
+    status: session.statusName,
+    duration: session.duration,
+    title: session.title,
+    // Preserve AI-generated fields so the PUT does not silently clear them
+    mentionedDifficultyPairs: parseJsonArray(session.mentionedDifficultyPairs),
+    suggestedDifficulties: parseJsonArray(session.suggestedDifficulties),
+    ...patch,
+  }
+  return updateSession(studentId, session.id, payload)
 }
 
 export async function deleteSession(studentId: string, sessionId: string): Promise<void> {

@@ -430,8 +430,58 @@ public class PromptService : IPromptService
             if (weaknesses.Length > 0)
                 sb.AppendLine($"- Areas to improve: {string.Join(", ", weaknesses)}");
 
+            var profession       = InputSanitizer.Sanitize(ctx.StudentProfession);
+            var reasonForStudying = InputSanitizer.Sanitize(ctx.StudentReasonForStudying);
+            var countryOfOrigin  = InputSanitizer.Sanitize(ctx.StudentCountryOfOrigin);
+            var countryOfResidence = InputSanitizer.Sanitize(ctx.StudentCountryOfResidence);
+            var officialCefr     = InputSanitizer.Sanitize(ctx.StudentOfficialCefrLevel);
+
+            // Age is approximated from birth year (off by up to one year depending on birthday — acceptable for prompt personalization)
+            var currentYear = DateTime.UtcNow.Year;
+            var age = ctx.StudentBirthYear is int birthYear && birthYear >= currentYear - 120 && birthYear <= currentYear
+                ? currentYear - birthYear
+                : (int?)null;
+
+            if (profession.Length > 0)
+                sb.AppendLine($"- Profession: {profession}");
+
+            if (age is not null)
+                sb.AppendLine($"- Age: {age}");
+
+            if (countryOfOrigin.Length > 0)
+                sb.AppendLine($"- Country of origin: {countryOfOrigin}");
+
+            if (countryOfResidence.Length > 0)
+                sb.AppendLine($"- Country of residence: {countryOfResidence}");
+
+            if (officialCefr.Length > 0)
+                sb.AppendLine($"- Official CEFR level: {officialCefr} (official) / {cefrLevel} (teacher assessment)");
+
+            if (ctx.StudentSpokenLanguages is { Length: > 0 })
+            {
+                var spokenLangs = ctx.StudentSpokenLanguages.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0).ToArray();
+                if (spokenLangs.Length > 0)
+                    sb.AppendLine($"- Also speaks: {string.Join(", ", spokenLangs)}");
+            }
+
+            if (reasonForStudying.Length > 0)
+                sb.AppendLine($"- Reason for studying {language}: {reasonForStudying}");
+
             sb.AppendLine();
             sb.AppendLine($"Personalize content for this student. Reference their interests in examples.");
+
+            if (reasonForStudying.Length > 0)
+                sb.AppendLine($"Anchor vocabulary, topics, and examples to the student's stated study motivation.");
+
+            if (ctx.StudentSpokenLanguages is { Length: > 0 })
+            {
+                var spokenForPrompt = ctx.StudentSpokenLanguages.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0).ToArray();
+                if (spokenForPrompt.Length > 0)
+                    sb.AppendLine("Where relevant, leverage cross-language awareness and cognates from the student's other languages.");
+            }
+
+            if (profession.Length > 0)
+                sb.AppendLine("Use domain-specific vocabulary and scenarios from the student's professional field where appropriate.");
 
             if (ctx.StudentNativeLanguage is not null)
             {
@@ -1436,4 +1486,169 @@ public class PromptService : IPromptService
     }
 
     private static string CefrCodeToSkillName(string code) => LangTeach.Api.DTOs.CefrSkillCodes.ToSkillName(code);
+
+    // --- Reflection extraction ---
+
+    public ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx)
+    {
+        var today = ctx.Today;
+        var teacherText = ctx.TeacherText;
+        var competencies = string.Join(", ", _pedagogy.GetValidDifficultyCompetencies().OrderBy(x => x));
+        var severities = string.Join(" | ", _pedagogy.GetValidDifficultySeverities().OrderBy(x => x));
+
+        var safeKnownDifficulties = ctx.KnownDifficulties?
+            .Select(InputSanitizer.Sanitize)
+            .Where(d => !string.IsNullOrWhiteSpace(d))
+            .ToArray();
+
+        var difficultiesSection = safeKnownDifficulties is { Length: > 0 }
+            ? $"""
+
+            Student's known difficulties (for difficultiesWorkedOn cross-referencing):
+            {string.Join("\n", safeKnownDifficulties.Select(d => $"- {d}"))}
+            Include in difficultiesWorkedOn any difficulty from this list that the teacher explicitly mentions working on in this session.
+            """
+            : string.Empty;
+
+        var system = $"""
+            You are a tool that helps language teachers structure their post-class notes.
+            Extract structured information from a teacher's free-form reflection text.
+
+            IMPORTANT: Preserve the original language of the teacher's text. Do not translate any field value into another language.
+
+            Today is {today.DayOfWeek}, {today:yyyy-MM-dd}.
+            {difficultiesSection}
+            TeachingTodo vs TeacherFollowup distinction:
+            - teachingTodos: pedagogical ideas the teacher intends to work on WITH the student in future sessions. Signal: "Tengo que trabajar X con el/ella", "Hay que practicar X".
+            - teacherFollowups: operational actions the teacher owes the student (send, share, confirm). Signal: "Le tengo que mandar/enviar/dar X", "Prometí enviar X".
+
+            Respond ONLY with a valid JSON object using these exact keys:
+            - whatWasCovered: object or null. When present, the object has two keys: "value" (string) and "mode" (one of "append", "replace", or "skip").
+                Set mode to "append" if the teacher adds to existing coverage notes (signal words: "además", "también", "y también cubrimos", "también hicimos").
+                Set mode to "replace" if the teacher corrects or restates what was covered (signal words: "me equivoqué", "en realidad", "no, mejor dicho", "quiero decir", "corrijo").
+                Set mode to "skip" if this field should not be updated.
+                Return null if nothing about session content is mentioned.
+            - areasToImprove: object or null. When present, the object has two keys: "value" (string, narrative summary of student difficulties and struggles — prose, not a list) and "mode" (one of "append", "replace", or "skip").
+                Set mode to "append" if teacher adds new difficulties to existing notes (signal words: "además", "también tiene problemas con", "y otra cosa").
+                Set mode to "replace" if teacher corrects prior notes (signal words: "me equivoqué", "en realidad", "no, mejor").
+                Set mode to "skip" if this field should not be updated.
+                Return null if no difficulties or areas to improve are mentioned.
+            - emotionalSignals: string or null (student attitude, mood, motivation, engagement signals)
+            - homeworkAssigned: object or null. When present, the object has two keys: "value" (string) and "mode" (one of "append", "replace", or "skip").
+                Set mode to "append" if teacher adds homework to existing assignments (signal words: "además", "también tienen que", "y también").
+                Set mode to "replace" if teacher corrects the homework (signal words: "me equivoqué", "en realidad", "no, mejor", corrections).
+                Set mode to "skip" if this field should not be updated.
+                Return null if no homework is mentioned.
+            - nextLessonIdeas: object or null. When present, the object has two keys: "value" (string) and "mode" (one of "append", "replace", or "skip").
+                Set mode to "append" if teacher adds ideas to existing next-session plans (signal words: "además", "también", "y otra cosa", "y en la próxima").
+                Set mode to "replace" if teacher corrects prior plans (signal words: "me equivoqué", "en realidad", "no, mejor", corrections).
+                Set mode to "skip" if this field should not be updated.
+                Return null if no next-session ideas are mentioned.
+            - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) of the session being described. Resolve date references using today's date and day of week: "hoy"/"today" = today, "ayer"/"yesterday" = yesterday, "el lunes pasado"/"el pasado lunes" = the most recent Monday before today (not the Monday of this week if today is Monday), "el martes pasado"/"el pasado martes" = the most recent Tuesday before today, and so on for any weekday. Always pick the last occurrence of the named weekday strictly before today. Null if no date is mentioned.
+            - sessionStartTime: string or null — 24-hour time (HH:MM) when the session started (e.g. "09:00", "18:30"). Null if not mentioned.
+            - sessionTitle: string or null — a concise title (under 60 chars) for this session derived from what was covered. Examples: "Subjunctive in time clauses", "Pasado compuesto — revisión". Null if no content is mentioned.
+            - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
+            - topicTags: array of objects with "tag" (string) and "category" (string or null) — topics, grammar structures, vocabulary areas covered. Each tag as a concise noun phrase. Empty array if none mentioned.
+            - previousHomeworkStatus: "done" | "partial" | "notDone" | null — whether the student completed homework from the previous session. Null if not mentioned.
+            - teachingTodos: array of strings — pedagogical ideas for future sessions (see distinction above). Empty array if none.
+            - teacherFollowups: array of strings — operational actions owed by the teacher (see distinction above). Empty array if none.
+            - levelReassessment: CEFR level string (e.g. "B1", "B2+") or null — if the teacher mentions reassessing or updating the student's level. Null if not mentioned.
+            - durationMinutes: integer or null — session duration in minutes. Null if not mentioned.
+            - isCancelled: true | false | null — true only if the session was cancelled or the student did not show up. Null if not mentioned.
+            - difficultiesWorkedOn: array of strings — copy verbatim from the student's known difficulties list any difficulty that was explicitly worked on in this session. Empty array if none or if no known difficulties were provided.
+
+            For suggestedDifficulties, each object must have:
+            - description: full sentence describing the difficulty, extracted verbatim from the teacher's language
+            - competency: one of {competencies}
+            - subcategory: specific item (e.g. "ser/estar", "subjunctive", "past tense"), free text
+            - severity: {severities} (infer from language: "mucho"/"siempre"/"constantemente" -> high, "a veces"/"sometimes" -> medium, "un poco"/"slightly" -> low; default medium)
+
+            Only include difficulties explicitly mentioned. Do not invent. Use null for scalar fields that cannot be inferred.
+            Keep each value concise (under 200 words).
+            Respond with JSON only, no markdown, no explanation.
+            """;
+
+        return new ClaudeRequest(SystemPrompt: system, UserPrompt: teacherText, Model: ClaudeModel.Haiku, MaxTokens: 2048);
+    }
+
+    // --- Replan suggestion ---
+
+    public ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx)
+    {
+        const string system = """
+            You are an expert language teaching assistant helping a teacher adapt an upcoming course plan based on recent class data.
+            Your job is to identify gaps between what was taught and what is planned, and suggest specific adjustments.
+
+            Rules:
+            - Focus on high-impact changes: grammar gaps not yet addressed, student difficulties not covered by upcoming lessons
+            - Be specific: name the topic to change and what to add or adjust
+            - Keep reasoning concise (1-2 sentences referencing the actual evidence)
+            - Limit to 3-5 suggestions maximum; only suggest genuine improvements
+            - If the plan already addresses all known gaps, return fewer suggestions
+            - Respond ONLY with a valid JSON object using this exact structure:
+              {"suggestions":[{"curriculumEntryId":"<guid or null>","proposedChange":"<what to change>","reasoning":"<why, citing evidence>"}]}
+            - curriculumEntryId must be one of the planned entry IDs provided, or null for a general suggestion
+            - Respond with JSON only, no markdown, no explanation
+            """;
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Course: {InputSanitizer.Sanitize(ctx.CourseName)}");
+        sb.AppendLine($"Language: {InputSanitizer.Sanitize(ctx.Language)}");
+        sb.AppendLine($"Target level: {InputSanitizer.Sanitize(ctx.TargetCefrLevel ?? "not set")}");
+        sb.AppendLine($"Student: {InputSanitizer.Sanitize(ctx.StudentName ?? "unknown")}");
+        sb.AppendLine();
+
+        if (ctx.Difficulties.Count > 0)
+        {
+            sb.AppendLine("Student difficulties on record:");
+            foreach (var d in ctx.Difficulties)
+                sb.AppendLine($"- {InputSanitizer.Sanitize(d)}");
+            sb.AppendLine();
+        }
+
+        sb.AppendLine("What has been taught so far (with lesson notes):");
+        foreach (var e in ctx.TaughtEntries)
+        {
+            sb.Append($"- {InputSanitizer.Sanitize(e.Topic)}");
+            if (!string.IsNullOrWhiteSpace(e.GrammarFocus)) sb.Append($" (grammar: {InputSanitizer.Sanitize(e.GrammarFocus)})");
+            sb.AppendLine();
+            if (!string.IsNullOrWhiteSpace(e.WhatWasCovered)) sb.AppendLine($"  Covered: {InputSanitizer.Sanitize(e.WhatWasCovered)}");
+            if (!string.IsNullOrWhiteSpace(e.AreasToImprove)) sb.AppendLine($"  Areas to improve: {InputSanitizer.Sanitize(e.AreasToImprove)}");
+        }
+        sb.AppendLine();
+
+        sb.AppendLine("Upcoming planned lessons (these can be adjusted):");
+        foreach (var e in ctx.PlannedEntries)
+        {
+            sb.Append($"- [ID: {e.Id}] Session {e.OrderIndex + 1}: {InputSanitizer.Sanitize(e.Topic)}");
+            if (!string.IsNullOrWhiteSpace(e.GrammarFocus)) sb.Append($" (grammar: {InputSanitizer.Sanitize(e.GrammarFocus)})");
+            sb.AppendLine();
+        }
+        sb.AppendLine();
+
+        sb.AppendLine($"Suggest up to {ctx.MaxSuggestions} targeted adjustments to upcoming lessons based on gaps and student difficulties.");
+
+        return new ClaudeRequest(SystemPrompt: system, UserPrompt: sb.ToString(), Model: ClaudeModel.Haiku, MaxTokens: 2048);
+    }
+
+    // --- Curriculum validation ---
+
+    public ClaudeRequest BuildCurriculumValidationPrompt(CurriculumValidationContext ctx)
+    {
+        const string system = "You are a CEFR-level grammar expert. Evaluate whether grammar structures in a generated curriculum match the target level.";
+
+        var grammarList = string.Join("\n", ctx.AllowedGrammar.Select(g => $"- {g}"));
+        var entriesList = string.Join("\n", ctx.EntriesWithGrammar.Select(e =>
+            $"Session {e.OrderIndex}: {InputSanitizer.Sanitize(e.GrammarFocus)}"));
+        var jsonExample = """[ { "sessionIndex": <number>, "grammarFocus": "<exact string>", "flagReason": "<one sentence>", "suggestedLevel": "<CEFR level or null>" } ]""";
+
+        var user = $"Target level: {InputSanitizer.Sanitize(ctx.TargetLevel)}\n" +
+                   $"Grammar structures expected at this level (or below):\n{grammarList}\n\n" +
+                   $"Generated curriculum entries:\n{entriesList}\n\n" +
+                   $"Respond ONLY with a raw JSON array (no markdown, no code fences). " +
+                   $"For each entry where the grammar focus EXCEEDS the target level, include one object with this shape: {jsonExample}\n" +
+                   $"If all entries are level-appropriate, respond with [].";
+
+        return new ClaudeRequest(SystemPrompt: system, UserPrompt: user, Model: ClaudeModel.Sonnet, MaxTokens: 1000);
+    }
 }

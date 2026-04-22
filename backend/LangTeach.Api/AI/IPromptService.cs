@@ -23,6 +23,9 @@ public interface IPromptService
     ClaudeRequest BuildErrorCorrectionPrompt(GenerationContext ctx);
     ClaudeRequest BuildNoticingTaskPrompt(GenerationContext ctx);
     ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx);
+    ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx);
+    ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx);
+    ClaudeRequest BuildCurriculumValidationPrompt(CurriculumValidationContext ctx);
 }
 
 public record CurriculumContext(
@@ -74,6 +77,28 @@ public record SessionHistoryContext(
     string? LearningStyleNotes
 );
 
+public record ReflectionExtractionContext(DateOnly Today, string TeacherText, IReadOnlyList<string>? KnownDifficulties = null);
+
+public record TaughtEntryContext(string Topic, string? GrammarFocus, string? WhatWasCovered, string? AreasToImprove);
+public record PlannedEntryContext(Guid Id, int OrderIndex, string Topic, string? GrammarFocus);
+
+public record ReplanSuggestionContext(
+    string CourseName,
+    string Language,
+    string? TargetCefrLevel,
+    string? StudentName,
+    IReadOnlyList<TaughtEntryContext> TaughtEntries,
+    IReadOnlyList<PlannedEntryContext> PlannedEntries,
+    IReadOnlyList<string> Difficulties,
+    int MaxSuggestions
+);
+
+public record CurriculumValidationContext(
+    string TargetLevel,
+    IReadOnlyList<string> AllowedGrammar,
+    IReadOnlyList<(int OrderIndex, string GrammarFocus)> EntriesWithGrammar
+);
+
 public record GenerationContext(
     string Language,
     string CefrLevel,
@@ -95,5 +120,12 @@ public record GenerationContext(
     string? CurriculumObjectives = null,
     string? TeacherGrammarConstraints = null,
     string? SectionType = null,
-    SessionHistoryContext? SessionHistory = null
+    SessionHistoryContext? SessionHistory = null,
+    string? StudentReasonForStudying = null,
+    string[]? StudentSpokenLanguages = null,
+    string? StudentProfession = null,
+    int? StudentBirthYear = null,
+    string? StudentCountryOfOrigin = null,
+    string? StudentCountryOfResidence = null,
+    string? StudentOfficialCefrLevel = null
 );

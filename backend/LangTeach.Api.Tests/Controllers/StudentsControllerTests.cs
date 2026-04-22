@@ -40,7 +40,7 @@ public class StudentsControllerTests
             LearningLanguage = "Spanish",
             CefrLevel = "B2",
             Interests = ["travel", "music"],
-            Notes = "Prefers morning sessions.",
+            PersonalNotes = "Prefers morning sessions.",
         };
 
         var response = await client.PostAsJsonAsync("/api/students", request);
@@ -51,7 +51,7 @@ public class StudentsControllerTests
         student.LearningLanguage.Should().Be("Spanish");
         student.CefrLevel.Should().Be("B2");
         student.Interests.Should().BeEquivalentTo(["travel", "music"]);
-        student.Notes.Should().Be("Prefers morning sessions.");
+        student.PersonalNotes.Should().Be("Prefers morning sessions.");
         response.Headers.Location.Should().NotBeNull();
     }
 
@@ -147,8 +147,11 @@ public class StudentsControllerTests
             Name = "Maria Silva",
             LearningLanguage = "Spanish",
             CefrLevel = "B1",
-            NativeLanguage = "Portuguese",
-            LearningGoals = ["travel", "conversation"],
+            NativeLanguages = ["Portuguese"],
+            LearningGoals = [
+                new LearningGoalDto(Guid.NewGuid().ToString(), "travel", []),
+                new LearningGoalDto(Guid.NewGuid().ToString(), "conversation", []),
+            ],
             Weaknesses = [new StudentWeaknessDto("past tenses", "grammatical"), new StudentWeaknessDto("articles", "lexical")],
         };
 
@@ -156,8 +159,8 @@ public class StudentsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
-        student!.NativeLanguage.Should().Be("Portuguese");
-        student.LearningGoals.Should().BeEquivalentTo(["travel", "conversation"]);
+        student!.NativeLanguages.Should().BeEquivalentTo(["Portuguese"]);
+        student.LearningGoals.Select(g => g.Text).Should().BeEquivalentTo(["travel", "conversation"]);
         student.Weaknesses.Should().BeEquivalentTo([
             new StudentWeaknessDto("past tenses", "grammatical"),
             new StudentWeaknessDto("articles", "lexical"),
@@ -180,7 +183,7 @@ public class StudentsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
-        student!.NativeLanguage.Should().BeNull();
+        student!.NativeLanguages.Should().BeEmpty();
         student.LearningGoals.Should().BeEmpty();
         student.Weaknesses.Should().BeEmpty();
     }
@@ -197,8 +200,8 @@ public class StudentsControllerTests
             Name = created.Name,
             LearningLanguage = created.LearningLanguage,
             CefrLevel = created.CefrLevel,
-            NativeLanguage = "German",
-            LearningGoals = ["business"],
+            NativeLanguages = ["German"],
+            LearningGoals = [new LearningGoalDto(Guid.NewGuid().ToString(), "business", [])],
             Weaknesses = [new StudentWeaknessDto("word order", "grammatical")],
         };
 
@@ -206,8 +209,8 @@ public class StudentsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
-        updated!.NativeLanguage.Should().Be("German");
-        updated.LearningGoals.Should().BeEquivalentTo(["business"]);
+        updated!.NativeLanguages.Should().BeEquivalentTo(["German"]);
+        updated.LearningGoals.Select(g => g.Text).Should().BeEquivalentTo(["business"]);
         updated.Weaknesses.Should().BeEquivalentTo([new StudentWeaknessDto("word order", "grammatical")]);
     }
 
@@ -221,7 +224,7 @@ public class StudentsControllerTests
             Name = "Test Student",
             LearningLanguage = "English",
             CefrLevel = "B1",
-            NativeLanguage = "Klingon",
+            NativeLanguages = ["Klingon"],
         };
 
         var response = await client.PostAsJsonAsync("/api/students", request);
@@ -241,7 +244,7 @@ public class StudentsControllerTests
             Name = created.Name,
             LearningLanguage = created.LearningLanguage,
             CefrLevel = created.CefrLevel,
-            NativeLanguage = "Klingon",
+            NativeLanguages = ["Klingon"],
         };
 
         var response = await client.PutAsJsonAsync($"/api/students/{created.Id}", updateRequest);
@@ -362,6 +365,27 @@ public class StudentsControllerTests
     }
 
     [Fact]
+    public async Task Create_WithLowercaseDifficultyStatus_Succeeds()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|difficulty-lowercase-status-test", "difficulty-lowercase-status@example.com");
+
+        var request = new CreateStudentRequest
+        {
+            Name = "Lowercase Status",
+            LearningLanguage = "English",
+            CefrLevel = "A1",
+            Difficulties =
+            [
+                new DifficultyDto("d1", "some description", "Grammar", "", "high", "stable", "active"),
+            ],
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact]
     public async Task Create_WithEmptyDifficulties_Succeeds()
     {
         var client = _factory.CreateAuthenticatedClient("auth0|difficulty-empty-test", "difficulty-empty@example.com");
@@ -379,6 +403,117 @@ public class StudentsControllerTests
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
         student!.Difficulties.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteTeachingTodo_Succeeds()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|delete-todo-test", "delete-todo@example.com");
+        var student = await CreateStudentAsync(client, "Todo Delete Student");
+
+        var appendResponse = await client.PostAsJsonAsync(
+            $"/api/students/{student.Id}/teaching-todos",
+            new CreateTeachingTodoDto("Practicar subjuntivo", null));
+        appendResponse.EnsureSuccessStatusCode();
+        var withTodo = await appendResponse.Content.ReadFromJsonAsync<StudentDto>();
+        var todoId = withTodo!.TeachingTodos[0].Id;
+
+        var deleteResponse = await client.DeleteAsync($"/api/students/{student.Id}/teaching-todos/{todoId}");
+
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await deleteResponse.Content.ReadFromJsonAsync<StudentDto>();
+        result!.TeachingTodos.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteTeachingTodo_UnknownTodoId_ReturnsNotFound()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|delete-todo-notfound-test", "delete-todo-notfound@example.com");
+        var student = await CreateStudentAsync(client, "Todo Delete NotFound Student");
+
+        var response = await client.DeleteAsync($"/api/students/{student.Id}/teaching-todos/nonexistent-id");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateTeachingTodo_WithCapitalizedPendingStatus_Succeeds()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|todo-capitalized-status-test", "todo-capitalized-status@example.com");
+        var student = await CreateStudentAsync(client, "Todo Capitalized Status Student");
+
+        var appendResponse = await client.PostAsJsonAsync(
+            $"/api/students/{student.Id}/teaching-todos",
+            new CreateTeachingTodoDto("Practicar subjuntivo", null));
+        appendResponse.EnsureSuccessStatusCode();
+        var withTodo = await appendResponse.Content.ReadFromJsonAsync<StudentDto>();
+        var todoId = withTodo!.TeachingTodos[0].Id;
+
+        // "Pending" capitalized should be accepted (OrdinalIgnoreCase)
+        var updateResponse = await client.PatchAsJsonAsync(
+            $"/api/students/{student.Id}/teaching-todos/{todoId}",
+            new UpdateTeachingTodoDto("Pending", null, null));
+
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Create_WithNestedLearningGoals_RoundTripsHierarchy()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|nested-goals-test", "nested-goals@example.com");
+
+        var childId = Guid.NewGuid().ToString();
+        var parentId = Guid.NewGuid().ToString();
+        var request = new CreateStudentRequest
+        {
+            Name = "Nested Goals Student",
+            LearningLanguage = "Spanish",
+            CefrLevel = "B2",
+            LearningGoals =
+            [
+                new LearningGoalDto(parentId, "Dominar el subjuntivo",
+                [
+                    new LearningGoalDto(childId, "Subjuntivo en oraciones subordinadas", []),
+                ]),
+            ],
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var student = await response.Content.ReadFromJsonAsync<StudentDto>();
+        student!.LearningGoals.Should().HaveCount(1);
+        student.LearningGoals[0].Text.Should().Be("Dominar el subjuntivo");
+        student.LearningGoals[0].Children.Should().HaveCount(1);
+        student.LearningGoals[0].Children[0].Text.Should().Be("Subjuntivo en oraciones subordinadas");
+        student.LearningGoals[0].Children[0].Children.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Create_With3LevelNestedGoal_ReturnsBadRequest()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|deep-goals-test", "deep-goals@example.com");
+
+        var request = new CreateStudentRequest
+        {
+            Name = "Deep Goals Student",
+            LearningLanguage = "Spanish",
+            CefrLevel = "B1",
+            LearningGoals =
+            [
+                new LearningGoalDto(Guid.NewGuid().ToString(), "Level 1",
+                [
+                    new LearningGoalDto(Guid.NewGuid().ToString(), "Level 2",
+                    [
+                        new LearningGoalDto(Guid.NewGuid().ToString(), "Level 3 — not allowed", []),
+                    ]),
+                ]),
+            ],
+        };
+
+        var response = await client.PostAsJsonAsync("/api/students", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     private static async Task<StudentDto> CreateStudentAsync(

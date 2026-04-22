@@ -4,4 +4,4 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 | Source issue | Date | Severity | Observation |
 
-*Cleared 2026-04-08 during Adaptive Replanning sprint close. Actionable entries batched into #603 (DemoSeeder difficulties), #604 (StudentForm partial rows), #605 (VoiceNote MaxLength + AudioRecorder), #606 (exercises block cap), #607 (ExcelImporter date validation), #608 (trend thresholds config), #609 (e2e test hygiene). Remaining entries deleted (acceptable limitations, pre-existing patterns, or covered by previously filed issues).*
+*Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Actionable entries batched into: #833 (bug batch), #834 (seeder gaps), #835 (e2e session-log rewrite), #836 (ScenarioSeeder Hans B1), #837 (deduplication), #838 (session title from web UI), #839 (debug log privacy), #840 (Edit Student UX), #841 (stale closure + LogSession pre-populate). Already-tracked entries removed (referenced #737/#707/#644/#714/#715/#716/#683/#741/#742/#756/#809/#657). Dismissed entries removed (defensive-only, intentional, or resolved).*

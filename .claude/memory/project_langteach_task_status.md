@@ -2,7 +2,30 @@
 name: LangTeach SaaS — Task Status and Next Steps
 description: Sprint branch name, milestone sequence, and pointers to live state. NOT per-issue status (query GitHub for that).
 type: project
+originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
+## In-Flight Tasks (2026-04-22)
+
+| Task | Issue | PR | Status |
+|------|-------|----|--------|
+| t833 | #833 Bug batch: validation case, countdown stale, difficulty toast | #842 | MERGED |
+| t826 | #826 ExtractionMode enum refactor | #831 | PR open, CI pending |
+| t824 | #824 Future session SCHEDULED badge | #828 | MERGED |
+| t823 | #823 Voice note extraction append/replace/skip mode | #827 | PR open, CI pending |
+| t725 | #725 Edit Student autosave | #743 | MERGED |
+| t726 | #726 Edit Student Stitch visual alignment | #744 | MERGED |
+| t729 | #729 Replace Edit Session modal with Log Session edit mode | #750 | PR open, CI PASS |
+| t723 | #723 Log Session form data quality (auto-title, topics, suggestions) | #751 | PR open, CI pending |
+| t730 | #730 Dashboard polish - hero CTA, roster signals, followup urgency | #748 | PR open, CI pending |
+| t731 | #731 Sidebar Settings separation and generation counter cleanup | #749 | MERGED |
+| t733 | #733 Standardize URL-driven tab state across multi-tab pages | #752 | PR open, CI pending |
+| t742 | #742 useMutation for useStudentAutosave | #758 | PR open, CI pending |
+| t771 | #771 Student detail interaction standard | #777 | PR open, CI pending |
+| t775 | #775 Edit Student layout + interaction polish | #784 | PR open, CI pending |
+| t778 | #778 Log session nav, autosave, timestamps | #785 | PR open, CI pending |
+| t793 | #793 Dashboard UX polish: roster click, followup nav, hero identity | #798 | PR open, CI pending |
+| t799 | #799 Edit Student + Log Session Stitch alignment polish | #803 | MERGED |
+| t797 | #797 Student Detail: header density, badge styling, session titles, border cleanup | #802 | MERGED |
 
 ## Live Tracker: GitHub Issues
 

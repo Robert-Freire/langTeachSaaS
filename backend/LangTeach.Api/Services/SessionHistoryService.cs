@@ -2,6 +2,7 @@ using System.Text.Json;
 using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
+using LangTeach.Api.DTOs;
 using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -123,5 +124,4 @@ public class SessionHistoryService : ISessionHistoryService
     private static readonly JsonSerializerOptions JsonOptions =
         new() { PropertyNameCaseInsensitive = true };
 
-    private sealed record TopicTagEntry(string Tag, string? Category);
 }

@@ -4,14 +4,35 @@ namespace LangTeach.Api.Services;
 
 public class StubReflectionExtractionService : IReflectionExtractionService
 {
-    public Task<ExtractedReflectionDto> ExtractAsync(string text, CancellationToken ct = default) =>
-        Task.FromResult(new ExtractedReflectionDto(
-            WhatWasCovered: "[Extracted] What was covered",
-            AreasToImprove: "[Extracted] Areas to improve",
+    private readonly ILogger<StubReflectionExtractionService> _logger;
+
+    public StubReflectionExtractionService(ILogger<StubReflectionExtractionService> logger)
+    {
+        _logger = logger;
+    }
+
+    public Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, CancellationToken ct = default)
+    {
+        _logger.LogInformation("StubReflectionExtractionService.ExtractAsync called with {Length} chars", text.Length);
+        return Task.FromResult(new ExtractedReflectionDto(
+            WhatWasCovered: new ExtractedTextFieldDto("[Extracted] What was covered", ExtractionMode.Replace),
+            AreasToImprove: new ExtractedTextFieldDto("[Extracted] Areas to improve", ExtractionMode.Replace),
             EmotionalSignals: "[Extracted] Emotional signals",
-            HomeworkAssigned: "[Extracted] Homework assigned",
-            NextLessonIdeas: "[Extracted] Next lesson ideas",
-            SessionDate: null,
-            SuggestedDifficulties: []
+            HomeworkAssigned: new ExtractedTextFieldDto("[Extracted] Homework assigned", ExtractionMode.Replace),
+            NextLessonIdeas: new ExtractedTextFieldDto("[Extracted] Next lesson ideas", ExtractionMode.Append),
+            SessionDate: "2026-01-15",
+            SuggestedDifficulties: [],
+            RawExtractionJson: null,
+            SessionTitle: "[Extracted] Session title",
+            TopicTags: [new TopicTagDto("[Extracted] Topic", null)],
+            PreviousHomeworkStatus: null,
+            TeachingTodos: [],
+            TeacherFollowups: [],
+            LevelReassessment: null,
+            DurationMinutes: null,
+            IsCancelled: null,
+            DifficultiesWorkedOn: [],
+            SessionStartTime: "09:00"
         ));
+    }
 }

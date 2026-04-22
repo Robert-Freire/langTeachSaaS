@@ -31,3 +31,36 @@ export function formatDateShort(iso: string): string {
 export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
+
+/** Month and year only: "Jan 2026" */
+export function formatMonthYear(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+}
+
+/** Long date with full weekday: "Thursday, March 21" */
+export function formatDateLong(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+}
+
+/** Month and day only: "Apr 5" */
+export function formatMonthDay(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+/** Short month, uppercase: "APR" */
+export function formatMonth(dateStr: string | null): string {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
+}
+
+/** Day number as string: "15" */
+export function formatDay(dateStr: string | null): string {
+  if (!dateStr) return ''
+  return String(new Date(dateStr).getDate())
+}
+
+/** Returns today's local date as a YYYY-MM-DD string (for comparisons against sessionDate). */
+export function todayLocalDateStr(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}

@@ -183,9 +183,9 @@ public class GenerateController : ControllerBase
             Style: request.Style,
             DurationMinutes: lesson.DurationMinutes,
             StudentName: student?.Name,
-            StudentNativeLanguage: student?.NativeLanguage,
+            StudentNativeLanguage: student?.NativeLanguages.FirstOrDefault(),
             StudentInterests: student?.Interests.ToArray(),
-            StudentGoals: student?.LearningGoals.ToArray(),
+            StudentGoals: student?.LearningGoals.SelectMany(g => new[] { g.Text }.Concat(g.Children.Select(c => c.Text))).ToArray(),
             StudentWeaknesses: student?.Weaknesses.Select(w => new StudentWeakness(w.Description, w.WeaknessType)).ToArray(),
             ExistingNotes: request.ExistingNotes,
             Direction: request.Direction,
@@ -196,7 +196,14 @@ public class GenerateController : ControllerBase
             CurriculumObjectives: lesson.Objectives,
             TeacherGrammarConstraints: request.GrammarConstraints,
             SectionType: request.SectionType,
-            SessionHistory: sessionHistory
+            SessionHistory: sessionHistory,
+            StudentReasonForStudying: student?.ReasonForStudying,
+            StudentSpokenLanguages: student?.SpokenLanguages.ToArray(),
+            StudentProfession: student?.Profession,
+            StudentBirthYear: student?.BirthYear,
+            StudentCountryOfOrigin: student?.CountryOfOrigin,
+            StudentCountryOfResidence: student?.CountryOfResidence,
+            StudentOfficialCefrLevel: student?.OfficialCefrLevel
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -343,9 +350,9 @@ public class GenerateController : ControllerBase
             Style: request.Style,
             DurationMinutes: lesson.DurationMinutes,
             StudentName: student?.Name,
-            StudentNativeLanguage: student?.NativeLanguage,
+            StudentNativeLanguage: student?.NativeLanguages.FirstOrDefault(),
             StudentInterests: student?.Interests.ToArray(),
-            StudentGoals: student?.LearningGoals.ToArray(),
+            StudentGoals: student?.LearningGoals.SelectMany(g => new[] { g.Text }.Concat(g.Children.Select(c => c.Text))).ToArray(),
             StudentWeaknesses: student?.Weaknesses.Select(w => new StudentWeakness(w.Description, w.WeaknessType)).ToArray(),
             ExistingNotes: request.ExistingNotes,
             Direction: request.Direction,
@@ -355,7 +362,15 @@ public class GenerateController : ControllerBase
             TemplateName: templateName,
             CurriculumObjectives: lesson.Objectives,
             TeacherGrammarConstraints: request.GrammarConstraints,
-            SessionHistory: sessionHistory
+            SectionType: request.SectionType,
+            SessionHistory: sessionHistory,
+            StudentReasonForStudying: student?.ReasonForStudying,
+            StudentSpokenLanguages: student?.SpokenLanguages.ToArray(),
+            StudentProfession: student?.Profession,
+            StudentBirthYear: student?.BirthYear,
+            StudentCountryOfOrigin: student?.CountryOfOrigin,
+            StudentCountryOfResidence: student?.CountryOfResidence,
+            StudentOfficialCefrLevel: student?.OfficialCefrLevel
         );
 
         var claudeRequest = buildPrompt(ctx);

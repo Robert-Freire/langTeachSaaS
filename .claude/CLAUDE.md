@@ -66,6 +66,7 @@ GitHub Issues is the single source of truth. Run `python3 .claude/scripts/task-p
 - **Self-assign immediately** when picking: `gh issue edit <N> --add-assignee "@me"`
 - **At most one `area:frontend` task in flight at a time.** Docker frontend runs on a fixed port (5173); concurrent frontend worktrees conflict. If a frontend task is already assigned, pick a backend or config task instead.
 - **Chrome extension for UI work:** When implementing frontend UI, launch Claude Code with `claude --chrome` to get live visual feedback via the Claude in Chrome extension. This improves first-pass output quality. It does NOT replace Playwright e2e tests or the `review-ui` agent (which runs before every push regardless). See `docs/dev-workflow.md` for setup steps.
+- **UI/UX standards:** `docs/design-system.md` is the authoritative reference for visual design (colors, typography, components) and interaction patterns (autosave, list-add, session inline edit, what is not allowed). Read it before implementing any frontend screen.
 
 For issue creation, editing, board management, and labels: see `.claude/procedures/issue-management.md`.
 
@@ -96,7 +97,6 @@ When a task is complete:
       | Reviewer | Finding | Action |
       |----------|---------|--------|
       | qa-verify | Gap: no e2e for empty state | Fixed (added test) |
-      | review | Unused import in FooBar.tsx | Fixed |
       | architecture-reviewer | Service could reuse SharedHelper | Deferred (#NNN) |
       | review-ui | Button clipped on mobile | Fixed |
       | CodeRabbit | Nullable warning in DTO | Dismissed (pre-existing) |

@@ -44,7 +44,8 @@ test('navigation flow using in-page Back buttons and links', async ({ browser })
   const studentCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
-  await studentCard.getByTestId('edit-student').click()
+  await studentCard.click()
+  await page.getByTestId('edit-profile-link').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: 10000 })
   await expect(page.getByTestId('page-header-back')).toHaveAttribute('href', '/students')
 

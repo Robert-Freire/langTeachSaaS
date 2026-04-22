@@ -11,13 +11,17 @@ const BASE_STUDENT: Student = {
   learningLanguage: 'Spanish',
   cefrLevel: 'B1',
   interests: [],
-  notes: null,
-  nativeLanguage: null,
+  personalNotes: null, teachingNotes: null,
+  nativeLanguages: [],
   learningGoals: [],
   weaknesses: [],
   difficulties: [],
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
+  birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
+  countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
+  officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
+  rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
 }
 
 function renderOverview(student: Partial<Student> = {}) {
@@ -92,23 +96,39 @@ describe('parseNotes', () => {
 })
 
 describe('StudentProfileOverview', () => {
-  it('renders "Teaching Context" card title', () => {
+  it('renders "Pedagogical Profile" card title', () => {
     renderOverview()
-    expect(screen.getByText('Teaching Context')).toBeInTheDocument()
+    expect(screen.getByText('Pedagogical Profile')).toBeInTheDocument()
   })
 
-  it('shows "Not specified" when native language is null', () => {
-    renderOverview({ nativeLanguage: null })
-    expect(screen.getByTestId('overview-native-language')).toHaveTextContent('Not specified')
+  it('does not show native language section when empty', () => {
+    renderOverview({ nativeLanguages: [] })
+    expect(screen.queryByTestId('overview-native-language')).not.toBeInTheDocument()
   })
 
-  it('shows native language when set', () => {
-    renderOverview({ nativeLanguage: 'Portuguese' })
-    expect(screen.getByTestId('overview-native-language')).toHaveTextContent('Portuguese')
+  it('shows native language tags with code badge when set', () => {
+    renderOverview({ nativeLanguages: ['Portuguese'] })
+    const el = screen.getByTestId('overview-native-language')
+    expect(el).toHaveTextContent('Portuguese')
+    expect(el).toHaveTextContent('PT')
+  })
+
+  it('shows skill bars when overrides are set', () => {
+    renderOverview({ skillLevelOverrides: { Reading: 'B1', Writing: 'A2' } })
+    const bars = screen.getByTestId('overview-skill-bars')
+    expect(bars).toHaveTextContent('Reading')
+    expect(bars).toHaveTextContent('B1')
+    expect(bars).toHaveTextContent('Writing')
+    expect(bars).toHaveTextContent('A2')
+  })
+
+  it('does not show skill bars section when no overrides', () => {
+    renderOverview({ skillLevelOverrides: {} })
+    expect(screen.queryByTestId('overview-skill-bars')).not.toBeInTheDocument()
   })
 
   it('renders learning goals as chips', () => {
-    renderOverview({ learningGoals: ['Travel', 'Work'] })
+    renderOverview({ learningGoals: [{ id: '1', text: 'Travel', children: [] }, { id: '2', text: 'Work', children: [] }] })
     expect(screen.getByText('Travel')).toBeInTheDocument()
     expect(screen.getByText('Work')).toBeInTheDocument()
   })
@@ -130,28 +150,29 @@ describe('StudentProfileOverview', () => {
     expect(screen.getByText('(grammatical)')).toBeInTheDocument()
   })
 
-  it('renders notes stripping Excel import prefix', () => {
-    renderOverview({ notes: '[Excel import 2026-03-01] Has great pronunciation.' })
-    expect(screen.getByTestId('overview-notes')).toHaveTextContent('Has great pronunciation.')
+  it('renders personal notes stripping Excel import prefix', () => {
+    renderOverview({ personalNotes: '[Excel import 2026-03-01] Has great pronunciation.' })
+    expect(screen.getByTestId('overview-personal-notes')).toHaveTextContent('Has great pronunciation.')
     expect(screen.queryByText(/Excel import/)).not.toBeInTheDocument()
   })
 
-  it('renders Preply/Student info as labeled subsections', () => {
-    renderOverview({ notes: 'Preply test: B1 score. Student info: Engineer background.' })
+  it('renders Preply/Student info as labeled subsections in personal notes', () => {
+    renderOverview({ personalNotes: 'Preply test: B1 score. Student info: Engineer background.' })
     expect(screen.getByText('Assessment notes')).toBeInTheDocument()
     expect(screen.getByText('Background')).toBeInTheDocument()
   })
 
-  it('does not render notes section when notes is null', () => {
-    renderOverview({ notes: null })
-    expect(screen.queryByTestId('overview-notes')).not.toBeInTheDocument()
+  it('renders teaching notes when set', () => {
+    renderOverview({ teachingNotes: 'Works well with inductive methods.' })
+    expect(screen.getByTestId('overview-teaching-notes')).toHaveTextContent('Works well with inductive methods.')
   })
 
-  it('renders Edit profile link to edit URL', () => {
-    renderOverview()
-    const link = screen.getByTestId('edit-profile-link')
-    expect(link).toHaveAttribute('href', '/students/student-1/edit')
+  it('does not render notes sections when both are null', () => {
+    renderOverview({ personalNotes: null, teachingNotes: null })
+    expect(screen.queryByTestId('overview-personal-notes')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('overview-teaching-notes')).not.toBeInTheDocument()
   })
+
 
   it('renders difficulties with competency and severity badges', () => {
     renderOverview({

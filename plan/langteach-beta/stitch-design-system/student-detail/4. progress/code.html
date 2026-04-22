@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Student Progress - Ana Martins | The Academic Atelier</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-background": "#1a1b22",
+                        "inverse-primary": "#c3c0ff",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#fbf8ff",
+                        "on-primary-fixed": "#0f0069",
+                        "surface-container-highest": "#e3e1ec",
+                        "on-tertiary-fixed": "#351000",
+                        "primary": "#3525cd",
+                        "primary-container": "#4f46e5",
+                        "surface-container": "#eeedf7",
+                        "on-tertiary-fixed-variant": "#7b2f00",
+                        "inverse-surface": "#2f3038",
+                        "primary-fixed": "#e2dfff",
+                        "surface-variant": "#e3e1ec",
+                        "outline": "#777587",
+                        "surface-container-low": "#f4f2fd",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#e8e7f1",
+                        "on-surface-variant": "#464555",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-dim": "#dad9e3",
+                        "tertiary-fixed": "#ffdbcc",
+                        "on-tertiary-container": "#ffd2be",
+                        "tertiary": "#7e3000",
+                        "background": "#fbf8ff",
+                        "tertiary-container": "#a44100",
+                        "outline-variant": "#c7c4d8",
+                        "on-secondary-container": "#54647a",
+                        "on-tertiary": "#ffffff",
+                        "secondary": "#505f76",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "secondary-container": "#d0e1fb",
+                        "on-surface": "#1a1b22",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#f1effa",
+                        "surface-bright": "#fbf8ff",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "tertiary-fixed-dim": "#ffb695",
+                        "secondary-fixed": "#d3e4fe",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "on-primary-container": "#dad7ff",
+                        "on-secondary": "#ffffff",
+                        "surface-tint": "#4d44e3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        h1, h2, h3, .font-headline { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .cefr-badge { width: 32px; height: 32px; display: flex; items-center; justify-content: center; border-radius: 0.375rem; font-weight: 700; font-size: 0.6875rem; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- SideNavBar Shell -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-[#F4F2FD] dark:bg-zinc-900 flex flex-col py-8 px-4 z-50">
+<div class="mb-12 px-2">
+<h1 class="text-lg font-bold text-[#3525CD] dark:text-[#4F46E5] tracking-tight">The Academic Atelier</h1>
+<p class="text-[10px] text-zinc-500 font-medium tracking-[0.2em] uppercase mt-1">Language Curator</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 dark:text-zinc-400 font-['Manrope'] tracking-wide text-sm font-medium hover:bg-[#FFFFFF]/50 transition-colors scale-95 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#3525CD] dark:text-[#4F46E5] font-bold bg-[#FFFFFF] dark:bg-zinc-800 rounded-lg font-['Manrope'] tracking-wide text-sm scale-95 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span>
+                Students
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 dark:text-zinc-400 font-['Manrope'] tracking-wide text-sm font-medium hover:bg-[#FFFFFF]/50 transition-colors scale-95 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="event_note">event_note</span>
+                Sessions
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 dark:text-zinc-400 font-['Manrope'] tracking-wide text-sm font-medium hover:bg-[#FFFFFF]/50 transition-colors scale-95 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+                Courses
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 dark:text-zinc-400 font-['Manrope'] tracking-wide text-sm font-medium hover:bg-[#FFFFFF]/50 transition-colors scale-95 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="auto_stories">auto_stories</span>
+                Lessons
+            </a>
+</nav>
+<div class="mt-auto pt-8 border-t border-outline-variant/10">
+<a class="flex items-center gap-3 px-4 py-3 text-zinc-500 dark:text-zinc-400 font-['Manrope'] tracking-wide text-sm font-medium hover:bg-[#FFFFFF]/50 transition-colors scale-95 duration-200 mb-4" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                Settings
+            </a>
+<div class="flex items-center gap-3 px-2">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center overflow-hidden">
+<img alt="Teacher Profile" data-alt="Professional portrait of a language educator in a bright minimalist office setting with soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC75iXwG1d1nOypXD6sWzklpZBZIX43I08gt8zQAI-hF70cM23jNp2RbCzKDbOtEQ__kuz_gwi7nzLHTQHGtg-ih3ZMGZXrdfXvlvmocReyV2MNGWtJbNP_ZN3zxAkQRx3YqrG0bLf7mN2l16g630yRGkocVaAunGaC0oDPCzIfL6LXqR3teiV78U_M9wt_BsOCwE6NGi0YIvV_NUiejQJ_wJL_6Pzdp9ovv8i3wCD68mQkCX3Y83Fy6CKG6-gVcG8JR1TgHvNZkL-3"/>
+</div>
+<div>
+<p class="text-xs font-bold text-on-surface">Prof. Julian</p>
+<p class="text-[10px] text-zinc-500">Curator Admin</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- TopAppBar Shell -->
+<header class="flex justify-between items-center w-full pl-72 pr-12 h-20 bg-[#FBF8FF]/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black text-[#1A1B22] dark:text-zinc-100 font-headline">Ana Martins</span>
+<nav class="flex gap-6 font-['Inter'] text-sm font-medium">
+<a class="text-zinc-500 dark:text-zinc-400 pb-4 hover:text-[#3525CD] transition-all" href="#">Overview</a>
+<a class="text-zinc-500 dark:text-zinc-400 pb-4 hover:text-[#3525CD] transition-all" href="#">Profile</a>
+<a class="text-zinc-500 dark:text-zinc-400 pb-4 hover:text-[#3525CD] transition-all" href="#">Sessions</a>
+<a class="text-[#3525CD] dark:text-[#4F46E5] border-b-2 border-[#3525CD] pb-4" href="#">Progress</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-gradient-to-br from-primary to-primary-container text-white px-5 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2 shadow-sm active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                Log Session
+            </button>
+<button class="w-10 h-10 flex items-center justify-center text-zinc-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="ml-64 pt-6 px-12 pb-24">
+<!-- Student Header Summary -->
+<section class="mb-10 flex items-end justify-between">
+<div class="flex items-center gap-6">
+<div class="w-24 h-24 rounded-2xl bg-surface-container-high overflow-hidden shadow-sm">
+<img alt="Ana Martins Avatar" data-alt="Close up portrait of a young woman with a friendly expression, warm studio lighting, neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDDXqCk9-bli_TfklrBFrQ4va-_mhIGBnj35XxtcYrF26BxSWsRO8yP_1N4b4RVKZPQe8BbHQ4wom7I5Ma6ABgIlujFEHpv_VBAXKaQlqV7h7aQNrTMoeyQWHc85RweD825w47DNgTm-e60_42x16sFIDClUNvXB_1LV0a1-z_tL_jiaVRndehWtfCQGj5_HuoTM8ZIEe_1mHz3Y09GMp3OhaQlnbWKOiifxfYgScom9g-9hu3mjzNO-vttO4yftzCSOsCXKcQ5LLT5"/>
+</div>
+<div>
+<div class="flex items-center gap-3 mb-2">
+<h2 class="text-3xl font-extrabold text-on-surface tracking-tight">Ana Martins</h2>
+<div class="cefr-badge bg-primary-fixed text-on-primary-fixed-variant">B1</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-green-100 text-green-700">Active</span>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-secondary-container text-on-secondary-container">Private</span>
+<span class="text-zinc-400 text-xs ml-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span>
+                            Next: tomorrow at 10:00
+                        </span>
+</div>
+</div>
+</div>
+<div class="text-right">
+<p class="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1">Native</p>
+<p class="text-lg font-headline font-semibold text-primary">Portuguese</p>
+</div>
+</section>
+<!-- Main Content Grid -->
+<div class="grid grid-cols-12 gap-8">
+<!-- Skill Imbalance Section (Bento Style) -->
+<div class="col-span-8 bg-surface-container-lowest rounded-3xl p-8 shadow-[0_12px_40px_rgba(26,27,34,0.04)]">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="text-xl font-bold text-on-surface mb-1">Skill Imbalance Analysis</h3>
+<p class="text-sm text-zinc-500">Skill levels compared to general CEFR level (B1)</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-sm bg-primary"></div>
+<span class="text-[10px] font-bold uppercase text-zinc-400 tracking-tighter">Current</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-sm bg-surface-container-high"></div>
+<span class="text-[10px] font-bold uppercase text-zinc-400 tracking-tighter">Target B1</span>
+</div>
+</div>
+</div>
+<div class="space-y-8">
+<!-- Reading B2 -->
+<div class="relative">
+<div class="flex justify-between items-center mb-2">
+<span class="text-sm font-semibold text-on-surface">Reading</span>
+<span class="cefr-badge bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px]">B2</span>
+</div>
+<div class="h-3 w-full bg-surface-container-low rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 85%;"></div>
+</div>
+</div>
+<!-- Speaking B1 -->
+<div class="relative">
+<div class="flex justify-between items-center mb-2">
+<span class="text-sm font-semibold text-on-surface">Speaking</span>
+<span class="cefr-badge bg-primary-fixed text-on-primary-fixed-variant text-[10px]">B1</span>
+</div>
+<div class="h-3 w-full bg-surface-container-low rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 60%;"></div>
+</div>
+</div>
+<!-- Listening B1 -->
+<div class="relative">
+<div class="flex justify-between items-center mb-2">
+<span class="text-sm font-semibold text-on-surface">Listening</span>
+<span class="cefr-badge bg-primary-fixed text-on-primary-fixed-variant text-[10px]">B1</span>
+</div>
+<div class="h-3 w-full bg-surface-container-low rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 55%;"></div>
+</div>
+</div>
+<!-- Writing A2 -->
+<div class="relative">
+<div class="flex justify-between items-center mb-2">
+<span class="text-sm font-semibold text-on-surface">Writing</span>
+<span class="cefr-badge bg-secondary-container text-on-secondary-container text-[10px]">A2</span>
+</div>
+<div class="h-3 w-full bg-surface-container-low rounded-full overflow-hidden">
+<div class="h-full bg-primary-container/40 rounded-full" style="width: 35%;"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Pacing Analytics Sidebar -->
+<div class="col-span-4 space-y-6">
+<!-- Pacing Card -->
+<div class="bg-surface-container-low rounded-3xl p-6">
+<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-6">Pacing Analytics</h3>
+<div class="space-y-6">
+<div>
+<p class="text-3xl font-black text-primary mb-1">14</p>
+<p class="text-xs font-medium text-zinc-600">Total Sessions over 3 months</p>
+</div>
+<div class="flex items-center gap-4 py-4 border-y border-outline-variant/20">
+<div class="flex-1">
+<p class="text-lg font-bold text-on-surface">1.2/wk</p>
+<p class="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">Frequency</p>
+</div>
+<div class="w-px h-8 bg-outline-variant/30"></div>
+<div class="flex-1">
+<p class="text-lg font-bold text-on-surface">since Jan</p>
+<p class="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">Start Date</p>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div>
+<p class="text-xs font-semibold text-on-surface">Cancellation Rate</p>
+<p class="text-[10px] text-zinc-500">Extremely reliable learner</p>
+</div>
+<div class="text-right">
+<span class="text-green-600 font-bold">7%</span>
+<div class="w-16 h-1 bg-surface-container-high rounded-full mt-1">
+<div class="h-full bg-green-500 w-[7%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Difficulties Summary -->
+<div class="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant/10">
+<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-4">Difficulties Summary</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between py-2 border-b border-outline-variant/5">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-on-surface">Subjuntivo en concesivas</span>
+<span class="text-[10px] text-zinc-400">3 weeks</span>
+</div>
+<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-primary-fixed text-on-primary-fixed-variant">Working</span>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-outline-variant/5">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-on-surface">Por vs Para</span>
+<span class="text-[10px] text-zinc-400">1 week</span>
+</div>
+<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-green-100 text-green-700">Covered</span>
+</div>
+<div class="flex items-center justify-between py-2">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-on-surface">Ser vs Estar</span>
+<span class="text-[10px] text-zinc-400">2 months</span>
+</div>
+<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-surface-container-highest text-zinc-500">Stale</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Placeholders Grid -->
+<div class="col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Curriculum Progress Placeholder -->
+<div class="bg-surface-container-lowest rounded-3xl p-8 shadow-sm border-2 border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-center min-h-[240px]">
+<div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-primary" data-icon="timeline">timeline</span>
+</div>
+<h4 class="text-sm font-bold text-on-surface uppercase tracking-wider mb-2">Curriculum Progress</h4>
+<p class="text-xs font-bold text-primary mb-1">COMING SOON</p>
+<p class="text-[11px] text-zinc-500 max-w-[200px]">Track your lesson plan milestones.</p>
+</div>
+<!-- Topic Analysis Placeholder -->
+<div class="bg-surface-container-lowest rounded-3xl p-8 shadow-sm border-2 border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-center min-h-[240px]">
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-tertiary" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<h4 class="text-sm font-bold text-on-surface uppercase tracking-wider mb-2">Topic Analysis</h4>
+<p class="text-xs font-bold text-tertiary mb-1">COMING SOON</p>
+<p class="text-[11px] text-zinc-500 max-w-[200px]">Deep dive into the thematic focus of each session.</p>
+</div>
+<!-- Engagement Trends Placeholder -->
+<div class="bg-surface-container-lowest rounded-3xl p-8 shadow-sm border-2 border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-center min-h-[240px]">
+<div class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-on-secondary-container" data-icon="show_chart">show_chart</span>
+</div>
+<h4 class="text-sm font-bold text-on-surface uppercase tracking-wider mb-2">Engagement Trends</h4>
+<p class="text-xs font-bold text-on-secondary-container mb-1">COMING SOON</p>
+<p class="text-[11px] text-zinc-500 max-w-[200px]">How your student's engagement evolves over time.</p>
+</div>
+</div>
+</div>
+</main>
+</body></html>

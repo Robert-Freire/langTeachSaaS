@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Helpers;
@@ -9,50 +10,25 @@ namespace LangTeach.Api.Services;
 public class ReflectionExtractionService : IReflectionExtractionService
 {
     private readonly IClaudeClient _claude;
+    private readonly IPromptService _prompts;
+    private readonly IPedagogyConfigService _pedagogy;
     private readonly ILogger<ReflectionExtractionService> _logger;
 
-    internal static string BuildSystemPrompt(DateOnly today) => $"""
-        You are a tool that helps language teachers structure their post-class notes.
-        Extract structured information from a teacher's free-form reflection text.
-
-        IMPORTANT: Preserve the original language of the teacher's text. Do not translate any field value into another language.
-
-        Today is {today.DayOfWeek}, {today:yyyy-MM-dd}.
-
-        Respond ONLY with a valid JSON object using these exact keys:
-        - whatWasCovered: string or null
-        - areasToImprove: string or null (narrative summary of student difficulties and struggles — prose, not a list)
-        - emotionalSignals: string or null (student attitude, mood, motivation, engagement signals)
-        - homeworkAssigned: string or null
-        - nextLessonIdeas: string or null
-        - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) of the session being described. Resolve date references using today's date and day of week: "hoy"/"today" = today, "ayer"/"yesterday" = yesterday, "el lunes pasado"/"el pasado lunes" = the most recent Monday before today (not the Monday of this week if today is Monday), "el martes pasado"/"el pasado martes" = the most recent Tuesday before today, and so on for any weekday. Always pick the last occurrence of the named weekday strictly before today. Null if no date is mentioned.
-        - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
-
-        For suggestedDifficulties, each object must have:
-        - description: full sentence describing the difficulty, extracted verbatim from the teacher's language
-        - competency: one of Grammar, Vocabulary, Pronunciation, Fluency, Discourse
-        - subcategory: specific item (e.g. "ser/estar", "subjunctive", "past tense"), free text
-        - severity: low | medium | high (infer from language: "mucho"/"siempre"/"constantemente" -> high, "a veces"/"sometimes" -> medium, "un poco"/"slightly" -> low; default medium)
-
-        Only include difficulties explicitly mentioned. Do not invent. Use null for scalar fields that cannot be inferred.
-        Keep each value concise (under 200 words).
-        Respond with JSON only, no markdown, no explanation.
-        """;
-
-    public ReflectionExtractionService(IClaudeClient claude, ILogger<ReflectionExtractionService> logger)
+    public ReflectionExtractionService(
+        IClaudeClient claude,
+        IPromptService prompts,
+        IPedagogyConfigService pedagogy,
+        ILogger<ReflectionExtractionService> logger)
     {
         _claude = claude;
+        _prompts = prompts;
+        _pedagogy = pedagogy;
         _logger = logger;
     }
 
-    public async Task<ExtractedReflectionDto> ExtractAsync(string text, CancellationToken ct = default)
+    public async Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, CancellationToken ct = default)
     {
-        var request = new ClaudeRequest(
-            SystemPrompt: BuildSystemPrompt(DateOnly.FromDateTime(DateTime.UtcNow)),
-            UserPrompt: text,
-            Model: ClaudeModel.Haiku,
-            MaxTokens: 1024
-        );
+        var request = _prompts.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(DateOnly.FromDateTime(DateTime.UtcNow), text, knownDifficulties));
 
         ClaudeResponse response;
         try
@@ -62,7 +38,13 @@ public class ReflectionExtractionService : IReflectionExtractionService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Claude API call failed during reflection extraction");
-            return new ExtractedReflectionDto(null, null, null, null, null, null, []);
+            return new ExtractedReflectionDto(
+                WhatWasCovered: null, AreasToImprove: null, EmotionalSignals: null,
+                HomeworkAssigned: null, NextLessonIdeas: null, SessionDate: null,
+                SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
+                TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
+                TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
+                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null);
         }
 
         return ParseResponse(response.Content);
@@ -77,20 +59,37 @@ public class ReflectionExtractionService : IReflectionExtractionService
             var root = doc.RootElement;
 
             return new ExtractedReflectionDto(
-                WhatWasCovered: GetStringOrNull(root, "whatWasCovered"),
-                AreasToImprove: GetStringOrNull(root, "areasToImprove"),
+                WhatWasCovered: ParseTextFieldOrNull(root, "whatWasCovered"),
+                AreasToImprove: ParseTextFieldOrNull(root, "areasToImprove"),
                 EmotionalSignals: GetStringOrNull(root, "emotionalSignals"),
-                HomeworkAssigned: GetStringOrNull(root, "homeworkAssigned"),
-                NextLessonIdeas: GetStringOrNull(root, "nextLessonIdeas"),
+                HomeworkAssigned: ParseTextFieldOrNull(root, "homeworkAssigned"),
+                NextLessonIdeas: ParseTextFieldOrNull(root, "nextLessonIdeas"),
                 SessionDate: GetIsoDateOrNull(root, "sessionDate"),
-                SuggestedDifficulties: ParseSuggestedDifficulties(root)
+                SuggestedDifficulties: ParseSuggestedDifficulties(root),
+                RawExtractionJson: cleaned,
+                SessionTitle: GetStringOrNull(root, "sessionTitle"),
+                TopicTags: ParseTopicTags(root),
+                PreviousHomeworkStatus: ParseHomeworkStatus(root),
+                TeachingTodos: ParseStringArray(root, "teachingTodos"),
+                TeacherFollowups: ParseStringArray(root, "teacherFollowups"),
+                LevelReassessment: ParseCefrLevel(root, "levelReassessment"),
+                DurationMinutes: GetIntOrNull(root, "durationMinutes"),
+                IsCancelled: GetBoolOrNull(root, "isCancelled"),
+                DifficultiesWorkedOn: ParseStringArray(root, "difficultiesWorkedOn"),
+                SessionStartTime: GetHhMmOrNull(root, "sessionStartTime")
             );
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to parse reflection extraction JSON (length: {Length})", json?.Length ?? 0);
-        _logger.LogDebug("Unparseable Claude response: {Json}", json);
-            return new ExtractedReflectionDto(null, null, null, null, null, null, []);
+            _logger.LogDebug("Unparseable Claude response: {Json}", json);
+            return new ExtractedReflectionDto(
+                WhatWasCovered: null, AreasToImprove: null, EmotionalSignals: null,
+                HomeworkAssigned: null, NextLessonIdeas: null, SessionDate: null,
+                SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
+                TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
+                TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
+                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null);
         }
     }
 
@@ -100,6 +99,9 @@ public class ReflectionExtractionService : IReflectionExtractionService
 
         if (!root.TryGetProperty("suggestedDifficulties", out var arr) || arr.ValueKind != JsonValueKind.Array)
             return result;
+
+        var validCompetencies = _pedagogy.GetValidDifficultyCompetencies();
+        var validSeverities = _pedagogy.GetValidDifficultySeverities();
 
         foreach (var item in arr.EnumerateArray())
         {
@@ -111,7 +113,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
             var severity = GetStringOrNull(item, "severity")?.Trim();
 
             if (description is null || competency is null || severity is null) continue;
-            if (!DifficultyConstants.ValidCompetencies.Contains(competency) || !DifficultyConstants.ValidSeverities.Contains(severity))
+            if (!validCompetencies.Contains(competency) || !validSeverities.Contains(severity))
             {
                 _logger.LogWarning("Skipping suggested difficulty with invalid fields: Competency={Competency}, Severity={Severity}", competency, severity);
                 continue;
@@ -121,6 +123,30 @@ public class ReflectionExtractionService : IReflectionExtractionService
         }
 
         return result;
+    }
+
+    private ExtractedTextFieldDto? ParseTextFieldOrNull(JsonElement root, string key)
+    {
+        if (!root.TryGetProperty(key, out var prop)) return null;
+        if (prop.ValueKind == JsonValueKind.Null) return null;
+        if (prop.ValueKind == JsonValueKind.Object)
+        {
+            var value = GetStringOrNull(prop, "value");
+            var modeStr = GetStringOrNull(prop, "mode") ?? "skip";
+            if (!Enum.TryParse<ExtractionMode>(modeStr, ignoreCase: true, out var mode))
+            {
+                _logger.LogWarning("Unrecognized extraction mode '{Mode}' for key '{Key}', defaulting to skip", modeStr, key);
+                mode = ExtractionMode.Skip;
+            }
+            return value is null ? null : new ExtractedTextFieldDto(value, mode);
+        }
+        // Legacy fallback: plain string response from AI (treat as replace)
+        if (prop.ValueKind == JsonValueKind.String)
+        {
+            var value = prop.GetString();
+            return string.IsNullOrWhiteSpace(value) ? null : new ExtractedTextFieldDto(value, ExtractionMode.Replace);
+        }
+        return null;
     }
 
     private static string? GetStringOrNull(JsonElement root, string key)
@@ -147,5 +173,78 @@ public class ReflectionExtractionService : IReflectionExtractionService
             out var parsed)
             ? parsed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
             : null;
+    }
+
+    private static int? GetIntOrNull(JsonElement root, string key)
+    {
+        if (!root.TryGetProperty(key, out var prop)) return null;
+        return prop.ValueKind == JsonValueKind.Number && prop.TryGetInt32(out var v) ? v : null;
+    }
+
+    private static bool? GetBoolOrNull(JsonElement root, string key)
+    {
+        if (!root.TryGetProperty(key, out var prop)) return null;
+        return prop.ValueKind is JsonValueKind.True or JsonValueKind.False ? prop.GetBoolean() : null;
+    }
+
+    private static string? GetHhMmOrNull(JsonElement root, string key)
+    {
+        var raw = GetStringOrNull(root, key);
+        if (raw is null) return null;
+        return TimeOnly.TryParseExact(raw, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _)
+            ? raw
+            : null;
+    }
+
+    private static List<string> ParseStringArray(JsonElement root, string key)
+    {
+        var result = new List<string>();
+        if (!root.TryGetProperty(key, out var arr) || arr.ValueKind != JsonValueKind.Array)
+            return result;
+
+        foreach (var item in arr.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.String)
+            {
+                var s = item.GetString();
+                if (!string.IsNullOrWhiteSpace(s))
+                    result.Add(s);
+            }
+        }
+        return result;
+    }
+
+    private static List<TopicTagDto> ParseTopicTags(JsonElement root)
+    {
+        var result = new List<TopicTagDto>();
+        if (!root.TryGetProperty("topicTags", out var arr) || arr.ValueKind != JsonValueKind.Array)
+            return result;
+
+        foreach (var item in arr.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object) continue;
+            var tag = GetStringOrNull(item, "tag")?.Trim();
+            if (string.IsNullOrWhiteSpace(tag)) continue;
+            var category = GetStringOrNull(item, "category")?.Trim();
+            result.Add(new TopicTagDto(tag, category));
+        }
+        return result;
+    }
+
+    private static ExtractedHomeworkStatus? ParseHomeworkStatus(JsonElement root)
+    {
+        var raw = GetStringOrNull(root, "previousHomeworkStatus");
+        if (raw is null) return null;
+        return Enum.TryParse<ExtractedHomeworkStatus>(raw, ignoreCase: true, out var parsed)
+            ? parsed
+            : null;
+    }
+
+    private static readonly Regex CefrLevelRegex = new(@"^[ABC][12]\+?$", RegexOptions.Compiled);
+
+    private static string? ParseCefrLevel(JsonElement root, string key)
+    {
+        var raw = GetStringOrNull(root, key);
+        return raw is not null && CefrLevelRegex.IsMatch(raw) ? raw : null;
     }
 }

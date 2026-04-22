@@ -6,6 +6,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import CourseDetail from './CourseDetail'
 import * as coursesApi from '../api/courses'
 
+vi.mock('../components/course/CourseSuggestionsPanel', () => ({
+  CourseSuggestionsPanel: () => <div data-testid="course-suggestions-panel" />,
+}))
+
 vi.mock('../api/courses', () => ({
   getCourse: vi.fn(),
   reorderCurriculum: vi.fn(),
@@ -466,6 +470,42 @@ describe('CourseDetail', () => {
       wrapper(<CourseDetail />)
       await screen.findByTestId('warnings-panel-clear')
       expect(screen.getByText(/All grammar structures are level-appropriate/)).toBeInTheDocument()
+    })
+  })
+
+  // -------------------------------------------------------------------------
+  // Tab URL state
+  // -------------------------------------------------------------------------
+
+  describe('tab URL state', () => {
+    it('tab click updates URL search param and shows suggestions panel', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />)
+
+      await screen.findByTestId('course-title')
+      expect(screen.queryByTestId('course-suggestions-panel')).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('tab-suggestions'))
+      expect(screen.getByTestId('course-suggestions-panel')).toBeInTheDocument()
+      expect(screen.queryByTestId('curriculum-list')).not.toBeInTheDocument()
+    })
+
+    it('renders correct tab when URL has ?tab=suggestions on load', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />, '/courses/course-1?tab=suggestions')
+
+      await screen.findByTestId('course-title')
+      expect(screen.getByTestId('course-suggestions-panel')).toBeInTheDocument()
+      expect(screen.queryByTestId('curriculum-list')).not.toBeInTheDocument()
+    })
+
+    it('defaults to curriculum tab when URL has an unknown tab value', async () => {
+      vi.mocked(coursesApi.getCourse).mockResolvedValue(mockCourse)
+      wrapper(<CourseDetail />, '/courses/course-1?tab=foo')
+
+      await screen.findByTestId('course-title')
+      expect(screen.getByTestId('curriculum-list')).toBeInTheDocument()
+      expect(screen.queryByTestId('course-suggestions-panel')).not.toBeInTheDocument()
     })
   })
 })

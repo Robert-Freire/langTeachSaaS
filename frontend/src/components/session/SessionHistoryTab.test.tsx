@@ -6,9 +6,16 @@ import { SessionHistoryTab } from './SessionHistoryTab'
 import * as sessionLogsApi from '../../api/sessionLogs'
 import * as lessonsApi from '../../api/lessons'
 
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>()
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 vi.mock('../../api/sessionLogs', () => ({
   listSessions: vi.fn(),
   deleteSession: vi.fn(),
+  patchSessionField: vi.fn(),
   updateSession: vi.fn(),
   createSession: vi.fn(),
   serializeTopicTags: vi.fn((tags) => JSON.stringify(tags)),
@@ -49,6 +56,9 @@ const SESSION_BASE: sessionLogsApi.SessionLog = {
   statusName: 'Confirmed' as const,
   mentionedDifficultyPairs: '[]',
   suggestedDifficulties: '[]',
+  duration: null,
+  title: null,
+  hasVoiceNote: false,
 }
 
 function wrapper() {
@@ -65,6 +75,7 @@ function wrapper() {
 describe('SessionHistoryTab', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockNavigate.mockClear()
     vi.mocked(lessonsApi.getLessons).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 })
   })
 
@@ -94,34 +105,49 @@ describe('SessionHistoryTab', () => {
     expect(await screen.findAllByTestId('session-entry')).toHaveLength(1)
   })
 
-  it('shows inline preview with word-boundary-truncated planned and actual content', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+  it('shows actualContent snippet in collapsed state with line-clamp-1 when title exists', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, title: 'Preterito Indefinido' },
+    ])
     wrapper()
     await screen.findByTestId('session-entry')
-    const plannedEl = screen.getByText(/Preterito indefinido intro/)
     const actualEl = screen.getByText(/Covered basics and exercises/)
-    expect(plannedEl).toBeInTheDocument()
     expect(actualEl).toBeInTheDocument()
-    expect(plannedEl.closest('p')).toHaveClass('line-clamp-1')
     expect(actualEl.closest('p')).toHaveClass('line-clamp-1')
+    // plannedContent is NOT shown in collapsed state
+    expect(screen.queryByText(/Preterito indefinido intro/)).not.toBeInTheDocument()
   })
 
-  it('hides planned and actual preview when expanded to avoid duplication', async () => {
+  it('shows actualContent snippet with line-clamp-2 when no title', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, title: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    const actualEl = screen.getByText(/Covered basics and exercises/)
+    expect(actualEl.closest('p')).toHaveClass('line-clamp-2')
+  })
+
+  it('hides actualContent snippet when expanded and shows it in detail section', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
     expect(screen.getByTestId('session-entry-detail')).toBeInTheDocument()
-    // Full text appears once in the detail section
-    expect(screen.getAllByText(/Preterito indefinido intro/)).toHaveLength(1)
-    expect(screen.getAllByText(/Covered basics and exercises/)).toHaveLength(1)
+    // collapsed snippet <p> gone; actualContent now appears in the editable narrative textarea
+    expect(screen.queryByText(/Covered basics and exercises/, { selector: 'p' })).not.toBeInTheDocument()
+    expect(screen.getByDisplayValue(/Covered basics and exercises/)).toBeInTheDocument()
+    // plannedContent appears in the detail (since it differs from actualContent)
+    expect(screen.getByText(/Preterito indefinido intro/)).toBeInTheDocument()
   })
 
-  it('shows previous homework status badge', async () => {
+  it('shows previous homework status badge in expanded view', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
     expect(await screen.findByTestId('hw-status-badge')).toBeInTheDocument()
-    expect(screen.getByTestId('hw-status-badge')).toHaveTextContent('HW: Done')
+    expect(screen.getByTestId('hw-status-badge')).toHaveTextContent('Done')
   })
 
   it('expands entry on click to show full detail', async () => {
@@ -163,32 +189,19 @@ describe('SessionHistoryTab', () => {
     expect(chips[1]).toHaveTextContent('viajes')
   })
 
-  it('shows delete button in expanded view', async () => {
+  it('does not show kebab trigger in the collapsed row', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
-    fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    expect(screen.getByTestId('delete-session-button')).toBeInTheDocument()
+    expect(screen.queryByTestId('session-kebab-trigger')).not.toBeInTheDocument()
   })
 
-  it('shows edit button in expanded view', async () => {
+  it('shows delete button in expanded row', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    expect(screen.getByTestId('edit-session-button')).toBeInTheDocument()
-  })
-
-  it('clicking edit button opens SessionLogDialog in edit mode', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
-    wrapper()
-    await screen.findByTestId('session-entry')
-    fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    fireEvent.click(screen.getByTestId('edit-session-button'))
-    await waitFor(() => {
-      expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument()
-      expect(screen.getByText('Edit Session')).toBeInTheDocument()
-    })
+    expect(await screen.findByTestId('delete-session-btn')).toBeInTheDocument()
   })
 
   it('does not call deleteSession when delete button is clicked without confirming', async () => {
@@ -197,7 +210,8 @@ describe('SessionHistoryTab', () => {
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    fireEvent.click(screen.getByTestId('delete-session-button'))
+    const deleteBtn = await screen.findByTestId('delete-session-btn')
+    fireEvent.click(deleteBtn)
     // Dialog opens but we cancel
     const cancelBtn = await screen.findByRole('button', { name: /cancel/i })
     fireEvent.click(cancelBtn)
@@ -210,12 +224,46 @@ describe('SessionHistoryTab', () => {
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    fireEvent.click(screen.getByTestId('delete-session-button'))
+    const deleteBtn = await screen.findByTestId('delete-session-btn')
+    fireEvent.click(deleteBtn)
     const confirmBtn = await screen.findByTestId('confirm-delete-session')
     fireEvent.click(confirmBtn)
     await waitFor(() => {
       expect(sessionLogsApi.deleteSession).toHaveBeenCalledWith('student-1', 'session-1')
     })
+  })
+
+  it('blurring session title calls patchSessionField and shows saved indicator', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.patchSessionField).mockResolvedValue({ ...SESSION_BASE, title: 'New Title' })
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const titleInput = screen.getByTestId('session-title-input')
+    fireEvent.change(titleInput, { target: { value: 'New Title' } })
+    fireEvent.blur(titleInput)
+    await waitFor(() => {
+      expect(sessionLogsApi.patchSessionField).toHaveBeenCalledWith(
+        'student-1',
+        expect.objectContaining({ id: 'session-1' }),
+        { title: 'New Title' },
+      )
+    })
+    expect(await screen.findByTestId('saved-indicator')).toBeInTheDocument()
+  })
+
+  it('Escape on session narrative reverts value and does not call patchSessionField', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const narrativeInput = screen.getByTestId('session-narrative-input')
+    fireEvent.change(narrativeInput, { target: { value: 'Edited content' } })
+    fireEvent.keyDown(narrativeInput, { key: 'Escape' })
+    await waitFor(() => {
+      expect(sessionLogsApi.patchSessionField).not.toHaveBeenCalled()
+    })
+    expect(screen.getByDisplayValue('Covered basics and exercises')).toBeInTheDocument()
   })
 
   it('shows separate action item and note counts when both are set', async () => {
@@ -256,28 +304,15 @@ describe('SessionHistoryTab', () => {
     expect(screen.queryByTestId('general-note-count')).not.toBeInTheDocument()
   })
 
-  it('shows relative time label: "today" for same-day session', async () => {
-    const today = new Date().toISOString().split('T')[0] + 'T00:00:00Z'
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, sessionDate: today }])
+  it('shows date badge with month and day for a session', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, sessionDate: '2026-03-30T00:00:00Z' },
+    ])
     wrapper()
     await screen.findByTestId('session-entry')
-    expect(screen.getByText('today')).toBeInTheDocument()
-  })
-
-  it('shows relative time label: "N days ago" for recent session', async () => {
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, sessionDate: threeDaysAgo }])
-    wrapper()
-    await screen.findByTestId('session-entry')
-    expect(screen.getByText('3 days ago')).toBeInTheDocument()
-  })
-
-  it('shows relative time label: "N weeks ago" for a session 2 weeks ago', async () => {
-    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, sessionDate: twoWeeksAgo }])
-    wrapper()
-    await screen.findByTestId('session-entry')
-    expect(screen.getByText('2 weeks ago')).toBeInTheDocument()
+    // Date badge shows month abbreviation and day
+    expect(screen.getByText('MAR')).toBeInTheDocument()
+    expect(screen.getByText('30')).toBeInTheDocument()
   })
 
   it('shows Cancelled badge for a cancelled session', async () => {
@@ -345,28 +380,28 @@ describe('SessionHistoryTab', () => {
     expect(screen.queryByTestId('next-session-topics-preview')).not.toBeInTheDocument()
   })
 
-  it('shows next session topics section with amber styling in expanded state', async () => {
+  it('shows next plan textarea with amber heading and value in expanded state', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    const section = screen.getByTestId('next-session-topics-section')
-    expect(section).toBeInTheDocument()
-    expect(section).toHaveTextContent('Planned for next class')
-    expect(section).toHaveTextContent('Review irregular verbs')
+    expect(screen.getByText('Planned for next class')).toBeInTheDocument()
+    const textarea = screen.getByTestId('session-next-plan-input')
+    expect(textarea).toBeInTheDocument()
+    expect(textarea).toHaveValue('Review irregular verbs')
   })
 
-  it('does not show next session topics section when nextSessionTopics is null', async () => {
+  it('does not show start-next-session-button when nextSessionTopics is null', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
       { ...SESSION_BASE, nextSessionTopics: null },
     ])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    expect(screen.queryByTestId('next-session-topics-section')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('start-next-session-button')).not.toBeInTheDocument()
   })
 
-  it('shows "Start next session" button in expanded view when nextSessionTopics is non-empty', async () => {
+  it('shows "Start next session" button when nextSessionTopics is non-empty', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
@@ -384,17 +419,316 @@ describe('SessionHistoryTab', () => {
     expect(screen.queryByTestId('start-next-session-button')).not.toBeInTheDocument()
   })
 
-  it('clicking "Start next session" opens Log Session dialog with planned content pre-filled', async () => {
+  it('clicking "Start next session" navigates to log-session page', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
     fireEvent.click(screen.getByTestId('start-next-session-button'))
     await waitFor(() => {
-      expect(screen.getByTestId('session-log-dialog')).toBeInTheDocument()
-      expect(screen.getByText('Log Session')).toBeInTheDocument()
+      expect(mockNavigate).toHaveBeenCalledWith(`/students/student-1/log-session`)
     })
-    const plannedField = screen.getByTestId('planned-content') as HTMLTextAreaElement
-    expect(plannedField.value).toBe('Review irregular verbs')
+  })
+
+  it('shows Total Hours stat when sessions have duration', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, duration: 60 }])
+    wrapper()
+    await screen.findByTestId('total-hours-stat')
+    expect(screen.getByTestId('total-hours-value')).toHaveTextContent('1')
+  })
+
+  it('hides Total Hours stat when all sessions have null duration', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.queryByTestId('total-hours-stat')).not.toBeInTheDocument()
+  })
+
+  it('filters sessions by search query on title and content', async () => {
+    const sessionA = { ...SESSION_BASE, id: 'a', title: 'Subjunctive Usage', actualContent: 'Covered subjunctive' }
+    const sessionB = { ...SESSION_BASE, id: 'b', title: 'Business Spanish', actualContent: 'Corporate vocabulary' }
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([sessionA, sessionB])
+    wrapper()
+    await screen.findAllByTestId('session-entry')
+    const input = screen.getByTestId('session-search-input')
+    fireEvent.change(input, { target: { value: 'subjunctive' } })
+    await waitFor(() => {
+      expect(screen.getAllByTestId('session-entry')).toHaveLength(1)
+    })
+    expect(screen.getByText('Subjunctive Usage')).toBeInTheDocument()
+    expect(screen.queryByText('Business Spanish')).not.toBeInTheDocument()
+  })
+
+  it('shows only cancelled sessions when Cancelled filter is active', async () => {
+    const cancelled = { ...SESSION_BASE, id: 'c', isCancelled: true }
+    const normal = { ...SESSION_BASE, id: 'n', isCancelled: false }
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([cancelled, normal])
+    wrapper()
+    await screen.findAllByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('status-filter-cancelled'))
+    await waitFor(() => {
+      expect(screen.getAllByTestId('session-entry')).toHaveLength(1)
+    })
+    expect(screen.getByTestId('cancelled-badge')).toBeInTheDocument()
+  })
+
+  it('shows Load earlier sessions button when sessions exceed page size', async () => {
+    const sessions = Array.from({ length: 16 }, (_, i) => ({
+      ...SESSION_BASE,
+      id: `s-${i}`,
+      sessionDate: new Date(2026, 0, 16 - i).toISOString(),
+    }))
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue(sessions)
+    wrapper()
+    await screen.findAllByTestId('session-entry')
+    expect(screen.getByTestId('load-earlier-sessions')).toBeInTheDocument()
+    expect(screen.getAllByTestId('session-entry')).toHaveLength(15)
+  })
+
+  it('loads more sessions on Load earlier button click', async () => {
+    const sessions = Array.from({ length: 16 }, (_, i) => ({
+      ...SESSION_BASE,
+      id: `s-${i}`,
+      sessionDate: new Date(2026, 0, 16 - i).toISOString(),
+    }))
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue(sessions)
+    wrapper()
+    await screen.findAllByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('load-earlier-sessions'))
+    await waitFor(() => {
+      expect(screen.getAllByTestId('session-entry')).toHaveLength(16)
+    })
+    expect(screen.queryByTestId('load-earlier-sessions')).not.toBeInTheDocument()
+  })
+
+  it('shows mic icon when hasVoiceNote is true', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, hasVoiceNote: true }])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('voice-note-icon')).toBeInTheDocument()
+  })
+
+  it('does not show mic icon when hasVoiceNote is false', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.queryByTestId('voice-note-icon')).not.toBeInTheDocument()
+  })
+
+  it('shows duration badge when duration is set', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, duration: 60 }])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('duration-badge')).toHaveTextContent('60 min')
+  })
+
+  it('shows session title when title is set', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, title: 'Subjunctive Usage in Time Clauses' },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByText('Subjunctive Usage in Time Clauses')).toBeInTheDocument()
+  })
+
+  it('shows 0 min duration badge for cancelled sessions without duration', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, isCancelled: true, duration: null },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('duration-badge')).toHaveTextContent('0 min')
+  })
+
+  it('filters sessions by date range', async () => {
+    const sessionOld = { ...SESSION_BASE, id: 'old', sessionDate: '2026-01-01T00:00:00Z' }
+    const sessionNew = { ...SESSION_BASE, id: 'new', sessionDate: '2026-03-30T00:00:00Z' }
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([sessionNew, sessionOld])
+    wrapper()
+    await screen.findAllByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('date-range-button'))
+    const fromInput = await screen.findByTestId('date-from-input')
+    fireEvent.change(fromInput, { target: { value: '2026-03-01' } })
+    await waitFor(() => {
+      expect(screen.getAllByTestId('session-entry')).toHaveLength(1)
+    })
+  })
+
+  it('falls back to Session date format when no title', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, title: null, sessionDate: '2026-04-05T10:00:00Z' },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByText(/Session, Apr 5/)).toBeInTheDocument()
+  })
+
+  it('shows homework status icon in collapsed row when previousHomeworkStatusName is set', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, previousHomeworkStatusName: 'Done' },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('hw-status-icon')).toBeInTheDocument()
+    expect(screen.getByTestId('hw-status-icon')).toHaveTextContent('✓')
+  })
+
+  it('shows x icon when homework not done', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, previousHomeworkStatusName: 'NotDone', previousHomeworkStatus: 2 },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('hw-status-icon')).toHaveTextContent('✗')
+  })
+
+  it('shows half-circle icon when homework partially done', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, previousHomeworkStatusName: 'Partial', previousHomeworkStatus: 3 },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('hw-status-icon')).toHaveTextContent('◑')
+  })
+
+  it('does not show homework status icon when previousHomeworkStatusName is empty', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, previousHomeworkStatusName: '', previousHomeworkStatus: 0 },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.queryByTestId('hw-status-icon')).not.toBeInTheDocument()
+  })
+
+  it('does not show homework status icon when status is NotApplicable', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, previousHomeworkStatusName: 'NotApplicable', previousHomeworkStatus: 3 },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.queryByTestId('hw-status-icon')).not.toBeInTheDocument()
+  })
+
+  it('uses full-width layout when no homework and no next plan', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      {
+        ...SESSION_BASE,
+        homeworkAssigned: null,
+        nextSessionTopics: null,
+        previousHomeworkStatusName: '',
+        previousHomeworkStatus: 0,
+      },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const detail = screen.getByTestId('session-entry-detail')
+    // The grid should not have md:grid-cols-3 when no right column content
+    const grid = detail.querySelector('.grid')
+    expect(grid?.className).not.toContain('md:grid-cols-3')
+  })
+
+  it('uses full-width layout when only hw status icon exists (no homework assigned, no next plan)', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      {
+        ...SESSION_BASE,
+        homeworkAssigned: null,
+        nextSessionTopics: null,
+        previousHomeworkStatusName: 'Done',
+        previousHomeworkStatus: 1,
+      },
+    ])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const detail = screen.getByTestId('session-entry-detail')
+    // Right column should not render even when hw status icon is present
+    const grid = detail.querySelector('.grid')
+    expect(grid?.className).not.toContain('md:grid-cols-3')
+  })
+
+  it('shows "Logged" timestamp in expanded session row', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const timestamps = screen.getByTestId('session-timestamps')
+    expect(timestamps).toHaveTextContent(/Logged/)
+  })
+
+  it('shows "Edited" timestamp when updatedAt differs from createdAt by more than 60s', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{
+      ...SESSION_BASE,
+      createdAt: '2026-03-30T10:00:00Z',
+      updatedAt: '2026-03-30T10:05:00Z',
+    }])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const timestamps = screen.getByTestId('session-timestamps')
+    expect(timestamps).toHaveTextContent(/Logged/)
+    expect(timestamps).toHaveTextContent(/Edited/)
+  })
+
+  it('does not show "Edited" when updatedAt is within 60s of createdAt', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{
+      ...SESSION_BASE,
+      createdAt: '2026-03-30T10:00:00Z',
+      updatedAt: '2026-03-30T10:00:30Z',
+    }])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const timestamps = screen.getByTestId('session-timestamps')
+    expect(timestamps).toHaveTextContent(/Logged/)
+    expect(timestamps).not.toHaveTextContent(/Edited/)
+  })
+
+  it('expanded row shows "Edit full session" link pointing to log-session with sessionId', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    const link = screen.getByTestId('edit-full-session-link')
+    expect(link).toBeInTheDocument()
+    expect(link).toHaveAttribute('href', '/students/student-1/sessions/session-1/edit')
+  })
+
+  it('shows Scheduled badge for a Confirmed session with a far-future date', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, sessionDate: '2099-01-15T00:00:00Z' },
+    ])
+    wrapper()
+    expect(await screen.findByTestId('scheduled-badge')).toBeInTheDocument()
+    expect(screen.getByTestId('scheduled-badge')).toHaveTextContent('Scheduled')
+    expect(screen.queryByTestId('completed-badge')).not.toBeInTheDocument()
+  })
+
+  it('shows Completed badge for a Confirmed session with a past date', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, sessionDate: '2020-06-10T00:00:00Z' },
+    ])
+    wrapper()
+    expect(await screen.findByTestId('completed-badge')).toBeInTheDocument()
+    expect(screen.getByTestId('completed-badge')).toHaveTextContent('Completed')
+    expect(screen.queryByTestId('scheduled-badge')).not.toBeInTheDocument()
+  })
+
+  it('does not show Scheduled badge for a Draft session with a future date', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, sessionDate: '2099-01-15T00:00:00Z', status: 1, statusName: 'Draft' as const },
+    ])
+    wrapper()
+    expect(await screen.findByTestId('draft-badge')).toBeInTheDocument()
+    expect(screen.queryByTestId('scheduled-badge')).not.toBeInTheDocument()
+  })
+
+  it('does not show Scheduled badge for a cancelled session with a future date', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SESSION_BASE, sessionDate: '2099-01-15T00:00:00Z', isCancelled: true },
+    ])
+    wrapper()
+    expect(await screen.findByTestId('cancelled-badge')).toBeInTheDocument()
+    expect(screen.queryByTestId('scheduled-badge')).not.toBeInTheDocument()
   })
 })

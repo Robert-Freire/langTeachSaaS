@@ -1,6 +1,9 @@
 ---
 name: pm
 description: Activate the PM persona for interactive discussion about features, priorities, plans, and UX decisions. Use when you want to discuss and iterate, not just get a one-shot verdict.
+initialCommands:
+  - "/rename PM"
+  - "/color green"
 ---
 
 # LangTeach PM Mode
