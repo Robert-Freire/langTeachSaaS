@@ -1,8 +1,9 @@
 FROM node:24-alpine AS base
 WORKDIR /app
-COPY package.json package-lock.json .npmrc ./
+COPY frontend/package.json frontend/package-lock.json frontend/.npmrc ./
 RUN npm ci
-COPY . .
+COPY frontend/. .
+COPY data/ /data/
 
 FROM base AS dev
 EXPOSE 5173

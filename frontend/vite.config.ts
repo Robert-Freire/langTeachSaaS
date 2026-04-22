@@ -9,10 +9,14 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@data': path.resolve(__dirname, '../data'),
     },
   },
   server: {
     port: 5173,
+    fs: {
+      allow: [path.resolve(__dirname, '.'), path.resolve(__dirname, '../data')],
+    },
     // Allow Docker container hostnames (e.g. "frontend") when running in e2e mode
     allowedHosts: mode === 'e2e' ? true : undefined,
     proxy: {

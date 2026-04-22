@@ -42,6 +42,13 @@ public class Student
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
+    public int? GetAge()
+    {
+        if (BirthYear is not int year) return null;
+        var current = DateTime.UtcNow.Year;
+        return year >= current - 120 && year <= current ? current - year : null;
+    }
+
     public Teacher Teacher { get; set; } = null!;
     public ICollection<Lesson> Lessons { get; set; } = [];
     public ICollection<Course> Courses { get; set; } = [];

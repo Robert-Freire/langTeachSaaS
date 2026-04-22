@@ -2,46 +2,20 @@
  * Canonical language lists used across the app.
  * LANGUAGES: target/teaching languages shown in lesson and course forms (compact list).
  * NATIVE_LANGUAGES: learner native languages (adds Catalan for onboarding step 2).
- * ALL_LANGUAGES: comprehensive ISO 639 subset for combobox fields (native, spoken, learning).
- * Update ALL_LANGUAGES when adding a new language; update LANGUAGES/NATIVE_LANGUAGES only
- * if it needs to appear in the compact dropdowns.
+ * ALL_LANGUAGES: comprehensive ISO 639 subset for combobox fields — sourced from
+ *   data/languages.json (single source of truth shared with the backend).
+ *   To add a language, edit data/languages.json only.
+ * Update LANGUAGES/NATIVE_LANGUAGES only if a language needs to appear in compact dropdowns.
  */
+import allLanguagesJson from '@data/languages.json'
+
 export const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Other'] as const
 
 export const NATIVE_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Catalan', 'Other'] as const
 
 export const NATIVE_LANGUAGE_OPTIONS = NATIVE_LANGUAGES.map((lang) => ({ value: lang, label: lang }))
 
-/**
- * Comprehensive language list for combobox fields.
- * Covers major world languages by speaker count + common European languages.
- * Custom values are also accepted via the combobox component.
- */
-export const ALL_LANGUAGES = [
-  'Afrikaans', 'Albanian', 'Amharic', 'Arabic', 'Armenian', 'Azerbaijani',
-  'Basque', 'Belarusian', 'Bengali', 'Bosnian', 'Bulgarian',
-  'Catalan', 'Chinese (Cantonese)', 'Chinese (Mandarin)', 'Croatian', 'Czech',
-  'Danish', 'Dutch',
-  'English', 'Estonian',
-  'Farsi', 'Finnish', 'French',
-  'Galician', 'Georgian', 'German', 'Greek', 'Gujarati',
-  'Hebrew', 'Hindi', 'Hungarian',
-  'Icelandic', 'Indonesian', 'Italian',
-  'Japanese',
-  'Kannada', 'Kazakh', 'Korean',
-  'Latvian', 'Lithuanian',
-  'Macedonian', 'Malay', 'Maltese', 'Mandarin', 'Marathi',
-  'Nepali', 'Norwegian',
-  'Pashto', 'Polish', 'Portuguese', 'Punjabi',
-  'Romanian', 'Russian',
-  'Serbian', 'Sinhalese', 'Slovak', 'Slovenian', 'Somali', 'Spanish', 'Swahili', 'Swedish',
-  'Tagalog', 'Tamil', 'Telugu', 'Thai', 'Turkish',
-  'Ukrainian', 'Urdu', 'Uzbek',
-  'Vietnamese',
-  'Welsh',
-  'Yoruba',
-  'Zulu',
-] as const
+export const ALL_LANGUAGES = allLanguagesJson as readonly string[]
 
 export const ALL_LANGUAGE_OPTIONS = ALL_LANGUAGES.map((lang) => ({ value: lang, label: lang }))
 

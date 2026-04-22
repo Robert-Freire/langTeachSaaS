@@ -87,6 +87,18 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void NativeLanguage_AppearsOnceAsDataFact_InstructionSubBulletsDoNotRepeatHeading()
+    {
+        var ctx = BaseCtx("Ana") with { StudentNativeLanguage = "Portuguese" };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().Contain("Native language: Portuguese");
+        request.SystemPrompt.Split("Native language: Portuguese", StringSplitOptions.None).Length.Should().Be(2);
+        request.SystemPrompt.Should().NotContain("The student's native language is Portuguese");
+    }
+
+    [Fact]
     public void SystemPrompt_OmitsInterestsLine_WhenInterestsArrayIsEmpty()
     {
         var ctx = BaseCtx("Ana") with { StudentInterests = [] };
@@ -3321,8 +3333,7 @@ public class PromptServiceTests
 
         var request = _sut.BuildLessonPlanPrompt(ctx);
 
-        request.SystemPrompt.Should().Contain("para vivir en Barcelona");
-        request.SystemPrompt.Should().Contain("Anchor vocabulary, topics, and examples to the student's stated study motivation");
+        request.SystemPrompt.Should().Contain("anchor vocabulary to their stated study motivation: para vivir en Barcelona");
     }
 
     [Fact]
@@ -3367,21 +3378,21 @@ public class PromptServiceTests
         request.SystemPrompt.Should().Contain("A2");
         request.SystemPrompt.Should().Contain("official");
         request.SystemPrompt.Should().Contain("teacher assessment");
+        request.SystemPrompt.Should().Contain("content difficulty decisions");
     }
 
     [Fact]
-    public void BirthYear_AgeComputedInSystemPrompt()
+    public void Age_IncludedInSystemPrompt()
     {
-        var birthYear = 1990;
+        var age = DateTime.UtcNow.Year - 1990;
         var ctx = BaseCtx("Ana") with
         {
-            StudentBirthYear = birthYear
+            StudentAge = age
         };
 
         var request = _sut.BuildLessonPlanPrompt(ctx);
 
-        var expectedAge = (DateTime.UtcNow.Year - birthYear).ToString();
-        request.SystemPrompt.Should().Contain(expectedAge);
+        request.SystemPrompt.Should().Contain(age.ToString());
     }
 
     [Fact]

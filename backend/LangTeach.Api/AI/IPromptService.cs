@@ -124,7 +124,7 @@ public record GenerationContext(
     string? StudentReasonForStudying = null,
     string[]? StudentSpokenLanguages = null,
     string? StudentProfession = null,
-    int? StudentBirthYear = null,
+    int? StudentAge = null,
     string? StudentCountryOfOrigin = null,
     string? StudentCountryOfResidence = null,
     string? StudentOfficialCefrLevel = null

@@ -16,6 +16,7 @@ public record StudentDto(
     DateTime UpdatedAt,
     // Identity fields
     int? BirthYear,
+    int? Age,
     string? Profession,
     string? CountryOfOrigin,
     string? CityOfOrigin,

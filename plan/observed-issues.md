@@ -4,6 +4,7 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 | Source issue | Date | Severity | Observation |
 | #834 | 2026-04-22 | low | EnsureAnaVisualExtrasAsync.UpdatedAt uses DateTime.UtcNow inline instead of caller's now (pre-existing inconsistency, not introduced by this task) |
+| #809 | 2026-04-22 | low | languages.json has duplicate concepts: "Mandarin" and "Chinese (Mandarin)" - requires data migration to consolidate; filed #874 |
 | #848 | 2026-04-22 | low | session-log-voice.spec.ts tests at lines 34-85, 118-151, 232-272 still reference session-log-dialog/submit-session-log (old modal path removed in prior sprint); not updated in #835 e2e rewrite; pre-existing failure |
 | #848 | 2026-04-22 | low | Issue #848 AC requested visible STATUS label above Cancelled toggle; design-system.md 11.3 prohibits this; AC was fulfilled via invisible spacer for alignment instead |
 | #838 | 2026-04-22 | low | LogSession: checkboxes in Teaching Todos/Followups left panel use native input instead of design-system custom controls (pre-existing) |
@@ -13,5 +14,6 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #844 | 2026-04-22 | low | TeacherFollowup.Kind has no DB CHECK constraint; only DTO regex guards API path — filed #870 |
 | #837 | 2026-04-22 | low | StudentRoster.tsx has local formatRelativeDate not yet refactored to use relativeTime — filed #861 |
 | #852 | 2026-04-22 | low | StudentsController (4x) and CoursesController still use ValidationProblem/BadRequest(rawString) for ValidationException — filed #871 |
+| #846 | 2026-04-22 | low | PromptService.cs lines 473-478: L1 sub-bullets (differs-from-native, false cognates, common errors) hardcoded in C# system prompt; overlaps with config-driven L1Adjustments block appended to user prompts. Predates #846; worth consolidating into the data-driven path. |
 
 *Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Actionable entries batched into: #833 (bug batch), #834 (seeder gaps), #835 (e2e session-log rewrite), #836 (ScenarioSeeder Hans B1), #837 (deduplication), #838 (session title from web UI), #839 (debug log privacy), #840 (Edit Student UX), #841 (stale closure + LogSession pre-populate). Already-tracked entries removed (referenced #737/#707/#644/#714/#715/#716/#683/#741/#742/#756/#809/#657). Dismissed entries removed (defensive-only, intentional, or resolved).*
