@@ -87,6 +87,17 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void NativeLanguage_AppearsOnceAsDataFact_InstructionSubBulletsDoNotRepeatHeading()
+    {
+        var ctx = BaseCtx("Ana") with { StudentNativeLanguage = "Portuguese" };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().Contain("Native language: Portuguese");
+        request.SystemPrompt.Should().NotContain("The student's native language is Portuguese");
+    }
+
+    [Fact]
     public void SystemPrompt_OmitsInterestsLine_WhenInterestsArrayIsEmpty()
     {
         var ctx = BaseCtx("Ana") with { StudentInterests = [] };
