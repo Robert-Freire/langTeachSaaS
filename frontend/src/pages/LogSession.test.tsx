@@ -211,6 +211,34 @@ describe('LogSession', () => {
   })
 
 
+  it('pre-populates actualContent from plannedForToday in create mode', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SAMPLE_SESSION, nextSessionTopics: 'Subjunctive revision' },
+    ])
+    renderLogSession()
+    await screen.findByTestId('actual-content')
+    await waitFor(() => {
+      expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Subjunctive revision')
+    })
+  })
+
+  it('does not re-pre-populate actualContent after user edits it (pre-populate runs only once)', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SAMPLE_SESSION, nextSessionTopics: 'Subjunctive revision' },
+    ])
+    renderLogSession()
+    await screen.findByTestId('actual-content')
+    await waitFor(() => {
+      expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Subjunctive revision')
+    })
+    // User clears the field and writes their own notes
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'My own notes' } })
+    // The pre-populate effect must not fire again and reset the field
+    await waitFor(() => {
+      expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('My own notes')
+    })
+  })
+
   it('shows planned-for-today reference panel when prev session has nextSessionTopics', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
       { ...SAMPLE_SESSION, nextSessionTopics: 'Subjunctive revision' },
@@ -987,6 +1015,37 @@ describe('LogSession — voice note extraction', () => {
     })
 
     expect(sessionLogsApi.extractSessionReflection).not.toHaveBeenCalled()
+  })
+
+  it('preserves manually edited sessionDate when extraction provides only time (stale closure fix)', async () => {
+    let resolveExtract!: (result: typeof EXTRACTED & { sessionStartTime?: string }) => void
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockReturnValue(
+      new Promise<typeof EXTRACTED>(resolve => { resolveExtract = resolve as typeof resolveExtract })
+    )
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    // Start extraction
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: 'La clase fue a las 10.' })
+    })
+    expect(screen.getByTestId('extracting-indicator')).toBeDefined()
+
+    // User manually edits date while extraction is in flight
+    fireEvent.change(screen.getByTestId('session-date'), { target: { value: '2026-03-15' } })
+
+    // Extraction resolves with a time but no date — without the fix, stale sessionDate from closure would be used
+    await act(async () => { resolveExtract({ ...EXTRACTED, sessionStartTime: '10:30' }) })
+    await waitFor(() => {
+      expect(screen.queryByTestId('extracting-indicator')).toBeNull()
+    })
+
+    await waitFor(() => {
+      expect(sessionLogsApi.createSession).toHaveBeenCalled()
+    })
+    const lastPayload = vi.mocked(sessionLogsApi.createSession).mock.calls.slice(-1)[0][1]
+    // The save must use the manually entered date, not the stale closure value from extraction start
+    expect(lastPayload.sessionDate).toContain('2026-03-15')
   })
 
   it('populates date picker from extracted sessionDate', async () => {
