@@ -63,7 +63,8 @@ public class TeacherFollowupsController : ControllerBase
         }
         catch (ValidationException ex)
         {
-            return ValidationProblem(ex.Message);
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
         }
     }
 
