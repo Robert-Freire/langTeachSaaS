@@ -10,6 +10,7 @@ import { getFollowups } from '@/api/followups'
 import { listSessions } from '@/api/sessionLogs'
 import type { SessionLog } from '@/api/sessionLogs'
 import { formatDateShort } from '@/utils/formatDate'
+import { getInitials } from '@/utils/nameUtils'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
@@ -19,15 +20,6 @@ import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
 import { getObjectiveUrgency, getDaysRemaining, formatDaysRemaining } from '@/lib/objectiveUrgency'
 
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((w) => w[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-}
 
 function buildIdentitySubtitle(student: Student): string {
   const segments: string[] = []

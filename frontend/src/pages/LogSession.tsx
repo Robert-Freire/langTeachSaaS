@@ -26,6 +26,7 @@ import { COMPETENCY_OPTIONS } from '@/lib/studentOptions'
 import { getObjectiveUrgency, getDaysRemaining } from '@/lib/objectiveUrgency'
 import { suggestTopicTags } from '@/lib/suggestTopicTags'
 import { formatDate as formatDateUtil, relativeTime, todayLocalDateStr } from '@/utils/formatDate'
+import { getInitials } from '@/utils/nameUtils'
 import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
 
@@ -58,9 +59,6 @@ function nowTimeHHMM(): string {
   return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 }
 
-function getInitials(name: string): string {
-  return name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
-}
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return '--'
