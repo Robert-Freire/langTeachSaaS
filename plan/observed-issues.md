@@ -4,6 +4,8 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 | Source issue | Date | Severity | Observation |
 | #834 | 2026-04-22 | low | EnsureAnaVisualExtrasAsync.UpdatedAt uses DateTime.UtcNow inline instead of caller's now (pre-existing inconsistency, not introduced by this task) |
+| #838 | 2026-04-22 | low | LogSession: checkboxes in Teaching Todos/Followups left panel use native input instead of design-system custom controls (pre-existing) |
+| #838 | 2026-04-22 | low | LogSession: local ToggleSwitch focus ring uses ring-indigo-500 instead of ring-indigo-600 (pre-existing, design-system 11.5) |
 | #837 | 2026-04-22 | low | TeachingTodosCard.tsx has local relativeTime duplicating formatDate.ts — filed #860 |
 | #837 | 2026-04-22 | low | StudentRoster.tsx has local formatRelativeDate not yet refactored to use relativeTime — filed #861 |
 
