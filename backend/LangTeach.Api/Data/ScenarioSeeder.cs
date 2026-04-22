@@ -513,6 +513,10 @@ public static class ScenarioSeeder
     private static async Task SeedScenario6Async(AppDbContext db, Guid teacherId, Student hansB1,
         DateTime now, ILogger logger)
     {
+        // ---- Hans B1: student-level context data ----
+        hansB1.ShortTermObjectives = $$"""[{"id":"obj1","text":"Master subjunctive triggers (WEIRDO verbs and temporal clauses)","targetDate":"{{now.AddDays(30):yyyy-MM-dd}}"},{"id":"obj2","text":"Achieve consistent use of ser vs estar in extended discourse","targetDate":"{{now.AddDays(45):yyyy-MM-dd}}"}]""";
+        hansB1.UpdatedAt = now;
+
         // Past session (7 days ago): all 4 briefing fields populated
         var pastSession = new SessionLog
         {
