@@ -80,8 +80,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
       target: e2e
     environment:
       # Real Auth0 mode — frontend uses Auth0Provider, not MockAuth0Provider
