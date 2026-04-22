@@ -16,6 +16,7 @@ public record StudentDto(
     DateTime UpdatedAt,
     // Identity fields
     int? BirthYear,
+    int? Age,
     string? Profession,
     string? CountryOfOrigin,
     string? CityOfOrigin,
@@ -36,12 +37,4 @@ public record StudentDto(
     List<TeachingTodoDto> TeachingTodos,
     // Skill override fields
     Dictionary<string, string> SkillLevelOverrides
-)
-{
-    public int? GetAge()
-    {
-        if (BirthYear is not int year) return null;
-        var current = DateTime.UtcNow.Year;
-        return year >= current - 120 && year <= current ? current - year : null;
-    }
-}
+);

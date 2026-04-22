@@ -256,6 +256,7 @@ public class StudentService : IStudentService
         s.CreatedAt,
         s.UpdatedAt,
         s.BirthYear,
+        s.GetAge(),
         s.Profession,
         s.CountryOfOrigin,
         s.CityOfOrigin,
