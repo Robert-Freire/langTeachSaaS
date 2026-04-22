@@ -1048,6 +1048,37 @@ describe('LogSession — voice note extraction', () => {
     expect(lastPayload.sessionDate).toContain('2026-03-15')
   })
 
+  it('preserves manually edited sessionStartTime when extraction provides only date (stale closure fix)', async () => {
+    let resolveExtract!: (result: typeof EXTRACTED & { sessionDate?: string }) => void
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockReturnValue(
+      new Promise<typeof EXTRACTED>(resolve => { resolveExtract = resolve as typeof resolveExtract })
+    )
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    // Start extraction
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: 'La clase fue el 15 de enero.' })
+    })
+    expect(screen.getByTestId('extracting-indicator')).toBeDefined()
+
+    // User manually edits time while extraction is in flight
+    fireEvent.change(screen.getByTestId('session-time'), { target: { value: '14:45' } })
+
+    // Extraction resolves with a date but no time
+    await act(async () => { resolveExtract({ ...EXTRACTED, sessionDate: '2026-01-15' }) })
+    await waitFor(() => {
+      expect(screen.queryByTestId('extracting-indicator')).toBeNull()
+    })
+
+    await waitFor(() => {
+      expect(sessionLogsApi.createSession).toHaveBeenCalled()
+    })
+    const lastPayload = vi.mocked(sessionLogsApi.createSession).mock.calls.slice(-1)[0][1]
+    // The save must use the manually entered time, not the stale closure value from extraction start
+    expect(lastPayload.sessionDate).toContain('14:45')
+  })
+
   it('populates date picker from extracted sessionDate', async () => {
     vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
       ...EXTRACTED,
