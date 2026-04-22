@@ -132,9 +132,12 @@ public static class DemoSeeder
         var studentsSeeded = await db.Students.AnyAsync(s => s.TeacherId == teacher.Id && s.PersonalNotes == VisualTag);
         var coursesSeeded  = await db.Courses.AnyAsync(c => c.TeacherId == teacher.Id && c.Description == VisualTag);
 
+        var now = DateTime.UtcNow;
+
         if (studentsSeeded && coursesSeeded)
         {
             await db.SaveChangesAsync(); // persist any approval/onboarding updates
+            await FixAnaVisualNameAsync(db, teacher.Id, now);
             await EnsureAnaVisualDifficultiesAsync(db, teacher.Id, logger);
             await EnsureAnaVisualExtrasAsync(db, teacher.Id, logger);
             await SeedScenarioStudentsAsync(db, teacher.Id, logger);
@@ -159,11 +162,9 @@ public static class DemoSeeder
 
         logger.LogInformation("Seeding visual data for teacher {Email}...", teacher.Email);
 
-        var now = DateTime.UtcNow;
-
         var students = new List<Student>
         {
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", NativeLanguages = """["Portuguese","Ukrainian"]""", PersonalNotes = VisualTag, LearningGoals = AnaVisualLearningGoals, ShortTermObjectives = AnaVisualShortTermObjectives, SkillLevelOverrides = AnaVisualSkillLevelOverrides, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", Difficulties = AnaVisualDifficulties, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", NativeLanguages = """["Portuguese","Ukrainian"]""", SpokenLanguages = AnaVisualSpokenLanguages, PersonalNotes = VisualTag, LearningGoals = AnaVisualLearningGoals, ShortTermObjectives = AnaVisualShortTermObjectives, SkillLevelOverrides = AnaVisualSkillLevelOverrides, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", Difficulties = AnaVisualDifficulties, CreatedAt = now, UpdatedAt = now },
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Visual", LearningLanguage = "English", CefrLevel = "A2", NativeLanguages = """["Italian"]""", PersonalNotes = VisualTag, CreatedAt = now, UpdatedAt = now },
         };
         db.Students.AddRange(students);
@@ -255,7 +256,7 @@ public static class DemoSeeder
             Interests          = """["literature","travel","photography"]""",
             Difficulties       = """["False friends with Portuguese","Subjunctive mood"]""",
             Weaknesses         = """["Listening to fast native speech","Idiomatic expressions"]""",
-            PersonalNotes      = "[scenario-seed]",
+            PersonalNotes      = "Sensitive about speaking in front of her manager at work — avoids complex sentences in meetings. Some test anxiety before formal assessments. Prefers positive reinforcement over error-focused feedback.",
             TeachingNotes      = "Responds well to visual aids. Prefers structured grammar drills over free conversation. Review subjunctive triggers next session.",
             TeachingTodos      = """[{"id":"a1b2c3d4-0000-0000-0000-000000000010","text":"Review subjunctive trigger verbs — she confuses querer vs desear contexts","createdAt":"2026-04-10T10:00:00Z","sourceSessionLogId":null,"status":"Pending","coveredInSessionLogId":null}]""",
             SkillLevelOverrides = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""",
@@ -271,8 +272,8 @@ public static class DemoSeeder
             ShortTermObjectives = """[{"id":"o1","text":"Pass B2 Cambridge exam","targetDate":"2026-06-30"},{"id":"o2","text":"Prepare for job interview in English","targetDate":null}]""",
         }, now);
 
-        // Marco Seed — excel-imported scenario
-        await UpsertStudentAsync(db, teacherId, new Student
+        // Marco Seed — excel-imported scenario; one old session, no upcoming → "Inactive Xd" badge
+        var marcoSeed = await UpsertStudentAsync(db, teacherId, new Student
         {
             TeacherId        = teacherId,
             Name             = "Marco Seed",
@@ -284,6 +285,7 @@ public static class DemoSeeder
             Difficulties     = "[]",
             Weaknesses       = "[]",
             PersonalNotes    = "[Excel import 2026-01-15]\nCurrent level: A2\nObjectives: Business English, travel vocabulary\nDifficulties: Pronunciation, articles",
+            IsActive         = true,
         }, now);
 
         // Clara Seed — minimal scenario
@@ -395,7 +397,7 @@ public static class DemoSeeder
                     Id                      = Guid.NewGuid(),
                     StudentId               = diego.Id,
                     TeacherId               = teacherId,
-                    SessionDate             = now.AddDays(-14),
+                    SessionDate             = now.AddDays(-3),
                     PlannedContent          = "Conditional sentences: zero and first conditional.",
                     ActualContent           = "Covered zero conditional fully. Introduced first conditional with examples.",
                     HomeworkAssigned        = "Write 5 sentences using first conditional.",
@@ -406,15 +408,15 @@ public static class DemoSeeder
                     Duration                = 60,
                     LinkedLessonId          = diegoLessonId != Guid.Empty ? diegoLessonId : null,
                     IsDeleted               = false,
-                    CreatedAt               = now.AddDays(-14),
-                    UpdatedAt               = now.AddDays(-14),
+                    CreatedAt               = now.AddDays(-3),
+                    UpdatedAt               = now.AddDays(-3),
                 },
                 new SessionLog
                 {
                     Id                      = Guid.NewGuid(),
                     StudentId               = diego.Id,
                     TeacherId               = teacherId,
-                    SessionDate             = now.AddDays(-7),
+                    SessionDate             = now.AddDays(-1),
                     PlannedContent          = "Second and third conditional.",
                     ActualContent           = "Reviewed first conditional homework. Taught second conditional with drill.",
                     HomeworkAssigned        = "Translate 5 sentences using second conditional.",
@@ -424,10 +426,31 @@ public static class DemoSeeder
                     TopicTags               = """["grammar","conditionals"]""",
                     Duration                = 60,
                     IsDeleted               = false,
-                    CreatedAt               = now.AddDays(-7),
-                    UpdatedAt               = now.AddDays(-7),
+                    CreatedAt               = now.AddDays(-1),
+                    UpdatedAt               = now.AddDays(-1),
                 }
             );
+            await db.SaveChangesAsync();
+        }
+
+        // Marco Seed — one session 20 days ago, no upcoming → "Inactive 20d" badge (amber) in students list
+        var marcoSeedSessionsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == marcoSeed.Id && !s.IsDeleted);
+        if (!marcoSeedSessionsExist)
+        {
+            db.SessionLogs.Add(new SessionLog
+            {
+                Id                     = Guid.NewGuid(),
+                StudentId              = marcoSeed.Id,
+                TeacherId              = teacherId,
+                SessionDate            = now.AddDays(-20),
+                PlannedContent         = "Present simple for daily routines.",
+                PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                Duration               = 60,
+                IsDeleted              = false,
+                IsCancelled            = false,
+                CreatedAt              = now.AddDays(-20),
+                UpdatedAt              = now.AddDays(-20),
+            });
             await db.SaveChangesAsync();
         }
 
@@ -475,6 +498,11 @@ public static class DemoSeeder
                     TeacherId              = teacherId,
                     SessionDate            = now.AddDays(-25),
                     PlannedContent         = "Present perfect vs past simple.",
+                    ActualContent          = "Covered key contrasts: finished time vs unspecified time. Practised with personal timeline stories.",
+                    HomeworkAssigned       = "Write 5 sentences about recent life events using present perfect.",
+                    NextSessionTopics      = "Review homework; introduce present perfect continuous",
+                    GeneralNotes           = "Student returned after a long break — motivation is high. Retained the basics well but needs practice with irregular verbs.",
+                    TopicTags              = """[{"tag":"Present perfect"},{"tag":"Past simple"}]""",
                     PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
                     Duration               = 60,
                     IsDeleted              = false,
@@ -524,14 +552,14 @@ public static class DemoSeeder
                     Id                     = Guid.NewGuid(),
                     StudentId              = hugo.Id,
                     TeacherId              = teacherId,
-                    SessionDate            = now.AddDays(-14),
+                    SessionDate            = now.AddDays(-3),
                     PlannedContent         = "Basic greetings and introductions.",
                     HomeworkAssigned       = "Write 5 sentences introducing yourself.",
                     PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
                     Duration               = 60,
                     IsDeleted              = false,
-                    CreatedAt              = now.AddDays(-14),
-                    UpdatedAt              = now.AddDays(-14),
+                    CreatedAt              = now.AddDays(-3),
+                    UpdatedAt              = now.AddDays(-3),
                 },
                 new SessionLog
                 {
@@ -720,6 +748,7 @@ public static class DemoSeeder
     private const string AnaVisualLearningGoals      = """["Pass DELE B1 exam","Improve conversational fluency for travel"]""";
     private const string AnaVisualShortTermObjectives = """[{"id":"o1","text":"Complete B1 grammar review by June 2026","targetDate":"2026-06-01"}]""";
     private const string AnaVisualSkillLevelOverrides = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""";
+    private const string AnaVisualSpokenLanguages     = """["English"]""";
 
     private static async Task EnsureAnaVisualExtrasAsync(AppDbContext db, Guid teacherId, ILogger logger)
     {
@@ -732,15 +761,30 @@ public static class DemoSeeder
         if (anaVisual.LearningGoals      == AnaVisualLearningGoals &&
             anaVisual.ShortTermObjectives == AnaVisualShortTermObjectives &&
             anaVisual.SkillLevelOverrides == AnaVisualSkillLevelOverrides &&
-            anaVisual.NativeLanguages     == AnaVisualNativeLanguages) return;
+            anaVisual.NativeLanguages     == AnaVisualNativeLanguages &&
+            anaVisual.SpokenLanguages     == AnaVisualSpokenLanguages) return;
 
         anaVisual.LearningGoals      = AnaVisualLearningGoals;
         anaVisual.ShortTermObjectives = AnaVisualShortTermObjectives;
         anaVisual.SkillLevelOverrides = AnaVisualSkillLevelOverrides;
         anaVisual.NativeLanguages     = AnaVisualNativeLanguages;
+        anaVisual.SpokenLanguages     = AnaVisualSpokenLanguages;
         anaVisual.UpdatedAt           = DateTime.UtcNow;
         await db.SaveChangesAsync();
-        logger.LogInformation("Ana Visual goals, skill overrides, and native languages backfilled.");
+        logger.LogInformation("Ana Visual goals, skill overrides, native languages, and spoken languages backfilled.");
+    }
+
+    private static async Task FixAnaVisualNameAsync(AppDbContext db, Guid teacherId, DateTime now)
+    {
+        var corrupted = await db.Students
+            .Where(s => s.TeacherId == teacherId && s.Name.StartsWith("Ana Visual") && s.Name != "Ana Visual" && !s.IsDeleted)
+            .ToListAsync();
+        foreach (var s in corrupted)
+        {
+            s.Name = "Ana Visual";
+            s.UpdatedAt = now;
+        }
+        if (corrupted.Count > 0) await db.SaveChangesAsync();
     }
 
     private static async Task SeedAnaVisualSessionLogAsync(AppDbContext db, Guid teacherId, ILogger logger)
@@ -758,7 +802,7 @@ public static class DemoSeeder
             Id                       = Guid.NewGuid(),
             StudentId                = anaVisual.Id,
             TeacherId                = teacherId,
-            SessionDate              = now.AddDays(-7),
+            SessionDate              = now.AddDays(-1),
             PlannedContent           = "Phrasal verbs in travel contexts and reading comprehension.",
             ActualContent            = "Practised 12 travel phrasal verbs; read a passage about airport experiences.",
             HomeworkAssigned         = "Write a short paragraph using at least 5 phrasal verbs from today.",
@@ -769,8 +813,8 @@ public static class DemoSeeder
             MentionedDifficultyPairs = """[{"competency":"Grammar","subcategory":"Phrasal verbs"},{"competency":"Vocabulary","subcategory":"Travel"}]""",
             SuggestedDifficulties    = """[{"description":"Confuses separable and inseparable phrasal verbs","competency":"Grammar","subcategory":"Phrasal verbs","severity":"medium"}]""",
             IsDeleted                = false,
-            CreatedAt                = now.AddDays(-7),
-            UpdatedAt                = now.AddDays(-7),
+            CreatedAt                = now.AddDays(-1),
+            UpdatedAt                = now.AddDays(-1),
         });
         await db.SaveChangesAsync();
         logger.LogInformation("Ana Visual session log seeded.");
