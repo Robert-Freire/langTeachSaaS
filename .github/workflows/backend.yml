@@ -127,6 +127,19 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Preserve previous stable image
+        run: |
+          if az acr repository show-tags --name ${{ env.ACR_NAME }} --repository ${{ env.IMAGE_NAME }} --query "[?@=='stable']" -o tsv 2>/dev/null | grep -q stable; then
+            az acr import \
+              --name ${{ env.ACR_NAME }} \
+              --source ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:stable \
+              --image ${{ env.IMAGE_NAME }}:stable-prev \
+              --force
+            echo "Saved current stable as stable-prev."
+          else
+            echo "No existing stable tag found, skipping stable-prev save."
+          fi
+
       - name: Build and push image to ACR
         run: |
           az acr build \
@@ -195,3 +208,11 @@ jobs:
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --revision "${NEW_REVISION}" || true
           exit 1
+
+      - name: Tag image as stable
+        run: |
+          az acr import \
+            --name ${{ env.ACR_NAME }} \
+            --source ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --image ${{ env.IMAGE_NAME }}:stable \
+            --force

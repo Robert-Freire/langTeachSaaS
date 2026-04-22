@@ -2,12 +2,15 @@
 name: LangTeach SaaS — Task Status and Next Steps
 description: Sprint branch name, milestone sequence, and pointers to live state. NOT per-issue status (query GitHub for that).
 type: project
+originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-
-## In-Flight Tasks (2026-04-18)
+## In-Flight Tasks (2026-04-21)
 
 | Task | Issue | PR | Status |
 |------|-------|----|--------|
+| t826 | #826 ExtractionMode enum refactor | #831 | PR open, CI pending |
+| t824 | #824 Future session SCHEDULED badge | #828 | MERGED |
+| t823 | #823 Voice note extraction append/replace/skip mode | #827 | PR open, CI pending |
 | t725 | #725 Edit Student autosave | #743 | MERGED |
 | t726 | #726 Edit Student Stitch visual alignment | #744 | MERGED |
 | t729 | #729 Replace Edit Session modal with Log Session edit mode | #750 | PR open, CI PASS |
