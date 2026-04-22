@@ -40,9 +40,7 @@ public class StudentService : IStudentService
     ];
 
     private static readonly HashSet<string> AllowedStatuses =
-    [
-        "Active", "Covered"
-    ];
+        new(StringComparer.OrdinalIgnoreCase) { "Active", "Covered" };
 
     private static readonly Dictionary<string, string> CanonicalTodoStatuses =
         new(StringComparer.OrdinalIgnoreCase)

@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, NotebookPen, Pencil, CalendarClock } from 'lucide-react'
@@ -113,6 +113,8 @@ export default function StudentDetail() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') ?? 'overview'
+  const [difficultyToggleError, setDifficultyToggleError] = useState<string | null>(null)
+  const difficultyToggleAttemptRef = useRef(0)
 
 
   const { data: student, isLoading, isError } = useQuery({
@@ -174,17 +176,27 @@ export default function StudentDetail() {
   }
 
   const { mutate: toggleDifficultyStatus } = useMutation({
+    onMutate: () => {
+      const attempt = ++difficultyToggleAttemptRef.current
+      setDifficultyToggleError(null)
+      return { attempt }
+    },
     mutationFn: (vars: { difficultyId: string; status: 'Active' | 'Covered' }) => {
       const updated = student!.difficulties.map((d) =>
         d.id === vars.difficultyId ? { ...d, status: vars.status } : d
       )
       return updateStudent(id!, { ...buildStudentPayload(), difficulties: updated })
     },
-    onSuccess: () => {
+    onSuccess: (_data, _vars, context) => {
+      if (context?.attempt === difficultyToggleAttemptRef.current) {
+        setDifficultyToggleError(null)
+      }
       queryClient.invalidateQueries({ queryKey: ['student', id] })
     },
-    onError: (err) => {
+    onError: (err, _vars, context) => {
       logger.error('StudentDetail', 'Failed to update difficulty status', err)
+      if (context?.attempt !== difficultyToggleAttemptRef.current) return
+      setDifficultyToggleError('Could not update difficulty status. Please try again.')
     },
   })
 
@@ -461,6 +473,7 @@ export default function StudentDetail() {
           followups={followups}
           onFollowupChange={onFollowupChange}
           onStudentChange={onStudentChange}
+          difficultyToggleError={difficultyToggleError}
           onToggleDifficultyStatus={(difficultyId, status) =>
             toggleDifficultyStatus({ difficultyId, status })
           }
