@@ -309,88 +309,28 @@ public class StudentServiceTests : IDisposable
 
     // TeachingTodos tests
 
-    private static TeachingTodoDto MakeTodo(string id, string text = "Work on ser/estar", string status = "Pending") =>
-        new(id, text, DateTime.UtcNow, null, status, null);
-
-    [Fact]
-    public async Task TeachingTodos_JsonRoundTrip_Succeeds()
-    {
-        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
-        var updateRequest = new UpdateStudentRequest
-        {
-            Name = created.Name,
-            LearningLanguage = created.LearningLanguage,
-            CefrLevel = created.CefrLevel,
-            TeachingTodos = [MakeTodo("todo-1", "Repasar pretérito"), MakeTodo("todo-2", "Artículo determinado")],
-        };
-
-        var updated = await _sut.UpdateAsync(_teacherId, created.Id, updateRequest);
-
-        updated!.TeachingTodos.Should().HaveCount(2);
-        updated.TeachingTodos[0].Id.Should().Be("todo-1");
-        updated.TeachingTodos[0].Text.Should().Be("Repasar pretérito");
-        updated.TeachingTodos[1].Id.Should().Be("todo-2");
-    }
-
     [Fact]
     public async Task TeachingTodos_StatusTransition_Covered_Succeeds()
     {
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
-        await _sut.UpdateAsync(_teacherId, created.Id, new UpdateStudentRequest
-        {
-            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
-            TeachingTodos = [MakeTodo("todo-1")],
-        });
+        var appended = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Work on ser/estar", null));
+        var todoId = appended!.TeachingTodos.Single().Id;
 
-        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1", new UpdateTeachingTodoDto("Covered", null, null));
+        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, todoId, new UpdateTeachingTodoDto("Covered", null, null));
 
-        result!.TeachingTodos.Single().Status.Should().Be("Covered");
+        result!.TeachingTodos.Single().Status.Should().Be("covered");
     }
 
     [Fact]
     public async Task TeachingTodos_StatusTransition_Dismissed_Succeeds()
     {
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
-        await _sut.UpdateAsync(_teacherId, created.Id, new UpdateStudentRequest
-        {
-            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
-            TeachingTodos = [MakeTodo("todo-1")],
-        });
+        var appended = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Work on ser/estar", null));
+        var todoId = appended!.TeachingTodos.Single().Id;
 
-        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1", new UpdateTeachingTodoDto("Dismissed", null, null));
+        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, todoId, new UpdateTeachingTodoDto("Dismissed", null, null));
 
-        result!.TeachingTodos.Single().Status.Should().Be("Dismissed");
-    }
-
-    [Fact]
-    public async Task TeachingTodos_MaxEnforced_ThrowsValidation()
-    {
-        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
-        var todos = Enumerable.Range(1, 51).Select(i => MakeTodo($"t{i}", $"Todo {i}")).ToList();
-        var updateRequest = new UpdateStudentRequest
-        {
-            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
-            TeachingTodos = todos,
-        };
-
-        var act = () => _sut.UpdateAsync(_teacherId, created.Id, updateRequest);
-
-        await act.Should().ThrowAsync<ValidationException>();
-    }
-
-    [Fact]
-    public async Task TeachingTodos_InvalidStatus_ThrowsValidation()
-    {
-        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
-        var updateRequest = new UpdateStudentRequest
-        {
-            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
-            TeachingTodos = [MakeTodo("todo-1", "Some text", "invalid-status")],
-        };
-
-        var act = () => _sut.UpdateAsync(_teacherId, created.Id, updateRequest);
-
-        await act.Should().ThrowAsync<ValidationException>();
+        result!.TeachingTodos.Single().Status.Should().Be("dismissed");
     }
 
     [Fact]
@@ -423,7 +363,7 @@ public class StudentServiceTests : IDisposable
 
         result!.TeachingTodos.Should().HaveCount(1);
         result.TeachingTodos[0].Text.Should().Be("Trabajar ser/estar");
-        result.TeachingTodos[0].Status.Should().Be("Pending");
+        result.TeachingTodos[0].Status.Should().Be("pending");
         result.TeachingTodos[0].Id.Should().NotBeNullOrEmpty();
     }
 
@@ -433,16 +373,15 @@ public class StudentServiceTests : IDisposable
     public async Task DeleteTeachingTodoAsync_RemovesTodo_ReturnsUpdatedStudent()
     {
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
-        await _sut.UpdateAsync(_teacherId, created.Id, new UpdateStudentRequest
-        {
-            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
-            TeachingTodos = [MakeTodo("todo-1"), MakeTodo("todo-2")],
-        });
+        var after1 = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Todo one", null));
+        var after2 = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Todo two", null));
+        var firstId = after1!.TeachingTodos[0].Id;
+        var secondId = after2!.TeachingTodos[1].Id;
 
-        var result = await _sut.DeleteTeachingTodoAsync(_teacherId, created.Id, "todo-1");
+        var result = await _sut.DeleteTeachingTodoAsync(_teacherId, created.Id, firstId);
 
         result!.TeachingTodos.Should().HaveCount(1);
-        result.TeachingTodos[0].Id.Should().Be("todo-2");
+        result.TeachingTodos[0].Id.Should().Be(secondId);
     }
 
     [Fact]
@@ -461,7 +400,7 @@ public class StudentServiceTests : IDisposable
         var otherTeacherId = Guid.NewGuid();
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
 
-        var result = await _sut.DeleteTeachingTodoAsync(otherTeacherId, created.Id, "todo-1");
+        var result = await _sut.DeleteTeachingTodoAsync(otherTeacherId, created.Id, Guid.NewGuid().ToString());
 
         result.Should().BeNull();
     }
@@ -472,13 +411,10 @@ public class StudentServiceTests : IDisposable
     public async Task UpdateTeachingTodoAsync_WithText_UpdatesText()
     {
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
-        await _sut.UpdateAsync(_teacherId, created.Id, new UpdateStudentRequest
-        {
-            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
-            TeachingTodos = [MakeTodo("todo-1", "Original text")],
-        });
+        var appended = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Original text", null));
+        var todoId = appended!.TeachingTodos.Single().Id;
 
-        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1",
+        var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, todoId,
             new UpdateTeachingTodoDto("Pending", null, "Updated text"));
 
         result!.TeachingTodos.Single().Text.Should().Be("Updated text");
@@ -488,13 +424,10 @@ public class StudentServiceTests : IDisposable
     public async Task UpdateTeachingTodoAsync_TextTooLong_ThrowsValidation()
     {
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
-        await _sut.UpdateAsync(_teacherId, created.Id, new UpdateStudentRequest
-        {
-            Name = created.Name, LearningLanguage = created.LearningLanguage, CefrLevel = created.CefrLevel,
-            TeachingTodos = [MakeTodo("todo-1")],
-        });
+        var appended = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Some text", null));
+        var todoId = appended!.TeachingTodos.Single().Id;
 
-        var act = () => _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, "todo-1",
+        var act = () => _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, todoId,
             new UpdateTeachingTodoDto("Pending", null, new string('x', 501)));
 
         await act.Should().ThrowAsync<ValidationException>();

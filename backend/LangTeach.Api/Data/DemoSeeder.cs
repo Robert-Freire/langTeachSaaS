@@ -48,7 +48,7 @@ public static class DemoSeeder
 
         var students = new List<Student>
         {
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Souza",        LearningLanguage = "English", CefrLevel = "B2", NativeLanguages = """["Portuguese"]""", Interests = """["travel","cooking"]""",    PersonalNotes = DemoTag, TeachingTodos = """[{"id":"a1b2c3d4-0000-0000-0000-000000000001","text":"Trabajar la diferencia entre artículo determinado e indeterminado","createdAt":"2026-04-09T10:00:00Z","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null},{"id":"a1b2c3d4-0000-0000-0000-000000000002","text":"Repasar pretérito en narraciones personales","createdAt":"2026-04-09T10:05:00Z","sourceSessionLogId":null,"status":"pending","coveredInSessionLogId":null}]""", CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Souza",        LearningLanguage = "English", CefrLevel = "B2", NativeLanguages = """["Portuguese"]""", Interests = """["travel","cooking"]""",    PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Rossi",      LearningLanguage = "English", CefrLevel = "A2", NativeLanguages = """["Italian"]""",   Interests = """["football","music"]""",    PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Yuki Tanaka",      LearningLanguage = "English", CefrLevel = "B1", NativeLanguages = """["Japanese"]""",  Interests = """["technology","anime"]""",  PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Fatima Al-Hassan", LearningLanguage = "English", CefrLevel = "C1", NativeLanguages = """["Arabic"]""",    Interests = """["literature","history"]""", PersonalNotes = DemoTag, CreatedAt = now, UpdatedAt = now },
@@ -56,6 +56,10 @@ public static class DemoSeeder
         };
 
         db.Students.AddRange(students);
+
+        db.TeacherFollowups.AddRange(
+            new TeacherFollowup { Id = Guid.Parse("a1b2c3d4-0000-0000-0000-000000000001"), TeacherId = teacher.Id, StudentId = students[0].Id, Text = "Trabajar la diferencia entre artículo determinado e indeterminado", Status = "pending", Kind = "pedagogical", CreatedAt = new DateTime(2026, 4, 9, 10, 0, 0, DateTimeKind.Utc) },
+            new TeacherFollowup { Id = Guid.Parse("a1b2c3d4-0000-0000-0000-000000000002"), TeacherId = teacher.Id, StudentId = students[0].Id, Text = "Repasar pretérito en narraciones personales", Status = "pending", Kind = "pedagogical", CreatedAt = new DateTime(2026, 4, 9, 10, 5, 0, DateTimeKind.Utc) });
 
         var lessons = new List<Lesson>
         {
@@ -245,7 +249,7 @@ public static class DemoSeeder
         var now = DateTime.UtcNow;
 
         // Ana Seed — rich-profile scenario
-        await UpsertStudentAsync(db, teacherId, new Student
+        var anaSeed = await UpsertStudentAsync(db, teacherId, new Student
         {
             TeacherId          = teacherId,
             Name               = "Ana Seed",
@@ -258,7 +262,6 @@ public static class DemoSeeder
             Weaknesses         = """["Listening to fast native speech","Idiomatic expressions"]""",
             PersonalNotes      = "Sensitive about speaking in front of her manager at work — avoids complex sentences in meetings. Some test anxiety before formal assessments. Prefers positive reinforcement over error-focused feedback.",
             TeachingNotes      = "Responds well to visual aids. Prefers structured grammar drills over free conversation. Review subjunctive triggers next session.",
-            TeachingTodos      = """[{"id":"a1b2c3d4-0000-0000-0000-000000000010","text":"Review subjunctive trigger verbs — she confuses querer vs desear contexts","createdAt":"2026-04-10T10:00:00Z","sourceSessionLogId":null,"status":"Pending","coveredInSessionLogId":null}]""",
             SkillLevelOverrides = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""",
             BirthYear          = 1992,
             Profession         = "Marketing Manager",
@@ -271,6 +274,10 @@ public static class DemoSeeder
             SpokenLanguages    = """["Portuguese","Spanish"]""",
             ShortTermObjectives = """[{"id":"o1","text":"Pass B2 Cambridge exam","targetDate":"2026-06-30"},{"id":"o2","text":"Prepare for job interview in English","targetDate":null}]""",
         }, now);
+
+        var anaSeedTodoId = Guid.Parse("a1b2c3d4-0000-0000-0000-000000000010");
+        if (!await db.TeacherFollowups.AnyAsync(f => f.Id == anaSeedTodoId))
+            db.TeacherFollowups.Add(new TeacherFollowup { Id = anaSeedTodoId, TeacherId = teacherId, StudentId = anaSeed.Id, Text = "Review subjunctive trigger verbs — she confuses querer vs desear contexts", Status = "pending", Kind = "pedagogical", CreatedAt = new DateTime(2026, 4, 10, 10, 0, 0, DateTimeKind.Utc) });
 
         // Marco Seed — excel-imported scenario; one old session, no upcoming → "Inactive Xd" badge
         var marcoSeed = await UpsertStudentAsync(db, teacherId, new Student
@@ -539,9 +546,12 @@ public static class DemoSeeder
             Difficulties     = "[]",
             Weaknesses       = "[]",
             PersonalNotes    = "[scenario-seed]",
-            TeachingTodos    = """[{"id":"a1b2c3d4-0000-0000-0000-000000000011","text":"Check if introduction homework sentences were completed before next session","createdAt":"2026-04-10T10:00:00Z","sourceSessionLogId":null,"status":"Pending","coveredInSessionLogId":null}]""",
             IsActive         = true,
         }, now);
+
+        var hugoTodoId = Guid.Parse("a1b2c3d4-0000-0000-0000-000000000011");
+        if (!await db.TeacherFollowups.AnyAsync(f => f.Id == hugoTodoId))
+            db.TeacherFollowups.Add(new TeacherFollowup { Id = hugoTodoId, TeacherId = teacherId, StudentId = hugo.Id, Text = "Check if introduction homework sentences were completed before next session", Status = "pending", Kind = "pedagogical", CreatedAt = new DateTime(2026, 4, 10, 10, 0, 0, DateTimeKind.Utc) });
 
         var hugoSessionsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == hugo.Id && !s.IsDeleted);
         if (!hugoSessionsExist)
@@ -941,7 +951,6 @@ public static class DemoSeeder
             existing.Weaknesses            = incoming.Weaknesses;
             existing.PersonalNotes         = incoming.PersonalNotes;
             existing.TeachingNotes         = incoming.TeachingNotes;
-            existing.TeachingTodos         = incoming.TeachingTodos;
             existing.SkillLevelOverrides   = incoming.SkillLevelOverrides;
             existing.BirthYear             = incoming.BirthYear;
             existing.Profession            = incoming.Profession;

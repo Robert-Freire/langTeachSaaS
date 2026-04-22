@@ -42,22 +42,6 @@ public class StudentService : IStudentService
     private static readonly HashSet<string> AllowedStatuses =
         new(StringComparer.OrdinalIgnoreCase) { "Active", "Covered" };
 
-    private static readonly Dictionary<string, string> CanonicalTodoStatuses =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            ["Pending"] = "Pending",
-            ["Covered"] = "Covered",
-            ["Dismissed"] = "Dismissed",
-        };
-
-    private static string NormalizeTodoStatus(string? status)
-    {
-        if (!string.IsNullOrWhiteSpace(status) && CanonicalTodoStatuses.TryGetValue(status, out var canonical))
-            return canonical;
-        throw new ValidationException(
-            $"Todo status '{status}' is not valid. Allowed: {string.Join(", ", CanonicalTodoStatuses.Values)}.");
-    }
-
     private static readonly HashSet<string> AllowedWeaknessTypes =
         new(StringComparer.OrdinalIgnoreCase) { "grammatical", "lexical", "orthographic" };
 
@@ -107,8 +91,17 @@ public class StudentService : IStudentService
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
+        var studentIds = items.Select(s => s.Id).ToList();
+        var allTodos = await _db.TeacherFollowups
+            .Where(f => f.StudentId != null && studentIds.Contains(f.StudentId.Value) && f.Kind == "pedagogical")
+            .OrderBy(f => f.CreatedAt)
+            .ToListAsync(cancellationToken);
+        var todosByStudent = allTodos
+            .GroupBy(f => f.StudentId!.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
         return new PagedResult<StudentDto>(
-            items.Select(MapToDto).ToList(),
+            items.Select(s => MapToDto(s, todosByStudent.GetValueOrDefault(s.Id, []))).ToList(),
             totalCount,
             page,
             pageSize
@@ -120,7 +113,9 @@ public class StudentService : IStudentService
         var student = await _db.Students
             .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
 
-        return student is null ? null : MapToDto(student);
+        if (student is null) return null;
+        var todos = await FetchPedagogicalTodosAsync(studentId, cancellationToken);
+        return MapToDto(student, todos);
     }
 
     public async Task<StudentDto> CreateAsync(Guid teacherId, CreateStudentRequest request, CancellationToken cancellationToken = default)
@@ -132,7 +127,6 @@ public class StudentService : IStudentService
         var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
         ValidateBirthYear(request.BirthYear);
         ValidateShortTermObjectives(request.ShortTermObjectives);
-        ValidateTeachingTodos(request.TeachingTodos);
         ValidateLearningGoals(request.LearningGoals);
         var normalizedSkillOverrides = NormalizeSkillLevelOverrides(request.SkillLevelOverrides);
 
@@ -159,7 +153,6 @@ public class StudentService : IStudentService
             ReasonForStudying = request.ReasonForStudying,
             OfficialCefrLevel = request.OfficialCefrLevel,
             ShortTermObjectives = Serialize(request.ShortTermObjectives),
-            TeachingTodos = Serialize(request.TeachingTodos),
             IsActive = request.IsActive,
             IsCorporate = request.IsCorporate,
             Rate = request.Rate,
@@ -174,7 +167,7 @@ public class StudentService : IStudentService
         _logger.LogInformation("Student created. TeacherId={TeacherId} StudentId={StudentId}",
             teacherId, student.Id);
 
-        return MapToDto(student);
+        return MapToDto(student, []);
     }
 
     public async Task<StudentDto?> UpdateAsync(Guid teacherId, Guid studentId, UpdateStudentRequest request, CancellationToken cancellationToken = default)
@@ -192,7 +185,6 @@ public class StudentService : IStudentService
         var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
         ValidateBirthYear(request.BirthYear);
         ValidateShortTermObjectives(request.ShortTermObjectives);
-        ValidateTeachingTodos(request.TeachingTodos);
         ValidateLearningGoals(request.LearningGoals);
         var normalizedSkillOverrides = NormalizeSkillLevelOverrides(request.SkillLevelOverrides);
 
@@ -215,7 +207,6 @@ public class StudentService : IStudentService
         student.ReasonForStudying = request.ReasonForStudying;
         student.OfficialCefrLevel = request.OfficialCefrLevel;
         student.ShortTermObjectives = Serialize(request.ShortTermObjectives);
-        student.TeachingTodos = Serialize(request.TeachingTodos);
         student.IsActive = request.IsActive;
         student.IsCorporate = request.IsCorporate;
         student.Rate = request.Rate;
@@ -227,7 +218,8 @@ public class StudentService : IStudentService
         _logger.LogInformation("Student updated. TeacherId={TeacherId} StudentId={StudentId}",
             teacherId, student.Id);
 
-        return MapToDto(student);
+        var todos = await FetchPedagogicalTodosAsync(studentId, cancellationToken);
+        return MapToDto(student, todos);
     }
 
     public async Task<bool> DeleteAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken = default)
@@ -247,7 +239,7 @@ public class StudentService : IStudentService
         return true;
     }
 
-    private static StudentDto MapToDto(Student s) => new(
+    private static StudentDto MapToDto(Student s, List<TeacherFollowup> pedagogicalTodos) => new(
         s.Id,
         s.Name,
         s.LearningLanguage,
@@ -276,9 +268,23 @@ public class StudentService : IStudentService
         s.IsCorporate,
         s.Rate,
         JsonStorageHelper.DeserializeList<string>(s.SpokenLanguages),
-        JsonStorageHelper.DeserializeList<TeachingTodoDto>(s.TeachingTodos),
+        pedagogicalTodos.Select(ToTodo).ToList(),
         DeserializeSkillLevelOverrides(s.SkillLevelOverrides)
     );
+
+    private static TeachingTodoDto ToTodo(TeacherFollowup f) => new(
+        f.Id.ToString(),
+        f.Text,
+        f.CreatedAt,
+        f.SourceSessionLogId?.ToString(),
+        f.Status,
+        f.CoveredInSessionLogId?.ToString());
+
+    private async Task<List<TeacherFollowup>> FetchPedagogicalTodosAsync(Guid studentId, CancellationToken cancellationToken) =>
+        await _db.TeacherFollowups
+            .Where(f => f.StudentId == studentId && f.Kind == "pedagogical")
+            .OrderBy(f => f.CreatedAt)
+            .ToListAsync(cancellationToken);
 
     private static List<StudentWeaknessDto> NormalizeWeaknesses(List<StudentWeaknessDto> weaknesses) =>
         weaknesses.Select(w => w with { WeaknessType = (w.WeaknessType ?? string.Empty).ToLowerInvariant() }).ToList();
@@ -389,114 +395,77 @@ public class StudentService : IStudentService
 
     public async Task<StudentDto?> AppendTeachingTodoAsync(Guid teacherId, Guid studentId, CreateTeachingTodoDto request, CancellationToken cancellationToken = default)
     {
-        var student = await _db.Students
-            .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
+        var studentExists = await _db.Students
+            .AnyAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
 
-        if (student is null)
-            return null;
+        if (!studentExists) return null;
 
-        var todos = JsonStorageHelper.DeserializeList<TeachingTodoDto>(student.TeachingTodos);
-
-        if (todos.Count >= 50)
-            throw new ValidationException("Cannot have more than 50 teaching todos.");
-
-        if (string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > 500)
-            throw new ValidationException("Todo text must be between 1 and 500 characters.");
-
-        var newTodo = new TeachingTodoDto(
-            Guid.NewGuid().ToString(),
-            request.Text,
-            DateTime.UtcNow,
-            request.SourceSessionLogId,
-            "Pending",
-            null);
-
-        todos.Add(newTodo);
-        student.TeachingTodos = Serialize(todos);
-        student.UpdatedAt = DateTime.UtcNow;
-
+        var followup = new TeacherFollowup
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacherId,
+            StudentId = studentId,
+            Text = request.Text,
+            Status = "pending",
+            Kind = "pedagogical",
+            CreatedAt = DateTime.UtcNow,
+            SourceSessionLogId = Guid.TryParse(request.SourceSessionLogId, out var sid) ? sid : null,
+        };
+        _db.TeacherFollowups.Add(followup);
         await _db.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Teaching todo appended. TeacherId={TeacherId} StudentId={StudentId} TodoId={TodoId}",
-            teacherId, student.Id, newTodo.Id);
+        _logger.LogInformation("Teaching todo appended. TeacherId={TeacherId} StudentId={StudentId} FollowupId={FollowupId}",
+            teacherId, studentId, followup.Id);
 
-        return MapToDto(student);
+        return await GetByIdAsync(teacherId, studentId, cancellationToken);
     }
 
     public async Task<StudentDto?> UpdateTeachingTodoAsync(Guid teacherId, Guid studentId, string todoId, UpdateTeachingTodoDto request, CancellationToken cancellationToken = default)
     {
-        var student = await _db.Students
-            .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
+        if (!Guid.TryParse(todoId, out var todoGuid)) return null;
 
-        if (student is null)
-            return null;
+        var followup = await _db.TeacherFollowups
+            .FirstOrDefaultAsync(f => f.Id == todoGuid
+                                   && f.StudentId == studentId
+                                   && f.TeacherId == teacherId
+                                   && f.Kind == "pedagogical", cancellationToken);
+        if (followup is null) return null;
 
-        var canonicalStatus = NormalizeTodoStatus(request.Status);
-
-        var todos = JsonStorageHelper.DeserializeList<TeachingTodoDto>(student.TeachingTodos);
-        var index = todos.FindIndex(t => t.Id == todoId);
-
-        if (index < 0)
-            return null;
-
-        var updated = todos[index] with { Status = canonicalStatus, CoveredInSessionLogId = request.CoveredInSessionLogId };
+        followup.Status = request.Status.ToLowerInvariant();
         if (request.Text is not null)
         {
             if (string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > 500)
                 throw new ValidationException("Todo text must be between 1 and 500 characters.");
-            updated = updated with { Text = request.Text };
+            followup.Text = request.Text;
         }
-        todos[index] = updated;
-        student.TeachingTodos = Serialize(todos);
-        student.UpdatedAt = DateTime.UtcNow;
+        if (request.CoveredInSessionLogId is not null &&
+            Guid.TryParse(request.CoveredInSessionLogId, out var covGuid))
+            followup.CoveredInSessionLogId = covGuid;
+        followup.CompletedAt = followup.Status is "done" or "covered" ? DateTime.UtcNow : null;
 
         await _db.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Teaching todo updated. TeacherId={TeacherId} StudentId={StudentId} TodoId={TodoId} Status={Status}",
-            teacherId, student.Id, todoId, canonicalStatus);
+        _logger.LogInformation("Teaching todo updated. TeacherId={TeacherId} StudentId={StudentId} FollowupId={FollowupId} Status={Status}",
+            teacherId, studentId, todoGuid, followup.Status);
 
-        return MapToDto(student);
+        return await GetByIdAsync(teacherId, studentId, cancellationToken);
     }
 
     public async Task<StudentDto?> DeleteTeachingTodoAsync(Guid teacherId, Guid studentId, string todoId, CancellationToken cancellationToken = default)
     {
-        var student = await _db.Students
-            .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
+        if (!Guid.TryParse(todoId, out var todoGuid)) return null;
 
-        if (student is null)
-            return null;
+        var followup = await _db.TeacherFollowups
+            .FirstOrDefaultAsync(f => f.Id == todoGuid
+                                   && f.StudentId == studentId
+                                   && f.TeacherId == teacherId
+                                   && f.Kind == "pedagogical", cancellationToken);
+        if (followup is null) return null;
 
-        var todos = JsonStorageHelper.DeserializeList<TeachingTodoDto>(student.TeachingTodos);
-        var index = todos.FindIndex(t => t.Id == todoId);
-
-        if (index < 0)
-            return null;
-
-        todos.RemoveAt(index);
-        student.TeachingTodos = Serialize(todos);
-        student.UpdatedAt = DateTime.UtcNow;
-
+        _db.TeacherFollowups.Remove(followup);
         await _db.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Teaching todo deleted. TeacherId={TeacherId} StudentId={StudentId} TodoId={TodoId}",
-            teacherId, student.Id, todoId);
+        _logger.LogInformation("Teaching todo deleted. TeacherId={TeacherId} StudentId={StudentId} FollowupId={FollowupId}",
+            teacherId, studentId, todoGuid);
 
-        return MapToDto(student);
-    }
-
-    private static void ValidateTeachingTodos(List<TeachingTodoDto> todos)
-    {
-        if (todos.Count > 50)
-            throw new ValidationException("TeachingTodos cannot contain more than 50 entries.");
-        var seenIds = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var t in todos)
-        {
-            if (string.IsNullOrWhiteSpace(t.Id) || t.Id.Length > 100)
-                throw new ValidationException("Each teaching todo must have an Id (max 100 characters).");
-            if (!seenIds.Add(t.Id))
-                throw new ValidationException($"Duplicate teaching todo Id '{t.Id}'.");
-            if (string.IsNullOrWhiteSpace(t.Text) || t.Text.Length > 500)
-                throw new ValidationException("Each teaching todo Text must be between 1 and 500 characters.");
-            if (string.IsNullOrWhiteSpace(t.Status) || !CanonicalTodoStatuses.ContainsKey(t.Status))
-                throw new ValidationException($"Teaching todo status '{t.Status}' is not valid. Allowed: {string.Join(", ", CanonicalTodoStatuses.Values)}.");
-        }
+        return await GetByIdAsync(teacherId, studentId, cancellationToken);
     }
 
     private static Dictionary<string, string> NormalizeSkillLevelOverrides(Dictionary<string, string> overrides)

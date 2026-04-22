@@ -29,7 +29,6 @@ public class Student
 
     // Plan fields
     public string ShortTermObjectives { get; set; } = "[]";
-    public string TeachingTodos { get; set; } = "[]";
 
     // Commercial fields
     public bool IsActive { get; set; } = true;
@@ -47,4 +46,5 @@ public class Student
     public ICollection<Lesson> Lessons { get; set; } = [];
     public ICollection<Course> Courses { get; set; } = [];
     public ICollection<SessionLog> SessionLogs { get; set; } = [];
+    public ICollection<TeacherFollowup> TeacherFollowups { get; set; } = [];
 }

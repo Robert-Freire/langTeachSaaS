@@ -11,7 +11,8 @@ public record TeacherFollowupDto(
     DateTime CreatedAt,
     DateOnly? DueDate,
     DateTime? CompletedAt,
-    string? SourceSessionLogId);
+    string? SourceSessionLogId,
+    string Kind);
 
 public record CreateTeacherFollowupRequest(
     [Required]
@@ -20,9 +21,13 @@ public record CreateTeacherFollowupRequest(
     string Text,
     Guid? StudentId,
     DateOnly? DueDate,
-    Guid? SourceSessionLogId);
+    Guid? SourceSessionLogId,
+    [RegularExpression("^(pedagogical|operational)$",
+        ErrorMessage = "Kind must be 'pedagogical' or 'operational'.")]
+    string? Kind = null);
 
 public record UpdateTeacherFollowupRequest(
     [Required]
-    [RegularExpression("^(pending|done)$", ErrorMessage = "Status must be 'pending' or 'done'.")]
+    [RegularExpression("^(pending|done|covered|dismissed)$",
+        ErrorMessage = "Status must be 'pending', 'done', 'covered', or 'dismissed'.")]
     string Status);

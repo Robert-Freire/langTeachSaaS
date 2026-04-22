@@ -41,7 +41,6 @@ public class DashboardServiceTests : IDisposable
             LearningLanguage = "Spanish",
             CefrLevel = "B1",
             NativeLanguages = "[\"English\"]",
-            TeachingTodos = "[]",
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
@@ -247,8 +246,11 @@ public class DashboardServiceTests : IDisposable
     [Fact]
     public async Task GetAsync_ActiveStudents_CountsTeachingTodos()
     {
-        _db.Students.First(s => s.Id == _studentId).TeachingTodos =
-            "[{\"id\":\"1\",\"text\":\"Focus on subjunctive\"},{\"id\":\"2\",\"text\":\"Review homework\"}]";
+        var t1 = Guid.NewGuid();
+        var t2 = Guid.NewGuid();
+        _db.TeacherFollowups.AddRange(
+            new TeacherFollowup { Id = t1, TeacherId = _teacherId, StudentId = _studentId, Kind = "pedagogical", Text = "Focus on subjunctive", Status = "pending", CreatedAt = DateTime.UtcNow },
+            new TeacherFollowup { Id = t2, TeacherId = _teacherId, StudentId = _studentId, Kind = "pedagogical", Text = "Review homework", Status = "pending", CreatedAt = DateTime.UtcNow });
         _db.SaveChanges();
 
         var result = await _sut.GetAsync(_teacherId);
@@ -259,9 +261,11 @@ public class DashboardServiceTests : IDisposable
     [Fact]
     public async Task GetAsync_ActiveStudents_ReturnsPendingTodos()
     {
-        _db.Students.First(s => s.Id == _studentId).TeachingTodos =
-            "[{\"id\":\"t1\",\"text\":\"Focus on subjunctive\",\"createdAt\":\"2026-04-01T10:00:00Z\",\"status\":\"Pending\",\"sourceSessionLogId\":null,\"coveredInSessionLogId\":null}," +
-            "{\"id\":\"t2\",\"text\":\"Review homework\",\"createdAt\":\"2026-04-02T10:00:00Z\",\"status\":\"Covered\",\"sourceSessionLogId\":null,\"coveredInSessionLogId\":null}]";
+        var t1Id = Guid.NewGuid();
+        var t2Id = Guid.NewGuid();
+        _db.TeacherFollowups.AddRange(
+            new TeacherFollowup { Id = t1Id, TeacherId = _teacherId, StudentId = _studentId, Kind = "pedagogical", Text = "Focus on subjunctive", Status = "pending", CreatedAt = new DateTime(2026, 4, 1, 10, 0, 0, DateTimeKind.Utc) },
+            new TeacherFollowup { Id = t2Id, TeacherId = _teacherId, StudentId = _studentId, Kind = "pedagogical", Text = "Review homework", Status = "covered", CreatedAt = new DateTime(2026, 4, 2, 10, 0, 0, DateTimeKind.Utc) });
         _db.SaveChanges();
 
         var result = await _sut.GetAsync(_teacherId);
@@ -269,9 +273,9 @@ public class DashboardServiceTests : IDisposable
         var student = result.ActiveStudents[0];
         student.TeachingTodosCount.Should().Be(2);
         student.PendingTodos.Should().HaveCount(1);
-        student.PendingTodos[0].Id.Should().Be("t1");
+        student.PendingTodos[0].Id.Should().Be(t1Id.ToString());
         student.PendingTodos[0].Text.Should().Be("Focus on subjunctive");
-        student.PendingTodos[0].Status.Should().Be("Pending");
+        student.PendingTodos[0].Status.Should().Be("pending");
     }
 
     [Fact]
@@ -414,7 +418,6 @@ public class DashboardServiceTests : IDisposable
             LearningLanguage = "Spanish",
             CefrLevel = "B2",
             NativeLanguages = "[]",
-            TeachingTodos = "[]",
             IsActive = false,
             IsDeleted = true,
             CreatedAt = DateTime.UtcNow,
@@ -468,7 +471,6 @@ public class DashboardServiceTests : IDisposable
             LearningLanguage = "Spanish",
             CefrLevel = "A2",
             NativeLanguages = "[]",
-            TeachingTodos = "[]",
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
