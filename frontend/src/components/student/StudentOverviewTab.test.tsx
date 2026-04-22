@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -120,6 +121,14 @@ describe('StudentOverviewTab - PedagogicalProfileCard', () => {
     const tagsSection = screen.getByTestId('language-tags')
     expect(tagsSection).toHaveTextContent('L-UKRAINIAN')
     expect(tagsSection).toHaveTextContent('T-SPANISH')
+  })
+
+  it('shows tooltip explaining target language on hover', async () => {
+    const user = userEvent.setup()
+    renderOverview({ ...BASE_STUDENT, learningLanguage: 'Spanish' })
+    const tag = screen.getByTestId('target-language-tag')
+    await user.hover(tag)
+    expect(await screen.findByText(/target language.*spanish/i)).toBeInTheDocument()
   })
 })
 

@@ -14,5 +14,7 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #837 | 2026-04-22 | low | StudentRoster.tsx has local formatRelativeDate not yet refactored to use relativeTime — filed #861 |
 | #852 | 2026-04-22 | low | StudentsController (4x) and CoursesController still use ValidationProblem/BadRequest(rawString) for ValidationException — filed #871 |
 | #846 | 2026-04-22 | low | PromptService.cs lines 473-478: L1 sub-bullets (differs-from-native, false cognates, common errors) hardcoded in C# system prompt; overlaps with config-driven L1Adjustments block appended to user prompts. Predates #846; worth consolidating into the data-driven path. |
+| #849 | 2026-04-22 | low | Root .dockerignore excludes frontend/ in worktrees, requiring manual bypass during UI review docker build; pre-existing worktree build infrastructure gap. |
+| #849 | 2026-04-22 | low | E2E test student-detail-session-expanded fails on session-title-input not found; pre-existing, unrelated to labeling changes. |
 
 *Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Actionable entries batched into: #833 (bug batch), #834 (seeder gaps), #835 (e2e session-log rewrite), #836 (ScenarioSeeder Hans B1), #837 (deduplication), #838 (session title from web UI), #839 (debug log privacy), #840 (Edit Student UX), #841 (stale closure + LogSession pre-populate). Already-tracked entries removed (referenced #737/#707/#644/#714/#715/#716/#683/#741/#742/#756/#809/#657). Dismissed entries removed (defensive-only, intentional, or resolved).*
