@@ -27,7 +27,7 @@ test('teacher can save and reload profile settings', async ({ browser }) => {
   const apiBase = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 
   await page.goto('/settings')
-  await expect(page.locator('h1')).toHaveText('My Profile')
+  await expect(page.locator('h1')).toHaveText('Settings')
 
   // Wait for profile to finish loading AND populating the form.
   // The input only appears after isLoading=false, but a React Query background
