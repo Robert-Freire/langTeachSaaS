@@ -238,6 +238,12 @@ describe('LogSession', () => {
     expect(cb.checked).toBe(true)
   })
 
+  it('shows STATUS label above the cancelled toggle in create mode', async () => {
+    renderLogSession()
+    await screen.findByTestId('cancelled-toggle')
+    expect(screen.getByText('Status')).toBeInTheDocument()
+  })
+
   it('hides form fields when cancelled toggle is clicked', async () => {
     renderLogSession()
     await screen.findByTestId('cancelled-toggle')
