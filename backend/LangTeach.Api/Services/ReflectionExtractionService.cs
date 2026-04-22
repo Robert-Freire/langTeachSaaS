@@ -82,7 +82,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to parse reflection extraction JSON (length: {Length})", json?.Length ?? 0);
-            _logger.LogDebug("Unparseable Claude response: {Json}", json);
+            _logger.LogDebug("Unparseable Claude response: {Preview}...", json is null ? null : json[..Math.Min(200, json.Length)]);
             return new ExtractedReflectionDto(
                 WhatWasCovered: null, AreasToImprove: null, EmotionalSignals: null,
                 HomeworkAssigned: null, NextLessonIdeas: null, SessionDate: null,
