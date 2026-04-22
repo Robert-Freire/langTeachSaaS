@@ -88,7 +88,11 @@ export function MultiSelect({
           data-testid={triggerId}
           className="flex w-full max-w-sm items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-50"
         >
-          {selected.length === 0 ? placeholder : `${selected.length} selected`}
+          {selected.length === 0
+            ? placeholder
+            : selected.length === 1
+              ? (options.find((o) => o.value === selected[0])?.label ?? selected[0])
+              : `${options.find((o) => o.value === selected[0])?.label ?? selected[0]} +${selected.length - 1} more`}
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </PopoverTrigger>
         <PopoverContent className="w-64 max-w-[calc(100vw-2rem)] p-0 z-[60]" align="start" side="bottom">
