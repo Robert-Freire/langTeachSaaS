@@ -79,7 +79,7 @@ test('voice upload: extracted fields pre-fill form, Confirm saves as Confirmed',
 
   // Expand session entry and verify extracted title was saved
   await page.getByTestId('session-entry-toggle').click()
-  await expect(page.getByTestId('session-title-input')).toHaveValue('[Extracted] Session title', { timeout: 5000 })
+  await expect(page.getByTestId('session-title-display')).toHaveText('[Extracted] Session title', { timeout: 5000 })
 
   await context.close()
 })
@@ -177,19 +177,18 @@ test('editing a Draft session and saving confirms it', async ({ browser }) => {
   // Draft badge is present
   await expect(page.getByTestId('draft-badge')).toBeVisible()
 
-  // Expand and click Edit
+  // Expand and click Edit full session link — navigates to full-page edit route
   await page.getByTestId('session-entry-toggle').click()
-  await page.getByTestId('edit-session-button').click()
+  await page.getByTestId('edit-full-session-link').click()
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}/sessions/.+/edit`), { timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
 
-  // Dialog opens in edit mode
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
-
-  // Save changes — transitions to Confirmed
-  await page.getByTestId('submit-session-log').click()
-  await expect(page.getByTestId('session-log-success')).toBeVisible({ timeout: 10000 })
-  await expect(page.getByTestId('session-log-dialog')).toBeHidden({ timeout: 3000 })
+  // Click Done — autosave has fired; navigates back to student sessions tab
+  await page.getByTestId('done-btn').click()
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}(\\?tab=sessions)?$`), { timeout: 10000 })
 
   // Draft badge should be gone
+  await page.getByRole('tab', { name: /history/i }).click()
   await expect(page.getByTestId('draft-badge')).toBeHidden({ timeout: 5000 })
 
   await context.close()
@@ -218,10 +217,10 @@ test('voice recorder is accessible in edit mode', async ({ browser }) => {
   await page.getByRole('tab', { name: /history/i }).click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: 10000 })
 
-  // Open edit dialog
+  // Open edit via full-page route
   await page.getByTestId('session-entry-toggle').click()
-  await page.getByTestId('edit-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await page.getByTestId('edit-full-session-link').click()
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
 
   // Voice recorder section should be visible in edit mode (bug fix)
   await expect(page.getByTestId('voice-recorder-section')).toBeVisible({ timeout: 5000 })
@@ -298,10 +297,10 @@ test('voice extraction append mode: concatenates extracted value with existing f
   await page.getByRole('tab', { name: /history/i }).click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: 10000 })
 
-  // Open the Draft in edit mode
+  // Open the Draft in edit mode via full-page route
   await page.getByTestId('session-entry-toggle').click()
-  await page.getByTestId('edit-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await page.getByTestId('edit-full-session-link').click()
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
 
   // Verify the field is pre-populated before uploading audio
   await expect(page.getByTestId('next-session-topics')).toHaveValue('Existing topics', { timeout: 5000 })
@@ -350,10 +349,10 @@ test('voice extraction replace mode: overwrites existing field content', async (
   await page.getByRole('tab', { name: /history/i }).click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: 10000 })
 
-  // Open the Draft in edit mode
+  // Open the Draft in edit mode via full-page route
   await page.getByTestId('session-entry-toggle').click()
-  await page.getByTestId('edit-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await page.getByTestId('edit-full-session-link').click()
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
 
   // Verify the field is pre-populated before uploading audio
   await expect(page.getByTestId('actual-content')).toHaveValue(

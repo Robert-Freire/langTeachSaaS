@@ -1126,9 +1126,9 @@ test('sessions tab redesign: timeline, search, status filter, and expand', async
   await firstEntry.getByTestId('session-entry-toggle').click()
   await expect(firstEntry.getByTestId('session-entry-detail')).toBeVisible({ timeout: UI_TIMEOUT })
 
-  // Expanded entry shows edit + delete buttons
-  await expect(firstEntry.getByTestId('edit-session-button')).toBeVisible()
-  await expect(firstEntry.getByTestId('delete-session-button')).toBeVisible()
+  // Expanded entry shows edit link + delete button
+  await expect(firstEntry.getByTestId('edit-full-session-link')).toBeVisible()
+  await expect(firstEntry.getByTestId('delete-session-btn')).toBeVisible()
 
   // Collapse by clicking again
   await firstEntry.getByTestId('session-entry-toggle').click()
