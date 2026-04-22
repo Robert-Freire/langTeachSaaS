@@ -30,7 +30,7 @@ function relativeTime(iso: string): string {
 
 function sortTodos(todos: TeachingTodo[]): TeachingTodo[] {
   return [...todos].sort((a, b) => {
-    const priority = (s: string) => (s === 'Pending' ? 0 : 1)
+    const priority = (s: string) => (s === 'pending' ? 0 : 1)
     const p = priority(a.status) - priority(b.status)
     if (p !== 0) return p
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -70,7 +70,7 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
         _temp: true,
         id: tempId,
         text,
-        status: 'Pending',
+        status: 'pending',
         createdAt: new Date().toISOString(),
         sourceSessionLogId: null,
         coveredInSessionLogId: null,
@@ -141,7 +141,7 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
 
   function handleToggle(todo: TeachingTodo) {
     if (toggleMutation.isPending) return
-    const next = todo.status === 'Pending' ? 'Covered' : 'Pending'
+    const next = todo.status === 'pending' ? 'covered' : 'pending'
     toggleMutation.mutate({ todoId: todo.id, status: next })
   }
 
@@ -168,8 +168,8 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
       ) : (
         <ul className="space-y-2 mb-3" data-testid="teaching-todos-list">
           {displayedTodos.map((todo) => {
-            const isCovered = todo.status === 'Covered'
-            const isDismissed = todo.status === 'Dismissed'
+            const isCovered = todo.status === 'covered'
+            const isDismissed = todo.status === 'dismissed'
             const isInactive = isCovered || isDismissed
             const isEditing = editingId === todo.id
             const isOptimistic = '_temp' in todo

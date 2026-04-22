@@ -67,8 +67,8 @@ const FULL_STUDENT: Student = {
   spokenLanguages: ['English', 'French'],
   skillLevelOverrides: { Reading: 'B2', Writing: 'B1' },
   teachingTodos: [
-    { id: 'todo-1', text: 'Enviar ejercicios de por/para', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Pending', coveredInSessionLogId: null },
-    { id: 'todo-2', text: 'Explicar diferencia', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Covered', coveredInSessionLogId: 'session-1' },
+    { id: 'todo-1', text: 'Enviar ejercicios de por/para', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'pending', coveredInSessionLogId: null },
+    { id: 'todo-2', text: 'Explicar diferencia', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'covered', coveredInSessionLogId: 'session-1' },
   ],
 }
 

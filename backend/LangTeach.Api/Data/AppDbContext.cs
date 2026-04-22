@@ -296,20 +296,27 @@ public class AppDbContext : DbContext
             e.HasKey(f => f.Id);
             e.HasIndex(f => new { f.TeacherId, f.Status });
             e.HasIndex(f => new { f.TeacherId, f.StudentId });
+            e.HasIndex(f => new { f.TeacherId, f.StudentId, f.Kind });
             e.Property(f => f.Text).HasMaxLength(500).IsRequired();
             e.Property(f => f.Status).HasDefaultValue("pending");
+            e.Property(f => f.Kind).HasMaxLength(20).HasDefaultValue("operational").IsRequired();
             e.HasOne(f => f.Teacher)
              .WithMany()
              .HasForeignKey(f => f.TeacherId)
              .OnDelete(DeleteBehavior.Cascade);
             e.HasOne(f => f.Student)
-             .WithMany()
+             .WithMany(s => s.TeacherFollowups)
              .HasForeignKey(f => f.StudentId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
             e.HasOne(f => f.SourceSessionLog)
              .WithMany()
              .HasForeignKey(f => f.SourceSessionLogId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(f => f.CoveredInSessionLog)
+             .WithMany()
+             .HasForeignKey(f => f.CoveredInSessionLogId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
         });

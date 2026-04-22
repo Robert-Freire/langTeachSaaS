@@ -225,8 +225,17 @@ public class DashboardService : IDashboardService
                 s.CefrLevel,
                 s.NativeLanguages,
                 s.IsActive,
-                s.TeachingTodos,
                 s.ShortTermObjectives,
+                TeachingTodosCount = s.TeacherFollowups.Count(f => f.Kind == "pedagogical"),
+                PendingTodos = s.TeacherFollowups
+                    .Where(f => f.Kind == "pedagogical" && f.Status == "pending")
+                    .OrderBy(f => f.CreatedAt)
+                    .Select(f => new TeachingTodoDto(
+                        f.Id.ToString(), f.Text, f.CreatedAt,
+                        f.SourceSessionLogId != null ? f.SourceSessionLogId.ToString() : null,
+                        f.Status,
+                        f.CoveredInSessionLogId != null ? f.CoveredInSessionLogId.ToString() : null))
+                    .ToList(),
                 LastSessionDate = s.SessionLogs
                     .Where(sl => !sl.IsDeleted && sl.SessionDate.HasValue && sl.SessionDate.Value < now)
                     .Max(sl => (DateTime?)sl.SessionDate),
@@ -255,9 +264,6 @@ public class DashboardService : IDashboardService
 
         return rows.Select(r =>
         {
-            var allTodos = JsonStorageHelper.DeserializeList<TeachingTodoDto>(r.TeachingTodos);
-            var pendingTodos = allTodos.Where(t => string.Equals(t.Status, "Pending", StringComparison.OrdinalIgnoreCase)).ToList();
-
             // NearestObjectiveDeadline: earliest future targetDate from ShortTermObjectives JSON
             // DefaultIfEmpty() on empty sequence returns DateTime.MinValue — treated as null below
             var objectives = JsonStorageHelper.DeserializeList<ShortTermObjectiveDto>(r.ShortTermObjectives);
@@ -281,8 +287,8 @@ public class DashboardService : IDashboardService
                 LastSessionDate: r.LastSessionDate,
                 NextSessionDate: r.NextSessionDate,
                 TotalSessions: r.TotalSessions,
-                TeachingTodosCount: allTodos.Count,
-                PendingTodos: pendingTodos,
+                TeachingTodosCount: r.TeachingTodosCount,
+                PendingTodos: r.PendingTodos,
                 CancelledSessionsLast30Days: r.CancelledSessionsLast30Days,
                 NearestObjectiveDeadline: nearestObjectiveDeadline,
                 LastHomeworkStatus: lastHomeworkStatus
