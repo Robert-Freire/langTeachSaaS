@@ -4,7 +4,7 @@ import { Pencil, X, Plus, Check, GraduationCap, ChevronDown } from 'lucide-react
 import { Badge } from '@/components/ui/badge'
 import type { Student } from '@/api/students'
 import type { TeacherFollowup } from '@/api/followups'
-import { parseNotes } from './studentNoteUtils'
+import { parseNotes, isSentinel } from './studentNoteUtils'
 import { TeachingTodosCard } from './TeachingTodosCard'
 import { StudentFollowupsCard } from './StudentFollowupsCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
@@ -14,12 +14,6 @@ import { langCode } from './langUtils'
 import { SavedIndicator } from '@/components/ui/SavedIndicator'
 
 const SKILL_ORDER = ['Reading', 'Writing', 'Speaking', 'Listening']
-
-function isSentinel(s: string | null | undefined): boolean {
-  if (!s) return false
-  const t = s.trim()
-  return t.startsWith('[') && t.endsWith(']')
-}
 
 interface Props {
   student: Student
