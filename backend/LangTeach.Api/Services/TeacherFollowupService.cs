@@ -84,8 +84,8 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
 
         if (followup is null) return null;
 
-        followup.Status = request.Status;
-        followup.CompletedAt = request.Status == "done" ? DateTime.UtcNow : null;
+        followup.Status = request.Status.ToLowerInvariant();
+        followup.CompletedAt = followup.Status is "done" or "covered" ? DateTime.UtcNow : null;
 
         await db.SaveChangesAsync(cancellationToken);
         return ToDto(followup, followup.Student?.Name);

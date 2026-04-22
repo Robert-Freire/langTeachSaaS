@@ -20,7 +20,7 @@ const PENDING_TODO: TeachingTodo = {
   text: 'Explain subjunctive',
   createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
   sourceSessionLogId: null,
-  status: 'Pending',
+  status: 'pending',
   coveredInSessionLogId: null,
 }
 const COVERED_TODO: TeachingTodo = {
@@ -28,7 +28,7 @@ const COVERED_TODO: TeachingTodo = {
   text: 'Past tense review',
   createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
   sourceSessionLogId: null,
-  status: 'Covered',
+  status: 'covered',
   coveredInSessionLogId: 'session-1',
 }
 
@@ -110,14 +110,14 @@ describe('TeachingTodosCard', () => {
 
   it('calls updateTeachingTodo on toggle', async () => {
     vi.mocked(studentsApi.updateTeachingTodo).mockResolvedValue(makeStudent([
-      { ...PENDING_TODO, status: 'Covered' },
+      { ...PENDING_TODO, status: 'covered' },
       COVERED_TODO,
     ]))
     render(<TeachingTodosCard {...defaultProps} onStudentChange={vi.fn()} />, { wrapper })
 
     fireEvent.click(screen.getByTestId(`todo-toggle-${PENDING_TODO.id}`))
     await waitFor(() =>
-      expect(studentsApi.updateTeachingTodo).toHaveBeenCalledWith('student-1', PENDING_TODO.id, { status: 'Covered' })
+      expect(studentsApi.updateTeachingTodo).toHaveBeenCalledWith('student-1', PENDING_TODO.id, { status: 'covered' })
     )
   })
 

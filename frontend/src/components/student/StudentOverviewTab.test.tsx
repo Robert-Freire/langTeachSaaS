@@ -339,7 +339,7 @@ describe('StudentOverviewTab - card order and conditional styling', () => {
   it('Ideas card has white background when todos exist', () => {
     const student = {
       ...BASE_STUDENT,
-      teachingTodos: [{ id: 't1', text: 'Practice past tense', status: 'Pending', createdAt: new Date().toISOString(), sourceSessionLogId: null, coveredInSessionLogId: null }],
+      teachingTodos: [{ id: 't1', text: 'Practice past tense', status: 'pending', createdAt: new Date().toISOString(), sourceSessionLogId: null, coveredInSessionLogId: null }],
     }
     renderOverview(student)
     const wrapper = screen.getByTestId('ideas-card-wrapper')
@@ -383,7 +383,7 @@ describe('StudentOverviewTab - rotating empty-state prompts', () => {
   it('hides rotating prompt for Ideas when todos exist', () => {
     const student = {
       ...BASE_STUDENT,
-      teachingTodos: [{ id: 't1', text: 'Practice something', status: 'Pending', createdAt: new Date().toISOString(), sourceSessionLogId: null, coveredInSessionLogId: null }],
+      teachingTodos: [{ id: 't1', text: 'Practice something', status: 'pending', createdAt: new Date().toISOString(), sourceSessionLogId: null, coveredInSessionLogId: null }],
     }
     renderOverview(student)
     expect(screen.queryByTestId('ideas-rotating-prompt')).not.toBeInTheDocument()

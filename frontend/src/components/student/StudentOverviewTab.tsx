@@ -411,7 +411,7 @@ export function StudentOverviewTab({
   const [showIdeasAdd, setShowIdeasAdd] = useState(false)
 
   const pendingFollowupsCount = followups.filter(f => f.status === 'pending').length
-  const pendingTodosCount = student.teachingTodos.filter(t => t.status === 'Pending').length
+  const pendingTodosCount = student.teachingTodos.filter(t => t.status === 'pending').length
   const firstName = student.name.split(' ')[0]
 
   const FOLLOWUP_PROMPTS = [
