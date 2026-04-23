@@ -258,7 +258,7 @@ public class StudentService : IStudentService
                 str => new StudentWeaknessDto(str, "grammatical")),
             JsonStorageHelper.DeserializeList<DifficultyDto>(s.Difficulties),
             JsonStorageHelper.DeserializeList<ShortTermObjectiveDto>(s.ShortTermObjectives),
-            pedagogicalTodos.Select(ToTodo).ToList(),
+            pedagogicalTodos.Select(TeachingTodoDtoProjection.Compiled).ToList(),
             s.ReasonForStudying
         ),
         new StudentCommercialDto(
@@ -270,13 +270,6 @@ public class StudentService : IStudentService
         s.UpdatedAt
     );
 
-    private static TeachingTodoDto ToTodo(TeacherFollowup f) => new(
-        f.Id.ToString(),
-        f.Text,
-        f.CreatedAt,
-        f.SourceSessionLogId?.ToString(),
-        f.Status,
-        f.CoveredInSessionLogId?.ToString());
 
     private async Task<List<TeacherFollowup>> FetchPedagogicalTodosAsync(Guid studentId, CancellationToken cancellationToken) =>
         await _db.TeacherFollowups
