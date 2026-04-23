@@ -185,6 +185,7 @@ public class GenerateController : ControllerBase
             StudentName: student?.Name,
             StudentNativeLanguage: student?.Languages.NativeLanguages.FirstOrDefault(),
             StudentInterests: student?.Profile.Interests.ToArray(),
+            // LearningGoals is a legacy field; migrate to ShortTermObjectives (see #855)
             StudentGoals: student?.Profile.LearningGoals.SelectMany(g => new[] { g.Text }.Concat(g.Children.Select(c => c.Text))).ToArray(),
             StudentWeaknesses: student?.Profile.Weaknesses.Select(w => new StudentWeakness(w.Description, w.WeaknessType)).ToArray(),
             ExistingNotes: request.ExistingNotes,
@@ -352,6 +353,7 @@ public class GenerateController : ControllerBase
             StudentName: student?.Name,
             StudentNativeLanguage: student?.Languages.NativeLanguages.FirstOrDefault(),
             StudentInterests: student?.Profile.Interests.ToArray(),
+            // LearningGoals is a legacy field; migrate to ShortTermObjectives (see #855)
             StudentGoals: student?.Profile.LearningGoals.SelectMany(g => new[] { g.Text }.Concat(g.Children.Select(c => c.Text))).ToArray(),
             StudentWeaknesses: student?.Profile.Weaknesses.Select(w => new StudentWeakness(w.Description, w.WeaknessType)).ToArray(),
             ExistingNotes: request.ExistingNotes,

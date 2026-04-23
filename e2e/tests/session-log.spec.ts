@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 import { NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
+import { createStudentViaApi } from '../helpers/students'
 
 const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 
@@ -18,20 +19,7 @@ test('log session from student detail page', async ({ browser }) => {
   const page = await context.newPage()
 
   const studentName = `Session Test Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  expect(createRes.ok()).toBeTruthy()
-  const student = await createRes.json()
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
@@ -66,19 +54,7 @@ test('log session page: prev homework status shows when prev session has homewor
   const page = await context.newPage()
 
   const studentName = `Homework Cond Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'A2',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  const student = await createRes.json()
+  const student = await createStudentViaApi(page, { name: studentName, cefrLevel: 'A2' })
 
   // Create a prior session with homework
   await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
@@ -107,19 +83,7 @@ test('expand session entry shows full detail without duplicating preview content
   const page = await context.newPage()
 
   const studentName = `Expand Test Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
     headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
@@ -161,19 +125,7 @@ test('delete session requires confirmation dialog', async ({ browser }) => {
   const page = await context.newPage()
 
   const studentName = `Delete Confirm Test ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'A2',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName, cefrLevel: 'A2' })
 
   await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
     headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
@@ -218,19 +170,7 @@ test('topic tag category dropdown has all four curriculum-aligned options', asyn
   const page = await context.newPage()
 
   const studentName = `Tag Category Test ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
@@ -261,14 +201,7 @@ test('future session date is accepted and appears in history', async ({ browser 
   const page = await context.newPage()
 
   const studentName = `Future Date Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName, learningLanguage: 'Spanish', cefrLevel: 'B1',
-      interests: [], learningGoals: [], weaknesses: [], difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
@@ -299,20 +232,7 @@ test('selecting a lesson in log session page links it to the session', async ({ 
   const page = await context.newPage()
 
   const studentName = `Lesson Link Test ${Date.now()}`
-  const createStudentRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  expect(createStudentRes.ok()).toBeTruthy()
-  const student = await createStudentRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
   // Create a lesson linked to this student
   const createLessonRes = await page.request.post(`${API_BASE}/api/lessons`, {
@@ -366,14 +286,7 @@ test('cancelled session shows Cancelled badge and is excluded from summary count
   const page = await context.newPage()
 
   const studentName = `Cancelled Session Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName, learningLanguage: 'Spanish', cefrLevel: 'B1',
-      interests: [], learningGoals: [], weaknesses: [], difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
   // Create a normal session and a cancelled session via API
   await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
@@ -418,14 +331,7 @@ test('un-cancel a session removes the Cancelled badge', async ({ browser }) => {
   const page = await context.newPage()
 
   const studentName = `Uncancel Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName, learningLanguage: 'Spanish', cefrLevel: 'B1',
-      interests: [], learningGoals: [], weaknesses: [], difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
   const sessionRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
     headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
@@ -481,19 +387,7 @@ test('summary header appears on history tab after logging a session', async ({ b
   const page = await context.newPage()
 
   const studentName = `Summary Header Test ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
     headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
@@ -536,19 +430,7 @@ test('confirming session with suggestedDifficulties upserts them to student prof
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: `Difficulty Upsert Test ${Date.now()}`,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: `Difficulty Upsert Test ${Date.now()}` })
 
   // Create a confirmed session with suggested difficulties
   const sessionRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
@@ -632,17 +514,8 @@ test('lesson dropdown in session log shows only lessons for the selected student
   const ts = Date.now()
 
   // Create two students
-  const createStudentA = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: { name: `Student A ${ts}`, learningLanguage: 'Spanish', cefrLevel: 'B1', interests: [], learningGoals: [], weaknesses: [], difficulties: [] },
-  })
-  const studentA = await createStudentA.json() as { id: string }
-
-  const createStudentB = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: { name: `Student B ${ts}`, learningLanguage: 'French', cefrLevel: 'A2', interests: [], learningGoals: [], weaknesses: [], difficulties: [] },
-  })
-  const studentB = await createStudentB.json() as { id: string }
+  const studentA = await createStudentViaApi(page, { name: `Student A ${ts}` })
+  const studentB = await createStudentViaApi(page, { name: `Student B ${ts}`, language: 'French', cefrLevel: 'A2' })
 
   // Create one lesson per student
   await page.request.post(`${API_BASE}/api/lessons`, {
@@ -679,20 +552,7 @@ test('unsaved-changes guard: back button with data shows discard confirmation', 
   const page = await context.newPage()
 
   const studentName = `Guard Test Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  expect(createRes.ok()).toBeTruthy()
-  const student = await createRes.json()
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
@@ -721,20 +581,7 @@ test('unsaved-changes guard: Keep editing returns to the form', async ({ browser
   const page = await context.newPage()
 
   const studentName = `Guard Keep Test ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  expect(createRes.ok()).toBeTruthy()
-  const student = await createRes.json()
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
@@ -760,20 +607,7 @@ test('start next session button navigates to log session page with planned topic
   const page = await context.newPage()
 
   const studentName = `Start Next Session Test ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  expect(createRes.ok()).toBeTruthy()
-  const student = await createRes.json()
+  const student = await createStudentViaApi(page, { name: studentName })
 
   // Create a session with NextSessionTopics set
   const sessionRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
@@ -833,20 +667,7 @@ test('unsaved-changes guard: back button on empty form navigates without confirm
   const page = await context.newPage()
 
   const studentName = `Guard Empty Test ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  expect(createRes.ok()).toBeTruthy()
-  const student = await createRes.json()
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
@@ -872,20 +693,7 @@ test('log session page: autosave creates session without submit button', async (
 
   try {
     const studentName = `Autosave Test Student ${Date.now()}`
-    const createRes = await page.request.post(`${API_BASE}/api/students`, {
-      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-      data: {
-        name: studentName,
-        learningLanguage: 'Spanish',
-        cefrLevel: 'B1',
-        interests: [],
-        learningGoals: [],
-        weaknesses: [],
-        difficulties: [],
-      },
-    })
-    expect(createRes.ok()).toBeTruthy()
-    const student = await createRes.json()
+    const student = await createStudentViaApi(page, { name: studentName })
 
     // Navigate directly to log-session page
     await page.goto(`/students/${student.id}/log-session`)
@@ -920,20 +728,7 @@ test('log session page: Done navigates back without saving if no changes made', 
 
   try {
     const studentName = `No Change Test ${Date.now()}`
-    const createRes = await page.request.post(`${API_BASE}/api/students`, {
-      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-      data: {
-        name: studentName,
-        learningLanguage: 'Spanish',
-        cefrLevel: 'A2',
-        interests: [],
-        learningGoals: [],
-        weaknesses: [],
-        difficulties: [],
-      },
-    })
-    expect(createRes.ok()).toBeTruthy()
-    const student = await createRes.json()
+    const student = await createStudentViaApi(page, { name: studentName, cefrLevel: 'A2' })
 
     await page.goto(`/students/${student.id}/log-session`)
     await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
@@ -960,20 +755,7 @@ test('session title: typing a title saves it and appears in session list and edi
 
   try {
     const studentName = `Title Test Student ${Date.now()}`
-    const createRes = await page.request.post(`${API_BASE}/api/students`, {
-      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-      data: {
-        name: studentName,
-        learningLanguage: 'Spanish',
-        cefrLevel: 'B1',
-        interests: [],
-        learningGoals: [],
-        weaknesses: [],
-        difficulties: [],
-      },
-    })
-    expect(createRes.ok()).toBeTruthy()
-    const student = await createRes.json() as { id: string }
+    const student = await createStudentViaApi(page, { name: studentName })
 
     await page.goto(`/students/${student.id}/log-session`)
     await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
@@ -1014,20 +796,7 @@ test('session title: blank title shows date fallback in session list', async ({ 
 
   try {
     const studentName = `No Title Student ${Date.now()}`
-    const createRes = await page.request.post(`${API_BASE}/api/students`, {
-      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-      data: {
-        name: studentName,
-        learningLanguage: 'Spanish',
-        cefrLevel: 'B1',
-        interests: [],
-        learningGoals: [],
-        weaknesses: [],
-        difficulties: [],
-      },
-    })
-    expect(createRes.ok()).toBeTruthy()
-    const student = await createRes.json() as { id: string }
+    const student = await createStudentViaApi(page, { name: studentName })
 
     await page.goto(`/students/${student.id}/log-session`)
     await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })

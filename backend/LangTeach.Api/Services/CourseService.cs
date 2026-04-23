@@ -341,6 +341,7 @@ public class CourseService : ICourseService
             StudentInterests: student is not null
                 ? JsonStorageHelper.DeserializeList<string>(student.Interests).ToArray()
                 : null,
+            // LearningGoals is a legacy field; migrate to ShortTermObjectives (see #855)
             StudentGoals: student is not null
                 ? LearningGoalHelper.FlattenGoals(student.LearningGoals)
                 : null,
