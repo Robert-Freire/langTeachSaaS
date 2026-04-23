@@ -99,6 +99,27 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void SystemPrompt_OmitsLearningGoalsLine_WhenGoalsArrayIsEmpty()
+    {
+        var ctx = BaseCtx("Ana") with { StudentGoals = [] };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Student profile:");
+        req.SystemPrompt.Should().NotContain("Learning goals:");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsLearningGoalsLine_WhenGoalsIsNull()
+    {
+        var ctx = BaseCtx("Ana") with { StudentGoals = null };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Learning goals:");
+    }
+
+    [Fact]
     public void SystemPrompt_OmitsInterestsLine_WhenInterestsArrayIsEmpty()
     {
         var ctx = BaseCtx("Ana") with { StudentInterests = [] };

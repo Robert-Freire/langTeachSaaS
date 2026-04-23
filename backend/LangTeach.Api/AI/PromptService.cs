@@ -424,6 +424,7 @@ public class PromptService : IPromptService
             if (interests.Length > 0)
                 sb.AppendLine($"- Interests: {string.Join(", ", interests)}");
 
+            // Legacy LearningGoals field; will be superseded by ShortTermObjectives (see #855)
             if (goals.Length > 0)
                 sb.AppendLine($"- Learning goals: {string.Join(", ", goals)}");
 
