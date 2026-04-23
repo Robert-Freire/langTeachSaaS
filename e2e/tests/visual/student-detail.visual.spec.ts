@@ -122,3 +122,20 @@ test('@visual student detail sessions tab - expanded row with editable fields', 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()
 })
+
+test('@visual student detail overview tab - with sessions', async ({ browser }) => {
+  fs.mkdirSync('screenshots', { recursive: true })
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const consoleErrors: string[] = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
+
+  await page.goto(`/students/${studentWithSessionsId}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('recent-sessions')).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.screenshot({ path: 'screenshots/student-detail-overview-sessions.png', fullPage: true })
+
+  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
+  await context.close()
+})
