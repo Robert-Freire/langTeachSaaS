@@ -29,6 +29,9 @@ public class StudentService : IStudentService
     private static readonly HashSet<string> AllowedWeaknessTypes =
         new(StringComparer.OrdinalIgnoreCase) { "grammatical", "lexical", "orthographic" };
 
+    private static readonly HashSet<string> AllowedObjectiveTypes =
+        new(StringComparer.OrdinalIgnoreCase) { "exam_prep", "communicative", "other" };
+
     private static readonly Dictionary<string, string> CanonicalSkillKeys =
         new(StringComparer.OrdinalIgnoreCase)
         {
@@ -318,8 +321,6 @@ public class StudentService : IStudentService
             throw new ValidationException($"BirthYear must be between 1920 and {currentYear}.");
     }
 
-    private static readonly HashSet<string> ValidObjectiveTypes = ["exam_prep", "communicative", "other"];
-
     private static void ValidateShortTermObjectives(List<ShortTermObjectiveDto> objectives)
     {
         if (objectives.Count > 10)
@@ -330,8 +331,8 @@ public class StudentService : IStudentService
                 throw new ValidationException("Each ShortTermObjective must have an Id (max 50 characters).");
             if (string.IsNullOrWhiteSpace(o.Text) || o.Text.Length > 200)
                 throw new ValidationException("Each ShortTermObjective Text must be between 1 and 200 characters.");
-            if (!ValidObjectiveTypes.Contains(o.ObjectiveType))
-                throw new ValidationException($"ShortTermObjective ObjectiveType must be one of: {string.Join(", ", ValidObjectiveTypes)}.");
+            if (!AllowedObjectiveTypes.Contains(o.ObjectiveType))
+                throw new ValidationException($"ShortTermObjective ObjectiveType must be one of: {string.Join(", ", AllowedObjectiveTypes)}.");
         }
     }
 
