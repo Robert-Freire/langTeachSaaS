@@ -63,7 +63,8 @@ public class StudentsController : ControllerBase
         }
         catch (ValidationException ex)
         {
-            return ValidationProblem(ex.Message);
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
         }
     }
 
@@ -111,7 +112,8 @@ public class StudentsController : ControllerBase
         }
         catch (ValidationException ex)
         {
-            return ValidationProblem(ex.Message);
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
         }
     }
 
@@ -144,7 +146,8 @@ public class StudentsController : ControllerBase
         }
         catch (System.ComponentModel.DataAnnotations.ValidationException ex)
         {
-            return ValidationProblem(ex.Message);
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
         }
     }
 
@@ -165,7 +168,8 @@ public class StudentsController : ControllerBase
         }
         catch (System.ComponentModel.DataAnnotations.ValidationException ex)
         {
-            return ValidationProblem(ex.Message);
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
         }
     }
 
