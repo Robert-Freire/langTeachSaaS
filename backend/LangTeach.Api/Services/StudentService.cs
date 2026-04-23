@@ -246,8 +246,7 @@ public class StudentService : IStudentService
             s.CountryOfOrigin,
             s.CityOfOrigin,
             s.CountryOfResidence,
-            s.CityOfResidence,
-            s.ReasonForStudying
+            s.CityOfResidence
         ),
         new StudentProfileDto(
             JsonStorageHelper.DeserializeList<string>(s.Interests),
@@ -259,7 +258,8 @@ public class StudentService : IStudentService
                 str => new StudentWeaknessDto(str, "grammatical")),
             JsonStorageHelper.DeserializeList<DifficultyDto>(s.Difficulties),
             JsonStorageHelper.DeserializeList<ShortTermObjectiveDto>(s.ShortTermObjectives),
-            pedagogicalTodos.Select(ToTodo).ToList()
+            pedagogicalTodos.Select(ToTodo).ToList(),
+            s.ReasonForStudying
         ),
         new StudentCommercialDto(
             s.IsActive,

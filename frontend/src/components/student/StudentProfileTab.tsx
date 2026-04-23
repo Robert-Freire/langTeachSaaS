@@ -245,15 +245,15 @@ function MotivationHero({
   onSave?: (value: string) => Promise<void>
 }) {
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(student.identity.reasonForStudying ?? '')
+  const [draft, setDraft] = useState(student.profile.reasonForStudying ?? '')
   const { savedVisible, fieldError: saveError, onSaveSuccess, onSaveError } = useBlurSave()
-  const lastSavedRef = useRef(student.identity.reasonForStudying ?? '')
+  const lastSavedRef = useRef(student.profile.reasonForStudying ?? '')
   const isRevertingRef = useRef(false)
 
   // Keep lastSavedRef in sync with server state when not editing; draft is set from prop on edit enter
   useEffect(() => {
-    if (!editing) lastSavedRef.current = student.identity.reasonForStudying ?? ''
-  }, [student.identity.reasonForStudying, editing])
+    if (!editing) lastSavedRef.current = student.profile.reasonForStudying ?? ''
+  }, [student.profile.reasonForStudying, editing])
 
   async function handleBlur() {
     if (!onSave || isRevertingRef.current) {
@@ -316,20 +316,20 @@ function MotivationHero({
         ) : (
           <div className="flex flex-col lg:flex-row lg:items-start gap-4">
             <div className="flex-1 min-w-0">
-              {student.identity.reasonForStudying ? (
+              {student.profile.reasonForStudying ? (
                 <div
                   className="flex items-start gap-2 cursor-pointer"
-                  onClick={() => { const v = student.identity.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
+                  onClick={() => { const v = student.profile.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.identity.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.profile.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
                   data-testid="reason-edit-trigger"
                 >
                   <p
                     className="font-manrope text-2xl font-extrabold text-primary italic leading-snug flex-1"
                     data-testid="reason-quote"
                   >
-                    &ldquo;{student.identity.reasonForStudying}&rdquo;
+                    &ldquo;{student.profile.reasonForStudying}&rdquo;
                   </p>
                   {onSave && (
                     <span
@@ -344,10 +344,10 @@ function MotivationHero({
               ) : (
                 <div
                   className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => { const v = student.identity.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
+                  onClick={() => { const v = student.profile.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.identity.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.profile.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
                   data-testid="reason-edit-trigger"
                 >
                   <p className="font-manrope text-lg italic text-zinc-400 flex-1" data-testid="reason-quote">

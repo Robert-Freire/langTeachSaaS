@@ -151,8 +151,8 @@ describe('Onboarding', () => {
       id: 'stu-1', name: 'Test Student', learningLanguage: 'English',
       level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
       languages: { nativeLanguages: [], spokenLanguages: [] },
-      identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null },
-      profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [] },
+      identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+      profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
       commercial: { isActive: true, isCorporate: false, rate: null },
       createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
     }
@@ -273,8 +273,8 @@ describe('Onboarding', () => {
       id: 'stu-1', name: 'Test Student', learningLanguage: 'English',
       level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
       languages: { nativeLanguages: [], spokenLanguages: [] },
-      identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null },
-      profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [] },
+      identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+      profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
       commercial: { isActive: true, isCorporate: false, rate: null },
       createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
     }

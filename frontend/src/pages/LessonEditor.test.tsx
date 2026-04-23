@@ -405,7 +405,7 @@ describe('LessonEditor', () => {
         studentName: 'Ana',
       })
       mockGetStudents.mockResolvedValue({
-        items: [{ id: 'student-1', name: 'Ana', learningLanguage: 'Spanish', level: { cefrLevel: 'A1', officialCefrLevel: null, skillLevelOverrides: {} }, languages: { nativeLanguages: [], spokenLanguages: [] }, identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null }, profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [] }, commercial: { isActive: true, isCorporate: false, rate: null }, createdAt: '', updatedAt: '' }],
+        items: [{ id: 'student-1', name: 'Ana', learningLanguage: 'Spanish', level: { cefrLevel: 'A1', officialCefrLevel: null, skillLevelOverrides: {} }, languages: { nativeLanguages: [], spokenLanguages: [] }, identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null }, profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null }, commercial: { isActive: true, isCorporate: false, rate: null }, createdAt: '', updatedAt: '' }],
         totalCount: 1,
       })
       renderWithProviders()
@@ -426,7 +426,7 @@ describe('LessonEditor', () => {
         studentName: 'Ana',
       })
       mockGetStudents.mockResolvedValue({
-        items: [{ id: 'student-1', name: 'Ana', learningLanguage: 'Spanish', level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} }, languages: { nativeLanguages: [], spokenLanguages: [] }, identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null }, profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [] }, commercial: { isActive: true, isCorporate: false, rate: null }, createdAt: '', updatedAt: '' }],
+        items: [{ id: 'student-1', name: 'Ana', learningLanguage: 'Spanish', level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} }, languages: { nativeLanguages: [], spokenLanguages: [] }, identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null }, profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null }, commercial: { isActive: true, isCorporate: false, rate: null }, createdAt: '', updatedAt: '' }],
         totalCount: 1,
       })
       renderWithProviders()

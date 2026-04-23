@@ -58,7 +58,6 @@ export interface StudentIdentity {
   cityOfOrigin: string | null
   countryOfResidence: string | null
   cityOfResidence: string | null
-  reasonForStudying: string | null
 }
 
 export interface StudentProfile {
@@ -70,6 +69,7 @@ export interface StudentProfile {
   difficulties: Difficulty[]
   shortTermObjectives: ShortTermObjective[]
   teachingTodos: TeachingTodo[]
+  reasonForStudying: string | null
 }
 
 export interface StudentCommercial {

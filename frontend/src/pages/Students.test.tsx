@@ -57,13 +57,13 @@ function makeStudent(overrides: FlatStudentOverrides = {}): studentsApi.Student 
       profession: overrides.profession ?? null,
       countryOfOrigin: overrides.countryOfOrigin ?? null, cityOfOrigin: overrides.cityOfOrigin ?? null,
       countryOfResidence: overrides.countryOfResidence ?? null, cityOfResidence: overrides.cityOfResidence ?? null,
-      reasonForStudying: overrides.reasonForStudying ?? null,
     },
     profile: {
       interests: overrides.interests ?? [], personalNotes: overrides.personalNotes ?? null,
       teachingNotes: overrides.teachingNotes ?? null, learningGoals: overrides.learningGoals ?? [],
       weaknesses: overrides.weaknesses ?? [], difficulties: overrides.difficulties ?? [],
       shortTermObjectives: overrides.shortTermObjectives ?? [], teachingTodos: overrides.teachingTodos ?? [],
+      reasonForStudying: overrides.reasonForStudying ?? null,
     },
     commercial: {
       isActive: overrides.isActive ?? true, isCorporate: overrides.isCorporate ?? false,

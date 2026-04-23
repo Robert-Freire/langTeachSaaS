@@ -51,7 +51,7 @@ const MOCK_STUDENT: studentsApi.Student = {
   learningLanguage: 'Spanish',
   level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
   languages: { nativeLanguages: ['English'], spokenLanguages: ['French'] },
-  identity: { birthYear: 1995, age: null, profession: 'Designer', countryOfOrigin: 'United Kingdom', cityOfOrigin: 'London', countryOfResidence: 'Spain', cityOfResidence: 'Barcelona', reasonForStudying: 'Moved to Barcelona for work' },
+  identity: { birthYear: 1995, age: null, profession: 'Designer', countryOfOrigin: 'United Kingdom', cityOfOrigin: 'London', countryOfResidence: 'Spain', cityOfResidence: 'Barcelona' },
   profile: {
     interests: ['travel', 'cooking'],
     personalNotes: null,
@@ -61,6 +61,7 @@ const MOCK_STUDENT: studentsApi.Student = {
     difficulties: [],
     shortTermObjectives: [{ id: 'obj-1', text: 'Complete DELE B1 exam prep', targetDate: '2026-06-01', objectiveType: 'exam_prep' as const }],
     teachingTodos: [{ id: 'todo-1', text: 'Send homework exercises', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Pending', coveredInSessionLogId: null }],
+    reasonForStudying: 'Moved to Barcelona for work',
   },
   commercial: { isActive: true, isCorporate: false, rate: '30 EUR/h' },
   createdAt: '2026-01-01T00:00:00Z',
@@ -480,8 +481,8 @@ describe('StudentDetail - Profile tab sections', () => {
   it('shows empty states when no profile data', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...MOCK_STUDENT,
-      identity: { ...MOCK_STUDENT.identity, birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null },
-      profile: { ...MOCK_STUDENT.profile, learningGoals: [], shortTermObjectives: [], teachingTodos: [] },
+      identity: { ...MOCK_STUDENT.identity, birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+      profile: { ...MOCK_STUDENT.profile, learningGoals: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
     })
     await openProfileTab()
     // identity sidebar is collapsed (no data) — show-empty-sections toggle is visible instead
