@@ -794,14 +794,18 @@ test('teaching todos: add, toggle covered, verify ordering on overview tab', asy
 
   await page.getByTestId(`todo-toggle-${todoId}`).click()
 
-  // Wait for covered state (strikethrough)
+  // Done item disappears from default view; reveal it via the toggle
+  await expect(page.getByTestId('todo-show-completed-toggle')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await page.getByTestId('todo-show-completed-toggle').click()
+
+  // Wait for done state (strikethrough)
   await expect(page.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
 
-  // Verify ordering: pending todo should appear before covered
+  // Verify ordering: pending todo should appear before done
   const reorderedItems = page.getByTestId('teaching-todo-item')
   const firstText = await reorderedItems.first().getByTestId(/^todo-text-/).textContent()
   const lastText = await reorderedItems.last().getByTestId(/^todo-text-/).textContent()
-  expect(firstText).not.toEqual(todoText) // the one we covered should now be last
+  expect(firstText).not.toEqual(todoText) // the one we marked done should now be last
   expect(lastText).toEqual(todoText)
 
   // Cleanup: delete the student
@@ -862,24 +866,30 @@ test('teaching todos: toggle persists after reload and can be toggled back to pe
   const toggleTestId = await toggleBtn.getAttribute('data-testid')
   const todoId = toggleTestId!.replace('todo-toggle-', '')
 
-  // Toggle to covered — this previously returned 400
+  // Toggle to done
   const coverDone = waitForTodoWrite()
   await toggleBtn.click()
   await coverDone
+
+  // Done item is hidden by default; reveal it to verify strikethrough
+  await expect(page.getByTestId('todo-show-completed-toggle')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await page.getByTestId('todo-show-completed-toggle').click()
   await expect(page.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
 
-  // Reload and verify persistence
+  // Reload and verify persistence — reveal completed again after reload
   await page.reload()
   await expect(page.getByTestId('teaching-todos-card')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await expect(page.getByTestId('todo-show-completed-toggle')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await page.getByTestId('todo-show-completed-toggle').click()
   await expect(page.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
 
-  // Toggle back to pending
+  // Toggle back to pending (toggle button now visible since completed are shown)
   const pendingDone = waitForTodoWrite()
   await page.getByTestId(`todo-toggle-${todoId}`).click()
   await pendingDone
   await expect(page.getByTestId(`todo-text-${todoId}`)).not.toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
 
-  // Reload again and verify pending state persists
+  // Reload again and verify pending state persists (item visible by default, no completed toggle)
   await page.reload()
   await expect(page.getByTestId('teaching-todos-card')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
   await expect(page.getByTestId(`todo-text-${todoId}`)).not.toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
