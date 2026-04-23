@@ -18,8 +18,7 @@ public record StudentIdentityDto(
     string? CountryOfOrigin,
     string? CityOfOrigin,
     string? CountryOfResidence,
-    string? CityOfResidence,
-    string? ReasonForStudying
+    string? CityOfResidence
 );
 
 public record StudentProfileDto(
@@ -30,7 +29,8 @@ public record StudentProfileDto(
     List<StudentWeaknessDto> Weaknesses,
     List<DifficultyDto> Difficulties,
     List<ShortTermObjectiveDto> ShortTermObjectives,
-    List<TeachingTodoDto> TeachingTodos
+    List<TeachingTodoDto> TeachingTodos,
+    string? ReasonForStudying
 );
 
 public record StudentCommercialDto(

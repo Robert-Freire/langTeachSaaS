@@ -36,7 +36,7 @@ const FULL_STUDENT: Student = {
   learningLanguage: 'Spanish',
   level: { cefrLevel: 'C1', officialCefrLevel: null, skillLevelOverrides: { Reading: 'B2', Writing: 'B1' } },
   languages: { nativeLanguages: ['Italian'], spokenLanguages: ['English', 'French'] },
-  identity: { birthYear: 1998, age: null, profession: 'Film student', countryOfOrigin: 'Italy', cityOfOrigin: 'Rome', countryOfResidence: 'Spain', cityOfResidence: 'Barcelona', reasonForStudying: 'Vive en Barcelona' },
+  identity: { birthYear: 1998, age: null, profession: 'Film student', countryOfOrigin: 'Italy', cityOfOrigin: 'Rome', countryOfResidence: 'Spain', cityOfResidence: 'Barcelona' },
   profile: {
     interests: ['cinema', 'cooking'],
     personalNotes: 'Muy motivado, cinefilo.',
@@ -55,6 +55,7 @@ const FULL_STUDENT: Student = {
       { id: 'todo-1', text: 'Enviar ejercicios de por/para', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'pending', coveredInSessionLogId: null },
       { id: 'todo-2', text: 'Explicar diferencia', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'covered', coveredInSessionLogId: 'session-1' },
     ],
+    reasonForStudying: 'Vive en Barcelona',
   },
   commercial: { isActive: true, isCorporate: false, rate: '25 EUR/h' },
   createdAt: '2026-01-01T00:00:00Z',
@@ -63,8 +64,8 @@ const FULL_STUDENT: Student = {
 
 const EMPTY_STUDENT: Student = {
   ...FULL_STUDENT,
-  identity: { ...FULL_STUDENT.identity, birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null },
-  profile: { ...FULL_STUDENT.profile, personalNotes: null, teachingNotes: null, interests: [], learningGoals: [], shortTermObjectives: [], weaknesses: [], difficulties: [], teachingTodos: [] },
+  identity: { ...FULL_STUDENT.identity, birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+  profile: { ...FULL_STUDENT.profile, personalNotes: null, teachingNotes: null, interests: [], learningGoals: [], shortTermObjectives: [], weaknesses: [], difficulties: [], teachingTodos: [], reasonForStudying: null },
   languages: { ...FULL_STUDENT.languages, nativeLanguages: [], spokenLanguages: [] },
   level: { ...FULL_STUDENT.level, skillLevelOverrides: {} },
 }

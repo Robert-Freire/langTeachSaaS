@@ -175,8 +175,8 @@ describe('CourseNew wizard', () => {
         id: 'student-1', name: 'Ana', learningLanguage: 'English',
         level: { cefrLevel: 'A1', officialCefrLevel: null, skillLevelOverrides: {} },
         languages: { nativeLanguages: [], spokenLanguages: [] },
-        identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null },
-        profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [] },
+        identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+        profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
         commercial: { isActive: true, isCorporate: false, rate: null },
         createdAt: '2026-01-01', updatedAt: '2026-01-01',
       }],
@@ -226,8 +226,8 @@ describe('CourseNew wizard', () => {
         id: 'student-1', name: 'Marco', learningLanguage: 'Spanish',
         level: { cefrLevel: 'A1', officialCefrLevel: null, skillLevelOverrides: {} },
         languages: { nativeLanguages: ['Italian'], spokenLanguages: [] },
-        identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null },
-        profile: { interests: ['football'], personalNotes: null, teachingNotes: null, learningGoals: [{ id: '1', text: 'get a job in Barcelona', children: [] }], weaknesses: [{ description: 'ser vs estar', weaknessType: 'grammatical' as const }], difficulties: [{ id: 'x', description: 'subjunctive', competency: 'Grammar', subcategory: '', severity: 'high', trend: 'stable', status: 'Active' }], shortTermObjectives: [], teachingTodos: [] },
+        identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+        profile: { interests: ['football'], personalNotes: null, teachingNotes: null, learningGoals: [{ id: '1', text: 'get a job in Barcelona', children: [] }], weaknesses: [{ description: 'ser vs estar', weaknessType: 'grammatical' as const }], difficulties: [{ id: 'x', description: 'subjunctive', competency: 'Grammar', subcategory: '', severity: 'high', trend: 'stable', status: 'Active' }], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
         commercial: { isActive: true, isCorporate: false, rate: null },
         createdAt: '2026-01-01', updatedAt: '2026-01-01',
       }],
@@ -263,7 +263,7 @@ describe('CourseNew wizard', () => {
   })
 
   it('renders teacher notes textarea when a student is selected', async () => {
-    const STUDENT = { items: [{ id: 's1', name: 'Marco', learningLanguage: 'Spanish', level: { cefrLevel: 'A1', officialCefrLevel: null, skillLevelOverrides: {} }, languages: { nativeLanguages: [], spokenLanguages: [] }, identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null }, profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [] }, commercial: { isActive: true, isCorporate: false, rate: null }, createdAt: '2026-01-01', updatedAt: '2026-01-01' }], totalCount: 1, page: 1, pageSize: 100 }
+    const STUDENT = { items: [{ id: 's1', name: 'Marco', learningLanguage: 'Spanish', level: { cefrLevel: 'A1', officialCefrLevel: null, skillLevelOverrides: {} }, languages: { nativeLanguages: [], spokenLanguages: [] }, identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null }, profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null }, commercial: { isActive: true, isCorporate: false, rate: null }, createdAt: '2026-01-01', updatedAt: '2026-01-01' }], totalCount: 1, page: 1, pageSize: 100 }
     vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT)
     const user = userEvent.setup()
     wrapper(<CourseNew />)
@@ -282,7 +282,7 @@ describe('CourseNew wizard', () => {
   })
 
   it('includes teacher notes in the create course request', async () => {
-    const STUDENT = { items: [{ id: 's1', name: 'Marco', learningLanguage: 'Spanish', level: { cefrLevel: 'A1', officialCefrLevel: null, skillLevelOverrides: {} }, languages: { nativeLanguages: [], spokenLanguages: [] }, identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null }, profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [] }, commercial: { isActive: true, isCorporate: false, rate: null }, createdAt: '2026-01-01', updatedAt: '2026-01-01' }], totalCount: 1, page: 1, pageSize: 100 }
+    const STUDENT = { items: [{ id: 's1', name: 'Marco', learningLanguage: 'Spanish', level: { cefrLevel: 'A1', officialCefrLevel: null, skillLevelOverrides: {} }, languages: { nativeLanguages: [], spokenLanguages: [] }, identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null }, profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null }, commercial: { isActive: true, isCorporate: false, rate: null }, createdAt: '2026-01-01', updatedAt: '2026-01-01' }], totalCount: 1, page: 1, pageSize: 100 }
     vi.mocked(studentsApi.getStudents).mockResolvedValue(STUDENT)
     const user = userEvent.setup()
     const mockCreate = vi.fn().mockResolvedValue({ id: 'course-1' })
@@ -390,8 +390,8 @@ describe('CourseNew wizard', () => {
       id: 'student-1', name: 'Marco', learningLanguage: 'Spanish',
       level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
       languages: { nativeLanguages: [], spokenLanguages: [] },
-      identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null },
-      profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [] },
+      identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+      profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
       commercial: { isActive: true, isCorporate: false, rate: null },
       createdAt: '2026-01-01', updatedAt: '2026-01-01',
     }
