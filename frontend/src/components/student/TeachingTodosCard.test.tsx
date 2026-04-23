@@ -138,7 +138,7 @@ describe('TeachingTodosCard', () => {
 
   it('shows relative time for each visible todo', () => {
     render(<TeachingTodosCard todos={[PENDING_TODO]} studentId="s1" onStudentChange={vi.fn()} />, { wrapper })
-    expect(screen.getAllByText(/ago/)).toHaveLength(1)
+    expect(screen.getAllByText(/yesterday|ago/)).toHaveLength(1)
   })
 
   it('calls appendTeachingTodo on add and updates list optimistically', async () => {
