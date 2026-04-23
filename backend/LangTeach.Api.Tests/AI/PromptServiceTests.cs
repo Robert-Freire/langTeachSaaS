@@ -120,6 +120,38 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void SystemPrompt_EmitsShortTermObjectives_WithTypeLabel()
+    {
+        var ctx = BaseCtx("Ana") with
+        {
+            StudentShortTermObjectives =
+            [
+                new StudentObjectiveContext("Pass DELE B2", new DateOnly(2026, 6, 30), "exam_prep"),
+                new StudentObjectiveContext("Handle a job interview", null, "communicative"),
+                new StudentObjectiveContext("General goal", null, "other")
+            ]
+        };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Short-term objectives:");
+        req.SystemPrompt.Should().Contain("[Exam prep] Pass DELE B2");
+        req.SystemPrompt.Should().Contain("[Communicative] Handle a job interview");
+        req.SystemPrompt.Should().Contain("General goal");
+        req.SystemPrompt.Should().NotContain("[Other]");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsShortTermObjectivesSection_WhenListIsNull()
+    {
+        var ctx = BaseCtx("Ana") with { StudentShortTermObjectives = null };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Short-term objectives:");
+    }
+
+    [Fact]
     public void SystemPrompt_OmitsInterestsLine_WhenInterestsArrayIsEmpty()
     {
         var ctx = BaseCtx("Ana") with { StudentInterests = [] };

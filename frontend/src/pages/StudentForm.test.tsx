@@ -114,7 +114,7 @@ function makeMockStudent(overrides: {
   learningGoals?: { id: string; text: string; children: unknown[] }[];
   weaknesses?: { description: string; weaknessType: string }[];
   difficulties?: { id: string; description: string; competency: string; subcategory: string; severity: string; trend: string; status: string }[];
-  shortTermObjectives?: { id: string; text: string; targetDate?: string }[];
+  shortTermObjectives?: { id: string; text: string; targetDate?: string; objectiveType?: string }[];
   teachingTodos?: { id: string; text: string; status: string; createdAt: string; sourceSessionLogId: null; coveredInSessionLogId: null }[];
   isActive?: boolean; isCorporate?: boolean; rate?: string | null;
   createdAt?: string; updatedAt?: string;

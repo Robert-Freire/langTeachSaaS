@@ -29,6 +29,9 @@ public class StudentService : IStudentService
     private static readonly HashSet<string> AllowedWeaknessTypes =
         new(StringComparer.OrdinalIgnoreCase) { "grammatical", "lexical", "orthographic" };
 
+    private static readonly HashSet<string> AllowedObjectiveTypes =
+        new(StringComparer.Ordinal) { "exam_prep", "communicative", "other" };
+
     private static readonly Dictionary<string, string> CanonicalSkillKeys =
         new(StringComparer.OrdinalIgnoreCase)
         {
@@ -328,6 +331,8 @@ public class StudentService : IStudentService
                 throw new ValidationException("Each ShortTermObjective must have an Id (max 50 characters).");
             if (string.IsNullOrWhiteSpace(o.Text) || o.Text.Length > 200)
                 throw new ValidationException("Each ShortTermObjective Text must be between 1 and 200 characters.");
+            if (!AllowedObjectiveTypes.Contains(o.ObjectiveType))
+                throw new ValidationException($"ShortTermObjective ObjectiveType must be one of: {string.Join(", ", AllowedObjectiveTypes)}.");
         }
     }
 

@@ -15,10 +15,13 @@ export interface Difficulty {
   status: string
 }
 
+export type ObjectiveType = 'exam_prep' | 'communicative' | 'other'
+
 export interface ShortTermObjective {
   id: string
   text: string
   targetDate: string | null
+  objectiveType: ObjectiveType
 }
 
 export interface LearningGoalItem {

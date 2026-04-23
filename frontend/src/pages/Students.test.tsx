@@ -450,7 +450,7 @@ describe('Students page', () => {
     vi.mocked(studentsApi.getStudents).mockResolvedValue(
       makeListResponse([makeStudent({
         id: 'abc-123',
-        shortTermObjectives: [{ id: 'obj1', text: 'DELE B2 exam', targetDate }],
+        shortTermObjectives: [{ id: 'obj1', text: 'DELE B2 exam', targetDate, objectiveType: 'exam_prep' as const }],
       })])
     )
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue({

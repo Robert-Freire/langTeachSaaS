@@ -644,7 +644,19 @@ export function StudentProfileTab({
                           data-testid="objective-row"
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <span className="text-[#1A1B22] font-medium">{obj.text}</span>
+                            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                              {obj.objectiveType === 'exam_prep' && (
+                                <span className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700" data-testid="objective-type-badge">
+                                  Exam prep
+                                </span>
+                              )}
+                              {obj.objectiveType === 'communicative' && (
+                                <span className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700" data-testid="objective-type-badge">
+                                  Communicative
+                                </span>
+                              )}
+                              <span className="text-[#1A1B22] font-medium">{obj.text}</span>
+                            </div>
                             {urgency === 'overdue' && (
                               <span className="text-xs font-bold text-red-600 shrink-0 uppercase" data-testid="objective-overdue-label">
                                 OVERDUE
