@@ -1,3 +1,3 @@
 namespace LangTeach.Api.DTOs;
 
-public record ShortTermObjectiveDto(string Id, string Text, DateOnly? TargetDate);
+public record ShortTermObjectiveDto(string Id, string Text, DateOnly? TargetDate, string ObjectiveType = "other");

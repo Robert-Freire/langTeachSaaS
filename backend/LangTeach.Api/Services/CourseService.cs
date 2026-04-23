@@ -358,7 +358,12 @@ public class CourseService : ICourseService
                     .Where(d => string.Equals(d.Status, "Active", StringComparison.OrdinalIgnoreCase))
                     .ToArray()
                 : null,
-            TeacherNotes: req.TeacherNotes
+            TeacherNotes: req.TeacherNotes,
+            StudentShortTermObjectives: student is not null
+                ? JsonStorageHelper.DeserializeList<ShortTermObjectiveDto>(student.ShortTermObjectives)
+                    .Select(o => new StudentObjectiveContext(o.Text, o.TargetDate, o.ObjectiveType))
+                    .ToList()
+                : null
         );
 
     private static CurriculumEntryDto MapEntryToDto(CurriculumEntry e) =>

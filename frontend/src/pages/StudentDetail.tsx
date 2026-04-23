@@ -240,7 +240,7 @@ export default function StudentDetail() {
 
   const { mutateAsync: saveShortTermObjective } = useMutation({
     mutationFn: (text: string) => {
-      const newObj = { id: newId(), text, targetDate: null }
+      const newObj = { id: newId(), text, targetDate: null, objectiveType: 'other' as const }
       return updateStudent(id!, { ...buildStudentPayload(), shortTermObjectives: [...student!.profile.shortTermObjectives, newObj] })
     },
     onSuccess: () => {

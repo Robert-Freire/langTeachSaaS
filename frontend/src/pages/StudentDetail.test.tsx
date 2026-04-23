@@ -59,7 +59,7 @@ const MOCK_STUDENT: studentsApi.Student = {
     learningGoals: [{ id: '1', text: 'Travel', children: [] }, { id: '2', text: 'DELE B1', children: [] }],
     weaknesses: [],
     difficulties: [],
-    shortTermObjectives: [{ id: 'obj-1', text: 'Complete DELE B1 exam prep', targetDate: '2026-06-01' }],
+    shortTermObjectives: [{ id: 'obj-1', text: 'Complete DELE B1 exam prep', targetDate: '2026-06-01', objectiveType: 'exam_prep' as const }],
     teachingTodos: [{ id: 'todo-1', text: 'Send homework exercises', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Pending', coveredInSessionLogId: null }],
   },
   commercial: { isActive: true, isCorporate: false, rate: '30 EUR/h' },
@@ -393,7 +393,7 @@ describe('StudentDetail - Primary objective in header', () => {
   it('shows days remaining for objective with future date', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...MOCK_STUDENT,
-      profile: { ...MOCK_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Future objective', targetDate: '2030-01-01' }] },
+      profile: { ...MOCK_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Future objective', targetDate: '2030-01-01', objectiveType: 'other' as const }] },
     })
     wrapper()
     await screen.findByTestId('primary-objective-card')

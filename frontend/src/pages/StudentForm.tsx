@@ -109,7 +109,7 @@ function ObjectiveRow({
 }: {
   obj: ShortTermObjective
   autoFocus: boolean
-  onUpdate: (id: string, field: 'text' | 'targetDate', value: string | null) => void
+  onUpdate: (id: string, field: 'text' | 'targetDate' | 'objectiveType', value: string | null) => void
   onRemove: (id: string) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -133,6 +133,16 @@ function ObjectiveRow({
         data-testid="objective-text-input"
       />
       <div className="flex items-center gap-2">
+        <select
+          value={obj.objectiveType ?? 'other'}
+          onChange={(e) => onUpdate(obj.id, 'objectiveType', e.target.value)}
+          className="h-9 rounded-md border border-zinc-200 bg-white px-2 py-1 text-sm text-[#1A1B22] focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          data-testid="objective-type-select"
+        >
+          <option value="exam_prep">Exam prep</option>
+          <option value="communicative">Communicative</option>
+          <option value="other">Other</option>
+        </select>
         <input
           type="date"
           value={obj.targetDate ?? ''}
@@ -254,7 +264,7 @@ export default function StudentForm() {
       setCountryOfResidence(existing.identity.countryOfResidence ?? '')
       setCityOfResidence(existing.identity.cityOfResidence ?? '')
       setReasonForStudying(existing.identity.reasonForStudying ?? '')
-      setShortTermObjectives(existing.profile.shortTermObjectives ?? [])
+      setShortTermObjectives((existing.profile.shortTermObjectives ?? []).map((o) => ({ ...o, objectiveType: o.objectiveType ?? 'other' })))
       setIsActive(existing.commercial.isActive ?? true)
       setIsCorporate(existing.commercial.isCorporate ?? false)
       setRate(existing.commercial.rate ?? '')
@@ -480,11 +490,11 @@ export default function StudentForm() {
   function addObjective() {
     const id = newId()
     setNewObjectiveId(id)
-    setShortTermObjectives((prev) => [...prev, { id, text: '', targetDate: null }])
+    setShortTermObjectives((prev) => [...prev, { id, text: '', targetDate: null, objectiveType: 'other' as const }])
     if (isEdit) saveNow()
   }
 
-  function updateObjective(objId: string, field: 'text' | 'targetDate', value: string | null) {
+  function updateObjective(objId: string, field: 'text' | 'targetDate' | 'objectiveType', value: string | null) {
     setShortTermObjectives((prev) =>
       prev.map((o) => (o.id === objId ? { ...o, [field]: value } : o))
     )
