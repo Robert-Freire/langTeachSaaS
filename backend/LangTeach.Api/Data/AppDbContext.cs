@@ -305,7 +305,7 @@ public class AppDbContext : DbContext
             e.HasIndex(f => new { f.TeacherId, f.StudentId, f.Kind });
             e.Property(f => f.Text).HasMaxLength(500).IsRequired();
             e.Property(f => f.Status).HasDefaultValue("pending");
-            e.Property(f => f.Kind).HasMaxLength(20).HasDefaultValue("operational").IsRequired();
+            e.Property(f => f.Kind).HasMaxLength(20).HasDefaultValue(TeacherFollowupKinds.Operational).IsRequired();
             e.HasOne(f => f.Teacher)
              .WithMany()
              .HasForeignKey(f => f.TeacherId)

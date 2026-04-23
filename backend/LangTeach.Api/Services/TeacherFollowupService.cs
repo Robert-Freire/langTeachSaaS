@@ -64,7 +64,7 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
             StudentId = request.StudentId,
             Text = request.Text,
             Status = "pending",
-            Kind = request.Kind ?? "operational",
+            Kind = request.Kind ?? TeacherFollowupKinds.Operational,
             CreatedAt = DateTime.UtcNow,
             DueDate = request.DueDate,
             SourceSessionLogId = request.SourceSessionLogId,

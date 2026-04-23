@@ -7,7 +7,7 @@ public class TeacherFollowup
     public Guid? StudentId { get; set; }
     public string Text { get; set; } = string.Empty;
     public string Status { get; set; } = "pending"; // pending | done | covered | dismissed
-    public string Kind { get; set; } = "operational"; // operational | pedagogical
+    public string Kind { get; set; } = TeacherFollowupKinds.Operational; // see TeacherFollowupKinds
     public DateTime CreatedAt { get; set; }
     public DateOnly? DueDate { get; set; }
     public DateTime? CompletedAt { get; set; }

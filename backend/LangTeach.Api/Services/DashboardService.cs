@@ -226,9 +226,9 @@ public class DashboardService : IDashboardService
                 s.NativeLanguages,
                 s.IsActive,
                 s.ShortTermObjectives,
-                TeachingTodosCount = s.TeacherFollowups.Count(f => f.Kind == "pedagogical"),
+                TeachingTodosCount = s.TeacherFollowups.Count(f => f.Kind == TeacherFollowupKinds.Pedagogical),
                 PendingTodos = s.TeacherFollowups
-                    .Where(f => f.Kind == "pedagogical" && f.Status == "pending")
+                    .Where(f => f.Kind == TeacherFollowupKinds.Pedagogical && f.Status == "pending")
                     .OrderBy(f => f.CreatedAt)
                     // Projection matches TeachingTodoDtoProjection.Compiled — keep in sync.
                     .Select(f => new TeachingTodoDto(
