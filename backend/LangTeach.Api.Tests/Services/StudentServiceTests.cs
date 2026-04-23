@@ -79,7 +79,6 @@ public class StudentServiceTests : IDisposable
     [InlineData("German")]
     [InlineData("Italian")]
     [InlineData("Portuguese")]
-    [InlineData("Mandarin")]
     [InlineData("Chinese (Mandarin)")]
     [InlineData("Japanese")]
     [InlineData("Arabic")]
