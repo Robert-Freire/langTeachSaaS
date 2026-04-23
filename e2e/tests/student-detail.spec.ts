@@ -52,6 +52,36 @@ test('student detail overview tab: three-card row renders in correct order', asy
   }
 })
 
+test('student detail overview tab: last-session summary card surfaces most recent session', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    // Diego Seed has 2 session log entries
+    await page.goto('/students')
+    await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+
+    const diegoSeed = page.getByText('Diego Seed').first()
+    await expect(diegoSeed).toBeVisible({ timeout: UI_TIMEOUT })
+    await diegoSeed.click()
+
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+    await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    const card = page.getByTestId('last-session-card')
+    await expect(card).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Read-only card: date badge + title are always present when a session exists
+    await expect(card.getByTestId('last-session-date')).toBeVisible()
+    await expect(card.getByTestId('last-session-title')).toBeVisible()
+
+    // No edit controls inside the card
+    await expect(card.locator('button, input, textarea')).toHaveCount(0)
+  } finally {
+    await context.close()
+  }
+})
+
 test('student detail overview tab: compact session cards and view-all link', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
