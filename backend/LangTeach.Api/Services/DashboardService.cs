@@ -230,6 +230,7 @@ public class DashboardService : IDashboardService
                 PendingTodos = s.TeacherFollowups
                     .Where(f => f.Kind == "pedagogical" && f.Status == "pending")
                     .OrderBy(f => f.CreatedAt)
+                    // Projection matches TeachingTodoDtoProjection.Compiled — keep in sync.
                     .Select(f => new TeachingTodoDto(
                         f.Id.ToString(), f.Text, f.CreatedAt,
                         f.SourceSessionLogId != null ? f.SourceSessionLogId.ToString() : null,
