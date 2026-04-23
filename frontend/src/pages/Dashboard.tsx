@@ -31,6 +31,7 @@ export default function Dashboard() {
     )
   }
 
+  // Intentional divergence: skeleton (not spinner) because Dashboard has multiple distinct regions; use this pattern only for similarly complex multi-region pages.
   if (isLoading) {
     return (
       <div className="space-y-5" data-testid="dashboard-skeleton">
