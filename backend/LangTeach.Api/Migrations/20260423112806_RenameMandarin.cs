@@ -14,7 +14,6 @@ namespace LangTeach.Api.Migrations
                 UPDATE Students
                 SET NativeLanguages = REPLACE(NativeLanguages, '"Mandarin"', '"Chinese (Mandarin)"')
                 WHERE NativeLanguages LIKE '%"Mandarin"%'
-                  AND NativeLanguages NOT LIKE '%"Chinese (Mandarin)"%'
                 """);
         }
 
