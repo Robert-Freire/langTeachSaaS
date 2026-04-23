@@ -236,8 +236,8 @@ export default function LogSession() {
     : null
   const sessionNumber = isEditMode ? (editSessionRank ?? '?') : nonCancelledSessions.length + 1
   const pendingFollowups = allFollowups.filter(f => f.status === 'pending')
-  const activeDifficulties = student?.difficulties.filter(d => d.status === 'Active') ?? []
-  const pendingTodos = student?.teachingTodos.filter(t => t.status.toLowerCase() === 'pending') ?? []
+  const activeDifficulties = student?.profile.difficulties.filter(d => d.status === 'Active') ?? []
+  const pendingTodos = student?.profile.teachingTodos.filter(t => t.status.toLowerCase() === 'pending') ?? []
   const showPrevHomework = (isEditMode && prevHomeworkStatus !== null) || (prevSession !== null && prevSession.homeworkAssigned !== null)
   const plannedForToday = prevSession?.nextSessionTopics ?? null
 
@@ -547,7 +547,7 @@ export default function LogSession() {
     )
   }
 
-  const sortedObjectives = [...(student.shortTermObjectives)].sort((a, b) => {
+  const sortedObjectives = [...(student.profile.shortTermObjectives)].sort((a, b) => {
     const order = { overdue: 0, critical: 1, normal: 2 }
     const ua = order[getObjectiveUrgency(a.targetDate)]
     const ub = order[getObjectiveUrgency(b.targetDate)]
@@ -582,19 +582,19 @@ export default function LogSession() {
               <h2 className="font-headline text-base font-bold text-[#1A1B22] leading-tight" data-testid="student-name">
                 {student.name}
               </h2>
-              <CefrBadge level={student.cefrLevel} data-testid="cefr-badge" />
+              <CefrBadge level={student.level.cefrLevel} data-testid="cefr-badge" />
             </div>
-            {student.nativeLanguages.length > 0 && (
-              <p className="text-xs text-zinc-500 mt-0.5">{student.nativeLanguages.join(', ')}</p>
+            {student.languages.nativeLanguages.length > 0 && (
+              <p className="text-xs text-zinc-500 mt-0.5">{student.languages.nativeLanguages.join(', ')}</p>
             )}
             {sessionsLoading ? (
               <Skeleton className="h-3 w-20 mt-1" />
             ) : (
               <p className="text-xs text-zinc-400 mt-0.5" data-testid="session-number">Session #{sessionNumber}</p>
             )}
-            {Object.keys(student.skillLevelOverrides).length > 0 && (
+            {Object.keys(student.level.skillLevelOverrides).length > 0 && (
               <p className="text-xs text-zinc-400 mt-1" data-testid="skill-levels-row">
-                {Object.entries(student.skillLevelOverrides).map(([skill, level], i) => (
+                {Object.entries(student.level.skillLevelOverrides).map(([skill, level], i) => (
                   <span key={skill}>
                     {i > 0 && <span className="mx-1 text-zinc-300">|</span>}
                     {skill} {level}
@@ -727,7 +727,7 @@ export default function LogSession() {
         ) : null}
 
         {/* Working Memory (teacher notes) */}
-        {student.teachingNotes && (
+        {student.profile.teachingNotes && (
           <PanelSection label="Working Memory">
             <div
               className="rounded-lg bg-white px-3 py-2.5"
@@ -735,9 +735,9 @@ export default function LogSession() {
               data-testid="working-memory-card"
             >
               <p className={`text-sm text-zinc-600 leading-snug whitespace-pre-wrap ${!workingMemoryExpanded ? 'line-clamp-4' : ''}`}>
-                {student.teachingNotes}
+                {student.profile.teachingNotes}
               </p>
-              {student.teachingNotes.length > 200 && (
+              {student.profile.teachingNotes.length > 200 && (
                 <button
                   type="button"
                   onClick={() => setWorkingMemoryExpanded(v => !v)}

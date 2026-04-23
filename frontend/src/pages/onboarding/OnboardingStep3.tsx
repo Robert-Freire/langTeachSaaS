@@ -49,7 +49,7 @@ export default function OnboardingStep3({ student, onBack, onSkip }: OnboardingS
       title: title.trim(),
       topic: topic.trim(),
       language: student.learningLanguage,
-      cefrLevel: student.cefrLevel,
+      cefrLevel: student.level.cefrLevel,
       durationMinutes: 60,
       studentId: student.id,
     })
@@ -66,7 +66,7 @@ export default function OnboardingStep3({ student, onBack, onSkip }: OnboardingS
 
       <div className="flex items-center gap-2 text-sm text-zinc-600">
         <Badge variant="outline" className="border-zinc-200">{student.learningLanguage}</Badge>
-        <Badge variant="outline" className="border-zinc-200">{student.cefrLevel}</Badge>
+        <Badge variant="outline" className="border-zinc-200">{student.level.cefrLevel}</Badge>
         <span>for {student.name}</span>
       </div>
 

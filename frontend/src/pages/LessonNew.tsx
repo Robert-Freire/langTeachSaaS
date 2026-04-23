@@ -108,10 +108,10 @@ export default function LessonNew() {
     if (!student) return
 
     const willFillLanguage = !!student.learningLanguage
-    const willFillLevel = !!student.cefrLevel
+    const willFillLevel = !!student.level.cefrLevel
 
     if (willFillLanguage) setLanguage(student.learningLanguage)
-    if (willFillLevel) setCefrLevel(student.cefrLevel)
+    if (willFillLevel) setCefrLevel(student.level.cefrLevel)
 
     if (willFillLanguage && willFillLevel) setAutoFilled('both')
     else if (willFillLanguage) setAutoFilled('language')

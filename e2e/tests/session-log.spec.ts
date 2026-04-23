@@ -568,12 +568,12 @@ test('confirming session with suggestedDifficulties upserts them to student prof
   const studentRes = await page.request.get(`${API_BASE}/api/students/${student.id}`, {
     headers: { Authorization: 'Bearer test-token' },
   })
-  const studentData = await studentRes.json() as { difficulties: { competency: string; subcategory: string; severity: string; status: string }[] }
-  expect(studentData.difficulties).toHaveLength(1)
-  expect(studentData.difficulties[0].competency).toBe('Grammar')
-  expect(studentData.difficulties[0].subcategory).toBe('ser/estar')
-  expect(studentData.difficulties[0].severity).toBe('high')
-  expect(studentData.difficulties[0].status).toBe('Active')
+  const studentData = await studentRes.json() as { profile: { difficulties: { competency: string; subcategory: string; severity: string; status: string }[] } }
+  expect(studentData.profile.difficulties).toHaveLength(1)
+  expect(studentData.profile.difficulties[0].competency).toBe('Grammar')
+  expect(studentData.profile.difficulties[0].subcategory).toBe('ser/estar')
+  expect(studentData.profile.difficulties[0].severity).toBe('high')
+  expect(studentData.profile.difficulties[0].status).toBe('Active')
 
   await context.close()
 })
@@ -616,11 +616,11 @@ test('confirming session updates existing difficulty in profile', async ({ brows
   const studentRes = await page.request.get(`${API_BASE}/api/students/${student.id}`, {
     headers: { Authorization: 'Bearer test-token' },
   })
-  const studentData = await studentRes.json() as { difficulties: { description: string; severity: string; status: string }[] }
-  expect(studentData.difficulties).toHaveLength(1)
-  expect(studentData.difficulties[0].description).toBe('Still confusing ser and estar')
-  expect(studentData.difficulties[0].severity).toBe('medium')
-  expect(studentData.difficulties[0].status).toBe('Active')
+  const studentData = await studentRes.json() as { profile: { difficulties: { description: string; severity: string; status: string }[] } }
+  expect(studentData.profile.difficulties).toHaveLength(1)
+  expect(studentData.profile.difficulties[0].description).toBe('Still confusing ser and estar')
+  expect(studentData.profile.difficulties[0].severity).toBe('medium')
+  expect(studentData.profile.difficulties[0].status).toBe('Active')
 
   await context.close()
 })

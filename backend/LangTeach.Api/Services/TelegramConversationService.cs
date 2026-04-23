@@ -204,7 +204,7 @@ public class TelegramConversationService : ITelegramConversationService
         long chatId, Guid teacherId, Guid studentId, string notes, CancellationToken ct)
     {
         var student = await _studentService.GetByIdAsync(teacherId, studentId, ct);
-        var knownDifficulties = student?.Difficulties
+        var knownDifficulties = student?.Profile.Difficulties
             .Select(d => d.Description)
             .Where(d => !string.IsNullOrWhiteSpace(d))
             .ToList();

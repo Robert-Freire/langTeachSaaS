@@ -245,15 +245,15 @@ function MotivationHero({
   onSave?: (value: string) => Promise<void>
 }) {
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(student.reasonForStudying ?? '')
+  const [draft, setDraft] = useState(student.identity.reasonForStudying ?? '')
   const { savedVisible, fieldError: saveError, onSaveSuccess, onSaveError } = useBlurSave()
-  const lastSavedRef = useRef(student.reasonForStudying ?? '')
+  const lastSavedRef = useRef(student.identity.reasonForStudying ?? '')
   const isRevertingRef = useRef(false)
 
   // Keep lastSavedRef in sync with server state when not editing; draft is set from prop on edit enter
   useEffect(() => {
-    if (!editing) lastSavedRef.current = student.reasonForStudying ?? ''
-  }, [student.reasonForStudying, editing])
+    if (!editing) lastSavedRef.current = student.identity.reasonForStudying ?? ''
+  }, [student.identity.reasonForStudying, editing])
 
   async function handleBlur() {
     if (!onSave || isRevertingRef.current) {
@@ -316,20 +316,20 @@ function MotivationHero({
         ) : (
           <div className="flex flex-col lg:flex-row lg:items-start gap-4">
             <div className="flex-1 min-w-0">
-              {student.reasonForStudying ? (
+              {student.identity.reasonForStudying ? (
                 <div
                   className="flex items-start gap-2 cursor-pointer"
-                  onClick={() => { const v = student.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
+                  onClick={() => { const v = student.identity.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.identity.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
                   data-testid="reason-edit-trigger"
                 >
                   <p
                     className="font-manrope text-2xl font-extrabold text-primary italic leading-snug flex-1"
                     data-testid="reason-quote"
                   >
-                    &ldquo;{student.reasonForStudying}&rdquo;
+                    &ldquo;{student.identity.reasonForStudying}&rdquo;
                   </p>
                   {onSave && (
                     <span
@@ -344,10 +344,10 @@ function MotivationHero({
               ) : (
                 <div
                   className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => { const v = student.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
+                  onClick={() => { const v = student.identity.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.identity.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
                   data-testid="reason-edit-trigger"
                 >
                   <p className="font-manrope text-lg italic text-zinc-400 flex-1" data-testid="reason-quote">
@@ -367,11 +367,11 @@ function MotivationHero({
             </div>
 
             {/* Interest chips pulled into banner */}
-            {student.interests.length > 0 && (
+            {student.profile.interests.length > 0 && (
               <div className="flex flex-col gap-1.5 lg:max-w-[180px]" data-testid="hero-interests">
                 <p className="text-[0.6rem] font-bold uppercase tracking-widest text-indigo-500 opacity-70">Interests</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {student.interests.map((interest) => (
+                  {student.profile.interests.map((interest) => (
                     <span
                       key={interest}
                       className="inline-block bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full px-3 py-1"
@@ -401,7 +401,7 @@ function InterestsSection({
   student: Student
   onSave?: (value: string[]) => Promise<void>
 }) {
-  const [chips, setChips] = useState<string[]>(student.interests)
+  const [chips, setChips] = useState<string[]>(student.profile.interests)
   const [inputValue, setInputValue] = useState('')
   const { savedVisible, fieldError: saveError, onSaveSuccess, onSaveError } = useBlurSave()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -527,22 +527,22 @@ export function StudentProfileTab({
 }: Props) {
   const [showEmptySections, setShowEmptySections] = useState(false)
 
-  const safePersonalNotes = isSentinel(student.personalNotes) ? null : student.personalNotes
+  const safePersonalNotes = isSentinel(student.profile.personalNotes) ? null : student.profile.personalNotes
   const parsedPersonalNotes = parseNotes(safePersonalNotes)
-  const parsedTeachingNotes = parseNotes(student.teachingNotes)
+  const parsedTeachingNotes = parseNotes(student.profile.teachingNotes)
 
   const hasAbout = !!(
-    student.birthYear ||
-    student.profession ||
-    student.countryOfOrigin ||
-    student.cityOfOrigin ||
-    student.countryOfResidence ||
-    student.cityOfResidence
+    student.identity.birthYear ||
+    student.identity.profession ||
+    student.identity.countryOfOrigin ||
+    student.identity.cityOfOrigin ||
+    student.identity.countryOfResidence ||
+    student.identity.cityOfResidence
   )
-  const hasWorkingMemory = !!(safePersonalNotes || student.teachingNotes)
+  const hasWorkingMemory = !!(safePersonalNotes || student.profile.teachingNotes)
 
-  const location = [student.cityOfResidence, student.countryOfResidence].filter(Boolean).join(', ')
-  const origin = [student.cityOfOrigin, student.countryOfOrigin].filter(Boolean).join(', ')
+  const location = [student.identity.cityOfResidence, student.identity.countryOfResidence].filter(Boolean).join(', ')
+  const origin = [student.identity.cityOfOrigin, student.identity.countryOfOrigin].filter(Boolean).join(', ')
 
   // TWM right sidebar is always visible; only left column dark card can be collapsed
   const anySectionCollapsed = !hasWorkingMemory && !showEmptySections
@@ -589,9 +589,9 @@ export function StudentProfileTab({
                     />
                   )}
                 </div>
-                {student.learningGoals.length > 0 ? (
+                {student.profile.learningGoals.length > 0 ? (
                   <ul className="space-y-1 list-none">
-                    {student.learningGoals.map((goal) => (
+                    {student.profile.learningGoals.map((goal) => (
                       <li key={goal.id}>
                         <div className="flex items-start gap-2 text-sm text-[#1A1B22]">
                           <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
@@ -627,9 +627,9 @@ export function StudentProfileTab({
                     />
                   )}
                 </div>
-                {student.shortTermObjectives.length > 0 ? (
+                {student.profile.shortTermObjectives.length > 0 ? (
                   <ul className="space-y-2">
-                    {student.shortTermObjectives.map((obj) => {
+                    {student.profile.shortTermObjectives.map((obj) => {
                       const urgency = getObjectiveUrgency(obj.targetDate)
                       return (
                         <li
@@ -671,12 +671,12 @@ export function StudentProfileTab({
               </div>
 
               {/* Skill Assessment - horizontal large square badges */}
-              {Object.keys(student.skillLevelOverrides ?? {}).length > 0 && (
+              {Object.keys(student.level.skillLevelOverrides ?? {}).length > 0 && (
                 <div data-testid="profile-skill-assessment">
                   <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3">Skill Assessment</p>
                   <div className="grid grid-cols-4 gap-3">
-                    {SKILL_ORDER.filter((s) => student.skillLevelOverrides?.[s]).map((skill) => (
-                      <SkillBadgeSquare key={skill} skill={skill} level={student.skillLevelOverrides[skill]} />
+                    {SKILL_ORDER.filter((s) => student.level.skillLevelOverrides?.[s]).map((skill) => (
+                      <SkillBadgeSquare key={skill} skill={skill} level={student.level.skillLevelOverrides[skill]} />
                     ))}
                   </div>
                 </div>
@@ -691,11 +691,11 @@ export function StudentProfileTab({
                 {difficultyToggleError && (
                   <span className="text-xs text-red-500 mb-2 block" data-testid="difficulty-toggle-error">{difficultyToggleError}</span>
                 )}
-                {student.difficulties.length === 0 && student.weaknesses.length === 0 ? (
+                {student.profile.difficulties.length === 0 && student.profile.weaknesses.length === 0 ? (
                   <EmptyState text="No focus areas tracked" />
                 ) : (
                   <>
-                    {student.difficulties.length > 0 && (
+                    {student.profile.difficulties.length > 0 && (
                       <div className="overflow-x-auto rounded-lg border border-[#F4F2FD]">
                         <table className="w-full text-sm">
                           <thead className="bg-[#F4F2FD]">
@@ -707,7 +707,7 @@ export function StudentProfileTab({
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-[#F4F2FD]">
-                            {student.difficulties.map((d) => {
+                            {student.profile.difficulties.map((d) => {
                               const isCovered = d.status === 'Covered'
                               const trendLabel = d.trend.charAt(0).toUpperCase() + d.trend.slice(1)
                               const trendColor =
@@ -767,11 +767,11 @@ export function StudentProfileTab({
                         </table>
                       </div>
                     )}
-                    {student.weaknesses.length > 0 && (
+                    {student.profile.weaknesses.length > 0 && (
                       <div className="mt-3" data-testid="profile-weaknesses">
                         <p className="text-xs text-zinc-400 font-medium mb-1.5">Areas to Improve</p>
                         <div className="space-y-1.5">
-                          {student.weaknesses.map((w, i) => {
+                          {student.profile.weaknesses.map((w, i) => {
                             const typeLabel = w.weaknessType.charAt(0).toUpperCase() + w.weaknessType.slice(1)
                             const typeColor =
                               w.weaknessType === 'grammatical'
@@ -833,7 +833,7 @@ export function StudentProfileTab({
                 )}
 
                 {/* Teaching notes (Pedagogical Observations) */}
-                {(parsedTeachingNotes || student.teachingNotes) && (
+                {(parsedTeachingNotes || student.profile.teachingNotes) && (
                   <div className={parsedPersonalNotes || safePersonalNotes ? 'pt-4 border-t border-white/10' : ''}>
                     <p className="text-[0.625rem] font-bold uppercase tracking-widest text-white/50 mb-2">
                       Pedagogical Observations
@@ -851,13 +851,13 @@ export function StudentProfileTab({
                       </div>
                     ) : (
                       <p className="text-sm text-white/90 whitespace-pre-wrap leading-relaxed border-l-2 border-indigo-400/50 pl-3">
-                        {student.teachingNotes}
+                        {student.profile.teachingNotes}
                       </p>
                     )}
                   </div>
                 )}
 
-                {!safePersonalNotes && !student.teachingNotes && (
+                {!safePersonalNotes && !student.profile.teachingNotes && (
                   <p className="text-sm text-white/40 italic">No notes added yet</p>
                 )}
               </div>
@@ -879,10 +879,10 @@ export function StudentProfileTab({
             <SectionHeader>Teacher&apos;s Working Memory</SectionHeader>
             {hasAbout ? (
               <div>
-                {student.profession && <FieldValue label="Profession" value={student.profession} />}
-                {student.birthYear != null && (() => {
-                  const age = new Date().getFullYear() - student.birthYear!
-                  return <FieldValue label="Born" value={`${student.birthYear} (${age})`} />
+                {student.identity.profession && <FieldValue label="Profession" value={student.identity.profession} />}
+                {student.identity.birthYear != null && (() => {
+                  const age = new Date().getFullYear() - student.identity.birthYear!
+                  return <FieldValue label="Born" value={`${student.identity.birthYear} (${age})`} />
                 })()}
                 {origin && <FieldValue label="Origin" value={origin} />}
                 {location && <FieldValue label="Residence" value={location} />}
@@ -896,11 +896,11 @@ export function StudentProfileTab({
           <section data-testid="profile-language-ecosystem">
             <SectionHeader>Language Ecosystem</SectionHeader>
             <div className="space-y-2">
-              {student.nativeLanguages.length > 0 && (
+              {student.languages.nativeLanguages.length > 0 && (
                 <div className="flex items-baseline gap-2 py-1">
                   <span className="text-xs text-zinc-400 shrink-0 w-20">Native</span>
                   <div className="flex flex-wrap gap-1.5">
-                    {student.nativeLanguages.map((lang) => (
+                    {student.languages.nativeLanguages.map((lang) => (
                       <span key={lang} className="inline-flex items-center gap-1 text-sm text-[#1A1B22]">
                         {lang}
                         <span className="inline-flex items-center justify-center rounded px-1 py-0.5 text-[0.625rem] font-bold uppercase bg-zinc-100 text-zinc-500">
@@ -911,29 +911,29 @@ export function StudentProfileTab({
                   </div>
                 </div>
               )}
-              {student.spokenLanguages.length > 0 && (
+              {student.languages.spokenLanguages.length > 0 && (
                 <div className="flex items-baseline gap-2 py-1">
                   <span className="text-xs text-zinc-400 shrink-0 w-20">Spoken</span>
-                  <span className="text-sm text-[#1A1B22]">{student.spokenLanguages.join(', ')}</span>
+                  <span className="text-sm text-[#1A1B22]">{student.languages.spokenLanguages.join(', ')}</span>
                 </div>
               )}
               <div className="flex items-baseline gap-2 py-1">
                 <span className="text-xs text-zinc-400 shrink-0 w-20">Learning</span>
                 <span className="text-sm text-[#1A1B22] flex items-center gap-2">
                   {student.learningLanguage}
-                  <CefrBadge level={student.cefrLevel} />
+                  <CefrBadge level={student.level.cefrLevel} />
                 </span>
               </div>
-              {student.officialCefrLevel && (
+              {student.level.officialCefrLevel && (
                 <div className="flex items-baseline gap-2 py-1">
                   <span className="text-xs text-zinc-400 shrink-0 w-20">Official</span>
                   <span className="text-sm text-[#1A1B22] flex items-center gap-1">
                     <span className="text-xs text-zinc-500">Official:</span>
-                    <CefrBadge level={student.officialCefrLevel} />
+                    <CefrBadge level={student.level.officialCefrLevel} />
                   </span>
                 </div>
               )}
-              {student.nativeLanguages.length === 0 && student.spokenLanguages.length === 0 && (
+              {student.languages.nativeLanguages.length === 0 && student.languages.spokenLanguages.length === 0 && (
                 <EmptyState text="No native or spoken languages added yet" />
               )}
             </div>
@@ -949,22 +949,22 @@ export function StudentProfileTab({
               <Badge
                 variant="outline"
                 className={`text-xs border-none ${
-                  student.isActive
+                  student.commercial.isActive
                     ? 'bg-green-100 text-green-700'
                     : 'bg-zinc-100 text-zinc-500'
                 }`}
                 data-testid="active-status-badge"
               >
-                {student.isActive ? 'Active' : 'Former'}
+                {student.commercial.isActive ? 'Active' : 'Former'}
               </Badge>
               <Badge
                 variant="outline"
                 className="text-xs border-none bg-zinc-100 text-zinc-600"
               >
-                {student.isCorporate ? 'Corporate' : 'Private'}
+                {student.commercial.isCorporate ? 'Corporate' : 'Private'}
               </Badge>
-              {student.rate && (
-                <span className="text-sm text-[#1A1B22]">{student.rate}</span>
+              {student.commercial.rate && (
+                <span className="text-sm text-[#1A1B22]">{student.commercial.rate}</span>
               )}
             </div>
           </section>
@@ -973,7 +973,7 @@ export function StudentProfileTab({
           <section data-testid="profile-teaching-todos">
             <SectionHeader>Ideas para Clases</SectionHeader>
             <TeachingTodosCard
-              todos={student.teachingTodos}
+              todos={student.profile.teachingTodos}
               studentId={student.id}
               onStudentChange={onStudentChange}
             />
