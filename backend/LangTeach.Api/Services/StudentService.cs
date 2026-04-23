@@ -227,34 +227,44 @@ public class StudentService : IStudentService
         s.Id,
         s.Name,
         s.LearningLanguage,
-        s.CefrLevel,
-        JsonStorageHelper.DeserializeList<string>(s.Interests),
-        s.PersonalNotes,
-        s.TeachingNotes,
-        JsonStorageHelper.DeserializeList<string>(s.NativeLanguages),
-        LearningGoalHelper.Deserialize(s.LearningGoals),
-        JsonStorageHelper.DeserializeListWithStringFallback<StudentWeaknessDto>(
-            s.Weaknesses,
-            str => new StudentWeaknessDto(str, "grammatical")),
-        JsonStorageHelper.DeserializeList<DifficultyDto>(s.Difficulties),
+        new StudentLevelDto(
+            s.CefrLevel,
+            s.OfficialCefrLevel,
+            DeserializeSkillLevelOverrides(s.SkillLevelOverrides)
+        ),
+        new StudentLanguagesDto(
+            JsonStorageHelper.DeserializeList<string>(s.NativeLanguages),
+            JsonStorageHelper.DeserializeList<string>(s.SpokenLanguages)
+        ),
+        new StudentIdentityDto(
+            s.BirthYear,
+            s.GetAge(),
+            s.Profession,
+            s.CountryOfOrigin,
+            s.CityOfOrigin,
+            s.CountryOfResidence,
+            s.CityOfResidence,
+            s.ReasonForStudying
+        ),
+        new StudentProfileDto(
+            JsonStorageHelper.DeserializeList<string>(s.Interests),
+            s.PersonalNotes,
+            s.TeachingNotes,
+            LearningGoalHelper.Deserialize(s.LearningGoals),
+            JsonStorageHelper.DeserializeListWithStringFallback<StudentWeaknessDto>(
+                s.Weaknesses,
+                str => new StudentWeaknessDto(str, "grammatical")),
+            JsonStorageHelper.DeserializeList<DifficultyDto>(s.Difficulties),
+            JsonStorageHelper.DeserializeList<ShortTermObjectiveDto>(s.ShortTermObjectives),
+            pedagogicalTodos.Select(ToTodo).ToList()
+        ),
+        new StudentCommercialDto(
+            s.IsActive,
+            s.IsCorporate,
+            s.Rate
+        ),
         s.CreatedAt,
-        s.UpdatedAt,
-        s.BirthYear,
-        s.GetAge(),
-        s.Profession,
-        s.CountryOfOrigin,
-        s.CityOfOrigin,
-        s.CountryOfResidence,
-        s.CityOfResidence,
-        s.ReasonForStudying,
-        s.OfficialCefrLevel,
-        JsonStorageHelper.DeserializeList<ShortTermObjectiveDto>(s.ShortTermObjectives),
-        s.IsActive,
-        s.IsCorporate,
-        s.Rate,
-        JsonStorageHelper.DeserializeList<string>(s.SpokenLanguages),
-        pedagogicalTodos.Select(ToTodo).ToList(),
-        DeserializeSkillLevelOverrides(s.SkillLevelOverrides)
+        s.UpdatedAt
     );
 
     private static TeachingTodoDto ToTodo(TeacherFollowup f) => new(

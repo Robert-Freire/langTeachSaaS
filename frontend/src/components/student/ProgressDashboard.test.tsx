@@ -9,31 +9,13 @@ const baseStudent: Student = {
   id: 'student-1',
   name: 'Ana Martins',
   learningLanguage: 'Spanish',
-  cefrLevel: 'B1',
-  interests: [],
-  personalNotes: null,
-  teachingNotes: null,
-  nativeLanguages: ['Portuguese'],
-  learningGoals: [],
-  weaknesses: [],
-  difficulties: [],
+  level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: { Reading: 'B2', Speaking: 'B1', Listening: 'B1', Writing: 'A2' } },
+  languages: { nativeLanguages: ['Portuguese'], spokenLanguages: [] },
+  identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null },
+  profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [] },
+  commercial: { isActive: true, isCorporate: false, rate: null },
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
-  birthYear: null,
-  profession: null,
-  countryOfOrigin: null,
-  cityOfOrigin: null,
-  countryOfResidence: null,
-  cityOfResidence: null,
-  reasonForStudying: null,
-  officialCefrLevel: null,
-  shortTermObjectives: [],
-  isActive: true,
-  isCorporate: false,
-  rate: null,
-  spokenLanguages: [],
-  teachingTodos: [],
-  skillLevelOverrides: { Reading: 'B2', Speaking: 'B1', Listening: 'B1', Writing: 'A2' },
 }
 
 const baseSession: SessionLog = {
@@ -102,8 +84,7 @@ describe('ProgressDashboard', () => {
     // baseline B1 (3), Listening=A1 (1) => gap=2, Writing=A2 (2) => gap=1 (no amber)
     const student = {
       ...baseStudent,
-      cefrLevel: 'B1',
-      skillLevelOverrides: { Reading: 'B2', Speaking: 'B1', Listening: 'A1', Writing: 'A2' },
+      level: { ...baseStudent.level, cefrLevel: 'B1', skillLevelOverrides: { Reading: 'B2', Speaking: 'B1', Listening: 'A1', Writing: 'A2' } },
     }
     renderProgress(student)
     const listeningBar = screen.getByTestId('skill-bar-listening')
@@ -130,7 +111,7 @@ describe('ProgressDashboard', () => {
   })
 
   it('shows empty state when no skill overrides', () => {
-    const student = { ...baseStudent, skillLevelOverrides: {} }
+    const student = { ...baseStudent, level: { ...baseStudent.level, skillLevelOverrides: {} } }
     renderProgress(student)
     expect(screen.getByText('No skill assessments recorded yet.')).toBeInTheDocument()
   })
@@ -176,7 +157,7 @@ describe('ProgressDashboard', () => {
   it('shows covered difficulty with Covered badge and competency label', () => {
     const student = {
       ...baseStudent,
-      difficulties: [
+      profile: { ...baseStudent.profile, difficulties: [
         {
           id: 'd1',
           description: 'Por vs Para',
@@ -186,7 +167,7 @@ describe('ProgressDashboard', () => {
           trend: 'stable',
           status: 'Covered',
         },
-      ],
+      ] },
     }
     renderProgress(student)
     expect(screen.getByTestId('difficulties-section')).toBeInTheDocument()
@@ -200,7 +181,7 @@ describe('ProgressDashboard', () => {
     const recentDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
     const student = {
       ...baseStudent,
-      difficulties: [
+      profile: { ...baseStudent.profile, difficulties: [
         {
           id: 'd1',
           description: 'Subjuntivo',
@@ -210,7 +191,7 @@ describe('ProgressDashboard', () => {
           trend: 'stable',
           status: 'Active',
         },
-      ],
+      ] },
     }
     const sessions = [
       {
@@ -229,7 +210,7 @@ describe('ProgressDashboard', () => {
     const oldDate = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString() // 5 weeks ago
     const student = {
       ...baseStudent,
-      difficulties: [
+      profile: { ...baseStudent.profile, difficulties: [
         {
           id: 'd1',
           description: 'Ser vs Estar',
@@ -239,7 +220,7 @@ describe('ProgressDashboard', () => {
           trend: 'stable',
           status: 'Active',
         },
-      ],
+      ] },
     }
     const sessions = [
       {
@@ -255,7 +236,7 @@ describe('ProgressDashboard', () => {
   it('shows active difficulty with Stale badge when not recently mentioned', () => {
     const student = {
       ...baseStudent,
-      difficulties: [
+      profile: { ...baseStudent.profile, difficulties: [
         {
           id: 'd1',
           description: 'Ser vs Estar',
@@ -265,7 +246,7 @@ describe('ProgressDashboard', () => {
           trend: 'stable',
           status: 'Active',
         },
-      ],
+      ] },
     }
     renderProgress(student, [])
     expect(screen.getByText('Stale')).toBeInTheDocument()
@@ -303,7 +284,7 @@ describe('ProgressDashboard', () => {
     const longDescription = 'Very long difficulty description that gets truncated in the UI but shown in full on hover'
     const student = {
       ...baseStudent,
-      difficulties: [
+      profile: { ...baseStudent.profile, difficulties: [
         {
           id: 'd-tooltip',
           description: longDescription,
@@ -313,7 +294,7 @@ describe('ProgressDashboard', () => {
           trend: 'stable',
           status: 'Active',
         },
-      ],
+      ] },
     }
     renderProgress(student)
     // Tooltip trigger wraps the description — hover to open

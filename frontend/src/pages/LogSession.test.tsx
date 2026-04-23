@@ -67,31 +67,22 @@ const SAMPLE_STUDENT: Student = {
   id: STUDENT_ID,
   name: 'Ana Seed',
   learningLanguage: 'Spanish',
-  cefrLevel: 'B1',
-  interests: ['reading'],
-  personalNotes: null,
-  teachingNotes: null,
-  nativeLanguages: ['Portuguese'],
-  learningGoals: [],
-  weaknesses: [],
-  difficulties: [],
+  level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
+  languages: { nativeLanguages: ['Portuguese'], spokenLanguages: [] },
+  identity: {
+    birthYear: null, age: null, profession: null,
+    countryOfOrigin: null, cityOfOrigin: null,
+    countryOfResidence: null, cityOfResidence: null,
+    reasonForStudying: null,
+  },
+  profile: {
+    interests: ['reading'], personalNotes: null, teachingNotes: null,
+    learningGoals: [], weaknesses: [], difficulties: [],
+    shortTermObjectives: [], teachingTodos: [],
+  },
+  commercial: { isActive: true, isCorporate: false, rate: null },
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
-  birthYear: null,
-  profession: null,
-  countryOfOrigin: null,
-  cityOfOrigin: null,
-  countryOfResidence: null,
-  cityOfResidence: null,
-  reasonForStudying: null,
-  officialCefrLevel: null,
-  shortTermObjectives: [],
-  isActive: true,
-  isCorporate: false,
-  rate: null,
-  spokenLanguages: [],
-  teachingTodos: [],
-  skillLevelOverrides: {},
 }
 
 const SAMPLE_SESSION: SessionLog = {
@@ -255,7 +246,7 @@ describe('LogSession', () => {
     }
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...SAMPLE_STUDENT,
-      teachingTodos: [todo],
+      profile: { ...SAMPLE_STUDENT.profile, teachingTodos: [todo] },
     })
     renderLogSession()
     await screen.findByTestId('teaching-todo-item')
@@ -346,7 +337,7 @@ describe('LogSession', () => {
       id: 'todo-1', text: 'Review grammar', status: 'Pending',
       createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, coveredInSessionLogId: null,
     }
-    vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...SAMPLE_STUDENT, teachingTodos: [todo] })
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...SAMPLE_STUDENT, profile: { ...SAMPLE_STUDENT.profile, teachingTodos: [todo] } })
     renderLogSession()
     await screen.findByTestId('teaching-todo-checkbox')
     fireEvent.click(screen.getByTestId('teaching-todo-checkbox'))
@@ -772,7 +763,7 @@ describe('LogSession — left panel context + metadata polish', () => {
   it('shows skill level overrides when available', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...SAMPLE_STUDENT,
-      skillLevelOverrides: { Speaking: 'B1', Writing: 'A2' },
+      level: { ...SAMPLE_STUDENT.level, skillLevelOverrides: { Speaking: 'B1', Writing: 'A2' } },
     })
     renderLogSession()
     await screen.findByTestId('skill-levels-row')
@@ -789,7 +780,7 @@ describe('LogSession — left panel context + metadata polish', () => {
   it('shows working memory card when teachingNotes available', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...SAMPLE_STUDENT,
-      teachingNotes: 'Prefers visual examples. Struggles with subjunctive.',
+      profile: { ...SAMPLE_STUDENT.profile, teachingNotes: 'Prefers visual examples. Struggles with subjunctive.' },
     })
     renderLogSession()
     await screen.findByTestId('working-memory-card')
@@ -806,10 +797,10 @@ describe('LogSession — left panel context + metadata polish', () => {
     const longDesc = 'A'.repeat(100)
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...SAMPLE_STUDENT,
-      difficulties: [{
+      profile: { ...SAMPLE_STUDENT.profile, difficulties: [{
         id: 'd1', description: longDesc, competency: 'Grammar',
         subcategory: 'Verbs', severity: 'high', trend: 'stable', status: 'Active',
-      }],
+      }] },
     })
     renderLogSession()
     await screen.findByTestId('difficulty-item')
@@ -820,10 +811,10 @@ describe('LogSession — left panel context + metadata polish', () => {
   it('does not show expand toggle for short difficulty descriptions', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...SAMPLE_STUDENT,
-      difficulties: [{
+      profile: { ...SAMPLE_STUDENT.profile, difficulties: [{
         id: 'd2', description: 'Short text', competency: 'Grammar',
         subcategory: 'Articles', severity: 'low', trend: 'stable', status: 'Active',
-      }],
+      }] },
     })
     renderLogSession()
     await screen.findByTestId('difficulty-item')

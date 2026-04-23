@@ -126,7 +126,7 @@ public class SessionLogsStatusTests
         studentResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var studentJson = await studentResponse.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(studentJson);
-        var difficulties = doc.RootElement.GetProperty("difficulties");
+        var difficulties = doc.RootElement.GetProperty("profile").GetProperty("difficulties");
         difficulties.GetArrayLength().Should().Be(1);
         var d = difficulties[0];
         d.GetProperty("competency").GetString().Should().Be("Grammar");
@@ -162,7 +162,7 @@ public class SessionLogsStatusTests
         var studentBefore = await client.GetAsync($"/api/students/{studentId}");
         var studentBeforeJson = await studentBefore.Content.ReadAsStringAsync();
         using var beforeDoc = JsonDocument.Parse(studentBeforeJson);
-        beforeDoc.RootElement.GetProperty("difficulties").GetArrayLength().Should().Be(0);
+        beforeDoc.RootElement.GetProperty("profile").GetProperty("difficulties").GetArrayLength().Should().Be(0);
 
         // Now confirm with updated severity
         var updatePayload = new
@@ -182,7 +182,7 @@ public class SessionLogsStatusTests
         var studentAfter = await client.GetAsync($"/api/students/{studentId}");
         var studentAfterJson = await studentAfter.Content.ReadAsStringAsync();
         using var afterDoc = JsonDocument.Parse(studentAfterJson);
-        var difficulties = afterDoc.RootElement.GetProperty("difficulties");
+        var difficulties = afterDoc.RootElement.GetProperty("profile").GetProperty("difficulties");
         difficulties.GetArrayLength().Should().Be(1);
         difficulties[0].GetProperty("severity").GetString().Should().Be("high");
         difficulties[0].GetProperty("status").GetString().Should().Be("Active");
@@ -249,6 +249,6 @@ public class SessionLogsStatusTests
         var studentResponse = await client.GetAsync($"/api/students/{studentId}");
         var studentJson = await studentResponse.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(studentJson);
-        doc.RootElement.GetProperty("difficulties").GetArrayLength().Should().Be(0);
+        doc.RootElement.GetProperty("profile").GetProperty("difficulties").GetArrayLength().Should().Be(0);
     }
 }

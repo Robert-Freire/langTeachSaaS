@@ -43,9 +43,9 @@ function cefrBarColor(level: string): string {
 }
 
 function PedagogicalProfileCard({ student }: { student: Student }) {
-  const overrides = student.skillLevelOverrides
+  const overrides = student.level.skillLevelOverrides
   const entries = Object.entries(overrides)
-  const activeDifficulties = student.difficulties.filter(d => d.status === 'Active')
+  const activeDifficulties = student.profile.difficulties.filter(d => d.status === 'Active')
   const firstName = student.name.split(' ')[0]
 
   const PROFILE_PROMPTS = [
@@ -74,9 +74,9 @@ function PedagogicalProfileCard({ student }: { student: Student }) {
                   </li>
                 ))}
               </ul>
-            ) : student.learningGoals.length > 0 ? (
+            ) : student.profile.learningGoals.length > 0 ? (
               <ul className="space-y-1.5 mb-2">
-                {student.learningGoals.slice(0, 2).map(g => (
+                {student.profile.learningGoals.slice(0, 2).map(g => (
                   <li key={g.id} className="text-xs text-[#1A1B22] flex items-start gap-1.5">
                     <span className="mt-0.5 shrink-0 w-1.5 h-1.5 rounded-full bg-indigo-400" />
                     {g.text}
@@ -126,7 +126,7 @@ function PedagogicalProfileCard({ student }: { student: Student }) {
 
       {/* Language tags — always rendered; target language always present */}
       <div className="mt-5 pt-4 border-t border-white/50 flex flex-wrap gap-2" data-testid="language-tags">
-        {student.nativeLanguages.map((lang) => (
+        {student.languages.nativeLanguages.map((lang) => (
           <span
             key={`L-${lang}`}
             className="bg-[#E2DFFF] text-[#3323CC] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
@@ -281,7 +281,7 @@ function TeachingNotesPanel({
   onSaveTeachingNotes?: (notes: string) => Promise<void>
 }) {
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(student.teachingNotes ?? '')
+  const [draft, setDraft] = useState(student.profile.teachingNotes ?? '')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -301,7 +301,7 @@ function TeachingNotesPanel({
   }
 
   function handleEdit() {
-    setDraft(student.teachingNotes ?? '')
+    setDraft(student.profile.teachingNotes ?? '')
     setEditing(true)
   }
 
@@ -349,12 +349,12 @@ function TeachingNotesPanel({
             </div>
           ) : (
             <>
-              {student.teachingNotes ? (
+              {student.profile.teachingNotes ? (
                 <p
                   className="text-sm text-zinc-400 leading-relaxed mb-5"
                   data-testid="teaching-notes-text"
                 >
-                  {student.teachingNotes}
+                  {student.profile.teachingNotes}
                 </p>
               ) : (
                 <p className="text-sm text-zinc-600 italic mb-5" data-testid="teaching-notes-empty">
@@ -411,7 +411,7 @@ export function StudentOverviewTab({
   const [showIdeasAdd, setShowIdeasAdd] = useState(false)
 
   const pendingFollowupsCount = followups.filter(f => f.status === 'pending').length
-  const pendingTodosCount = student.teachingTodos.filter(t => t.status === 'pending').length
+  const pendingTodosCount = student.profile.teachingTodos.filter(t => t.status === 'pending').length
   const firstName = student.name.split(' ')[0]
 
   const FOLLOWUP_PROMPTS = [
@@ -470,14 +470,14 @@ export function StudentOverviewTab({
             </button>
           </div>
 
-          {student.teachingTodos.length === 0 && !showIdeasAdd && (
+          {student.profile.teachingTodos.length === 0 && !showIdeasAdd && (
             <p className="text-xs text-zinc-400 italic mb-3" data-testid="ideas-rotating-prompt">
               {rotatingPrompt(student.id, IDEAS_PROMPTS)}
             </p>
           )}
 
           <TeachingTodosCard
-            todos={student.teachingTodos}
+            todos={student.profile.teachingTodos}
             studentId={student.id}
             onStudentChange={onStudentChange}
             showAddForm={showIdeasAdd}

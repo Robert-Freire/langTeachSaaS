@@ -24,26 +24,53 @@ const emptyDashboard = { nextSession: null, todaySessions: [], activeStudents: [
 // Default createdAt is 30 days ago to avoid triggering the NEW signal badge
 const DEFAULT_CREATED_AT = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-function makeStudent(overrides: Partial<studentsApi.Student> = {}): studentsApi.Student {
+type FlatStudentOverrides = {
+  id?: string; name?: string; learningLanguage?: string; createdAt?: string; updatedAt?: string
+  cefrLevel?: string; officialCefrLevel?: string | null; skillLevelOverrides?: Record<string, string>
+  nativeLanguages?: string[]; spokenLanguages?: string[]
+  birthYear?: number | null; profession?: string | null
+  countryOfOrigin?: string | null; cityOfOrigin?: string | null
+  countryOfResidence?: string | null; cityOfResidence?: string | null; reasonForStudying?: string | null
+  interests?: string[]; personalNotes?: string | null; teachingNotes?: string | null
+  learningGoals?: studentsApi.LearningGoalItem[]; weaknesses?: studentsApi.StudentWeaknessItem[]
+  difficulties?: studentsApi.Difficulty[]; shortTermObjectives?: studentsApi.ShortTermObjective[]
+  teachingTodos?: studentsApi.TeachingTodo[]
+  isActive?: boolean; isCorporate?: boolean; rate?: string | null
+}
+
+function makeStudent(overrides: FlatStudentOverrides = {}): studentsApi.Student {
   return {
-    id: 'abc-123',
-    name: 'Ana García',
-    learningLanguage: 'Spanish',
-    cefrLevel: 'B2',
-    interests: [],
-    personalNotes: null,
-    teachingNotes: null,
-    nativeLanguages: [],
-    learningGoals: [],
-    weaknesses: [],
-    difficulties: [],
-    createdAt: DEFAULT_CREATED_AT,
-    updatedAt: '',
-    birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
-    countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
-    officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
-    rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
-    ...overrides,
+    id: overrides.id ?? 'abc-123',
+    name: overrides.name ?? 'Ana García',
+    learningLanguage: overrides.learningLanguage ?? 'Spanish',
+    level: {
+      cefrLevel: overrides.cefrLevel ?? 'B2',
+      officialCefrLevel: overrides.officialCefrLevel ?? null,
+      skillLevelOverrides: overrides.skillLevelOverrides ?? {},
+    },
+    languages: {
+      nativeLanguages: overrides.nativeLanguages ?? [],
+      spokenLanguages: overrides.spokenLanguages ?? [],
+    },
+    identity: {
+      birthYear: overrides.birthYear ?? null, age: null,
+      profession: overrides.profession ?? null,
+      countryOfOrigin: overrides.countryOfOrigin ?? null, cityOfOrigin: overrides.cityOfOrigin ?? null,
+      countryOfResidence: overrides.countryOfResidence ?? null, cityOfResidence: overrides.cityOfResidence ?? null,
+      reasonForStudying: overrides.reasonForStudying ?? null,
+    },
+    profile: {
+      interests: overrides.interests ?? [], personalNotes: overrides.personalNotes ?? null,
+      teachingNotes: overrides.teachingNotes ?? null, learningGoals: overrides.learningGoals ?? [],
+      weaknesses: overrides.weaknesses ?? [], difficulties: overrides.difficulties ?? [],
+      shortTermObjectives: overrides.shortTermObjectives ?? [], teachingTodos: overrides.teachingTodos ?? [],
+    },
+    commercial: {
+      isActive: overrides.isActive ?? true, isCorporate: overrides.isCorporate ?? false,
+      rate: overrides.rate ?? null,
+    },
+    createdAt: overrides.createdAt ?? DEFAULT_CREATED_AT,
+    updatedAt: overrides.updatedAt ?? '',
   }
 }
 

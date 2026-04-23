@@ -42,8 +42,8 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
 }
 
 export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Props) {
-  const parsedPersonalNotes = parseNotes(student.personalNotes)
-  const parsedTeachingNotes = parseNotes(student.teachingNotes)
+  const parsedPersonalNotes = parseNotes(student.profile.personalNotes)
+  const parsedTeachingNotes = parseNotes(student.profile.teachingNotes)
 
   return (
     <Card data-testid="student-profile-overview">
@@ -53,11 +53,11 @@ export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Pr
       <CardContent>
         <dl className="space-y-4">
           {/* Skill bars */}
-          {SKILL_ORDER.some((s) => student.skillLevelOverrides?.[s]) && (
+          {SKILL_ORDER.some((s) => student.level.skillLevelOverrides?.[s]) && (
             <FieldRow label="Skill overrides">
               <div className="space-y-2" data-testid="overview-skill-bars">
-                {SKILL_ORDER.filter((s) => student.skillLevelOverrides?.[s]).map((skill) => {
-                  const level = student.skillLevelOverrides[skill]
+                {SKILL_ORDER.filter((s) => student.level.skillLevelOverrides?.[s]).map((skill) => {
+                  const level = student.level.skillLevelOverrides[skill]
                   return (
                     <div key={skill} className="flex items-center gap-2">
                       <span className="text-xs text-zinc-400 w-16 shrink-0">{skill}</span>
@@ -73,10 +73,10 @@ export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Pr
           )}
 
           {/* Native languages as tags */}
-          {student.nativeLanguages.length > 0 && (
+          {student.languages.nativeLanguages.length > 0 && (
             <FieldRow label="Native languages">
               <div className="flex flex-wrap gap-1.5" data-testid="overview-native-language">
-                {student.nativeLanguages.map((lang) => (
+                {student.languages.nativeLanguages.map((lang) => (
                   <span key={lang} className="inline-flex items-center gap-1 text-sm text-zinc-700">
                     {lang}
                     <span className="inline-flex items-center justify-center rounded px-1 py-0.5 text-[0.625rem] font-bold uppercase bg-zinc-100 text-zinc-500">
@@ -89,18 +89,18 @@ export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Pr
           )}
 
           <FieldRow label="Learning goals">
-            <ChipList items={student.learningGoals.flatMap(g => [g.text, ...g.children.map(c => `↳ ${c.text}`)])} emptyText="None specified" />
+            <ChipList items={student.profile.learningGoals.flatMap(g => [g.text, ...g.children.map(c => `↳ ${c.text}`)])} emptyText="None specified" />
           </FieldRow>
 
           <FieldRow label="Interests">
-            <ChipList items={student.interests} emptyText="None specified" />
+            <ChipList items={student.profile.interests} emptyText="None specified" />
           </FieldRow>
 
           <FieldRow label="Areas to improve">
-            {student.weaknesses.length === 0
+            {student.profile.weaknesses.length === 0
               ? <span className="text-zinc-400 text-sm">None specified</span>
               : <div className="flex flex-wrap gap-1.5">
-                  {student.weaknesses.map((w, i) => (
+                  {student.profile.weaknesses.map((w, i) => (
                     <span
                       key={i}
                       className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded px-2 py-0.5"
@@ -113,10 +113,10 @@ export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Pr
             }
           </FieldRow>
 
-          {student.difficulties.length > 0 && (
+          {student.profile.difficulties.length > 0 && (
             <FieldRow label="Specific difficulties">
               <div className="space-y-2">
-                {student.difficulties.map((d) => {
+                {student.profile.difficulties.map((d) => {
                   const isCovered = d.status === 'Covered'
                   return (
                     <div key={d.id} className="flex items-start gap-2 text-sm">

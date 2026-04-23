@@ -15,4 +15,9 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #852 | 2026-04-22 | low | StudentsController (4x) and CoursesController still use ValidationProblem/BadRequest(rawString) for ValidationException — filed #871 |
 | #846 | 2026-04-22 | low | PromptService.cs lines 473-478: L1 sub-bullets (differs-from-native, false cognates, common errors) hardcoded in C# system prompt; overlaps with config-driven L1Adjustments block appended to user prompts. Predates #846; worth consolidating into the data-driven path. |
 
+| #845 | 2026-04-23 | low | Visual spec `student-detail.visual.spec.ts`: "sessions tab - expanded row" fails because testid `session-title-input` does not exist (only `log-session-title-input`); pre-existing, unrelated to task |
+| #845 | 2026-04-23 | low | `.dockerignore` at repo root excludes `frontend/` which breaks `docker compose build` from worktrees when cached frontend image expires; needs investigation |
+| #845 | 2026-04-23 | low | Arch: `StudentDto` nested sub-records diverge from flat-record convention used by all other response DTOs (LessonDto, SessionLogDto, etc.) — intentional for this task; worth documenting as architectural convention |
+| #845 | 2026-04-23 | low | Sophy: `ReasonForStudying` semantically belongs in `StudentProfileDto` (drives teaching decisions) not `StudentIdentityDto` (demographics) — filed #880 |
+
 *Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Actionable entries batched into: #833 (bug batch), #834 (seeder gaps), #835 (e2e session-log rewrite), #836 (ScenarioSeeder Hans B1), #837 (deduplication), #838 (session title from web UI), #839 (debug log privacy), #840 (Edit Student UX), #841 (stale closure + LogSession pre-populate). Already-tracked entries removed (referenced #737/#707/#644/#714/#715/#716/#683/#741/#742/#756/#809/#657). Dismissed entries removed (defensive-only, intentional, or resolved).*

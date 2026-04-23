@@ -18,13 +18,14 @@ export function StudentProfileSummary({ student, hasRichNotes = false }: Props) 
           <User className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
           <span className="text-xs font-medium text-zinc-800">{student.name}</span>
           <span className="text-xs text-zinc-500 ml-auto">
-            {student.cefrLevel} {student.learningLanguage}
+            {student.level.cefrLevel} {student.learningLanguage}
           </span>
         </div>
 
         <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-          {COMPLETENESS_FIELDS.map(({ key, label }) => {
-            const populated = isFieldPopulated(student, key)
+          {COMPLETENESS_FIELDS.map((field) => {
+            const { key, label } = field
+            const populated = isFieldPopulated(student, field)
             return (
               <div key={key} className="flex items-center gap-1 text-xs" data-testid={`profile-field-${key}`}>
                 {populated
@@ -32,8 +33,8 @@ export function StudentProfileSummary({ student, hasRichNotes = false }: Props) 
                   : <Circle className="h-3 w-3 text-zinc-300 shrink-0" />
                 }
                 <span className={populated ? 'text-zinc-600' : 'text-zinc-400'}>{label}</span>
-                {key === 'nativeLanguages' && student.nativeLanguages.length > 0 && (
-                  <span className="text-zinc-500">({student.nativeLanguages.join(', ')})</span>
+                {key === 'nativeLanguages' && student.languages.nativeLanguages.length > 0 && (
+                  <span className="text-zinc-500">({student.languages.nativeLanguages.join(', ')})</span>
                 )}
               </div>
             )

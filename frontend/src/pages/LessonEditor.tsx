@@ -366,7 +366,7 @@ export default function LessonEditor() {
   const matchedStudent = lesson?.studentId
     ? students.find(s => s.id === lesson.studentId)
     : undefined
-  const topDifficulties = matchedStudent?.difficulties
+  const topDifficulties = matchedStudent?.profile.difficulties
     ?.toSorted((a, b) => {
       const rank = (sev: string) => sev === 'high' ? 3 : sev === 'medium' ? 2 : 1
       return rank(b.severity) - rank(a.severity)
@@ -639,7 +639,7 @@ export default function LessonEditor() {
           <CefrMismatchWarning
             key={`view:${lesson.studentId}`}
             studentName={lesson.studentName}
-            studentLevel={linkedStudent.cefrLevel}
+            studentLevel={linkedStudent.level.cefrLevel}
             lessonLevel={lesson.cefrLevel}
           />
         ) : null
@@ -672,7 +672,7 @@ export default function LessonEditor() {
                   <CefrMismatchWarning
                     key={`edit:${lesson.studentId}`}
                     studentName={lesson.studentName}
-                    studentLevel={linkedStudent.cefrLevel}
+                    studentLevel={linkedStudent.level.cefrLevel}
                     lessonLevel={metaDraft.cefrLevel}
                   />
                 ) : null

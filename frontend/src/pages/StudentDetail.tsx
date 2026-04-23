@@ -23,14 +23,14 @@ import { getObjectiveUrgency, getDaysRemaining, formatDaysRemaining } from '@/li
 
 function buildIdentitySubtitle(student: Student): string {
   const segments: string[] = []
-  if (student.nativeLanguages.length > 0) {
-    segments.push(`${student.nativeLanguages[0]} speaker, learning ${student.learningLanguage}`)
+  if (student.languages.nativeLanguages.length > 0) {
+    segments.push(`${student.languages.nativeLanguages[0]} speaker, learning ${student.learningLanguage}`)
   } else {
     segments.push(`Learning ${student.learningLanguage}`)
   }
   const profCityParts: string[] = []
-  if (student.profession) profCityParts.push(student.profession)
-  const city = student.cityOfResidence ?? student.cityOfOrigin
+  if (student.identity.profession) profCityParts.push(student.identity.profession)
+  const city = student.identity.cityOfResidence ?? student.identity.cityOfOrigin
   if (city) profCityParts.push(city)
   if (profCityParts.length > 0) segments.push(profCityParts.join(', '))
   return segments.join(' \u00b7 ')
@@ -53,7 +53,7 @@ function calcSessionFrequency(sessions: SessionLog[]): string | null {
 }
 
 function HeaderObjective({ student }: { student: Student }) {
-  const objectives = student.shortTermObjectives
+  const objectives = student.profile.shortTermObjectives
   if (objectives.length === 0) return null
   const sorted = [...objectives].sort((a, b) => {
     const order = { overdue: 0, critical: 1, normal: 2 }
@@ -141,29 +141,29 @@ export default function StudentDetail() {
     return {
       name: student.name,
       learningLanguage: student.learningLanguage,
-      cefrLevel: student.cefrLevel,
-      interests: student.interests,
-      nativeLanguages: student.nativeLanguages,
-      learningGoals: student.learningGoals,
-      weaknesses: student.weaknesses,
-      difficulties: student.difficulties,
-      personalNotes: student.personalNotes,
-      teachingNotes: student.teachingNotes,
-      birthYear: student.birthYear,
-      profession: student.profession,
-      countryOfOrigin: student.countryOfOrigin,
-      cityOfOrigin: student.cityOfOrigin,
-      countryOfResidence: student.countryOfResidence,
-      cityOfResidence: student.cityOfResidence,
-      reasonForStudying: student.reasonForStudying,
-      officialCefrLevel: student.officialCefrLevel,
-      shortTermObjectives: student.shortTermObjectives,
-      isActive: student.isActive,
-      isCorporate: student.isCorporate,
-      rate: student.rate,
-      spokenLanguages: student.spokenLanguages,
-      skillLevelOverrides: student.skillLevelOverrides,
-      teachingTodos: student.teachingTodos,
+      cefrLevel: student.level.cefrLevel,
+      interests: student.profile.interests,
+      nativeLanguages: student.languages.nativeLanguages,
+      learningGoals: student.profile.learningGoals,
+      weaknesses: student.profile.weaknesses,
+      difficulties: student.profile.difficulties,
+      personalNotes: student.profile.personalNotes,
+      teachingNotes: student.profile.teachingNotes,
+      birthYear: student.identity.birthYear,
+      profession: student.identity.profession,
+      countryOfOrigin: student.identity.countryOfOrigin,
+      cityOfOrigin: student.identity.cityOfOrigin,
+      countryOfResidence: student.identity.countryOfResidence,
+      cityOfResidence: student.identity.cityOfResidence,
+      reasonForStudying: student.identity.reasonForStudying,
+      officialCefrLevel: student.level.officialCefrLevel,
+      shortTermObjectives: student.profile.shortTermObjectives,
+      isActive: student.commercial.isActive,
+      isCorporate: student.commercial.isCorporate,
+      rate: student.commercial.rate,
+      spokenLanguages: student.languages.spokenLanguages,
+      skillLevelOverrides: student.level.skillLevelOverrides,
+      teachingTodos: student.profile.teachingTodos,
     }
   }
 
@@ -174,7 +174,7 @@ export default function StudentDetail() {
       return { attempt }
     },
     mutationFn: (vars: { difficultyId: string; status: 'Active' | 'Covered' }) => {
-      const updated = student!.difficulties.map((d) =>
+      const updated = student!.profile.difficulties.map((d) =>
         d.id === vars.difficultyId ? { ...d, status: vars.status } : d
       )
       return updateStudent(id!, { ...buildStudentPayload(), difficulties: updated })
@@ -228,7 +228,7 @@ export default function StudentDetail() {
   const { mutateAsync: saveLearningGoal } = useMutation({
     mutationFn: (text: string) => {
       const newGoal = { id: newId(), text, children: [] }
-      return updateStudent(id!, { ...buildStudentPayload(), learningGoals: [...student!.learningGoals, newGoal] })
+      return updateStudent(id!, { ...buildStudentPayload(), learningGoals: [...student!.profile.learningGoals, newGoal] })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student', id] })
@@ -241,7 +241,7 @@ export default function StudentDetail() {
   const { mutateAsync: saveShortTermObjective } = useMutation({
     mutationFn: (text: string) => {
       const newObj = { id: newId(), text, targetDate: null }
-      return updateStudent(id!, { ...buildStudentPayload(), shortTermObjectives: [...student!.shortTermObjectives, newObj] })
+      return updateStudent(id!, { ...buildStudentPayload(), shortTermObjectives: [...student!.profile.shortTermObjectives, newObj] })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student', id] })
@@ -254,7 +254,7 @@ export default function StudentDetail() {
   const { mutateAsync: saveDifficulty } = useMutation({
     mutationFn: ({ competency, description }: { competency: string; description: string }) => {
       const newDiff = { id: newId(), competency, description, subcategory: '', severity: 'medium', trend: 'stable', status: 'Active' }
-      return updateStudent(id!, { ...buildStudentPayload(), difficulties: [...student!.difficulties, newDiff] })
+      return updateStudent(id!, { ...buildStudentPayload(), difficulties: [...student!.profile.difficulties, newDiff] })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student', id] })
@@ -332,11 +332,11 @@ export default function StudentDetail() {
                 >
                   {student.name}
                 </h1>
-                <CefrBadge level={student.cefrLevel} data-testid="cefr-badge" />
-                {student.officialCefrLevel && (
+                <CefrBadge level={student.level.cefrLevel} data-testid="cefr-badge" />
+                {student.level.officialCefrLevel && (
                   <span data-testid="official-cefr-badge" className="inline-flex items-center gap-1">
                     <span className="text-[0.6875rem] text-zinc-500 uppercase tracking-[0.05em]">Official: </span>
-                    <CefrBadge level={student.officialCefrLevel} />
+                    <CefrBadge level={student.level.officialCefrLevel} />
                   </span>
                 )}
               </div>
@@ -351,7 +351,7 @@ export default function StudentDetail() {
 
               {/* Line 3: status badges + next session */}
               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                {student.isActive ? (
+                {student.commercial.isActive ? (
                   <>
                     <span
                       className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] bg-green-100 text-green-700"
@@ -363,7 +363,7 @@ export default function StudentDetail() {
                       className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] bg-indigo-100 text-indigo-700"
                       data-testid="student-type-badge"
                     >
-                      {student.isCorporate ? 'Corporate' : 'Private'}
+                      {student.commercial.isCorporate ? 'Corporate' : 'Private'}
                     </span>
                   </>
                 ) : (
