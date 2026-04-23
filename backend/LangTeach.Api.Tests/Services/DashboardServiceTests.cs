@@ -249,8 +249,8 @@ public class DashboardServiceTests : IDisposable
         var t1 = Guid.NewGuid();
         var t2 = Guid.NewGuid();
         _db.TeacherFollowups.AddRange(
-            new TeacherFollowup { Id = t1, TeacherId = _teacherId, StudentId = _studentId, Kind = "pedagogical", Text = "Focus on subjunctive", Status = "pending", CreatedAt = DateTime.UtcNow },
-            new TeacherFollowup { Id = t2, TeacherId = _teacherId, StudentId = _studentId, Kind = "pedagogical", Text = "Review homework", Status = "pending", CreatedAt = DateTime.UtcNow });
+            new TeacherFollowup { Id = t1, TeacherId = _teacherId, StudentId = _studentId, Kind = TeacherFollowupKinds.Pedagogical, Text = "Focus on subjunctive", Status = "pending", CreatedAt = DateTime.UtcNow },
+            new TeacherFollowup { Id = t2, TeacherId = _teacherId, StudentId = _studentId, Kind = TeacherFollowupKinds.Pedagogical, Text = "Review homework", Status = "pending", CreatedAt = DateTime.UtcNow });
         _db.SaveChanges();
 
         var result = await _sut.GetAsync(_teacherId);
@@ -264,8 +264,8 @@ public class DashboardServiceTests : IDisposable
         var t1Id = Guid.NewGuid();
         var t2Id = Guid.NewGuid();
         _db.TeacherFollowups.AddRange(
-            new TeacherFollowup { Id = t1Id, TeacherId = _teacherId, StudentId = _studentId, Kind = "pedagogical", Text = "Focus on subjunctive", Status = "pending", CreatedAt = new DateTime(2026, 4, 1, 10, 0, 0, DateTimeKind.Utc) },
-            new TeacherFollowup { Id = t2Id, TeacherId = _teacherId, StudentId = _studentId, Kind = "pedagogical", Text = "Review homework", Status = "covered", CreatedAt = new DateTime(2026, 4, 2, 10, 0, 0, DateTimeKind.Utc) });
+            new TeacherFollowup { Id = t1Id, TeacherId = _teacherId, StudentId = _studentId, Kind = TeacherFollowupKinds.Pedagogical, Text = "Focus on subjunctive", Status = "pending", CreatedAt = new DateTime(2026, 4, 1, 10, 0, 0, DateTimeKind.Utc) },
+            new TeacherFollowup { Id = t2Id, TeacherId = _teacherId, StudentId = _studentId, Kind = TeacherFollowupKinds.Pedagogical, Text = "Review homework", Status = "covered", CreatedAt = new DateTime(2026, 4, 2, 10, 0, 0, DateTimeKind.Utc) });
         _db.SaveChanges();
 
         var result = await _sut.GetAsync(_teacherId);

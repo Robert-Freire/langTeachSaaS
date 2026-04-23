@@ -58,8 +58,8 @@ public static class DemoSeeder
         db.Students.AddRange(students);
 
         db.TeacherFollowups.AddRange(
-            new TeacherFollowup { Id = Guid.Parse("a1b2c3d4-0000-0000-0000-000000000001"), TeacherId = teacher.Id, StudentId = students[0].Id, Text = "Trabajar la diferencia entre artículo determinado e indeterminado", Status = "pending", Kind = "pedagogical", CreatedAt = new DateTime(2026, 4, 9, 10, 0, 0, DateTimeKind.Utc) },
-            new TeacherFollowup { Id = Guid.Parse("a1b2c3d4-0000-0000-0000-000000000002"), TeacherId = teacher.Id, StudentId = students[0].Id, Text = "Repasar pretérito en narraciones personales", Status = "pending", Kind = "pedagogical", CreatedAt = new DateTime(2026, 4, 9, 10, 5, 0, DateTimeKind.Utc) });
+            new TeacherFollowup { Id = Guid.Parse("a1b2c3d4-0000-0000-0000-000000000001"), TeacherId = teacher.Id, StudentId = students[0].Id, Text = "Trabajar la diferencia entre artículo determinado e indeterminado", Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = new DateTime(2026, 4, 9, 10, 0, 0, DateTimeKind.Utc) },
+            new TeacherFollowup { Id = Guid.Parse("a1b2c3d4-0000-0000-0000-000000000002"), TeacherId = teacher.Id, StudentId = students[0].Id, Text = "Repasar pretérito en narraciones personales", Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = new DateTime(2026, 4, 9, 10, 5, 0, DateTimeKind.Utc) });
 
         var lessons = new List<Lesson>
         {
@@ -277,7 +277,7 @@ public static class DemoSeeder
 
         var anaSeedTodoId = Guid.Parse("a1b2c3d4-0000-0000-0000-000000000010");
         if (!await db.TeacherFollowups.AnyAsync(f => f.Id == anaSeedTodoId))
-            db.TeacherFollowups.Add(new TeacherFollowup { Id = anaSeedTodoId, TeacherId = teacherId, StudentId = anaSeed.Id, Text = "Review subjunctive trigger verbs — she confuses querer vs desear contexts", Status = "pending", Kind = "pedagogical", CreatedAt = new DateTime(2026, 4, 10, 10, 0, 0, DateTimeKind.Utc) });
+            db.TeacherFollowups.Add(new TeacherFollowup { Id = anaSeedTodoId, TeacherId = teacherId, StudentId = anaSeed.Id, Text = "Review subjunctive trigger verbs — she confuses querer vs desear contexts", Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = new DateTime(2026, 4, 10, 10, 0, 0, DateTimeKind.Utc) });
 
         // Marco Seed — excel-imported scenario; one old session, no upcoming → "Inactive Xd" badge
         var marcoSeed = await UpsertStudentAsync(db, teacherId, new Student
@@ -551,7 +551,7 @@ public static class DemoSeeder
 
         var hugoTodoId = Guid.Parse("a1b2c3d4-0000-0000-0000-000000000011");
         if (!await db.TeacherFollowups.AnyAsync(f => f.Id == hugoTodoId))
-            db.TeacherFollowups.Add(new TeacherFollowup { Id = hugoTodoId, TeacherId = teacherId, StudentId = hugo.Id, Text = "Check if introduction homework sentences were completed before next session", Status = "pending", Kind = "pedagogical", CreatedAt = new DateTime(2026, 4, 10, 10, 0, 0, DateTimeKind.Utc) });
+            db.TeacherFollowups.Add(new TeacherFollowup { Id = hugoTodoId, TeacherId = teacherId, StudentId = hugo.Id, Text = "Check if introduction homework sentences were completed before next session", Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = new DateTime(2026, 4, 10, 10, 0, 0, DateTimeKind.Utc) });
 
         var hugoSessionsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == hugo.Id && !s.IsDeleted);
         if (!hugoSessionsExist)

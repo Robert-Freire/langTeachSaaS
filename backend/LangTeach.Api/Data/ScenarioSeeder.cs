@@ -416,7 +416,7 @@ public static class ScenarioSeeder
         {
             Id = Guid.NewGuid(), TeacherId = teacherId, StudentId = claraSeed.Id,
             Text = "Review Clara's subjunctive triggers — exercises not completed",
-            Status = "pending", Kind = "pedagogical", CreatedAt = now.AddDays(-3),
+            Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = now.AddDays(-3),
         });
 
         // Diego Seed: no signal (recent past session + upcoming session, no todos)
@@ -597,8 +597,8 @@ public static class ScenarioSeeder
         anaVisual.SkillLevelOverrides = """{"Reading":"B2","Writing":"B1"}""";
 
         db.TeacherFollowups.AddRange(
-            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = teacherId, StudentId = anaVisual.Id, Text = "Prepare a set of subjunctive trigger cards for next class", Status = "pending", Kind = "pedagogical", CreatedAt = now.AddDays(-5) },
-            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = teacherId, StudentId = anaVisual.Id, Text = "Find an authentic news article about Latin American culture at B2 level", Status = "pending", Kind = "pedagogical", CreatedAt = now.AddDays(-2) });
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = teacherId, StudentId = anaVisual.Id, Text = "Prepare a set of subjunctive trigger cards for next class", Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = now.AddDays(-5) },
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = teacherId, StudentId = anaVisual.Id, Text = "Find an authentic news article about Latin American culture at B2 level", Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = now.AddDays(-2) });
 
         anaVisual.ShortTermObjectives = $$"""[{"id":"obj1","text":"Master subjunctive in nominal clauses (WEIRDO verbs)","targetDate":"{{now.AddDays(-3):yyyy-MM-dd}}"},{"id":"obj2","text":"Achieve confident use of ser vs estar in all tenses","targetDate":"{{now.AddDays(5):yyyy-MM-dd}}"},{"id":"obj3","text":"Build travel and business vocabulary to 500 items","targetDate":"{{now.AddDays(28):yyyy-MM-dd}}"}]""";
 
