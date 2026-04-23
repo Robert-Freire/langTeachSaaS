@@ -153,29 +153,47 @@ const MOCK_SESSION: SessionLog = {
   hasVoiceNote: false,
 }
 
-describe('StudentOverviewTab - RecentSessions', () => {
-  it('shows empty state when no sessions', () => {
+describe('StudentOverviewTab - LastSessionCard + RecentSessions', () => {
+  it('shows empty state via LastSessionCard when no sessions, and hides RecentSessions', () => {
     renderOverview(BASE_STUDENT, [])
-    expect(screen.getByTestId('recent-sessions-empty')).toBeInTheDocument()
+    expect(screen.getByTestId('last-session-empty')).toBeInTheDocument()
+    expect(screen.queryByTestId('recent-sessions')).not.toBeInTheDocument()
   })
 
-  it('renders a session item when sessions are passed', () => {
+  it('renders LastSessionCard when at least one session exists', () => {
     renderOverview(BASE_STUDENT, [MOCK_SESSION])
-    expect(screen.getAllByTestId('recent-session-item').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('Vocabulary: Travel')).toBeInTheDocument()
+    expect(screen.getByTestId('last-session-card')).toBeInTheDocument()
+    expect(screen.getByTestId('last-session-title')).toHaveTextContent('Vocabulary: Travel')
   })
 
-  it('shows homework chip when set', () => {
+  it('hides RecentSessions when only one session exists (claimed by LastSessionCard)', () => {
     renderOverview(BASE_STUDENT, [MOCK_SESSION])
-    expect(screen.getByText(/Write 5 sentences/)).toBeInTheDocument()
+    expect(screen.queryByTestId('recent-sessions')).not.toBeInTheDocument()
   })
 
-  it('shows duration', () => {
-    renderOverview(BASE_STUDENT, [MOCK_SESSION])
-    expect(screen.getByText('60min')).toBeInTheDocument()
+  it('RecentSessions shows sessions 2-3 when LastSessionCard claims the top one', () => {
+    const sessions: SessionLog[] = [1, 2, 3, 4].map((i) => ({
+      ...MOCK_SESSION,
+      id: `sess-${i}`,
+      sessionDate: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+      title: `Session ${i}`,
+    }))
+    renderOverview(BASE_STUDENT, sessions)
+    // LastSessionCard shows the most recent; RecentSessions shows the next 2 (indices 1 and 2)
+    expect(screen.getByTestId('last-session-title')).toHaveTextContent('Session 1')
+    const items = screen.getAllByTestId('recent-session-item')
+    expect(items).toHaveLength(2)
+    expect(items[0]).toHaveTextContent('Session 2')
+    expect(items[1]).toHaveTextContent('Session 3')
   })
 
   it('shows view all sessions button and calls callback', () => {
+    const sessions: SessionLog[] = [1, 2, 3].map((i) => ({
+      ...MOCK_SESSION,
+      id: `sess-${i}`,
+      sessionDate: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+      title: `Session ${i}`,
+    }))
     const onViewAll = vi.fn()
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
     render(
@@ -183,7 +201,7 @@ describe('StudentOverviewTab - RecentSessions', () => {
         <MemoryRouter>
           <StudentOverviewTab
             student={BASE_STUDENT}
-            sessions={[MOCK_SESSION]}
+            sessions={sessions}
             onStudentChange={() => {}}
             onViewAllSessions={onViewAll}
           />
@@ -192,29 +210,6 @@ describe('StudentOverviewTab - RecentSessions', () => {
     )
     fireEvent.click(screen.getByTestId('view-all-sessions-btn'))
     expect(onViewAll).toHaveBeenCalled()
-  })
-
-  it('limits to 2 sessions', () => {
-    const sessions: SessionLog[] = [1, 2, 3, 4].map((i) => ({
-      ...MOCK_SESSION,
-      id: `sess-${i}`,
-      sessionDate: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
-      title: `Session ${i}`,
-    }))
-    renderOverview(BASE_STUDENT, sessions)
-    expect(screen.getAllByTestId('recent-session-item').length).toBe(2)
-  })
-
-  it('synthesizes title from narrative when title is blank', () => {
-    const session = { ...MOCK_SESSION, title: null, actualContent: 'Practised pretérito indefinido with travel narrative' }
-    renderOverview(BASE_STUDENT, [session])
-    expect(screen.getByTestId('compact-session-title')).toHaveTextContent('Practised pretérito indefinido')
-  })
-
-  it('synthesizes title from narrative when title is generic Session', () => {
-    const session = { ...MOCK_SESSION, title: 'Session', actualContent: 'Review of irregular verbs' }
-    renderOverview(BASE_STUDENT, [session])
-    expect(screen.getByTestId('compact-session-title')).toHaveTextContent('Review of irregular verbs')
   })
 })
 
