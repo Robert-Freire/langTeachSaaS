@@ -13,7 +13,7 @@ namespace LangTeach.Api.Migrations
             migrationBuilder.AddCheckConstraint(
                 name: "CK_TeacherFollowups_Kind",
                 table: "TeacherFollowups",
-                sql: "Kind IN ('pedagogical', 'operational')");
+                sql: "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational')");
         }
 
         /// <inheritdoc />

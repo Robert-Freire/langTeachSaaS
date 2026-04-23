@@ -783,7 +783,7 @@ namespace LangTeach.Api.Migrations
 
                     b.ToTable("TeacherFollowups", t =>
                         {
-                            t.HasCheckConstraint("CK_TeacherFollowups_Kind", "Kind IN ('pedagogical', 'operational')");
+                            t.HasCheckConstraint("CK_TeacherFollowups_Kind", "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational')");
                         });
                 });
 
