@@ -326,12 +326,12 @@ describe('StudentProfileTab', () => {
     })
 
     it('is hidden when personalNotes is a sentinel string', () => {
-      renderProfile({ ...EMPTY_STUDENT, personalNotes: '[visual-seed]' })
+      renderProfile({ ...EMPTY_STUDENT, profile: { ...EMPTY_STUDENT.profile, personalNotes: '[visual-seed]' } })
       expect(screen.queryByTestId('profile-teachers-working-memory')).not.toBeInTheDocument()
     })
 
     it('does not render sentinel personalNotes text', () => {
-      renderProfile({ ...EMPTY_STUDENT, personalNotes: '[scenario-seed]' })
+      renderProfile({ ...EMPTY_STUDENT, profile: { ...EMPTY_STUDENT.profile, personalNotes: '[scenario-seed]' } })
       expect(screen.queryByText('[scenario-seed]')).not.toBeInTheDocument()
     })
 
