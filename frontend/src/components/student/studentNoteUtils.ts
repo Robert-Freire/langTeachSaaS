@@ -1,3 +1,9 @@
+export function isSentinel(s: string | null | undefined): boolean {
+  if (!s) return false
+  const t = s.trim()
+  return t.startsWith('[') && t.endsWith(']')
+}
+
 export interface ParsedNotes {
   sections: { label: string; text: string }[]
 }
