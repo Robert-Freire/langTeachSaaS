@@ -8,6 +8,7 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #848 | 2026-04-22 | low | Issue #848 AC requested visible STATUS label above Cancelled toggle; design-system.md 11.3 prohibits this; AC was fulfilled via invisible spacer for alignment instead |
 | #838 | 2026-04-22 | low | LogSession: checkboxes in Teaching Todos/Followups left panel use native input instead of design-system custom controls (pre-existing) |
 | #838 | 2026-04-22 | low | LogSession: local ToggleSwitch focus ring uses ring-indigo-500 instead of ring-indigo-600 (pre-existing, design-system 11.5) |
+| #850 | 2026-04-23 | low | LogSession.test.tsx "date defaults to today" fails at ~midnight UTC due to UTC vs local timezone mismatch in date comparison; pre-existing flaky test |
 | #837 | 2026-04-22 | low | TeachingTodosCard.tsx has local relativeTime duplicating formatDate.ts — filed #860 |
 | #844 | 2026-04-22 | low | TeachingTodoDto projection duplicated in StudentService.ToTodo() and DashboardService inline LINQ (EF Core constraint) — filed #869 |
 | #844 | 2026-04-22 | low | TeacherFollowup.Kind has no DB CHECK constraint; only DTO regex guards API path — filed #870 |
