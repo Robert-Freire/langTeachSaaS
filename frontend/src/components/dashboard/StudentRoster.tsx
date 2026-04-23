@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ChevronsUpDown } from 'lucide-react'
 import { CefrBadge } from './CefrBadge'
 import type { ActiveStudent } from '@/api/dashboard'
+import { calendarRelativeDay } from '@/utils/formatDate'
 
 interface StudentRosterProps {
   students: ActiveStudent[]
@@ -97,9 +98,13 @@ function formatRelativeDate(dateStr: string | null): string {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
   const diffDays = Math.round((dateStart.getTime() - todayStart.getTime()) / 86400000)
-  if (diffDays === 0) return 'Today'
-  if (diffDays === -1) return 'Yesterday'
-  if (diffDays < 0 && diffDays >= -29) return `${Math.abs(diffDays)}d ago`
+  if (diffDays >= 0) return diffDays === 0 ? 'Today' : date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  if (diffDays >= -29) {
+    const base = calendarRelativeDay(dateStr)
+    if (base === 'today') return 'Today'
+    if (base === 'yesterday') return 'Yesterday'
+    return base.charAt(0).toUpperCase() + base.slice(1)
+  }
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
