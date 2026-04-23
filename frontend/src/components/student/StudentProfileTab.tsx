@@ -279,6 +279,14 @@ function MotivationHero({
     }
   }
 
+  function startEditingReason() {
+    if (!onSave) return
+    const v = student.profile.reasonForStudying ?? ''
+    setDraft(v)
+    lastSavedRef.current = v
+    setEditing(true)
+  }
+
   return (
     <div
       className="group relative bg-indigo-50/60 rounded-xl px-6 py-5 overflow-hidden"
@@ -318,11 +326,11 @@ function MotivationHero({
             <div className="flex-1 min-w-0">
               {student.profile.reasonForStudying ? (
                 <div
-                  className="flex items-start gap-2 cursor-pointer"
-                  onClick={() => { const v = student.profile.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.profile.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
+                  className={`flex items-start gap-2${onSave ? ' cursor-pointer' : ''}`}
+                  onClick={startEditingReason}
+                  role={onSave ? 'button' : undefined}
+                  tabIndex={onSave ? 0 : undefined}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startEditingReason() } }}
                   data-testid="reason-edit-trigger"
                 >
                   <p
@@ -343,11 +351,11 @@ function MotivationHero({
                 </div>
               ) : (
                 <div
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => { const v = student.profile.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { const v = student.profile.reasonForStudying ?? ''; setDraft(v); lastSavedRef.current = v; setEditing(true) } }}
+                  className={`flex items-center gap-2${onSave ? ' cursor-pointer' : ''}`}
+                  onClick={startEditingReason}
+                  role={onSave ? 'button' : undefined}
+                  tabIndex={onSave ? 0 : undefined}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startEditingReason() } }}
                   data-testid="reason-edit-trigger"
                 >
                   <p className="font-manrope text-lg italic text-zinc-400 flex-1" data-testid="reason-quote">
