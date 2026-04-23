@@ -297,6 +297,7 @@ public class AppDbContext : DbContext
             // Binary collation on the column ref forces case-sensitive comparison.
             // Without it, SQL Server default CI collations would accept 'PEDAGOGICAL' et al,
             // defeating the purpose of a backstop against non-API writes.
+            // Allowed values defined in TeacherFollowupKinds; SQL string literal required here
             e.ToTable(t => t.HasCheckConstraint(
                 "CK_TeacherFollowups_Kind",
                 "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational')"));
