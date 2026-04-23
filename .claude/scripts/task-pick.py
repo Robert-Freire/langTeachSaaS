@@ -27,7 +27,9 @@ DEP_PATTERN = re.compile(
 
 
 def gh(*args: str) -> str:
-    result = subprocess.run(["gh", *args], capture_output=True, text=True)
+    result = subprocess.run(
+        ["gh", *args], capture_output=True, encoding="utf-8", errors="replace"
+    )
     if result.returncode != 0:
         print(f"ERROR: gh {' '.join(args)} failed:\n{result.stderr}", file=sys.stderr)
         sys.exit(1)

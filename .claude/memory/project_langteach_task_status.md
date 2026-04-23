@@ -4,9 +4,12 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-04-22)
+## In-Flight Tasks (2026-04-23)
 
-No tasks in flight. Task #834 PR #865 open, awaiting merge.
+Task #874 PR #895 open, awaiting merge.
+Task #860 + #861 bundled PR #891 open, awaiting merge.
+
+Task #852 merged (PR #872). Task #846 merged (PR #873). Task #841 merged (PR #876). Task #840 merged (PR #877). Task #834 PR #865 open, awaiting merge. Task #839 PR #867 open, awaiting merge. Task #809 PR #875 open, awaiting merge. Task #849 PR #878 open, awaiting merge. Task #850 PR #879 open, awaiting merge. Task #853 PR #882 open, awaiting merge. Task #855 PR #884 open, awaiting merge. Task #857 PR #885 open, awaiting merge. Task #856 PR #886 open, awaiting merge.
 
 ## Live Tracker: GitHub Issues
 
@@ -25,7 +28,7 @@ Agents must PR against the active sprint branch, not `main`. See CLAUDE.md "Spri
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| Stabilisation | NEXT | milestone #17, no sprint branch yet |
+| Stabilisation | ACTIVE | milestone #17, sprint/stabilisation branch active |
 | UI Redesign & Student Profile Polish | CLOSED 2026-04-22 | milestone #16, merged to main, branch deleted |
 | Adaptive Replanning | CLOSED 2026-04-08 | 22/22 done, merged to main |
 | Post-Class Tracking | CLOSED 2026-04-04 | 23/23 done, merged to main |
@@ -38,7 +41,6 @@ Agents must PR against the active sprint branch, not `main`. See CLAUDE.md "Spri
 
 ## Upcoming Milestones (not yet started)
 
-- Stabilisation: next (milestone #17, created 2026-04-22 — tech debt, model fixes, test reliability, prompt cleanup)
 - Listening Comprehension: after Stabilisation (milestone #14)
 - Solo Whiteboard: after Listening Comprehension
 - Group Classes: FUTURE
