@@ -30,7 +30,7 @@ public class StudentService : IStudentService
         new(StringComparer.OrdinalIgnoreCase) { "grammatical", "lexical", "orthographic" };
 
     private static readonly HashSet<string> AllowedObjectiveTypes =
-        new(StringComparer.OrdinalIgnoreCase) { "exam_prep", "communicative", "other" };
+        new(StringComparer.Ordinal) { "exam_prep", "communicative", "other" };
 
     private static readonly Dictionary<string, string> CanonicalSkillKeys =
         new(StringComparer.OrdinalIgnoreCase)
