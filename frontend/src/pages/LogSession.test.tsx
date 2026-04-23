@@ -73,12 +73,11 @@ const SAMPLE_STUDENT: Student = {
     birthYear: null, age: null, profession: null,
     countryOfOrigin: null, cityOfOrigin: null,
     countryOfResidence: null, cityOfResidence: null,
-    reasonForStudying: null,
   },
   profile: {
     interests: ['reading'], personalNotes: null, teachingNotes: null,
     learningGoals: [], weaknesses: [], difficulties: [],
-    shortTermObjectives: [], teachingTodos: [],
+    shortTermObjectives: [], teachingTodos: [], reasonForStudying: null,
   },
   commercial: { isActive: true, isCorporate: false, rate: null },
   createdAt: '2026-01-01T00:00:00Z',

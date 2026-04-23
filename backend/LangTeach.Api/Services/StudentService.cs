@@ -80,7 +80,7 @@ public class StudentService : IStudentService
 
         var studentIds = items.Select(s => s.Id).ToList();
         var allTodos = await _db.TeacherFollowups
-            .Where(f => f.StudentId != null && studentIds.Contains(f.StudentId.Value) && f.Kind == "pedagogical")
+            .Where(f => f.StudentId != null && studentIds.Contains(f.StudentId.Value) && f.Kind == TeacherFollowupKinds.Pedagogical)
             .OrderBy(f => f.CreatedAt)
             .ToListAsync(cancellationToken);
         var todosByStudent = allTodos
@@ -246,8 +246,7 @@ public class StudentService : IStudentService
             s.CountryOfOrigin,
             s.CityOfOrigin,
             s.CountryOfResidence,
-            s.CityOfResidence,
-            s.ReasonForStudying
+            s.CityOfResidence
         ),
         new StudentProfileDto(
             JsonStorageHelper.DeserializeList<string>(s.Interests),
@@ -259,7 +258,8 @@ public class StudentService : IStudentService
                 str => new StudentWeaknessDto(str, "grammatical")),
             JsonStorageHelper.DeserializeList<DifficultyDto>(s.Difficulties),
             JsonStorageHelper.DeserializeList<ShortTermObjectiveDto>(s.ShortTermObjectives),
-            pedagogicalTodos.Select(TeachingTodoDtoProjection.Compiled).ToList()
+            pedagogicalTodos.Select(TeachingTodoDtoProjection.Compiled).ToList(),
+            s.ReasonForStudying
         ),
         new StudentCommercialDto(
             s.IsActive,
@@ -273,7 +273,7 @@ public class StudentService : IStudentService
 
     private async Task<List<TeacherFollowup>> FetchPedagogicalTodosAsync(Guid studentId, CancellationToken cancellationToken) =>
         await _db.TeacherFollowups
-            .Where(f => f.StudentId == studentId && f.Kind == "pedagogical")
+            .Where(f => f.StudentId == studentId && f.Kind == TeacherFollowupKinds.Pedagogical)
             .OrderBy(f => f.CreatedAt)
             .ToListAsync(cancellationToken);
 
@@ -401,7 +401,7 @@ public class StudentService : IStudentService
             StudentId = studentId,
             Text = request.Text,
             Status = "pending",
-            Kind = "pedagogical",
+            Kind = TeacherFollowupKinds.Pedagogical,
             CreatedAt = DateTime.UtcNow,
             SourceSessionLogId = sourceSessionLogId,
         };
@@ -421,7 +421,7 @@ public class StudentService : IStudentService
             .FirstOrDefaultAsync(f => f.Id == todoGuid
                                    && f.StudentId == studentId
                                    && f.TeacherId == teacherId
-                                   && f.Kind == "pedagogical", cancellationToken);
+                                   && f.Kind == TeacherFollowupKinds.Pedagogical, cancellationToken);
         if (followup is null) return null;
 
         followup.Status = request.Status.ToLowerInvariant();
@@ -450,7 +450,7 @@ public class StudentService : IStudentService
             .FirstOrDefaultAsync(f => f.Id == todoGuid
                                    && f.StudentId == studentId
                                    && f.TeacherId == teacherId
-                                   && f.Kind == "pedagogical", cancellationToken);
+                                   && f.Kind == TeacherFollowupKinds.Pedagogical, cancellationToken);
         if (followup is null) return null;
 
         _db.TeacherFollowups.Remove(followup);

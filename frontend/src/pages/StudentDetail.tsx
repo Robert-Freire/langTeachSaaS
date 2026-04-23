@@ -155,7 +155,7 @@ export default function StudentDetail() {
       cityOfOrigin: student.identity.cityOfOrigin,
       countryOfResidence: student.identity.countryOfResidence,
       cityOfResidence: student.identity.cityOfResidence,
-      reasonForStudying: student.identity.reasonForStudying,
+      reasonForStudying: student.profile.reasonForStudying,
       officialCefrLevel: student.level.officialCefrLevel,
       shortTermObjectives: student.profile.shortTermObjectives,
       isActive: student.commercial.isActive,

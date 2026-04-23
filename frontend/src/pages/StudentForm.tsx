@@ -263,7 +263,7 @@ export default function StudentForm() {
       setCityOfOrigin(existing.identity.cityOfOrigin ?? '')
       setCountryOfResidence(existing.identity.countryOfResidence ?? '')
       setCityOfResidence(existing.identity.cityOfResidence ?? '')
-      setReasonForStudying(existing.identity.reasonForStudying ?? '')
+      setReasonForStudying(existing.profile.reasonForStudying ?? '')
       setShortTermObjectives((existing.profile.shortTermObjectives ?? []).map((o) => ({ ...o, objectiveType: o.objectiveType ?? 'other' })))
       setIsActive(existing.commercial.isActive ?? true)
       setIsCorporate(existing.commercial.isCorporate ?? false)

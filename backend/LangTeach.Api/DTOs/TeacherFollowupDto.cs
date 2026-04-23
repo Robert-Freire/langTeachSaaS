@@ -22,6 +22,7 @@ public record CreateTeacherFollowupRequest(
     Guid? StudentId,
     DateOnly? DueDate,
     Guid? SourceSessionLogId,
+    // Allowed values defined in TeacherFollowupKinds; regex must stay as a string literal for attributes
     [MinLength(1, ErrorMessage = "Kind must be 'pedagogical' or 'operational'.")]
     [RegularExpression("^(pedagogical|operational)$",
         ErrorMessage = "Kind must be 'pedagogical' or 'operational'.")]
