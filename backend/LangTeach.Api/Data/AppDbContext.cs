@@ -294,6 +294,12 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<TeacherFollowup>(e =>
         {
             e.HasKey(f => f.Id);
+            // Binary collation on the column ref forces case-sensitive comparison.
+            // Without it, SQL Server default CI collations would accept 'PEDAGOGICAL' et al,
+            // defeating the purpose of a backstop against non-API writes.
+            e.ToTable(t => t.HasCheckConstraint(
+                "CK_TeacherFollowups_Kind",
+                "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational')"));
             e.HasIndex(f => new { f.TeacherId, f.Status });
             e.HasIndex(f => new { f.TeacherId, f.StudentId });
             e.HasIndex(f => new { f.TeacherId, f.StudentId, f.Kind });
