@@ -5,6 +5,8 @@ import type { TeacherFollowup } from '@/api/followups'
 import type { SessionLog } from '@/api/sessionLogs'
 import { TeachingTodosCard } from './TeachingTodosCard'
 import { StudentFollowupsCard } from './StudentFollowupsCard'
+import { LastSessionCard } from './LastSessionCard'
+import { pickLastSession } from '@/lib/sessionUtils'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { SectionHeader } from './SectionHeader'
 import { formatMonthYear } from '@/utils/formatDate'
@@ -226,14 +228,19 @@ function CompactSessionCard({ session, isMostRecent }: { session: SessionLog; is
 function RecentSessions({
   sessions,
   onViewAll,
+  skipFirst = false,
 }: {
   sessions: SessionLog[]
   onViewAll?: () => void
+  skipFirst?: boolean
 }) {
-  const recent = [...sessions]
+  const sorted = [...sessions]
     .filter(s => s.sessionDate && !s.isCancelled)
     .sort((a, b) => new Date(b.sessionDate!).getTime() - new Date(a.sessionDate!).getTime())
-    .slice(0, 2)
+  const start = skipFirst ? 1 : 0
+  const recent = sorted.slice(start, start + 2)
+
+  if (skipFirst && recent.length === 0) return null
 
   return (
     <div data-testid="recent-sessions">
@@ -421,6 +428,7 @@ export function StudentOverviewTab({
   const pendingFollowupsCount = followups.filter(f => f.status === 'pending').length
   const pendingTodosCount = student.profile.teachingTodos.filter(t => t.status === 'pending').length
   const firstName = student.name.split(' ')[0]
+  const lastSession = pickLastSession(sessions)
 
   const FOLLOWUP_PROMPTS = [
     `Anything you promised ${firstName} for next class?`,
@@ -494,8 +502,13 @@ export function StudentOverviewTab({
         </div>
       </div>
 
-      {/* Compact Session History */}
-      <RecentSessions sessions={sessions} onViewAll={onViewAllSessions} />
+      {/* Last session summary (richer than the compact history strip) */}
+      <LastSessionCard session={lastSession} studentId={student.id} />
+
+      {/* Compact Session History -- skip the top entry when LastSessionCard is showing it */}
+      {lastSession !== null && (
+        <RecentSessions sessions={sessions} onViewAll={onViewAllSessions} skipFirst />
+      )}
 
       {/* Teacher's Working Memory */}
       <TeachingNotesPanel
