@@ -50,7 +50,7 @@ const FULL_STUDENT: Student = {
       { id: 'd1', description: 'Subjuntivo en concesivas', competency: 'Grammar', subcategory: 'subjuntivo', severity: 'high', trend: 'stable', status: 'Active' },
       { id: 'd2', description: 'Registro formal', competency: 'Writing', subcategory: '', severity: 'medium', trend: 'improving', status: 'Covered' },
     ],
-    shortTermObjectives: [{ id: 'obj-1', text: 'Redaccion formal semanal', targetDate: '2026-05-01' }],
+    shortTermObjectives: [{ id: 'obj-1', text: 'Redaccion formal semanal', targetDate: '2026-05-01', objectiveType: 'other' as const }],
     teachingTodos: [
       { id: 'todo-1', text: 'Enviar ejercicios de por/para', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'pending', coveredInSessionLogId: null },
       { id: 'todo-2', text: 'Explicar diferencia', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'covered', coveredInSessionLogId: 'session-1' },
@@ -414,7 +414,7 @@ describe('StudentProfileTab', () => {
     it('shows OVERDUE label for past-due objective', () => {
       const student = {
         ...FULL_STUDENT,
-        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Overdue objective', targetDate: dateOffset(-5) }] },
+        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Overdue objective', targetDate: dateOffset(-5), objectiveType: 'other' as const }] },
       }
       renderProfile(student)
       expect(screen.getByTestId('objective-overdue-label')).toBeInTheDocument()
@@ -423,7 +423,7 @@ describe('StudentProfileTab', () => {
     it('shows Critical label for objective within 3 days', () => {
       const student = {
         ...FULL_STUDENT,
-        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Critical objective', targetDate: dateOffset(2) }] },
+        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Critical objective', targetDate: dateOffset(2), objectiveType: 'other' as const }] },
       }
       renderProfile(student)
       expect(screen.getByTestId('objective-critical-label')).toBeInTheDocument()
@@ -432,11 +432,38 @@ describe('StudentProfileTab', () => {
     it('does not show urgency labels for normal objectives', () => {
       const student = {
         ...FULL_STUDENT,
-        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Normal objective', targetDate: dateOffset(60) }] },
+        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Normal objective', targetDate: dateOffset(60), objectiveType: 'other' as const }] },
       }
       renderProfile(student)
       expect(screen.queryByTestId('objective-overdue-label')).not.toBeInTheDocument()
       expect(screen.queryByTestId('objective-critical-label')).not.toBeInTheDocument()
+    })
+
+    it('shows exam_prep badge for exam_prep objectives', () => {
+      const student = {
+        ...FULL_STUDENT,
+        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Pass DELE B2', targetDate: null, objectiveType: 'exam_prep' as const }] },
+      }
+      renderProfile(student)
+      expect(screen.getByTestId('objective-type-badge')).toHaveTextContent('Exam prep')
+    })
+
+    it('shows communicative badge for communicative objectives', () => {
+      const student = {
+        ...FULL_STUDENT,
+        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Job interview', targetDate: null, objectiveType: 'communicative' as const }] },
+      }
+      renderProfile(student)
+      expect(screen.getByTestId('objective-type-badge')).toHaveTextContent('Communicative')
+    })
+
+    it('shows no type badge for other objectives', () => {
+      const student = {
+        ...FULL_STUDENT,
+        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'General goal', targetDate: null, objectiveType: 'other' as const }] },
+      }
+      renderProfile(student)
+      expect(screen.queryByTestId('objective-type-badge')).not.toBeInTheDocument()
     })
 
     it('shows + button when onSaveShortTermObjective is provided', () => {

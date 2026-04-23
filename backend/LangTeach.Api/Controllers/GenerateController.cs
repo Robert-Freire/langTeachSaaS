@@ -204,7 +204,10 @@ public class GenerateController : ControllerBase
             StudentAge: student?.Identity.Age,
             StudentCountryOfOrigin: student?.Identity.CountryOfOrigin,
             StudentCountryOfResidence: student?.Identity.CountryOfResidence,
-            StudentOfficialCefrLevel: student?.Level.OfficialCefrLevel
+            StudentOfficialCefrLevel: student?.Level.OfficialCefrLevel,
+            StudentShortTermObjectives: student?.Profile.ShortTermObjectives
+                .Select(o => new StudentObjectiveContext(o.Text, o.TargetDate, o.ObjectiveType))
+                .ToList()
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -372,7 +375,10 @@ public class GenerateController : ControllerBase
             StudentAge: student?.Identity.Age,
             StudentCountryOfOrigin: student?.Identity.CountryOfOrigin,
             StudentCountryOfResidence: student?.Identity.CountryOfResidence,
-            StudentOfficialCefrLevel: student?.Level.OfficialCefrLevel
+            StudentOfficialCefrLevel: student?.Level.OfficialCefrLevel,
+            StudentShortTermObjectives: student?.Profile.ShortTermObjectives
+                .Select(o => new StudentObjectiveContext(o.Text, o.TargetDate, o.ObjectiveType))
+                .ToList()
         );
 
         var claudeRequest = buildPrompt(ctx);

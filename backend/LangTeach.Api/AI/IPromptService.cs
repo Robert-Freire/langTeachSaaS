@@ -9,6 +9,8 @@ namespace LangTeach.Api.AI;
 /// </summary>
 public record StudentWeakness(string Description, string WeaknessType = "grammatical");
 
+public record StudentObjectiveContext(string Text, DateOnly? TargetDate, string ObjectiveType = "other");
+
 public interface IPromptService
 {
     ClaudeRequest BuildLessonPlanPrompt(GenerationContext ctx);
@@ -44,7 +46,8 @@ public record CurriculumContext(
     string? TemplateLevel = null,
     IReadOnlyList<TemplateUnitContext>? TemplateUnits = null,
     string? TeacherNotes = null,
-    string CourseType = "general"
+    string CourseType = "general",
+    IReadOnlyList<StudentObjectiveContext>? StudentShortTermObjectives = null
 );
 
 /// <summary>
@@ -127,5 +130,6 @@ public record GenerationContext(
     int? StudentAge = null,
     string? StudentCountryOfOrigin = null,
     string? StudentCountryOfResidence = null,
-    string? StudentOfficialCefrLevel = null
+    string? StudentOfficialCefrLevel = null,
+    IReadOnlyList<StudentObjectiveContext>? StudentShortTermObjectives = null
 );

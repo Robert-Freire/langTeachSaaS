@@ -459,6 +459,22 @@ public class PromptService : IPromptService
             if (reasonForStudying.Length > 0)
                 sb.AppendLine($"- Reason for studying {language}: {reasonForStudying}");
 
+            if (ctx.StudentShortTermObjectives is { Count: > 0 })
+            {
+                sb.AppendLine("- Short-term objectives:");
+                foreach (var obj in ctx.StudentShortTermObjectives)
+                {
+                    var typeLabel = obj.ObjectiveType switch
+                    {
+                        "exam_prep"      => "[Exam prep] ",
+                        "communicative"  => "[Communicative] ",
+                        _                => string.Empty
+                    };
+                    var dateSuffix = obj.TargetDate.HasValue ? $" (by {obj.TargetDate.Value:yyyy-MM-dd})" : string.Empty;
+                    sb.AppendLine($"  - {typeLabel}{InputSanitizer.Sanitize(obj.Text)}{dateSuffix}");
+                }
+            }
+
             sb.AppendLine();
             var motivationSuffix = reasonForStudying.Length > 0
                 ? $", and anchor vocabulary to their stated study motivation: {reasonForStudying}"
@@ -1268,6 +1284,21 @@ public class PromptService : IPromptService
                 sb.AppendLine($"Interests: {string.Join(", ", ctx.StudentInterests.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0))}");
             if (ctx.StudentGoals?.Length > 0)
                 sb.AppendLine($"Goals: {string.Join(", ", ctx.StudentGoals.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0))}");
+            if (ctx.StudentShortTermObjectives is { Count: > 0 })
+            {
+                sb.AppendLine("Short-term objectives:");
+                foreach (var obj in ctx.StudentShortTermObjectives)
+                {
+                    var typeLabel = obj.ObjectiveType switch
+                    {
+                        "exam_prep"     => "[Exam prep] ",
+                        "communicative" => "[Communicative] ",
+                        _               => string.Empty
+                    };
+                    var dateSuffix = obj.TargetDate.HasValue ? $" (by {obj.TargetDate.Value:yyyy-MM-dd})" : string.Empty;
+                    sb.AppendLine($"  - {typeLabel}{InputSanitizer.Sanitize(obj.Text)}{dateSuffix}");
+                }
+            }
             if (ctx.StudentWeaknesses?.Length > 0)
                 sb.AppendLine($"Known weaknesses: {string.Join(", ", ctx.StudentWeaknesses.Select(w => InputSanitizer.Sanitize(w.Description)).Where(s => s.Length > 0))}");
             if (ctx.StudentDifficulties?.Length > 0)
