@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 import { UI_TIMEOUT, NAV_TIMEOUT } from '../helpers/timeouts'
+import { createStudentViaUI } from '../helpers/students'
 
 test.beforeAll(async ({ browser }) => {
   const ctx = await createMockAuthContext(browser)
@@ -18,19 +19,7 @@ test('followup happy path: create, appear on dashboard, mark done', async ({ bro
   try {
     // Step 1: Create a student to attach the followup to
     const studentName = `Followup Test ${Date.now()}`
-    await page.goto('/students/new')
-    await expect(page.locator('h1')).toHaveText('Add Student', { timeout: NAV_TIMEOUT })
-    await page.getByTestId('student-name').fill(studentName)
-    await page.getByTestId('student-language').click()
-    await page.getByRole('option', { name: 'Spanish' }).click()
-    await page.getByTestId('student-cefr').click()
-    await page.getByRole('option', { name: 'A1' }).click()
-    await page.getByTestId('student-native-language').click()
-    await page.getByRole('option', { name: 'English' }).click()
-    await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Save Student' }).click()
-
-    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+    await createStudentViaUI(page, { name: studentName, language: 'Spanish', cefrLevel: 'A1', nativeLanguage: 'English' })
     await expect(page.getByTestId('tab-profile')).toBeVisible({ timeout: UI_TIMEOUT })
 
     // Step 2: Add a followup from the Profile tab
