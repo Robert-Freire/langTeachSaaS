@@ -126,9 +126,9 @@ function computeLastMentionDates(sessions: SessionLog[]): Map<string, Date> {
 }
 
 export function ProgressDashboard({ student, sessions }: Props) {
-  const baselineNum = CEFR_ORDER[student.cefrLevel] ?? 3
+  const baselineNum = CEFR_ORDER[student.level.cefrLevel] ?? 3
   const baselinePercent = (baselineNum / 6) * 100
-  const skillOverrides = student.skillLevelOverrides ?? {}
+  const skillOverrides = student.level.skillLevelOverrides ?? {}
   const hasSkillData = Object.keys(skillOverrides).length > 0
 
   // Pacing analytics
@@ -138,7 +138,7 @@ export function ProgressDashboard({ student, sessions }: Props) {
   // Difficulty classification
   const recentMentions = useMemo(() => computeRecentMentions(sessions), [sessions])
   const lastMentionDates = useMemo(() => computeLastMentionDates(sessions), [sessions])
-  const difficulties = student.difficulties ?? []
+  const difficulties = student.profile.difficulties ?? []
 
   const coveredDifficulties = difficulties.filter((d) => d.status === 'Covered')
   const activeDifficulties = difficulties.filter((d) => d.status !== 'Covered')
@@ -163,7 +163,7 @@ export function ProgressDashboard({ student, sessions }: Props) {
             <div>
               <h3 className="text-lg font-bold text-[#1A1B22] mb-1">Skill Imbalance Analysis</h3>
               <p className="text-sm text-zinc-500">
-                Skill levels compared to general CEFR level ({student.cefrLevel})
+                Skill levels compared to general CEFR level ({student.level.cefrLevel})
               </p>
             </div>
             {hasSkillData && (
@@ -177,7 +177,7 @@ export function ProgressDashboard({ student, sessions }: Props) {
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-sm bg-[#E8E7F1]" />
                   <span className="text-[0.6875rem] font-bold uppercase text-zinc-400 tracking-tighter">
-                    Baseline {student.cefrLevel}
+                    Baseline {student.level.cefrLevel}
                   </span>
                 </div>
               </div>
@@ -190,8 +190,8 @@ export function ProgressDashboard({ student, sessions }: Props) {
                 const level = skillOverrides[skill]
                 if (!level) return null
                 const width = cefrBarWidth(level)
-                const above = isAboveOrAtBaseline(level, student.cefrLevel)
-                const hasGap = isGapTwoOrMore(level, student.cefrLevel)
+                const above = isAboveOrAtBaseline(level, student.level.cefrLevel)
+                const hasGap = isGapTwoOrMore(level, student.level.cefrLevel)
                 const barColor = hasGap ? 'bg-amber-400' : above ? 'bg-[#3525CD]' : 'bg-[#C3C0FF]'
                 return (
                   <div key={skill} className="relative">
@@ -214,7 +214,7 @@ export function ProgressDashboard({ student, sessions }: Props) {
                       <div
                         className="absolute z-10 w-0.5 bg-[#C7C4D8]"
                         style={{ left: `${baselinePercent}%`, top: '-2px', bottom: '-2px' }}
-                        aria-label={`Baseline ${student.cefrLevel}`}
+                        aria-label={`Baseline ${student.level.cefrLevel}`}
                         data-testid={`baseline-marker-${skill.toLowerCase()}`}
                       />
                       <div

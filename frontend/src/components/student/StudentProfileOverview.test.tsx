@@ -5,29 +5,31 @@ import { StudentProfileOverview } from './StudentProfileOverview'
 import { parseNotes } from './studentNoteUtils'
 import type { Student } from '@/api/students'
 
-const BASE_STUDENT: Student = {
-  id: 'student-1',
-  name: 'Ana Garcia',
-  learningLanguage: 'Spanish',
-  cefrLevel: 'B1',
-  interests: [],
-  personalNotes: null, teachingNotes: null,
-  nativeLanguages: [],
-  learningGoals: [],
-  weaknesses: [],
-  difficulties: [],
-  createdAt: '2026-01-01T00:00:00Z',
-  updatedAt: '2026-01-01T00:00:00Z',
-  birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
-  countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
-  officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
-  rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
+type FlatOverrides = {
+  nativeLanguages?: string[]; spokenLanguages?: string[]
+  cefrLevel?: string; officialCefrLevel?: string | null; skillLevelOverrides?: Record<string, string>
+  interests?: string[]; personalNotes?: string | null; teachingNotes?: string | null
+  learningGoals?: import('@/api/students').LearningGoalItem[]
+  weaknesses?: import('@/api/students').StudentWeaknessItem[]
+  difficulties?: import('@/api/students').Difficulty[]
 }
 
-function renderOverview(student: Partial<Student> = {}) {
+function makeStudent(overrides: FlatOverrides = {}): Student {
+  return {
+    id: 'student-1', name: 'Ana Garcia', learningLanguage: 'Spanish',
+    level: { cefrLevel: overrides.cefrLevel ?? 'B1', officialCefrLevel: overrides.officialCefrLevel ?? null, skillLevelOverrides: overrides.skillLevelOverrides ?? {} },
+    languages: { nativeLanguages: overrides.nativeLanguages ?? [], spokenLanguages: overrides.spokenLanguages ?? [] },
+    identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, reasonForStudying: null },
+    profile: { interests: overrides.interests ?? [], personalNotes: overrides.personalNotes ?? null, teachingNotes: overrides.teachingNotes ?? null, learningGoals: overrides.learningGoals ?? [], weaknesses: overrides.weaknesses ?? [], difficulties: overrides.difficulties ?? [], shortTermObjectives: [], teachingTodos: [] },
+    commercial: { isActive: true, isCorporate: false, rate: null },
+    createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+  }
+}
+
+function renderOverview(overrides: FlatOverrides = {}) {
   return render(
     <MemoryRouter>
-      <StudentProfileOverview student={{ ...BASE_STUDENT, ...student }} />
+      <StudentProfileOverview student={makeStudent(overrides)} />
     </MemoryRouter>
   )
 }

@@ -81,7 +81,7 @@ interface Signal {
 }
 
 function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal[] {
-  if (!student.isActive) {
+  if (!student.commercial.isActive) {
     return [{ label: 'Former', className: 'bg-zinc-600 text-white' }]
   }
 
@@ -105,7 +105,7 @@ function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal
 
   // Exam prep: short-term objective with targetDate within 6 weeks
   const sixWeeksMs = 6 * 7 * 24 * 60 * 60 * 1000
-  const hasExamPrep = student.shortTermObjectives.some(o => {
+  const hasExamPrep = student.profile.shortTermObjectives.some(o => {
     if (!o.targetDate) return false
     const targetMs = new Date(o.targetDate).getTime()
     const msUntil = targetMs - now
@@ -184,7 +184,7 @@ function sortStudents(
     case 'name':
       return sorted.sort((a, b) => a.name.localeCompare(b.name))
     case 'cefrLevel':
-      return sorted.sort((a, b) => (cefrOrder[a.cefrLevel] ?? 99) - (cefrOrder[b.cefrLevel] ?? 99))
+      return sorted.sort((a, b) => (cefrOrder[a.level.cefrLevel] ?? 99) - (cefrOrder[b.level.cefrLevel] ?? 99))
   }
 }
 
@@ -282,7 +282,7 @@ export default function Students() {
 
   const filteredStudents = allStudents.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(localSearch.toLowerCase())
-    const matchesCefr = cefrFilter === 'All' || s.cefrLevel === cefrFilter
+    const matchesCefr = cefrFilter === 'All' || s.level.cefrLevel === cefrFilter
     return matchesSearch && matchesCefr
   })
 
@@ -298,7 +298,7 @@ export default function Students() {
       return `Showing ${count} result${count === 1 ? '' : 's'} for '${localSearch}'`
     }
     if (cefrFilter !== 'All') {
-      const count = allStudents.filter(s => s.cefrLevel === cefrFilter).length
+      const count = allStudents.filter(s => s.level.cefrLevel === cefrFilter).length
       return `Managing ${count} ${cefrFilter} learner${count === 1 ? '' : 's'} in your atelier`
     }
     return `Managing ${total} active language learner${total === 1 ? '' : 's'} in your atelier`
@@ -515,15 +515,15 @@ export default function Students() {
                     </span>
 
                     {/* CEFR badge */}
-                    <CefrBadge level={student.cefrLevel} data-testid="student-level" />
+                    <CefrBadge level={student.level.cefrLevel} data-testid="student-level" />
 
                     {/* Native language */}
                     <span
                       data-testid="native-language-chip"
                       className="text-sm text-zinc-600 truncate"
                     >
-                      {student.nativeLanguages.length > 0
-                        ? student.nativeLanguages.join(', ')
+                      {student.languages.nativeLanguages.length > 0
+                        ? student.languages.nativeLanguages.join(', ')
                         : <span className="text-zinc-300">—</span>}
                     </span>
 
@@ -561,7 +561,7 @@ export default function Students() {
 
                     {/* Hidden interests for e2e compatibility */}
                     <span className="sr-only">
-                      {student.interests.map(interest => (
+                      {student.profile.interests.map(interest => (
                         <span key={interest} data-testid="interest-chip">{interest}</span>
                       ))}
                     </span>

@@ -50,7 +50,7 @@ test('trend starts stable with no session logs', async ({ browser }) => {
   expect(createRes.status()).toBe(201)
   const student = await createRes.json()
   createdStudentIds.push(student.id)
-  expect(student.difficulties[0].trend).toBe('stable')
+  expect(student.profile.difficulties[0].trend).toBe('stable')
 
   await context.close()
 })
@@ -98,7 +98,7 @@ test('trend becomes worsening after 3 consecutive session logs mentioning pair',
     headers: { Authorization: 'Bearer test-token' },
   })
   const updated = await updatedRes.json()
-  expect(updated.difficulties[0].trend).toBe('worsening')
+  expect(updated.profile.difficulties[0].trend).toBe('worsening')
 
   await context.close()
 })
@@ -146,7 +146,7 @@ test('covered difficulty becomes improving when not mentioned in last 2 sessions
     headers: { Authorization: 'Bearer test-token' },
   })
   const updated = await updatedRes.json()
-  expect(updated.difficulties[0].trend).toBe('improving')
+  expect(updated.profile.difficulties[0].trend).toBe('improving')
 
   await context.close()
 })
@@ -214,8 +214,8 @@ test('taxonomy: Interaction and Mediation competencies accepted; Fluency rejecte
   expect(interactionRes.status()).toBe(201)
   const interactionStudent = await interactionRes.json()
   createdStudentIds.push(interactionStudent.id)
-  expect(interactionStudent.difficulties[0].competency).toBe('Interaction')
-  expect(interactionStudent.difficulties[0].severity).toBe('critical')
+  expect(interactionStudent.profile.difficulties[0].competency).toBe('Interaction')
+  expect(interactionStudent.profile.difficulties[0].severity).toBe('critical')
 
   // Mediation competency must be accepted
   const mediationRes = await page.request.post(`${API_BASE}/api/students`, {
@@ -230,7 +230,7 @@ test('taxonomy: Interaction and Mediation competencies accepted; Fluency rejecte
   expect(mediationRes.status()).toBe(201)
   const mediationStudent = await mediationRes.json()
   createdStudentIds.push(mediationStudent.id)
-  expect(mediationStudent.difficulties[0].competency).toBe('Mediation')
+  expect(mediationStudent.profile.difficulties[0].competency).toBe('Mediation')
 
   // Fluency competency must be rejected (removed from taxonomy)
   const fluencyRes = await page.request.post(`${API_BASE}/api/students`, {

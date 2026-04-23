@@ -49,9 +49,9 @@ public class StudentsControllerTests
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
         student!.Name.Should().Be("Ana García");
         student.LearningLanguage.Should().Be("Spanish");
-        student.CefrLevel.Should().Be("B2");
-        student.Interests.Should().BeEquivalentTo(["travel", "music"]);
-        student.PersonalNotes.Should().Be("Prefers morning sessions.");
+        student.Level.CefrLevel.Should().Be("B2");
+        student.Profile.Interests.Should().BeEquivalentTo(["travel", "music"]);
+        student.Profile.PersonalNotes.Should().Be("Prefers morning sessions.");
         response.Headers.Location.Should().NotBeNull();
     }
 
@@ -103,9 +103,9 @@ public class StudentsControllerTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
         updated!.Name.Should().Be("Updated Name");
-        updated.CefrLevel.Should().Be("C1");
+        updated.Level.CefrLevel.Should().Be("C1");
         updated.LearningLanguage.Should().Be("French");
-        updated.Interests.Should().BeEquivalentTo(["cinema"]);
+        updated.Profile.Interests.Should().BeEquivalentTo(["cinema"]);
     }
 
     [Fact]
@@ -159,9 +159,9 @@ public class StudentsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
-        student!.NativeLanguages.Should().BeEquivalentTo(["Portuguese"]);
-        student.LearningGoals.Select(g => g.Text).Should().BeEquivalentTo(["travel", "conversation"]);
-        student.Weaknesses.Should().BeEquivalentTo([
+        student!.Languages.NativeLanguages.Should().BeEquivalentTo(["Portuguese"]);
+        student.Profile.LearningGoals.Select(g => g.Text).Should().BeEquivalentTo(["travel", "conversation"]);
+        student.Profile.Weaknesses.Should().BeEquivalentTo([
             new StudentWeaknessDto("past tenses", "grammatical"),
             new StudentWeaknessDto("articles", "lexical"),
         ]);
@@ -183,9 +183,9 @@ public class StudentsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
-        student!.NativeLanguages.Should().BeEmpty();
-        student.LearningGoals.Should().BeEmpty();
-        student.Weaknesses.Should().BeEmpty();
+        student!.Languages.NativeLanguages.Should().BeEmpty();
+        student.Profile.LearningGoals.Should().BeEmpty();
+        student.Profile.Weaknesses.Should().BeEmpty();
     }
 
     [Fact]
@@ -199,7 +199,7 @@ public class StudentsControllerTests
         {
             Name = created.Name,
             LearningLanguage = created.LearningLanguage,
-            CefrLevel = created.CefrLevel,
+            CefrLevel = created.Level.CefrLevel,
             NativeLanguages = ["German"],
             LearningGoals = [new LearningGoalDto(Guid.NewGuid().ToString(), "business", [])],
             Weaknesses = [new StudentWeaknessDto("word order", "grammatical")],
@@ -209,9 +209,9 @@ public class StudentsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
-        updated!.NativeLanguages.Should().BeEquivalentTo(["German"]);
-        updated.LearningGoals.Select(g => g.Text).Should().BeEquivalentTo(["business"]);
-        updated.Weaknesses.Should().BeEquivalentTo([new StudentWeaknessDto("word order", "grammatical")]);
+        updated!.Languages.NativeLanguages.Should().BeEquivalentTo(["German"]);
+        updated.Profile.LearningGoals.Select(g => g.Text).Should().BeEquivalentTo(["business"]);
+        updated.Profile.Weaknesses.Should().BeEquivalentTo([new StudentWeaknessDto("word order", "grammatical")]);
     }
 
     [Fact]
@@ -243,7 +243,7 @@ public class StudentsControllerTests
         {
             Name = created.Name,
             LearningLanguage = created.LearningLanguage,
-            CefrLevel = created.CefrLevel,
+            CefrLevel = created.Level.CefrLevel,
             NativeLanguages = ["Klingon"],
         };
 
@@ -273,12 +273,12 @@ public class StudentsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
-        student!.Difficulties.Should().HaveCount(2);
-        student.Difficulties[0].Competency.Should().Be("Grammar");
-        student.Difficulties[0].Description.Should().Be("Confuses ser/estar in past tense");
-        student.Difficulties[0].Severity.Should().Be("high");
-        student.Difficulties[0].Status.Should().Be("Active");
-        student.Difficulties[1].Competency.Should().Be("Pronunciation");
+        student!.Profile.Difficulties.Should().HaveCount(2);
+        student.Profile.Difficulties[0].Competency.Should().Be("Grammar");
+        student.Profile.Difficulties[0].Description.Should().Be("Confuses ser/estar in past tense");
+        student.Profile.Difficulties[0].Severity.Should().Be("high");
+        student.Profile.Difficulties[0].Status.Should().Be("Active");
+        student.Profile.Difficulties[1].Competency.Should().Be("Pronunciation");
     }
 
     [Fact]
@@ -292,7 +292,7 @@ public class StudentsControllerTests
         {
             Name = created.Name,
             LearningLanguage = created.LearningLanguage,
-            CefrLevel = created.CefrLevel,
+            CefrLevel = created.Level.CefrLevel,
             Difficulties =
             [
                 new DifficultyDto("d1", "Lacks academic register vocabulary", "Vocabulary", "academic register", "low", "stable", "Active"),
@@ -303,23 +303,23 @@ public class StudentsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
-        updated!.Difficulties.Should().HaveCount(1);
-        updated.Difficulties[0].Competency.Should().Be("Vocabulary");
-        updated.Difficulties[0].Description.Should().Be("Lacks academic register vocabulary");
+        updated!.Profile.Difficulties.Should().HaveCount(1);
+        updated.Profile.Difficulties[0].Competency.Should().Be("Vocabulary");
+        updated.Profile.Difficulties[0].Description.Should().Be("Lacks academic register vocabulary");
 
         // Update again to remove all difficulties
         var clearRequest = new UpdateStudentRequest
         {
             Name = created.Name,
             LearningLanguage = created.LearningLanguage,
-            CefrLevel = created.CefrLevel,
+            CefrLevel = created.Level.CefrLevel,
             Difficulties = [],
         };
 
         var clearResponse = await client.PutAsJsonAsync($"/api/students/{created.Id}", clearRequest);
         clearResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var cleared = await clearResponse.Content.ReadFromJsonAsync<StudentDto>();
-        cleared!.Difficulties.Should().BeEmpty();
+        cleared!.Profile.Difficulties.Should().BeEmpty();
     }
 
     [Fact]
@@ -402,7 +402,7 @@ public class StudentsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
-        student!.Difficulties.Should().BeEmpty();
+        student!.Profile.Difficulties.Should().BeEmpty();
     }
 
     [Fact]
@@ -416,13 +416,13 @@ public class StudentsControllerTests
             new CreateTeachingTodoDto("Practicar subjuntivo", null));
         appendResponse.EnsureSuccessStatusCode();
         var withTodo = await appendResponse.Content.ReadFromJsonAsync<StudentDto>();
-        var todoId = withTodo!.TeachingTodos[0].Id;
+        var todoId = withTodo!.Profile.TeachingTodos[0].Id;
 
         var deleteResponse = await client.DeleteAsync($"/api/students/{student.Id}/teaching-todos/{todoId}");
 
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await deleteResponse.Content.ReadFromJsonAsync<StudentDto>();
-        result!.TeachingTodos.Should().BeEmpty();
+        result!.Profile.TeachingTodos.Should().BeEmpty();
     }
 
     [Fact]
@@ -447,7 +447,7 @@ public class StudentsControllerTests
             new CreateTeachingTodoDto("Practicar subjuntivo", null));
         appendResponse.EnsureSuccessStatusCode();
         var withTodo = await appendResponse.Content.ReadFromJsonAsync<StudentDto>();
-        var todoId = withTodo!.TeachingTodos[0].Id;
+        var todoId = withTodo!.Profile.TeachingTodos[0].Id;
 
         // "Pending" capitalized should be accepted (OrdinalIgnoreCase)
         var updateResponse = await client.PatchAsJsonAsync(
@@ -482,11 +482,11 @@ public class StudentsControllerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var student = await response.Content.ReadFromJsonAsync<StudentDto>();
-        student!.LearningGoals.Should().HaveCount(1);
-        student.LearningGoals[0].Text.Should().Be("Dominar el subjuntivo");
-        student.LearningGoals[0].Children.Should().HaveCount(1);
-        student.LearningGoals[0].Children[0].Text.Should().Be("Subjuntivo en oraciones subordinadas");
-        student.LearningGoals[0].Children[0].Children.Should().BeEmpty();
+        student!.Profile.LearningGoals.Should().HaveCount(1);
+        student.Profile.LearningGoals[0].Text.Should().Be("Dominar el subjuntivo");
+        student.Profile.LearningGoals[0].Children.Should().HaveCount(1);
+        student.Profile.LearningGoals[0].Children[0].Text.Should().Be("Subjuntivo en oraciones subordinadas");
+        student.Profile.LearningGoals[0].Children[0].Children.Should().BeEmpty();
     }
 
     [Fact]

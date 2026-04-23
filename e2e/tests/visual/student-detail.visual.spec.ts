@@ -18,10 +18,10 @@ test.beforeAll(async ({ browser }) => {
   const res = await page.request.get(`${API_BASE}/api/students`, { headers: AUTH_HEADER })
   expect(res.ok()).toBeTruthy()
   const body = await res.json()
-  const students: Array<{ personalNotes?: string; name?: string; id: string }> = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
+  const students: Array<{ profile?: { personalNotes?: string }; name?: string; id: string }> = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
 
   // [visual-seed] student -- no sessions (for empty-state screenshot)
-  const visual = students.find((s) => s.personalNotes === '[visual-seed]')
+  const visual = students.find((s) => s.profile?.personalNotes === '[visual-seed]')
   if (!visual) throw new Error('No [visual-seed] student found. Run start-visual-stack.sh first.')
   studentId = visual.id
 
