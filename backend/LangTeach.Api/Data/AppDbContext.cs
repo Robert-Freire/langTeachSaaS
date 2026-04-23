@@ -293,10 +293,10 @@ public class AppDbContext : DbContext
         // TeacherFollowup — cascade delete from Teacher, no-action from Student and SessionLog (nullable)
         modelBuilder.Entity<TeacherFollowup>(e =>
         {
+            e.HasKey(f => f.Id);
             e.ToTable(t => t.HasCheckConstraint(
                 "CK_TeacherFollowups_Kind",
                 "Kind IN ('pedagogical', 'operational')"));
-            e.HasKey(f => f.Id);
             e.HasIndex(f => new { f.TeacherId, f.Status });
             e.HasIndex(f => new { f.TeacherId, f.StudentId });
             e.HasIndex(f => new { f.TeacherId, f.StudentId, f.Kind });
