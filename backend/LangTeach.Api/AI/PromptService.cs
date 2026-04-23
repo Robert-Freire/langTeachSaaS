@@ -464,14 +464,8 @@ public class PromptService : IPromptService
                 sb.AppendLine("- Short-term objectives:");
                 foreach (var obj in ctx.StudentShortTermObjectives)
                 {
-                    var typeLabel = obj.ObjectiveType switch
-                    {
-                        "exam_prep"      => "[Exam prep] ",
-                        "communicative"  => "[Communicative] ",
-                        _                => string.Empty
-                    };
                     var dateSuffix = obj.TargetDate.HasValue ? $" (by {obj.TargetDate.Value:yyyy-MM-dd})" : string.Empty;
-                    sb.AppendLine($"  - {typeLabel}{InputSanitizer.Sanitize(obj.Text)}{dateSuffix}");
+                    sb.AppendLine($"  - {ObjectiveTypeLabel(obj.ObjectiveType)}{InputSanitizer.Sanitize(obj.Text)}{dateSuffix}");
                 }
             }
 
@@ -1289,14 +1283,8 @@ public class PromptService : IPromptService
                 sb.AppendLine("Short-term objectives:");
                 foreach (var obj in ctx.StudentShortTermObjectives)
                 {
-                    var typeLabel = obj.ObjectiveType switch
-                    {
-                        "exam_prep"     => "[Exam prep] ",
-                        "communicative" => "[Communicative] ",
-                        _               => string.Empty
-                    };
                     var dateSuffix = obj.TargetDate.HasValue ? $" (by {obj.TargetDate.Value:yyyy-MM-dd})" : string.Empty;
-                    sb.AppendLine($"  - {typeLabel}{InputSanitizer.Sanitize(obj.Text)}{dateSuffix}");
+                    sb.AppendLine($"  - {ObjectiveTypeLabel(obj.ObjectiveType)}{InputSanitizer.Sanitize(obj.Text)}{dateSuffix}");
                 }
             }
             if (ctx.StudentWeaknesses?.Length > 0)
@@ -1507,6 +1495,13 @@ public class PromptService : IPromptService
     }
 
     private static string CefrCodeToSkillName(string code) => LangTeach.Api.DTOs.CefrSkillCodes.ToSkillName(code);
+
+    private static string ObjectiveTypeLabel(string objectiveType) => objectiveType switch
+    {
+        "exam_prep"     => "[Exam prep] ",
+        "communicative" => "[Communicative] ",
+        _               => string.Empty
+    };
 
     // --- Reflection extraction ---
 

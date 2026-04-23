@@ -318,6 +318,8 @@ public class StudentService : IStudentService
             throw new ValidationException($"BirthYear must be between 1920 and {currentYear}.");
     }
 
+    private static readonly HashSet<string> ValidObjectiveTypes = ["exam_prep", "communicative", "other"];
+
     private static void ValidateShortTermObjectives(List<ShortTermObjectiveDto> objectives)
     {
         if (objectives.Count > 10)
@@ -328,6 +330,8 @@ public class StudentService : IStudentService
                 throw new ValidationException("Each ShortTermObjective must have an Id (max 50 characters).");
             if (string.IsNullOrWhiteSpace(o.Text) || o.Text.Length > 200)
                 throw new ValidationException("Each ShortTermObjective Text must be between 1 and 200 characters.");
+            if (!ValidObjectiveTypes.Contains(o.ObjectiveType))
+                throw new ValidationException($"ShortTermObjective ObjectiveType must be one of: {string.Join(", ", ValidObjectiveTypes)}.");
         }
     }
 
