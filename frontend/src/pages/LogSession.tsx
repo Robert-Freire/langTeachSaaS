@@ -1476,7 +1476,7 @@ export default function LogSession() {
           {/* Cancelled session: minimal fields */}
           {isCancelled && (
             <div className="space-y-1">
-              <p className="text-sm text-zinc-400 italic">This session was cancelled. Only date, duration, topics covered and notes will be recorded.</p>
+              <div className="bg-amber-50 rounded p-3 text-sm text-amber-800">This session was cancelled. Only date, duration, topics covered and notes will be recorded.</div>
 
               {/* Topics Covered */}
               <div className="space-y-1 pt-4">

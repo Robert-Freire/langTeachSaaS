@@ -38,7 +38,7 @@ export default function StudyView() {
           title={lesson.title}
           titleTestId="study-title"
           actions={
-            <Badge variant="outline" className="text-xs font-medium text-zinc-500 border-zinc-300 uppercase tracking-wide">Preview</Badge>
+            <Badge variant="outline" className="text-xs font-medium text-indigo-600 border-indigo-300 bg-indigo-50 uppercase tracking-wide">Preview</Badge>
           }
         />
       </div>

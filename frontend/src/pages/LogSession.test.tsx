@@ -277,6 +277,17 @@ describe('LogSession', () => {
     })
   })
 
+  it('shows amber callout message when cancelled toggle is clicked', async () => {
+    renderLogSession()
+    await screen.findByTestId('cancelled-toggle')
+    fireEvent.click(screen.getByTestId('cancelled-toggle'))
+    await waitFor(() => {
+      expect(screen.getByText(/This session was cancelled/)).toBeInTheDocument()
+    })
+    const callout = screen.getByText(/This session was cancelled/).closest('div')
+    expect(callout?.className).toContain('bg-amber-50')
+  })
+
   it('calls createSession with correct payload when Done is clicked after typing', async () => {
     renderLogSession()
     await screen.findByTestId('actual-content')

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { cn } from '@/lib/utils'
 import type { Student } from '@/api/students'
-import { parseNotes } from './studentNoteUtils'
+import { parseNotes, isSentinel } from './studentNoteUtils'
 import { langCode } from './langUtils'
 
 const SKILL_ORDER = ['Reading', 'Writing', 'Speaking', 'Listening']
@@ -42,7 +42,7 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
 }
 
 export function StudentProfileOverview({ student, onToggleDifficultyStatus }: Props) {
-  const parsedPersonalNotes = parseNotes(student.profile.personalNotes)
+  const parsedPersonalNotes = parseNotes(isSentinel(student.profile.personalNotes) ? null : student.profile.personalNotes)
   const parsedTeachingNotes = parseNotes(student.profile.teachingNotes)
 
   return (

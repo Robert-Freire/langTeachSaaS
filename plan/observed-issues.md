@@ -8,12 +8,15 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #848 | 2026-04-22 | low | Issue #848 AC requested visible STATUS label above Cancelled toggle; design-system.md 11.3 prohibits this; AC was fulfilled via invisible spacer for alignment instead |
 | #838 | 2026-04-22 | low | LogSession: checkboxes in Teaching Todos/Followups left panel use native input instead of design-system custom controls (pre-existing) |
 | #838 | 2026-04-22 | low | LogSession: local ToggleSwitch focus ring uses ring-indigo-500 instead of ring-indigo-600 (pre-existing, design-system 11.5) |
+| #850 | 2026-04-23 | low | LogSession.test.tsx "date defaults to today" fails at ~midnight UTC due to UTC vs local timezone mismatch in date comparison; pre-existing flaky test |
 | #837 | 2026-04-22 | low | TeachingTodosCard.tsx has local relativeTime duplicating formatDate.ts — filed #860 |
 | #844 | 2026-04-22 | low | TeachingTodoDto projection duplicated in StudentService.ToTodo() and DashboardService inline LINQ (EF Core constraint) — filed #869 |
 | #844 | 2026-04-22 | low | TeacherFollowup.Kind has no DB CHECK constraint; only DTO regex guards API path — filed #870 |
 | #837 | 2026-04-22 | low | StudentRoster.tsx has local formatRelativeDate not yet refactored to use relativeTime — filed #861 |
 | #852 | 2026-04-22 | low | StudentsController (4x) and CoursesController still use ValidationProblem/BadRequest(rawString) for ValidationException — filed #871 |
 | #846 | 2026-04-22 | low | PromptService.cs lines 473-478: L1 sub-bullets (differs-from-native, false cognates, common errors) hardcoded in C# system prompt; overlaps with config-driven L1Adjustments block appended to user prompts. Predates #846; worth consolidating into the data-driven path. |
+| #849 | 2026-04-22 | low | Root .dockerignore excludes frontend/ in worktrees, requiring manual bypass during UI review docker build; pre-existing worktree build infrastructure gap. |
+| #849 | 2026-04-22 | low | E2E test student-detail-session-expanded fails on session-title-input not found; pre-existing, unrelated to labeling changes. |
 
 | #845 | 2026-04-23 | low | Visual spec `student-detail.visual.spec.ts`: "sessions tab - expanded row" fails because testid `session-title-input` does not exist (only `log-session-title-input`); pre-existing, unrelated to task |
 | #845 | 2026-04-23 | low | `.dockerignore` at repo root excludes `frontend/` which breaks `docker compose build` from worktrees when cached frontend image expires; needs investigation |

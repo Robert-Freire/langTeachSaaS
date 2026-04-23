@@ -4,7 +4,7 @@ import { Pencil, X, Plus, Check, GraduationCap, ChevronDown } from 'lucide-react
 import { Badge } from '@/components/ui/badge'
 import type { Student } from '@/api/students'
 import type { TeacherFollowup } from '@/api/followups'
-import { parseNotes } from './studentNoteUtils'
+import { parseNotes, isSentinel } from './studentNoteUtils'
 import { TeachingTodosCard } from './TeachingTodosCard'
 import { StudentFollowupsCard } from './StudentFollowupsCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
@@ -527,7 +527,8 @@ export function StudentProfileTab({
 }: Props) {
   const [showEmptySections, setShowEmptySections] = useState(false)
 
-  const parsedPersonalNotes = parseNotes(student.profile.personalNotes)
+  const safePersonalNotes = isSentinel(student.profile.personalNotes) ? null : student.profile.personalNotes
+  const parsedPersonalNotes = parseNotes(safePersonalNotes)
   const parsedTeachingNotes = parseNotes(student.profile.teachingNotes)
 
   const hasAbout = !!(
@@ -538,7 +539,7 @@ export function StudentProfileTab({
     student.identity.countryOfResidence ||
     student.identity.cityOfResidence
   )
-  const hasWorkingMemory = !!(student.profile.personalNotes || student.profile.teachingNotes)
+  const hasWorkingMemory = !!(safePersonalNotes || student.profile.teachingNotes)
 
   const location = [student.identity.cityOfResidence, student.identity.countryOfResidence].filter(Boolean).join(', ')
   const origin = [student.identity.cityOfOrigin, student.identity.countryOfOrigin].filter(Boolean).join(', ')
@@ -809,7 +810,7 @@ export function StudentProfileTab({
 
               <div className="space-y-6">
                 {/* Personal notes (Sensitivities / Life Context) */}
-                {(parsedPersonalNotes || student.profile.personalNotes) && (
+                {(parsedPersonalNotes || safePersonalNotes) && (
                   <div>
                     <p className="text-[0.625rem] font-bold uppercase tracking-widest text-white/50 mb-2">
                       Sensitivities / Life Context
@@ -826,14 +827,14 @@ export function StudentProfileTab({
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-white/90 whitespace-pre-wrap leading-relaxed">{student.profile.personalNotes}</p>
+                      <p className="text-sm text-white/90 whitespace-pre-wrap leading-relaxed">{safePersonalNotes}</p>
                     )}
                   </div>
                 )}
 
                 {/* Teaching notes (Pedagogical Observations) */}
                 {(parsedTeachingNotes || student.profile.teachingNotes) && (
-                  <div className={parsedPersonalNotes || student.profile.personalNotes ? 'pt-4 border-t border-white/10' : ''}>
+                  <div className={parsedPersonalNotes || safePersonalNotes ? 'pt-4 border-t border-white/10' : ''}>
                     <p className="text-[0.625rem] font-bold uppercase tracking-widest text-white/50 mb-2">
                       Pedagogical Observations
                     </p>
@@ -856,7 +857,7 @@ export function StudentProfileTab({
                   </div>
                 )}
 
-                {!student.profile.personalNotes && !student.profile.teachingNotes && (
+                {!safePersonalNotes && !student.profile.teachingNotes && (
                   <p className="text-sm text-white/40 italic">No notes added yet</p>
                 )}
               </div>

@@ -8,6 +8,7 @@ import { StudentFollowupsCard } from './StudentFollowupsCard'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { SectionHeader } from './SectionHeader'
 import { formatMonthYear } from '@/utils/formatDate'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { CEFR_ORDER } from '@/utils/cefrUtils'
 import { getDisplayTitle } from '@/lib/sessionUtils'
 import { rotatingPrompt } from '@/utils/rotatingPrompt'
@@ -135,12 +136,19 @@ function PedagogicalProfileCard({ student }: { student: Student }) {
             L-{lang.toUpperCase()}
           </span>
         ))}
-        <span
-          className="bg-[#D0F4DE] text-[#1A6636] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-          data-testid="target-language-tag"
-        >
-          T-{student.learningLanguage.toUpperCase()}
-        </span>
+        <Tooltip>
+          <TooltipTrigger render={<span />}>
+            <span
+              className="bg-[#D0F4DE] text-[#1A6636] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide cursor-default"
+              data-testid="target-language-tag"
+            >
+              T-{student.learningLanguage.toUpperCase()}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            Target language: this student is being taught in {student.learningLanguage}
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
   )

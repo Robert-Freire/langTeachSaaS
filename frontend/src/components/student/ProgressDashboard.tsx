@@ -359,7 +359,7 @@ export function ProgressDashboard({ student, sessions }: Props) {
                               <div className="flex flex-col gap-0.5 mr-2 min-w-0 cursor-default" />
                             }
                           >
-                            <span className="text-xs font-bold text-[#1A1B22] truncate max-w-[140px] block">
+                            <span className="text-xs font-bold text-[#1A1B22] block">
                               {d.description}
                             </span>
                             <span className="text-[0.5625rem] font-bold uppercase text-zinc-400 block">
