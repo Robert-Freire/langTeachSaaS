@@ -116,6 +116,19 @@ describe('ProgressDashboard', () => {
     expect(screen.getByText('No skill assessments recorded yet.')).toBeInTheDocument()
   })
 
+  it('renders chart with partial skill overrides and omits bars for missing skills', () => {
+    const student = {
+      ...baseStudent,
+      level: { ...baseStudent.level, skillLevelOverrides: { Reading: 'B2', Writing: 'A2' } },
+    }
+    renderProgress(student)
+    expect(screen.queryByText('No skill assessments recorded yet.')).not.toBeInTheDocument()
+    expect(screen.getByTestId('skill-bar-reading')).toBeInTheDocument()
+    expect(screen.getByTestId('skill-bar-writing')).toBeInTheDocument()
+    expect(screen.queryByTestId('skill-bar-speaking')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('skill-bar-listening')).not.toBeInTheDocument()
+  })
+
   it('renders pacing section', () => {
     renderProgress(baseStudent, [baseSession])
     expect(screen.getByTestId('pacing-section')).toBeInTheDocument()

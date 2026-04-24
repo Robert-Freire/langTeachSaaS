@@ -330,8 +330,9 @@ public static class DemoSeeder
             IsActive            = true,
             IsCorporate         = true,
             Rate                = "30 euros",
-            SpokenLanguages     = """["French"]""",
-            ShortTermObjectives = """[{"id":"o1","text":"Complete C1 exam preparation course","targetDate":"2026-09-01"}]""",
+            SpokenLanguages       = """["French"]""",
+            ShortTermObjectives  = """[{"id":"o1","text":"Complete C1 exam preparation course","targetDate":"2026-09-01"}]""",
+            SkillLevelOverrides  = DiegoSkillLevelOverrides,
         }, now);
 
         // Flush all upserted student updates before checking session logs
@@ -787,6 +788,7 @@ public static class DemoSeeder
     private const string AnaVisualShortTermObjectives = """[{"id":"o1","text":"Complete B1 grammar review by June 2026","targetDate":"2026-06-01"}]""";
     private const string AnaVisualSkillLevelOverrides = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""";
     private const string AnaVisualSpokenLanguages     = """["English"]""";
+    private const string DiegoSkillLevelOverrides     = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""";
 
     private static async Task EnsureAnaVisualExtrasAsync(AppDbContext db, Guid teacherId, ILogger logger)
     {
