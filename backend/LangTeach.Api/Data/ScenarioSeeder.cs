@@ -419,6 +419,10 @@ public static class ScenarioSeeder
             Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = now.AddDays(-3),
         });
 
+        // Diego Seed: restore skill overrides (WipeAsync clears them) so Progress tab shows chart
+        diegoSeed.SkillLevelOverrides = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""";
+        diegoSeed.UpdatedAt = now;
+
         // Diego Seed: no signal (recent past session + upcoming session, no todos)
         db.SessionLogs.AddRange(
             new SessionLog

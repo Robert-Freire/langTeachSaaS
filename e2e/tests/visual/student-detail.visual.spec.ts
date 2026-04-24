@@ -123,6 +123,24 @@ test('@visual student detail sessions tab - expanded row with editable fields', 
   await context.close()
 })
 
+test('@visual student detail progress tab - skill bars', async ({ browser }) => {
+  fs.mkdirSync('screenshots', { recursive: true })
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const consoleErrors: string[] = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
+
+  await page.goto(`/students/${studentWithSessionsId}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await page.getByTestId('tab-progress').click()
+  await expect(page.getByTestId('progress-tab-content')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('skill-bar-reading')).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.screenshot({ path: 'screenshots/progress-dashboard.png', fullPage: true })
+
+  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
+  await context.close()
+})
+
 test('@visual student detail overview tab - with sessions', async ({ browser }) => {
   fs.mkdirSync('screenshots', { recursive: true })
   const context = await createMockAuthContext(browser)

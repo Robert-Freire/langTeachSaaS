@@ -330,8 +330,9 @@ public static class DemoSeeder
             IsActive            = true,
             IsCorporate         = true,
             Rate                = "30 euros",
-            SpokenLanguages     = """["French"]""",
-            ShortTermObjectives = """[{"id":"o1","text":"Complete C1 exam preparation course","targetDate":"2026-09-01"}]""",
+            SpokenLanguages       = """["French"]""",
+            ShortTermObjectives  = """[{"id":"o1","text":"Complete C1 exam preparation course","targetDate":"2026-09-01"}]""",
+            SkillLevelOverrides  = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""",
         }, now);
 
         // Flush all upserted student updates before checking session logs
