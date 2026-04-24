@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ChevronDown,
@@ -82,26 +82,28 @@ function SessionEntry({
   const [localDuration, setLocalDuration] = useState(session.duration?.toString() ?? '')
   const [localNextSessionTopics, setLocalNextSessionTopics] = useState(session.nextSessionTopics ?? '')
 
-  // getFormData ref always returns the latest local state at save time
+  // getFormData ref kept current on each render so save reads latest local state
   const getFormDataRef = useRef<(() => CreateSessionLogRequest) | null>(null)
-  getFormDataRef.current = (): CreateSessionLogRequest => ({
-    sessionDate: session.sessionDate,
-    plannedContent: session.plannedContent,
-    actualContent: localActualContent || null,
-    homeworkAssigned: session.homeworkAssigned,
-    previousHomeworkStatus: session.previousHomeworkStatusName || 'NotApplicable',
-    nextSessionTopics: localNextSessionTopics || null,
-    generalNotes: session.generalNotes,
-    levelReassessmentSkill: session.levelReassessmentSkill,
-    levelReassessmentLevel: session.levelReassessmentLevel,
-    linkedLessonId: session.linkedLessonId,
-    topicTags: session.topicTags,
-    isCancelled: session.isCancelled,
-    status: session.statusName,
-    duration: localDuration ? parseInt(localDuration, 10) : null,
-    title: localTitle || null,
-    mentionedDifficultyPairs: JSON.parse(session.mentionedDifficultyPairs || '[]') as { Competency: string; Subcategory: string }[],
-    suggestedDifficulties: JSON.parse(session.suggestedDifficulties || '[]') as SuggestedDifficulty[],
+  useEffect(() => {
+    getFormDataRef.current = (): CreateSessionLogRequest => ({
+      sessionDate: session.sessionDate,
+      plannedContent: session.plannedContent,
+      actualContent: localActualContent || null,
+      homeworkAssigned: session.homeworkAssigned,
+      previousHomeworkStatus: session.previousHomeworkStatusName || 'NotApplicable',
+      nextSessionTopics: localNextSessionTopics || null,
+      generalNotes: session.generalNotes,
+      levelReassessmentSkill: session.levelReassessmentSkill,
+      levelReassessmentLevel: session.levelReassessmentLevel,
+      linkedLessonId: session.linkedLessonId,
+      topicTags: session.topicTags,
+      isCancelled: session.isCancelled,
+      status: session.statusName,
+      duration: localDuration ? parseInt(localDuration, 10) : null,
+      title: localTitle || null,
+      mentionedDifficultyPairs: JSON.parse(session.mentionedDifficultyPairs || '[]') as { Competency: string; Subcategory: string }[],
+      suggestedDifficulties: JSON.parse(session.suggestedDifficulties || '[]') as SuggestedDifficulty[],
+    })
   })
 
   const { status: saveStatus, saveNow } = useSessionAutosave(studentId, getFormDataRef, session.id)
