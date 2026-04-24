@@ -1,13 +1,15 @@
 export type HomeworkStatus = 'NotApplicable' | 'NotDone' | 'Partial' | 'Done'
 
+const KNOWN_STATUSES = new Set<string>(['NotApplicable', 'NotDone', 'Partial', 'Done'])
+
 export interface HomeworkStatusInfo {
   label: string
   icon: string
   color: string
 }
 
-function assertNever(x: never): HomeworkStatusInfo {
-  return { label: x as string, icon: '?', color: 'text-zinc-500' }
+function assertNever(x: never): never {
+  throw new Error(`Unhandled HomeworkStatus: ${String(x)}`)
 }
 
 export function getHomeworkStatusInfo(status: HomeworkStatus): HomeworkStatusInfo {
@@ -21,14 +23,10 @@ export function getHomeworkStatusInfo(status: HomeworkStatus): HomeworkStatusInf
 }
 
 export function getHomeworkStatusInfoSafe(status: string | null | undefined): HomeworkStatusInfo {
-  if (!status) return getHomeworkStatusInfo('NotApplicable')
-  switch (status) {
-    case 'NotApplicable': return getHomeworkStatusInfo('NotApplicable')
-    case 'NotDone': return getHomeworkStatusInfo('NotDone')
-    case 'Partial': return getHomeworkStatusInfo('Partial')
-    case 'Done': return getHomeworkStatusInfo('Done')
-    default: return { label: status, icon: '?', color: 'text-zinc-500' }
+  if (status && KNOWN_STATUSES.has(status)) {
+    return getHomeworkStatusInfo(status as HomeworkStatus)
   }
+  return status ? { label: status, icon: '?', color: 'text-zinc-500' } : getHomeworkStatusInfo('NotApplicable')
 }
 
 export function isHomeworkApplicable(status: string | null | undefined): boolean {
