@@ -698,4 +698,36 @@ public class ReflectionExtractionServiceTests
 
         result.WhatWasCovered.Should().BeNull();
     }
+
+    // Regression guard: prompt must instruct Claude to match the teacher's input language.
+    // Root cause of Jordi's bug: weak "preserve original language" instruction + English sessionTitle
+    // example biased Haiku to generate English titles from Spanish voice notes.
+
+    private static readonly IPromptService RealPrompts = new PromptService(
+        ProfileService,
+        PedagogyService,
+        NullLogger<PromptService>.Instance,
+        NullContentSchemas.Instance);
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_SystemPrompt_ContainsExplicitLanguageInstruction()
+    {
+        var ctx = new ReflectionExtractionContext(DateOnly.FromDateTime(DateTime.UtcNow), "Hoy practicamos el subjuntivo.", null);
+
+        var request = RealPrompts.BuildReflectionExtractionPrompt(ctx);
+
+        request.SystemPrompt.Should().Contain("same language as the teacher's input text",
+            because: "the prompt must instruct Claude to match the teacher's input language for all generated fields");
+    }
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_SystemPrompt_SessionTitleExampleIsNotInEnglish()
+    {
+        var ctx = new ReflectionExtractionContext(DateOnly.FromDateTime(DateTime.UtcNow), "Hoy practicamos el subjuntivo.", null);
+
+        var request = RealPrompts.BuildReflectionExtractionPrompt(ctx);
+
+        request.SystemPrompt.Should().NotContain("Subjunctive in time clauses",
+            because: "English examples in sessionTitle bias Haiku to generate English titles from Spanish input");
+    }
 }
