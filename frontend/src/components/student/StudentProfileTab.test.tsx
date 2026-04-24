@@ -595,9 +595,9 @@ describe('StudentProfileTab', () => {
       expect(screen.getByText('Enviar ejercicios de por/para')).toBeInTheDocument()
     })
 
-    it('displays section heading as "Ideas para Clases"', () => {
+    it('displays section heading as "Teaching Ideas"', () => {
       renderProfile(FULL_STUDENT)
-      expect(screen.getByText('Ideas para Clases')).toBeInTheDocument()
+      expect(screen.getByText('Teaching Ideas')).toBeInTheDocument()
     })
   })
 

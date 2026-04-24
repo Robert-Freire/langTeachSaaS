@@ -465,7 +465,7 @@ export function StudentOverviewTab({
         {/* Card 2: Pedagogical Profile */}
         <PedagogicalProfileCard student={student} />
 
-        {/* Card 3: Ideas para Clases */}
+        {/* Card 3: Teaching Ideas */}
         <div
           className={`rounded-2xl p-6 transition-colors ${
             pendingTodosCount > 0 ? 'bg-white' : 'bg-[#F4F2FD]'
@@ -474,7 +474,7 @@ export function StudentOverviewTab({
           data-testid="ideas-card-wrapper"
         >
           <div className="flex items-center justify-between mb-1">
-            <SectionHeader>Ideas para Clases</SectionHeader>
+            <SectionHeader>Teaching Ideas</SectionHeader>
             <button
               type="button"
               onClick={() => setShowIdeasAdd(true)}

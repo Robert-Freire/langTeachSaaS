@@ -989,9 +989,9 @@ export function StudentProfileTab({
             </div>
           </section>
 
-          {/* 5. Ideas para Clases */}
+          {/* 5. Teaching Ideas */}
           <section data-testid="profile-teaching-todos">
-            <SectionHeader>Ideas para Clases</SectionHeader>
+            <SectionHeader>Teaching Ideas</SectionHeader>
             <TeachingTodosCard
               todos={student.profile.teachingTodos}
               studentId={student.id}

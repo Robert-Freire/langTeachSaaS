@@ -319,6 +319,11 @@ describe('StudentOverviewTab - card order and conditional styling', () => {
     expect(wrapper.className).toContain('FFF9F2')
   })
 
+  it('Ideas card section heading reads "Teaching Ideas"', () => {
+    renderOverview(BASE_STUDENT)
+    expect(screen.getByText('Teaching Ideas')).toBeInTheDocument()
+  })
+
   it('Ideas card has muted background when no todos', () => {
     renderOverview({ ...BASE_STUDENT, profile: { ...BASE_STUDENT.profile, teachingTodos: [] } })
     const wrapper = screen.getByTestId('ideas-card-wrapper')
