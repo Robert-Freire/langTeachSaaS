@@ -132,7 +132,7 @@ test('student detail overview tab: + Ideas button opens inline input', async ({ 
     await page.getByTestId('student-native-language').click()
     await page.getByRole('option', { name: 'English' }).click()
     await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Save Student' }).click()
+    await page.getByRole('button', { name: 'Done' }).click()
 
     await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
     await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: UI_TIMEOUT })
@@ -168,7 +168,7 @@ test('student detail overview tab: Followups card amber when pending followups e
     await page.getByTestId('student-native-language').click()
     await page.getByRole('option', { name: 'English' }).click()
     await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Save Student' }).click()
+    await page.getByRole('button', { name: 'Done' }).click()
 
     await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
 
@@ -439,7 +439,7 @@ test('student profile tab: add interest chip via Enter', async ({ browser }) => 
     await page.getByTestId('student-native-language').click()
     await page.getByRole('option', { name: 'English' }).click()
     await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Save Student' }).click()
+    await page.getByRole('button', { name: 'Done' }).click()
     await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
 
     await page.getByTestId('tab-profile').click()
@@ -472,7 +472,7 @@ test('student profile tab: TWM always visible without show-all', async ({ browse
     await page.getByTestId('student-native-language').click()
     await page.getByRole('option', { name: 'English' }).click()
     await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Save Student' }).click()
+    await page.getByRole('button', { name: 'Done' }).click()
     await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
 
     await page.getByTestId('tab-profile').click()

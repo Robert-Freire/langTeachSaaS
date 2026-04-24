@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Copy, Trash2, UserPlus, CheckCircle, Sparkles, Square, CalendarPlus, Plus, Pencil, NotebookPen } from 'lucide-react'
+import { ArrowLeft, Copy, Trash2, UserPlus, CheckCircle, Sparkles, Square, CalendarPlus, Plus, Pencil } from 'lucide-react'
 import {
   getLesson, updateLesson, updateSections, deleteLesson, duplicateLesson, updateLearningTargets,
   type Lesson, type LessonStatus, type SectionType,
@@ -507,21 +507,10 @@ export default function LessonEditor() {
             onBlockSaved={handleBlockInsert}
           />
 
-          {lesson.studentId && (
-            <button
-              onClick={() => navigate(`/students/${lesson.studentId}/log-session?lessonId=${lesson.id}`)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
-              data-testid="log-session-btn"
-            >
-              <NotebookPen className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Log session</span>
-            </button>
-          )}
-
           <button
             onClick={() => { if (!isSaving && !isUpdating) navigate(`/lessons/${id}/study`) }}
             disabled={isSaving || isUpdating}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-200 bg-transparent text-zinc-600 hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="preview-student-btn"
           >
             <span className="hidden sm:inline">Preview as Student</span>

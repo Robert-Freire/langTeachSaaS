@@ -84,7 +84,7 @@ test('creates student with lexical weakness and verifies round-trip', async ({ b
   await page.getByTestId('weakness-type').click()
   await page.getByRole('option', { name: 'Lexical' }).click()
 
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Go to roster to find the student card and navigate to edit
@@ -189,7 +189,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await diffRow.getByTestId('difficulty-subcategory').fill('ser/estar')
 
   // Save
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
 
   // Should redirect to student profile page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
@@ -333,7 +333,7 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
   await page.getByTestId('weakness-description').fill('irregular verb conjugation')
 
   // Save
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Navigate to list to verify persistence
@@ -505,7 +505,7 @@ test('saves and displays SpokenLanguages, OfficialCefrLevel, and SkillLevelOverr
   await page.getByTestId('skill-override-reading').click()
   await page.getByRole('option', { name: 'B2' }).click()
 
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Verify Overview tab shows skill bar
@@ -570,7 +570,7 @@ test('identity fields round-trip: save and verify in profile view and edit form'
   await page.getByTestId('student-country-residence').fill('Spain')
   await page.getByTestId('student-city-residence').fill('Madrid')
 
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
 
   // Should redirect to student detail page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
@@ -641,7 +641,7 @@ test('motivation fields: reason for studying and objectives round-trip', async (
   await page.getByTestId('add-objective').click()
   await page.getByTestId('objective-text-input').fill(objectiveText)
 
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Header: primary objective card shows the objective (visible on all tabs)
@@ -1113,7 +1113,7 @@ test('nested learning goal with sub-goal persists after save', async ({ browser 
   await page.getByTestId('learning-goal-child-input').fill('Subjuntivo de deseo')
   await page.keyboard.press('Enter')
 
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Navigate back to edit and verify structure persists
@@ -1161,7 +1161,7 @@ test('partial difficulty row shows inline validation error and blocks save', asy
   await diffRow.getByTestId('difficulty-description').fill('Confuses ser/estar')
 
   // Attempt to save
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL('/students/new', { timeout: UI_TIMEOUT })
 
   // Inline error should appear

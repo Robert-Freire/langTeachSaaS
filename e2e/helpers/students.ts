@@ -27,7 +27,7 @@ export async function createStudentViaUI(
     await page.getByRole('option', { name: nativeLanguage }).click()
     await page.keyboard.press('Escape')
   }
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByTestId('done-btn').click()
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 }
 

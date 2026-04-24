@@ -164,11 +164,11 @@ describe('StudentForm', () => {
     expect(screen.queryByTestId('lesson-history-card')).not.toBeInTheDocument()
   })
 
-  it('renders Save and Cancel buttons in header for new student', () => {
+  it('renders Done button in header for new student', () => {
     renderNew()
     expect(screen.getByRole('heading', { name: 'Add Student' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Save Student' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
+    expect(screen.getByTestId('done-btn')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
   })
 
   it('shows Edit Student title in edit mode', async () => {
@@ -196,18 +196,10 @@ describe('StudentForm', () => {
     expect(back).toHaveAttribute('href', '/students/stu-1')
   })
 
-  it('Save button has form attribute pointing to student-form', () => {
+  it('Done button has form attribute pointing to student-form', () => {
     renderNew()
-    const saveBtn = screen.getByRole('button', { name: 'Save Student' })
-    expect(saveBtn).toHaveAttribute('form', 'student-form')
-  })
-
-  it('Cancel navigates to /students', async () => {
-    const { default: userEvent } = await import('@testing-library/user-event')
-    const user = userEvent.setup()
-    renderNew()
-    await user.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/students')
+    const doneBtn = screen.getByTestId('done-btn')
+    expect(doneBtn).toHaveAttribute('form', 'student-form')
   })
 
   it('after creating a student, redirects to student profile page', async () => {
@@ -220,7 +212,7 @@ describe('StudentForm', () => {
     await user.click(await screen.findByRole('option', { name: 'Spanish' }))
     await user.click(screen.getByTestId('student-cefr'))
     await user.click(await screen.findByRole('option', { name: 'B1' }))
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/students/new-id')
@@ -363,7 +355,7 @@ describe('StudentForm', () => {
     await user.type(screen.getByTestId('difficulty-description'), 'test difficulty')
 
     // Submit
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     // Should show inline error and not call createStudent
     expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
@@ -388,7 +380,7 @@ describe('StudentForm', () => {
     await user.click(screen.getByTestId('difficulty-competency'))
     await user.click(await screen.findByRole('option', { name: /grammar/i }))
 
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
     expect(mockCreateStudent).not.toHaveBeenCalled()
@@ -408,7 +400,7 @@ describe('StudentForm', () => {
 
     await user.click(screen.getByTestId('add-difficulty'))
     await user.type(screen.getByTestId('difficulty-description'), 'test difficulty')
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     // Error appears
     expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
@@ -434,7 +426,7 @@ describe('StudentForm', () => {
 
     await user.click(screen.getByTestId('add-difficulty'))
     await user.type(screen.getByTestId('difficulty-description'), 'test difficulty')
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
 
@@ -457,7 +449,7 @@ describe('StudentForm', () => {
 
     // Add empty row, don't fill anything
     await user.click(screen.getByTestId('add-difficulty'))
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     expect(screen.queryByTestId('difficulty-error')).not.toBeInTheDocument()
     expect(mockCreateStudent).toHaveBeenCalledWith(
@@ -509,7 +501,7 @@ describe('StudentForm', () => {
     await user.click(screen.getByTestId('add-weakness'))
     await user.type(screen.getByTestId('weakness-description'), 'Vocabulary gaps')
 
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     expect(mockCreateStudent).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -612,7 +604,7 @@ describe('StudentForm', () => {
     await user.type(screen.getByTestId('student-country-residence'), 'Spain')
     await user.type(screen.getByTestId('student-city-residence'), 'Madrid')
 
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     await vi.waitFor(() => {
       expect(mockCreateStudent).toHaveBeenCalledWith(
@@ -674,7 +666,7 @@ describe('StudentForm', () => {
     await user.click(await screen.findByRole('option', { name: 'B1' }))
     await user.type(screen.getByTestId('student-reason-for-studying'), 'Moving to Spain')
 
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     await vi.waitFor(() => {
       expect(mockCreateStudent).toHaveBeenCalledWith(
@@ -711,7 +703,7 @@ describe('StudentForm', () => {
     await user.click(screen.getByTestId('add-objective'))
     await user.type(screen.getByTestId('objective-text-input'), 'Pass DELE B1')
 
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     await vi.waitFor(() => {
       expect(mockCreateStudent).toHaveBeenCalledWith(
@@ -1026,7 +1018,7 @@ describe('StudentForm – language combobox with full options', () => {
     await user.click(await screen.findByRole('option', { name: 'Welsh' }))
     await user.click(screen.getByTestId('student-cefr'))
     await user.click(await screen.findByRole('option', { name: 'B1' }))
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
     await vi.waitFor(() => {
       expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({ learningLanguage: 'Welsh' }))
     })
@@ -1043,7 +1035,7 @@ describe('StudentForm – language combobox with full options', () => {
     await user.click(await screen.findByTestId('add-custom-entry'))
     await user.click(screen.getByTestId('student-cefr'))
     await user.click(await screen.findByRole('option', { name: 'B1' }))
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
     await vi.waitFor(() => {
       expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({ learningLanguage: 'Esperanto' }))
     })

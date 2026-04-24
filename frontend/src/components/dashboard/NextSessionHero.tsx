@@ -80,7 +80,7 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
   const urgency = getUrgencyBadge(session.sessionDate)
   const hwStatus = getHomeworkStatusInfoSafe(session.previousHomeworkStatus)
 
-  const filteredTopicTags = session.lastSessionTopicTags.filter((t) => t.trim() !== '')
+  const filteredTopicTags = session.lastSessionTopicTags.filter((t) => t != null && t.trim() !== '')
   const hasTopics = filteredTopicTags.length > 0
   const hasResponse = !!session.lastSessionNotes
   const hasLastHomework = !!session.lastSessionHomework
@@ -119,7 +119,7 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
           <div className="flex items-center gap-3">
             <Link
               to={`/students/${session.studentId}`}
-              className="inline-flex items-center rounded-xl border border-[#3525CD] px-3 py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-[#3525CD] font-inter transition-colors hover:bg-[#F4F2FD]"
+              className="inline-flex items-center rounded-xl bg-[#ECEAFD] px-3 py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-[#3525CD] font-inter transition-colors hover:bg-[#E0DDFA]"
             >
               View profile
             </Link>

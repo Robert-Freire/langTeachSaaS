@@ -24,7 +24,7 @@ test('student selection auto-fills language and CEFR level in lesson form', asyn
   await page.getByRole('option', { name: 'French' }).click()
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'C1' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL('/students', { timeout: 10000 })
 
   // Create a new lesson and select the student

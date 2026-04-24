@@ -113,11 +113,11 @@ test('Draft session shows "Pending review" badge in history', async ({ browser }
   await context.close()
 })
 
-test('voice recorder is accessible from the Lesson editor', async ({ browser }) => {
+test('voice recorder is accessible with a lesson pre-linked', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  const student = await createStudent(page, `Lesson Editor Voice Student ${Date.now()}`)
+  const student = await createStudent(page, `Lesson Voice Student ${Date.now()}`)
 
   // Create a lesson linked to this student
   const lessonRes = await page.request.post(`${API_BASE}/api/lessons`, {
@@ -134,13 +134,9 @@ test('voice recorder is accessible from the Lesson editor', async ({ browser }) 
   expect(lessonRes.ok()).toBeTruthy()
   const lesson = await lessonRes.json()
 
-  // Navigate to the lesson editor
-  await page.goto(`/lessons/${lesson.id}`)
-  await expect(page.getByTestId('log-session-btn')).toBeVisible({ timeout: 15000 })
-
-  // Log Session button navigates to the full LogSession page (with lessonId pre-linked)
-  await page.getByTestId('log-session-btn').click()
-  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
+  // Navigate directly to the log session page with lessonId pre-linked
+  await page.goto(`/students/${student.id}/log-session?lessonId=${lesson.id}`)
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 15000 })
 
   // Voice recorder section should be present in create mode
   await expect(page.getByTestId('voice-recorder-section')).toBeVisible({ timeout: 5000 })

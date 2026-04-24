@@ -34,7 +34,7 @@ test('navigation flow using in-page Back buttons and links', async ({ browser })
   await page.getByRole('option', { name: 'English' }).click()
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'A2' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
 
   // Should redirect back to students list
   await expect(page).toHaveURL('/students', { timeout: 10000 })
