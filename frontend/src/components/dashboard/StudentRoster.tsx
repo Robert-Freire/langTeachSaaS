@@ -20,7 +20,7 @@ interface RosterSignal {
 function buildRosterSignal(student: ActiveStudent): RosterSignal | null {
   // 1. Cancelled 2x (highest priority)
   if (student.cancelledSessionsLast30Days >= 2) {
-    return { label: 'Cancelled 2x', className: 'bg-[#1A1B22] text-white', redDot: true }
+    return { label: 'Cancelled 2x', className: 'bg-red-700 text-white', redDot: true }
   }
 
   const now = Date.now()

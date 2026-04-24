@@ -189,13 +189,21 @@ describe('LogSession', () => {
     expect(screen.getByRole('option', { name: '50 min' })).toBeInTheDocument()
   })
 
-  it('reveals custom duration input when "Other" selected', async () => {
+  it('duration "Other" option includes unit context label "Other (min)"', async () => {
+    const user = userEvent.setup()
+    renderLogSession()
+    await screen.findByTestId('duration-select')
+    await user.click(screen.getByTestId('duration-select'))
+    expect(await screen.findByRole('option', { name: 'Other (min)' })).toBeInTheDocument()
+  })
+
+  it('reveals custom duration input when "Other (min)" selected', async () => {
     const user = userEvent.setup()
     renderLogSession()
     await screen.findByTestId('duration-select')
     expect(screen.queryByTestId('duration-other')).toBeNull()
     await user.click(screen.getByTestId('duration-select'))
-    const option = await screen.findByRole('option', { name: 'Other' })
+    const option = await screen.findByRole('option', { name: 'Other (min)' })
     await user.click(option)
     expect(screen.getByTestId('duration-other')).toBeDefined()
   })

@@ -97,6 +97,16 @@ describe('TelegramCard', () => {
     }
   })
 
+  it('copy button has aria-label in pending state', async () => {
+    renderCard()
+    const btn = await screen.findByTestId('telegram-connect-btn')
+    fireEvent.click(btn)
+    await screen.findByTestId('telegram-pending')
+    const copyBtn = screen.getByRole('button', { name: /copy command/i })
+    expect(copyBtn).toBeInTheDocument()
+    expect(copyBtn).toHaveAttribute('aria-label', 'Copy command')
+  })
+
   it('transitions to connected state when query cache is updated to connected', async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
     renderCard(qc)

@@ -100,7 +100,7 @@ function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal
 
   // Cancelled 2x (highest priority)
   if (dash.cancelledSessionsLast30Days >= 2) {
-    return [{ label: 'Cancelled 2x', className: 'bg-[#1A1B22] text-white', redDot: true }]
+    return [{ label: 'Cancelled 2x', className: 'bg-red-700 text-white', redDot: true }]
   }
 
   // Exam prep: short-term objective with targetDate within 6 weeks
@@ -118,7 +118,7 @@ function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal
   // RETURNING: was inactive 21+ days and now has a scheduled next session
   const isReturning = lastSessionGapDays != null && lastSessionGapDays >= 21 && hasNextSession
   if (isReturning) {
-    return [{ label: 'RETURNING', className: 'bg-[#1A1B22] text-white' }]
+    return [{ label: 'RETURNING', className: 'bg-indigo-700 text-white' }]
   }
 
   // Review pending: has pending teaching todos

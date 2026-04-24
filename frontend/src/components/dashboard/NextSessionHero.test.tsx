@@ -99,6 +99,17 @@ describe('NextSessionHero', () => {
     expect(subtitle).toHaveTextContent('Session #14')
   })
 
+  it('shows "First Session" for totalSessionCount 1', () => {
+    render(
+      <MemoryRouter>
+        <NextSessionHero session={makeSession({ teachingLanguage: 'Spanish', totalSessionCount: 1 })} />
+      </MemoryRouter>,
+    )
+    const subtitle = screen.getByTestId('hero-identity-subtitle')
+    expect(subtitle).toHaveTextContent('First Session')
+    expect(subtitle).not.toHaveTextContent('Session #')
+  })
+
   it('hides identity subtitle when no language and count is 0', () => {
     render(
       <MemoryRouter>

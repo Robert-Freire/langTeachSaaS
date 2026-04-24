@@ -38,7 +38,7 @@ const DURATION_OPTIONS = [
   { value: '50', label: '50 min' },
   { value: '60', label: '60 min' },
   { value: '90', label: '90 min' },
-  { value: 'other', label: 'Other' },
+  { value: 'other', label: 'Other (min)' },
 ]
 
 const PREV_HOMEWORK_STATUSES = HOMEWORK_STATUS_PILL_OPTIONS
@@ -790,10 +790,10 @@ export default function LogSession() {
           </PanelSection>
         )}
 
-        {/* Active Difficulties */}
+        {/* Active Difficulties — read-only reference, tinted to distinguish from interactive sections */}
         {activeDifficulties.length > 0 && (
           <PanelSection label="Student Difficulties">
-            <div className="space-y-1.5">
+            <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2.5 space-y-1.5">
               {activeDifficulties.map(d => {
                 const key = `${d.competency}|${d.subcategory}`
                 return (
