@@ -3,19 +3,13 @@ import { Link } from 'react-router-dom'
 import { getLessonHistory } from '../../api/students'
 import { formatDate } from '../../utils/formatDate'
 import { HOMEWORK_STATUS_STYLES } from '../../utils/homeworkStatusStyles'
+import { getHomeworkStatusInfoSafe, isHomeworkApplicable } from '../../utils/homeworkStatusUtils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface LessonHistoryCardProps {
   studentId: string
-}
-
-
-const HOMEWORK_STATUS_LABELS: Record<string, string> = {
-  Done: 'Done',
-  Partial: 'Partial',
-  NotDone: 'Not done',
 }
 
 const NOTE_LABELS: { key: 'whatWasCovered' | 'homeworkAssigned' | 'areasToImprove' | 'nextLessonIdeas' | 'emotionalSignals'; label: string; testId: string }[] = [
@@ -81,15 +75,14 @@ export function LessonHistoryCard({ studentId }: LessonHistoryCardProps) {
                       <p key={key} className="text-xs text-zinc-600 flex items-center gap-1.5 flex-wrap" data-testid={testId}>
                         <span className="font-medium text-zinc-700">{label}:</span> {entry[key]}
                         {key === 'homeworkAssigned' &&
-                          entry.followingSessionHomeworkStatusName &&
-                          entry.followingSessionHomeworkStatusName !== 'NotApplicable' &&
-                          HOMEWORK_STATUS_STYLES[entry.followingSessionHomeworkStatusName] && (
+                          isHomeworkApplicable(entry.followingSessionHomeworkStatusName) &&
+                          HOMEWORK_STATUS_STYLES[entry.followingSessionHomeworkStatusName!] && (
                             <Badge
                               variant="outline"
-                              className={`text-xs px-1.5 py-0 ${HOMEWORK_STATUS_STYLES[entry.followingSessionHomeworkStatusName]}`}
+                              className={`text-xs px-1.5 py-0 ${HOMEWORK_STATUS_STYLES[entry.followingSessionHomeworkStatusName!]}`}
                               data-testid="lesson-history-hw-status-badge"
                             >
-                              {HOMEWORK_STATUS_LABELS[entry.followingSessionHomeworkStatusName] ?? entry.followingSessionHomeworkStatusName}
+                              {getHomeworkStatusInfoSafe(entry.followingSessionHomeworkStatusName).label}
                             </Badge>
                           )}
                       </p>

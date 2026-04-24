@@ -15,7 +15,7 @@ function makeSession(overrides: Partial<NextSession> = {}): NextSession {
     lastSessionNotes: 'Struggles with ser/estar',
     lastSessionDate: new Date(Date.now() - 7 * 86400000).toISOString(),
     homeworkAssigned: 'Exercises page 42',
-    previousHomeworkStatus: '3',
+    previousHomeworkStatus: 'Done',
     lastSessionTopicTags: ['Subjuntivo', 'Concesivas'],
     lastSessionHomework: 'Redacción mi ciudad ideal',
     lastSessionFollowups: ['Prometí ejercicios de por/para'],
@@ -163,7 +163,7 @@ describe('NextSessionHero', () => {
       </MemoryRouter>,
     )
     expect(screen.getByText('Exercises page 42')).toBeInTheDocument()
-    expect(screen.getByText('Completed')).toBeInTheDocument()
+    expect(screen.getByText('Done')).toBeInTheDocument()
   })
 
   it('hides briefing section when all briefing fields are empty', () => {

@@ -29,6 +29,7 @@ import { formatDate as formatDateUtil, relativeTime, todayLocalDateStr } from '@
 import { getInitials } from '@/utils/nameUtils'
 import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
+import { HOMEWORK_STATUS_PILL_OPTIONS } from '@/utils/homeworkStatusUtils'
 
 const DURATION_OPTIONS = [
   { value: '25', label: '25 min' },
@@ -40,11 +41,7 @@ const DURATION_OPTIONS = [
   { value: 'other', label: 'Other' },
 ]
 
-const PREV_HOMEWORK_STATUSES = [
-  { value: 'Done', label: 'Done' },
-  { value: 'Partial', label: 'Partial' },
-  { value: 'NotDone', label: 'Not Done' },
-]
+const PREV_HOMEWORK_STATUSES = HOMEWORK_STATUS_PILL_OPTIONS
 
 const CEFR_SUBLEVELS = [
   'A1.1','A1.2','A2.1','A2.2',
