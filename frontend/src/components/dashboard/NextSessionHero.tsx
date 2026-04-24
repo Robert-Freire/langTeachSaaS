@@ -86,7 +86,8 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
   const urgency = getUrgencyBadge(session.sessionDate)
   const hwStatus = homeworkStatusLabel(session.previousHomeworkStatus)
 
-  const hasTopics = session.lastSessionTopicTags.length > 0
+  const filteredTopicTags = session.lastSessionTopicTags.filter((t) => t.trim() !== '')
+  const hasTopics = filteredTopicTags.length > 0
   const hasResponse = !!session.lastSessionNotes
   const hasLastHomework = !!session.lastSessionHomework
   const hasPromises = session.lastSessionFollowups.length > 0
@@ -160,7 +161,7 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
               {hasTopics && (
                 <div>
                   <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mb-0.5">Topics</p>
-                  <p className="text-sm text-[#1A1B22] font-inter">{session.lastSessionTopicTags.join(', ')}</p>
+                  <p className="text-sm text-[#1A1B22] font-inter">{filteredTopicTags.join(', ')}</p>
                 </div>
               )}
               {hasResponse && (

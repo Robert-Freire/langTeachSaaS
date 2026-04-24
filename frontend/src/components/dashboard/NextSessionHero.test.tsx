@@ -184,6 +184,53 @@ describe('NextSessionHero', () => {
     expect(screen.queryByText('Promises made')).not.toBeInTheDocument()
   })
 
+  describe('topic tag filtering', () => {
+    it('hides TOPICS row when lastSessionTopicTags is an empty array', () => {
+      render(
+        <MemoryRouter>
+          <NextSessionHero session={makeSession({ lastSessionTopicTags: [] })} />
+        </MemoryRouter>,
+      )
+      expect(screen.queryByText('Topics')).not.toBeInTheDocument()
+    })
+
+    it('hides TOPICS row when lastSessionTopicTags contains a single empty string', () => {
+      render(
+        <MemoryRouter>
+          <NextSessionHero session={makeSession({ lastSessionTopicTags: [''] })} />
+        </MemoryRouter>,
+      )
+      expect(screen.queryByText('Topics')).not.toBeInTheDocument()
+    })
+
+    it('hides TOPICS row when lastSessionTopicTags contains only whitespace strings', () => {
+      render(
+        <MemoryRouter>
+          <NextSessionHero session={makeSession({ lastSessionTopicTags: ['   ', '\t'] })} />
+        </MemoryRouter>,
+      )
+      expect(screen.queryByText('Topics')).not.toBeInTheDocument()
+    })
+
+    it('shows only real tags when mixed with empty strings', () => {
+      render(
+        <MemoryRouter>
+          <NextSessionHero session={makeSession({ lastSessionTopicTags: ['', 'Subjuntivo', '  ', 'Concesivas'] })} />
+        </MemoryRouter>,
+      )
+      expect(screen.getByText('Subjuntivo, Concesivas')).toBeInTheDocument()
+    })
+
+    it('shows all real tags when none are empty', () => {
+      render(
+        <MemoryRouter>
+          <NextSessionHero session={makeSession({ lastSessionTopicTags: ['Pretérito', 'Imperfecto'] })} />
+        </MemoryRouter>,
+      )
+      expect(screen.getByText('Pretérito, Imperfecto')).toBeInTheDocument()
+    })
+  })
+
   it('refreshes countdown badge after 60 seconds', async () => {
     vi.useFakeTimers()
     // Session is 45 minutes away — renders as "IN 45 MIN"
