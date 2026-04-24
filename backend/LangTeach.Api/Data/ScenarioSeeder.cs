@@ -10,7 +10,8 @@ namespace LangTeach.Api.Data;
 /// </summary>
 public static class ScenarioSeeder
 {
-    private const string ScenarioTag = "[scenario-seed]";
+    private const string ScenarioTag           = "[scenario-seed]";
+    private const string DiegoSkillLevelOverrides = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""";
 
     // All students whose sessions, followups, and todos are managed by this seeder.
     // Ana Visual, Ana Seed, Marco Seed, Clara Seed, Diego Seed already exist after --visual-seed.
@@ -420,7 +421,7 @@ public static class ScenarioSeeder
         });
 
         // Diego Seed: restore skill overrides (WipeAsync clears them) so Progress tab shows chart
-        diegoSeed.SkillLevelOverrides = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""";
+        diegoSeed.SkillLevelOverrides = DiegoSkillLevelOverrides;
         diegoSeed.UpdatedAt = now;
 
         // Diego Seed: no signal (recent past session + upcoming session, no todos)
