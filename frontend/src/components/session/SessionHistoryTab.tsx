@@ -303,22 +303,29 @@ function SessionEntry({
             data-testid="session-entry-detail"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Title (editable) */}
-            <div className="mb-4 flex items-center gap-2">
+            {/* Title (editable) + save status indicator */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1">
+                <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                  Session Title
+                </h4>
+                <div className="flex items-center gap-2">
+                  <SavedIndicator visible={saveStatus === 'saved'} />
+                  {saveStatus === 'saving' || saveStatus === 'retrying' ? (
+                    <span className="text-xs text-zinc-400" data-testid="session-save-pending">Saving…</span>
+                  ) : saveStatus === 'error' ? (
+                    <span className="text-xs text-red-500" data-testid="session-save-error">Save failed</span>
+                  ) : null}
+                </div>
+              </div>
               <Input
-                className="text-sm font-bold text-[#1A1B22] border-0 ring-1 ring-[#C7C4D8]/30 focus-visible:ring-[#3525CD]/40 rounded-xl bg-white flex-1"
-                placeholder="Session title"
+                className="text-sm font-bold text-[#1A1B22] border-0 ring-1 ring-[#C7C4D8]/30 focus-visible:ring-[#3525CD]/40 rounded-xl bg-white w-full"
+                placeholder="Add a title…"
                 value={localTitle}
                 onChange={(e) => setLocalTitle(e.target.value)}
                 onBlur={() => void saveNow()}
                 data-testid="session-title-input"
               />
-              <SavedIndicator visible={saveStatus === 'saved'} />
-              {saveStatus === 'saving' || saveStatus === 'retrying' ? (
-                <span className="text-xs text-zinc-400" data-testid="session-save-pending">Saving…</span>
-              ) : saveStatus === 'error' ? (
-                <span className="text-xs text-red-500" data-testid="session-save-error">Save failed</span>
-              ) : null}
             </div>
 
             <div className={`grid grid-cols-1 gap-6 ${hasRightColumn ? 'md:grid-cols-3' : ''}`}>
