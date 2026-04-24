@@ -253,7 +253,7 @@ test('second voice note updates session, does not create a duplicate', async ({ 
 
   // Navigate back; discard prompt may appear since session was created via autosave
   await page.getByTestId('done-btn').click()
-  await expect(page).toHaveURL(new RegExp(`/students/${student.id}`), { timeout: 10000 })
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
 
   // Navigate to session history tab and verify only ONE session exists
   await page.getByRole('tab', { name: /history/i }).click()
