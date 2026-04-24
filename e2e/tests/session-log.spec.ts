@@ -863,6 +863,11 @@ test('edit mode: Previous Homework change survives back + reopen (no discard ban
     await page.getByTestId('prev-hw-done').click()
     await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
 
+    // After the green "All changes saved" window elapses, the indicator should
+    // show "Last saved ..." tied to the live autosave timestamp (AC4), not the
+    // stale editSession.updatedAt from initial fetch.
+    await expect(page.getByTestId('autosave-status')).toContainText(/Last saved/, { timeout: UI_TIMEOUT })
+
     // Click back. In edit mode the "Discard" banner must NOT appear.
     await page.getByTestId('back-button').click()
     await expect(page.getByTestId('discard-confirm-bar')).not.toBeVisible()
