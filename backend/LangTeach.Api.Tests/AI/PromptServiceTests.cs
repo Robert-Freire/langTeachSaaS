@@ -3502,8 +3502,8 @@ public class PromptServiceTests
         var personalizeLine = request.SystemPrompt.IndexOf("Personalize content for this student", StringComparison.Ordinal);
         var falseCognatesLine = request.SystemPrompt.IndexOf("Flag false cognates", StringComparison.Ordinal);
 
-        personalizeLine.Should().BeGreaterThan(0);
-        falseCognatesLine.Should().BeGreaterThan(0);
+        personalizeLine.Should().BeGreaterThan(-1, because: "personalization paragraph must be present");
+        falseCognatesLine.Should().BeGreaterThan(-1, because: "native-language bullet must be present");
         falseCognatesLine.Should().BeLessThan(personalizeLine);
     }
 
