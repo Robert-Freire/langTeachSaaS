@@ -31,7 +31,7 @@ async function createStudent(page: import('@playwright/test').Page, name: string
   return res.json()
 }
 
-test('voice upload: extracted fields pre-fill form, Confirm saves as Confirmed', async ({ browser }) => {
+test('voice upload: extracted fields pre-fill form, autosave saves as Confirmed', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
@@ -41,18 +41,19 @@ test('voice upload: extracted fields pre-fill form, Confirm saves as Confirmed',
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: 15000 })
 
-  // Open Log Session dialog
+  // Log Session button navigates to the full LogSession page
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
 
   // Upload audio file via the upload button in AudioRecorder
   const audioPath = path.join(__dirname, '../fixtures/test-audio.webm')
   await page.getByTestId('audio-file-input').setInputFiles(audioPath)
 
-  // Wait for extraction to complete: submit button changes to "Confirm"
+  // Wait for extraction to complete
   // StubTranscriptionService returns "[Test transcription]"
   // StubReflectionExtractionService returns "[Extracted] ..." values
-  await expect(page.getByTestId('submit-session-log')).toHaveText('Confirm', { timeout: 20000 })
+  await expect(page.getByTestId('extracting-indicator')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('extracting-indicator')).toBeHidden({ timeout: 20000 })
 
   // Verify extracted fields are pre-filled (title, topic tag, content, homework, next session)
   await expect(page.getByTestId('actual-content')).toHaveValue('[Extracted] What was covered')
@@ -64,12 +65,9 @@ test('voice upload: extracted fields pre-fill form, Confirm saves as Confirmed',
   await expect(page.getByTestId('session-date')).toHaveValue('2026-01-15')
   await expect(page.getByTestId('session-time')).toHaveValue('09:00')
 
-  // Confirm — submits and transitions Draft → Confirmed
-  await page.getByTestId('submit-session-log').click()
-
-  // Success
-  await expect(page.getByTestId('session-log-success')).toBeVisible({ timeout: 10000 })
-  await expect(page.getByTestId('session-log-dialog')).toBeHidden({ timeout: 3000 })
+  // Done — autosave saves as Confirmed, navigates back to student detail
+  await page.getByTestId('done-btn').click()
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
 
   // Navigate to session history tab and verify no "Pending review" badge
   await page.getByRole('tab', { name: /history/i }).click()
@@ -79,7 +77,7 @@ test('voice upload: extracted fields pre-fill form, Confirm saves as Confirmed',
 
   // Expand session entry and verify extracted title was saved
   await page.getByTestId('session-entry-toggle').click()
-  await expect(page.getByTestId('session-title-display')).toHaveText('[Extracted] Session title', { timeout: 5000 })
+  await expect(page.getByTestId('session-title-input')).toHaveValue('[Extracted] Session title', { timeout: 5000 })
 
   await context.close()
 })
@@ -140,11 +138,11 @@ test('voice recorder is accessible from the Lesson editor', async ({ browser }) 
   await page.goto(`/lessons/${lesson.id}`)
   await expect(page.getByTestId('log-session-btn')).toBeVisible({ timeout: 15000 })
 
-  // Open Log Session dialog from lesson editor
+  // Log Session button navigates to the full LogSession page (with lessonId pre-linked)
   await page.getByTestId('log-session-btn').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
 
-  // Voice recorder section should be present (create mode)
+  // Voice recorder section should be present in create mode
   await expect(page.getByTestId('voice-recorder-section')).toBeVisible({ timeout: 5000 })
 
   await context.close()
@@ -228,44 +226,40 @@ test('voice recorder is accessible in edit mode', async ({ browser }) => {
   await context.close()
 })
 
-test('second voice note updates draft, does not create a duplicate', async ({ browser }) => {
+test('second voice note updates session, does not create a duplicate', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  const student = await createStudent(page, `No Duplicate Draft Student ${Date.now()}`)
+  const student = await createStudent(page, `No Duplicate Student ${Date.now()}`)
 
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: 15000 })
 
-  // Open Log Session dialog
+  // Log Session button navigates to the full LogSession page
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 10000 })
 
   const audioPath = path.join(__dirname, '../fixtures/test-audio.webm')
 
-  // First voice note: creates a Draft
+  // First voice note: autosave creates a session
   await page.getByTestId('audio-file-input').setInputFiles(audioPath)
-  await expect(page.getByTestId('submit-session-log')).toHaveText('Confirm', { timeout: 20000 })
+  await expect(page.getByTestId('extracting-indicator')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('extracting-indicator')).toBeHidden({ timeout: 20000 })
 
-  // Second voice note: should update the same Draft, not create a new one.
-  // Wait for the extracting indicator to appear and clear so we know the second upload ran.
+  // Second voice note: should update the same session, not create a new one
   await page.getByTestId('audio-file-input').setInputFiles(audioPath)
   await expect(page.getByTestId('extracting-indicator')).toBeVisible({ timeout: 5000 })
   await expect(page.getByTestId('extracting-indicator')).toBeHidden({ timeout: 20000 })
 
-  // Close the dialog without confirming
-  await page.keyboard.press('Escape')
-  // Dismiss the discard dialog if it appears
-  const discardBtn = page.getByTestId('discard-btn')
-  if (await discardBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await discardBtn.click()
-  }
+  // Navigate back; discard prompt may appear since session was created via autosave
+  await page.getByTestId('done-btn').click()
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
 
-  // Navigate to session history tab and verify only ONE Draft exists
+  // Navigate to session history tab and verify only ONE session exists
   await page.getByRole('tab', { name: /history/i }).click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: 10000 })
-  const draftBadges = page.getByTestId('draft-badge')
-  await expect(draftBadges).toHaveCount(1, { timeout: 5000 })
+  const sessionEntries = page.getByTestId('session-entry')
+  await expect(sessionEntries).toHaveCount(1, { timeout: 5000 })
 
   await context.close()
 })
