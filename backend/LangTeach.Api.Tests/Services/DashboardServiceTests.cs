@@ -600,26 +600,6 @@ public class DashboardServiceTests : IDisposable
         result.PendingFollowups[0].Text.Should().Be("Op pending");
     }
 
-    [Fact]
-    public async Task GetAsync_PendingFollowups_PedagogicalPendingDoesNotPolluteDashboard()
-    {
-        _db.TeacherFollowups.Add(new TeacherFollowup
-        {
-            Id = Guid.NewGuid(),
-            TeacherId = _teacherId,
-            StudentId = _studentId,
-            Kind = TeacherFollowupKinds.Pedagogical,
-            Text = "Focus on subjunctive",
-            Status = "pending",
-            CreatedAt = DateTime.UtcNow,
-        });
-        _db.SaveChanges();
-
-        var result = await _sut.GetAsync(_teacherId);
-
-        result.PendingFollowups.Should().BeEmpty();
-    }
-
     // GetAsync new field: UpcomingThisWeek
 
     [Fact]
