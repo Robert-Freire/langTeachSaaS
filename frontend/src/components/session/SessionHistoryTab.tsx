@@ -104,7 +104,7 @@ function SessionEntry({
       mentionedDifficultyPairs: JSON.parse(session.mentionedDifficultyPairs || '[]') as { Competency: string; Subcategory: string }[],
       suggestedDifficulties: JSON.parse(session.suggestedDifficulties || '[]') as SuggestedDifficulty[],
     })
-  })
+  }, [session, localTitle, localActualContent, localDuration, localNextSessionTopics])
 
   const { status: saveStatus, saveNow } = useSessionAutosave(studentId, getFormDataRef, session.id)
 
@@ -314,6 +314,11 @@ function SessionEntry({
                 data-testid="session-title-input"
               />
               <SavedIndicator visible={saveStatus === 'saved'} />
+              {saveStatus === 'saving' || saveStatus === 'retrying' ? (
+                <span className="text-xs text-zinc-400" data-testid="session-save-pending">Saving…</span>
+              ) : saveStatus === 'error' ? (
+                <span className="text-xs text-red-500" data-testid="session-save-error">Save failed</span>
+              ) : null}
             </div>
 
             <div className={`grid grid-cols-1 gap-6 ${hasRightColumn ? 'md:grid-cols-3' : ''}`}>
