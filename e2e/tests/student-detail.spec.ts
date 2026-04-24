@@ -270,6 +270,31 @@ test('student detail profile tab: inline-add short-term objective', async ({ bro
   }
 })
 
+test('student detail progress tab: skill imbalance chart renders when skill overrides exist', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    await page.goto('/students')
+    await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+
+    const diegoSeed = page.getByText('Diego Seed').first()
+    await expect(diegoSeed).toBeVisible({ timeout: UI_TIMEOUT })
+    await diegoSeed.click()
+
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+    await page.getByTestId('tab-progress').click()
+    await expect(page.getByTestId('progress-tab-content')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Chart renders — skill bars are present, empty state is not shown
+    await expect(page.getByTestId('skill-bar-reading')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByTestId('skill-bar-writing')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByText('No skill assessments recorded yet.')).not.toBeVisible()
+  } finally {
+    await context.close()
+  }
+})
+
 test('student detail progress tab: renders without errors', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
