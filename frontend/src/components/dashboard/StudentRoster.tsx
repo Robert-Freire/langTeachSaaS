@@ -43,7 +43,7 @@ function buildRosterSignal(student: ActiveStudent): RosterSignal | null {
     ? Math.floor((now - lastSessionMs) / (1000 * 60 * 60 * 24))
     : null
   if (lastSessionGapDays != null && lastSessionGapDays > 21 && student.nextSessionDate != null) {
-    return { label: 'Returning', className: 'bg-violet-600 text-white' }
+    return { label: 'Returning', className: 'bg-indigo-700 text-white' }
   }
 
   // 4. Homework not done / partial
