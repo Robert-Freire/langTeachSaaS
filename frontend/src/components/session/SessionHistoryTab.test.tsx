@@ -789,7 +789,7 @@ describe('SessionHistoryTab', () => {
       const updatedSession: sessionLogsApi.SessionLog = { ...SESSION_BASE, title: 'Saved Title' }
       vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
       vi.mocked(useSessionAutosaveModule.useSessionAutosave).mockImplementation(
-        (_studentId, _getFormData, _initialSessionId) => {
+        () => {
           return {
             status: 'idle' as const,
             sessionId: 'session-1',
