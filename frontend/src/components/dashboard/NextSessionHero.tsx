@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Play } from 'lucide-react'
 import { CefrBadge } from './CefrBadge'
 import type { NextSession } from '@/api/dashboard'
+import { getHomeworkStatusInfoSafe } from '@/utils/homeworkStatusUtils'
 
 interface NextSessionHeroProps {
   session: NextSession | null
@@ -56,13 +57,6 @@ function formatLastSessionDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
-function homeworkStatusLabel(status: string | null): { label: string; color: string } {
-  if (!status || status === '0' || status === 'Unknown' || status === 'NotApplicable') return { label: 'No record', color: 'text-zinc-400' }
-  if (status === '3' || status === 'Done') return { label: 'Completed', color: 'text-emerald-600' }
-  if (status === '2' || status === 'Partial') return { label: 'Partial', color: 'text-amber-600' }
-  if (status === '1' || status === 'NotDone') return { label: 'Not done', color: 'text-red-600' }
-  return { label: status, color: 'text-zinc-500' }
-}
 
 export function NextSessionHero({ session }: NextSessionHeroProps) {
   const [, setTick] = useState(0)
@@ -84,7 +78,7 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
   }
 
   const urgency = getUrgencyBadge(session.sessionDate)
-  const hwStatus = homeworkStatusLabel(session.previousHomeworkStatus)
+  const hwStatus = getHomeworkStatusInfoSafe(session.previousHomeworkStatus)
 
   const filteredTopicTags = session.lastSessionTopicTags.filter((t) => t.trim() !== '')
   const hasTopics = filteredTopicTags.length > 0

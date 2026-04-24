@@ -18,6 +18,7 @@ import { listSessions, deleteSession, parseTopicTags, type SessionLog, type Sugg
 import { formatMonth, formatDay, relativeTime, todayLocalDateStr } from '../../utils/formatDate'
 import { getSessionTitle } from '../../lib/sessionUtils'
 import { HOMEWORK_STATUS_INFO } from '../../utils/homeworkStatusStyles'
+import { isHomeworkApplicable } from '../../utils/homeworkStatusUtils'
 import { useSessionAutosave } from '../../hooks/useSessionAutosave'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -139,7 +140,7 @@ function SessionEntry({
   const hwInfo = (hwStatus ? HOMEWORK_STATUS_INFO[hwStatus] : undefined) ?? HW_STATUS_FALLBACK
   const isCancelled = session.isCancelled
   const isDraft = session.statusName === 'Draft'
-  const showHwIcon = Boolean(hwStatus && hwStatus !== 'NotApplicable')
+  const showHwIcon = isHomeworkApplicable(hwStatus)
 
   // Single-tenant beta: sessionDate may be UTC ISO (e.g. "2026-05-17T00:00:00Z"); slice(0,10)
   // yields the UTC date, which is compared against the local date from todayLocalDateStr().
