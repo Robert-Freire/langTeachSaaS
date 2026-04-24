@@ -1,4 +1,4 @@
-# Used when building the API image with context = repo root.
+# Applied when building the API image with context = repo root.
 # Excludes directories not needed by the backend build.
 .git
 **/bin
