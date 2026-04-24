@@ -552,3 +552,43 @@ test('sessions tab: expanded row has "Edit full session" link that navigates to 
     await context.close()
   }
 })
+
+test('session inline edit: expand, edit title, autosave fires, reload, value persists', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    await page.goto('/students')
+    await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+    await page.getByText('Diego Seed').first().click()
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+
+    await page.getByTestId('tab-sessions').click()
+    await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Expand first session
+    await page.getByTestId('session-entry-toggle').first().click()
+    await expect(page.getByTestId('session-entry-detail').first()).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Edit title
+    const titleInput = page.getByTestId('session-title-input').first()
+    await expect(titleInput).toBeVisible({ timeout: UI_TIMEOUT })
+    const uniqueTitle = `E2E Inline Edit ${Date.now()}`
+    await titleInput.fill(uniqueTitle)
+    await titleInput.blur()
+
+    // Wait for saved indicator
+    await expect(page.getByTestId('saved-indicator').first()).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Reload and verify value persisted
+    await page.reload()
+    await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+    await page.getByTestId('tab-sessions').click()
+    await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
+    await page.getByTestId('session-entry-toggle').first().click()
+    await expect(page.getByTestId('session-title-input').first()).toHaveValue(uniqueTitle, { timeout: UI_TIMEOUT })
+  } finally {
+    await context.close()
+  }
+})
+

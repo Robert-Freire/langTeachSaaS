@@ -1,10 +1,11 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionHistoryTab } from './SessionHistoryTab'
 import * as sessionLogsApi from '../../api/sessionLogs'
 import * as lessonsApi from '../../api/lessons'
+import * as useSessionAutosaveModule from '../../hooks/useSessionAutosave'
 
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -21,6 +22,16 @@ vi.mock('../../api/sessionLogs', () => ({
   parseTopicTags: vi.fn((raw: string) => {
     try { return JSON.parse(raw) } catch { return [] }
   }),
+}))
+
+vi.mock('../../hooks/useSessionAutosave', () => ({
+  useSessionAutosave: vi.fn(() => ({
+    status: 'idle' as const,
+    sessionId: 'session-1',
+    lastSavedAt: null,
+    scheduleTextSave: vi.fn(),
+    saveNow: vi.fn().mockResolvedValue('session-1'),
+  })),
 }))
 
 vi.mock('../../api/lessons', () => ({
@@ -127,15 +138,15 @@ describe('SessionHistoryTab', () => {
     expect(actualEl.closest('p')).toHaveClass('line-clamp-2')
   })
 
-  it('hides actualContent snippet when expanded and shows it in detail section as read-only', async () => {
+  it('hides actualContent snippet when expanded and shows it in detail section as editable input', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
     expect(screen.getByTestId('session-entry-detail')).toBeInTheDocument()
-    // actualContent appears in the read-only narrative display
-    const narrativeDisplay = screen.getByTestId('session-narrative-display')
-    expect(narrativeDisplay).toHaveTextContent('Covered basics and exercises')
+    // actualContent appears in the editable narrative input
+    const narrativeInput = screen.getByTestId('session-narrative-input')
+    expect(narrativeInput).toHaveValue('Covered basics and exercises')
     // plannedContent appears in the detail (since it differs from actualContent)
     expect(screen.getByText(/Preterito indefinido intro/)).toBeInTheDocument()
   })
@@ -232,26 +243,26 @@ describe('SessionHistoryTab', () => {
     })
   })
 
-  it('shows session title as read-only text in expanded state', async () => {
+  it('shows session title as editable input in expanded state', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, title: 'My Session' }])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    const titleDisplay = screen.getByTestId('session-title-display')
-    expect(titleDisplay).toBeInTheDocument()
-    expect(titleDisplay).toHaveTextContent('My Session')
-    expect(screen.queryByTestId('session-title-input')).not.toBeInTheDocument()
+    const titleInput = screen.getByTestId('session-title-input')
+    expect(titleInput).toBeInTheDocument()
+    expect(titleInput).toHaveValue('My Session')
+    expect(screen.queryByTestId('session-title-display')).not.toBeInTheDocument()
   })
 
-  it('shows session narrative as read-only text in expanded state', async () => {
+  it('shows session narrative as editable textarea in expanded state', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    const narrativeDisplay = screen.getByTestId('session-narrative-display')
-    expect(narrativeDisplay).toBeInTheDocument()
-    expect(narrativeDisplay).toHaveTextContent('Covered basics and exercises')
-    expect(screen.queryByTestId('session-narrative-input')).not.toBeInTheDocument()
+    const narrativeInput = screen.getByTestId('session-narrative-input')
+    expect(narrativeInput).toBeInTheDocument()
+    expect(narrativeInput).toHaveValue('Covered basics and exercises')
+    expect(screen.queryByTestId('session-narrative-display')).not.toBeInTheDocument()
   })
 
   it('shows separate action item and note counts when both are set', async () => {
@@ -368,19 +379,19 @@ describe('SessionHistoryTab', () => {
     expect(screen.queryByTestId('next-session-topics-preview')).not.toBeInTheDocument()
   })
 
-  it('shows next plan as read-only text with amber heading in expanded state', async () => {
+  it('shows next plan as editable textarea with amber heading in expanded state', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
     expect(screen.getByText('Planned for next class')).toBeInTheDocument()
-    const nextPlanDisplay = screen.getByTestId('session-next-plan-display')
-    expect(nextPlanDisplay).toBeInTheDocument()
-    expect(nextPlanDisplay).toHaveTextContent('Review irregular verbs')
-    expect(screen.queryByTestId('session-next-plan-input')).not.toBeInTheDocument()
+    const nextPlanInput = screen.getByTestId('session-next-plan-input')
+    expect(nextPlanInput).toBeInTheDocument()
+    expect(nextPlanInput).toHaveValue('Review irregular verbs')
+    expect(screen.queryByTestId('session-next-plan-display')).not.toBeInTheDocument()
   })
 
-  it('does not show start-next-session-button when nextSessionTopics is null', async () => {
+  it('does not show start-next-session-button when nextSessionTopics is null and local input is empty', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
       { ...SESSION_BASE, nextSessionTopics: null },
     ])
@@ -398,7 +409,7 @@ describe('SessionHistoryTab', () => {
     expect(screen.getByTestId('start-next-session-button')).toBeInTheDocument()
   })
 
-  it('does not show "Start next session" button when nextSessionTopics is null', async () => {
+  it('does not show "Start next session" button when nextSessionTopics is null and local input empty', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
       { ...SESSION_BASE, nextSessionTopics: null },
     ])
@@ -598,7 +609,7 @@ describe('SessionHistoryTab', () => {
     expect(screen.queryByTestId('hw-status-icon')).not.toBeInTheDocument()
   })
 
-  it('uses full-width layout when no homework and no next plan', async () => {
+  it('always uses two-column layout in expanded state (next-plan textarea always present)', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
       {
         ...SESSION_BASE,
@@ -612,28 +623,8 @@ describe('SessionHistoryTab', () => {
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
     const detail = screen.getByTestId('session-entry-detail')
-    // The grid should not have md:grid-cols-3 when no right column content
     const grid = detail.querySelector('.grid')
-    expect(grid?.className).not.toContain('md:grid-cols-3')
-  })
-
-  it('uses full-width layout when only hw status icon exists (no homework assigned, no next plan)', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
-      {
-        ...SESSION_BASE,
-        homeworkAssigned: null,
-        nextSessionTopics: null,
-        previousHomeworkStatusName: 'Done',
-        previousHomeworkStatus: 1,
-      },
-    ])
-    wrapper()
-    await screen.findByTestId('session-entry')
-    fireEvent.click(screen.getByTestId('session-entry-toggle'))
-    const detail = screen.getByTestId('session-entry-detail')
-    // Right column should not render even when hw status icon is present
-    const grid = detail.querySelector('.grid')
-    expect(grid?.className).not.toContain('md:grid-cols-3')
+    expect(grid?.className).toContain('md:grid-cols-3')
   })
 
   it('shows "Logged" timestamp in expanded session row', async () => {
@@ -719,5 +710,119 @@ describe('SessionHistoryTab', () => {
     wrapper()
     expect(await screen.findByTestId('cancelled-badge')).toBeInTheDocument()
     expect(screen.queryByTestId('scheduled-badge')).not.toBeInTheDocument()
+  })
+
+  describe('inline edit autosave', () => {
+    it('expanding a row renders all four editable inputs', async () => {
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+      wrapper()
+      await screen.findByTestId('session-entry')
+      fireEvent.click(screen.getByTestId('session-entry-toggle'))
+      expect(screen.getByTestId('session-title-input')).toBeInTheDocument()
+      expect(screen.getByTestId('session-narrative-input')).toBeInTheDocument()
+      expect(screen.getByTestId('session-duration-input')).toBeInTheDocument()
+      expect(screen.getByTestId('session-next-plan-input')).toBeInTheDocument()
+    })
+
+    it('title input initialises with empty string when session.title is null', async () => {
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, title: null }])
+      wrapper()
+      await screen.findByTestId('session-entry')
+      fireEvent.click(screen.getByTestId('session-entry-toggle'))
+      expect(screen.getByTestId('session-title-input')).toHaveValue('')
+    })
+
+    it('blurring title input calls saveNow', async () => {
+      const saveNowMock = vi.fn().mockResolvedValue('session-1')
+      vi.mocked(useSessionAutosaveModule.useSessionAutosave).mockReturnValue({
+        status: 'idle',
+        sessionId: 'session-1',
+        lastSavedAt: null,
+        scheduleTextSave: vi.fn(),
+        saveNow: saveNowMock,
+      })
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+      wrapper()
+      await screen.findByTestId('session-entry')
+      fireEvent.click(screen.getByTestId('session-entry-toggle'))
+      const input = screen.getByTestId('session-title-input')
+      fireEvent.change(input, { target: { value: 'New Title' } })
+      fireEvent.blur(input)
+      await waitFor(() => expect(saveNowMock).toHaveBeenCalled())
+    })
+
+    it('collapsing an expanded row calls saveNow', async () => {
+      const saveNowMock = vi.fn().mockResolvedValue('session-1')
+      vi.mocked(useSessionAutosaveModule.useSessionAutosave).mockReturnValue({
+        status: 'idle',
+        sessionId: 'session-1',
+        lastSavedAt: null,
+        scheduleTextSave: vi.fn(),
+        saveNow: saveNowMock,
+      })
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+      wrapper()
+      await screen.findByTestId('session-entry')
+      fireEvent.click(screen.getByTestId('session-entry-toggle'))
+      await screen.findByTestId('session-entry-detail')
+      fireEvent.click(screen.getByTestId('session-entry-toggle'))
+      await waitFor(() => expect(saveNowMock).toHaveBeenCalled())
+    })
+
+    it('SavedIndicator appears when saveStatus is saved', async () => {
+      vi.mocked(useSessionAutosaveModule.useSessionAutosave).mockReturnValue({
+        status: 'saved',
+        sessionId: 'session-1',
+        lastSavedAt: null,
+        scheduleTextSave: vi.fn(),
+        saveNow: vi.fn().mockResolvedValue('session-1'),
+      })
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+      wrapper()
+      await screen.findByTestId('session-entry')
+      fireEvent.click(screen.getByTestId('session-entry-toggle'))
+      expect(await screen.findByTestId('saved-indicator')).toBeInTheDocument()
+    })
+
+    it('after RQ cache update on save, edited value persists when row is reopened', async () => {
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      const updatedSession: sessionLogsApi.SessionLog = { ...SESSION_BASE, title: 'Saved Title' }
+      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+      vi.mocked(useSessionAutosaveModule.useSessionAutosave).mockImplementation(
+        (_studentId, _getFormData, _initialSessionId) => {
+          return {
+            status: 'idle' as const,
+            sessionId: 'session-1',
+            lastSavedAt: null,
+            scheduleTextSave: vi.fn(),
+            saveNow: vi.fn().mockImplementation(async () => {
+              queryClient.setQueryData<sessionLogsApi.SessionLog[]>(['sessions', 'student-1'], [updatedSession])
+              return 'session-1'
+            }),
+          }
+        },
+      )
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter>
+            <SessionHistoryTab studentId="student-1" />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      )
+      await screen.findByTestId('session-entry')
+      fireEvent.click(screen.getByTestId('session-entry-toggle'))
+      await screen.findByTestId('session-entry-detail')
+      const input = screen.getByTestId('session-title-input')
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'Saved Title' } })
+        fireEvent.blur(input)
+      })
+      fireEvent.click(screen.getByTestId('session-entry-toggle'))
+      await waitFor(() => expect(screen.queryByTestId('session-entry-detail')).not.toBeInTheDocument())
+      fireEvent.click(screen.getByTestId('session-entry-toggle'))
+      await waitFor(() => {
+        expect(screen.getByTestId('session-title-input')).toHaveValue('Saved Title')
+      })
+    })
   })
 })
