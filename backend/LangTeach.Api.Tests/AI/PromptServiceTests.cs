@@ -3478,5 +3478,44 @@ public class PromptServiceTests
         request.SystemPrompt.Should().NotContain("Also speaks:");
         request.SystemPrompt.Should().NotContain("Reason for studying");
     }
+
+    [Fact]
+    public void ReasonForStudying_AppearsExactlyOnce_AsDirectiveNotDataFact()
+    {
+        var ctx = BaseCtx("Ana") with { StudentReasonForStudying = "para vivir en Barcelona" };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().Contain("para vivir en Barcelona");
+        request.SystemPrompt.Split("para vivir en Barcelona", StringSplitOptions.None).Length.Should().Be(2);
+        request.SystemPrompt.Should().NotContain("Reason for studying Spanish: para vivir en Barcelona");
+        request.SystemPrompt.Should().Contain("anchor vocabulary to their stated study motivation: para vivir en Barcelona");
+    }
+
+    [Fact]
+    public void NativeLanguageBullets_AppearInProfileBlock_BeforePersonalizationParagraph()
+    {
+        var ctx = BaseCtx("Ana") with { StudentNativeLanguage = "Portuguese" };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        var personalizeLine = request.SystemPrompt.IndexOf("Personalize content for this student", StringComparison.Ordinal);
+        var falseCognatesLine = request.SystemPrompt.IndexOf("Flag false cognates", StringComparison.Ordinal);
+
+        personalizeLine.Should().BeGreaterThan(-1, because: "personalization paragraph must be present");
+        falseCognatesLine.Should().BeGreaterThan(-1, because: "native-language bullet must be present");
+        falseCognatesLine.Should().BeLessThan(personalizeLine);
+    }
+
+    [Fact]
+    public void CefrPriorityCue_EmittedWithoutOfficialCefrLevel()
+    {
+        var ctx = BaseCtx("Ana") with { StudentOfficialCefrLevel = null };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().Contain("teacher assessment");
+        request.SystemPrompt.Should().Contain("content difficulty decisions");
+    }
 }
 

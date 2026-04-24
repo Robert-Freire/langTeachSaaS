@@ -419,7 +419,12 @@ public class PromptService : IPromptService
             sb.AppendLine($"- Name: {studentName}");
 
             if (ctx.StudentNativeLanguage is not null)
+            {
                 sb.AppendLine($"- Native language: {nativeLang}");
+                sb.AppendLine($"- For grammar explanations, note where {language} differs from {nativeLang}.");
+                sb.AppendLine($"- Flag false cognates between {nativeLang} and {language} when relevant.");
+                sb.AppendLine($"- Be aware of common errors {nativeLang} speakers make in {language}.");
+            }
 
             if (interests.Length > 0)
                 sb.AppendLine($"- Interests: {string.Join(", ", interests)}");
@@ -456,9 +461,6 @@ public class PromptService : IPromptService
             if (spokenLangs.Length > 0)
                 sb.AppendLine($"- Also speaks: {string.Join(", ", spokenLangs)}");
 
-            if (reasonForStudying.Length > 0)
-                sb.AppendLine($"- Reason for studying {language}: {reasonForStudying}");
-
             if (ctx.StudentShortTermObjectives is { Count: > 0 })
             {
                 sb.AppendLine("- Short-term objectives:");
@@ -481,15 +483,9 @@ public class PromptService : IPromptService
             if (profession.Length > 0)
                 sb.AppendLine("Use domain-specific vocabulary and scenarios from the student's professional field where appropriate.");
 
-            if (ctx.StudentNativeLanguage is not null)
-            {
-                sb.AppendLine($"- For grammar explanations, note where {language} differs from {nativeLang}.");
-                sb.AppendLine($"- Flag false cognates between {nativeLang} and {language} when relevant.");
-                sb.AppendLine($"- Be aware of common errors {nativeLang} speakers make in {language}.");
-            }
-
-            if (officialCefr.Length > 0)
-                sb.AppendLine("Use the teacher assessment level for content difficulty decisions; the official level is for reference only.");
+            sb.AppendLine(officialCefr.Length > 0
+                ? "Use the teacher assessment level for content difficulty decisions; the official level is for reference only."
+                : "Use the teacher assessment level for content difficulty decisions.");
 
             if (ctx.StudentDifficulties is { Length: > 0 })
             {
