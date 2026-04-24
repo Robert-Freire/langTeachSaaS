@@ -32,6 +32,27 @@ test('@visual sessions list - full page with recent sessions', async ({ browser 
   await context.close()
 })
 
+test('@visual sessions list - mixed status chips visible', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const consoleErrors: string[] = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
+
+  await page.goto('/sessions')
+  await expect(page.locator('h1')).toContainText('Sessions', { timeout: NAV_TIMEOUT })
+
+  const list = page.locator('[data-testid="sessions-list"]')
+  await expect(list).toBeVisible({ timeout: UI_TIMEOUT })
+
+  // Seed data provides Cancelled, Draft, Completed, and Scheduled sessions
+  // DOM text is 'Cancelled'; CSS text-transform:uppercase makes it appear as 'CANCELLED' visually
+  await expect(list.getByText('Cancelled').first()).toBeVisible()
+
+  await page.screenshot({ path: 'screenshots/sessions-mixed-status.png', fullPage: true })
+  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
+  await context.close()
+})
+
 test('@visual sessions list - sidebar nav item highlighted', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()

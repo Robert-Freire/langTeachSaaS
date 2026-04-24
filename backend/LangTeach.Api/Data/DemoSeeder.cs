@@ -587,6 +587,26 @@ public static class DemoSeeder
             );
             await db.SaveChangesAsync();
         }
+        // Ensure an upcoming draft session exists (fixed GUID allows idempotent upsert on persistent DBs)
+        var hugoDraftSessionId = Guid.Parse("c1d2e3f4-0000-0003-0000-000000000001");
+        if (!await db.SessionLogs.AnyAsync(sl => sl.Id == hugoDraftSessionId))
+        {
+            db.SessionLogs.Add(new SessionLog
+            {
+                Id                     = hugoDraftSessionId,
+                StudentId              = hugo.Id,
+                TeacherId              = teacherId,
+                SessionDate            = now.AddDays(6),
+                PlannedContent         = "Colors and clothing vocabulary.",
+                PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                Status                 = SessionLogStatus.Draft,
+                Duration               = 60,
+                IsDeleted              = false,
+                CreatedAt              = now,
+                UpdatedAt              = now,
+            });
+            await db.SaveChangesAsync();
+        }
 
         // Nataliya Seed — Cancelled 2x signal; clean data (no test artifacts)
         var nataliya = await UpsertStudentAsync(db, teacherId, new Student
@@ -608,36 +628,40 @@ public static class DemoSeeder
         var nataliyaSessionsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == nataliya.Id && !s.IsDeleted);
         if (!nataliyaSessionsExist)
         {
-            db.SessionLogs.AddRange(
-                new SessionLog
-                {
-                    Id                     = Guid.NewGuid(),
-                    StudentId              = nataliya.Id,
-                    TeacherId              = teacherId,
-                    SessionDate            = now.AddDays(-20),
-                    PlannedContent         = "Greetings and asking for directions in Spanish.",
-                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
-                    Duration               = 60,
-                    IsCancelled            = true,
-                    IsDeleted              = false,
-                    CreatedAt              = now.AddDays(-20),
-                    UpdatedAt              = now.AddDays(-20),
-                },
-                new SessionLog
-                {
-                    Id                     = Guid.NewGuid(),
-                    StudentId              = nataliya.Id,
-                    TeacherId              = teacherId,
-                    SessionDate            = now.AddDays(-10),
-                    PlannedContent         = "Numbers, dates, and telling the time.",
-                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
-                    Duration               = 60,
-                    IsCancelled            = true,
-                    IsDeleted              = false,
-                    CreatedAt              = now.AddDays(-10),
-                    UpdatedAt              = now.AddDays(-10),
-                }
-            );
+            db.SessionLogs.Add(new SessionLog
+            {
+                Id                     = Guid.NewGuid(),
+                StudentId              = nataliya.Id,
+                TeacherId              = teacherId,
+                SessionDate            = now.AddDays(-20),
+                PlannedContent         = "Greetings and asking for directions in Spanish.",
+                PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                Duration               = 60,
+                IsCancelled            = true,
+                IsDeleted              = false,
+                CreatedAt              = now.AddDays(-20),
+                UpdatedAt              = now.AddDays(-20),
+            });
+            await db.SaveChangesAsync();
+        }
+        // Ensure a recent cancelled session exists (fixed GUID allows idempotent upsert on persistent DBs)
+        var nataliyaRecentCancelledId = Guid.Parse("c1d2e3f4-0000-0001-0000-000000000001");
+        if (!await db.SessionLogs.AnyAsync(sl => sl.Id == nataliyaRecentCancelledId))
+        {
+            db.SessionLogs.Add(new SessionLog
+            {
+                Id                     = nataliyaRecentCancelledId,
+                StudentId              = nataliya.Id,
+                TeacherId              = teacherId,
+                SessionDate            = now.AddDays(-4),
+                PlannedContent         = "Numbers, dates, and telling the time.",
+                PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                Duration               = 60,
+                IsCancelled            = true,
+                IsDeleted              = false,
+                CreatedAt              = now.AddDays(-4),
+                UpdatedAt              = now.AddDays(-4),
+            });
             await db.SaveChangesAsync();
         }
 
@@ -645,36 +669,40 @@ public static class DemoSeeder
         var claraSessionsExist = await db.SessionLogs.AnyAsync(s => s.StudentId == clara.Id && !s.IsDeleted);
         if (!claraSessionsExist)
         {
-            db.SessionLogs.AddRange(
-                new SessionLog
-                {
-                    Id                     = Guid.NewGuid(),
-                    StudentId              = clara.Id,
-                    TeacherId              = teacherId,
-                    SessionDate            = now.AddDays(-18),
-                    PlannedContent         = "Basic Spanish greetings and alphabet.",
-                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
-                    Duration               = 60,
-                    IsCancelled            = true,
-                    IsDeleted              = false,
-                    CreatedAt              = now.AddDays(-18),
-                    UpdatedAt              = now.AddDays(-18),
-                },
-                new SessionLog
-                {
-                    Id                     = Guid.NewGuid(),
-                    StudentId              = clara.Id,
-                    TeacherId              = teacherId,
-                    SessionDate            = now.AddDays(-8),
-                    PlannedContent         = "Numbers and simple questions in Spanish.",
-                    PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
-                    Duration               = 60,
-                    IsCancelled            = true,
-                    IsDeleted              = false,
-                    CreatedAt              = now.AddDays(-8),
-                    UpdatedAt              = now.AddDays(-8),
-                }
-            );
+            db.SessionLogs.Add(new SessionLog
+            {
+                Id                     = Guid.NewGuid(),
+                StudentId              = clara.Id,
+                TeacherId              = teacherId,
+                SessionDate            = now.AddDays(-18),
+                PlannedContent         = "Basic Spanish greetings and alphabet.",
+                PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                Duration               = 60,
+                IsCancelled            = true,
+                IsDeleted              = false,
+                CreatedAt              = now.AddDays(-18),
+                UpdatedAt              = now.AddDays(-18),
+            });
+            await db.SaveChangesAsync();
+        }
+        // Ensure a recent cancelled session exists (fixed GUID allows idempotent upsert on persistent DBs)
+        var claraRecentCancelledId = Guid.Parse("c1d2e3f4-0000-0002-0000-000000000001");
+        if (!await db.SessionLogs.AnyAsync(sl => sl.Id == claraRecentCancelledId))
+        {
+            db.SessionLogs.Add(new SessionLog
+            {
+                Id                     = claraRecentCancelledId,
+                StudentId              = clara.Id,
+                TeacherId              = teacherId,
+                SessionDate            = now.AddDays(-3),
+                PlannedContent         = "Numbers and simple questions in Spanish.",
+                PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+                Duration               = 60,
+                IsCancelled            = true,
+                IsDeleted              = false,
+                CreatedAt              = now.AddDays(-3),
+                UpdatedAt              = now.AddDays(-3),
+            });
             await db.SaveChangesAsync();
         }
 
