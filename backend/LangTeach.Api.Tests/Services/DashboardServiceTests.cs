@@ -566,6 +566,60 @@ public class DashboardServiceTests : IDisposable
         result.NextSession.LastSessionFollowups.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task GetAsync_PendingFollowups_ExcludesTeachingTodos()
+    {
+        _db.TeacherFollowups.Add(new TeacherFollowup
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = _teacherId,
+            StudentId = _studentId,
+            Kind = TeacherFollowupKinds.Pedagogical,
+            Text = "Teaching todo",
+            Status = "pending",
+            CreatedAt = DateTime.UtcNow,
+        });
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.PendingFollowups.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetAsync_PendingFollowups_IncludesOperational()
+    {
+        _db.TeacherFollowups.AddRange(
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = _teacherId, StudentId = _studentId, Kind = TeacherFollowupKinds.Operational, Text = "Op pending", Status = "pending", CreatedAt = DateTime.UtcNow },
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = _teacherId, StudentId = _studentId, Kind = TeacherFollowupKinds.Pedagogical, Text = "Ped pending", Status = "pending", CreatedAt = DateTime.UtcNow });
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.PendingFollowups.Should().HaveCount(1);
+        result.PendingFollowups[0].Text.Should().Be("Op pending");
+    }
+
+    [Fact]
+    public async Task GetAsync_PendingFollowups_PedagogicalPendingDoesNotPolluteDashboard()
+    {
+        _db.TeacherFollowups.Add(new TeacherFollowup
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = _teacherId,
+            StudentId = _studentId,
+            Kind = TeacherFollowupKinds.Pedagogical,
+            Text = "Focus on subjunctive",
+            Status = "pending",
+            CreatedAt = DateTime.UtcNow,
+        });
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.PendingFollowups.Should().BeEmpty();
+    }
+
     // GetAsync new field: UpcomingThisWeek
 
     [Fact]

@@ -11,7 +11,7 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
     public async Task<List<TeacherFollowupDto>> GetAllAsync(Guid teacherId, CancellationToken cancellationToken)
     {
         return await db.TeacherFollowups
-            .Where(f => f.TeacherId == teacherId)
+            .Where(f => f.TeacherId == teacherId && f.Kind == TeacherFollowupKinds.Operational)
             .Include(f => f.Student)
             .OrderBy(f => f.CreatedAt)
             .Select(f => ToDto(f, f.Student != null ? f.Student.Name : null))
@@ -21,7 +21,7 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
     public async Task<List<TeacherFollowupDto>> GetPendingAsync(Guid teacherId, CancellationToken cancellationToken)
     {
         return await db.TeacherFollowups
-            .Where(f => f.TeacherId == teacherId && f.Status == "pending")
+            .Where(f => f.TeacherId == teacherId && f.Status == "pending" && f.Kind == TeacherFollowupKinds.Operational)
             .Include(f => f.Student)
             .OrderBy(f => f.CreatedAt)
             .Select(f => ToDto(f, f.Student != null ? f.Student.Name : null))
@@ -31,7 +31,7 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
     public async Task<List<TeacherFollowupDto>> GetByStudentAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken)
     {
         return await db.TeacherFollowups
-            .Where(f => f.TeacherId == teacherId && f.StudentId == studentId)
+            .Where(f => f.TeacherId == teacherId && f.StudentId == studentId && f.Kind == TeacherFollowupKinds.Operational)
             .OrderBy(f => f.CreatedAt)
             .Select(f => ToDto(f, null))
             .ToListAsync(cancellationToken);

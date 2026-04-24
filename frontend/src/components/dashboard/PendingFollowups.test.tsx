@@ -117,4 +117,21 @@ describe('PendingFollowups', () => {
     wrap(<PendingFollowups followups={followups} />)
     expect(screen.queryByTestId('followups-see-all')).not.toBeInTheDocument()
   })
+
+  it('row click navigates to student overview', () => {
+    wrap(<PendingFollowups followups={[makeFollowup({ id: 'f1', studentId: 'student-1' })]} />)
+    expect(screen.getByTestId('followup-text-link-f1')).toHaveAttribute('href', '/students/student-1')
+  })
+
+  it('row without studentId renders no text link', () => {
+    wrap(<PendingFollowups followups={[makeFollowup({ id: 'f1', studentId: null })]} />)
+    expect(screen.queryByTestId('followup-text-link-f1')).not.toBeInTheDocument()
+  })
+
+  it('dot button is not inside the text link', () => {
+    wrap(<PendingFollowups followups={[makeFollowup({ id: 'f1', studentId: 'student-1' })]} />)
+    const link = screen.getByTestId('followup-text-link-f1')
+    const dot = screen.getByTestId('followup-dot-f1')
+    expect(link).not.toContainElement(dot)
+  })
 })
