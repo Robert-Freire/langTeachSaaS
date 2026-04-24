@@ -99,7 +99,11 @@ function SessionEntry({
       topicTags: session.topicTags,
       isCancelled: session.isCancelled,
       status: session.statusName,
-      duration: localDuration ? parseInt(localDuration, 10) : null,
+      duration: (() => {
+        if (!localDuration) return null
+        const n = Number.parseInt(localDuration, 10)
+        return Number.isFinite(n) && n >= 0 ? n : null
+      })(),
       title: localTitle || null,
       mentionedDifficultyPairs: JSON.parse(session.mentionedDifficultyPairs || '[]') as { Competency: string; Subcategory: string }[],
       suggestedDifficulties: JSON.parse(session.suggestedDifficulties || '[]') as SuggestedDifficulty[],
