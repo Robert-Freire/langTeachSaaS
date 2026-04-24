@@ -123,6 +123,116 @@ test('@visual student detail sessions tab - expanded row with editable fields', 
   await context.close()
 })
 
+test('@visual header stable - overview tab 1280px', async ({ browser }) => {
+  fs.mkdirSync('screenshots', { recursive: true })
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const consoleErrors: string[] = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
+
+  await page.goto(`/students/${studentWithSessionsId}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await expect(page.getByTestId('student-detail-name')).toBeVisible()
+  await expect(page.getByTestId('cefr-badge')).toBeVisible()
+  await expect(page.getByTestId('student-header-subtitle')).toBeVisible()
+  await expect(page.getByTestId('student-status-badge')).toBeVisible()
+  await page.screenshot({ path: 'screenshots/header-stable-overview.png', fullPage: false })
+
+  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
+  await context.close()
+})
+
+test('@visual header stable - profile tab 1280px', async ({ browser }) => {
+  fs.mkdirSync('screenshots', { recursive: true })
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const consoleErrors: string[] = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
+
+  await page.goto(`/students/${studentWithSessionsId}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await page.getByTestId('tab-profile').click()
+  await expect(page.getByTestId('student-profile-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await expect(page.getByTestId('student-detail-name')).toBeVisible()
+  await expect(page.getByTestId('cefr-badge')).toBeVisible()
+  await expect(page.getByTestId('student-header-subtitle')).toBeVisible()
+  await expect(page.getByTestId('student-status-badge')).toBeVisible()
+  await page.screenshot({ path: 'screenshots/header-stable-profile-1280.png', fullPage: false })
+
+  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
+  await context.close()
+})
+
+test('@visual header stable - progress tab 1280px', async ({ browser }) => {
+  fs.mkdirSync('screenshots', { recursive: true })
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const consoleErrors: string[] = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
+
+  await page.goto(`/students/${studentWithSessionsId}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await page.getByTestId('tab-progress').click()
+  await expect(page.getByTestId('progress-tab-content')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await expect(page.getByTestId('student-detail-name')).toBeVisible()
+  await expect(page.getByTestId('cefr-badge')).toBeVisible()
+  await expect(page.getByTestId('student-header-subtitle')).toBeVisible()
+  await expect(page.getByTestId('student-status-badge')).toBeVisible()
+  await page.screenshot({ path: 'screenshots/header-stable-progress.png', fullPage: false })
+
+  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
+  await context.close()
+})
+
+test('@visual header stable - sessions tab 1280px', async ({ browser }) => {
+  fs.mkdirSync('screenshots', { recursive: true })
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const consoleErrors: string[] = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
+
+  await page.goto(`/students/${studentWithSessionsId}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await page.getByTestId('tab-sessions').click()
+  await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await expect(page.getByTestId('student-detail-name')).toBeVisible()
+  await expect(page.getByTestId('cefr-badge')).toBeVisible()
+  await expect(page.getByTestId('student-header-subtitle')).toBeVisible()
+  await expect(page.getByTestId('student-status-badge')).toBeVisible()
+  await page.screenshot({ path: 'screenshots/header-stable-sessions.png', fullPage: false })
+
+  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
+  await context.close()
+})
+
+test('@visual header stable - profile tab 375px', async ({ browser }) => {
+  fs.mkdirSync('screenshots', { recursive: true })
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  await page.setViewportSize({ width: 375, height: 812 })
+  const consoleErrors: string[] = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
+
+  await page.goto(`/students/${studentWithSessionsId}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await page.getByTestId('tab-profile').click()
+  await expect(page.getByTestId('student-profile-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  await expect(page.getByTestId('student-detail-name')).toBeVisible()
+  await expect(page.getByTestId('cefr-badge')).toBeVisible()
+  await expect(page.getByTestId('student-header-subtitle')).toBeVisible()
+  await expect(page.getByTestId('student-status-badge')).toBeVisible()
+  await page.screenshot({ path: 'screenshots/header-stable-profile-375.png', fullPage: false })
+
+  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
+  await context.close()
+})
+
 test('@visual student detail progress tab - skill bars', async ({ browser }) => {
   fs.mkdirSync('screenshots', { recursive: true })
   const context = await createMockAuthContext(browser)
