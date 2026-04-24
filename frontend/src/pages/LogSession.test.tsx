@@ -671,6 +671,83 @@ describe('LogSession — edit mode', () => {
       expect(screen.getByTestId('autosave-status')).toHaveTextContent(/Last saved/)
     })
   })
+
+  it('back arrow in edit mode navigates without showing the discard banner even when there are unsaved changes', async () => {
+    renderEditSession()
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Just typed something' } })
+    await act(async () => { fireEvent.click(screen.getByTestId('back-button')) })
+    expect(screen.queryByTestId('discard-confirm-bar')).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(`/students/${STUDENT_ID}?tab=sessions`)
+    })
+  })
+
+  it('back arrow in edit mode flushes pending autosave before navigating (text within debounce window persists)', async () => {
+    renderEditSession()
+    await screen.findByTestId('actual-content')
+    // Simulate typing quickly: change fires scheduleTextSave but we do not advance timers past the debounce.
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Typed right before back' } })
+    await act(async () => { fireEvent.click(screen.getByTestId('back-button')) })
+    // saveNow should have been called with the typed text, regardless of debounce not firing
+    await waitFor(() => {
+      expect(sessionLogsApi.updateSession).toHaveBeenCalledWith(
+        STUDENT_ID,
+        SESSION_ID,
+        expect.objectContaining({ actualContent: 'Typed right before back' }),
+      )
+    })
+  })
+
+  it('back arrow in edit mode does NOT navigate when the flush save fails', async () => {
+    // Persistent rejection so the mutation exhausts its retries and reports error
+    vi.mocked(sessionLogsApi.updateSession).mockRejectedValue(new Error('boom'))
+    renderEditSession()
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Will fail to save' } })
+    await act(async () => { fireEvent.click(screen.getByTestId('back-button')) })
+    // Error message surfaced (matches handleDone's error UI) — the mutation retries,
+    // so this waits out the retry window before asserting.
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to save session/i)).toBeInTheDocument()
+    }, { timeout: 15000 })
+    // And we did NOT navigate — user's last edits would otherwise appear lost
+    expect(mockNavigate).not.toHaveBeenCalledWith(`/students/${STUDENT_ID}?tab=sessions`)
+  }, 20000)
+
+  it('form state does not reset when the session cache is updated in place (same id)', async () => {
+    // Mount with original session; user types new content; then an autosave-style
+    // cache update writes a fresh SessionLog into the SAME QueryClient for the
+    // SAME session id. The initializedForIdRef guard must prevent the populate
+    // effect from running a second time and wiping the in-progress edit.
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
+          <Routes>
+            <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+            <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'User is typing' } })
+    // Simulate the autosave onSuccess cache update on the same QueryClient.
+    // Keys must match those used by the page: ['session', studentId, sessionId].
+    await act(async () => {
+      client.setQueryData(['session', STUDENT_ID, SESSION_ID], {
+        ...EDIT_SESSION,
+        actualContent: 'Server echoed the saved value',
+        updatedAt: '2026-04-01T12:00:00Z',
+      })
+    })
+    // The effect is keyed off editSession.id (same id here), so it must not re-run
+    // and the user's in-progress text must remain intact.
+    await waitFor(() => {
+      expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('User is typing')
+    })
+  })
 })
 
 describe('LogSession — back arrow behavior', () => {
