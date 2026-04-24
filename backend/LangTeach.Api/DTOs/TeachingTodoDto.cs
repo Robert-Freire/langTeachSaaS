@@ -16,7 +16,8 @@ public record CreateTeachingTodoDto(
 
 public record UpdateTeachingTodoDto(
     [Required]
-    [RegularExpression("^(Pending|Done|Covered|Dismissed|pending|done|covered|dismissed)$",
+    // Allowed values defined in TeacherFollowupStatuses; regex must stay as string literal for attributes
+    [RegularExpression("^(pending|done|covered|dismissed)$",
         ErrorMessage = "Status must be 'pending', 'done', 'covered', or 'dismissed'.")]
     string Status,
     string? CoveredInSessionLogId,

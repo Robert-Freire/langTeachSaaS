@@ -400,7 +400,7 @@ public class StudentService : IStudentService
             TeacherId = teacherId,
             StudentId = studentId,
             Text = request.Text,
-            Status = "pending",
+            Status = TeacherFollowupStatuses.Pending,
             Kind = TeacherFollowupKinds.Pedagogical,
             CreatedAt = DateTime.UtcNow,
             SourceSessionLogId = sourceSessionLogId,
@@ -424,6 +424,7 @@ public class StudentService : IStudentService
                                    && f.Kind == TeacherFollowupKinds.Pedagogical, cancellationToken);
         if (followup is null) return null;
 
+        // .ToLowerInvariant() guards against any title-case values that bypassed DTO validation
         followup.Status = request.Status.ToLowerInvariant();
         if (request.Text is not null)
         {
@@ -433,7 +434,7 @@ public class StudentService : IStudentService
         }
         if (request.CoveredInSessionLogId is not null)
             followup.CoveredInSessionLogId = await ResolveSessionLogIdAsync(teacherId, studentId, request.CoveredInSessionLogId, cancellationToken);
-        followup.CompletedAt = followup.Status is "done" or "covered" ? DateTime.UtcNow : null;
+        followup.CompletedAt = followup.Status is TeacherFollowupStatuses.Done or TeacherFollowupStatuses.Covered ? DateTime.UtcNow : null;
 
         await _db.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Teaching todo updated. TeacherId={TeacherId} StudentId={StudentId} FollowupId={FollowupId} Status={Status}",

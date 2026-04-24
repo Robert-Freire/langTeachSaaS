@@ -6,7 +6,7 @@ public class TeacherFollowup
     public Guid TeacherId { get; set; }
     public Guid? StudentId { get; set; }
     public string Text { get; set; } = string.Empty;
-    public string Status { get; set; } = "pending"; // pending | done | covered | dismissed
+    public string Status { get; set; } = TeacherFollowupStatuses.Pending;
     public string Kind { get; set; } = TeacherFollowupKinds.Operational; // see TeacherFollowupKinds
     public DateTime CreatedAt { get; set; }
     public DateOnly? DueDate { get; set; }
