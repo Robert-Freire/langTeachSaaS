@@ -6,7 +6,7 @@ Run all reviewers **sequentially** (never as parallel background agents; notific
 
 **Always run:** `architecture-reviewer`.
 
-> **Note:** The `review` (code review) agent has been retired from the pre-push sequence. CodeRabbit covers the same ground (line-level bugs, style, unused imports, null checks) with better PR-level context. Findings are addressed post-push via follow-up commits.
+> **DO NOT USE the `review` agent.** It has been retired. CodeRabbit covers the same ground (line-level bugs, style, unused imports, null checks) with better PR-level context post-push. Never invoke `subagent_type: "review"`.
 
 **Then check the issue labels and diff to add conditional reviewers:**
 

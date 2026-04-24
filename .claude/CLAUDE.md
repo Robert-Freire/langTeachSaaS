@@ -61,6 +61,8 @@ Reviews are invoked as **agents** (Agent tool with `subagent_type`), never as sk
 3. `qa-verify` agent. FAIL or PASS WITH GAPS: fix, re-commit, re-run.
 4. Code reviews **sequentially** (no parallel background agents). Before launching: check issue labels (`gh issue view <N> --json labels`) + diff to determine required reviewers per `.claude/procedures/review-routing.md`. Run all of them, including conditional ones.
 5. **UI Review (before pushing):** required if issue has `area:frontend` OR `area:design`. Launch `review-ui` agent with specific routes/screens changed. Agent manages its own Docker stack. NEEDS WORK: fix, re-run, re-review. Log unfixed findings to `plan/ui-review-backlog.md`. For screens with student data, consult `.claude/procedures/review-ui-scenarios.md` and pass scenario student name(s).
+
+   **Trivial-frontend exemption.** May skip `review-ui` if **all** apply: diff <20 lines, single file, CSS/styling-only (no component logic, no new elements, no state changes). Rely on CodeRabbit + dev-server smoke check instead. **When skipping, you MUST append a row to `plan/ui-review-skipped.md`** (`| #<issue> | <date> | <PR> | <one-line: what changed and why review-ui was skipped> |`). The sprint-close procedure audits this log.
 6. Log out-of-scope observations to `plan/observed-issues.md`: `| #<issue> | <date> | <severity> | <one-line> |`.
 7. Conflict check: `git fetch origin && git merge --no-commit --no-ff origin/sprint/<slug> && git merge --abort`. Resolve if needed.
 8. Push, open PR against sprint branch. Post `@coderabbitai review` comment.
