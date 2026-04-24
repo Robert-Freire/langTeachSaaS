@@ -4,8 +4,9 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-04-23)
+## In-Flight Tasks (2026-04-24)
 
+Task #899 merged (PR #900).
 Task #874 PR #895 open, awaiting merge.
 Task #860 + #861 bundled PR #891 open, awaiting merge.
 
