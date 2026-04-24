@@ -3,6 +3,7 @@
 Out-of-scope observations logged by agents during implementation. Each row is something an agent noticed but did not fix because it was outside the current task's scope. These get batched into future GitHub issues by the PM.
 
 | Source issue | Date | Severity | Observation |
+| #908 | 2026-04-24 | low | Tab bar at 375px clips "Progress" label (shows "Progre") -- pre-existing tab overflow at mobile width, outside StudentDetailHeader scope |
 | #834 | 2026-04-22 | low | EnsureAnaVisualExtrasAsync.UpdatedAt uses DateTime.UtcNow inline instead of caller's now (pre-existing inconsistency, not introduced by this task) |
 | #809 | 2026-04-22 | low | languages.json has duplicate concepts: "Mandarin" and "Chinese (Mandarin)" - requires data migration to consolidate; filed #874 |
 | #848 | 2026-04-22 | low | session-log-voice.spec.ts tests at lines 34-85, 118-151, 232-272 still reference session-log-dialog/submit-session-log (old modal path removed in prior sprint); not updated in #835 e2e rewrite; pre-existing failure |
