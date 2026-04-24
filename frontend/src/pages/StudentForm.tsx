@@ -640,14 +640,9 @@ export default function StudentForm() {
               )
             })()}
             {!isEdit && (
-              <>
-                <Button type="button" variant="outline" onClick={() => navigate('/students')}>
-                  Cancel
-                </Button>
-                <Button type="submit" form="student-form" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                  {isPending ? 'Saving...' : 'Save Student'}
-                </Button>
-              </>
+              <Button type="submit" form="student-form" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white" data-testid="done-btn">
+                {isPending ? 'Saving...' : 'Done'}
+              </Button>
             )}
           </div>
         }

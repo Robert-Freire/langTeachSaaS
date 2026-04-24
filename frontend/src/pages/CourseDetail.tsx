@@ -299,7 +299,7 @@ function SortableEntryRow({
                   variant="outline"
                   data-testid={`mark-taught-${idx}`}
                   onClick={() => onMarkTaught(entry)}
-                  className="text-xs h-9 min-w-[44px] text-green-700 border-green-200 hover:bg-green-50"
+                  className="text-xs h-9 min-w-[44px]"
                 >
                   <Check className="h-3.5 w-3.5 sm:mr-1" />
                   <span className="hidden sm:inline">Mark as taught</span>

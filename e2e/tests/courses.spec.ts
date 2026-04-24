@@ -733,7 +733,7 @@ test('full happy path: student edit → CourseNew (locked) → generate → Cour
   await page.getByRole('option', { name: 'Spanish' }).click()
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'A1' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL('/students', { timeout: NAV_TIMEOUT })
 
   // Navigate to student edit page
