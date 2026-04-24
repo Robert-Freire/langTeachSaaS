@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Play } from 'lucide-react'
 import { CefrBadge } from './CefrBadge'
 import type { NextSession } from '@/api/dashboard'
-import { getHomeworkStatusInfoSafe, isHomeworkApplicable } from '@/utils/homeworkStatusUtils'
+import { getHomeworkStatusInfoSafe } from '@/utils/homeworkStatusUtils'
 
 interface NextSessionHeroProps {
   session: NextSession | null
