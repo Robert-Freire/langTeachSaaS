@@ -1,11 +1,13 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import { createSession, updateSession, type CreateSessionLogRequest } from '../api/sessionLogs'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { createSession, updateSession, type CreateSessionLogRequest, type SessionLog } from '../api/sessionLogs'
 import { type SaveStatus, DEBOUNCE_MS, IDLE_RESET_MS, RETRY_DELAY_MS, MAX_RETRIES } from '../lib/autosaveConstants'
 
 interface UseSessionAutosaveResult {
   status: SaveStatus
   sessionId: string | null
+  /** ISO timestamp of the most recent successful save, or null if no save has succeeded yet this mount. */
+  lastSavedAt: string | null
   /**
    * Schedule a debounced save (fires 400ms after last call).
    * Reads form state from `getFormData.current()` at save time.
@@ -34,10 +36,12 @@ export function useSessionAutosave(
   getFormData: React.MutableRefObject<(() => CreateSessionLogRequest) | null>,
   initialSessionId?: string,
 ): UseSessionAutosaveResult {
+  const queryClient = useQueryClient()
   // Tracks whether we are currently showing 'saved' (vs 'idle' after the 2s window).
   // React Query keeps isSuccess=true indefinitely; this flag handles the timed reset.
   const [showSaved, setShowSaved] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(initialSessionId ?? null)
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
 
   // sessionIdRef drives the create-vs-update decision inside mutationFn.
   // It is kept in sync with sessionId state but is readable synchronously.
@@ -56,19 +60,30 @@ export function useSessionAutosave(
   }, [initialSessionId])
 
   const mutation = useMutation({
-    mutationFn: async ({ reqStudentId, data }: { reqStudentId: string; data: CreateSessionLogRequest }): Promise<string> => {
+    mutationFn: async ({ reqStudentId, data }: { reqStudentId: string; data: CreateSessionLogRequest }): Promise<SessionLog> => {
       if (!sessionIdRef.current) {
-        const session = await createSession(reqStudentId, data)
-        sessionIdRef.current = session.id
-        setSessionId(session.id)
-        return session.id
+        const created = await createSession(reqStudentId, data)
+        sessionIdRef.current = created.id
+        setSessionId(created.id)
+        return created
       }
-      await updateSession(reqStudentId, sessionIdRef.current, data)
-      return sessionIdRef.current
+      return updateSession(reqStudentId, sessionIdRef.current, data)
     },
     retry: MAX_RETRIES,
     retryDelay: RETRY_DELAY_MS,
-    onSuccess: () => {
+    onSuccess: (updated) => {
+      // Keep RQ cache in sync with the authoritative server response so that
+      // navigating away and back (or any other consumer of these keys) sees
+      // fresh data without an extra refetch. Without this, clicking back +
+      // reopening the session surfaces the pre-edit value because the cached
+      // SessionLog was never updated.
+      if (studentId) {
+        queryClient.setQueryData<SessionLog>(['session', studentId, updated.id], updated)
+        queryClient.setQueryData<SessionLog[]>(['sessions', studentId], (list) =>
+          list ? list.map(s => s.id === updated.id ? updated : s) : list,
+        )
+      }
+      setLastSavedAt(updated.updatedAt)
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
       setShowSaved(true)
       idleTimerRef.current = setTimeout(() => {
@@ -101,11 +116,19 @@ export function useSessionAutosave(
     if (!baseData) return null
     const data = override ? { ...baseData, ...override } : baseData
     try {
-      return await mutateAsync({ reqStudentId: studentId, data })
+      // Cancel any in-flight GET for this session so that a late refetch response
+      // doesn't overwrite the optimistic cache update we're about to make in onSuccess.
+      // Inside the try so any (unexpected) rejection still yields a null return
+      // and keeps doSave's failure semantics uniform for scheduleTextSave callers.
+      if (sessionIdRef.current) {
+        await queryClient.cancelQueries({ queryKey: ['session', studentId, sessionIdRef.current] })
+      }
+      const result = await mutateAsync({ reqStudentId: studentId, data })
+      return result.id
     } catch {
       return null
     }
-  }, [studentId, getFormData, mutateAsync])
+  }, [studentId, getFormData, mutateAsync, queryClient])
 
   const scheduleTextSave = useCallback(() => {
     if (!studentId) return
@@ -119,5 +142,5 @@ export function useSessionAutosave(
     return doSave(override)
   }, [studentId, doSave])
 
-  return { status, sessionId, scheduleTextSave, saveNow }
+  return { status, sessionId, lastSavedAt, scheduleTextSave, saveNow }
 }

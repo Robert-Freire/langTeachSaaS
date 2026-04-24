@@ -109,7 +109,7 @@ function ObjectiveRow({
 }: {
   obj: ShortTermObjective
   autoFocus: boolean
-  onUpdate: (id: string, field: 'text' | 'targetDate', value: string | null) => void
+  onUpdate: (id: string, field: 'text' | 'targetDate' | 'objectiveType', value: string | null) => void
   onRemove: (id: string) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -133,6 +133,16 @@ function ObjectiveRow({
         data-testid="objective-text-input"
       />
       <div className="flex items-center gap-2">
+        <select
+          value={obj.objectiveType ?? 'other'}
+          onChange={(e) => onUpdate(obj.id, 'objectiveType', e.target.value)}
+          className="h-9 rounded-md border border-zinc-200 bg-white px-2 py-1 text-sm text-[#1A1B22] focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          data-testid="objective-type-select"
+        >
+          <option value="exam_prep">Exam prep</option>
+          <option value="communicative">Communicative</option>
+          <option value="other">Other</option>
+        </select>
         <input
           type="date"
           value={obj.targetDate ?? ''}
@@ -225,7 +235,7 @@ export default function StudentForm() {
     queryFn: () => getStudent(id!),
     enabled: isEdit && !!id,
   })
-  const sidebarTodos = sidebarStudent?.teachingTodos ?? existing?.teachingTodos ?? []
+  const sidebarTodos = sidebarStudent?.profile.teachingTodos ?? existing?.profile.teachingTodos ?? []
   const onSidebarTodoChange = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['student', id] })
   }, [queryClient, id])
@@ -236,28 +246,28 @@ export default function StudentForm() {
     if (existing) {
       setName(existing.name)
       setLanguage(existing.learningLanguage)
-      setCefrLevel(existing.cefrLevel)
-      setOfficialCefrLevel(existing.officialCefrLevel ?? '')
-      setInterests(existing.interests)
-      setNativeLanguages(existing.nativeLanguages)
-      setSpokenLanguages(existing.spokenLanguages ?? [])
-      setSkillLevelOverrides(existing.skillLevelOverrides ?? {})
-      setLearningGoals(existing.learningGoals)
-      setWeaknesses(existing.weaknesses)
-      setDifficulties(existing.difficulties ?? [])
-      setPersonalNotes(existing.personalNotes ?? '')
-      setTeachingNotes(existing.teachingNotes ?? '')
-      setBirthYear(existing.birthYear ?? null)
-      setProfession(existing.profession ?? '')
-      setCountryOfOrigin(existing.countryOfOrigin ?? '')
-      setCityOfOrigin(existing.cityOfOrigin ?? '')
-      setCountryOfResidence(existing.countryOfResidence ?? '')
-      setCityOfResidence(existing.cityOfResidence ?? '')
-      setReasonForStudying(existing.reasonForStudying ?? '')
-      setShortTermObjectives(existing.shortTermObjectives ?? [])
-      setIsActive(existing.isActive ?? true)
-      setIsCorporate(existing.isCorporate ?? false)
-      setRate(existing.rate ?? '')
+      setCefrLevel(existing.level.cefrLevel)
+      setOfficialCefrLevel(existing.level.officialCefrLevel ?? '')
+      setInterests(existing.profile.interests)
+      setNativeLanguages(existing.languages.nativeLanguages)
+      setSpokenLanguages(existing.languages.spokenLanguages ?? [])
+      setSkillLevelOverrides(existing.level.skillLevelOverrides ?? {})
+      setLearningGoals(existing.profile.learningGoals)
+      setWeaknesses(existing.profile.weaknesses)
+      setDifficulties(existing.profile.difficulties ?? [])
+      setPersonalNotes(existing.profile.personalNotes ?? '')
+      setTeachingNotes(existing.profile.teachingNotes ?? '')
+      setBirthYear(existing.identity.birthYear ?? null)
+      setProfession(existing.identity.profession ?? '')
+      setCountryOfOrigin(existing.identity.countryOfOrigin ?? '')
+      setCityOfOrigin(existing.identity.cityOfOrigin ?? '')
+      setCountryOfResidence(existing.identity.countryOfResidence ?? '')
+      setCityOfResidence(existing.identity.cityOfResidence ?? '')
+      setReasonForStudying(existing.profile.reasonForStudying ?? '')
+      setShortTermObjectives((existing.profile.shortTermObjectives ?? []).map((o) => ({ ...o, objectiveType: o.objectiveType ?? 'other' })))
+      setIsActive(existing.commercial.isActive ?? true)
+      setIsCorporate(existing.commercial.isCorporate ?? false)
+      setRate(existing.commercial.rate ?? '')
     }
   }, [existing])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -480,11 +490,11 @@ export default function StudentForm() {
   function addObjective() {
     const id = newId()
     setNewObjectiveId(id)
-    setShortTermObjectives((prev) => [...prev, { id, text: '', targetDate: null }])
+    setShortTermObjectives((prev) => [...prev, { id, text: '', targetDate: null, objectiveType: 'other' as const }])
     if (isEdit) saveNow()
   }
 
-  function updateObjective(objId: string, field: 'text' | 'targetDate', value: string | null) {
+  function updateObjective(objId: string, field: 'text' | 'targetDate' | 'objectiveType', value: string | null) {
     setShortTermObjectives((prev) =>
       prev.map((o) => (o.id === objId ? { ...o, [field]: value } : o))
     )
@@ -630,14 +640,9 @@ export default function StudentForm() {
               )
             })()}
             {!isEdit && (
-              <>
-                <Button type="button" variant="outline" onClick={() => navigate('/students')}>
-                  Cancel
-                </Button>
-                <Button type="submit" form="student-form" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                  {isPending ? 'Saving...' : 'Save Student'}
-                </Button>
-              </>
+              <Button type="submit" form="student-form" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white" data-testid="done-btn">
+                {isPending ? 'Saving...' : 'Done'}
+              </Button>
             )}
           </div>
         }

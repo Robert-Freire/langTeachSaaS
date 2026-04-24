@@ -106,7 +106,8 @@ public class SessionLogsController : ControllerBase
         }
         catch (ValidationException ex)
         {
-            return ValidationProblem(ex.Message);
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
         }
     }
 
@@ -138,7 +139,8 @@ public class SessionLogsController : ControllerBase
         }
         catch (ValidationException ex)
         {
-            return ValidationProblem(ex.Message);
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
         }
     }
 

@@ -25,7 +25,9 @@ Deploy freeze = Robert does not trigger the merge action. Sprint branch keeps re
 
 Four stages:
 
-**Stage 1 (PM, main conversation):** Read `plan/code-review-backlog.md`, `plan/ui-review-backlog.md`, `plan/observed-issues.md`. Triage each entry as FIX NOW / NEXT SPRINT / DELETE. Present to user. Implement FIX NOW items via normal worktree flow. Batch NEXT SPRINT items into themed GitHub issues. Clear triaged entries.
+**Stage 1 (PM, main conversation):** Read `plan/code-review-backlog.md`, `plan/ui-review-backlog.md`, `plan/observed-issues.md`, and `plan/ui-review-skipped.md`. Triage each entry as FIX NOW / NEXT SPRINT / DELETE. Present to user. Implement FIX NOW items via normal worktree flow. Batch NEXT SPRINT items into themed GitHub issues. Clear triaged entries.
+
+**Audit `plan/ui-review-skipped.md` specifically:** every row is a task that bypassed `review-ui` under the trivial-frontend exemption. For each, verify the skip was justified (truly CSS-only, <20 lines, single file). If any look risky in retrospect, add the affected screen(s) to the `review-ui-sprint` scope in Stage 2. Clear the log after audit.
 
 **Stage 1b (branch-level review):** Review the full sprint branch diff against `main` for cross-cutting issues that per-PR reviews miss. This catches architectural drift, duplicated patterns, and inconsistencies across all tasks merged during the sprint.
 

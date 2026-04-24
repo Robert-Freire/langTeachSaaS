@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Copy, Trash2, UserPlus, CheckCircle, Sparkles, Square, CalendarPlus, Plus, Pencil, NotebookPen } from 'lucide-react'
+import { ArrowLeft, Copy, Trash2, UserPlus, CheckCircle, Sparkles, Square, CalendarPlus, Plus, Pencil } from 'lucide-react'
 import {
   getLesson, updateLesson, updateSections, deleteLesson, duplicateLesson, updateLearningTargets,
   type Lesson, type LessonStatus, type SectionType,
@@ -366,7 +366,7 @@ export default function LessonEditor() {
   const matchedStudent = lesson?.studentId
     ? students.find(s => s.id === lesson.studentId)
     : undefined
-  const topDifficulties = matchedStudent?.difficulties
+  const topDifficulties = matchedStudent?.profile.difficulties
     ?.toSorted((a, b) => {
       const rank = (sev: string) => sev === 'high' ? 3 : sev === 'medium' ? 2 : 1
       return rank(b.severity) - rank(a.severity)
@@ -382,7 +382,7 @@ export default function LessonEditor() {
           <Skeleton className="h-8 w-8 rounded-md" />
           <Skeleton className="h-8 w-8 rounded-md" />
         </div>
-        <Card className="bg-white border border-zinc-200">
+        <Card className="bg-white shadow-sm">
           <CardHeader className="py-3 px-6">
             <div className="flex items-center gap-2">
               <Skeleton className="h-5 w-16 rounded-full" />
@@ -394,7 +394,7 @@ export default function LessonEditor() {
         <div className="space-y-4">
           <Skeleton className="h-5 w-32" />
           {[1, 2, 3].map(i => (
-            <Card key={i} className="bg-white border border-zinc-200">
+            <Card key={i} className="bg-white shadow-sm">
               <CardHeader className="py-3 px-6"><Skeleton className="h-4 w-24" /></CardHeader>
               <CardContent className="px-6 pb-4"><Skeleton className="h-24 w-full" /></CardContent>
             </Card>
@@ -507,21 +507,10 @@ export default function LessonEditor() {
             onBlockSaved={handleBlockInsert}
           />
 
-          {lesson.studentId && (
-            <button
-              onClick={() => navigate(`/students/${lesson.studentId}/log-session?lessonId=${lesson.id}`)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
-              data-testid="log-session-btn"
-            >
-              <NotebookPen className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Log session</span>
-            </button>
-          )}
-
           <button
             onClick={() => { if (!isSaving && !isUpdating) navigate(`/lessons/${id}/study`) }}
             disabled={isSaving || isUpdating}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-200 bg-transparent text-zinc-600 hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="preview-student-btn"
           >
             <span className="hidden sm:inline">Preview as Student</span>
@@ -639,7 +628,7 @@ export default function LessonEditor() {
           <CefrMismatchWarning
             key={`view:${lesson.studentId}`}
             studentName={lesson.studentName}
-            studentLevel={linkedStudent.cefrLevel}
+            studentLevel={linkedStudent.level.cefrLevel}
             lessonLevel={lesson.cefrLevel}
           />
         ) : null
@@ -647,7 +636,7 @@ export default function LessonEditor() {
 
       {/* Edit details form */}
       {editingMeta && (
-        <Card className="bg-white border border-zinc-200">
+        <Card className="bg-white shadow-sm">
           <CardContent className="px-6 py-4">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -672,7 +661,7 @@ export default function LessonEditor() {
                   <CefrMismatchWarning
                     key={`edit:${lesson.studentId}`}
                     studentName={lesson.studentName}
-                    studentLevel={linkedStudent.cefrLevel}
+                    studentLevel={linkedStudent.level.cefrLevel}
                     lessonLevel={metaDraft.cefrLevel}
                   />
                 ) : null
@@ -721,7 +710,7 @@ export default function LessonEditor() {
           const canRemove = lesson.sections.length > 1
 
           return (
-            <Card key={type} className="bg-white border border-zinc-200" data-testid={`section-card-${type.toLowerCase()}`}>
+            <Card key={type} className="bg-white shadow-sm" data-testid={`section-card-${type.toLowerCase()}`}>
               <CardHeader className="py-3 px-6 pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium text-zinc-700">{SECTION_LABELS[type]}</CardTitle>

@@ -11,7 +11,7 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
     public async Task<List<TeacherFollowupDto>> GetAllAsync(Guid teacherId, CancellationToken cancellationToken)
     {
         return await db.TeacherFollowups
-            .Where(f => f.TeacherId == teacherId)
+            .Where(f => f.TeacherId == teacherId && f.Kind == TeacherFollowupKinds.Operational)
             .Include(f => f.Student)
             .OrderBy(f => f.CreatedAt)
             .Select(f => ToDto(f, f.Student != null ? f.Student.Name : null))
@@ -21,7 +21,7 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
     public async Task<List<TeacherFollowupDto>> GetPendingAsync(Guid teacherId, CancellationToken cancellationToken)
     {
         return await db.TeacherFollowups
-            .Where(f => f.TeacherId == teacherId && f.Status == "pending")
+            .Where(f => f.TeacherId == teacherId && f.Status == "pending" && f.Kind == TeacherFollowupKinds.Operational)
             .Include(f => f.Student)
             .OrderBy(f => f.CreatedAt)
             .Select(f => ToDto(f, f.Student != null ? f.Student.Name : null))
@@ -31,7 +31,7 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
     public async Task<List<TeacherFollowupDto>> GetByStudentAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken)
     {
         return await db.TeacherFollowups
-            .Where(f => f.TeacherId == teacherId && f.StudentId == studentId)
+            .Where(f => f.TeacherId == teacherId && f.StudentId == studentId && f.Kind == TeacherFollowupKinds.Operational)
             .OrderBy(f => f.CreatedAt)
             .Select(f => ToDto(f, null))
             .ToListAsync(cancellationToken);
@@ -64,6 +64,7 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
             StudentId = request.StudentId,
             Text = request.Text,
             Status = "pending",
+            Kind = request.Kind ?? TeacherFollowupKinds.Operational,
             CreatedAt = DateTime.UtcNow,
             DueDate = request.DueDate,
             SourceSessionLogId = request.SourceSessionLogId,
@@ -83,8 +84,8 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
 
         if (followup is null) return null;
 
-        followup.Status = request.Status;
-        followup.CompletedAt = request.Status == "done" ? DateTime.UtcNow : null;
+        followup.Status = request.Status.ToLowerInvariant();
+        followup.CompletedAt = followup.Status is "done" or "covered" ? DateTime.UtcNow : null;
 
         await db.SaveChangesAsync(cancellationToken);
         return ToDto(followup, followup.Student?.Name);
@@ -111,5 +112,6 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
             f.CreatedAt,
             f.DueDate,
             f.CompletedAt,
-            f.SourceSessionLogId?.ToString());
+            f.SourceSessionLogId?.ToString(),
+            f.Kind);
 }

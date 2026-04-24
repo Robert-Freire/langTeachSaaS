@@ -294,22 +294,36 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<TeacherFollowup>(e =>
         {
             e.HasKey(f => f.Id);
+            // Binary collation on the column ref forces case-sensitive comparison.
+            // Without it, SQL Server default CI collations would accept 'PEDAGOGICAL' et al,
+            // defeating the purpose of a backstop against non-API writes.
+            // Allowed values defined in TeacherFollowupKinds; SQL string literal required here
+            e.ToTable(t => t.HasCheckConstraint(
+                "CK_TeacherFollowups_Kind",
+                "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational')"));
             e.HasIndex(f => new { f.TeacherId, f.Status });
             e.HasIndex(f => new { f.TeacherId, f.StudentId });
+            e.HasIndex(f => new { f.TeacherId, f.StudentId, f.Kind });
             e.Property(f => f.Text).HasMaxLength(500).IsRequired();
             e.Property(f => f.Status).HasDefaultValue("pending");
+            e.Property(f => f.Kind).HasMaxLength(20).HasDefaultValue(TeacherFollowupKinds.Operational).IsRequired();
             e.HasOne(f => f.Teacher)
              .WithMany()
              .HasForeignKey(f => f.TeacherId)
              .OnDelete(DeleteBehavior.Cascade);
             e.HasOne(f => f.Student)
-             .WithMany()
+             .WithMany(s => s.TeacherFollowups)
              .HasForeignKey(f => f.StudentId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
             e.HasOne(f => f.SourceSessionLog)
              .WithMany()
              .HasForeignKey(f => f.SourceSessionLogId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(f => f.CoveredInSessionLog)
+             .WithMany()
+             .HasForeignKey(f => f.CoveredInSessionLogId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
         });

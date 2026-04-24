@@ -1,39 +1,53 @@
 namespace LangTeach.Api.DTOs;
 
-public record StudentDto(
-    Guid Id,
-    string Name,
-    string LearningLanguage,
+public record StudentLevelDto(
     string CefrLevel,
-    List<string> Interests,
-    string? PersonalNotes,
-    string? TeachingNotes,
+    string? OfficialCefrLevel,
+    Dictionary<string, string> SkillLevelOverrides
+);
+
+public record StudentLanguagesDto(
     List<string> NativeLanguages,
-    List<LearningGoalDto> LearningGoals,
-    List<StudentWeaknessDto> Weaknesses,
-    List<DifficultyDto> Difficulties,
-    DateTime CreatedAt,
-    DateTime UpdatedAt,
-    // Identity fields
+    List<string> SpokenLanguages
+);
+
+public record StudentIdentityDto(
     int? BirthYear,
+    int? Age,
     string? Profession,
     string? CountryOfOrigin,
     string? CityOfOrigin,
     string? CountryOfResidence,
-    string? CityOfResidence,
-    string? ReasonForStudying,
-    // Level fields
-    string? OfficialCefrLevel,
-    // Plan fields
+    string? CityOfResidence
+);
+
+public record StudentProfileDto(
+    List<string> Interests,
+    string? PersonalNotes,
+    string? TeachingNotes,
+    List<LearningGoalDto> LearningGoals,
+    List<StudentWeaknessDto> Weaknesses,
+    List<DifficultyDto> Difficulties,
     List<ShortTermObjectiveDto> ShortTermObjectives,
-    // Commercial fields
+    List<TeachingTodoDto> TeachingTodos,
+    string? ReasonForStudying
+);
+
+public record StudentCommercialDto(
     bool IsActive,
     bool IsCorporate,
-    string? Rate,
-    // Language fields
-    List<string> SpokenLanguages,
-    // Teaching fields
-    List<TeachingTodoDto> TeachingTodos,
-    // Skill override fields
-    Dictionary<string, string> SkillLevelOverrides
+    string? Rate
+);
+
+public record StudentDto(
+    Guid Id,
+    string Name,
+    string LearningLanguage,
+    StudentLevelDto Level,
+    StudentLanguagesDto Languages,
+    StudentIdentityDto Identity,
+    StudentProfileDto Profile,
+    StudentCommercialDto Commercial,
+    DateTime CreatedAt,
+    DateTime UpdatedAt
 );

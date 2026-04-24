@@ -36,7 +36,6 @@ public class TeacherFollowupServiceTests : IDisposable
             LearningLanguage = "Spanish",
             CefrLevel = "A1",
             NativeLanguages = "[\"English\"]",
-            TeachingTodos = "[]",
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
@@ -76,7 +75,6 @@ public class TeacherFollowupServiceTests : IDisposable
             LearningLanguage = "Spanish",
             CefrLevel = "B1",
             NativeLanguages = "[\"Portuguese\"]",
-            TeachingTodos = "[]",
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
@@ -164,6 +162,64 @@ public class TeacherFollowupServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetPendingAsync_ExcludesPedagogicalKind()
+    {
+        _db.TeacherFollowups.AddRange(
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = _teacherId, Kind = TeacherFollowupKinds.Operational, Text = "Operational pending", Status = "pending", CreatedAt = DateTime.UtcNow },
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = _teacherId, Kind = TeacherFollowupKinds.Pedagogical, Text = "Pedagogical pending", Status = "pending", CreatedAt = DateTime.UtcNow });
+        _db.SaveChanges();
+
+        var result = await _sut.GetPendingAsync(_teacherId, default);
+
+        result.Should().HaveCount(1);
+        result[0].Text.Should().Be("Operational pending");
+    }
+
+    [Fact]
+    public async Task GetPendingAsync_IncludesOperationalPendingOnly()
+    {
+        _db.TeacherFollowups.AddRange(
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = _teacherId, Kind = TeacherFollowupKinds.Operational, Text = "Op pending", Status = "pending", CreatedAt = DateTime.UtcNow },
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = _teacherId, Kind = TeacherFollowupKinds.Operational, Text = "Op done", Status = "done", CreatedAt = DateTime.UtcNow },
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = _teacherId, Kind = TeacherFollowupKinds.Pedagogical, Text = "Ped pending", Status = "pending", CreatedAt = DateTime.UtcNow },
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = _teacherId, Kind = TeacherFollowupKinds.Pedagogical, Text = "Ped done", Status = "done", CreatedAt = DateTime.UtcNow });
+        _db.SaveChanges();
+
+        var result = await _sut.GetPendingAsync(_teacherId, default);
+
+        result.Should().HaveCount(1);
+        result[0].Text.Should().Be("Op pending");
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ExcludesPedagogicalKind()
+    {
+        _db.TeacherFollowups.AddRange(
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = _teacherId, Kind = TeacherFollowupKinds.Operational, Text = "Operational", Status = "pending", CreatedAt = DateTime.UtcNow },
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = _teacherId, Kind = TeacherFollowupKinds.Pedagogical, Text = "Pedagogical", Status = "pending", CreatedAt = DateTime.UtcNow });
+        _db.SaveChanges();
+
+        var result = await _sut.GetAllAsync(_teacherId, default);
+
+        result.Should().HaveCount(1);
+        result[0].Text.Should().Be("Operational");
+    }
+
+    [Fact]
+    public async Task GetByStudentAsync_ExcludesPedagogicalKind()
+    {
+        _db.TeacherFollowups.AddRange(
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = _teacherId, StudentId = _studentId, Kind = TeacherFollowupKinds.Operational, Text = "Op followup", Status = "pending", CreatedAt = DateTime.UtcNow },
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = _teacherId, StudentId = _studentId, Kind = TeacherFollowupKinds.Pedagogical, Text = "Ped todo", Status = "pending", CreatedAt = DateTime.UtcNow });
+        _db.SaveChanges();
+
+        var result = await _sut.GetByStudentAsync(_teacherId, _studentId, default);
+
+        result.Should().HaveCount(1);
+        result[0].Text.Should().Be("Op followup");
+    }
+
+    [Fact]
     public async Task CreateAsync_WithOtherTeachersStudentId_ThrowsValidationException()
     {
         var otherStudent = Guid.NewGuid();
@@ -175,7 +231,6 @@ public class TeacherFollowupServiceTests : IDisposable
             LearningLanguage = "Spanish",
             CefrLevel = "A1",
             NativeLanguages = "[\"English\"]",
-            TeachingTodos = "[]",
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,

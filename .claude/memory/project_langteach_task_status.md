@@ -4,28 +4,13 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-04-22)
+## In-Flight Tasks (2026-04-24)
 
-| Task | Issue | PR | Status |
-|------|-------|----|--------|
-| t833 | #833 Bug batch: validation case, countdown stale, difficulty toast | #842 | MERGED |
-| t826 | #826 ExtractionMode enum refactor | #831 | PR open, CI pending |
-| t824 | #824 Future session SCHEDULED badge | #828 | MERGED |
-| t823 | #823 Voice note extraction append/replace/skip mode | #827 | PR open, CI pending |
-| t725 | #725 Edit Student autosave | #743 | MERGED |
-| t726 | #726 Edit Student Stitch visual alignment | #744 | MERGED |
-| t729 | #729 Replace Edit Session modal with Log Session edit mode | #750 | PR open, CI PASS |
-| t723 | #723 Log Session form data quality (auto-title, topics, suggestions) | #751 | PR open, CI pending |
-| t730 | #730 Dashboard polish - hero CTA, roster signals, followup urgency | #748 | PR open, CI pending |
-| t731 | #731 Sidebar Settings separation and generation counter cleanup | #749 | MERGED |
-| t733 | #733 Standardize URL-driven tab state across multi-tab pages | #752 | PR open, CI pending |
-| t742 | #742 useMutation for useStudentAutosave | #758 | PR open, CI pending |
-| t771 | #771 Student detail interaction standard | #777 | PR open, CI pending |
-| t775 | #775 Edit Student layout + interaction polish | #784 | PR open, CI pending |
-| t778 | #778 Log session nav, autosave, timestamps | #785 | PR open, CI pending |
-| t793 | #793 Dashboard UX polish: roster click, followup nav, hero identity | #798 | PR open, CI pending |
-| t799 | #799 Edit Student + Log Session Stitch alignment polish | #803 | MERGED |
-| t797 | #797 Student Detail: header density, badge styling, session titles, border cleanup | #802 | MERGED |
+Task #899 merged (PR #900).
+Task #874 PR #895 open, awaiting merge.
+Task #860 + #861 bundled PR #891 open, awaiting merge.
+
+Task #852 merged (PR #872). Task #846 merged (PR #873). Task #841 merged (PR #876). Task #840 merged (PR #877). Task #834 PR #865 open, awaiting merge. Task #839 PR #867 open, awaiting merge. Task #809 PR #875 open, awaiting merge. Task #849 PR #878 open, awaiting merge. Task #850 PR #879 open, awaiting merge. Task #853 PR #882 open, awaiting merge. Task #855 PR #884 open, awaiting merge. Task #857 PR #885 open, awaiting merge. Task #856 PR #886 open, awaiting merge.
 
 ## Live Tracker: GitHub Issues
 
@@ -37,14 +22,15 @@ Key queries:
 - Must-haves: `gh issue list --milestone "<milestone-name>" --label "P1:must" --state open`
 - Ready to pick up: `gh issue list --milestone "<milestone-name>" --label "qa:ready" --state open`
 
-**Active sprint branch:** `sprint/ui-redesign-student-polish`
-Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Workflow" section.
+**Active sprint branch:** `sprint/stabilisation` (milestone #17)
+Agents must PR against the active sprint branch, not `main`. See CLAUDE.md "Sprint Branch Workflow" section.
 
 ## Milestone Sequence (newest first)
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| UI Redesign & Student Profile Polish | ACTIVE 2026-04-08 | milestone #16, sprint/ui-redesign-student-polish |
+| Stabilisation | ACTIVE | milestone #17, sprint/stabilisation branch active |
+| UI Redesign & Student Profile Polish | CLOSED 2026-04-22 | milestone #16, merged to main, branch deleted |
 | Adaptive Replanning | CLOSED 2026-04-08 | 22/22 done, merged to main |
 | Post-Class Tracking | CLOSED 2026-04-04 | 23/23 done, merged to main |
 | Pedagogical Quality | CLOSED 2026-04-02 | 35/35 done, merged to main |
@@ -56,7 +42,7 @@ Agents must PR against this branch, not `main`. See CLAUDE.md "Sprint Branch Wor
 
 ## Upcoming Milestones (not yet started)
 
-- Listening Comprehension: after UI Redesign
+- Listening Comprehension: after Stabilisation (milestone #14)
 - Solo Whiteboard: after Listening Comprehension
 - Group Classes: FUTURE
 - Phase 2B: Production (caching, usage limits, CI pipeline)
@@ -73,7 +59,7 @@ Tasks are numbered sequentially within a phase. Branch naming: `task/t<N>-<short
 - Content blocks are typed (vocabulary, exercises, conversation, reading, grammar, homework, freeText, errorCorrection, noticingTask, guidedWriting) with per-type renderers
 - Mock-auth e2e: ASPNETCORE_ENVIRONMENT=E2ETesting, VITE_E2E_TEST_MODE=true
 - Student->Lesson FK is NoAction (SQL Server cascade constraint)
-- Deploy freeze: primary mechanism is sprint branch workflow (don't trigger merge action); secondary is DEPLOY_FROZEN repo variable
+- Deploy freeze: primary mechanism is sprint branch workflow (don't trigger merge action). DEPLOY_FROZEN repo variable was removed.
 
 ## Production Incidents
 

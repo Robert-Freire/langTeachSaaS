@@ -59,6 +59,26 @@ export function formatDay(dateStr: string | null): string {
   return String(new Date(dateStr).getDate())
 }
 
+/** Calendar-relative label using midnight-anchored day diff: "today", "yesterday", "3 days ago", etc.
+ *  Unlike relativeTime(), this buckets by calendar day rather than elapsed milliseconds. */
+export function calendarRelativeDay(dateStr: string): string {
+  const date = new Date(dateStr)
+  if (Number.isNaN(date.getTime())) return ''
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const targetDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const diffDays = Math.round((today.getTime() - targetDay.getTime()) / (1000 * 60 * 60 * 24))
+  if (diffDays === 0) return 'today'
+  if (diffDays === 1) return 'yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+  if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7)
+    return `${weeks} week${weeks > 1 ? 's' : ''} ago`
+  }
+  const months = Math.floor(diffDays / 30)
+  return `${months} month${months > 1 ? 's' : ''} ago`
+}
+
 /** Returns today's local date as a YYYY-MM-DD string (for comparisons against sessionDate). */
 export function todayLocalDateStr(): string {
   const now = new Date()

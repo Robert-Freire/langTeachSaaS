@@ -46,13 +46,14 @@ export default function OnboardingStep1({ onNext }: OnboardingStep1Props) {
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
+    const nameFromAuth0 = user?.name && !user.name.includes('@') ? user.name : ''
     if (profile) {
-      setDisplayName(profile.displayName || user?.name || '')
+      setDisplayName(profile.displayName || nameFromAuth0)
       setTeachingLanguages(profile.teachingLanguages)
       setCefrLevels(profile.cefrLevels)
       setPreferredStyle(profile.preferredStyle)
-    } else if (user?.name) {
-      setDisplayName(user.name)
+    } else if (nameFromAuth0) {
+      setDisplayName(nameFromAuth0)
     }
   }, [profile, user])
   /* eslint-enable react-hooks/set-state-in-effect */

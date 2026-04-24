@@ -34,64 +34,40 @@ const FULL_STUDENT: Student = {
   id: 'student-1',
   name: 'Matteo Russo',
   learningLanguage: 'Spanish',
-  cefrLevel: 'C1',
-  interests: ['cinema', 'cooking'],
-  personalNotes: 'Muy motivado, cinefilo.',
-  teachingNotes: 'Nivel alto pero con lagunas.',
-  nativeLanguages: ['Italian'],
-  learningGoals: [
-    { id: '1', text: 'Dominar el subjuntivo', children: [{ id: '1a', text: 'Subjuntivo de deseo', children: [] }] },
-    { id: '2', text: 'Preparar DELE C1', children: [] },
-  ],
-  weaknesses: [{ description: 'Ser/Estar', weaknessType: 'grammatical' }],
-  difficulties: [
-    { id: 'd1', description: 'Subjuntivo en concesivas', competency: 'Grammar', subcategory: 'subjuntivo', severity: 'high', trend: 'stable', status: 'Active' },
-    { id: 'd2', description: 'Registro formal', competency: 'Writing', subcategory: '', severity: 'medium', trend: 'improving', status: 'Covered' },
-  ],
+  level: { cefrLevel: 'C1', officialCefrLevel: null, skillLevelOverrides: { Reading: 'B2', Writing: 'B1' } },
+  languages: { nativeLanguages: ['Italian'], spokenLanguages: ['English', 'French'] },
+  identity: { birthYear: 1998, age: null, profession: 'Film student', countryOfOrigin: 'Italy', cityOfOrigin: 'Rome', countryOfResidence: 'Spain', cityOfResidence: 'Barcelona' },
+  profile: {
+    interests: ['cinema', 'cooking'],
+    personalNotes: 'Muy motivado, cinefilo.',
+    teachingNotes: 'Nivel alto pero con lagunas.',
+    learningGoals: [
+      { id: '1', text: 'Dominar el subjuntivo', children: [{ id: '1a', text: 'Subjuntivo de deseo', children: [] }] },
+      { id: '2', text: 'Preparar DELE C1', children: [] },
+    ],
+    weaknesses: [{ description: 'Ser/Estar', weaknessType: 'grammatical' }],
+    difficulties: [
+      { id: 'd1', description: 'Subjuntivo en concesivas', competency: 'Grammar', subcategory: 'subjuntivo', severity: 'high', trend: 'stable', status: 'Active' },
+      { id: 'd2', description: 'Registro formal', competency: 'Writing', subcategory: '', severity: 'medium', trend: 'improving', status: 'Covered' },
+    ],
+    shortTermObjectives: [{ id: 'obj-1', text: 'Redaccion formal semanal', targetDate: '2026-05-01', objectiveType: 'other' as const }],
+    teachingTodos: [
+      { id: 'todo-1', text: 'Enviar ejercicios de por/para', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'pending', coveredInSessionLogId: null },
+      { id: 'todo-2', text: 'Explicar diferencia', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'covered', coveredInSessionLogId: 'session-1' },
+    ],
+    reasonForStudying: 'Vive en Barcelona',
+  },
+  commercial: { isActive: true, isCorporate: false, rate: '25 EUR/h' },
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
-  birthYear: 1998,
-  profession: 'Film student',
-  countryOfOrigin: 'Italy',
-  cityOfOrigin: 'Rome',
-  countryOfResidence: 'Spain',
-  cityOfResidence: 'Barcelona',
-  reasonForStudying: 'Vive en Barcelona',
-  officialCefrLevel: null,
-  shortTermObjectives: [
-    { id: 'obj-1', text: 'Redaccion formal semanal', targetDate: '2026-05-01' },
-  ],
-  isActive: true,
-  isCorporate: false,
-  rate: '25 EUR/h',
-  spokenLanguages: ['English', 'French'],
-  skillLevelOverrides: { Reading: 'B2', Writing: 'B1' },
-  teachingTodos: [
-    { id: 'todo-1', text: 'Enviar ejercicios de por/para', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Pending', coveredInSessionLogId: null },
-    { id: 'todo-2', text: 'Explicar diferencia', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Covered', coveredInSessionLogId: 'session-1' },
-  ],
 }
 
 const EMPTY_STUDENT: Student = {
   ...FULL_STUDENT,
-  birthYear: null,
-  profession: null,
-  countryOfOrigin: null,
-  cityOfOrigin: null,
-  countryOfResidence: null,
-  cityOfResidence: null,
-  reasonForStudying: null,
-  personalNotes: null,
-  teachingNotes: null,
-  interests: [],
-  nativeLanguages: [],
-  learningGoals: [],
-  spokenLanguages: [],
-  shortTermObjectives: [],
-  weaknesses: [],
-  difficulties: [],
-  teachingTodos: [],
-  skillLevelOverrides: {},
+  identity: { ...FULL_STUDENT.identity, birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+  profile: { ...FULL_STUDENT.profile, personalNotes: null, teachingNotes: null, interests: [], learningGoals: [], shortTermObjectives: [], weaknesses: [], difficulties: [], teachingTodos: [], reasonForStudying: null },
+  languages: { ...FULL_STUDENT.languages, nativeLanguages: [], spokenLanguages: [] },
+  level: { ...FULL_STUDENT.level, skillLevelOverrides: {} },
 }
 
 function renderProfile(
@@ -155,7 +131,7 @@ describe('StudentProfileTab', () => {
     })
 
     it('does not show hero interests when no interests', () => {
-      renderProfile({ ...FULL_STUDENT, interests: [] })
+      renderProfile({ ...FULL_STUDENT, profile: { ...FULL_STUDENT.profile, interests: [] } })
       expect(screen.queryByTestId('hero-interests')).not.toBeInTheDocument()
     })
 
@@ -311,7 +287,7 @@ describe('StudentProfileTab', () => {
     })
 
     it('shows official CEFR level when set', () => {
-      renderProfile({ ...FULL_STUDENT, officialCefrLevel: 'B2' })
+      renderProfile({ ...FULL_STUDENT, level: { ...FULL_STUDENT.level, officialCefrLevel: 'B2' } })
       const section = screen.getByTestId('profile-language-ecosystem')
       expect(section).toHaveTextContent('Official')
       expect(section).toHaveTextContent('B2')
@@ -348,6 +324,16 @@ describe('StudentProfileTab', () => {
     it('is hidden when both notes are empty (empty state collapse)', () => {
       renderProfile(EMPTY_STUDENT)
       expect(screen.queryByTestId('profile-teachers-working-memory')).not.toBeInTheDocument()
+    })
+
+    it('is hidden when personalNotes is a sentinel string', () => {
+      renderProfile({ ...EMPTY_STUDENT, profile: { ...EMPTY_STUDENT.profile, personalNotes: '[visual-seed]' } })
+      expect(screen.queryByTestId('profile-teachers-working-memory')).not.toBeInTheDocument()
+    })
+
+    it('does not render sentinel personalNotes text', () => {
+      renderProfile({ ...EMPTY_STUDENT, profile: { ...EMPTY_STUDENT.profile, personalNotes: '[scenario-seed]' } })
+      expect(screen.queryByText('[scenario-seed]')).not.toBeInTheDocument()
     })
 
     it('shows when revealed via show-all toggle', () => {
@@ -429,9 +415,7 @@ describe('StudentProfileTab', () => {
     it('shows OVERDUE label for past-due objective', () => {
       const student = {
         ...FULL_STUDENT,
-        shortTermObjectives: [
-          { id: 'obj-1', text: 'Overdue objective', targetDate: dateOffset(-5) },
-        ],
+        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Overdue objective', targetDate: dateOffset(-5), objectiveType: 'other' as const }] },
       }
       renderProfile(student)
       expect(screen.getByTestId('objective-overdue-label')).toBeInTheDocument()
@@ -440,9 +424,7 @@ describe('StudentProfileTab', () => {
     it('shows Critical label for objective within 3 days', () => {
       const student = {
         ...FULL_STUDENT,
-        shortTermObjectives: [
-          { id: 'obj-1', text: 'Critical objective', targetDate: dateOffset(2) },
-        ],
+        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Critical objective', targetDate: dateOffset(2), objectiveType: 'other' as const }] },
       }
       renderProfile(student)
       expect(screen.getByTestId('objective-critical-label')).toBeInTheDocument()
@@ -451,13 +433,38 @@ describe('StudentProfileTab', () => {
     it('does not show urgency labels for normal objectives', () => {
       const student = {
         ...FULL_STUDENT,
-        shortTermObjectives: [
-          { id: 'obj-1', text: 'Normal objective', targetDate: dateOffset(60) },
-        ],
+        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Normal objective', targetDate: dateOffset(60), objectiveType: 'other' as const }] },
       }
       renderProfile(student)
       expect(screen.queryByTestId('objective-overdue-label')).not.toBeInTheDocument()
       expect(screen.queryByTestId('objective-critical-label')).not.toBeInTheDocument()
+    })
+
+    it('shows exam_prep badge for exam_prep objectives', () => {
+      const student = {
+        ...FULL_STUDENT,
+        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Pass DELE B2', targetDate: null, objectiveType: 'exam_prep' as const }] },
+      }
+      renderProfile(student)
+      expect(screen.getByTestId('objective-type-badge')).toHaveTextContent('Exam prep')
+    })
+
+    it('shows communicative badge for communicative objectives', () => {
+      const student = {
+        ...FULL_STUDENT,
+        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Job interview', targetDate: null, objectiveType: 'communicative' as const }] },
+      }
+      renderProfile(student)
+      expect(screen.getByTestId('objective-type-badge')).toHaveTextContent('Communicative')
+    })
+
+    it('shows no type badge for other objectives', () => {
+      const student = {
+        ...FULL_STUDENT,
+        profile: { ...FULL_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'General goal', targetDate: null, objectiveType: 'other' as const }] },
+      }
+      renderProfile(student)
+      expect(screen.queryByTestId('objective-type-badge')).not.toBeInTheDocument()
     })
 
     it('shows + button when onSaveShortTermObjective is provided', () => {
@@ -491,6 +498,19 @@ describe('StudentProfileTab', () => {
       renderProfile(FULL_STUDENT)
       expect(screen.getByText('Grammar')).toBeInTheDocument()
       expect(screen.getByText('subjuntivo')).toBeInTheDocument()
+    })
+
+    it('shows description as muted secondary line when subcategory and description are both set', () => {
+      renderProfile(FULL_STUDENT)
+      // d1 has subcategory 'subjuntivo' and description 'Subjuntivo en concesivas'
+      expect(screen.getByText('subjuntivo')).toBeInTheDocument()
+      expect(screen.getByText('Subjuntivo en concesivas')).toBeInTheDocument()
+    })
+
+    it('shows description as primary text when subcategory is empty', () => {
+      renderProfile(FULL_STUDENT)
+      // d2 has empty subcategory and description 'Registro formal'
+      expect(screen.getByText('Registro formal')).toBeInTheDocument()
     })
 
     it('renders trend badge with capitalized value', () => {
@@ -532,13 +552,13 @@ describe('StudentProfileTab', () => {
     })
 
     it('shows difficulties table when difficulties exist but weaknesses empty', () => {
-      renderProfile({ ...EMPTY_STUDENT, difficulties: FULL_STUDENT.difficulties })
+      renderProfile({ ...EMPTY_STUDENT, profile: { ...EMPTY_STUDENT.profile, difficulties: FULL_STUDENT.profile.difficulties } })
       expect(screen.getByTestId('profile-focus-areas')).toBeInTheDocument()
       expect(screen.queryByText('No focus areas tracked')).not.toBeInTheDocument()
     })
 
     it('shows weaknesses section when weaknesses exist but difficulties empty', () => {
-      renderProfile({ ...EMPTY_STUDENT, weaknesses: FULL_STUDENT.weaknesses })
+      renderProfile({ ...EMPTY_STUDENT, profile: { ...EMPTY_STUDENT.profile, weaknesses: FULL_STUDENT.profile.weaknesses } })
       expect(screen.getByTestId('profile-weaknesses')).toBeInTheDocument()
       expect(screen.queryByText('No focus areas tracked')).not.toBeInTheDocument()
     })
@@ -575,9 +595,9 @@ describe('StudentProfileTab', () => {
       expect(screen.getByText('Enviar ejercicios de por/para')).toBeInTheDocument()
     })
 
-    it('displays section heading as "Ideas para Clases"', () => {
+    it('displays section heading as "Teaching Ideas"', () => {
       renderProfile(FULL_STUDENT)
-      expect(screen.getByText('Ideas para Clases')).toBeInTheDocument()
+      expect(screen.getByText('Teaching Ideas')).toBeInTheDocument()
     })
   })
 
@@ -626,12 +646,12 @@ describe('StudentProfileTab', () => {
     })
 
     it('shows Former status when inactive', () => {
-      renderProfile({ ...FULL_STUDENT, isActive: false })
+      renderProfile({ ...FULL_STUDENT, commercial: { ...FULL_STUDENT.commercial, isActive: false } })
       expect(screen.getByTestId('active-status-badge')).toHaveTextContent('Former')
     })
 
     it('shows Corporate badge when corporate', () => {
-      renderProfile({ ...FULL_STUDENT, isCorporate: true })
+      renderProfile({ ...FULL_STUDENT, commercial: { ...FULL_STUDENT.commercial, isCorporate: true } })
       expect(screen.getByText('Corporate')).toBeInTheDocument()
     })
   })

@@ -52,6 +52,26 @@ describe('Courses list', () => {
     expect(await screen.findByText('No courses yet')).toBeInTheDocument()
   })
 
+  it('progress bar has minWidth 4px when at least 1 lesson created', async () => {
+    vi.mocked(coursesApi.getCourses).mockResolvedValue([{ ...mockCourse, lessonsCreated: 1, sessionCount: 8 }])
+    wrapper(<Courses />)
+
+    await screen.findByText('1/8 sessions')
+    const bar = document.querySelector('.bg-blue-500') as HTMLElement
+    expect(bar).not.toBeNull()
+    expect(bar.style.minWidth).toBe('4px')
+  })
+
+  it('progress bar has no minWidth when lessonsCreated is 0', async () => {
+    vi.mocked(coursesApi.getCourses).mockResolvedValue([{ ...mockCourse, lessonsCreated: 0, sessionCount: 8 }])
+    wrapper(<Courses />)
+
+    await screen.findByText('0/8 sessions')
+    const bar = document.querySelector('.bg-blue-500') as HTMLElement
+    expect(bar).not.toBeNull()
+    expect(bar.style.minWidth).toBe('')
+  })
+
   it('shows delete confirmation dialog on delete click', async () => {
     vi.mocked(coursesApi.getCourses).mockResolvedValue([mockCourse])
     wrapper(<Courses />)

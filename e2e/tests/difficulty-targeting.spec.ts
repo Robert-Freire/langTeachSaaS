@@ -45,7 +45,7 @@ test('difficulty badges appear after generating content for a student with diffi
     await diffRow.getByTestId('difficulty-trend').click()
     await page.getByRole('option', { name: 'Stable' }).click()
 
-    await page.getByRole('button', { name: 'Save Student' }).click()
+    await page.getByRole('button', { name: 'Done' }).click()
     await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
 
     // 2. Create a lesson linked to this student

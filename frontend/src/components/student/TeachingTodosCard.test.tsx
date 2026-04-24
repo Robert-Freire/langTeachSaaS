@@ -20,7 +20,7 @@ const PENDING_TODO: TeachingTodo = {
   text: 'Explain subjunctive',
   createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
   sourceSessionLogId: null,
-  status: 'Pending',
+  status: 'pending',
   coveredInSessionLogId: null,
 }
 const COVERED_TODO: TeachingTodo = {
@@ -28,8 +28,16 @@ const COVERED_TODO: TeachingTodo = {
   text: 'Past tense review',
   createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
   sourceSessionLogId: null,
-  status: 'Covered',
+  status: 'covered',
   coveredInSessionLogId: 'session-1',
+}
+const DONE_TODO: TeachingTodo = {
+  id: '3',
+  text: 'Pronunciation drills',
+  createdAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+  sourceSessionLogId: null,
+  status: 'done',
+  coveredInSessionLogId: null,
 }
 
 function makeStudent(todos: TeachingTodo[]) {
@@ -59,14 +67,54 @@ describe('TeachingTodosCard', () => {
     expect(screen.getByTestId('todo-add-input')).toBeInTheDocument()
   })
 
-  it('renders list of todos', () => {
+  it('renders only pending todos by default (hides completed)', () => {
     render(<TeachingTodosCard {...defaultProps} />, { wrapper })
     expect(screen.getByTestId('teaching-todos-list')).toBeInTheDocument()
-    expect(screen.getAllByTestId('teaching-todo-item')).toHaveLength(2)
+    // Only PENDING_TODO visible by default; COVERED_TODO is hidden
+    expect(screen.getAllByTestId('teaching-todo-item')).toHaveLength(1)
+    expect(screen.getByTestId(`todo-text-${PENDING_TODO.id}`)).toBeInTheDocument()
+    expect(screen.queryByTestId(`todo-text-${COVERED_TODO.id}`)).not.toBeInTheDocument()
   })
 
-  it('sorts pending todos before covered ones', () => {
-    // Pass covered first to verify sorting
+  it('shows "Show N completed" toggle when completed todos exist', () => {
+    render(<TeachingTodosCard {...defaultProps} />, { wrapper })
+    expect(screen.getByTestId('todo-show-completed-toggle')).toHaveTextContent('Show 1 completed')
+  })
+
+  it('does not show completed toggle when no completed todos exist', () => {
+    render(<TeachingTodosCard todos={[PENDING_TODO]} studentId="s1" onStudentChange={vi.fn()} />, { wrapper })
+    expect(screen.queryByTestId('todo-show-completed-toggle')).not.toBeInTheDocument()
+  })
+
+  it('reveals completed todos when toggle is clicked', () => {
+    render(<TeachingTodosCard {...defaultProps} />, { wrapper })
+    fireEvent.click(screen.getByTestId('todo-show-completed-toggle'))
+    expect(screen.getAllByTestId('teaching-todo-item')).toHaveLength(2)
+    expect(screen.getByTestId(`todo-text-${COVERED_TODO.id}`)).toBeInTheDocument()
+  })
+
+  it('changes toggle label to "Hide completed" when expanded', () => {
+    render(<TeachingTodosCard {...defaultProps} />, { wrapper })
+    fireEvent.click(screen.getByTestId('todo-show-completed-toggle'))
+    expect(screen.getByTestId('todo-show-completed-toggle')).toHaveTextContent('Hide completed (1)')
+  })
+
+  it('hides completed todos again when toggle is clicked a second time', () => {
+    render(<TeachingTodosCard {...defaultProps} />, { wrapper })
+    fireEvent.click(screen.getByTestId('todo-show-completed-toggle'))
+    fireEvent.click(screen.getByTestId('todo-show-completed-toggle'))
+    expect(screen.getAllByTestId('teaching-todo-item')).toHaveLength(1)
+  })
+
+  it('shows "Show 2 completed" when both done and covered todos exist', () => {
+    render(
+      <TeachingTodosCard todos={[PENDING_TODO, COVERED_TODO, DONE_TODO]} studentId="s1" onStudentChange={vi.fn()} />,
+      { wrapper }
+    )
+    expect(screen.getByTestId('todo-show-completed-toggle')).toHaveTextContent('Show 2 completed')
+  })
+
+  it('sorts pending todos before completed ones when expanded', () => {
     render(
       <TeachingTodosCard
         todos={[COVERED_TODO, PENDING_TODO]}
@@ -75,20 +123,22 @@ describe('TeachingTodosCard', () => {
       />,
       { wrapper }
     )
+    fireEvent.click(screen.getByTestId('todo-show-completed-toggle'))
     const items = screen.getAllByTestId('teaching-todo-item')
     expect(items[0]).toHaveTextContent('Explain subjunctive') // pending first
     expect(items[1]).toHaveTextContent('Past tense review')   // covered second
   })
 
-  it('applies strikethrough to covered todos', () => {
+  it('applies strikethrough to completed todos when visible', () => {
     render(<TeachingTodosCard {...defaultProps} />, { wrapper })
+    fireEvent.click(screen.getByTestId('todo-show-completed-toggle'))
     const coveredText = screen.getByTestId(`todo-text-${COVERED_TODO.id}`)
     expect(coveredText.className).toContain('line-through')
   })
 
-  it('shows relative time for each todo', () => {
-    render(<TeachingTodosCard {...defaultProps} />, { wrapper })
-    expect(screen.getAllByText(/ago/)).toHaveLength(2)
+  it('shows relative time for each visible todo', () => {
+    render(<TeachingTodosCard todos={[PENDING_TODO]} studentId="s1" onStudentChange={vi.fn()} />, { wrapper })
+    expect(screen.getAllByText(/yesterday|ago/)).toHaveLength(1)
   })
 
   it('calls appendTeachingTodo on add and updates list optimistically', async () => {
@@ -108,16 +158,32 @@ describe('TeachingTodosCard', () => {
     await waitFor(() => expect(onStudentChange).toHaveBeenCalled())
   })
 
-  it('calls updateTeachingTodo on toggle', async () => {
+  it('calls updateTeachingTodo with status "done" on toggle', async () => {
     vi.mocked(studentsApi.updateTeachingTodo).mockResolvedValue(makeStudent([
-      { ...PENDING_TODO, status: 'Covered' },
+      { ...PENDING_TODO, status: 'done' },
       COVERED_TODO,
     ]))
     render(<TeachingTodosCard {...defaultProps} onStudentChange={vi.fn()} />, { wrapper })
 
     fireEvent.click(screen.getByTestId(`todo-toggle-${PENDING_TODO.id}`))
     await waitFor(() =>
-      expect(studentsApi.updateTeachingTodo).toHaveBeenCalledWith('student-1', PENDING_TODO.id, { status: 'Covered' })
+      expect(studentsApi.updateTeachingTodo).toHaveBeenCalledWith('student-1', PENDING_TODO.id, { status: 'done' })
+    )
+  })
+
+  it('calls updateTeachingTodo with status "pending" when toggling a done todo', async () => {
+    vi.mocked(studentsApi.updateTeachingTodo).mockResolvedValue(makeStudent([
+      { ...DONE_TODO, status: 'pending' },
+    ]))
+    render(
+      <TeachingTodosCard todos={[DONE_TODO]} studentId="s1" onStudentChange={vi.fn()} />,
+      { wrapper }
+    )
+    // Reveal completed todos first
+    fireEvent.click(screen.getByTestId('todo-show-completed-toggle'))
+    fireEvent.click(screen.getByTestId(`todo-toggle-${DONE_TODO.id}`))
+    await waitFor(() =>
+      expect(studentsApi.updateTeachingTodo).toHaveBeenCalledWith('s1', DONE_TODO.id, { status: 'pending' })
     )
   })
 
@@ -144,6 +210,30 @@ describe('TeachingTodosCard', () => {
     fireEvent.change(screen.getByTestId('todo-add-input'), { target: { value: 'Via enter' } })
     fireEvent.keyDown(screen.getByTestId('todo-add-input'), { key: 'Enter' })
     await waitFor(() => expect(studentsApi.appendTeachingTodo).toHaveBeenCalledWith('s1', 'Via enter'))
+  })
+
+  it('todo toggle is a BUTTON element with aria-pressed (DS §11.4 keyboard accessibility)', () => {
+    render(<TeachingTodosCard {...defaultProps} />, { wrapper })
+    const btn = screen.getByTestId(`todo-toggle-${PENDING_TODO.id}`)
+    expect(btn.tagName).toBe('BUTTON')
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+    // covered todo (already completed) toggle shows aria-pressed=true
+    fireEvent.click(screen.getByTestId('todo-show-completed-toggle'))
+    const coveredBtn = screen.getByTestId(`todo-toggle-${COVERED_TODO.id}`)
+    expect(coveredBtn.tagName).toBe('BUTTON')
+    expect(coveredBtn).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('optimistic todo toggle is non-interactive (disabled state analog)', () => {
+    vi.mocked(studentsApi.updateTeachingTodo).mockResolvedValue(makeStudent([]))
+    render(<TeachingTodosCard todos={[]} studentId="s1" onStudentChange={vi.fn()} />, { wrapper })
+    // Add an item optimistically
+    fireEvent.change(screen.getByTestId('todo-add-input'), { target: { value: 'Optimistic item' } })
+    fireEvent.keyDown(screen.getByTestId('todo-add-input'), { key: 'Enter' })
+    const btn = screen.getByTestId(/^todo-toggle-temp-/)
+    fireEvent.click(btn)
+    // updateTeachingTodo must not be called for optimistic items
+    expect(studentsApi.updateTeachingTodo).not.toHaveBeenCalled()
   })
 })
 

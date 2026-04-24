@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Plus, Trash2, Check } from 'lucide-react'
 import type { TeachingTodo } from '@/api/students'
 import { appendTeachingTodo, updateTeachingTodo, deleteTeachingTodo } from '@/api/students'
+import { relativeTime } from '@/utils/formatDate'
 
 interface TeachingTodosCardProps {
   todos: TeachingTodo[]
@@ -15,22 +16,11 @@ interface TeachingTodosCardProps {
   onAddFormClose?: () => void
 }
 
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}d ago`
-  const months = Math.floor(days / 30)
-  return `${months}mo ago`
-}
+const COMPLETED_STATUSES = new Set(['done', 'covered', 'dismissed'])
 
 function sortTodos(todos: TeachingTodo[]): TeachingTodo[] {
   return [...todos].sort((a, b) => {
-    const priority = (s: string) => (s === 'Pending' ? 0 : 1)
+    const priority = (s: string) => (s === 'pending' ? 0 : 1)
     const p = priority(a.status) - priority(b.status)
     if (p !== 0) return p
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -46,13 +36,14 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
   const [optimisticAdds, setOptimisticAdds] = useState<OptimisticAdd[]>([])
   const [pendingUpdates, setPendingUpdates] = useState<Map<string, PendingUpdate>>(() => new Map())
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set())
+  const [showCompleted, setShowCompleted] = useState(false)
 
   const [newText, setNewText] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
 
-  // Derive displayed list from server state + optimistic overlays
-  const displayedTodos = useMemo(() => {
+  // Derive all merged todos from server state + optimistic overlays
+  const allMergedTodos = useMemo(() => {
     const serverMerged = todos
       .filter(t => !deletedIds.has(t.id))
       .map(t => {
@@ -62,6 +53,16 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
     return sortTodos([...serverMerged, ...optimisticAdds])
   }, [todos, deletedIds, pendingUpdates, optimisticAdds])
 
+  const completedCount = useMemo(
+    () => allMergedTodos.filter(t => COMPLETED_STATUSES.has(t.status)).length,
+    [allMergedTodos]
+  )
+
+  const displayedTodos = useMemo(
+    () => showCompleted ? allMergedTodos : allMergedTodos.filter(t => !COMPLETED_STATUSES.has(t.status)),
+    [allMergedTodos, showCompleted]
+  )
+
   const addMutation = useMutation({
     mutationFn: (text: string) => appendTeachingTodo(studentId, text),
     onMutate: (text) => {
@@ -70,7 +71,7 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
         _temp: true,
         id: tempId,
         text,
-        status: 'Pending',
+        status: 'pending',
         createdAt: new Date().toISOString(),
         sourceSessionLogId: null,
         coveredInSessionLogId: null,
@@ -141,7 +142,7 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
 
   function handleToggle(todo: TeachingTodo) {
     if (toggleMutation.isPending) return
-    const next = todo.status === 'Pending' ? 'Covered' : 'Pending'
+    const next = todo.status === 'pending' ? 'done' : 'pending'
     toggleMutation.mutate({ todoId: todo.id, status: next })
   }
 
@@ -153,7 +154,7 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
   function commitEdit(todoId: string, currentStatus: string) {
     const text = editText.trim()
     setEditingId(null)
-    const originalTodo = todos.find(t => t.id === todoId) ?? displayedTodos.find(t => t.id === todoId)
+    const originalTodo = todos.find(t => t.id === todoId) ?? allMergedTodos.find(t => t.id === todoId)
     if (text && text !== originalTodo?.text) {
       editMutation.mutate({ todoId, text, status: currentStatus })
     }
@@ -161,91 +162,106 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
 
   return (
     <div data-testid="teaching-todos-card">
-      {displayedTodos.length === 0 ? (
+      {allMergedTodos.length === 0 ? (
         <p className="text-sm text-zinc-400 italic mb-3" data-testid="teaching-todos-empty">
           No ideas yet. Add one below.
         </p>
       ) : (
-        <ul className="space-y-2 mb-3" data-testid="teaching-todos-list">
-          {displayedTodos.map((todo) => {
-            const isCovered = todo.status === 'Covered'
-            const isDismissed = todo.status === 'Dismissed'
-            const isInactive = isCovered || isDismissed
-            const isEditing = editingId === todo.id
-            const isOptimistic = '_temp' in todo
+        <>
+          {displayedTodos.length > 0 && (
+            <ul className="space-y-2 mb-3" data-testid="teaching-todos-list">
+              {displayedTodos.map((todo) => {
+                const isDone = todo.status === 'done'
+                const isCovered = todo.status === 'covered'
+                const isDismissed = todo.status === 'dismissed'
+                const isCompleted = isDone || isCovered || isDismissed
+                const isEditing = editingId === todo.id
+                const isOptimistic = '_temp' in todo
 
-            return (
-              <li
-                key={todo.id}
-                className="flex items-start gap-2 group"
-                data-testid="teaching-todo-item"
-              >
-                {/* Checkbox / status toggle */}
-                <button
-                  type="button"
-                  onClick={() => !isOptimistic && handleToggle(todo)}
-                  aria-label={isCovered ? 'Mark pending' : 'Mark covered'}
-                  data-testid={`todo-toggle-${todo.id}`}
-                  className={`mt-0.5 shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
-                    isCovered
-                      ? 'bg-green-500 border-green-500'
-                      : isDismissed
-                        ? 'border-zinc-300 bg-zinc-100'
-                        : 'border-indigo-400 hover:border-indigo-600'
-                  }`}
-                >
-                  {isCovered && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
-                </button>
-
-                {/* Text / edit */}
-                <div className="flex-1 min-w-0">
-                  {isEditing ? (
-                    <input
-                      autoFocus
-                      type="text"
-                      value={editText}
-                      onChange={e => setEditText(e.target.value)}
-                      onBlur={() => commitEdit(todo.id, todo.status)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') commitEdit(todo.id, todo.status)
-                        if (e.key === 'Escape') setEditingId(null)
-                      }}
-                      maxLength={500}
-                      className="w-full text-sm border-b border-indigo-300 bg-transparent outline-none text-[#1A1B22] py-0.5"
-                      data-testid={`todo-edit-input-${todo.id}`}
-                    />
-                  ) : (
-                    <span
-                      className={`text-sm leading-snug ${
-                        isInactive ? 'line-through text-zinc-400' : 'text-[#1A1B22]'
-                      } ${allowEdit && !isOptimistic ? 'cursor-text hover:text-indigo-700' : ''}`}
-                      onClick={() => allowEdit && !isOptimistic && startEdit(todo)}
-                      data-testid={`todo-text-${todo.id}`}
-                    >
-                      {todo.text}
-                    </span>
-                  )}
-                  <span className="block text-[0.6875rem] text-zinc-400 mt-0.5" data-testid={`todo-time-${todo.id}`}>
-                    {relativeTime(todo.createdAt)}
-                  </span>
-                </div>
-
-                {/* Delete button (allowEdit only, not for provisional optimistic items) */}
-                {allowEdit && !isEditing && !isOptimistic && (
-                  <button
-                    type="button"
-                    onClick={() => deleteMutation.mutate(todo.id)}
-                    aria-label="Delete todo"
-                    data-testid={`todo-delete-${todo.id}`}
-                    className="shrink-0 text-zinc-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 mt-0.5"
+                return (
+                  <li
+                    key={todo.id}
+                    className="flex items-start gap-2 group"
+                    data-testid="teaching-todo-item"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </li>
-            )
-          })}
-        </ul>
+                    {/* Checkbox / status toggle */}
+                    <button
+                      type="button"
+                      onClick={() => !isOptimistic && handleToggle(todo)}
+                      aria-label={isCompleted ? 'Mark pending' : 'Mark done'}
+                      aria-pressed={isCompleted}
+                      data-testid={`todo-toggle-${todo.id}`}
+                      className={`mt-0.5 shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+                        isCompleted
+                          ? 'bg-green-500 border-green-500'
+                          : 'border-indigo-400 hover:border-indigo-600'
+                      }`}
+                    >
+                      {isCompleted && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+                    </button>
+
+                    {/* Text / edit */}
+                    <div className="flex-1 min-w-0">
+                      {isEditing ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          value={editText}
+                          onChange={e => setEditText(e.target.value)}
+                          onBlur={() => commitEdit(todo.id, todo.status)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') commitEdit(todo.id, todo.status)
+                            if (e.key === 'Escape') setEditingId(null)
+                          }}
+                          maxLength={500}
+                          className="w-full text-sm border-b border-indigo-300 bg-transparent outline-none text-[#1A1B22] py-0.5"
+                          data-testid={`todo-edit-input-${todo.id}`}
+                        />
+                      ) : (
+                        <span
+                          className={`text-sm leading-snug ${
+                            isCompleted ? 'line-through text-zinc-400' : 'text-[#1A1B22]'
+                          } ${allowEdit && !isOptimistic ? 'cursor-text hover:text-indigo-700' : ''}`}
+                          onClick={() => allowEdit && !isOptimistic && startEdit(todo)}
+                          data-testid={`todo-text-${todo.id}`}
+                        >
+                          {todo.text}
+                        </span>
+                      )}
+                      <span className="block text-[0.6875rem] text-zinc-400 mt-0.5" data-testid={`todo-time-${todo.id}`}>
+                        {relativeTime(todo.createdAt)}
+                      </span>
+                    </div>
+
+                    {/* Delete button (allowEdit only, not for provisional optimistic items) */}
+                    {allowEdit && !isEditing && !isOptimistic && (
+                      <button
+                        type="button"
+                        onClick={() => deleteMutation.mutate(todo.id)}
+                        aria-label="Delete todo"
+                        data-testid={`todo-delete-${todo.id}`}
+                        className="shrink-0 text-zinc-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 mt-0.5"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+
+          {completedCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowCompleted(v => !v)}
+              data-testid="todo-show-completed-toggle"
+              className="mb-3 text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
+            >
+              {showCompleted ? `Hide completed (${completedCount})` : `Show ${completedCount} completed`}
+            </button>
+          )}
+        </>
       )}
 
       {/* Add input — always visible in uncontrolled mode; visible only when showAddForm=true in controlled mode */}

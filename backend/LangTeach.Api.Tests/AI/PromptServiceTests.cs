@@ -87,6 +87,71 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void NativeLanguage_AppearsOnceAsDataFact_InstructionSubBulletsDoNotRepeatHeading()
+    {
+        var ctx = BaseCtx("Ana") with { StudentNativeLanguage = "Portuguese" };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().Contain("Native language: Portuguese");
+        request.SystemPrompt.Split("Native language: Portuguese", StringSplitOptions.None).Length.Should().Be(2);
+        request.SystemPrompt.Should().NotContain("The student's native language is Portuguese");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsLearningGoalsLine_WhenGoalsArrayIsEmpty()
+    {
+        var ctx = BaseCtx("Ana") with { StudentGoals = [] };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Student profile:");
+        req.SystemPrompt.Should().NotContain("Learning goals:");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsLearningGoalsLine_WhenGoalsIsNull()
+    {
+        var ctx = BaseCtx("Ana") with { StudentGoals = null };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Learning goals:");
+    }
+
+    [Fact]
+    public void SystemPrompt_EmitsShortTermObjectives_WithTypeLabel()
+    {
+        var ctx = BaseCtx("Ana") with
+        {
+            StudentShortTermObjectives =
+            [
+                new StudentObjectiveContext("Pass DELE B2", new DateOnly(2026, 6, 30), "exam_prep"),
+                new StudentObjectiveContext("Handle a job interview", null, "communicative"),
+                new StudentObjectiveContext("General goal", null, "other")
+            ]
+        };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().Contain("Short-term objectives:");
+        req.SystemPrompt.Should().Contain("[Exam prep] Pass DELE B2");
+        req.SystemPrompt.Should().Contain("[Communicative] Handle a job interview");
+        req.SystemPrompt.Should().Contain("General goal");
+        req.SystemPrompt.Should().NotContain("[Other]");
+    }
+
+    [Fact]
+    public void SystemPrompt_OmitsShortTermObjectivesSection_WhenListIsNull()
+    {
+        var ctx = BaseCtx("Ana") with { StudentShortTermObjectives = null };
+
+        var req = _sut.BuildVocabularyPrompt(ctx);
+
+        req.SystemPrompt.Should().NotContain("Short-term objectives:");
+    }
+
+    [Fact]
     public void SystemPrompt_OmitsInterestsLine_WhenInterestsArrayIsEmpty()
     {
         var ctx = BaseCtx("Ana") with { StudentInterests = [] };
@@ -3321,8 +3386,7 @@ public class PromptServiceTests
 
         var request = _sut.BuildLessonPlanPrompt(ctx);
 
-        request.SystemPrompt.Should().Contain("para vivir en Barcelona");
-        request.SystemPrompt.Should().Contain("Anchor vocabulary, topics, and examples to the student's stated study motivation");
+        request.SystemPrompt.Should().Contain("anchor vocabulary to their stated study motivation: para vivir en Barcelona");
     }
 
     [Fact]
@@ -3367,21 +3431,21 @@ public class PromptServiceTests
         request.SystemPrompt.Should().Contain("A2");
         request.SystemPrompt.Should().Contain("official");
         request.SystemPrompt.Should().Contain("teacher assessment");
+        request.SystemPrompt.Should().Contain("content difficulty decisions");
     }
 
     [Fact]
-    public void BirthYear_AgeComputedInSystemPrompt()
+    public void Age_IncludedInSystemPrompt()
     {
-        var birthYear = 1990;
+        var age = DateTime.UtcNow.Year - 1990;
         var ctx = BaseCtx("Ana") with
         {
-            StudentBirthYear = birthYear
+            StudentAge = age
         };
 
         var request = _sut.BuildLessonPlanPrompt(ctx);
 
-        var expectedAge = (DateTime.UtcNow.Year - birthYear).ToString();
-        request.SystemPrompt.Should().Contain(expectedAge);
+        request.SystemPrompt.Should().Contain(age.ToString());
     }
 
     [Fact]
@@ -3413,6 +3477,45 @@ public class PromptServiceTests
         request.SystemPrompt.Should().NotContain("Official CEFR level:");
         request.SystemPrompt.Should().NotContain("Also speaks:");
         request.SystemPrompt.Should().NotContain("Reason for studying");
+    }
+
+    [Fact]
+    public void ReasonForStudying_AppearsExactlyOnce_AsDirectiveNotDataFact()
+    {
+        var ctx = BaseCtx("Ana") with { StudentReasonForStudying = "para vivir en Barcelona" };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().Contain("para vivir en Barcelona");
+        request.SystemPrompt.Split("para vivir en Barcelona", StringSplitOptions.None).Length.Should().Be(2);
+        request.SystemPrompt.Should().NotContain("Reason for studying Spanish: para vivir en Barcelona");
+        request.SystemPrompt.Should().Contain("anchor vocabulary to their stated study motivation: para vivir en Barcelona");
+    }
+
+    [Fact]
+    public void NativeLanguageBullets_AppearInProfileBlock_BeforePersonalizationParagraph()
+    {
+        var ctx = BaseCtx("Ana") with { StudentNativeLanguage = "Portuguese" };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        var personalizeLine = request.SystemPrompt.IndexOf("Personalize content for this student", StringComparison.Ordinal);
+        var falseCognatesLine = request.SystemPrompt.IndexOf("Flag false cognates", StringComparison.Ordinal);
+
+        personalizeLine.Should().BeGreaterThan(-1, because: "personalization paragraph must be present");
+        falseCognatesLine.Should().BeGreaterThan(-1, because: "native-language bullet must be present");
+        falseCognatesLine.Should().BeLessThan(personalizeLine);
+    }
+
+    [Fact]
+    public void CefrPriorityCue_EmittedWithoutOfficialCefrLevel()
+    {
+        var ctx = BaseCtx("Ana") with { StudentOfficialCefrLevel = null };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().Contain("teacher assessment");
+        request.SystemPrompt.Should().Contain("content difficulty decisions");
     }
 }
 

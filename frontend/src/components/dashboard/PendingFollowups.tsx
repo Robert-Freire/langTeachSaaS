@@ -87,7 +87,7 @@ export function PendingFollowups({ followups }: PendingFollowupsProps) {
                 className="flex items-start gap-3 rounded-lg px-3 py-2.5 hover:bg-[#F4F2FD] transition-colors"
               >
                 <button
-                  onClick={() => handleMarkDone(f.id)}
+                  onClick={(e) => { e.stopPropagation(); handleMarkDone(f.id) }}
                   aria-label="Mark done"
                   title="Mark as done"
                   className={`mt-0.5 shrink-0 w-3.5 h-3.5 rounded-full border-2 ${badge.dotColor} border-transparent hover:opacity-80 hover:scale-125 transition-all`}
@@ -103,7 +103,17 @@ export function PendingFollowups({ followups }: PendingFollowupsProps) {
                       {f.studentName}
                     </Link>
                   )}
-                  <p className="text-sm text-[#1A1B22] font-inter">{f.text}</p>
+                  {f.studentId ? (
+                    <Link
+                      to={`/students/${f.studentId}`}
+                      className="block text-sm text-[#1A1B22] font-inter hover:text-indigo-700 cursor-pointer"
+                      data-testid={`followup-text-link-${f.id}`}
+                    >
+                      {f.text}
+                    </Link>
+                  ) : (
+                    <p className="text-sm text-[#1A1B22] font-inter">{f.text}</p>
+                  )}
                 </div>
                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[0.6875rem] font-bold font-inter shrink-0 ${badge.badgeClassName}`} data-testid={`followup-age-${f.id}`}>
                   {badge.label}

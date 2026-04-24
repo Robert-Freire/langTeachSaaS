@@ -116,7 +116,7 @@ export default function Settings() {
   return (
     <div className="max-w-2xl space-y-6">
       <PageHeader
-        title="My Profile"
+        title="Settings"
         subtitle="Configure how you appear to students and set your teaching preferences."
         actions={
           <div className="flex items-center gap-3">

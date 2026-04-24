@@ -76,7 +76,7 @@ export default function CourseNew() {
   useEffect(() => {
     if (!lockedStudent) return
     if (!language) setLanguage(lockedStudent.learningLanguage)
-    if (!targetCefrLevel) setTargetCefrLevel(lockedStudent.cefrLevel)
+    if (!targetCefrLevel) setTargetCefrLevel(lockedStudent.level.cefrLevel)
   }, [lockedStudent, lockedStudentId]) // eslint-disable-line react-hooks/exhaustive-deps
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -389,7 +389,7 @@ export default function CourseNew() {
               <CefrMismatchWarning
                 key={studentId}
                 studentName={selectedStudent.name}
-                studentLevel={selectedStudent.cefrLevel}
+                studentLevel={selectedStudent.level.cefrLevel}
                 lessonLevel={targetCefrLevel}
               />
             ) : null

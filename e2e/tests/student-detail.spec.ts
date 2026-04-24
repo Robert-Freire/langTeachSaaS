@@ -52,6 +52,36 @@ test('student detail overview tab: three-card row renders in correct order', asy
   }
 })
 
+test('student detail overview tab: last-session summary card surfaces most recent session', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    // Diego Seed has 2 session log entries
+    await page.goto('/students')
+    await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+
+    const diegoSeed = page.getByText('Diego Seed').first()
+    await expect(diegoSeed).toBeVisible({ timeout: UI_TIMEOUT })
+    await diegoSeed.click()
+
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+    await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    const card = page.getByTestId('last-session-card')
+    await expect(card).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Read-only card: date badge + title are always present when a session exists
+    await expect(card.getByTestId('last-session-date')).toBeVisible()
+    await expect(card.getByTestId('last-session-title')).toBeVisible()
+
+    // No edit controls inside the card
+    await expect(card.locator('button, input, textarea')).toHaveCount(0)
+  } finally {
+    await context.close()
+  }
+})
+
 test('student detail overview tab: compact session cards and view-all link', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
@@ -102,7 +132,7 @@ test('student detail overview tab: + Ideas button opens inline input', async ({ 
     await page.getByTestId('student-native-language').click()
     await page.getByRole('option', { name: 'English' }).click()
     await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Save Student' }).click()
+    await page.getByRole('button', { name: 'Done' }).click()
 
     await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
     await expect(page.getByTestId('student-overview-tab')).toBeVisible({ timeout: UI_TIMEOUT })
@@ -138,7 +168,7 @@ test('student detail overview tab: Followups card amber when pending followups e
     await page.getByTestId('student-native-language').click()
     await page.getByRole('option', { name: 'English' }).click()
     await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Save Student' }).click()
+    await page.getByRole('button', { name: 'Done' }).click()
 
     await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
 
@@ -235,6 +265,31 @@ test('student detail profile tab: inline-add short-term objective', async ({ bro
 
     await expect(page.getByText(objText)).toBeVisible({ timeout: UI_TIMEOUT })
     await expect(page.getByTestId('objective-add-btn-input')).not.toBeVisible()
+  } finally {
+    await context.close()
+  }
+})
+
+test('student detail progress tab: skill imbalance chart renders when skill overrides exist', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    await page.goto('/students')
+    await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+
+    const diegoSeed = page.getByText('Diego Seed').first()
+    await expect(diegoSeed).toBeVisible({ timeout: UI_TIMEOUT })
+    await diegoSeed.click()
+
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+    await page.getByTestId('tab-progress').click()
+    await expect(page.getByTestId('progress-tab-content')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Chart renders — skill bars are present, empty state is not shown
+    await expect(page.getByTestId('skill-bar-reading')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByTestId('skill-bar-writing')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByText('No skill assessments recorded yet.')).not.toBeVisible()
   } finally {
     await context.close()
   }
@@ -384,7 +439,7 @@ test('student profile tab: add interest chip via Enter', async ({ browser }) => 
     await page.getByTestId('student-native-language').click()
     await page.getByRole('option', { name: 'English' }).click()
     await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Save Student' }).click()
+    await page.getByRole('button', { name: 'Done' }).click()
     await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
 
     await page.getByTestId('tab-profile').click()
@@ -417,7 +472,7 @@ test('student profile tab: TWM always visible without show-all', async ({ browse
     await page.getByTestId('student-native-language').click()
     await page.getByRole('option', { name: 'English' }).click()
     await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Save Student' }).click()
+    await page.getByRole('button', { name: 'Done' }).click()
     await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
 
     await page.getByTestId('tab-profile').click()
@@ -522,3 +577,43 @@ test('sessions tab: expanded row has "Edit full session" link that navigates to 
     await context.close()
   }
 })
+
+test('session inline edit: expand, edit title, autosave fires, reload, value persists', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    await page.goto('/students')
+    await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+    await page.getByText('Diego Seed').first().click()
+    await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
+
+    await page.getByTestId('tab-sessions').click()
+    await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Expand first session
+    await page.getByTestId('session-entry-toggle').first().click()
+    await expect(page.getByTestId('session-entry-detail').first()).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Edit title
+    const titleInput = page.getByTestId('session-title-input').first()
+    await expect(titleInput).toBeVisible({ timeout: UI_TIMEOUT })
+    const uniqueTitle = `E2E Inline Edit ${Date.now()}`
+    await titleInput.fill(uniqueTitle)
+    await titleInput.blur()
+
+    // Wait for saved indicator
+    await expect(page.getByTestId('saved-indicator').first()).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Reload and verify value persisted
+    await page.reload()
+    await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+    await page.getByTestId('tab-sessions').click()
+    await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
+    await page.getByTestId('session-entry-toggle').first().click()
+    await expect(page.getByTestId('session-title-input').first()).toHaveValue(uniqueTitle, { timeout: UI_TIMEOUT })
+  } finally {
+    await context.close()
+  }
+})
+

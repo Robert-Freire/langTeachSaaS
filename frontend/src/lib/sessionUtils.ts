@@ -25,3 +25,14 @@ export function getDisplayTitle(session: SessionLog): string {
   if (fallback) return fallback.slice(0, 55) + (fallback.length > 55 ? '...' : '')
   return 'Session'
 }
+
+/**
+ * Most recent non-cancelled session with a date, or null.
+ * Same filter as the compact RecentSessions strip so the two pickers stay in lock-step.
+ */
+export function pickLastSession(sessions: SessionLog[]): SessionLog | null {
+  const candidates = sessions
+    .filter(s => s.sessionDate && !s.isCancelled)
+    .sort((a, b) => new Date(b.sessionDate!).getTime() - new Date(a.sessionDate!).getTime())
+  return candidates[0] ?? null
+}

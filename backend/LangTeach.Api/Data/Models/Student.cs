@@ -29,7 +29,6 @@ public class Student
 
     // Plan fields
     public string ShortTermObjectives { get; set; } = "[]";
-    public string TeachingTodos { get; set; } = "[]";
 
     // Commercial fields
     public bool IsActive { get; set; } = true;
@@ -43,8 +42,16 @@ public class Student
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
+    public int? GetAge()
+    {
+        if (BirthYear is not int year) return null;
+        var current = DateTime.UtcNow.Year;
+        return year >= current - 120 && year <= current ? current - year : null;
+    }
+
     public Teacher Teacher { get; set; } = null!;
     public ICollection<Lesson> Lessons { get; set; } = [];
     public ICollection<Course> Courses { get; set; } = [];
     public ICollection<SessionLog> SessionLogs { get; set; } = [];
+    public ICollection<TeacherFollowup> TeacherFollowups { get; set; } = [];
 }

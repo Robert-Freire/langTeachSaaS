@@ -49,35 +49,23 @@ const MOCK_STUDENT: studentsApi.Student = {
   id: 'student-1',
   name: 'Ana Garcia',
   learningLanguage: 'Spanish',
-  cefrLevel: 'B1',
-  interests: ['travel', 'cooking'],
-  personalNotes: null,
-  teachingNotes: null,
-  nativeLanguages: ['English'],
-  learningGoals: [{ id: '1', text: 'Travel', children: [] }, { id: '2', text: 'DELE B1', children: [] }],
-  weaknesses: [],
-  difficulties: [],
+  level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
+  languages: { nativeLanguages: ['English'], spokenLanguages: ['French'] },
+  identity: { birthYear: 1995, age: null, profession: 'Designer', countryOfOrigin: 'United Kingdom', cityOfOrigin: 'London', countryOfResidence: 'Spain', cityOfResidence: 'Barcelona' },
+  profile: {
+    interests: ['travel', 'cooking'],
+    personalNotes: null,
+    teachingNotes: null,
+    learningGoals: [{ id: '1', text: 'Travel', children: [] }, { id: '2', text: 'DELE B1', children: [] }],
+    weaknesses: [],
+    difficulties: [],
+    shortTermObjectives: [{ id: 'obj-1', text: 'Complete DELE B1 exam prep', targetDate: '2026-06-01', objectiveType: 'exam_prep' as const }],
+    teachingTodos: [{ id: 'todo-1', text: 'Send homework exercises', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Pending', coveredInSessionLogId: null }],
+    reasonForStudying: 'Moved to Barcelona for work',
+  },
+  commercial: { isActive: true, isCorporate: false, rate: '30 EUR/h' },
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
-  birthYear: 1995,
-  profession: 'Designer',
-  countryOfOrigin: 'United Kingdom',
-  cityOfOrigin: 'London',
-  countryOfResidence: 'Spain',
-  cityOfResidence: 'Barcelona',
-  reasonForStudying: 'Moved to Barcelona for work',
-  officialCefrLevel: null,
-  shortTermObjectives: [
-    { id: 'obj-1', text: 'Complete DELE B1 exam prep', targetDate: '2026-06-01' },
-  ],
-  isActive: true,
-  isCorporate: false,
-  rate: '30 EUR/h',
-  spokenLanguages: ['French'],
-  skillLevelOverrides: {},
-  teachingTodos: [
-    { id: 'todo-1', text: 'Send homework exercises', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Pending', coveredInSessionLogId: null },
-  ],
 }
 
 function wrapper(studentId = 'student-1') {
@@ -182,7 +170,7 @@ describe('StudentDetail', () => {
   it('shows official CEFR badge when different from teacher level', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...MOCK_STUDENT,
-      officialCefrLevel: 'A2',
+      level: { ...MOCK_STUDENT.level, officialCefrLevel: 'A2' },
     })
     wrapper()
     await screen.findByTestId('student-detail-name')
@@ -192,7 +180,7 @@ describe('StudentDetail', () => {
   it('shows official CEFR badge even when same as teacher level', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...MOCK_STUDENT,
-      officialCefrLevel: 'B1',
+      level: { ...MOCK_STUDENT.level, officialCefrLevel: 'B1' },
     })
     wrapper()
     await screen.findByTestId('student-detail-name')
@@ -208,7 +196,7 @@ describe('StudentDetail', () => {
   it('shows "Learning {language}" in subtitle when nativeLanguages is empty', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...MOCK_STUDENT,
-      nativeLanguages: [],
+      languages: { ...MOCK_STUDENT.languages, nativeLanguages: [] },
     })
     wrapper()
     await screen.findByTestId('student-detail-name')
@@ -219,7 +207,7 @@ describe('StudentDetail', () => {
   it('omits profession segment in subtitle when profession is null', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...MOCK_STUDENT,
-      profession: null,
+      identity: { ...MOCK_STUDENT.identity, profession: null },
     })
     wrapper()
     await screen.findByTestId('student-detail-name')
@@ -229,10 +217,8 @@ describe('StudentDetail', () => {
   it('shows subtitle with just learning language when L1, profession, and city are all absent', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...MOCK_STUDENT,
-      nativeLanguages: [],
-      profession: null,
-      cityOfOrigin: null,
-      cityOfResidence: null,
+      languages: { ...MOCK_STUDENT.languages, nativeLanguages: [] },
+      identity: { ...MOCK_STUDENT.identity, profession: null, cityOfOrigin: null, cityOfResidence: null },
     })
     wrapper()
     await screen.findByTestId('student-detail-name')
@@ -283,7 +269,7 @@ describe('StudentDetail - Header badges', () => {
   })
 
   it('shows separate Active and Corporate badges for active corporate student', async () => {
-    vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...MOCK_STUDENT, isCorporate: true })
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...MOCK_STUDENT, commercial: { ...MOCK_STUDENT.commercial, isCorporate: true } })
     wrapper()
     await screen.findByTestId('student-detail-name')
     expect(screen.getByTestId('student-status-badge')).toHaveTextContent('Active')
@@ -291,7 +277,7 @@ describe('StudentDetail - Header badges', () => {
   })
 
   it('shows Inactive badge for inactive student', async () => {
-    vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...MOCK_STUDENT, isActive: false })
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...MOCK_STUDENT, commercial: { ...MOCK_STUDENT.commercial, isActive: false } })
     wrapper()
     await screen.findByTestId('student-detail-name')
     expect(screen.getByTestId('student-status-badge')).toHaveTextContent(/Inactive/i)
@@ -408,9 +394,7 @@ describe('StudentDetail - Primary objective in header', () => {
   it('shows days remaining for objective with future date', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...MOCK_STUDENT,
-      shortTermObjectives: [
-        { id: 'obj-1', text: 'Future objective', targetDate: '2030-01-01' },
-      ],
+      profile: { ...MOCK_STUDENT.profile, shortTermObjectives: [{ id: 'obj-1', text: 'Future objective', targetDate: '2030-01-01', objectiveType: 'other' as const }] },
     })
     wrapper()
     await screen.findByTestId('primary-objective-card')
@@ -418,7 +402,7 @@ describe('StudentDetail - Primary objective in header', () => {
   })
 
   it('hides objective element when no objectives set', async () => {
-    vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...MOCK_STUDENT, shortTermObjectives: [] })
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...MOCK_STUDENT, profile: { ...MOCK_STUDENT.profile, shortTermObjectives: [] } })
     wrapper()
     await screen.findByTestId('student-detail-name')
     expect(screen.queryByTestId('primary-objective-card')).not.toBeInTheDocument()
@@ -497,16 +481,8 @@ describe('StudentDetail - Profile tab sections', () => {
   it('shows empty states when no profile data', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...MOCK_STUDENT,
-      birthYear: null,
-      profession: null,
-      countryOfOrigin: null,
-      cityOfOrigin: null,
-      countryOfResidence: null,
-      cityOfResidence: null,
-      reasonForStudying: null,
-      learningGoals: [],
-      shortTermObjectives: [],
-      teachingTodos: [],
+      identity: { ...MOCK_STUDENT.identity, birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+      profile: { ...MOCK_STUDENT.profile, learningGoals: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
     })
     await openProfileTab()
     // identity sidebar is collapsed (no data) — show-empty-sections toggle is visible instead

@@ -303,7 +303,7 @@ test('generate lesson from curriculum entry navigates to LessonNew pre-filled', 
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        items: [{ id: STUDENT_ID, name: 'Ana', learningLanguage: 'English', cefrLevel: 'B2', interests: [], personalNotes: null, teachingNotes: null, nativeLanguages: [], learningGoals: [], weaknesses: [], difficulties: [], createdAt: '', updatedAt: '' }],
+        items: [{ id: STUDENT_ID, name: 'Ana', learningLanguage: 'English', level: { cefrLevel: 'B2', officialCefrLevel: null, skillLevelOverrides: {} }, languages: { nativeLanguages: [], spokenLanguages: [] }, identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null }, profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null }, commercial: { isActive: true, isCorporate: false, rate: null }, createdAt: '', updatedAt: '' }],
         totalCount: 1,
       }),
     })
@@ -733,7 +733,7 @@ test('full happy path: student edit → CourseNew (locked) → generate → Cour
   await page.getByRole('option', { name: 'Spanish' }).click()
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'A1' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL('/students', { timeout: NAV_TIMEOUT })
 
   // Navigate to student edit page

@@ -43,7 +43,7 @@ public class SessionsController : ControllerBase
         if (student is null) return NotFound();
 
         _logger.LogInformation("POST /api/students/{StudentId}/sessions/extract. TeacherId={TeacherId}", studentId, teacherId);
-        var knownDifficulties = student.Difficulties.Select(d => d.Description).ToList();
+        var knownDifficulties = student.Profile.Difficulties.Select(d => d.Description).ToList();
         var extracted = await _extractionService.ExtractAsync(request.Text, knownDifficulties, cancellationToken);
         return Ok(extracted);
     }

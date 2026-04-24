@@ -10,7 +10,8 @@ namespace LangTeach.Api.Data;
 /// </summary>
 public static class ScenarioSeeder
 {
-    private const string ScenarioTag = "[scenario-seed]";
+    private const string ScenarioTag           = "[scenario-seed]";
+    private const string DiegoSkillLevelOverrides = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""";
 
     // All students whose sessions, followups, and todos are managed by this seeder.
     // Ana Visual, Ana Seed, Marco Seed, Clara Seed, Diego Seed already exist after --visual-seed.
@@ -136,7 +137,6 @@ public static class ScenarioSeeder
         var students = await db.Students.Where(s => studentIds.Contains(s.Id)).ToListAsync();
         foreach (var s in students)
         {
-            s.TeachingTodos       = "[]";
             s.ShortTermObjectives = "[]";
             s.Difficulties        = "[]";
             s.TeachingNotes       = null;
@@ -413,10 +413,16 @@ public static class ScenarioSeeder
         });
 
         // Clara Seed: Review pending (1 pending teaching todo)
-        var claraTodoId   = Guid.NewGuid();
-        var claraTodoDate = now.AddDays(-3).ToString("yyyy-MM-ddTHH:mm:ssZ");
-        claraSeed.TeachingTodos = $$"""[{"id":"{{claraTodoId}}","text":"Review Clara's subjunctive triggers — exercises not completed","createdAt":"{{claraTodoDate}}","sourceSessionLogId":null,"status":"Pending","coveredInSessionLogId":null}]""";
-        claraSeed.UpdatedAt = now;
+        db.TeacherFollowups.Add(new TeacherFollowup
+        {
+            Id = Guid.NewGuid(), TeacherId = teacherId, StudentId = claraSeed.Id,
+            Text = "Review Clara's subjunctive triggers — exercises not completed",
+            Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = now.AddDays(-3),
+        });
+
+        // Diego Seed: restore skill overrides (WipeAsync clears them) so Progress tab shows chart
+        diegoSeed.SkillLevelOverrides = DiegoSkillLevelOverrides;
+        diegoSeed.UpdatedAt = now;
 
         // Diego Seed: no signal (recent past session + upcoming session, no todos)
         db.SessionLogs.AddRange(
@@ -513,6 +519,10 @@ public static class ScenarioSeeder
     private static async Task SeedScenario6Async(AppDbContext db, Guid teacherId, Student hansB1,
         DateTime now, ILogger logger)
     {
+        // ---- Hans B1: student-level context data ----
+        hansB1.ShortTermObjectives = $$"""[{"id":"obj1","text":"Master subjunctive triggers (WEIRDO verbs and temporal clauses)","targetDate":"{{now.AddDays(30):yyyy-MM-dd}}"},{"id":"obj2","text":"Achieve consistent use of ser vs estar in extended discourse","targetDate":"{{now.AddDays(45):yyyy-MM-dd}}"}]""";
+        hansB1.UpdatedAt = now;
+
         // Past session (7 days ago): all 4 briefing fields populated
         var pastSession = new SessionLog
         {
@@ -591,11 +601,9 @@ public static class ScenarioSeeder
         anaVisual.TeachingNotes = "Ana is a motivated B2 student who has studied Spanish for 3 years. She works as a translator and uses Spanish professionally. Main challenges: subjunctive triggers, ser vs estar in extended discourse, and maintaining gender agreement in complex sentences. She responds well to authentic text examples and prefers inductive grammar discovery over explicit rule-teaching. Avoid metalinguistic jargon; use discovery questions instead.";
         anaVisual.SkillLevelOverrides = """{"Reading":"B2","Writing":"B1"}""";
 
-        var todoId1 = Guid.NewGuid();
-        var todoId2 = Guid.NewGuid();
-        var todoDate1 = now.AddDays(-5).ToString("yyyy-MM-ddTHH:mm:ssZ");
-        var todoDate2 = now.AddDays(-2).ToString("yyyy-MM-ddTHH:mm:ssZ");
-        anaVisual.TeachingTodos = $$"""[{"id":"{{todoId1}}","text":"Prepare a set of subjunctive trigger cards for next class","createdAt":"{{todoDate1}}","sourceSessionLogId":null,"status":"Pending","coveredInSessionLogId":null},{"id":"{{todoId2}}","text":"Find an authentic news article about Latin American culture at B2 level","createdAt":"{{todoDate2}}","sourceSessionLogId":null,"status":"Pending","coveredInSessionLogId":null}]""";
+        db.TeacherFollowups.AddRange(
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = teacherId, StudentId = anaVisual.Id, Text = "Prepare a set of subjunctive trigger cards for next class", Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = now.AddDays(-5) },
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = teacherId, StudentId = anaVisual.Id, Text = "Find an authentic news article about Latin American culture at B2 level", Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = now.AddDays(-2) });
 
         anaVisual.ShortTermObjectives = $$"""[{"id":"obj1","text":"Master subjunctive in nominal clauses (WEIRDO verbs)","targetDate":"{{now.AddDays(-3):yyyy-MM-dd}}"},{"id":"obj2","text":"Achieve confident use of ser vs estar in all tenses","targetDate":"{{now.AddDays(5):yyyy-MM-dd}}"},{"id":"obj3","text":"Build travel and business vocabulary to 500 items","targetDate":"{{now.AddDays(28):yyyy-MM-dd}}"}]""";
 

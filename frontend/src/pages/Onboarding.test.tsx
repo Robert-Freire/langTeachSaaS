@@ -148,22 +148,13 @@ describe('Onboarding', () => {
 
   it('resumes at step 3 if student exists but no lessons', async () => {
     const mockStudent = {
-      id: 'stu-1',
-      name: 'Test Student',
-      learningLanguage: 'English',
-      cefrLevel: 'B1',
-      interests: [],
-      personalNotes: null, teachingNotes: null,
-      nativeLanguages: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-      createdAt: '2026-01-01T00:00:00Z',
-      updatedAt: '2026-01-01T00:00:00Z',
-      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
-      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
-      officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
-      rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
+      id: 'stu-1', name: 'Test Student', learningLanguage: 'English',
+      level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
+      languages: { nativeLanguages: [], spokenLanguages: [] },
+      identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+      profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
+      commercial: { isActive: true, isCorporate: false, rate: null },
+      createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
     }
     mockGetStudents.mockResolvedValue({ items: [mockStudent], totalCount: 1, page: 1, pageSize: 1 })
 
@@ -279,22 +270,13 @@ describe('Onboarding', () => {
 
   it('navigates to dashboard when step 3 skip is clicked', async () => {
     const mockStudent = {
-      id: 'stu-1',
-      name: 'Test Student',
-      learningLanguage: 'English',
-      cefrLevel: 'B1',
-      interests: [],
-      personalNotes: null, teachingNotes: null,
-      nativeLanguages: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-      createdAt: '2026-01-01T00:00:00Z',
-      updatedAt: '2026-01-01T00:00:00Z',
-      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
-      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
-      officialCefrLevel: null, shortTermObjectives: [], isActive: true, isCorporate: false,
-      rate: null, spokenLanguages: [], teachingTodos: [], skillLevelOverrides: {},
+      id: 'stu-1', name: 'Test Student', learningLanguage: 'English',
+      level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
+      languages: { nativeLanguages: [], spokenLanguages: [] },
+      identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+      profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
+      commercial: { isActive: true, isCorporate: false, rate: null },
+      createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
     }
     mockGetStudents.mockResolvedValue({ items: [mockStudent], totalCount: 1, page: 1, pageSize: 1 })
 

@@ -183,10 +183,11 @@ public class GenerateController : ControllerBase
             Style: request.Style,
             DurationMinutes: lesson.DurationMinutes,
             StudentName: student?.Name,
-            StudentNativeLanguage: student?.NativeLanguages.FirstOrDefault(),
-            StudentInterests: student?.Interests.ToArray(),
-            StudentGoals: student?.LearningGoals.SelectMany(g => new[] { g.Text }.Concat(g.Children.Select(c => c.Text))).ToArray(),
-            StudentWeaknesses: student?.Weaknesses.Select(w => new StudentWeakness(w.Description, w.WeaknessType)).ToArray(),
+            StudentNativeLanguage: student?.Languages.NativeLanguages.FirstOrDefault(),
+            StudentInterests: student?.Profile.Interests.ToArray(),
+            // LearningGoals is a legacy field; migrate to ShortTermObjectives (see #855)
+            StudentGoals: student?.Profile.LearningGoals.SelectMany(g => new[] { g.Text }.Concat(g.Children.Select(c => c.Text))).ToArray(),
+            StudentWeaknesses: student?.Profile.Weaknesses.Select(w => new StudentWeakness(w.Description, w.WeaknessType)).ToArray(),
             ExistingNotes: request.ExistingNotes,
             Direction: request.Direction,
             MaterialFileNames: materialFileNames,
@@ -197,13 +198,16 @@ public class GenerateController : ControllerBase
             TeacherGrammarConstraints: request.GrammarConstraints,
             SectionType: request.SectionType,
             SessionHistory: sessionHistory,
-            StudentReasonForStudying: student?.ReasonForStudying,
-            StudentSpokenLanguages: student?.SpokenLanguages.ToArray(),
-            StudentProfession: student?.Profession,
-            StudentBirthYear: student?.BirthYear,
-            StudentCountryOfOrigin: student?.CountryOfOrigin,
-            StudentCountryOfResidence: student?.CountryOfResidence,
-            StudentOfficialCefrLevel: student?.OfficialCefrLevel
+            StudentReasonForStudying: student?.Profile.ReasonForStudying,
+            StudentSpokenLanguages: student?.Languages.SpokenLanguages.ToArray(),
+            StudentProfession: student?.Identity.Profession,
+            StudentAge: student?.Identity.Age,
+            StudentCountryOfOrigin: student?.Identity.CountryOfOrigin,
+            StudentCountryOfResidence: student?.Identity.CountryOfResidence,
+            StudentOfficialCefrLevel: student?.Level.OfficialCefrLevel,
+            StudentShortTermObjectives: student?.Profile.ShortTermObjectives
+                .Select(o => new StudentObjectiveContext(o.Text, o.TargetDate, o.ObjectiveType))
+                .ToList()
         );
 
         var claudeRequest = buildPrompt(_promptService, ctx);
@@ -350,10 +354,11 @@ public class GenerateController : ControllerBase
             Style: request.Style,
             DurationMinutes: lesson.DurationMinutes,
             StudentName: student?.Name,
-            StudentNativeLanguage: student?.NativeLanguages.FirstOrDefault(),
-            StudentInterests: student?.Interests.ToArray(),
-            StudentGoals: student?.LearningGoals.SelectMany(g => new[] { g.Text }.Concat(g.Children.Select(c => c.Text))).ToArray(),
-            StudentWeaknesses: student?.Weaknesses.Select(w => new StudentWeakness(w.Description, w.WeaknessType)).ToArray(),
+            StudentNativeLanguage: student?.Languages.NativeLanguages.FirstOrDefault(),
+            StudentInterests: student?.Profile.Interests.ToArray(),
+            // LearningGoals is a legacy field; migrate to ShortTermObjectives (see #855)
+            StudentGoals: student?.Profile.LearningGoals.SelectMany(g => new[] { g.Text }.Concat(g.Children.Select(c => c.Text))).ToArray(),
+            StudentWeaknesses: student?.Profile.Weaknesses.Select(w => new StudentWeakness(w.Description, w.WeaknessType)).ToArray(),
             ExistingNotes: request.ExistingNotes,
             Direction: request.Direction,
             MaterialFileNames: materialFileNames,
@@ -364,13 +369,16 @@ public class GenerateController : ControllerBase
             TeacherGrammarConstraints: request.GrammarConstraints,
             SectionType: request.SectionType,
             SessionHistory: sessionHistory,
-            StudentReasonForStudying: student?.ReasonForStudying,
-            StudentSpokenLanguages: student?.SpokenLanguages.ToArray(),
-            StudentProfession: student?.Profession,
-            StudentBirthYear: student?.BirthYear,
-            StudentCountryOfOrigin: student?.CountryOfOrigin,
-            StudentCountryOfResidence: student?.CountryOfResidence,
-            StudentOfficialCefrLevel: student?.OfficialCefrLevel
+            StudentReasonForStudying: student?.Profile.ReasonForStudying,
+            StudentSpokenLanguages: student?.Languages.SpokenLanguages.ToArray(),
+            StudentProfession: student?.Identity.Profession,
+            StudentAge: student?.Identity.Age,
+            StudentCountryOfOrigin: student?.Identity.CountryOfOrigin,
+            StudentCountryOfResidence: student?.Identity.CountryOfResidence,
+            StudentOfficialCefrLevel: student?.Level.OfficialCefrLevel,
+            StudentShortTermObjectives: student?.Profile.ShortTermObjectives
+                .Select(o => new StudentObjectiveContext(o.Text, o.TargetDate, o.ObjectiveType))
+                .ToList()
         );
 
         var claudeRequest = buildPrompt(ctx);
@@ -468,7 +476,7 @@ public class GenerateController : ControllerBase
     }
 
     private static DifficultyDto[]? TopDifficulties(StudentDto? student) =>
-        student?.Difficulties
+        student?.Profile.Difficulties
             .Where(d => string.Equals(d.Status, "Active", StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(d => d.Severity switch { "high" => 3, "medium" => 2, _ => 1 })
             .Take(3)

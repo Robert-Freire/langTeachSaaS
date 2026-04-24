@@ -56,7 +56,8 @@ public class CoursesController : ControllerBase
         }
         catch (ValidationException ex)
         {
-            return BadRequest(ex.Message);
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
         }
         catch (CurriculumGenerationException ex)
         {

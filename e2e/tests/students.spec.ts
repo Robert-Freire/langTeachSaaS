@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 import { NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
+import { createStudentViaUI } from '../helpers/students'
 
 test.beforeAll(async ({ browser }) => {
   const ctx = await createMockAuthContext(browser)
@@ -83,7 +84,7 @@ test('creates student with lexical weakness and verifies round-trip', async ({ b
   await page.getByTestId('weakness-type').click()
   await page.getByRole('option', { name: 'Lexical' }).click()
 
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Go to roster to find the student card and navigate to edit
@@ -188,7 +189,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await diffRow.getByTestId('difficulty-subcategory').fill('ser/estar')
 
   // Save
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
 
   // Should redirect to student profile page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
@@ -332,7 +333,7 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
   await page.getByTestId('weakness-description').fill('irregular verb conjugation')
 
   // Save
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Navigate to list to verify persistence
@@ -377,15 +378,7 @@ test('"Create Course" button on student edit page navigates to CourseNew with st
 
   // Create a student with full profile
   const studentName = `Create Course Test ${Date.now()}`
-  await page.goto('/students/new')
-  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: UI_TIMEOUT })
-  await page.getByTestId('student-name').fill(studentName)
-  await page.getByTestId('student-language').click()
-  await page.getByRole('option', { name: 'Spanish' }).click()
-  await page.getByTestId('student-cefr').click()
-  await page.getByRole('option', { name: 'B2' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
+  await createStudentViaUI(page, { name: studentName, language: 'Spanish', cefrLevel: 'B2' })
 
   // Navigate to list then to edit page
   await page.goto('/students')
@@ -427,20 +420,7 @@ test('student detail shows 4 tabs and overview content by default', async ({ bro
   const studentName = `Profile Tab Test ${Date.now()}`
 
   // Create a student with native language set
-  await page.goto('/students/new')
-  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: UI_TIMEOUT })
-  await page.getByTestId('student-name').fill(studentName)
-  await page.getByTestId('student-language').click()
-  await page.getByRole('option', { name: 'Spanish' }).click()
-  await page.getByTestId('student-cefr').click()
-  await page.getByRole('option', { name: 'B1' }).click()
-  await page.getByTestId('student-native-language').click()
-  await page.getByRole('option', { name: 'Portuguese' }).click()
-  await page.keyboard.press('Escape')
-  await page.getByRole('button', { name: 'Save Student' }).click()
-
-  // Should redirect directly to student detail page
-  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
+  await createStudentViaUI(page, { name: studentName, language: 'Spanish', cefrLevel: 'B1', nativeLanguage: 'Portuguese' })
 
   // All 4 tabs should be visible
   await expect(page.getByTestId('tab-overview')).toBeVisible({ timeout: UI_TIMEOUT })
@@ -525,7 +505,7 @@ test('saves and displays SpokenLanguages, OfficialCefrLevel, and SkillLevelOverr
   await page.getByTestId('skill-override-reading').click()
   await page.getByRole('option', { name: 'B2' }).click()
 
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL(/\/students\/[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Verify Overview tab shows skill bar
@@ -590,7 +570,7 @@ test('identity fields round-trip: save and verify in profile view and edit form'
   await page.getByTestId('student-country-residence').fill('Spain')
   await page.getByTestId('student-city-residence').fill('Madrid')
 
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
 
   // Should redirect to student detail page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
@@ -661,7 +641,7 @@ test('motivation fields: reason for studying and objectives round-trip', async (
   await page.getByTestId('add-objective').click()
   await page.getByTestId('objective-text-input').fill(objectiveText)
 
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Header: primary objective card shows the objective (visible on all tabs)
@@ -754,15 +734,7 @@ test('teaching todos: add, toggle covered, verify ordering on overview tab', asy
   const studentName = `Todo E2E Test ${Date.now()}`
 
   // Create a student to work with
-  await page.goto('/students/new')
-  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: UI_TIMEOUT })
-  await page.getByTestId('student-name').fill(studentName)
-  await page.getByTestId('student-language').click()
-  await page.getByRole('option', { name: 'Spanish' }).click()
-  await page.getByTestId('student-cefr').click()
-  await page.getByRole('option', { name: 'B1' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
+  await createStudentViaUI(page, { name: studentName, language: 'Spanish', cefrLevel: 'B1' })
 
   // Verify we're on the overview tab (default)
   await expect(page.getByTestId('tab-overview')).toHaveAttribute('aria-selected', 'true', { timeout: FEEDBACK_TIMEOUT })
@@ -794,14 +766,18 @@ test('teaching todos: add, toggle covered, verify ordering on overview tab', asy
 
   await page.getByTestId(`todo-toggle-${todoId}`).click()
 
-  // Wait for covered state (strikethrough)
+  // Done item disappears from default view; reveal it via the toggle
+  await expect(page.getByTestId('todo-show-completed-toggle')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await page.getByTestId('todo-show-completed-toggle').click()
+
+  // Wait for done state (strikethrough)
   await expect(page.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
 
-  // Verify ordering: pending todo should appear before covered
+  // Verify ordering: pending todo should appear before done
   const reorderedItems = page.getByTestId('teaching-todo-item')
   const firstText = await reorderedItems.first().getByTestId(/^todo-text-/).textContent()
   const lastText = await reorderedItems.last().getByTestId(/^todo-text-/).textContent()
-  expect(firstText).not.toEqual(todoText) // the one we covered should now be last
+  expect(firstText).not.toEqual(todoText) // the one we marked done should now be last
   expect(lastText).toEqual(todoText)
 
   // Cleanup: delete the student
@@ -827,15 +803,7 @@ test('teaching todos: toggle persists after reload and can be toggled back to pe
   const studentName = `TodoPersist_${Date.now()}`
 
   // Create a student
-  await page.goto('/students/new')
-  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: UI_TIMEOUT })
-  await page.getByTestId('student-name').fill(studentName)
-  await page.getByTestId('student-language').click()
-  await page.getByRole('option', { name: 'Spanish' }).click()
-  await page.getByTestId('student-cefr').click()
-  await page.getByRole('option', { name: 'B1' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
+  await createStudentViaUI(page, { name: studentName, language: 'Spanish', cefrLevel: 'B1' })
   const detailUrl = page.url()
 
   // Navigate to edit student and add a todo via the sidebar card
@@ -862,24 +830,30 @@ test('teaching todos: toggle persists after reload and can be toggled back to pe
   const toggleTestId = await toggleBtn.getAttribute('data-testid')
   const todoId = toggleTestId!.replace('todo-toggle-', '')
 
-  // Toggle to covered — this previously returned 400
+  // Toggle to done
   const coverDone = waitForTodoWrite()
   await toggleBtn.click()
   await coverDone
+
+  // Done item is hidden by default; reveal it to verify strikethrough
+  await expect(page.getByTestId('todo-show-completed-toggle')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await page.getByTestId('todo-show-completed-toggle').click()
   await expect(page.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
 
-  // Reload and verify persistence
+  // Reload and verify persistence — reveal completed again after reload
   await page.reload()
   await expect(page.getByTestId('teaching-todos-card')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await expect(page.getByTestId('todo-show-completed-toggle')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
+  await page.getByTestId('todo-show-completed-toggle').click()
   await expect(page.getByTestId(`todo-text-${todoId}`)).toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
 
-  // Toggle back to pending
+  // Toggle back to pending (toggle button now visible since completed are shown)
   const pendingDone = waitForTodoWrite()
   await page.getByTestId(`todo-toggle-${todoId}`).click()
   await pendingDone
   await expect(page.getByTestId(`todo-text-${todoId}`)).not.toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
 
-  // Reload again and verify pending state persists
+  // Reload again and verify pending state persists (item visible by default, no completed toggle)
   await page.reload()
   await expect(page.getByTestId('teaching-todos-card')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
   await expect(page.getByTestId(`todo-text-${todoId}`)).not.toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
@@ -906,15 +880,7 @@ test('log session page: create session from full-page form and redirect back', a
   const studentName = `LogSessionTest_${Date.now()}`
 
   // Create a student
-  await page.goto('/students/new')
-  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: UI_TIMEOUT })
-  await page.getByTestId('student-name').fill(studentName)
-  await page.getByTestId('student-language').click()
-  await page.getByRole('option', { name: 'Spanish' }).click()
-  await page.getByTestId('student-cefr').click()
-  await page.getByRole('option', { name: 'B1' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
+  await createStudentViaUI(page, { name: studentName, language: 'Spanish', cefrLevel: 'B1' })
 
   // Click "Log Session" button - should navigate to full page
   await expect(page.getByTestId('log-session-button')).toBeVisible({ timeout: UI_TIMEOUT })
@@ -969,15 +935,7 @@ test('overview tab: header badges, pedagogical profile, teaching notes panel vis
   const page = await context.newPage()
   const studentName = `OverviewSectionsTest_${Date.now()}`
 
-  await page.goto('/students/new')
-  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: UI_TIMEOUT })
-  await page.getByTestId('student-name').fill(studentName)
-  await page.getByTestId('student-language').click()
-  await page.getByRole('option', { name: 'Spanish' }).click()
-  await page.getByTestId('student-cefr').click()
-  await page.getByRole('option', { name: 'B1' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
+  await createStudentViaUI(page, { name: studentName, language: 'Spanish', cefrLevel: 'B1' })
 
   // Header status badge should show Active + Private
   await expect(page.getByTestId('student-status-badge')).toBeVisible({ timeout: UI_TIMEOUT })
@@ -1017,14 +975,7 @@ test('commercial fields round-trip: isActive, isCorporate, rate', async ({ brows
   const studentName = `CommercialTest_${Date.now()}`
 
   // Create a student
-  await page.goto('/students/new')
-  await page.getByTestId('student-name').fill(studentName)
-  await page.getByTestId('student-language').click()
-  await page.getByRole('option', { name: 'Spanish' }).click()
-  await page.getByTestId('student-cefr').click()
-  await page.getByRole('option', { name: 'B1' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
+  await createStudentViaUI(page, { name: studentName, language: 'Spanish', cefrLevel: 'B1' })
 
   // Navigate to edit
   await page.getByTestId('edit-profile-link').click()
@@ -1126,9 +1077,9 @@ test('sessions tab redesign: timeline, search, status filter, and expand', async
   await firstEntry.getByTestId('session-entry-toggle').click()
   await expect(firstEntry.getByTestId('session-entry-detail')).toBeVisible({ timeout: UI_TIMEOUT })
 
-  // Expanded entry shows edit + delete buttons
-  await expect(firstEntry.getByTestId('edit-session-button')).toBeVisible()
-  await expect(firstEntry.getByTestId('delete-session-button')).toBeVisible()
+  // Expanded entry shows edit link + delete button
+  await expect(firstEntry.getByTestId('edit-full-session-link')).toBeVisible()
+  await expect(firstEntry.getByTestId('delete-session-btn')).toBeVisible()
 
   // Collapse by clicking again
   await firstEntry.getByTestId('session-entry-toggle').click()
@@ -1162,7 +1113,7 @@ test('nested learning goal with sub-goal persists after save', async ({ browser 
   await page.getByTestId('learning-goal-child-input').fill('Subjuntivo de deseo')
   await page.keyboard.press('Enter')
 
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Navigate back to edit and verify structure persists
@@ -1210,7 +1161,7 @@ test('partial difficulty row shows inline validation error and blocks save', asy
   await diffRow.getByTestId('difficulty-description').fill('Confuses ser/estar')
 
   // Attempt to save
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL('/students/new', { timeout: UI_TIMEOUT })
 
   // Inline error should appear
@@ -1231,14 +1182,7 @@ test('Notes section nav link scrolls to Notes fields', async ({ browser }) => {
   const studentName = `NotesNavTest_${Date.now()}`
 
   // Create a student
-  await page.goto('/students/new')
-  await page.getByTestId('student-name').fill(studentName)
-  await page.getByTestId('student-language').click()
-  await page.getByRole('option', { name: 'Spanish' }).click()
-  await page.getByTestId('student-cefr').click()
-  await page.getByRole('option', { name: 'B1' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
+  await createStudentViaUI(page, { name: studentName, language: 'Spanish', cefrLevel: 'B1' })
 
   // Navigate to edit
   await page.getByTestId('edit-profile-link').click()
@@ -1265,15 +1209,7 @@ test('Ukrainian native language saves and persists after reload', async ({ brows
   const studentName = `Ukrainian Test ${Date.now()}`
 
   // Create a student
-  await page.goto('/students/new')
-  await expect(page.locator('h1')).toHaveText('Add Student', { timeout: UI_TIMEOUT })
-  await page.getByTestId('student-name').fill(studentName)
-  await page.getByTestId('student-language').click()
-  await page.getByRole('option', { name: 'Spanish' }).click()
-  await page.getByTestId('student-cefr').click()
-  await page.getByRole('option', { name: 'A2' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
-  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
+  await createStudentViaUI(page, { name: studentName, language: 'Spanish', cefrLevel: 'A2' })
 
   // Navigate to edit
   await page.getByTestId('edit-profile-link').click()

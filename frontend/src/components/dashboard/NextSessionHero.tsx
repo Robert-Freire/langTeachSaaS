@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Play } from 'lucide-react'
 import { CefrBadge } from './CefrBadge'
 import type { NextSession } from '@/api/dashboard'
+import { getHomeworkStatusInfoSafe } from '@/utils/homeworkStatusUtils'
 
 interface NextSessionHeroProps {
   session: NextSession | null
@@ -52,17 +53,11 @@ function formatSessionDay(sessionDate: string): string {
   return d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })
 }
 
+// Canonical format: short month + numeric day ("Mar 28"), matching Sessions list section headers.
 function formatLastSessionDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
-function homeworkStatusLabel(status: string | null): { label: string; color: string } {
-  if (!status || status === '0' || status === 'Unknown' || status === 'NotApplicable') return { label: 'No record', color: 'text-zinc-400' }
-  if (status === '3' || status === 'Done') return { label: 'Completed', color: 'text-emerald-600' }
-  if (status === '2' || status === 'Partial') return { label: 'Partial', color: 'text-amber-600' }
-  if (status === '1' || status === 'NotDone') return { label: 'Not done', color: 'text-red-600' }
-  return { label: status, color: 'text-zinc-500' }
-}
 
 export function NextSessionHero({ session }: NextSessionHeroProps) {
   const [, setTick] = useState(0)
@@ -84,9 +79,10 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
   }
 
   const urgency = getUrgencyBadge(session.sessionDate)
-  const hwStatus = homeworkStatusLabel(session.previousHomeworkStatus)
+  const hwStatus = getHomeworkStatusInfoSafe(session.previousHomeworkStatus)
 
-  const hasTopics = session.lastSessionTopicTags.length > 0
+  const filteredTopicTags = session.lastSessionTopicTags.filter((t) => t != null && t.trim() !== '')
+  const hasTopics = filteredTopicTags.length > 0
   const hasResponse = !!session.lastSessionNotes
   const hasLastHomework = !!session.lastSessionHomework
   const hasPromises = session.lastSessionFollowups.length > 0
@@ -115,7 +111,7 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
           </h2>
           {(session.teachingLanguage || session.totalSessionCount > 0) && (
             <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mt-0.5" data-testid="hero-identity-subtitle">
-              {[session.teachingLanguage, session.totalSessionCount > 0 ? `Session #${session.totalSessionCount}` : null].filter(Boolean).join(' · ')}
+              {[session.teachingLanguage, session.totalSessionCount === 1 ? 'First Session' : session.totalSessionCount > 1 ? `Session #${session.totalSessionCount}` : null].filter(Boolean).join(' · ')}
             </p>
           )}
         </div>
@@ -124,7 +120,7 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
           <div className="flex items-center gap-3">
             <Link
               to={`/students/${session.studentId}`}
-              className="inline-flex items-center rounded-xl border border-[#3525CD] px-3 py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-[#3525CD] font-inter transition-colors hover:bg-[#F4F2FD]"
+              className="inline-flex items-center rounded-xl bg-[#ECEAFD] px-3 py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-[#3525CD] font-inter transition-colors hover:bg-[#E0DDFA]"
             >
               View profile
             </Link>
@@ -160,7 +156,7 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
               {hasTopics && (
                 <div>
                   <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mb-0.5">Topics</p>
-                  <p className="text-sm text-[#1A1B22] font-inter">{session.lastSessionTopicTags.join(', ')}</p>
+                  <p className="text-sm text-[#1A1B22] font-inter">{filteredTopicTags.join(', ')}</p>
                 </div>
               )}
               {hasResponse && (

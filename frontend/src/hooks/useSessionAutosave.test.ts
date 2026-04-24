@@ -11,7 +11,7 @@ vi.mock('../api/sessionLogs', () => ({
 }))
 
 import { useSessionAutosave } from './useSessionAutosave'
-import type { CreateSessionLogRequest } from '../api/sessionLogs'
+import type { CreateSessionLogRequest, SessionLog } from '../api/sessionLogs'
 
 const BASE_FORM_DATA: CreateSessionLogRequest = {
   sessionDate: '2026-04-14',
@@ -19,6 +19,36 @@ const BASE_FORM_DATA: CreateSessionLogRequest = {
   previousHomeworkStatus: 'Done',
   isCancelled: false,
   status: 'Confirmed',
+}
+
+function makeSessionLog(overrides: Partial<SessionLog> = {}): SessionLog {
+  return {
+    id: 'ses-1',
+    studentId: 'stu-1',
+    sessionDate: '2026-04-14',
+    plannedContent: null,
+    actualContent: 'We reviewed subjunctive',
+    homeworkAssigned: null,
+    previousHomeworkStatus: 1,
+    previousHomeworkStatusName: 'Done',
+    nextSessionTopics: null,
+    generalNotes: null,
+    levelReassessmentSkill: null,
+    levelReassessmentLevel: null,
+    linkedLessonId: null,
+    topicTags: '[]',
+    createdAt: '2026-04-14T10:00:00Z',
+    updatedAt: '2026-04-14T10:00:00Z',
+    isCancelled: false,
+    status: 1,
+    statusName: 'Confirmed',
+    mentionedDifficultyPairs: '[]',
+    suggestedDifficulties: '[]',
+    duration: null,
+    title: null,
+    hasVoiceNote: false,
+    ...overrides,
+  }
 }
 
 function makeGetFormDataRef(data: CreateSessionLogRequest = BASE_FORM_DATA) {
@@ -32,12 +62,20 @@ function makeWrapper() {
     React.createElement(QueryClientProvider, { client: qc }, children)
 }
 
+// Variant that exposes the QueryClient so tests can inspect the cache.
+function makeWrapperWithQc(qc?: QueryClient) {
+  const client = qc ?? new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const Wrapper = ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client }, children)
+  return { Wrapper, qc: client }
+}
+
 describe('useSessionAutosave', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
-    mockCreateSession.mockResolvedValue({ id: 'ses-1' })
-    mockUpdateSession.mockResolvedValue({ id: 'ses-1' })
+    mockCreateSession.mockResolvedValue(makeSessionLog())
+    mockUpdateSession.mockResolvedValue(makeSessionLog())
   })
 
   afterEach(() => {
@@ -139,7 +177,7 @@ describe('useSessionAutosave', () => {
 
   it('retry does not call updateSession when createSession failed (sessionId still null)', async () => {
     mockCreateSession.mockRejectedValueOnce(new Error('Network error'))
-    mockCreateSession.mockResolvedValue({ id: 'ses-1' })
+    mockCreateSession.mockResolvedValue(makeSessionLog())
     const ref = makeGetFormDataRef()
     const { result } = renderHook(() => useSessionAutosave('stu-1', ref), { wrapper: makeWrapper() })
     act(() => { void result.current.saveNow() })
@@ -155,5 +193,66 @@ describe('useSessionAutosave', () => {
     await act(async () => { await result.current.saveNow() })
     expect(mockCreateSession).not.toHaveBeenCalled()
     expect(mockUpdateSession).toHaveBeenCalledWith('stu-1', 'existing-ses-id', BASE_FORM_DATA)
+  })
+
+  describe('React Query cache integration', () => {
+    it('update success writes the returned SessionLog into the session cache', async () => {
+      const updated = makeSessionLog({ id: 'existing-ses-id', title: 'Updated title', updatedAt: '2026-04-14T11:30:00Z' })
+      mockUpdateSession.mockResolvedValue(updated)
+      const ref = makeGetFormDataRef()
+      const { Wrapper, qc } = makeWrapperWithQc()
+      const { result } = renderHook(() => useSessionAutosave('stu-1', ref, 'existing-ses-id'), { wrapper: Wrapper })
+      await act(async () => { await result.current.saveNow() })
+      const cached = qc.getQueryData<SessionLog>(['session', 'stu-1', 'existing-ses-id'])
+      expect(cached).toEqual(updated)
+    })
+
+    it('update success replaces the matching entry in the sessions list cache', async () => {
+      const updated = makeSessionLog({ id: 'existing-ses-id', title: 'Fresh title' })
+      mockUpdateSession.mockResolvedValue(updated)
+      const ref = makeGetFormDataRef()
+      const { Wrapper, qc } = makeWrapperWithQc()
+      qc.setQueryData<SessionLog[]>(['sessions', 'stu-1'], [
+        makeSessionLog({ id: 'other-ses', title: 'Other' }),
+        makeSessionLog({ id: 'existing-ses-id', title: 'Old title' }),
+      ])
+      const { result } = renderHook(() => useSessionAutosave('stu-1', ref, 'existing-ses-id'), { wrapper: Wrapper })
+      await act(async () => { await result.current.saveNow() })
+      const list = qc.getQueryData<SessionLog[]>(['sessions', 'stu-1'])
+      expect(list).toHaveLength(2)
+      expect(list?.find(s => s.id === 'existing-ses-id')?.title).toBe('Fresh title')
+      expect(list?.find(s => s.id === 'other-ses')?.title).toBe('Other')
+    })
+
+    it('update success leaves the sessions list alone when no cache entry exists yet', async () => {
+      mockUpdateSession.mockResolvedValue(makeSessionLog({ id: 'existing-ses-id' }))
+      const ref = makeGetFormDataRef()
+      const { Wrapper, qc } = makeWrapperWithQc()
+      const { result } = renderHook(() => useSessionAutosave('stu-1', ref, 'existing-ses-id'), { wrapper: Wrapper })
+      await act(async () => { await result.current.saveNow() })
+      // No list in cache, and we don't fabricate one
+      expect(qc.getQueryData(['sessions', 'stu-1'])).toBeUndefined()
+    })
+
+    it('lastSavedAt reflects the server updatedAt after each successful save', async () => {
+      const ref = makeGetFormDataRef()
+      const { result } = renderHook(() => useSessionAutosave('stu-1', ref, 'existing-ses-id'), { wrapper: makeWrapper() })
+      expect(result.current.lastSavedAt).toBeNull()
+      mockUpdateSession.mockResolvedValueOnce(makeSessionLog({ id: 'existing-ses-id', updatedAt: '2026-04-14T11:00:00Z' }))
+      await act(async () => { await result.current.saveNow() })
+      expect(result.current.lastSavedAt).toBe('2026-04-14T11:00:00Z')
+      mockUpdateSession.mockResolvedValueOnce(makeSessionLog({ id: 'existing-ses-id', updatedAt: '2026-04-14T11:05:00Z' }))
+      await act(async () => { await result.current.saveNow() })
+      expect(result.current.lastSavedAt).toBe('2026-04-14T11:05:00Z')
+    })
+
+    it('cancels in-flight session queries before mutating to prevent stale refetch overwriting the cache', async () => {
+      const ref = makeGetFormDataRef()
+      const { Wrapper, qc } = makeWrapperWithQc()
+      const cancelSpy = vi.spyOn(qc, 'cancelQueries')
+      const { result } = renderHook(() => useSessionAutosave('stu-1', ref, 'existing-ses-id'), { wrapper: Wrapper })
+      await act(async () => { await result.current.saveNow() })
+      expect(cancelSpy).toHaveBeenCalledWith({ queryKey: ['session', 'stu-1', 'existing-ses-id'] })
+    })
   })
 })

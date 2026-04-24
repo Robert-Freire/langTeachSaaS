@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
+import { NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
+import { createStudentViaApi } from '../helpers/students'
 
 const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 
@@ -16,77 +18,43 @@ test('log session from student detail page', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  // Create a student via API
   const studentName = `Session Test Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  expect(createRes.ok()).toBeTruthy()
-  const student = await createRes.json()
+  const student = await createStudentViaApi(page, { name: studentName })
 
-  // Navigate to student detail page
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
 
-  // Click Log session
   await page.getByTestId('log-session-button').click()
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
-  // Dialog should open
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  // Date defaults to today and duration defaults to 50 min
+  const todayIso = new Date().toISOString().split('T')[0]
+  await expect(page.getByTestId('session-date')).toHaveValue(todayIso)
+  await expect(page.getByTestId('duration-select')).toBeVisible()
 
-  // Date is already filled (today)
-  const todayIso = await page.evaluate(() => {
-    const d = new Date()
-    const yyyy = d.getFullYear()
-    const mm = String(d.getMonth() + 1).padStart(2, '0')
-    const dd = String(d.getDate()).padStart(2, '0')
-    return `${yyyy}-${mm}-${dd}`
-  })
-  const dateInput = page.getByTestId('session-date')
-  await expect(dateInput).toHaveValue(todayIso)
-
-  // Fill actual content (required)
+  // Fill in what happened
   await page.getByTestId('actual-content').fill('Practiced preterito indefinido with reading exercises.')
 
-  // Submit
-  await page.getByTestId('submit-session-log').click()
+  // Autosave should trigger and complete
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
 
-  // Success confirmation
-  await expect(page.getByTestId('session-log-success')).toBeVisible({ timeout: 10000 })
-  // Dialog should close automatically after success
-  await expect(page.getByTestId('session-log-dialog')).toBeHidden({ timeout: 3000 })
+  // Click Done to navigate back
+  await page.getByTestId('done-btn').click()
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
+
+  // Session should appear in history
+  await page.getByRole('tab', { name: /history/i }).click()
+  await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()
 })
 
-test('log session dialog prev homework status shows when prev session has homework', async ({ browser }) => {
+test('log session page: prev homework status shows when prev session has homework', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  // Create student
   const studentName = `Homework Cond Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'A2',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  const student = await createRes.json()
+  const student = await createStudentViaApi(page, { name: studentName, cefrLevel: 'A2' })
 
   // Create a prior session with homework
   await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
@@ -100,12 +68,12 @@ test('log session dialog prev homework status shows when prev session has homewo
   })
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Previous homework status should appear since prior session had homework
-  await expect(page.getByTestId('prev-homework-status')).toBeVisible({ timeout: 8000 })
+  await expect(page.getByTestId('prev-homework-status')).toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()
 })
@@ -115,19 +83,7 @@ test('expand session entry shows full detail without duplicating preview content
   const page = await context.newPage()
 
   const studentName = `Expand Test Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
     headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
@@ -140,11 +96,11 @@ test('expand session entry shows full detail without duplicating preview content
   })
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByRole('tab', { name: /history/i }).click()
 
   const entry = page.getByTestId('session-entry').first()
-  await expect(entry).toBeVisible({ timeout: 10000 })
+  await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Collapsed: preview content visible
   await expect(entry.getByText(/Preterito indefinido intro/)).toBeVisible()
@@ -169,19 +125,7 @@ test('delete session requires confirmation dialog', async ({ browser }) => {
   const page = await context.newPage()
 
   const studentName = `Delete Confirm Test ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'A2',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName, cefrLevel: 'A2' })
 
   await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
     headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
@@ -193,17 +137,17 @@ test('delete session requires confirmation dialog', async ({ browser }) => {
   })
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByRole('tab', { name: /history/i }).click()
 
   const entry = page.getByTestId('session-entry').first()
-  await expect(entry).toBeVisible({ timeout: 10000 })
+  await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
   await entry.getByTestId('session-entry-toggle').click()
 
   // Click delete — confirmation dialog should appear
-  await entry.getByTestId('delete-session-button').click()
+  await entry.getByTestId('delete-session-btn').click()
   const confirmBtn = page.getByTestId('confirm-delete-session')
-  await expect(confirmBtn).toBeVisible({ timeout: 5000 })
+  await expect(confirmBtn).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
   // Cancel — session should remain
   await page.getByRole('button', { name: /cancel/i }).click()
@@ -211,12 +155,12 @@ test('delete session requires confirmation dialog', async ({ browser }) => {
   await expect(entry).toBeVisible()
 
   // Delete again and confirm
-  await entry.getByTestId('delete-session-button').click()
-  await expect(confirmBtn).toBeVisible({ timeout: 5000 })
+  await entry.getByTestId('delete-session-btn').click()
+  await expect(confirmBtn).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
   await confirmBtn.click()
 
   // Session entry should be removed from the list
-  await expect(page.getByTestId('session-history-empty')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-history-empty')).toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()
 })
@@ -226,24 +170,12 @@ test('topic tag category dropdown has all four curriculum-aligned options', asyn
   const page = await context.newPage()
 
   const studentName = `Tag Category Test ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Open the category dropdown and verify all four options exist
   await page.getByTestId('topic-tag-category').click()
@@ -269,58 +201,38 @@ test('future session date is accepted and appears in history', async ({ browser 
   const page = await context.newPage()
 
   const studentName = `Future Date Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName, learningLanguage: 'Spanish', cefrLevel: 'B1',
-      interests: [], learningGoals: [], weaknesses: [], difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
-  // Log a session with a future date via UI
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Set a future date (tomorrow)
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
   const tomorrowIso = tomorrow.toISOString().split('T')[0]
   await page.getByTestId('session-date').fill(tomorrowIso)
-  await page.getByTestId('planned-content').fill('Planned grammar session')
-  await page.getByTestId('submit-session-log').click()
+  await page.getByTestId('actual-content').fill('Planned grammar session')
 
-  // Success -- no validation error
-  await expect(page.getByTestId('session-log-success')).toBeVisible({ timeout: 10000 })
-  await expect(page.getByTestId('session-log-dialog')).toBeHidden({ timeout: 3000 })
+  // Autosave should complete -- no validation error for future dates
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+
+  await page.getByTestId('done-btn').click()
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
   // Session appears in history
   await page.getByRole('tab', { name: /history/i }).click()
-  await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()
 })
 
-test('selecting a lesson in log session dialog auto-populates planned content', async ({ browser }) => {
+test('selecting a lesson in log session page links it to the session', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
   const studentName = `Lesson Link Test ${Date.now()}`
-  const createStudentRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  expect(createStudentRes.ok()).toBeTruthy()
-  const student = await createStudentRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
   // Create a lesson linked to this student
   const createLessonRes = await page.request.post(`${API_BASE}/api/lessons`, {
@@ -336,23 +248,35 @@ test('selecting a lesson in log session dialog auto-populates planned content', 
     },
   })
   expect(createLessonRes.ok()).toBeTruthy()
+  const lesson = await createLessonRes.json() as { id: string }
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
-  // The linked lesson selector should be visible (student has a lesson)
-  await expect(page.getByTestId('linked-lesson')).toBeVisible({ timeout: 8000 })
+  // Linked lesson selector is inside the secondary section
+  await page.getByTestId('toggle-secondary').click()
+  await expect(page.getByTestId('linked-lesson')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Select the lesson
   await page.getByTestId('linked-lesson').click()
   await page.getByRole('option', { name: 'Subjunctive Intro' }).click()
 
-  // Planned content should be auto-populated
-  await expect(page.getByTestId('planned-content')).toHaveValue(
-    'Subjunctive Intro: Use subjunctive in wishes and doubt'
-  )
+  // Save — session should have the lesson linked
+  await page.getByTestId('actual-content').fill('Covered subjunctive intro.')
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+  await page.getByTestId('done-btn').click()
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
+
+  // Verify via API that lesson was linked
+  const sessionsRes = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions`, {
+    headers: { Authorization: 'Bearer test-token' },
+  })
+  expect(sessionsRes.ok()).toBeTruthy()
+  const sessions = await sessionsRes.json() as { linkedLessonId: string | null }[]
+  expect(sessions.length).toBeGreaterThan(0)
+  expect(sessions[0].linkedLessonId).toBe(lesson.id)
 
   await context.close()
 })
@@ -362,14 +286,7 @@ test('cancelled session shows Cancelled badge and is excluded from summary count
   const page = await context.newPage()
 
   const studentName = `Cancelled Session Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName, learningLanguage: 'Spanish', cefrLevel: 'B1',
-      interests: [], learningGoals: [], weaknesses: [], difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
   // Create a normal session and a cancelled session via API
   await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
@@ -393,9 +310,9 @@ test('cancelled session shows Cancelled badge and is excluded from summary count
 
   // Cancelled badge visible in history
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByRole('tab', { name: /history/i }).click()
-  await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: UI_TIMEOUT })
   await expect(page.getByTestId('cancelled-badge')).toBeVisible()
 
   // Summary count = 1 (only the non-cancelled session)
@@ -414,14 +331,7 @@ test('un-cancel a session removes the Cancelled badge', async ({ browser }) => {
   const page = await context.newPage()
 
   const studentName = `Uncancel Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName, learningLanguage: 'Spanish', cefrLevel: 'B1',
-      interests: [], learningGoals: [], weaknesses: [], difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
   const sessionRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
     headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
@@ -436,23 +346,31 @@ test('un-cancel a session removes the Cancelled badge', async ({ browser }) => {
 
   // View history -- badge present
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByRole('tab', { name: /history/i }).click()
-  await expect(page.getByTestId('cancelled-badge')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('cancelled-badge')).toBeVisible({ timeout: UI_TIMEOUT })
 
-  // Edit session -- uncheck cancelled
+  // Open expanded view and click "Edit full session"
   const entry = page.getByTestId('session-entry').first()
   await entry.getByTestId('session-entry-toggle').click()
-  await entry.getByTestId('edit-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await entry.getByTestId('edit-full-session-link').click()
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}/sessions/${session.id}/edit`), { timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  // Cancelled toggle should be checked
   await expect(page.getByTestId('cancelled-toggle')).toBeChecked()
+
+  // Uncheck cancelled -- autosave fires immediately (saveNow)
   await page.getByTestId('cancelled-toggle').click()
-  await page.getByTestId('submit-session-log').click()
-  await expect(page.getByTestId('session-log-success')).toBeVisible({ timeout: 10000 })
-  await expect(page.getByTestId('session-log-dialog')).toBeHidden({ timeout: 3000 })
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+
+  await page.getByTestId('done-btn').click()
+  // Edit mode navigates to ?tab=sessions
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}(\\?tab=sessions)?$`), { timeout: UI_TIMEOUT })
 
   // Badge should be gone
-  await expect(page.getByTestId('cancelled-badge')).toBeHidden()
+  await page.getByRole('tab', { name: /history/i }).click()
+  await expect(page.getByTestId('cancelled-badge')).toBeHidden({ timeout: FEEDBACK_TIMEOUT })
 
   // Verify via API -- session is no longer cancelled
   const updated = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions/${session.id}`, {
@@ -469,19 +387,7 @@ test('summary header appears on history tab after logging a session', async ({ b
   const page = await context.newPage()
 
   const studentName = `Summary Header Test ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
     headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
@@ -494,12 +400,12 @@ test('summary header appears on history tab after logging a session', async ({ b
   })
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
 
   // Navigate to History tab
   await page.getByRole('tab', { name: /history/i }).click()
 
-  await expect(page.getByTestId('session-summary-header')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-summary-header')).toBeVisible({ timeout: UI_TIMEOUT })
   await expect(page.getByTestId('session-summary-action-items-toggle')).toBeVisible()
 
   // Expand action items
@@ -524,19 +430,7 @@ test('confirming session with suggestedDifficulties upserts them to student prof
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: `Difficulty Upsert Test ${Date.now()}`,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  const student = await createRes.json() as { id: string }
+  const student = await createStudentViaApi(page, { name: `Difficulty Upsert Test ${Date.now()}` })
 
   // Create a confirmed session with suggested difficulties
   const sessionRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
@@ -556,12 +450,12 @@ test('confirming session with suggestedDifficulties upserts them to student prof
   const studentRes = await page.request.get(`${API_BASE}/api/students/${student.id}`, {
     headers: { Authorization: 'Bearer test-token' },
   })
-  const studentData = await studentRes.json() as { difficulties: { competency: string; subcategory: string; severity: string; status: string }[] }
-  expect(studentData.difficulties).toHaveLength(1)
-  expect(studentData.difficulties[0].competency).toBe('Grammar')
-  expect(studentData.difficulties[0].subcategory).toBe('ser/estar')
-  expect(studentData.difficulties[0].severity).toBe('high')
-  expect(studentData.difficulties[0].status).toBe('Active')
+  const studentData = await studentRes.json() as { profile: { difficulties: { competency: string; subcategory: string; severity: string; status: string }[] } }
+  expect(studentData.profile.difficulties).toHaveLength(1)
+  expect(studentData.profile.difficulties[0].competency).toBe('Grammar')
+  expect(studentData.profile.difficulties[0].subcategory).toBe('ser/estar')
+  expect(studentData.profile.difficulties[0].severity).toBe('high')
+  expect(studentData.profile.difficulties[0].status).toBe('Active')
 
   await context.close()
 })
@@ -604,11 +498,11 @@ test('confirming session updates existing difficulty in profile', async ({ brows
   const studentRes = await page.request.get(`${API_BASE}/api/students/${student.id}`, {
     headers: { Authorization: 'Bearer test-token' },
   })
-  const studentData = await studentRes.json() as { difficulties: { description: string; severity: string; status: string }[] }
-  expect(studentData.difficulties).toHaveLength(1)
-  expect(studentData.difficulties[0].description).toBe('Still confusing ser and estar')
-  expect(studentData.difficulties[0].severity).toBe('medium')
-  expect(studentData.difficulties[0].status).toBe('Active')
+  const studentData = await studentRes.json() as { profile: { difficulties: { description: string; severity: string; status: string }[] } }
+  expect(studentData.profile.difficulties).toHaveLength(1)
+  expect(studentData.profile.difficulties[0].description).toBe('Still confusing ser and estar')
+  expect(studentData.profile.difficulties[0].severity).toBe('medium')
+  expect(studentData.profile.difficulties[0].status).toBe('Active')
 
   await context.close()
 })
@@ -620,17 +514,8 @@ test('lesson dropdown in session log shows only lessons for the selected student
   const ts = Date.now()
 
   // Create two students
-  const createStudentA = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: { name: `Student A ${ts}`, learningLanguage: 'Spanish', cefrLevel: 'B1', interests: [], learningGoals: [], weaknesses: [], difficulties: [] },
-  })
-  const studentA = await createStudentA.json() as { id: string }
-
-  const createStudentB = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: { name: `Student B ${ts}`, learningLanguage: 'French', cefrLevel: 'A2', interests: [], learningGoals: [], weaknesses: [], difficulties: [] },
-  })
-  const studentB = await createStudentB.json() as { id: string }
+  const studentA = await createStudentViaApi(page, { name: `Student A ${ts}` })
+  const studentB = await createStudentViaApi(page, { name: `Student B ${ts}`, language: 'French', cefrLevel: 'A2' })
 
   // Create one lesson per student
   await page.request.post(`${API_BASE}/api/lessons`, {
@@ -642,12 +527,15 @@ test('lesson dropdown in session log shows only lessons for the selected student
     data: { title: `Lesson for B ${ts}`, language: 'French', cefrLevel: 'A2', topic: 'Articles', durationMinutes: 60, studentId: studentB.id },
   })
 
-  // Open session log dialog for student A
+  // Open log session page for student A
   await page.goto(`/students/${studentA.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(`Student A ${ts}`, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(`Student A ${ts}`, { timeout: NAV_TIMEOUT })
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
-  await expect(page.getByTestId('linked-lesson')).toBeVisible({ timeout: 8000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
+
+  // Linked lesson selector is inside the secondary section
+  await page.getByTestId('toggle-secondary').click()
+  await expect(page.getByTestId('linked-lesson')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Open the lesson dropdown
   await page.getByTestId('linked-lesson').click()
@@ -659,44 +547,31 @@ test('lesson dropdown in session log shows only lessons for the selected student
   await context.close()
 })
 
-test('unsaved-changes guard: clicking outside with data shows discard confirmation', async ({ browser }) => {
+test('unsaved-changes guard: back button with data shows discard confirmation', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
   const studentName = `Guard Test Student ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  expect(createRes.ok()).toBeTruthy()
-  const student = await createRes.json()
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
 
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Enter some data to make the form dirty
   await page.getByTestId('actual-content').fill('We covered the present tense.')
 
-  // Click outside the dialog (top-left corner of viewport)
-  await page.mouse.click(10, 10)
+  // Click the back button
+  await page.getByTestId('back-button').click()
 
-  // Discard confirmation should appear
-  await expect(page.getByTestId('discard-confirm-dialog')).toBeVisible({ timeout: 5000 })
+  // Discard confirmation bar should appear
+  await expect(page.getByTestId('discard-confirm-bar')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
-  // Click Discard — form should close
+  // Click Discard — form should navigate back
   await page.getByTestId('discard-btn').click()
-  await expect(page.getByTestId('session-log-dialog')).not.toBeVisible({ timeout: 5000 })
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: FEEDBACK_TIMEOUT })
 
   await context.close()
 })
@@ -706,59 +581,33 @@ test('unsaved-changes guard: Keep editing returns to the form', async ({ browser
   const page = await context.newPage()
 
   const studentName = `Guard Keep Test ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  expect(createRes.ok()).toBeTruthy()
-  const student = await createRes.json()
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
 
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
   await page.getByTestId('actual-content').fill('Some notes.')
-  await page.mouse.click(10, 10)
-  await expect(page.getByTestId('discard-confirm-dialog')).toBeVisible({ timeout: 5000 })
+  await page.getByTestId('back-button').click()
+  await expect(page.getByTestId('discard-confirm-bar')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
   await page.getByTestId('keep-editing-btn').click()
 
   // Form stays open with data intact
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
   await expect(page.getByTestId('actual-content')).toHaveValue('Some notes.')
 
   await context.close()
 })
 
-test('start next session button pre-populates planned content from NextSessionTopics', async ({ browser }) => {
+test('start next session button navigates to log session page with planned topics as reference', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
   const studentName = `Start Next Session Test ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  expect(createRes.ok()).toBeTruthy()
-  const student = await createRes.json()
+  const student = await createStudentViaApi(page, { name: studentName })
 
   // Create a session with NextSessionTopics set
   const sessionRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
@@ -776,41 +625,35 @@ test('start next session button pre-populates planned content from NextSessionTo
 
   // Navigate to student page, go to Sessions tab
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
   await page.getByRole('tab', { name: /history/i }).click()
 
   // Expand the session entry
-  await expect(page.getByTestId('session-entry')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('session-entry')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.getByTestId('session-entry-toggle').click()
-  await expect(page.getByTestId('session-entry-detail')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('session-entry-detail')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
   // "Start next session" button should be visible
-  await expect(page.getByTestId('start-next-session-button')).toBeVisible({ timeout: 5000 })
+  await expect(page.getByTestId('start-next-session-button')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
 
-  // Click it
+  // Click it -- navigates to log-session page
   await page.getByTestId('start-next-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}/log-session`))
 
-  // Dialog should be in create mode (title "Log Session")
-  await expect(page.getByText('Log Session')).toBeVisible()
+  // Planned topics from the previous session appear as a reference in the left panel
+  await expect(page.getByTestId('log-session-left-panel')).toContainText('Review irregular verbs')
 
-  // PlannedContent should be pre-filled with NextSessionTopics value
-  await expect(page.getByTestId('planned-content')).toHaveValue('Review irregular verbs')
-
-  // Teacher can modify it
-  await page.getByTestId('planned-content').fill('Review irregular verbs + ser/estar')
-
-  // Save the new session
+  // Log the next session
   await page.getByTestId('actual-content').fill('Covered irregular verbs')
-  await page.getByTestId('submit-session-log').click()
-  await expect(page.getByTestId('session-log-success')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+  await page.getByTestId('done-btn').click()
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
-  // Original session's NextSessionTopics should not be modified — reload and check
-  await page.reload()
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
-  await page.getByRole('tab', { name: /history/i }).click()
   // Two sessions should now be present
-  await expect(page.getByTestId('session-entry')).toHaveCount(2, { timeout: 10000 })
+  await page.getByRole('tab', { name: /history/i }).click()
+  await expect(page.getByTestId('session-entry')).toHaveCount(2, { timeout: UI_TIMEOUT })
+
   // Original session still shows its NextSessionTopics preview
   const previews = page.getByTestId('next-session-topics-preview')
   await expect(previews).toHaveCount(1)
@@ -819,38 +662,25 @@ test('start next session button pre-populates planned content from NextSessionTo
   await context.close()
 })
 
-test('unsaved-changes guard: empty form closes without confirmation', async ({ browser }) => {
+test('unsaved-changes guard: back button on empty form navigates without confirmation', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
   const studentName = `Guard Empty Test ${Date.now()}`
-  const createRes = await page.request.post(`${API_BASE}/api/students`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      name: studentName,
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-    },
-  })
-  expect(createRes.ok()).toBeTruthy()
-  const student = await createRes.json()
+  const student = await createStudentViaApi(page, { name: studentName })
 
   await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: 15000 })
+  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
 
   await page.getByTestId('log-session-button').click()
-  await expect(page.getByTestId('session-log-dialog')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
 
-  // Click outside without entering data
-  await page.mouse.click(10, 10)
+  // Click back without entering data
+  await page.getByTestId('back-button').click()
 
-  // Dialog closes immediately, no confirmation
-  await expect(page.getByTestId('session-log-dialog')).not.toBeVisible({ timeout: 5000 })
-  await expect(page.getByTestId('discard-confirm-dialog')).not.toBeVisible()
+  // Navigates back immediately, no confirmation
+  await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: FEEDBACK_TIMEOUT })
+  await expect(page.getByTestId('discard-confirm-bar')).not.toBeVisible()
 
   await context.close()
 })
@@ -863,34 +693,21 @@ test('log session page: autosave creates session without submit button', async (
 
   try {
     const studentName = `Autosave Test Student ${Date.now()}`
-    const createRes = await page.request.post(`${API_BASE}/api/students`, {
-      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-      data: {
-        name: studentName,
-        learningLanguage: 'Spanish',
-        cefrLevel: 'B1',
-        interests: [],
-        learningGoals: [],
-        weaknesses: [],
-        difficulties: [],
-      },
-    })
-    expect(createRes.ok()).toBeTruthy()
-    const student = await createRes.json()
+    const student = await createStudentViaApi(page, { name: studentName })
 
     // Navigate directly to log-session page
     await page.goto(`/students/${student.id}/log-session`)
-    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 15000 })
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
 
     // Type in "What Happened?" - triggers autosave
     await page.getByTestId('actual-content').fill('Practiced subjunctive with reading exercises.')
 
     // Wait for autosave to complete (status shows "All changes saved")
-    await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: 5000 })
+    await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: FEEDBACK_TIMEOUT })
 
     // Click Done to navigate back
     await page.getByTestId('done-btn').click()
-    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
     // Verify session was created in the API
     const sessionsRes = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions`, {
@@ -911,27 +728,14 @@ test('log session page: Done navigates back without saving if no changes made', 
 
   try {
     const studentName = `No Change Test ${Date.now()}`
-    const createRes = await page.request.post(`${API_BASE}/api/students`, {
-      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-      data: {
-        name: studentName,
-        learningLanguage: 'Spanish',
-        cefrLevel: 'A2',
-        interests: [],
-        learningGoals: [],
-        weaknesses: [],
-        difficulties: [],
-      },
-    })
-    expect(createRes.ok()).toBeTruthy()
-    const student = await createRes.json()
+    const student = await createStudentViaApi(page, { name: studentName, cefrLevel: 'A2' })
 
     await page.goto(`/students/${student.id}/log-session`)
-    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: 15000 })
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
 
     // Click Done without typing anything
     await page.getByTestId('done-btn').click()
-    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
     // No session should have been created
     const sessionsRes = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions`, {
@@ -940,6 +744,189 @@ test('log session page: Done navigates back without saving if no changes made', 
     expect(sessionsRes.ok()).toBeTruthy()
     const sessions = await sessionsRes.json()
     expect(sessions.length).toBe(0)
+  } finally {
+    await context.close()
+  }
+})
+
+test('session title: typing a title saves it and appears in session list and edit mode', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    const studentName = `Title Test Student ${Date.now()}`
+    const student = await createStudentViaApi(page, { name: studentName })
+
+    await page.goto(`/students/${student.id}/log-session`)
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
+
+    // Title input is visible with correct placeholder
+    const titleInput = page.getByTestId('log-session-title-input')
+    await expect(titleInput).toBeVisible()
+    await expect(titleInput).toHaveAttribute('placeholder', 'What did you work on? (optional)')
+    await expect(titleInput).toHaveAttribute('maxlength', '120')
+
+    // Type a title and session content
+    await titleInput.fill('Present tense practice')
+    await page.getByTestId('actual-content').fill('Covered present tense conjugations.')
+    await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+
+    await page.getByTestId('done-btn').click()
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
+
+    // Session list shows the typed title
+    await page.getByRole('tab', { name: /history/i }).click()
+    const entry = page.getByTestId('session-entry').first()
+    await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(entry).toContainText('Present tense practice')
+
+    // Open edit mode and verify title is pre-populated
+    await entry.getByTestId('session-entry-toggle').click()
+    await entry.getByTestId('edit-full-session-link').click()
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByTestId('log-session-title-input')).toHaveValue('Present tense practice')
+  } finally {
+    await context.close()
+  }
+})
+
+test('session title: blank title shows date fallback in session list', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    const studentName = `No Title Student ${Date.now()}`
+    const student = await createStudentViaApi(page, { name: studentName })
+
+    await page.goto(`/students/${student.id}/log-session`)
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
+
+    // Leave title blank, fill content
+    await page.getByTestId('actual-content').fill('Covered vocabulary.')
+    await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+
+    await page.getByTestId('done-btn').click()
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
+
+    // Session list shows date fallback (contains "Session,")
+    await page.getByRole('tab', { name: /history/i }).click()
+    const entry = page.getByTestId('session-entry').first()
+    await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(entry).toContainText('Session,')
+  } finally {
+    await context.close()
+  }
+})
+
+// ── Edit mode: autosave + back navigation preserves saved data (#899) ─────
+
+test('edit mode: Previous Homework change survives back + reopen (no discard banner)', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    const studentName = `Edit Homework Test ${Date.now()}`
+    const student = await createStudentViaApi(page, { name: studentName })
+
+    // Seed a session with homework assigned so the next edit session can show Previous Homework controls
+    const seedRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+      data: {
+        sessionDate: '2026-03-20',
+        actualContent: 'Prior session',
+        homeworkAssigned: 'Exercise 1',
+        previousHomeworkStatus: 'NotApplicable',
+        status: 'Confirmed',
+      },
+    })
+    expect(seedRes.ok()).toBeTruthy()
+
+    // Create a second session via API (the one we will edit). Start with Previous Homework = NotDone.
+    const editSeedRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+      data: {
+        sessionDate: '2026-03-27',
+        actualContent: 'Session to edit',
+        previousHomeworkStatus: 'NotDone',
+        status: 'Confirmed',
+      },
+    })
+    expect(editSeedRes.ok()).toBeTruthy()
+    const editSeed = await editSeedRes.json() as { id: string }
+
+    // Open the edit page for the second session
+    await page.goto(`/students/${student.id}/sessions/${editSeed.id}/edit`)
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
+    await expect(page.getByTestId('prev-hw-notdone')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Click "Done" for previous homework and wait for autosave confirmation
+    await page.getByTestId('prev-hw-done').click()
+    await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+
+    // After the green "All changes saved" window elapses, the indicator should
+    // show "Last saved ..." tied to the live autosave timestamp (AC4), not the
+    // stale editSession.updatedAt from initial fetch.
+    await expect(page.getByTestId('autosave-status')).toContainText(/Last saved/, { timeout: UI_TIMEOUT })
+
+    // Click back. In edit mode the "Discard" banner must NOT appear.
+    await page.getByTestId('back-button').click()
+    await expect(page.getByTestId('discard-confirm-bar')).not.toBeVisible()
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}\\?tab=sessions`), { timeout: UI_TIMEOUT })
+
+    // Reopen the session via the Sessions list → "Edit full session" link
+    const entry = page.getByTestId('session-entry').first()
+    await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
+    await entry.getByTestId('session-entry-toggle').click()
+    await entry.getByTestId('edit-full-session-link').click()
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // The Previous Homework = Done state from our edit is visible (active styling)
+    const doneBtn = page.getByTestId('prev-hw-done')
+    await expect(doneBtn).toBeVisible({ timeout: UI_TIMEOUT })
+    // Active state is indicated by the bg-indigo-600 class on the selected button
+    await expect(doneBtn).toHaveClass(/bg-indigo-600/)
+  } finally {
+    await context.close()
+  }
+})
+
+test('edit mode: text typed just before clicking back is persisted (no debounce loss)', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    const studentName = `Edit Debounce Test ${Date.now()}`
+    const student = await createStudentViaApi(page, { name: studentName })
+
+    const seedRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+      data: {
+        sessionDate: '2026-03-28',
+        actualContent: 'Original content',
+        previousHomeworkStatus: 'NotApplicable',
+        status: 'Confirmed',
+      },
+    })
+    expect(seedRes.ok()).toBeTruthy()
+    const seed = await seedRes.json() as { id: string }
+
+    await page.goto(`/students/${student.id}/sessions/${seed.id}/edit`)
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
+    await expect(page.getByTestId('actual-content')).toHaveValue('Original content')
+
+    // Type a new value and IMMEDIATELY click back before the 400ms debounce completes.
+    // handleBack must flush the pending save before navigating.
+    await page.getByTestId('actual-content').fill('Edited right before leaving')
+    await page.getByTestId('back-button').click()
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}\\?tab=sessions`), { timeout: UI_TIMEOUT })
+
+    // Reload the session from the server and verify the new content persisted
+    const getRes = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions/${seed.id}`, {
+      headers: { Authorization: 'Bearer test-token' },
+    })
+    expect(getRes.ok()).toBeTruthy()
+    const session = await getRes.json() as { actualContent: string }
+    expect(session.actualContent).toBe('Edited right before leaving')
   } finally {
     await context.close()
   }

@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Plus, X, ChevronDown,
-  Loader2, CheckCircle, RefreshCw,
+  Loader2, CheckCircle, RefreshCw, Check,
 } from 'lucide-react'
 import { getStudent, appendTeachingTodo, updateTeachingTodo } from '@/api/students'
 import {
@@ -26,8 +26,10 @@ import { COMPETENCY_OPTIONS } from '@/lib/studentOptions'
 import { getObjectiveUrgency, getDaysRemaining } from '@/lib/objectiveUrgency'
 import { suggestTopicTags } from '@/lib/suggestTopicTags'
 import { formatDate as formatDateUtil, relativeTime, todayLocalDateStr } from '@/utils/formatDate'
+import { getInitials } from '@/utils/nameUtils'
 import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
+import { HOMEWORK_STATUS_PILL_OPTIONS } from '@/utils/homeworkStatusUtils'
 
 const DURATION_OPTIONS = [
   { value: '25', label: '25 min' },
@@ -36,14 +38,10 @@ const DURATION_OPTIONS = [
   { value: '50', label: '50 min' },
   { value: '60', label: '60 min' },
   { value: '90', label: '90 min' },
-  { value: 'other', label: 'Other' },
+  { value: 'other', label: 'Other (min)' },
 ]
 
-const PREV_HOMEWORK_STATUSES = [
-  { value: 'Done', label: 'Done' },
-  { value: 'Partial', label: 'Partial' },
-  { value: 'NotDone', label: 'Not Done' },
-]
+const PREV_HOMEWORK_STATUSES = HOMEWORK_STATUS_PILL_OPTIONS
 
 const CEFR_SUBLEVELS = [
   'A1.1','A1.2','A2.1','A2.2',
@@ -58,9 +56,6 @@ function nowTimeHHMM(): string {
   return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 }
 
-function getInitials(name: string): string {
-  return name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
-}
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return '--'
@@ -137,6 +132,8 @@ export default function LogSession() {
   const [durationChoice, setDurationChoice] = useState('50')
   const durationChoiceRef = useRef('50')
   const latestFieldsRef = useRef({ actualContent: '', generalNotes: '', homeworkAssigned: '', nextSessionTopics: '' })
+  const sessionDateRef = useRef(sessionDate)
+  const sessionTimeRef = useRef(sessionTime)
   const [durationOther, setDurationOther] = useState('')
   const [isCancelled, setIsCancelled] = useState(false)
   const [prevHomeworkStatus, setPrevHomeworkStatus] = useState<string | null>(null)
@@ -183,7 +180,13 @@ export default function LogSession() {
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
 
   // Edit mode: track whether we've initialized form state from the fetched session
-  const [didInitEdit, setDidInitEdit] = useState(false)
+  // Tracks the session ID that the form state was last populated for. Lets the
+  // populate effect run exactly once per unique session id, so a cache update for
+  // the same session does not wipe the teacher's in-progress edits, but navigation
+  // to a different session will re-initialize correctly.
+  const initializedForIdRef = useRef<string | null>(null)
+  // Create mode: track whether we've pre-populated actualContent from plannedForToday
+  const [didInitContent, setDidInitContent] = useState(false)
 
   // Data fetching
   const { data: student, isLoading: studentLoading } = useQuery({
@@ -234,15 +237,16 @@ export default function LogSession() {
     : null
   const sessionNumber = isEditMode ? (editSessionRank ?? '?') : nonCancelledSessions.length + 1
   const pendingFollowups = allFollowups.filter(f => f.status === 'pending')
-  const activeDifficulties = student?.difficulties.filter(d => d.status === 'Active') ?? []
-  const pendingTodos = student?.teachingTodos.filter(t => t.status.toLowerCase() === 'pending') ?? []
+  const activeDifficulties = student?.profile.difficulties.filter(d => d.status === 'Active') ?? []
+  const pendingTodos = student?.profile.teachingTodos.filter(t => t.status.toLowerCase() === 'pending') ?? []
   const showPrevHomework = (isEditMode && prevHomeworkStatus !== null) || (prevSession !== null && prevSession.homeworkAssigned !== null)
   const plannedForToday = prevSession?.nextSessionTopics ?? null
 
   // Edit mode: pre-populate form state from the fetched session
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (!editSession || didInitEdit) return
+    if (!editSession) return
+    if (initializedForIdRef.current === editSession.id) return
     const [datePart, timePart] = (editSession.sessionDate ?? '').split('T')
     setSessionDate(datePart || todayISO())
     setSessionTime(timePart?.slice(0, 5) || nowTimeHHMM())
@@ -256,6 +260,7 @@ export default function LogSession() {
     setReassessmentEnabled(!!editSession.levelReassessmentSkill)
     setReassessmentLevel(editSession.levelReassessmentLevel ?? '')
     setSelectedLessonId(editSession.linkedLessonId ?? '')
+    setSessionTitle(editSession.title ?? undefined)
     const dur = editSession.duration
     if (dur === null || dur === undefined) {
       setDurationChoice('other')
@@ -275,8 +280,8 @@ export default function LogSession() {
       const parsed = JSON.parse(editSession.suggestedDifficulties || '[]') as unknown[]
       setSuggestedDifficulties(Array.isArray(parsed) ? parsed.filter(isSuggestedDifficulty) : [])
     } catch { setSuggestedDifficulties([]) }
-    setDidInitEdit(true)
-  }, [editSession, didInitEdit])
+    initializedForIdRef.current = editSession.id
+  }, [editSession])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Keep durationChoiceRef current so async extraction callbacks read the latest value, not a stale closure
@@ -285,6 +290,19 @@ export default function LogSession() {
   useEffect(() => {
     latestFieldsRef.current = { actualContent, generalNotes, homeworkAssigned, nextSessionTopics }
   }, [actualContent, generalNotes, homeworkAssigned, nextSessionTopics])
+  // Keep sessionDateRef and sessionTimeRef current so extraction callbacks read the value the teacher
+  // may have edited while extraction was in flight, not the stale closure value from when extraction started
+  useEffect(() => { sessionDateRef.current = sessionDate }, [sessionDate])
+  useEffect(() => { sessionTimeRef.current = sessionTime }, [sessionTime])
+
+  // In create mode, pre-populate actualContent from the previous session's planned topics once data loads
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (isEditMode || didInitContent || sessionsLoading) return
+    setDidInitContent(true)
+    if (plannedForToday) setActualContent(prev => prev || plannedForToday)
+  }, [isEditMode, didInitContent, sessionsLoading, plannedForToday])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Autosave setup - keep ref current after every render (StudentForm pattern)
   const getFormDataRef = useRef<(() => CreateSessionLogRequest) | null>(null)
@@ -330,7 +348,7 @@ export default function LogSession() {
 
   // Disable autosave in edit mode until the session data has loaded (prevents spurious createSession calls)
   const autosaveStudentId = isEditMode ? (editSession ? id : undefined) : id
-  const { status: saveStatus, sessionId: autosavedSessionId, scheduleTextSave, saveNow } = useSessionAutosave(
+  const { status: saveStatus, sessionId: autosavedSessionId, lastSavedAt, scheduleTextSave, saveNow } = useSessionAutosave(
     autosaveStudentId,
     getFormDataRef,
     isEditMode ? editSession?.id : undefined,
@@ -348,11 +366,27 @@ export default function LogSession() {
 
   const doneNavTarget = isEditMode ? `/students/${id}?tab=sessions` : `/students/${id}`
 
-  function handleBack() {
-    // In edit mode, autosavedSessionId is seeded from the existing session,
-    // so only hasChanges determines whether the user made edits.
-    // In create mode, an autosavedSessionId means a session was created by autosave.
-    const isDirty = hasChanges || (!isEditMode && !!autosavedSessionId)
+  async function handleBack() {
+    if (isEditMode) {
+      // Edit mode: autosave persists on every change and updates the RQ cache on
+      // success, so there is nothing to "discard" - clicking back should silently
+      // flush any pending debounced save and navigate away. If the flush fails we
+      // must NOT navigate: that would leave the user thinking their last edits
+      // were saved when they were not.
+      if (hasChanges) {
+        setDoneError(null)
+        const sid = await saveNow()
+        if (!sid) {
+          setDoneError('Failed to save session. Please try again.')
+          return
+        }
+      }
+      navigate(doneNavTarget)
+      return
+    }
+    // Create mode: the "Discard" banner still makes sense because autosave
+    // progressively creates a draft and the user may want to throw it away.
+    const isDirty = hasChanges || !!autosavedSessionId
     if (!isDirty) {
       navigate(doneNavTarget)
       return
@@ -531,7 +565,7 @@ export default function LogSession() {
     )
   }
 
-  const sortedObjectives = [...(student.shortTermObjectives)].sort((a, b) => {
+  const sortedObjectives = [...(student.profile.shortTermObjectives)].sort((a, b) => {
     const order = { overdue: 0, critical: 1, normal: 2 }
     const ua = order[getObjectiveUrgency(a.targetDate)]
     const ub = order[getObjectiveUrgency(b.targetDate)]
@@ -566,19 +600,19 @@ export default function LogSession() {
               <h2 className="font-headline text-base font-bold text-[#1A1B22] leading-tight" data-testid="student-name">
                 {student.name}
               </h2>
-              <CefrBadge level={student.cefrLevel} data-testid="cefr-badge" />
+              <CefrBadge level={student.level.cefrLevel} data-testid="cefr-badge" />
             </div>
-            {student.nativeLanguages.length > 0 && (
-              <p className="text-xs text-zinc-500 mt-0.5">{student.nativeLanguages.join(', ')}</p>
+            {student.languages.nativeLanguages.length > 0 && (
+              <p className="text-xs text-zinc-500 mt-0.5">{student.languages.nativeLanguages.join(', ')}</p>
             )}
             {sessionsLoading ? (
               <Skeleton className="h-3 w-20 mt-1" />
             ) : (
               <p className="text-xs text-zinc-400 mt-0.5" data-testid="session-number">Session #{sessionNumber}</p>
             )}
-            {Object.keys(student.skillLevelOverrides).length > 0 && (
+            {Object.keys(student.level.skillLevelOverrides).length > 0 && (
               <p className="text-xs text-zinc-400 mt-1" data-testid="skill-levels-row">
-                {Object.entries(student.skillLevelOverrides).map(([skill, level], i) => (
+                {Object.entries(student.level.skillLevelOverrides).map(([skill, level], i) => (
                   <span key={skill}>
                     {i > 0 && <span className="mx-1 text-zinc-300">|</span>}
                     {skill} {level}
@@ -621,22 +655,29 @@ export default function LogSession() {
           <PanelSection label="Teaching Todos">
             <div className="space-y-1.5">
               {pendingTodos.map(todo => (
-                <label
+                <div
                   key={todo.id}
-                  className="flex items-start gap-2.5 cursor-pointer group"
+                  className="flex items-start gap-2.5"
                   data-testid="teaching-todo-item"
                 >
-                  <input
-                    type="checkbox"
-                    checked={checkedTodoIds.has(todo.id)}
-                    onChange={() => toggleTodo(todo.id)}
-                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-indigo-600 shrink-0"
-                    data-testid="teaching-todo-checkbox"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleTodo(todo.id)}
+                    aria-label={checkedTodoIds.has(todo.id) ? 'Mark uncovered' : 'Mark covered'}
+                    aria-pressed={checkedTodoIds.has(todo.id)}
+                    data-testid="teaching-todo-toggle"
+                    className={`mt-0.5 shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+                      checkedTodoIds.has(todo.id)
+                        ? 'bg-green-500 border-green-500'
+                        : 'border-indigo-400 hover:border-indigo-600'
+                    }`}
+                  >
+                    {checkedTodoIds.has(todo.id) && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+                  </button>
                   <span className={`text-sm leading-snug ${checkedTodoIds.has(todo.id) ? 'line-through text-zinc-400' : 'text-[#1A1B22]'}`}>
                     {todo.text}
                   </span>
-                </label>
+                </div>
               ))}
             </div>
             {checkedTodoIds.size > 0 && (
@@ -651,17 +692,22 @@ export default function LogSession() {
             <p className="text-xs text-zinc-400 -mt-1">Check items you addressed in this session</p>
             <div className="space-y-1.5">
               {pendingFollowups.map(f => (
-                <label
+                <div
                   key={f.id}
-                  className="flex items-start gap-2.5 cursor-pointer"
+                  className="flex items-start gap-2.5"
                   data-testid="followup-item"
                 >
-                  <input
-                    type="checkbox"
-                    checked={checkedFollowupIds.has(f.id)}
-                    onChange={() => toggleFollowup(f.id)}
-                    className="mt-0.5 h-4 w-4 rounded border-amber-300 accent-amber-500 shrink-0"
-                    data-testid="followup-checkbox"
+                  <button
+                    type="button"
+                    onClick={() => toggleFollowup(f.id)}
+                    aria-label={checkedFollowupIds.has(f.id) ? 'Mark pending' : 'Mark done'}
+                    aria-pressed={checkedFollowupIds.has(f.id)}
+                    data-testid="followup-toggle"
+                    className={`mt-0.5 shrink-0 w-3 h-3 rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+                      checkedFollowupIds.has(f.id)
+                        ? 'bg-emerald-500 border-emerald-500'
+                        : 'border-amber-400 bg-amber-100 hover:bg-amber-500'
+                    }`}
                   />
                   <span className={`text-sm leading-snug transition-all duration-150 ${checkedFollowupIds.has(f.id) ? 'line-through text-zinc-400 opacity-60' : 'text-[#1A1B22]'}`}>
                     {f.text}
@@ -669,7 +715,7 @@ export default function LogSession() {
                       <span className="ml-1.5 text-xs text-amber-600">{formatDate(f.dueDate)}</span>
                     )}
                   </span>
-                </label>
+                </div>
               ))}
             </div>
           </PanelSection>
@@ -711,7 +757,7 @@ export default function LogSession() {
         ) : null}
 
         {/* Working Memory (teacher notes) */}
-        {student.teachingNotes && (
+        {student.profile.teachingNotes && (
           <PanelSection label="Working Memory">
             <div
               className="rounded-lg bg-white px-3 py-2.5"
@@ -719,9 +765,9 @@ export default function LogSession() {
               data-testid="working-memory-card"
             >
               <p className={`text-sm text-zinc-600 leading-snug whitespace-pre-wrap ${!workingMemoryExpanded ? 'line-clamp-4' : ''}`}>
-                {student.teachingNotes}
+                {student.profile.teachingNotes}
               </p>
-              {student.teachingNotes.length > 200 && (
+              {student.profile.teachingNotes.length > 200 && (
                 <button
                   type="button"
                   onClick={() => setWorkingMemoryExpanded(v => !v)}
@@ -744,19 +790,25 @@ export default function LogSession() {
           </PanelSection>
         )}
 
-        {/* Active Difficulties */}
+        {/* Active Difficulties — read-only reference, tinted to distinguish from interactive sections */}
         {activeDifficulties.length > 0 && (
           <PanelSection label="Student Difficulties">
-            <div className="space-y-1.5">
+            <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2.5 space-y-1.5">
               {activeDifficulties.map(d => {
                 const key = `${d.competency}|${d.subcategory}`
                 return (
-                  <label key={d.id} className="flex items-start gap-2.5 cursor-pointer" data-testid="difficulty-item">
-                    <input
-                      type="checkbox"
-                      checked={mentionedDifficultyKeys.has(key)}
-                      onChange={() => toggleDifficulty(key)}
-                      className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-indigo-600 shrink-0"
+                  <div key={d.id} className="flex items-start gap-2.5" data-testid="difficulty-item">
+                    <button
+                      type="button"
+                      onClick={() => toggleDifficulty(key)}
+                      aria-label={mentionedDifficultyKeys.has(key) ? 'Mark unmentioned' : 'Mark mentioned'}
+                      aria-pressed={mentionedDifficultyKeys.has(key)}
+                      data-testid="difficulty-toggle"
+                      className={`mt-0.5 shrink-0 w-3 h-3 rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+                        mentionedDifficultyKeys.has(key)
+                          ? 'bg-emerald-500 border-emerald-500'
+                          : 'border-amber-400 bg-amber-100 hover:bg-amber-500'
+                      }`}
                     />
                     <span className="text-sm text-[#1A1B22] leading-snug">
                       <span className={d.description.length > 80 && !expandedDifficulties.has(key) ? 'line-clamp-2' : ''}>
@@ -773,7 +825,7 @@ export default function LogSession() {
                         </button>
                       )}
                     </span>
-                  </label>
+                  </div>
                 )
               })}
             </div>
@@ -828,8 +880,8 @@ export default function LogSession() {
               {saveStatus === 'error' && (
                 <><RefreshCw className="h-3.5 w-3.5 text-red-500" /><span className="text-red-500">Couldn't save</span></>
               )}
-              {isEditMode && saveStatus === 'idle' && editSession?.updatedAt && (
-                <span className="text-zinc-400">Last saved {relativeTime(editSession.updatedAt)}</span>
+              {isEditMode && saveStatus === 'idle' && (lastSavedAt || editSession?.updatedAt) && (
+                <span className="text-zinc-400">Last saved {relativeTime(lastSavedAt ?? editSession!.updatedAt)}</span>
               )}
             </span>
 
@@ -963,8 +1015,8 @@ export default function LogSession() {
                       saveOverride.suggestedDifficulties = extracted.suggestedDifficulties
                       setSuggestedDifficulties(extracted.suggestedDifficulties)
                     }
-                    const nextDate = extracted.sessionDate || sessionDate
-                    const nextTime = extracted.sessionStartTime || sessionTime
+                    const nextDate = extracted.sessionDate || sessionDateRef.current
+                    const nextTime = extracted.sessionStartTime || sessionTimeRef.current
                     if (extracted.sessionDate) setSessionDate(extracted.sessionDate)
                     if (extracted.sessionStartTime) setSessionTime(extracted.sessionStartTime)
                     if (extracted.sessionDate || extracted.sessionStartTime) {
@@ -1060,8 +1112,9 @@ export default function LogSession() {
               </div>
             </div>
 
-            {/* Cancelled */}
+            {/* Cancelled — spacer matches the label height of Date/Time/Duration cells */}
             <div className="space-y-1">
+              <span className="block text-xs invisible" aria-hidden="true">&nbsp;</span>
               <div className="flex items-center gap-2 h-8">
                 <Label htmlFor="cancelled-toggle" className="text-sm text-zinc-600 cursor-pointer select-none">
                   Cancelled
@@ -1075,6 +1128,22 @@ export default function LogSession() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Session Title */}
+          <div className="space-y-1">
+            <Label htmlFor="session-title" className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">
+              Title <span className="normal-case tracking-normal font-normal">(optional)</span>
+            </Label>
+            <Input
+              id="session-title"
+              value={sessionTitle ?? ''}
+              onChange={e => { setSessionTitle(e.target.value || undefined); markChangedAndSchedule() }}
+              placeholder="What did you work on? (optional)"
+              maxLength={120}
+              className="text-sm bg-white"
+              data-testid="log-session-title-input"
+            />
           </div>
 
           {/* ── Editorial headline + Previous HW + What Happened ── */}
@@ -1443,7 +1512,7 @@ export default function LogSession() {
           {/* Cancelled session: minimal fields */}
           {isCancelled && (
             <div className="space-y-1">
-              <p className="text-sm text-zinc-400 italic">This session was cancelled. Only date, duration, topics covered and notes will be recorded.</p>
+              <div className="bg-amber-50 rounded p-3 text-sm text-amber-800">This session was cancelled. Only date, duration, topics covered and notes will be recorded.</div>
 
               {/* Topics Covered */}
               <div className="space-y-1 pt-4">

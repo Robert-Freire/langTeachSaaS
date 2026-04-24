@@ -103,20 +103,40 @@ function renderEdit() {
   )
 }
 
+function makeMockStudent(overrides: {
+  id?: string; name?: string; learningLanguage?: string;
+  cefrLevel?: string; officialCefrLevel?: string | null; skillLevelOverrides?: Record<string, string>;
+  nativeLanguages?: string[]; spokenLanguages?: string[];
+  birthYear?: number | null; profession?: string | null;
+  countryOfOrigin?: string | null; cityOfOrigin?: string | null;
+  countryOfResidence?: string | null; cityOfResidence?: string | null; reasonForStudying?: string | null;
+  interests?: string[]; personalNotes?: string | null; teachingNotes?: string | null;
+  learningGoals?: { id: string; text: string; children: unknown[] }[];
+  weaknesses?: { description: string; weaknessType: string }[];
+  difficulties?: { id: string; description: string; competency: string; subcategory: string; severity: string; trend: string; status: string }[];
+  shortTermObjectives?: { id: string; text: string; targetDate?: string; objectiveType?: string }[];
+  teachingTodos?: { id: string; text: string; status: string; createdAt: string; sourceSessionLogId: null; coveredInSessionLogId: null }[];
+  isActive?: boolean; isCorporate?: boolean; rate?: string | null;
+  createdAt?: string; updatedAt?: string;
+} = {}) {
+  return {
+    id: overrides.id ?? 'stu-1',
+    name: overrides.name ?? 'Ana',
+    learningLanguage: overrides.learningLanguage ?? 'Spanish',
+    level: { cefrLevel: overrides.cefrLevel ?? 'B1', officialCefrLevel: overrides.officialCefrLevel ?? null, skillLevelOverrides: overrides.skillLevelOverrides ?? {} },
+    languages: { nativeLanguages: overrides.nativeLanguages ?? [], spokenLanguages: overrides.spokenLanguages ?? [] },
+    identity: { birthYear: overrides.birthYear ?? null, age: null, profession: overrides.profession ?? null, countryOfOrigin: overrides.countryOfOrigin ?? null, cityOfOrigin: overrides.cityOfOrigin ?? null, countryOfResidence: overrides.countryOfResidence ?? null, cityOfResidence: overrides.cityOfResidence ?? null },
+    profile: { interests: overrides.interests ?? [], personalNotes: overrides.personalNotes ?? null, teachingNotes: overrides.teachingNotes ?? null, learningGoals: overrides.learningGoals ?? [], weaknesses: overrides.weaknesses ?? [], difficulties: overrides.difficulties ?? [], shortTermObjectives: overrides.shortTermObjectives ?? [], teachingTodos: overrides.teachingTodos ?? [], reasonForStudying: overrides.reasonForStudying ?? null },
+    commercial: { isActive: overrides.isActive ?? true, isCorporate: overrides.isCorporate ?? false, rate: overrides.rate ?? null },
+    createdAt: overrides.createdAt ?? '2026-01-01T00:00:00Z',
+    updatedAt: overrides.updatedAt ?? '2026-01-01T00:00:00Z',
+  }
+}
+
 describe('StudentForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
-      interests: [], nativeLanguages: [], learningGoals: [],
-      weaknesses: [] as { description: string; weaknessType: string }[],
-      difficulties: [], personalNotes: null, teachingNotes: null,
-      shortTermObjectives: [], spokenLanguages: [], teachingTodos: [],
-      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
-      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
-      officialCefrLevel: null, isActive: true, isCorporate: false, rate: null,
-      skillLevelOverrides: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
-    })
+    mockGetStudent.mockResolvedValue(makeMockStudent())
     mockGetStudents.mockResolvedValue({ items: [], totalCount: 0 })
     mockCreateStudent.mockResolvedValue({ id: 'new-id' })
     mockUpdateStudent.mockResolvedValue({ id: 'stu-1' })
@@ -144,11 +164,11 @@ describe('StudentForm', () => {
     expect(screen.queryByTestId('lesson-history-card')).not.toBeInTheDocument()
   })
 
-  it('renders Save and Cancel buttons in header for new student', () => {
+  it('renders Done button in header for new student', () => {
     renderNew()
     expect(screen.getByRole('heading', { name: 'Add Student' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Save Student' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
+    expect(screen.getByTestId('done-btn')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
   })
 
   it('shows Edit Student title in edit mode', async () => {
@@ -176,18 +196,10 @@ describe('StudentForm', () => {
     expect(back).toHaveAttribute('href', '/students/stu-1')
   })
 
-  it('Save button has form attribute pointing to student-form', () => {
+  it('Done button has form attribute pointing to student-form', () => {
     renderNew()
-    const saveBtn = screen.getByRole('button', { name: 'Save Student' })
-    expect(saveBtn).toHaveAttribute('form', 'student-form')
-  })
-
-  it('Cancel navigates to /students', async () => {
-    const { default: userEvent } = await import('@testing-library/user-event')
-    const user = userEvent.setup()
-    renderNew()
-    await user.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/students')
+    const doneBtn = screen.getByTestId('done-btn')
+    expect(doneBtn).toHaveAttribute('form', 'student-form')
   })
 
   it('after creating a student, redirects to student profile page', async () => {
@@ -200,7 +212,7 @@ describe('StudentForm', () => {
     await user.click(await screen.findByRole('option', { name: 'Spanish' }))
     await user.click(screen.getByTestId('student-cefr'))
     await user.click(await screen.findByRole('option', { name: 'B1' }))
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/students/new-id')
@@ -270,21 +282,12 @@ describe('StudentForm', () => {
   })
 
   it('renders existing difficulties in edit mode', async () => {
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1',
-      name: 'Ana',
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      nativeLanguages: [],
-      learningGoals: [],
-      weaknesses: [],
+    mockGetStudent.mockResolvedValue(makeMockStudent({
       difficulties: [
         { id: 'd1', description: 'Confuses ser/estar', competency: 'Grammar', subcategory: 'ser/estar', severity: 'high', trend: 'stable', status: 'Active' },
         { id: 'd2', description: 'Difficulty with rolled r', competency: 'Pronunciation', subcategory: '/r/', severity: 'low', trend: 'stable', status: 'Active' },
       ],
-      personalNotes: null, teachingNotes: null,
-    })
+    }))
 
     renderEdit()
 
@@ -324,21 +327,9 @@ describe('StudentForm', () => {
   })
 
   it('displays learning goals in edit mode when loaded from server', async () => {
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1',
-      name: 'Ana',
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      nativeLanguages: [],
-      learningGoals: [
-        { id: '1', text: 'travel', children: [] },
-        { id: '2', text: 'pass DELE B2 exam', children: [] },
-      ],
-      weaknesses: [],
-      difficulties: [],
-      personalNotes: null, teachingNotes: null,
-    })
+    mockGetStudent.mockResolvedValue(makeMockStudent({
+      learningGoals: [{ id: '1', text: 'travel', children: [] }, { id: '2', text: 'pass DELE B2 exam', children: [] }],
+    }))
 
     renderEdit()
 
@@ -364,7 +355,7 @@ describe('StudentForm', () => {
     await user.type(screen.getByTestId('difficulty-description'), 'test difficulty')
 
     // Submit
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     // Should show inline error and not call createStudent
     expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
@@ -389,7 +380,7 @@ describe('StudentForm', () => {
     await user.click(screen.getByTestId('difficulty-competency'))
     await user.click(await screen.findByRole('option', { name: /grammar/i }))
 
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
     expect(mockCreateStudent).not.toHaveBeenCalled()
@@ -409,7 +400,7 @@ describe('StudentForm', () => {
 
     await user.click(screen.getByTestId('add-difficulty'))
     await user.type(screen.getByTestId('difficulty-description'), 'test difficulty')
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     // Error appears
     expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
@@ -435,7 +426,7 @@ describe('StudentForm', () => {
 
     await user.click(screen.getByTestId('add-difficulty'))
     await user.type(screen.getByTestId('difficulty-description'), 'test difficulty')
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     expect(screen.getByTestId('difficulty-error')).toBeInTheDocument()
 
@@ -458,7 +449,7 @@ describe('StudentForm', () => {
 
     // Add empty row, don't fill anything
     await user.click(screen.getByTestId('add-difficulty'))
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     expect(screen.queryByTestId('difficulty-error')).not.toBeInTheDocument()
     expect(mockCreateStudent).toHaveBeenCalledWith(
@@ -510,7 +501,7 @@ describe('StudentForm', () => {
     await user.click(screen.getByTestId('add-weakness'))
     await user.type(screen.getByTestId('weakness-description'), 'Vocabulary gaps')
 
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     expect(mockCreateStudent).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -520,21 +511,12 @@ describe('StudentForm', () => {
   })
 
   it('existing weaknesses render as rows in edit mode', async () => {
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1',
-      name: 'Ana',
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      nativeLanguages: [],
-      learningGoals: [],
+    mockGetStudent.mockResolvedValue(makeMockStudent({
       weaknesses: [
         { description: 'ser/estar confusion', weaknessType: 'grammatical' },
         { description: 'limited travel vocabulary', weaknessType: 'lexical' },
       ],
-      difficulties: [],
-      personalNotes: null, teachingNotes: null,
-    })
+    }))
 
     renderEdit()
 
@@ -558,18 +540,7 @@ describe('StudentForm', () => {
   })
 
   it('loads all native languages in edit mode and displays them as chips', async () => {
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1',
-      name: 'Ana',
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      nativeLanguages: ['Portuguese', 'English', 'Catalan'],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-      personalNotes: null, teachingNotes: null,
-    })
+    mockGetStudent.mockResolvedValue(makeMockStudent({ nativeLanguages: ['Portuguese', 'English', 'Catalan'] }))
 
     renderEdit()
 
@@ -583,18 +554,7 @@ describe('StudentForm', () => {
   })
 
   it('"Create Course" button is disabled when student is missing CEFR level', async () => {
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1',
-      name: 'Ana',
-      learningLanguage: 'Spanish',
-      cefrLevel: '',
-      interests: [],
-      nativeLanguages: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-      personalNotes: null, teachingNotes: null,
-    })
+    mockGetStudent.mockResolvedValue(makeMockStudent({ cefrLevel: '' }))
     renderEdit()
     const btn = await screen.findByTestId('create-course-btn')
     expect(btn).toBeDisabled()
@@ -612,25 +572,10 @@ describe('StudentForm', () => {
   })
 
   it('pre-populates identity fields in edit mode', async () => {
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1',
-      name: 'Ana',
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      nativeLanguages: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-      personalNotes: null,
-      teachingNotes: null,
-      birthYear: 1990,
-      profession: 'Architect',
-      countryOfOrigin: 'Portugal',
-      cityOfOrigin: 'Lisbon',
-      countryOfResidence: 'Spain',
-      cityOfResidence: 'Madrid',
-    })
+    mockGetStudent.mockResolvedValue(makeMockStudent({
+      birthYear: 1990, profession: 'Architect', countryOfOrigin: 'Portugal', cityOfOrigin: 'Lisbon',
+      countryOfResidence: 'Spain', cityOfResidence: 'Madrid',
+    }))
     renderEdit()
     await screen.findByRole('heading', { name: 'Edit Student' })
     expect(screen.getByTestId('student-birth-year')).toHaveValue(1990)
@@ -659,7 +604,7 @@ describe('StudentForm', () => {
     await user.type(screen.getByTestId('student-country-residence'), 'Spain')
     await user.type(screen.getByTestId('student-city-residence'), 'Madrid')
 
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     await vi.waitFor(() => {
       expect(mockCreateStudent).toHaveBeenCalledWith(
@@ -721,7 +666,7 @@ describe('StudentForm', () => {
     await user.click(await screen.findByRole('option', { name: 'B1' }))
     await user.type(screen.getByTestId('student-reason-for-studying'), 'Moving to Spain')
 
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     await vi.waitFor(() => {
       expect(mockCreateStudent).toHaveBeenCalledWith(
@@ -731,23 +676,10 @@ describe('StudentForm', () => {
   })
 
   it('pre-populates reasonForStudying and objectives in edit mode', async () => {
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1',
-      name: 'Ana',
-      learningLanguage: 'Spanish',
-      cefrLevel: 'B1',
-      interests: [],
-      nativeLanguages: [],
-      learningGoals: [],
-      weaknesses: [],
-      difficulties: [],
-      personalNotes: null,
-      teachingNotes: null,
+    mockGetStudent.mockResolvedValue(makeMockStudent({
       reasonForStudying: 'Loves Spanish culture',
-      shortTermObjectives: [
-        { id: 'obj-1', text: 'Pass DELE B1', targetDate: '2026-06-01' },
-      ],
-    })
+      shortTermObjectives: [{ id: 'obj-1', text: 'Pass DELE B1', targetDate: '2026-06-01' }],
+    }))
     renderEdit()
     await screen.findByRole('heading', { name: 'Edit Student' })
     expect(screen.getByTestId('student-reason-for-studying')).toHaveValue('Loves Spanish culture')
@@ -771,7 +703,7 @@ describe('StudentForm', () => {
     await user.click(screen.getByTestId('add-objective'))
     await user.type(screen.getByTestId('objective-text-input'), 'Pass DELE B1')
 
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
 
     await vi.waitFor(() => {
       expect(mockCreateStudent).toHaveBeenCalledWith(
@@ -783,19 +715,9 @@ describe('StudentForm', () => {
   })
 
   it('shows teaching todos sidebar in edit mode', async () => {
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
-      interests: [], nativeLanguages: [], learningGoals: [], weaknesses: [], difficulties: [],
-      personalNotes: null, teachingNotes: null,
-      teachingTodos: [
-        { id: 't1', text: 'Review subjunctive', status: 'Pending', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, coveredInSessionLogId: null },
-      ],
-      shortTermObjectives: [], spokenLanguages: [],
-      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
-      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
-      officialCefrLevel: null, isActive: true, isCorporate: false, rate: null,
-      createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
-    })
+    mockGetStudent.mockResolvedValue(makeMockStudent({
+      teachingTodos: [{ id: 't1', text: 'Review subjunctive', status: 'Pending', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, coveredInSessionLogId: null }],
+    }))
     renderEdit()
     expect(await screen.findByTestId('sidebar-teaching-todos')).toBeInTheDocument()
     expect(await screen.findByText('Review subjunctive')).toBeInTheDocument()
@@ -824,16 +746,7 @@ describe('StudentForm', () => {
   })
 
   it('submits commercial fields in edit mode', async () => {
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
-      interests: [], nativeLanguages: [], learningGoals: [], weaknesses: [], difficulties: [],
-      personalNotes: null, teachingNotes: null, shortTermObjectives: [], spokenLanguages: [],
-      teachingTodos: [], birthYear: null, profession: null, countryOfOrigin: null,
-      cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null,
-      reasonForStudying: null, officialCefrLevel: null,
-      isActive: true, isCorporate: false, rate: '45/hr',
-      skillLevelOverrides: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
-    })
+    mockGetStudent.mockResolvedValue(makeMockStudent({ rate: '45/hr' }))
     const { default: userEvent } = await import('@testing-library/user-event')
     const user = userEvent.setup()
     renderEdit()
@@ -903,16 +816,7 @@ describe('StudentForm', () => {
 
   // AC2: Language chips use full roundedness
   it('spoken language chips have rounded-full class', async () => {
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
-      interests: [], nativeLanguages: [], learningGoals: [],
-      weaknesses: [], difficulties: [], personalNotes: null, teachingNotes: null,
-      shortTermObjectives: [], spokenLanguages: ['French', 'Italian'], teachingTodos: [],
-      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
-      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
-      officialCefrLevel: null, isActive: true, isCorporate: false, rate: null,
-      skillLevelOverrides: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
-    })
+    mockGetStudent.mockResolvedValue(makeMockStudent({ spokenLanguages: ['French', 'Italian'] }))
     renderEdit()
     const chips = await screen.findAllByTestId('spoken-lang-chip')
     expect(chips.length).toBeGreaterThan(0)
@@ -962,16 +866,7 @@ describe('StudentForm', () => {
 
   // AC2: native language chips use rounded-full
   it('native language chips have rounded-full class', async () => {
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
-      interests: [], nativeLanguages: ['Ukrainian'], learningGoals: [],
-      weaknesses: [], difficulties: [], personalNotes: null, teachingNotes: null,
-      shortTermObjectives: [], spokenLanguages: [], teachingTodos: [],
-      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
-      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
-      officialCefrLevel: null, isActive: true, isCorporate: false, rate: null,
-      skillLevelOverrides: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
-    })
+    mockGetStudent.mockResolvedValue(makeMockStudent({ nativeLanguages: ['Ukrainian'] }))
     renderEdit()
     const chips = await screen.findAllByTestId('native-lang-chip')
     expect(chips.length).toBeGreaterThan(0)
@@ -982,18 +877,9 @@ describe('StudentForm', () => {
 
   // AC6: difficulty severity/trend indicators are hidden (not teacher-editable)
   it('does not render difficulty severity/trend visual indicators', async () => {
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
-      interests: [], nativeLanguages: [], learningGoals: [],
-      weaknesses: [], difficulties: [
-        { id: 'd1', description: 'test', competency: 'Grammar', subcategory: '', severity: 'high', trend: 'worsening', status: 'Active' },
-      ], personalNotes: null, teachingNotes: null,
-      shortTermObjectives: [], spokenLanguages: [], teachingTodos: [],
-      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
-      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
-      officialCefrLevel: null, isActive: true, isCorporate: false, rate: null,
-      skillLevelOverrides: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
-    })
+    mockGetStudent.mockResolvedValue(makeMockStudent({
+      difficulties: [{ id: 'd1', description: 'test', competency: 'Grammar', subcategory: '', severity: 'high', trend: 'worsening', status: 'Active' }],
+    }))
     renderEdit()
     await screen.findByRole('heading', { name: 'Edit Student' })
     expect(screen.queryByTestId('difficulty-visual-indicators')).not.toBeInTheDocument()
@@ -1102,17 +988,7 @@ describe('StudentForm', () => {
   })
 
   it('C3: Inactive badge has no border class', async () => {
-    mockGetStudent.mockResolvedValue({
-      id: 'stu-1', name: 'Ana', learningLanguage: 'Spanish', cefrLevel: 'B1',
-      interests: [], nativeLanguages: [], learningGoals: [],
-      weaknesses: [] as { description: string; weaknessType: string }[],
-      difficulties: [], personalNotes: null, teachingNotes: null,
-      shortTermObjectives: [], spokenLanguages: [], teachingTodos: [],
-      birthYear: null, profession: null, countryOfOrigin: null, cityOfOrigin: null,
-      countryOfResidence: null, cityOfResidence: null, reasonForStudying: null,
-      officialCefrLevel: null, isActive: false, isCorporate: false, rate: null,
-      skillLevelOverrides: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
-    })
+    mockGetStudent.mockResolvedValue(makeMockStudent({ isActive: false }))
     renderEdit()
     const badge = await screen.findByTestId('inactive-badge')
     expect(badge.className).not.toContain('border')
@@ -1142,7 +1018,7 @@ describe('StudentForm – language combobox with full options', () => {
     await user.click(await screen.findByRole('option', { name: 'Welsh' }))
     await user.click(screen.getByTestId('student-cefr'))
     await user.click(await screen.findByRole('option', { name: 'B1' }))
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
     await vi.waitFor(() => {
       expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({ learningLanguage: 'Welsh' }))
     })
@@ -1159,7 +1035,7 @@ describe('StudentForm – language combobox with full options', () => {
     await user.click(await screen.findByTestId('add-custom-entry'))
     await user.click(screen.getByTestId('student-cefr'))
     await user.click(await screen.findByRole('option', { name: 'B1' }))
-    await user.click(screen.getByRole('button', { name: 'Save Student' }))
+    await user.click(screen.getByTestId('done-btn'))
     await vi.waitFor(() => {
       expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({ learningLanguage: 'Esperanto' }))
     })

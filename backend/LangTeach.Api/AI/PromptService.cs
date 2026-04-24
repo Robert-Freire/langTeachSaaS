@@ -419,11 +419,17 @@ public class PromptService : IPromptService
             sb.AppendLine($"- Name: {studentName}");
 
             if (ctx.StudentNativeLanguage is not null)
+            {
                 sb.AppendLine($"- Native language: {nativeLang}");
+                sb.AppendLine($"- For grammar explanations, note where {language} differs from {nativeLang}.");
+                sb.AppendLine($"- Flag false cognates between {nativeLang} and {language} when relevant.");
+                sb.AppendLine($"- Be aware of common errors {nativeLang} speakers make in {language}.");
+            }
 
             if (interests.Length > 0)
                 sb.AppendLine($"- Interests: {string.Join(", ", interests)}");
 
+            // Legacy LearningGoals field; will be superseded by ShortTermObjectives (see #855)
             if (goals.Length > 0)
                 sb.AppendLine($"- Learning goals: {string.Join(", ", goals)}");
 
@@ -435,18 +441,13 @@ public class PromptService : IPromptService
             var countryOfOrigin  = InputSanitizer.Sanitize(ctx.StudentCountryOfOrigin);
             var countryOfResidence = InputSanitizer.Sanitize(ctx.StudentCountryOfResidence);
             var officialCefr     = InputSanitizer.Sanitize(ctx.StudentOfficialCefrLevel);
-
-            // Age is approximated from birth year (off by up to one year depending on birthday — acceptable for prompt personalization)
-            var currentYear = DateTime.UtcNow.Year;
-            var age = ctx.StudentBirthYear is int birthYear && birthYear >= currentYear - 120 && birthYear <= currentYear
-                ? currentYear - birthYear
-                : (int?)null;
+            var spokenLangs      = ctx.StudentSpokenLanguages?.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0).ToArray() ?? [];
 
             if (profession.Length > 0)
                 sb.AppendLine($"- Profession: {profession}");
 
-            if (age is not null)
-                sb.AppendLine($"- Age: {age}");
+            if (ctx.StudentAge is not null)
+                sb.AppendLine($"- Age: {ctx.StudentAge}");
 
             if (countryOfOrigin.Length > 0)
                 sb.AppendLine($"- Country of origin: {countryOfOrigin}");
@@ -457,39 +458,34 @@ public class PromptService : IPromptService
             if (officialCefr.Length > 0)
                 sb.AppendLine($"- Official CEFR level: {officialCefr} (official) / {cefrLevel} (teacher assessment)");
 
-            if (ctx.StudentSpokenLanguages is { Length: > 0 })
-            {
-                var spokenLangs = ctx.StudentSpokenLanguages.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0).ToArray();
-                if (spokenLangs.Length > 0)
-                    sb.AppendLine($"- Also speaks: {string.Join(", ", spokenLangs)}");
-            }
+            if (spokenLangs.Length > 0)
+                sb.AppendLine($"- Also speaks: {string.Join(", ", spokenLangs)}");
 
-            if (reasonForStudying.Length > 0)
-                sb.AppendLine($"- Reason for studying {language}: {reasonForStudying}");
+            if (ctx.StudentShortTermObjectives is { Count: > 0 })
+            {
+                sb.AppendLine("- Short-term objectives:");
+                foreach (var obj in ctx.StudentShortTermObjectives)
+                {
+                    var dateSuffix = obj.TargetDate.HasValue ? $" (by {obj.TargetDate.Value:yyyy-MM-dd})" : string.Empty;
+                    sb.AppendLine($"  - {ObjectiveTypeLabel(obj.ObjectiveType)}{InputSanitizer.Sanitize(obj.Text)}{dateSuffix}");
+                }
+            }
 
             sb.AppendLine();
-            sb.AppendLine($"Personalize content for this student. Reference their interests in examples.");
+            var motivationSuffix = reasonForStudying.Length > 0
+                ? $", and anchor vocabulary to their stated study motivation: {reasonForStudying}"
+                : string.Empty;
+            sb.AppendLine($"Personalize content for this student. Reference their interests in examples{motivationSuffix}.");
 
-            if (reasonForStudying.Length > 0)
-                sb.AppendLine($"Anchor vocabulary, topics, and examples to the student's stated study motivation.");
-
-            if (ctx.StudentSpokenLanguages is { Length: > 0 })
-            {
-                var spokenForPrompt = ctx.StudentSpokenLanguages.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0).ToArray();
-                if (spokenForPrompt.Length > 0)
-                    sb.AppendLine("Where relevant, leverage cross-language awareness and cognates from the student's other languages.");
-            }
+            if (spokenLangs.Length > 0)
+                sb.AppendLine("Where relevant, leverage cross-language awareness and cognates from the student's other languages.");
 
             if (profession.Length > 0)
                 sb.AppendLine("Use domain-specific vocabulary and scenarios from the student's professional field where appropriate.");
 
-            if (ctx.StudentNativeLanguage is not null)
-            {
-                sb.AppendLine($"The student's native language is {nativeLang}.");
-                sb.AppendLine($"- For grammar explanations, note where {language} differs from {nativeLang}.");
-                sb.AppendLine($"- Flag false cognates between {nativeLang} and {language} when relevant.");
-                sb.AppendLine($"- Be aware of common errors {nativeLang} speakers make in {language}.");
-            }
+            sb.AppendLine(officialCefr.Length > 0
+                ? "Use the teacher assessment level for content difficulty decisions; the official level is for reference only."
+                : "Use the teacher assessment level for content difficulty decisions.");
 
             if (ctx.StudentDifficulties is { Length: > 0 })
             {
@@ -1278,6 +1274,15 @@ public class PromptService : IPromptService
                 sb.AppendLine($"Interests: {string.Join(", ", ctx.StudentInterests.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0))}");
             if (ctx.StudentGoals?.Length > 0)
                 sb.AppendLine($"Goals: {string.Join(", ", ctx.StudentGoals.Select(InputSanitizer.Sanitize).Where(s => s.Length > 0))}");
+            if (ctx.StudentShortTermObjectives is { Count: > 0 })
+            {
+                sb.AppendLine("Short-term objectives:");
+                foreach (var obj in ctx.StudentShortTermObjectives)
+                {
+                    var dateSuffix = obj.TargetDate.HasValue ? $" (by {obj.TargetDate.Value:yyyy-MM-dd})" : string.Empty;
+                    sb.AppendLine($"  - {ObjectiveTypeLabel(obj.ObjectiveType)}{InputSanitizer.Sanitize(obj.Text)}{dateSuffix}");
+                }
+            }
             if (ctx.StudentWeaknesses?.Length > 0)
                 sb.AppendLine($"Known weaknesses: {string.Join(", ", ctx.StudentWeaknesses.Select(w => InputSanitizer.Sanitize(w.Description)).Where(s => s.Length > 0))}");
             if (ctx.StudentDifficulties?.Length > 0)
@@ -1487,6 +1492,13 @@ public class PromptService : IPromptService
 
     private static string CefrCodeToSkillName(string code) => LangTeach.Api.DTOs.CefrSkillCodes.ToSkillName(code);
 
+    private static string ObjectiveTypeLabel(string objectiveType) => objectiveType switch
+    {
+        "exam_prep"     => "[Exam prep] ",
+        "communicative" => "[Communicative] ",
+        _               => string.Empty
+    };
+
     // --- Reflection extraction ---
 
     public ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx)
@@ -1518,10 +1530,6 @@ public class PromptService : IPromptService
 
             Today is {today.DayOfWeek}, {today:yyyy-MM-dd}.
             {difficultiesSection}
-            TeachingTodo vs TeacherFollowup distinction:
-            - teachingTodos: pedagogical ideas the teacher intends to work on WITH the student in future sessions. Signal: "Tengo que trabajar X con el/ella", "Hay que practicar X".
-            - teacherFollowups: operational actions the teacher owes the student (send, share, confirm). Signal: "Le tengo que mandar/enviar/dar X", "Prometí enviar X".
-
             Respond ONLY with a valid JSON object using these exact keys:
             - whatWasCovered: object or null. When present, the object has two keys: "value" (string) and "mode" (one of "append", "replace", or "skip").
                 Set mode to "append" if the teacher adds to existing coverage notes (signal words: "además", "también", "y también cubrimos", "también hicimos").
@@ -1550,8 +1558,8 @@ public class PromptService : IPromptService
             - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
             - topicTags: array of objects with "tag" (string) and "category" (string or null) — topics, grammar structures, vocabulary areas covered. Each tag as a concise noun phrase. Empty array if none mentioned.
             - previousHomeworkStatus: "done" | "partial" | "notDone" | null — whether the student completed homework from the previous session. Null if not mentioned.
-            - teachingTodos: array of strings — pedagogical ideas for future sessions (see distinction above). Empty array if none.
-            - teacherFollowups: array of strings — operational actions owed by the teacher (see distinction above). Empty array if none.
+            - teachingTodos: array of strings — pedagogical ideas for future sessions (grammar points to revisit, vocabulary to practise, skills to develop; e.g. "hay que practicar el subjuntivo"). Empty array if none.
+            - teacherFollowups: array of strings — operational actions owed by the teacher (send materials, book a test, contact a school; e.g. "le tengo que mandar ejercicios"). Empty array if none.
             - levelReassessment: CEFR level string (e.g. "B1", "B2+") or null — if the teacher mentions reassessing or updating the student's level. Null if not mentioned.
             - durationMinutes: integer or null — session duration in minutes. Null if not mentioned.
             - isCancelled: true | false | null — true only if the session was cancelled or the student did not show up. Null if not mentioned.

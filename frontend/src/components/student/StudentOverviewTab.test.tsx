@@ -1,7 +1,9 @@
 import { render, screen, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { StudentOverviewTab } from './StudentOverviewTab'
 import type { Student } from '@/api/students'
 import type { SessionLog } from '@/api/sessionLogs'
@@ -27,40 +29,24 @@ const BASE_STUDENT: Student = {
   id: 'student-1',
   name: 'Ana García',
   learningLanguage: 'Spanish',
-  cefrLevel: 'B1',
-  interests: ['reading', 'travel'],
-  personalNotes: null,
-  teachingNotes: null,
-  nativeLanguages: ['English'],
-  learningGoals: [{ id: '1', text: 'Conversational fluency', children: [] }],
-  weaknesses: [],
-  difficulties: [],
+  level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
+  languages: { nativeLanguages: ['English'], spokenLanguages: [] },
+  identity: { birthYear: null, age: null, profession: 'Designer', countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+  profile: { interests: ['reading', 'travel'], personalNotes: null, teachingNotes: null, learningGoals: [{ id: '1', text: 'Conversational fluency', children: [] }], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: 'Moving to Spain next year' },
+  commercial: { isActive: true, isCorporate: false, rate: null },
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
-  birthYear: null,
-  profession: 'Designer',
-  countryOfOrigin: null,
-  cityOfOrigin: null,
-  countryOfResidence: null,
-  cityOfResidence: null,
-  reasonForStudying: 'Moving to Spain next year',
-  officialCefrLevel: null,
-  shortTermObjectives: [],
-  isActive: true,
-  isCorporate: false,
-  rate: null,
-  spokenLanguages: [],
-  teachingTodos: [],
-  skillLevelOverrides: {},
 }
 
 function renderOverview(student: Student, sessions?: SessionLog[], followups?: import('@/api/followups').TeacherFollowup[]) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
-        <StudentOverviewTab student={student} sessions={sessions} followups={followups} onStudentChange={() => {}} />
-      </MemoryRouter>
+      <TooltipProvider>
+        <MemoryRouter>
+          <StudentOverviewTab student={student} sessions={sessions} followups={followups} onStudentChange={() => {}} />
+        </MemoryRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   )
 }
@@ -79,7 +65,7 @@ describe('StudentOverviewTab', () => {
 
 describe('StudentOverviewTab - PedagogicalProfileCard', () => {
   it('shows empty state when no skill overrides', () => {
-    renderOverview({ ...BASE_STUDENT, skillLevelOverrides: {} })
+    renderOverview({ ...BASE_STUDENT, level: { ...BASE_STUDENT.level, skillLevelOverrides: {} } })
     expect(screen.getByTestId('pedagogical-profile-card')).toBeInTheDocument()
     expect(screen.getByTestId('pedagogical-profile-empty')).toBeInTheDocument()
   })
@@ -87,7 +73,7 @@ describe('StudentOverviewTab - PedagogicalProfileCard', () => {
   it('renders skill bars for each override', () => {
     const student = {
       ...BASE_STUDENT,
-      skillLevelOverrides: { Reading: 'B2', Writing: 'A2' },
+      level: { ...BASE_STUDENT.level, skillLevelOverrides: { Reading: 'B2', Writing: 'A2' } },
     }
     renderOverview(student)
     expect(screen.getByTestId('skill-bars')).toBeInTheDocument()
@@ -100,7 +86,7 @@ describe('StudentOverviewTab - PedagogicalProfileCard', () => {
   it('renders native language tags with L- prefix', () => {
     const student = {
       ...BASE_STUDENT,
-      nativeLanguages: ['English', 'French'],
+      languages: { ...BASE_STUDENT.languages, nativeLanguages: ['English', 'French'] },
     }
     renderOverview(student)
     const tagsSection = screen.getByTestId('language-tags')
@@ -109,17 +95,25 @@ describe('StudentOverviewTab - PedagogicalProfileCard', () => {
   })
 
   it('always renders language tag row with target language', () => {
-    renderOverview({ ...BASE_STUDENT, nativeLanguages: [] })
+    renderOverview({ ...BASE_STUDENT, languages: { ...BASE_STUDENT.languages, nativeLanguages: [] } })
     const tagsSection = screen.getByTestId('language-tags')
     expect(tagsSection).toHaveTextContent('T-SPANISH')
   })
 
   it('renders target language tag alongside native tags', () => {
-    const student = { ...BASE_STUDENT, nativeLanguages: ['Ukrainian'], learningLanguage: 'Spanish' }
+    const student = { ...BASE_STUDENT, languages: { ...BASE_STUDENT.languages, nativeLanguages: ['Ukrainian'] }, learningLanguage: 'Spanish' }
     renderOverview(student)
     const tagsSection = screen.getByTestId('language-tags')
     expect(tagsSection).toHaveTextContent('L-UKRAINIAN')
     expect(tagsSection).toHaveTextContent('T-SPANISH')
+  })
+
+  it('shows tooltip explaining target language on hover', async () => {
+    const user = userEvent.setup()
+    renderOverview({ ...BASE_STUDENT, learningLanguage: 'Spanish' })
+    const tag = screen.getByTestId('target-language-tag')
+    await user.hover(tag)
+    expect(await screen.findByText(/target language.*spanish/i)).toBeInTheDocument()
   })
 })
 
@@ -159,29 +153,47 @@ const MOCK_SESSION: SessionLog = {
   hasVoiceNote: false,
 }
 
-describe('StudentOverviewTab - RecentSessions', () => {
-  it('shows empty state when no sessions', () => {
+describe('StudentOverviewTab - LastSessionCard + RecentSessions', () => {
+  it('shows empty state via LastSessionCard when no sessions, and hides RecentSessions', () => {
     renderOverview(BASE_STUDENT, [])
-    expect(screen.getByTestId('recent-sessions-empty')).toBeInTheDocument()
+    expect(screen.getByTestId('last-session-empty')).toBeInTheDocument()
+    expect(screen.queryByTestId('recent-sessions')).not.toBeInTheDocument()
   })
 
-  it('renders a session item when sessions are passed', () => {
+  it('renders LastSessionCard when at least one session exists', () => {
     renderOverview(BASE_STUDENT, [MOCK_SESSION])
-    expect(screen.getAllByTestId('recent-session-item').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('Vocabulary: Travel')).toBeInTheDocument()
+    expect(screen.getByTestId('last-session-card')).toBeInTheDocument()
+    expect(screen.getByTestId('last-session-title')).toHaveTextContent('Vocabulary: Travel')
   })
 
-  it('shows homework chip when set', () => {
+  it('hides RecentSessions when only one session exists (claimed by LastSessionCard)', () => {
     renderOverview(BASE_STUDENT, [MOCK_SESSION])
-    expect(screen.getByText(/Write 5 sentences/)).toBeInTheDocument()
+    expect(screen.queryByTestId('recent-sessions')).not.toBeInTheDocument()
   })
 
-  it('shows duration', () => {
-    renderOverview(BASE_STUDENT, [MOCK_SESSION])
-    expect(screen.getByText('60min')).toBeInTheDocument()
+  it('RecentSessions shows sessions 2-3 when LastSessionCard claims the top one', () => {
+    const sessions: SessionLog[] = [1, 2, 3, 4].map((i) => ({
+      ...MOCK_SESSION,
+      id: `sess-${i}`,
+      sessionDate: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+      title: `Session ${i}`,
+    }))
+    renderOverview(BASE_STUDENT, sessions)
+    // LastSessionCard shows the most recent; RecentSessions shows the next 2 (indices 1 and 2)
+    expect(screen.getByTestId('last-session-title')).toHaveTextContent('Session 1')
+    const items = screen.getAllByTestId('recent-session-item')
+    expect(items).toHaveLength(2)
+    expect(items[0]).toHaveTextContent('Session 2')
+    expect(items[1]).toHaveTextContent('Session 3')
   })
 
   it('shows view all sessions button and calls callback', () => {
+    const sessions: SessionLog[] = [1, 2, 3].map((i) => ({
+      ...MOCK_SESSION,
+      id: `sess-${i}`,
+      sessionDate: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+      title: `Session ${i}`,
+    }))
     const onViewAll = vi.fn()
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
     render(
@@ -189,7 +201,7 @@ describe('StudentOverviewTab - RecentSessions', () => {
         <MemoryRouter>
           <StudentOverviewTab
             student={BASE_STUDENT}
-            sessions={[MOCK_SESSION]}
+            sessions={sessions}
             onStudentChange={() => {}}
             onViewAllSessions={onViewAll}
           />
@@ -198,29 +210,6 @@ describe('StudentOverviewTab - RecentSessions', () => {
     )
     fireEvent.click(screen.getByTestId('view-all-sessions-btn'))
     expect(onViewAll).toHaveBeenCalled()
-  })
-
-  it('limits to 2 sessions', () => {
-    const sessions: SessionLog[] = [1, 2, 3, 4].map((i) => ({
-      ...MOCK_SESSION,
-      id: `sess-${i}`,
-      sessionDate: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
-      title: `Session ${i}`,
-    }))
-    renderOverview(BASE_STUDENT, sessions)
-    expect(screen.getAllByTestId('recent-session-item').length).toBe(2)
-  })
-
-  it('synthesizes title from narrative when title is blank', () => {
-    const session = { ...MOCK_SESSION, title: null, actualContent: 'Practised pretérito indefinido with travel narrative' }
-    renderOverview(BASE_STUDENT, [session])
-    expect(screen.getByTestId('compact-session-title')).toHaveTextContent('Practised pretérito indefinido')
-  })
-
-  it('synthesizes title from narrative when title is generic Session', () => {
-    const session = { ...MOCK_SESSION, title: 'Session', actualContent: 'Review of irregular verbs' }
-    renderOverview(BASE_STUDENT, [session])
-    expect(screen.getByTestId('compact-session-title')).toHaveTextContent('Review of irregular verbs')
   })
 })
 
@@ -235,12 +224,12 @@ describe('StudentOverviewTab - TeachingNotesPanel', () => {
   })
 
   it('shows empty state when no teaching notes', () => {
-    renderOverview({ ...BASE_STUDENT, teachingNotes: null })
+    renderOverview({ ...BASE_STUDENT, profile: { ...BASE_STUDENT.profile, teachingNotes: null } })
     expect(screen.getByTestId('teaching-notes-empty')).toBeInTheDocument()
   })
 
   it('shows teaching notes text when set', () => {
-    const student = { ...BASE_STUDENT, teachingNotes: 'Prefers visual examples' }
+    const student = { ...BASE_STUDENT, profile: { ...BASE_STUDENT.profile, teachingNotes: 'Prefers visual examples' } }
     renderOverview(student)
     expect(screen.getByTestId('teaching-notes-text')).toHaveTextContent('Prefers visual examples')
   })
@@ -330,8 +319,13 @@ describe('StudentOverviewTab - card order and conditional styling', () => {
     expect(wrapper.className).toContain('FFF9F2')
   })
 
+  it('Ideas card section heading reads "Teaching Ideas"', () => {
+    renderOverview(BASE_STUDENT)
+    expect(screen.getByText('Teaching Ideas')).toBeInTheDocument()
+  })
+
   it('Ideas card has muted background when no todos', () => {
-    renderOverview({ ...BASE_STUDENT, teachingTodos: [] })
+    renderOverview({ ...BASE_STUDENT, profile: { ...BASE_STUDENT.profile, teachingTodos: [] } })
     const wrapper = screen.getByTestId('ideas-card-wrapper')
     expect(wrapper.className).toContain('F4F2FD')
   })
@@ -339,7 +333,7 @@ describe('StudentOverviewTab - card order and conditional styling', () => {
   it('Ideas card has white background when todos exist', () => {
     const student = {
       ...BASE_STUDENT,
-      teachingTodos: [{ id: 't1', text: 'Practice past tense', status: 'Pending', createdAt: new Date().toISOString(), sourceSessionLogId: null, coveredInSessionLogId: null }],
+      profile: { ...BASE_STUDENT.profile, teachingTodos: [{ id: 't1', text: 'Practice past tense', status: 'pending', createdAt: new Date().toISOString(), sourceSessionLogId: null, coveredInSessionLogId: null }] },
     }
     renderOverview(student)
     const wrapper = screen.getByTestId('ideas-card-wrapper')
@@ -355,9 +349,8 @@ describe('StudentOverviewTab - rotating empty-state prompts', () => {
   it('shows rotating prompt for Pedagogical Profile when no overrides, difficulties, or goals', () => {
     const student = {
       ...BASE_STUDENT,
-      skillLevelOverrides: {},
-      difficulties: [],
-      learningGoals: [],
+      level: { ...BASE_STUDENT.level, skillLevelOverrides: {} },
+      profile: { ...BASE_STUDENT.profile, difficulties: [], learningGoals: [] },
     }
     renderOverview(student)
     expect(screen.getByTestId('pedagogical-profile-rotating-prompt')).toBeInTheDocument()
@@ -366,9 +359,8 @@ describe('StudentOverviewTab - rotating empty-state prompts', () => {
   it('shows active difficulties instead of rotating prompt when present', () => {
     const student = {
       ...BASE_STUDENT,
-      skillLevelOverrides: {},
-      difficulties: [{ id: 'd1', description: 'Pretérito vs imperfecto', competency: 'Grammar', subcategory: '', severity: 'Medium', trend: 'Stable', status: 'Active' }],
-      learningGoals: [],
+      level: { ...BASE_STUDENT.level, skillLevelOverrides: {} },
+      profile: { ...BASE_STUDENT.profile, difficulties: [{ id: 'd1', description: 'Pretérito vs imperfecto', competency: 'Grammar', subcategory: '', severity: 'Medium', trend: 'Stable', status: 'Active' }], learningGoals: [] },
     }
     renderOverview(student)
     expect(screen.queryByTestId('pedagogical-profile-rotating-prompt')).not.toBeInTheDocument()
@@ -376,14 +368,14 @@ describe('StudentOverviewTab - rotating empty-state prompts', () => {
   })
 
   it('shows rotating prompt for Ideas when no todos', () => {
-    renderOverview({ ...BASE_STUDENT, teachingTodos: [] })
+    renderOverview({ ...BASE_STUDENT, profile: { ...BASE_STUDENT.profile, teachingTodos: [] } })
     expect(screen.getByTestId('ideas-rotating-prompt')).toBeInTheDocument()
   })
 
   it('hides rotating prompt for Ideas when todos exist', () => {
     const student = {
       ...BASE_STUDENT,
-      teachingTodos: [{ id: 't1', text: 'Practice something', status: 'Pending', createdAt: new Date().toISOString(), sourceSessionLogId: null, coveredInSessionLogId: null }],
+      profile: { ...BASE_STUDENT.profile, teachingTodos: [{ id: 't1', text: 'Practice something', status: 'pending', createdAt: new Date().toISOString(), sourceSessionLogId: null, coveredInSessionLogId: null }] },
     }
     renderOverview(student)
     expect(screen.queryByTestId('ideas-rotating-prompt')).not.toBeInTheDocument()

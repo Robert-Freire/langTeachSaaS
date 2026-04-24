@@ -15,7 +15,7 @@ function makeSession(overrides: Partial<NextSession> = {}): NextSession {
     lastSessionNotes: 'Struggles with ser/estar',
     lastSessionDate: new Date(Date.now() - 7 * 86400000).toISOString(),
     homeworkAssigned: 'Exercises page 42',
-    previousHomeworkStatus: '3',
+    previousHomeworkStatus: 'Done',
     lastSessionTopicTags: ['Subjuntivo', 'Concesivas'],
     lastSessionHomework: 'Redacción mi ciudad ideal',
     lastSessionFollowups: ['Prometí ejercicios de por/para'],
@@ -99,6 +99,17 @@ describe('NextSessionHero', () => {
     expect(subtitle).toHaveTextContent('Session #14')
   })
 
+  it('shows "First Session" for totalSessionCount 1', () => {
+    render(
+      <MemoryRouter>
+        <NextSessionHero session={makeSession({ teachingLanguage: 'Spanish', totalSessionCount: 1 })} />
+      </MemoryRouter>,
+    )
+    const subtitle = screen.getByTestId('hero-identity-subtitle')
+    expect(subtitle).toHaveTextContent('First Session')
+    expect(subtitle).not.toHaveTextContent('Session #')
+  })
+
   it('hides identity subtitle when no language and count is 0', () => {
     render(
       <MemoryRouter>
@@ -163,7 +174,7 @@ describe('NextSessionHero', () => {
       </MemoryRouter>,
     )
     expect(screen.getByText('Exercises page 42')).toBeInTheDocument()
-    expect(screen.getByText('Completed')).toBeInTheDocument()
+    expect(screen.getByText('Done')).toBeInTheDocument()
   })
 
   it('hides briefing section when all briefing fields are empty', () => {
@@ -182,6 +193,53 @@ describe('NextSessionHero', () => {
     )
     expect(screen.queryByText('Topics')).not.toBeInTheDocument()
     expect(screen.queryByText('Promises made')).not.toBeInTheDocument()
+  })
+
+  describe('topic tag filtering', () => {
+    it('hides TOPICS row when lastSessionTopicTags is an empty array', () => {
+      render(
+        <MemoryRouter>
+          <NextSessionHero session={makeSession({ lastSessionTopicTags: [] })} />
+        </MemoryRouter>,
+      )
+      expect(screen.queryByText('Topics')).not.toBeInTheDocument()
+    })
+
+    it('hides TOPICS row when lastSessionTopicTags contains a single empty string', () => {
+      render(
+        <MemoryRouter>
+          <NextSessionHero session={makeSession({ lastSessionTopicTags: [''] })} />
+        </MemoryRouter>,
+      )
+      expect(screen.queryByText('Topics')).not.toBeInTheDocument()
+    })
+
+    it('hides TOPICS row when lastSessionTopicTags contains only whitespace strings', () => {
+      render(
+        <MemoryRouter>
+          <NextSessionHero session={makeSession({ lastSessionTopicTags: ['   ', '\t'] })} />
+        </MemoryRouter>,
+      )
+      expect(screen.queryByText('Topics')).not.toBeInTheDocument()
+    })
+
+    it('shows only real tags when mixed with empty strings', () => {
+      render(
+        <MemoryRouter>
+          <NextSessionHero session={makeSession({ lastSessionTopicTags: ['', 'Subjuntivo', '  ', 'Concesivas'] })} />
+        </MemoryRouter>,
+      )
+      expect(screen.getByText('Subjuntivo, Concesivas')).toBeInTheDocument()
+    })
+
+    it('shows all real tags when none are empty', () => {
+      render(
+        <MemoryRouter>
+          <NextSessionHero session={makeSession({ lastSessionTopicTags: ['Pretérito', 'Imperfecto'] })} />
+        </MemoryRouter>,
+      )
+      expect(screen.getByText('Pretérito, Imperfecto')).toBeInTheDocument()
+    })
   })
 
   it('refreshes countdown badge after 60 seconds', async () => {

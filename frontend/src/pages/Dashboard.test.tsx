@@ -103,6 +103,13 @@ describe('Dashboard', () => {
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
   })
 
+  it('renders subtitle in sentence case without uppercase transform', async () => {
+    renderDashboard()
+    const subtitle = await screen.findByText('Your teaching command center')
+    expect(subtitle).toBeInTheDocument()
+    expect(subtitle.className).not.toContain('uppercase')
+  })
+
   it('shows slow connection message after 5 seconds', () => {
     vi.useFakeTimers()
     mockGetDashboard.mockReturnValue(new Promise(() => {}))

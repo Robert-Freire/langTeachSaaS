@@ -67,31 +67,21 @@ const SAMPLE_STUDENT: Student = {
   id: STUDENT_ID,
   name: 'Ana Seed',
   learningLanguage: 'Spanish',
-  cefrLevel: 'B1',
-  interests: ['reading'],
-  personalNotes: null,
-  teachingNotes: null,
-  nativeLanguages: ['Portuguese'],
-  learningGoals: [],
-  weaknesses: [],
-  difficulties: [],
+  level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
+  languages: { nativeLanguages: ['Portuguese'], spokenLanguages: [] },
+  identity: {
+    birthYear: null, age: null, profession: null,
+    countryOfOrigin: null, cityOfOrigin: null,
+    countryOfResidence: null, cityOfResidence: null,
+  },
+  profile: {
+    interests: ['reading'], personalNotes: null, teachingNotes: null,
+    learningGoals: [], weaknesses: [], difficulties: [],
+    shortTermObjectives: [], teachingTodos: [], reasonForStudying: null,
+  },
+  commercial: { isActive: true, isCorporate: false, rate: null },
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
-  birthYear: null,
-  profession: null,
-  countryOfOrigin: null,
-  cityOfOrigin: null,
-  countryOfResidence: null,
-  cityOfResidence: null,
-  reasonForStudying: null,
-  officialCefrLevel: null,
-  shortTermObjectives: [],
-  isActive: true,
-  isCorporate: false,
-  rate: null,
-  spokenLanguages: [],
-  teachingTodos: [],
-  skillLevelOverrides: {},
 }
 
 const SAMPLE_SESSION: SessionLog = {
@@ -199,17 +189,53 @@ describe('LogSession', () => {
     expect(screen.getByRole('option', { name: '50 min' })).toBeInTheDocument()
   })
 
-  it('reveals custom duration input when "Other" selected', async () => {
+  it('duration "Other" option includes unit context label "Other (min)"', async () => {
+    const user = userEvent.setup()
+    renderLogSession()
+    await screen.findByTestId('duration-select')
+    await user.click(screen.getByTestId('duration-select'))
+    expect(await screen.findByRole('option', { name: 'Other (min)' })).toBeInTheDocument()
+  })
+
+  it('reveals custom duration input when "Other (min)" selected', async () => {
     const user = userEvent.setup()
     renderLogSession()
     await screen.findByTestId('duration-select')
     expect(screen.queryByTestId('duration-other')).toBeNull()
     await user.click(screen.getByTestId('duration-select'))
-    const option = await screen.findByRole('option', { name: 'Other' })
+    const option = await screen.findByRole('option', { name: 'Other (min)' })
     await user.click(option)
     expect(screen.getByTestId('duration-other')).toBeDefined()
   })
 
+
+  it('pre-populates actualContent from plannedForToday in create mode', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SAMPLE_SESSION, nextSessionTopics: 'Subjunctive revision' },
+    ])
+    renderLogSession()
+    await screen.findByTestId('actual-content')
+    await waitFor(() => {
+      expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Subjunctive revision')
+    })
+  })
+
+  it('does not re-pre-populate actualContent after user edits it (pre-populate runs only once)', async () => {
+    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+      { ...SAMPLE_SESSION, nextSessionTopics: 'Subjunctive revision' },
+    ])
+    renderLogSession()
+    await screen.findByTestId('actual-content')
+    await waitFor(() => {
+      expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Subjunctive revision')
+    })
+    // User clears the field and writes their own notes
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'My own notes' } })
+    // The pre-populate effect must not fire again and reset the field
+    await waitFor(() => {
+      expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('My own notes')
+    })
+  })
 
   it('shows planned-for-today reference panel when prev session has nextSessionTopics', async () => {
     vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
@@ -220,22 +246,51 @@ describe('LogSession', () => {
     expect(screen.getAllByText('Subjunctive revision').length).toBeGreaterThan(0)
   })
 
-  it('shows teaching todos as checkboxes', async () => {
+  it('shows teaching todos with DS §11.4 indigo square toggle', async () => {
     const todo: TeachingTodo = {
       id: 'todo-1', text: 'Check homework', status: 'Pending',
       createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, coveredInSessionLogId: null,
     }
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...SAMPLE_STUDENT,
-      teachingTodos: [todo],
+      profile: { ...SAMPLE_STUDENT.profile, teachingTodos: [todo] },
     })
     renderLogSession()
     await screen.findByTestId('teaching-todo-item')
     expect(screen.getByText('Check homework')).toBeDefined()
-    const cb = screen.getByTestId('teaching-todo-checkbox') as HTMLInputElement
-    expect(cb.checked).toBe(false)
-    fireEvent.click(cb)
-    expect(cb.checked).toBe(true)
+    const btn = screen.getByTestId('teaching-todo-toggle')
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('teaching todo toggle can be toggled off (round-trip)', async () => {
+    const todo: TeachingTodo = {
+      id: 'todo-1', text: 'Check homework', status: 'Pending',
+      createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, coveredInSessionLogId: null,
+    }
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...SAMPLE_STUDENT,
+      profile: { ...SAMPLE_STUDENT.profile, teachingTodos: [todo] },
+    })
+    renderLogSession()
+    const btn = await screen.findByTestId('teaching-todo-toggle')
+    expect(btn.tagName).toBe('BUTTON')
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('shows Cancelled toggle aligned with Date/Time/Duration cells (spacer present)', async () => {
+    renderLogSession()
+    await screen.findByTestId('cancelled-toggle')
+    // The Cancelled toggle cell uses an invisible spacer so its toggle row aligns
+    // with the input rows in the Date, Time, and Duration cells.
+    // Design-system 11.3: Cancelled toggle must NOT be under a "Status" heading.
+    expect(screen.queryByText('Status')).not.toBeInTheDocument()
+    expect(screen.getByTestId('cancelled-toggle')).toBeInTheDocument()
   })
 
   it('hides form fields when cancelled toggle is clicked', async () => {
@@ -246,6 +301,17 @@ describe('LogSession', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('actual-content')).toBeNull()
     })
+  })
+
+  it('shows amber callout message when cancelled toggle is clicked', async () => {
+    renderLogSession()
+    await screen.findByTestId('cancelled-toggle')
+    fireEvent.click(screen.getByTestId('cancelled-toggle'))
+    await waitFor(() => {
+      expect(screen.getByText(/This session was cancelled/)).toBeInTheDocument()
+    })
+    const callout = screen.getByText(/This session was cancelled/).closest('div')
+    expect(callout?.className).toContain('bg-amber-50')
   })
 
   it('calls createSession with correct payload when Done is clicked after typing', async () => {
@@ -308,10 +374,10 @@ describe('LogSession', () => {
       id: 'todo-1', text: 'Review grammar', status: 'Pending',
       createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, coveredInSessionLogId: null,
     }
-    vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...SAMPLE_STUDENT, teachingTodos: [todo] })
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...SAMPLE_STUDENT, profile: { ...SAMPLE_STUDENT.profile, teachingTodos: [todo] } })
     renderLogSession()
-    await screen.findByTestId('teaching-todo-checkbox')
-    fireEvent.click(screen.getByTestId('teaching-todo-checkbox'))
+    await screen.findByTestId('teaching-todo-toggle')
+    fireEvent.click(screen.getByTestId('teaching-todo-toggle'))
     await screen.findByTestId('actual-content')
     fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Session content' } })
     await act(async () => {
@@ -357,7 +423,7 @@ describe('LogSession', () => {
     })
   })
 
-  it('pending followups shown as checkboxes in left panel', async () => {
+  it('pending followups shown with DS §11.4 amber circle toggle in left panel', async () => {
     vi.mocked(followupsApi.getFollowups).mockResolvedValue([
       {
         id: 'f-1', text: 'Send grammar sheet', status: 'pending',
@@ -368,10 +434,48 @@ describe('LogSession', () => {
     renderLogSession()
     await screen.findByTestId('followup-item')
     expect(screen.getByText('Send grammar sheet')).toBeDefined()
-    const cb = screen.getByTestId('followup-checkbox') as HTMLInputElement
-    expect(cb.checked).toBe(false)
-    fireEvent.click(cb)
-    expect(cb.checked).toBe(true)
+    const btn = screen.getByTestId('followup-toggle')
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('followup toggle can be toggled off (round-trip)', async () => {
+    vi.mocked(followupsApi.getFollowups).mockResolvedValue([
+      {
+        id: 'f-1', text: 'Send grammar sheet', status: 'pending',
+        studentId: STUDENT_ID, studentName: 'Ana Seed', dueDate: null,
+        createdAt: '2026-01-01T00:00:00Z', completedAt: null, sourceSessionLogId: null,
+      },
+    ])
+    renderLogSession()
+    const btn = await screen.findByTestId('followup-toggle')
+    expect(btn.tagName).toBe('BUTTON')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('student difficulty uses DS §11.4 amber circle toggle and can be toggled off', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...SAMPLE_STUDENT,
+      profile: {
+        ...SAMPLE_STUDENT.profile,
+        difficulties: [{
+          id: 'd-1', description: 'Ser vs estar', competency: 'Grammar',
+          subcategory: 'Verbs', severity: 'high', trend: 'stable', status: 'Active',
+        }],
+      },
+    })
+    renderLogSession()
+    const btn = await screen.findByTestId('difficulty-toggle')
+    expect(btn.tagName).toBe('BUTTON')
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('shows previousHomeworkStatus buttons when prev session had homework', async () => {
@@ -632,6 +736,83 @@ describe('LogSession — edit mode', () => {
       expect(screen.getByTestId('autosave-status')).toHaveTextContent(/Last saved/)
     })
   })
+
+  it('back arrow in edit mode navigates without showing the discard banner even when there are unsaved changes', async () => {
+    renderEditSession()
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Just typed something' } })
+    await act(async () => { fireEvent.click(screen.getByTestId('back-button')) })
+    expect(screen.queryByTestId('discard-confirm-bar')).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(`/students/${STUDENT_ID}?tab=sessions`)
+    })
+  })
+
+  it('back arrow in edit mode flushes pending autosave before navigating (text within debounce window persists)', async () => {
+    renderEditSession()
+    await screen.findByTestId('actual-content')
+    // Simulate typing quickly: change fires scheduleTextSave but we do not advance timers past the debounce.
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Typed right before back' } })
+    await act(async () => { fireEvent.click(screen.getByTestId('back-button')) })
+    // saveNow should have been called with the typed text, regardless of debounce not firing
+    await waitFor(() => {
+      expect(sessionLogsApi.updateSession).toHaveBeenCalledWith(
+        STUDENT_ID,
+        SESSION_ID,
+        expect.objectContaining({ actualContent: 'Typed right before back' }),
+      )
+    })
+  })
+
+  it('back arrow in edit mode does NOT navigate when the flush save fails', async () => {
+    // Persistent rejection so the mutation exhausts its retries and reports error
+    vi.mocked(sessionLogsApi.updateSession).mockRejectedValue(new Error('boom'))
+    renderEditSession()
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Will fail to save' } })
+    await act(async () => { fireEvent.click(screen.getByTestId('back-button')) })
+    // Error message surfaced (matches handleDone's error UI) — the mutation retries,
+    // so this waits out the retry window before asserting.
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to save session/i)).toBeInTheDocument()
+    }, { timeout: 15000 })
+    // And we did NOT navigate — user's last edits would otherwise appear lost
+    expect(mockNavigate).not.toHaveBeenCalledWith(`/students/${STUDENT_ID}?tab=sessions`)
+  }, 20000)
+
+  it('form state does not reset when the session cache is updated in place (same id)', async () => {
+    // Mount with original session; user types new content; then an autosave-style
+    // cache update writes a fresh SessionLog into the SAME QueryClient for the
+    // SAME session id. The initializedForIdRef guard must prevent the populate
+    // effect from running a second time and wiping the in-progress edit.
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
+          <Routes>
+            <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+            <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'User is typing' } })
+    // Simulate the autosave onSuccess cache update on the same QueryClient.
+    // Keys must match those used by the page: ['session', studentId, sessionId].
+    await act(async () => {
+      client.setQueryData(['session', STUDENT_ID, SESSION_ID], {
+        ...EDIT_SESSION,
+        actualContent: 'Server echoed the saved value',
+        updatedAt: '2026-04-01T12:00:00Z',
+      })
+    })
+    // The effect is keyed off editSession.id (same id here), so it must not re-run
+    // and the user's in-progress text must remain intact.
+    await waitFor(() => {
+      expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('User is typing')
+    })
+  })
 })
 
 describe('LogSession — back arrow behavior', () => {
@@ -734,7 +915,7 @@ describe('LogSession — left panel context + metadata polish', () => {
   it('shows skill level overrides when available', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...SAMPLE_STUDENT,
-      skillLevelOverrides: { Speaking: 'B1', Writing: 'A2' },
+      level: { ...SAMPLE_STUDENT.level, skillLevelOverrides: { Speaking: 'B1', Writing: 'A2' } },
     })
     renderLogSession()
     await screen.findByTestId('skill-levels-row')
@@ -751,7 +932,7 @@ describe('LogSession — left panel context + metadata polish', () => {
   it('shows working memory card when teachingNotes available', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...SAMPLE_STUDENT,
-      teachingNotes: 'Prefers visual examples. Struggles with subjunctive.',
+      profile: { ...SAMPLE_STUDENT.profile, teachingNotes: 'Prefers visual examples. Struggles with subjunctive.' },
     })
     renderLogSession()
     await screen.findByTestId('working-memory-card')
@@ -768,10 +949,10 @@ describe('LogSession — left panel context + metadata polish', () => {
     const longDesc = 'A'.repeat(100)
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...SAMPLE_STUDENT,
-      difficulties: [{
+      profile: { ...SAMPLE_STUDENT.profile, difficulties: [{
         id: 'd1', description: longDesc, competency: 'Grammar',
         subcategory: 'Verbs', severity: 'high', trend: 'stable', status: 'Active',
-      }],
+      }] },
     })
     renderLogSession()
     await screen.findByTestId('difficulty-item')
@@ -782,10 +963,10 @@ describe('LogSession — left panel context + metadata polish', () => {
   it('does not show expand toggle for short difficulty descriptions', async () => {
     vi.mocked(studentsApi.getStudent).mockResolvedValue({
       ...SAMPLE_STUDENT,
-      difficulties: [{
+      profile: { ...SAMPLE_STUDENT.profile, difficulties: [{
         id: 'd2', description: 'Short text', competency: 'Grammar',
         subcategory: 'Articles', severity: 'low', trend: 'stable', status: 'Active',
-      }],
+      }] },
     })
     renderLogSession()
     await screen.findByTestId('difficulty-item')
@@ -977,6 +1158,68 @@ describe('LogSession — voice note extraction', () => {
     })
 
     expect(sessionLogsApi.extractSessionReflection).not.toHaveBeenCalled()
+  })
+
+  it('preserves manually edited sessionDate when extraction provides only time (stale closure fix)', async () => {
+    let resolveExtract!: (result: typeof EXTRACTED & { sessionStartTime?: string }) => void
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockReturnValue(
+      new Promise<typeof EXTRACTED>(resolve => { resolveExtract = resolve as typeof resolveExtract })
+    )
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    // Start extraction
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: 'La clase fue a las 10.' })
+    })
+    expect(screen.getByTestId('extracting-indicator')).toBeDefined()
+
+    // User manually edits date while extraction is in flight
+    fireEvent.change(screen.getByTestId('session-date'), { target: { value: '2026-03-15' } })
+
+    // Extraction resolves with a time but no date — without the fix, stale sessionDate from closure would be used
+    await act(async () => { resolveExtract({ ...EXTRACTED, sessionStartTime: '10:30' }) })
+    await waitFor(() => {
+      expect(screen.queryByTestId('extracting-indicator')).toBeNull()
+    })
+
+    await waitFor(() => {
+      expect(sessionLogsApi.createSession).toHaveBeenCalled()
+    })
+    const lastPayload = vi.mocked(sessionLogsApi.createSession).mock.calls.slice(-1)[0][1]
+    // The save must use the manually entered date, not the stale closure value from extraction start
+    expect(lastPayload.sessionDate).toContain('2026-03-15')
+  })
+
+  it('preserves manually edited sessionStartTime when extraction provides only date (stale closure fix)', async () => {
+    let resolveExtract!: (result: typeof EXTRACTED & { sessionDate?: string }) => void
+    vi.mocked(sessionLogsApi.extractSessionReflection).mockReturnValue(
+      new Promise<typeof EXTRACTED>(resolve => { resolveExtract = resolve as typeof resolveExtract })
+    )
+    renderLogSession()
+    await screen.findByTestId('log-session-page')
+
+    // Start extraction
+    await act(async () => {
+      capturedOnVoiceNote?.({ id: 'note-1', transcription: 'La clase fue el 15 de enero.' })
+    })
+    expect(screen.getByTestId('extracting-indicator')).toBeDefined()
+
+    // User manually edits time while extraction is in flight
+    fireEvent.change(screen.getByTestId('session-time'), { target: { value: '14:45' } })
+
+    // Extraction resolves with a date but no time
+    await act(async () => { resolveExtract({ ...EXTRACTED, sessionDate: '2026-01-15' }) })
+    await waitFor(() => {
+      expect(screen.queryByTestId('extracting-indicator')).toBeNull()
+    })
+
+    await waitFor(() => {
+      expect(sessionLogsApi.createSession).toHaveBeenCalled()
+    })
+    const lastPayload = vi.mocked(sessionLogsApi.createSession).mock.calls.slice(-1)[0][1]
+    // The save must use the manually entered time, not the stale closure value from extraction start
+    expect(lastPayload.sessionDate).toContain('14:45')
   })
 
   it('populates date picker from extracted sessionDate', async () => {

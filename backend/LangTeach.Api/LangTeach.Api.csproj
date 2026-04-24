@@ -12,6 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="..\..\data\languages.json"
+                      Link="languages.json" />
     <EmbeddedResource Include="..\..\data\curricula\instituto_educativo\*.json"
                       Link="Curricula\%(Filename)%(Extension)" />
     <EmbeddedResource Include="..\..\data\section-profiles\*.json"

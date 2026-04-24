@@ -1,48 +1,19 @@
 import { useCallback, useRef, useState } from 'react'
-import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, NotebookPen, Pencil, CalendarClock } from 'lucide-react'
 import { getStudent, updateStudent } from '../api/students'
-import type { Student } from '../api/students'
 import { logger } from '../lib/logger'
 import { newId } from '@/lib/newId'
 import { getFollowups } from '@/api/followups'
 import { listSessions } from '@/api/sessionLogs'
 import type { SessionLog } from '@/api/sessionLogs'
-import { formatDateShort } from '@/utils/formatDate'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CefrBadge } from '@/components/dashboard/CefrBadge'
+import { StudentDetailHeader } from '@/components/student/StudentDetailHeader'
 import { StudentProfileTab } from '@/components/student/StudentProfileTab'
 import { StudentOverviewTab } from '@/components/student/StudentOverviewTab'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
-import { getObjectiveUrgency, getDaysRemaining, formatDaysRemaining } from '@/lib/objectiveUrgency'
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((w) => w[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-}
-
-function buildIdentitySubtitle(student: Student): string {
-  const segments: string[] = []
-  if (student.nativeLanguages.length > 0) {
-    segments.push(`${student.nativeLanguages[0]} speaker, learning ${student.learningLanguage}`)
-  } else {
-    segments.push(`Learning ${student.learningLanguage}`)
-  }
-  const profCityParts: string[] = []
-  if (student.profession) profCityParts.push(student.profession)
-  const city = student.cityOfResidence ?? student.cityOfOrigin
-  if (city) profCityParts.push(city)
-  if (profCityParts.length > 0) segments.push(profCityParts.join(', '))
-  return segments.join(' \u00b7 ')
-}
 
 function calcSessionFrequency(sessions: SessionLog[]): string | null {
   const past = sessions
@@ -57,54 +28,7 @@ function calcSessionFrequency(sessions: SessionLog[]): string | null {
   const weeks = Math.max(1, Math.round(spanDays / 7))
   const avgDays = Math.round(spanDays / (past.length - 1))
   const weekLabel = weeks === 1 ? '1 week' : `${weeks} weeks`
-  return `${past.length} sessions in ${weekLabel} \u00b7 avg. every ${avgDays} days`
-}
-
-function HeaderObjective({ student }: { student: Student }) {
-  const objectives = student.shortTermObjectives
-  if (objectives.length === 0) return null
-  const sorted = [...objectives].sort((a, b) => {
-    const order = { overdue: 0, critical: 1, normal: 2 }
-    const urgencyDelta =
-      order[getObjectiveUrgency(a.targetDate)] - order[getObjectiveUrgency(b.targetDate)]
-    if (urgencyDelta !== 0) return urgencyDelta
-    const aDays = getDaysRemaining(a.targetDate)
-    const bDays = getDaysRemaining(b.targetDate)
-    return (aDays ?? Number.POSITIVE_INFINITY) - (bDays ?? Number.POSITIVE_INFINITY)
-  })
-  const obj = sorted[0]
-  const urgency = getObjectiveUrgency(obj.targetDate)
-  const daysRemaining = getDaysRemaining(obj.targetDate)
-  return (
-    <div
-      className="mt-2 flex items-center gap-2 flex-wrap"
-      data-testid="primary-objective-card"
-    >
-      <span className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-[#7E3000]">Goal</span>
-      <span className="text-sm font-medium text-[#1A1B22] truncate max-w-xs" data-testid="objective-text">
-        {obj.text}
-      </span>
-      {obj.targetDate && (
-        <span className="flex items-center gap-1 text-xs text-zinc-500">
-          <CalendarClock className="h-3 w-3 shrink-0" />
-          {new Date(obj.targetDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-          {daysRemaining !== null && (
-            <span
-              className={`font-semibold ${
-                urgency === 'overdue' ? 'text-red-600' : urgency === 'critical' ? 'text-orange-600' : 'text-[#7E3000]'
-              }`}
-              data-testid="days-remaining"
-            >
-              {formatDaysRemaining(daysRemaining)}
-            </span>
-          )}
-        </span>
-      )}
-      {objectives.length > 1 && (
-        <span className="text-[0.6875rem] text-zinc-400">+{objectives.length - 1} more</span>
-      )}
-    </div>
-  )
+  return `${past.length} sessions in ${weekLabel} · avg. every ${avgDays} days`
 }
 
 export default function StudentDetail() {
@@ -115,7 +39,6 @@ export default function StudentDetail() {
   const activeTab = searchParams.get('tab') ?? 'overview'
   const [difficultyToggleError, setDifficultyToggleError] = useState<string | null>(null)
   const difficultyToggleAttemptRef = useRef(0)
-
 
   const { data: student, isLoading, isError } = useQuery({
     queryKey: ['student', id],
@@ -149,29 +72,29 @@ export default function StudentDetail() {
     return {
       name: student.name,
       learningLanguage: student.learningLanguage,
-      cefrLevel: student.cefrLevel,
-      interests: student.interests,
-      nativeLanguages: student.nativeLanguages,
-      learningGoals: student.learningGoals,
-      weaknesses: student.weaknesses,
-      difficulties: student.difficulties,
-      personalNotes: student.personalNotes,
-      teachingNotes: student.teachingNotes,
-      birthYear: student.birthYear,
-      profession: student.profession,
-      countryOfOrigin: student.countryOfOrigin,
-      cityOfOrigin: student.cityOfOrigin,
-      countryOfResidence: student.countryOfResidence,
-      cityOfResidence: student.cityOfResidence,
-      reasonForStudying: student.reasonForStudying,
-      officialCefrLevel: student.officialCefrLevel,
-      shortTermObjectives: student.shortTermObjectives,
-      isActive: student.isActive,
-      isCorporate: student.isCorporate,
-      rate: student.rate,
-      spokenLanguages: student.spokenLanguages,
-      skillLevelOverrides: student.skillLevelOverrides,
-      teachingTodos: student.teachingTodos,
+      cefrLevel: student.level.cefrLevel,
+      interests: student.profile.interests,
+      nativeLanguages: student.languages.nativeLanguages,
+      learningGoals: student.profile.learningGoals,
+      weaknesses: student.profile.weaknesses,
+      difficulties: student.profile.difficulties,
+      personalNotes: student.profile.personalNotes,
+      teachingNotes: student.profile.teachingNotes,
+      birthYear: student.identity.birthYear,
+      profession: student.identity.profession,
+      countryOfOrigin: student.identity.countryOfOrigin,
+      cityOfOrigin: student.identity.cityOfOrigin,
+      countryOfResidence: student.identity.countryOfResidence,
+      cityOfResidence: student.identity.cityOfResidence,
+      reasonForStudying: student.profile.reasonForStudying,
+      officialCefrLevel: student.level.officialCefrLevel,
+      shortTermObjectives: student.profile.shortTermObjectives,
+      isActive: student.commercial.isActive,
+      isCorporate: student.commercial.isCorporate,
+      rate: student.commercial.rate,
+      spokenLanguages: student.languages.spokenLanguages,
+      skillLevelOverrides: student.level.skillLevelOverrides,
+      teachingTodos: student.profile.teachingTodos,
     }
   }
 
@@ -182,7 +105,7 @@ export default function StudentDetail() {
       return { attempt }
     },
     mutationFn: (vars: { difficultyId: string; status: 'Active' | 'Covered' }) => {
-      const updated = student!.difficulties.map((d) =>
+      const updated = student!.profile.difficulties.map((d) =>
         d.id === vars.difficultyId ? { ...d, status: vars.status } : d
       )
       return updateStudent(id!, { ...buildStudentPayload(), difficulties: updated })
@@ -236,7 +159,7 @@ export default function StudentDetail() {
   const { mutateAsync: saveLearningGoal } = useMutation({
     mutationFn: (text: string) => {
       const newGoal = { id: newId(), text, children: [] }
-      return updateStudent(id!, { ...buildStudentPayload(), learningGoals: [...student!.learningGoals, newGoal] })
+      return updateStudent(id!, { ...buildStudentPayload(), learningGoals: [...student!.profile.learningGoals, newGoal] })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student', id] })
@@ -248,8 +171,8 @@ export default function StudentDetail() {
 
   const { mutateAsync: saveShortTermObjective } = useMutation({
     mutationFn: (text: string) => {
-      const newObj = { id: newId(), text, targetDate: null }
-      return updateStudent(id!, { ...buildStudentPayload(), shortTermObjectives: [...student!.shortTermObjectives, newObj] })
+      const newObj = { id: newId(), text, targetDate: null, objectiveType: 'other' as const }
+      return updateStudent(id!, { ...buildStudentPayload(), shortTermObjectives: [...student!.profile.shortTermObjectives, newObj] })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student', id] })
@@ -262,7 +185,7 @@ export default function StudentDetail() {
   const { mutateAsync: saveDifficulty } = useMutation({
     mutationFn: ({ competency, description }: { competency: string; description: string }) => {
       const newDiff = { id: newId(), competency, description, subcategory: '', severity: 'medium', trend: 'stable', status: 'Active' }
-      return updateStudent(id!, { ...buildStudentPayload(), difficulties: [...student!.difficulties, newDiff] })
+      return updateStudent(id!, { ...buildStudentPayload(), difficulties: [...student!.profile.difficulties, newDiff] })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student', id] })
@@ -304,134 +227,15 @@ export default function StudentDetail() {
     { key: 'progress', label: 'Progress' },
   ]
 
-  const identitySubtitle = buildIdentitySubtitle(student)
   const sessionFrequency = calcSessionFrequency(sessions)
 
   return (
     <div className="space-y-6">
-      {/* Header card */}
-      <div
-        className="bg-white rounded-2xl p-5 lg:p-6"
-        style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <Link
-              to="/students"
-              className="text-zinc-400 hover:text-zinc-600 transition-colors shrink-0"
-              aria-label="Back to students"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-
-            {/* Avatar */}
-            <div className="h-14 w-14 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-              <span className="text-indigo-700 font-bold text-lg">
-                {getInitials(student.name)}
-              </span>
-            </div>
-
-            <div className="min-w-0">
-              {/* Line 1: name + CEFR badge(s) */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1
-                  className="font-manrope text-[1.75rem] font-bold text-[#1A1B22] leading-tight truncate"
-                  data-testid="student-detail-name"
-                >
-                  {student.name}
-                </h1>
-                <CefrBadge level={student.cefrLevel} data-testid="cefr-badge" />
-                {student.officialCefrLevel && (
-                  <span data-testid="official-cefr-badge" className="inline-flex items-center gap-1">
-                    <span className="text-[0.6875rem] text-zinc-500 uppercase tracking-[0.05em]">Official: </span>
-                    <CefrBadge level={student.officialCefrLevel} />
-                  </span>
-                )}
-              </div>
-
-              {/* Line 2: identity subtitle (L1 speaker, learning English · Profession, City) */}
-              <p
-                className="text-sm text-zinc-500 mt-0.5 truncate"
-                data-testid="student-header-subtitle"
-              >
-                {identitySubtitle}
-              </p>
-
-              {/* Line 3: status badges + next session */}
-              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                {student.isActive ? (
-                  <>
-                    <span
-                      className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] bg-green-100 text-green-700"
-                      data-testid="student-status-badge"
-                    >
-                      Active
-                    </span>
-                    <span
-                      className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] bg-indigo-100 text-indigo-700"
-                      data-testid="student-type-badge"
-                    >
-                      {student.isCorporate ? 'Corporate' : 'Private'}
-                    </span>
-                  </>
-                ) : (
-                  <span
-                    className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] bg-zinc-100 text-zinc-500"
-                    data-testid="student-status-badge"
-                  >
-                    Inactive
-                  </span>
-                )}
-                {nextSession && (
-                  <span
-                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium bg-[#E8E7F1] text-[#464455]"
-                    data-testid="next-session-pill"
-                  >
-                    <span className="text-[0.6875rem]">Next:</span>{' '}
-                    {formatDateShort(nextSession.sessionDate!)}
-                    {nextSession.duration && ` \u00b7 ${nextSession.duration}min`}
-                  </span>
-                )}
-              </div>
-
-              {/* Session frequency */}
-              {sessionFrequency && (
-                <span
-                  className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-medium text-zinc-500 bg-[#F4F2FD]"
-                  data-testid="session-frequency-indicator"
-                >
-                  {sessionFrequency}
-                </span>
-              )}
-
-              {/* Primary Objective — compact, in header */}
-              <HeaderObjective student={student} />
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              to={`/students/${student.id}/edit`}
-              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
-              data-testid="edit-profile-link"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit Student
-            </Link>
-            <Button
-              onClick={() => navigate(`/students/${student.id}/log-session`)}
-              className="rounded-xl text-white text-sm font-medium"
-              style={{ background: 'linear-gradient(135deg, #3525CD, #4F46E5)' }}
-              size="sm"
-              data-testid="log-session-button"
-            >
-              <NotebookPen className="h-4 w-4 mr-1.5" />
-              Log Session
-            </Button>
-          </div>
-        </div>
-      </div>
+      <StudentDetailHeader
+        student={student}
+        nextSession={nextSession}
+        sessionFrequency={sessionFrequency}
+      />
 
       {/* Tab bar */}
       <div className="flex gap-1" role="tablist">

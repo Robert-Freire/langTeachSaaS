@@ -14,12 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-
-function statusChipClass(status: string): string {
-  if (status === 'Cancelled') return 'bg-red-50 text-red-600'
-  if (status === 'Draft') return 'bg-amber-50 text-amber-700'
-  return 'bg-zinc-100 text-zinc-500'
-}
+import { getDisplayStatus, sessionStatusChipClass } from '@/utils/sessionStatusUtils'
 
 function groupByDate(items: SessionListItem[]): Map<string, SessionListItem[]> {
   const map = new Map<string, SessionListItem[]>()
@@ -38,13 +33,13 @@ function formatTime(iso: string): string {
 
 interface SessionRowProps {
   session: SessionListItem
-  onClick: () => void
+  onClick: (studentId: string, sessionLogId: string) => void
 }
 
 function SessionRow({ session, onClick }: SessionRowProps) {
   return (
     <button
-      onClick={onClick}
+      onClick={() => onClick(session.studentId, session.sessionLogId)}
       className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#F4F2FD] transition-colors text-left"
       data-testid={`session-row-${session.sessionLogId}`}
     >
@@ -59,10 +54,10 @@ function SessionRow({ session, onClick }: SessionRowProps) {
       <span
         className={cn(
           'text-[0.6875rem] font-bold uppercase tracking-[0.05em] px-2 py-0.5 rounded shrink-0',
-          statusChipClass(session.status)
+          sessionStatusChipClass(getDisplayStatus(session.status, session.sessionDate))
         )}
       >
-        {session.status}
+        {getDisplayStatus(session.status, session.sessionDate)}
       </span>
       <ChevronRight className="h-4 w-4 text-zinc-300 shrink-0" />
     </button>
@@ -73,7 +68,7 @@ interface SectionProps {
   title: string
   items: SessionListItem[]
   grouped?: boolean
-  onSessionClick: (studentId: string) => void
+  onSessionClick: (studentId: string, sessionLogId: string) => void
 }
 
 function Section({ title, items, grouped = false, onSessionClick }: SectionProps) {
@@ -96,13 +91,13 @@ function Section({ title, items, grouped = false, onSessionClick }: SectionProps
                 </span>
               </div>
               {groupSessions.map(s => (
-                <SessionRow key={s.sessionLogId} session={s} onClick={() => onSessionClick(s.studentId)} />
+                <SessionRow key={s.sessionLogId} session={s} onClick={onSessionClick} />
               ))}
             </div>
           ))
         ) : (
           items.map(s => (
-            <SessionRow key={s.sessionLogId} session={s} onClick={() => onSessionClick(s.studentId)} />
+            <SessionRow key={s.sessionLogId} session={s} onClick={onSessionClick} />
           ))
         )}
       </div>
@@ -149,7 +144,7 @@ export default function Sessions() {
     queryFn: () => getSessionsList(studentId),
   })
 
-  const handleSessionClick = (sId: string) => navigate(`/students/${sId}`)
+  const handleSessionClick = (sId: string, slId: string) => navigate(`/students/${sId}/sessions/${slId}/edit`)
   const handleStudentChange = (v: string | null) => setSelectedStudentId(v ?? 'all')
 
   const isEmpty = data && data.upcoming.length === 0 && data.today.length === 0 && data.recent.length === 0

@@ -341,6 +341,7 @@ public class CourseService : ICourseService
             StudentInterests: student is not null
                 ? JsonStorageHelper.DeserializeList<string>(student.Interests).ToArray()
                 : null,
+            // LearningGoals is a legacy field; migrate to ShortTermObjectives (see #855)
             StudentGoals: student is not null
                 ? LearningGoalHelper.FlattenGoals(student.LearningGoals)
                 : null,
@@ -357,7 +358,12 @@ public class CourseService : ICourseService
                     .Where(d => string.Equals(d.Status, "Active", StringComparison.OrdinalIgnoreCase))
                     .ToArray()
                 : null,
-            TeacherNotes: req.TeacherNotes
+            TeacherNotes: req.TeacherNotes,
+            StudentShortTermObjectives: student is not null
+                ? JsonStorageHelper.DeserializeList<ShortTermObjectiveDto>(student.ShortTermObjectives)
+                    .Select(o => new StudentObjectiveContext(o.Text, o.TargetDate, o.ObjectiveType))
+                    .ToList()
+                : null
         );
 
     private static CurriculumEntryDto MapEntryToDto(CurriculumEntry e) =>

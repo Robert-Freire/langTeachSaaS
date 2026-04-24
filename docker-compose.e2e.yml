@@ -79,8 +79,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
       target: e2e
     environment:
       # VITE_* process env vars override values baked into frontend/.env.e2e

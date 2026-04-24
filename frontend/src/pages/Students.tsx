@@ -11,13 +11,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { cn } from '@/lib/utils'
+import { calendarRelativeDay } from '@/utils/formatDate'
+import { getInitials } from '@/utils/nameUtils'
 
 // ── Avatar helpers ──────────────────────────────────────────────────────────
-
-function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/)
-  return words.slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
-}
 
 const AVATAR_PALETTES = [
   'bg-indigo-100 text-indigo-700',
@@ -42,35 +39,37 @@ function formatRelativeDate(dateStr: string | null | undefined, showTime = false
   if (!dateStr) return '—'
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return '—'
+
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const targetDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
   const diffDays = Math.round((today.getTime() - targetDay.getTime()) / (1000 * 60 * 60 * 24))
 
-  if (diffDays === 0) {
+  if (diffDays < 0) {
+    // Future dates — relativeTime returns 'today' for these, so handle locally
+    const futureDays = Math.abs(diffDays)
     if (showTime) {
-      const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-      return `Today ${timeStr}`
+      const t = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      if (futureDays === 1) return `Tomorrow ${t}`
+      if (futureDays <= 6) return `${date.toLocaleDateString('en-GB', { weekday: 'short' })} ${t}`
+      return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    }
+    if (futureDays === 1) return 'Tomorrow'
+    if (futureDays <= 6) return `in ${futureDays}d`
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  }
+
+  // Past / today — delegate calendar-day bucketing to shared util
+  const base = calendarRelativeDay(dateStr)
+  if (base === 'today') {
+    if (showTime) {
+      const t = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      return `Today ${t}`
     }
     return 'Today'
   }
-  if (diffDays === 1) return 'Yesterday'
-  if (diffDays > 0) return `${diffDays}d ago`
-
-  // Future dates
-  const futureDays = Math.abs(diffDays)
-  if (showTime) {
-    const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-    if (futureDays === 1) return `Tomorrow ${timeStr}`
-    if (futureDays <= 6) {
-      const dayAbbr = date.toLocaleDateString('en-GB', { weekday: 'short' })
-      return `${dayAbbr} ${timeStr}`
-    }
-    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-  }
-  if (futureDays === 1) return 'Tomorrow'
-  if (futureDays <= 6) return `in ${futureDays}d`
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  if (base === 'yesterday') return 'Yesterday'
+  return base.charAt(0).toUpperCase() + base.slice(1)
 }
 
 // ── Signal badges ───────────────────────────────────────────────────────────
@@ -82,7 +81,7 @@ interface Signal {
 }
 
 function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal[] {
-  if (!student.isActive) {
+  if (!student.commercial.isActive) {
     return [{ label: 'Former', className: 'bg-zinc-600 text-white' }]
   }
 
@@ -101,12 +100,12 @@ function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal
 
   // Cancelled 2x (highest priority)
   if (dash.cancelledSessionsLast30Days >= 2) {
-    return [{ label: 'Cancelled 2x', className: 'bg-[#1A1B22] text-white', redDot: true }]
+    return [{ label: 'Cancelled 2x', className: 'bg-red-700 text-white', redDot: true }]
   }
 
   // Exam prep: short-term objective with targetDate within 6 weeks
   const sixWeeksMs = 6 * 7 * 24 * 60 * 60 * 1000
-  const hasExamPrep = student.shortTermObjectives.some(o => {
+  const hasExamPrep = student.profile.shortTermObjectives.some(o => {
     if (!o.targetDate) return false
     const targetMs = new Date(o.targetDate).getTime()
     const msUntil = targetMs - now
@@ -119,7 +118,7 @@ function buildSignals(student: Student, dash: ActiveStudent | undefined): Signal
   // RETURNING: was inactive 21+ days and now has a scheduled next session
   const isReturning = lastSessionGapDays != null && lastSessionGapDays >= 21 && hasNextSession
   if (isReturning) {
-    return [{ label: 'RETURNING', className: 'bg-[#1A1B22] text-white' }]
+    return [{ label: 'RETURNING', className: 'bg-indigo-700 text-white' }]
   }
 
   // Review pending: has pending teaching todos
@@ -185,7 +184,7 @@ function sortStudents(
     case 'name':
       return sorted.sort((a, b) => a.name.localeCompare(b.name))
     case 'cefrLevel':
-      return sorted.sort((a, b) => (cefrOrder[a.cefrLevel] ?? 99) - (cefrOrder[b.cefrLevel] ?? 99))
+      return sorted.sort((a, b) => (cefrOrder[a.level.cefrLevel] ?? 99) - (cefrOrder[b.level.cefrLevel] ?? 99))
   }
 }
 
@@ -283,7 +282,7 @@ export default function Students() {
 
   const filteredStudents = allStudents.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(localSearch.toLowerCase())
-    const matchesCefr = cefrFilter === 'All' || s.cefrLevel === cefrFilter
+    const matchesCefr = cefrFilter === 'All' || s.level.cefrLevel === cefrFilter
     return matchesSearch && matchesCefr
   })
 
@@ -299,7 +298,7 @@ export default function Students() {
       return `Showing ${count} result${count === 1 ? '' : 's'} for '${localSearch}'`
     }
     if (cefrFilter !== 'All') {
-      const count = allStudents.filter(s => s.cefrLevel === cefrFilter).length
+      const count = allStudents.filter(s => s.level.cefrLevel === cefrFilter).length
       return `Managing ${count} ${cefrFilter} learner${count === 1 ? '' : 's'} in your atelier`
     }
     return `Managing ${total} active language learner${total === 1 ? '' : 's'} in your atelier`
@@ -516,15 +515,15 @@ export default function Students() {
                     </span>
 
                     {/* CEFR badge */}
-                    <CefrBadge level={student.cefrLevel} data-testid="student-level" />
+                    <CefrBadge level={student.level.cefrLevel} data-testid="student-level" />
 
                     {/* Native language */}
                     <span
                       data-testid="native-language-chip"
                       className="text-sm text-zinc-600 truncate"
                     >
-                      {student.nativeLanguages.length > 0
-                        ? student.nativeLanguages.join(', ')
+                      {student.languages.nativeLanguages.length > 0
+                        ? student.languages.nativeLanguages.join(', ')
                         : <span className="text-zinc-300">—</span>}
                     </span>
 
@@ -562,7 +561,7 @@ export default function Students() {
 
                     {/* Hidden interests for e2e compatibility */}
                     <span className="sr-only">
-                      {student.interests.map(interest => (
+                      {student.profile.interests.map(interest => (
                         <span key={interest} data-testid="interest-chip">{interest}</span>
                       ))}
                     </span>

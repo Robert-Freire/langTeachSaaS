@@ -54,7 +54,7 @@ test('CEFR mismatch warning appears and can be dismissed in CourseNew', async ({
   await page.getByRole('option', { name: 'English' }).click()
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'A1' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL('/students', { timeout: NAV_TIMEOUT })
 
   // Navigate to course creation
@@ -112,7 +112,7 @@ test('Competency gap warning appears and can be dismissed in CourseNew', async (
   await page.getByRole('option', { name: 'English' }).click()
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'B1' }).click()
-  await page.getByRole('button', { name: 'Save Student' }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page).toHaveURL('/students', { timeout: NAV_TIMEOUT })
 
   // Navigate to course creation

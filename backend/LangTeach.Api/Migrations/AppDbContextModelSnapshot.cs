@@ -17,7 +17,7 @@ namespace LangTeach.Api.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.14")
+                .HasAnnotation("ProductVersion", "9.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -663,10 +663,6 @@ namespace LangTeach.Api.Migrations
                     b.Property<string>("TeachingNotes")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("TeachingTodos")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -735,11 +731,21 @@ namespace LangTeach.Api.Migrations
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("CoveredInSessionLogId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<DateOnly?>("DueDate")
                         .HasColumnType("date");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("operational");
 
                     b.Property<Guid?>("SourceSessionLogId")
                         .HasColumnType("uniqueidentifier");
@@ -763,6 +769,8 @@ namespace LangTeach.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CoveredInSessionLogId");
+
                     b.HasIndex("SourceSessionLogId");
 
                     b.HasIndex("StudentId");
@@ -771,7 +779,12 @@ namespace LangTeach.Api.Migrations
 
                     b.HasIndex("TeacherId", "StudentId");
 
-                    b.ToTable("TeacherFollowups");
+                    b.HasIndex("TeacherId", "StudentId", "Kind");
+
+                    b.ToTable("TeacherFollowups", t =>
+                        {
+                            t.HasCheckConstraint("CK_TeacherFollowups_Kind", "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational')");
+                        });
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.TeacherSettings", b =>
@@ -1099,13 +1112,18 @@ namespace LangTeach.Api.Migrations
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.TeacherFollowup", b =>
                 {
+                    b.HasOne("LangTeach.Api.Data.Models.SessionLog", "CoveredInSessionLog")
+                        .WithMany()
+                        .HasForeignKey("CoveredInSessionLogId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("LangTeach.Api.Data.Models.SessionLog", "SourceSessionLog")
                         .WithMany()
                         .HasForeignKey("SourceSessionLogId")
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("LangTeach.Api.Data.Models.Student", "Student")
-                        .WithMany()
+                        .WithMany("TeacherFollowups")
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.NoAction);
 
@@ -1114,6 +1132,8 @@ namespace LangTeach.Api.Migrations
                         .HasForeignKey("TeacherId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("CoveredInSessionLog");
 
                     b.Navigation("SourceSessionLog");
 
@@ -1200,6 +1220,8 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("Lessons");
 
                     b.Navigation("SessionLogs");
+
+                    b.Navigation("TeacherFollowups");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Teacher", b =>

@@ -15,10 +15,13 @@ export interface Difficulty {
   status: string
 }
 
+export type ObjectiveType = 'exam_prep' | 'communicative' | 'other'
+
 export interface ShortTermObjective {
   id: string
   text: string
   targetDate: string | null
+  objectiveType: ObjectiveType
 }
 
 export interface LearningGoalItem {
@@ -36,42 +39,56 @@ export interface TeachingTodo {
   coveredInSessionLogId: string | null
 }
 
-export interface Student {
-  id: string
-  name: string
-  learningLanguage: string
+export interface StudentLevel {
   cefrLevel: string
-  interests: string[]
-  personalNotes: string | null
-  teachingNotes: string | null
+  officialCefrLevel: string | null
+  skillLevelOverrides: Record<string, string>
+}
+
+export interface StudentLanguages {
   nativeLanguages: string[]
-  learningGoals: LearningGoalItem[]
-  weaknesses: StudentWeaknessItem[]
-  difficulties: Difficulty[]
-  createdAt: string
-  updatedAt: string
-  // Identity fields
+  spokenLanguages: string[]
+}
+
+export interface StudentIdentity {
   birthYear: number | null
+  age: number | null
   profession: string | null
   countryOfOrigin: string | null
   cityOfOrigin: string | null
   countryOfResidence: string | null
   cityOfResidence: string | null
-  reasonForStudying: string | null
-  // Level fields
-  officialCefrLevel: string | null
-  // Plan fields
+}
+
+export interface StudentProfile {
+  interests: string[]
+  personalNotes: string | null
+  teachingNotes: string | null
+  learningGoals: LearningGoalItem[]
+  weaknesses: StudentWeaknessItem[]
+  difficulties: Difficulty[]
   shortTermObjectives: ShortTermObjective[]
-  // Commercial fields
+  teachingTodos: TeachingTodo[]
+  reasonForStudying: string | null
+}
+
+export interface StudentCommercial {
   isActive: boolean
   isCorporate: boolean
   rate: string | null
-  // Language fields
-  spokenLanguages: string[]
-  // Teaching fields
-  teachingTodos: TeachingTodo[]
-  // Skill override fields
-  skillLevelOverrides: Record<string, string>
+}
+
+export interface Student {
+  id: string
+  name: string
+  learningLanguage: string
+  level: StudentLevel
+  languages: StudentLanguages
+  identity: StudentIdentity
+  profile: StudentProfile
+  commercial: StudentCommercial
+  createdAt: string
+  updatedAt: string
 }
 
 export interface StudentListResponse {

@@ -5,9 +5,13 @@ import type { TeacherFollowup } from '@/api/followups'
 import type { SessionLog } from '@/api/sessionLogs'
 import { TeachingTodosCard } from './TeachingTodosCard'
 import { StudentFollowupsCard } from './StudentFollowupsCard'
+import { LastSessionCard } from './LastSessionCard'
+import { pickLastSession } from '@/lib/sessionUtils'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { SectionHeader } from './SectionHeader'
 import { formatMonthYear } from '@/utils/formatDate'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { CEFR_ORDER } from '@/utils/cefrUtils'
 import { getDisplayTitle } from '@/lib/sessionUtils'
 import { rotatingPrompt } from '@/utils/rotatingPrompt'
 
@@ -29,12 +33,9 @@ interface Props {
 // PedagogicalProfileCard
 // ---------------------------------------------------------------------------
 
-const CEFR_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
-
 function cefrBarWidth(level: string): number {
-  const idx = CEFR_ORDER.indexOf(level.toUpperCase())
-  if (idx === -1) return 0
-  return Math.round(((idx + 1) / CEFR_ORDER.length) * 100)
+  const num = CEFR_ORDER[level.toUpperCase()] ?? 0
+  return Math.round((num / 6) * 100)
 }
 
 function cefrBarColor(level: string): string {
@@ -45,9 +46,9 @@ function cefrBarColor(level: string): string {
 }
 
 function PedagogicalProfileCard({ student }: { student: Student }) {
-  const overrides = student.skillLevelOverrides
+  const overrides = student.level.skillLevelOverrides
   const entries = Object.entries(overrides)
-  const activeDifficulties = student.difficulties.filter(d => d.status === 'Active')
+  const activeDifficulties = student.profile.difficulties.filter(d => d.status === 'Active')
   const firstName = student.name.split(' ')[0]
 
   const PROFILE_PROMPTS = [
@@ -76,9 +77,9 @@ function PedagogicalProfileCard({ student }: { student: Student }) {
                   </li>
                 ))}
               </ul>
-            ) : student.learningGoals.length > 0 ? (
+            ) : student.profile.learningGoals.length > 0 ? (
               <ul className="space-y-1.5 mb-2">
-                {student.learningGoals.slice(0, 2).map(g => (
+                {student.profile.learningGoals.slice(0, 2).map(g => (
                   <li key={g.id} className="text-xs text-[#1A1B22] flex items-start gap-1.5">
                     <span className="mt-0.5 shrink-0 w-1.5 h-1.5 rounded-full bg-indigo-400" />
                     {g.text}
@@ -128,7 +129,7 @@ function PedagogicalProfileCard({ student }: { student: Student }) {
 
       {/* Language tags — always rendered; target language always present */}
       <div className="mt-5 pt-4 border-t border-white/50 flex flex-wrap gap-2" data-testid="language-tags">
-        {student.nativeLanguages.map((lang) => (
+        {student.languages.nativeLanguages.map((lang) => (
           <span
             key={`L-${lang}`}
             className="bg-[#E2DFFF] text-[#3323CC] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
@@ -137,12 +138,19 @@ function PedagogicalProfileCard({ student }: { student: Student }) {
             L-{lang.toUpperCase()}
           </span>
         ))}
-        <span
-          className="bg-[#D0F4DE] text-[#1A6636] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-          data-testid="target-language-tag"
-        >
-          T-{student.learningLanguage.toUpperCase()}
-        </span>
+        <Tooltip>
+          <TooltipTrigger render={<span />}>
+            <span
+              className="bg-[#D0F4DE] text-[#1A6636] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide cursor-default"
+              data-testid="target-language-tag"
+            >
+              T-{student.learningLanguage.toUpperCase()}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            Target language: this student is being taught in {student.learningLanguage}
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
   )
@@ -220,14 +228,19 @@ function CompactSessionCard({ session, isMostRecent }: { session: SessionLog; is
 function RecentSessions({
   sessions,
   onViewAll,
+  skipFirst = false,
 }: {
   sessions: SessionLog[]
   onViewAll?: () => void
+  skipFirst?: boolean
 }) {
-  const recent = [...sessions]
+  const sorted = [...sessions]
     .filter(s => s.sessionDate && !s.isCancelled)
     .sort((a, b) => new Date(b.sessionDate!).getTime() - new Date(a.sessionDate!).getTime())
-    .slice(0, 2)
+  const start = skipFirst ? 1 : 0
+  const recent = sorted.slice(start, start + 2)
+
+  if (skipFirst && recent.length === 0) return null
 
   return (
     <div data-testid="recent-sessions">
@@ -283,7 +296,7 @@ function TeachingNotesPanel({
   onSaveTeachingNotes?: (notes: string) => Promise<void>
 }) {
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(student.teachingNotes ?? '')
+  const [draft, setDraft] = useState(student.profile.teachingNotes ?? '')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -303,7 +316,7 @@ function TeachingNotesPanel({
   }
 
   function handleEdit() {
-    setDraft(student.teachingNotes ?? '')
+    setDraft(student.profile.teachingNotes ?? '')
     setEditing(true)
   }
 
@@ -351,12 +364,12 @@ function TeachingNotesPanel({
             </div>
           ) : (
             <>
-              {student.teachingNotes ? (
+              {student.profile.teachingNotes ? (
                 <p
                   className="text-sm text-zinc-400 leading-relaxed mb-5"
                   data-testid="teaching-notes-text"
                 >
-                  {student.teachingNotes}
+                  {student.profile.teachingNotes}
                 </p>
               ) : (
                 <p className="text-sm text-zinc-600 italic mb-5" data-testid="teaching-notes-empty">
@@ -413,8 +426,9 @@ export function StudentOverviewTab({
   const [showIdeasAdd, setShowIdeasAdd] = useState(false)
 
   const pendingFollowupsCount = followups.filter(f => f.status === 'pending').length
-  const pendingTodosCount = student.teachingTodos.filter(t => t.status === 'Pending').length
+  const pendingTodosCount = student.profile.teachingTodos.filter(t => t.status === 'pending').length
   const firstName = student.name.split(' ')[0]
+  const lastSession = pickLastSession(sessions)
 
   const FOLLOWUP_PROMPTS = [
     `Anything you promised ${firstName} for next class?`,
@@ -451,7 +465,7 @@ export function StudentOverviewTab({
         {/* Card 2: Pedagogical Profile */}
         <PedagogicalProfileCard student={student} />
 
-        {/* Card 3: Ideas para Clases */}
+        {/* Card 3: Teaching Ideas */}
         <div
           className={`rounded-2xl p-6 transition-colors ${
             pendingTodosCount > 0 ? 'bg-white' : 'bg-[#F4F2FD]'
@@ -460,7 +474,7 @@ export function StudentOverviewTab({
           data-testid="ideas-card-wrapper"
         >
           <div className="flex items-center justify-between mb-1">
-            <SectionHeader>Ideas para Clases</SectionHeader>
+            <SectionHeader>Teaching Ideas</SectionHeader>
             <button
               type="button"
               onClick={() => setShowIdeasAdd(true)}
@@ -472,14 +486,14 @@ export function StudentOverviewTab({
             </button>
           </div>
 
-          {student.teachingTodos.length === 0 && !showIdeasAdd && (
+          {student.profile.teachingTodos.length === 0 && !showIdeasAdd && (
             <p className="text-xs text-zinc-400 italic mb-3" data-testid="ideas-rotating-prompt">
               {rotatingPrompt(student.id, IDEAS_PROMPTS)}
             </p>
           )}
 
           <TeachingTodosCard
-            todos={student.teachingTodos}
+            todos={student.profile.teachingTodos}
             studentId={student.id}
             onStudentChange={onStudentChange}
             showAddForm={showIdeasAdd}
@@ -488,8 +502,13 @@ export function StudentOverviewTab({
         </div>
       </div>
 
-      {/* Compact Session History */}
-      <RecentSessions sessions={sessions} onViewAll={onViewAllSessions} />
+      {/* Last session summary (richer than the compact history strip) */}
+      <LastSessionCard session={lastSession} studentId={student.id} />
+
+      {/* Compact Session History -- skip the top entry when LastSessionCard is showing it */}
+      {lastSession !== null && (
+        <RecentSessions sessions={sessions} onViewAll={onViewAllSessions} skipFirst />
+      )}
 
       {/* Teacher's Working Memory */}
       <TeachingNotesPanel

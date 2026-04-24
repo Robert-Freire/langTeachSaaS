@@ -1,5 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
-import { useBlurSave } from '../../hooks/useBlurSave'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ChevronDown,
@@ -15,15 +14,18 @@ import {
 } from 'lucide-react'
 import { logger } from '../../lib/logger'
 import { Link, useNavigate } from 'react-router-dom'
-import { listSessions, deleteSession, patchSessionField, parseTopicTags, type SessionLog } from '../../api/sessionLogs'
+import { listSessions, deleteSession, parseTopicTags, type SessionLog, type SuggestedDifficulty, type CreateSessionLogRequest } from '../../api/sessionLogs'
 import { formatMonth, formatDay, relativeTime, todayLocalDateStr } from '../../utils/formatDate'
 import { getSessionTitle } from '../../lib/sessionUtils'
 import { HOMEWORK_STATUS_INFO } from '../../utils/homeworkStatusStyles'
+import { isHomeworkApplicable } from '../../utils/homeworkStatusUtils'
+import { useSessionAutosave } from '../../hooks/useSessionAutosave'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Textarea } from '@/components/ui/textarea'
 import { SavedIndicator } from '@/components/ui/SavedIndicator'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -75,13 +77,48 @@ function SessionEntry({
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
-  // Inline edit state — initialized from session prop
-  const [titleDraft, setTitleDraft] = useState(session.title ?? '')
-  const [narrativeDraft, setNarrativeDraft] = useState(session.actualContent ?? '')
-  const [durationDraft, setDurationDraft] = useState(session.duration?.toString() ?? '')
-  const [nextPlanDraft, setNextPlanDraft] = useState(session.nextSessionTopics ?? '')
-  const { savedVisible, fieldError, onSaveSuccess, onSaveError } = useBlurSave()
-  const isRevertingRef = useRef(false)
+  // Editable field state (initialized from session; kept in sync via RQ cache on save)
+  const [localTitle, setLocalTitle] = useState(session.title ?? '')
+  const [localActualContent, setLocalActualContent] = useState(session.actualContent ?? '')
+  const [localDuration, setLocalDuration] = useState(session.duration?.toString() ?? '')
+  const [localNextSessionTopics, setLocalNextSessionTopics] = useState(session.nextSessionTopics ?? '')
+
+  // getFormData ref kept current on each render so save reads latest local state
+  const getFormDataRef = useRef<(() => CreateSessionLogRequest) | null>(null)
+  useEffect(() => {
+    getFormDataRef.current = (): CreateSessionLogRequest => ({
+      sessionDate: session.sessionDate,
+      plannedContent: session.plannedContent,
+      actualContent: localActualContent || null,
+      homeworkAssigned: session.homeworkAssigned,
+      previousHomeworkStatus: session.previousHomeworkStatusName || 'NotApplicable',
+      nextSessionTopics: localNextSessionTopics || null,
+      generalNotes: session.generalNotes,
+      levelReassessmentSkill: session.levelReassessmentSkill,
+      levelReassessmentLevel: session.levelReassessmentLevel,
+      linkedLessonId: session.linkedLessonId,
+      topicTags: session.topicTags,
+      isCancelled: session.isCancelled,
+      status: session.statusName,
+      duration: (() => {
+        if (!localDuration) return null
+        const n = Number.parseInt(localDuration, 10)
+        return Number.isFinite(n) && n >= 0 ? n : null
+      })(),
+      title: localTitle || null,
+      mentionedDifficultyPairs: JSON.parse(session.mentionedDifficultyPairs || '[]') as { Competency: string; Subcategory: string }[],
+      suggestedDifficulties: JSON.parse(session.suggestedDifficulties || '[]') as SuggestedDifficulty[],
+    })
+  }, [session, localTitle, localActualContent, localDuration, localNextSessionTopics])
+
+  const { status: saveStatus, saveNow } = useSessionAutosave(studentId, getFormDataRef, session.id)
+
+  function handleToggle() {
+    if (expanded) {
+      void saveNow()
+    }
+    setExpanded((v) => !v)
+  }
 
   const { mutate: softDelete, isPending: isDeleting } = useMutation({
     mutationFn: () => deleteSession(studentId, session.id),
@@ -96,38 +133,6 @@ function SessionEntry({
     },
   })
 
-  async function handleFieldBlur(
-    field: 'title' | 'actualContent' | 'duration' | 'nextSessionTopics',
-    value: string,
-    savedValue: string,
-  ) {
-    if (isRevertingRef.current) { isRevertingRef.current = false; return }
-    if (value === savedValue) return
-    const patch: Record<string, string | number | null> = {}
-    if (field === 'duration') {
-      if (value === '') {
-        patch[field] = null
-      } else {
-        const n = Number(value)
-        if (!Number.isFinite(n) || n < 0) {
-          onSaveError('Invalid duration')
-          return
-        }
-        patch[field] = n
-      }
-    } else {
-      patch[field] = value || null
-    }
-    try {
-      await patchSessionField(studentId, session, patch as Parameters<typeof patchSessionField>[2])
-      queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
-      onSaveSuccess()
-    } catch (err) {
-      logger.error('SessionHistoryTab', 'inline field save failed', err)
-      onSaveError('Failed to save')
-    }
-  }
-
   const topicTags = parseTopicTags(session.topicTags)
   const hasActionItem = Boolean(session.nextSessionTopics)
   const hasNote = Boolean(session.generalNotes)
@@ -135,15 +140,15 @@ function SessionEntry({
   const hwInfo = (hwStatus ? HOMEWORK_STATUS_INFO[hwStatus] : undefined) ?? HW_STATUS_FALLBACK
   const isCancelled = session.isCancelled
   const isDraft = session.statusName === 'Draft'
-  const showHwIcon = Boolean(hwStatus && hwStatus !== 'NotApplicable')
+  const showHwIcon = isHomeworkApplicable(hwStatus)
 
   // Single-tenant beta: sessionDate may be UTC ISO (e.g. "2026-05-17T00:00:00Z"); slice(0,10)
   // yields the UTC date, which is compared against the local date from todayLocalDateStr().
   // Acceptable for now (one timezone); revisit when multi-timezone support is added.
   const isScheduled = !isCancelled && !isDraft && session.sessionDate != null && session.sessionDate.slice(0, 10) > todayLocalDateStr()
 
-  // Right column is only needed when there's actual homework content or a next plan
-  const hasRightColumn = Boolean(session.homeworkAssigned) || Boolean(session.nextSessionTopics)
+  // Next-plan textarea is always shown in expanded view, so always use two-column layout
+  const hasRightColumn = true
 
   const cardClass = isCancelled
     ? 'bg-[#F4F2FD]/50 opacity-60 grayscale'
@@ -157,7 +162,7 @@ function SessionEntry({
       >
         {/* Header row: expand button only (no kebab) */}
         <button
-          onClick={() => setExpanded((v) => !v)}
+          onClick={handleToggle}
           className="w-full text-left p-4 hover:bg-[#F4F2FD]/40 transition-colors"
           aria-expanded={expanded}
           data-testid="session-entry-toggle"
@@ -303,63 +308,65 @@ function SessionEntry({
             data-testid="session-entry-detail"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Editable header row: title + saved indicator */}
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <input
-                type="text"
-                value={titleDraft}
-                onChange={(e) => setTitleDraft(e.target.value)}
-                onBlur={() => void handleFieldBlur('title', titleDraft, session.title ?? '')}
-                onKeyDown={(e) => { if (e.key === 'Escape') { isRevertingRef.current = true; setTitleDraft(session.title ?? ''); e.currentTarget.blur() } }}
-                placeholder="Session title..."
-                className="flex-1 text-sm font-bold text-[#1A1B22] bg-transparent border-b border-transparent hover:border-zinc-200 focus:border-indigo-300 focus:outline-none px-1 py-0.5 transition-colors"
+            {/* Title (editable) + save status indicator */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1">
+                <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                  Session Title
+                </h4>
+                <div className="flex items-center gap-2">
+                  <SavedIndicator visible={saveStatus === 'saved'} />
+                  {saveStatus === 'saving' || saveStatus === 'retrying' ? (
+                    <span className="text-xs text-zinc-400" data-testid="session-save-pending">Saving…</span>
+                  ) : saveStatus === 'error' ? (
+                    <span className="text-xs text-red-500" data-testid="session-save-error">Save failed</span>
+                  ) : null}
+                </div>
+              </div>
+              <Input
+                className="text-sm font-bold text-[#1A1B22] border-0 ring-1 ring-[#C7C4D8]/30 focus-visible:ring-[#3525CD]/40 rounded-xl bg-white w-full"
+                placeholder="Add a title…"
+                value={localTitle}
+                onChange={(e) => setLocalTitle(e.target.value)}
+                onBlur={() => void saveNow()}
                 data-testid="session-title-input"
               />
-              <div className="flex items-center gap-2 shrink-0">
-                {fieldError && (
-                  <span className="text-xs text-red-500" data-testid="session-field-error">{fieldError}</span>
-                )}
-                <SavedIndicator visible={savedVisible} />
-              </div>
             </div>
 
             <div className={`grid grid-cols-1 gap-6 ${hasRightColumn ? 'md:grid-cols-3' : ''}`}>
               {/* Left/full: narrative + duration + tags + notes */}
               <div className={`${hasRightColumn ? 'md:col-span-2' : ''} space-y-5`}>
-                {/* Editable narrative */}
+                {/* Session narrative (editable) */}
                 <div>
                   <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
                     Session Narrative
                   </h4>
-                  <textarea
-                    value={narrativeDraft}
-                    onChange={(e) => setNarrativeDraft(e.target.value)}
-                    onBlur={() => void handleFieldBlur('actualContent', narrativeDraft, session.actualContent ?? '')}
-                    onKeyDown={(e) => { if (e.key === 'Escape') { isRevertingRef.current = true; setNarrativeDraft(session.actualContent ?? ''); e.currentTarget.blur() } }}
-                    placeholder="What happened in this session..."
-                    rows={3}
-                    className="w-full text-sm leading-relaxed text-[#464455] italic bg-white border border-zinc-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-300 placeholder:text-zinc-300 placeholder:not-italic"
+                  <Textarea
+                    className="text-sm leading-relaxed text-[#464455] italic border-0 ring-1 ring-[#C7C4D8]/30 focus-visible:ring-[#3525CD]/40 rounded-xl bg-white resize-none min-h-[80px]"
+                    placeholder="What happened in this session…"
+                    value={localActualContent}
+                    onChange={(e) => setLocalActualContent(e.target.value)}
+                    onBlur={() => void saveNow()}
                     data-testid="session-narrative-input"
                   />
                 </div>
 
-                {/* Editable duration */}
+                {/* Duration (editable) */}
                 <div className="flex items-center gap-2">
                   <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest shrink-0">
                     Duration
                   </h4>
-                  <input
+                  <Input
                     type="number"
-                    min="0"
-                    value={durationDraft}
-                    onChange={(e) => setDurationDraft(e.target.value)}
-                    onBlur={() => void handleFieldBlur('duration', durationDraft, session.duration?.toString() ?? '')}
-                    onKeyDown={(e) => { if (e.key === 'Escape') { isRevertingRef.current = true; setDurationDraft(session.duration?.toString() ?? ''); e.currentTarget.blur() } }}
-                    placeholder="60"
-                    className="w-16 text-sm text-[#1A1B22] bg-white border border-zinc-200 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                    min={0}
+                    className="w-20 text-sm text-[#1A1B22] border-0 ring-1 ring-[#C7C4D8]/30 focus-visible:ring-[#3525CD]/40 rounded-xl bg-white"
+                    placeholder="min"
+                    value={localDuration}
+                    onChange={(e) => setLocalDuration(e.target.value)}
+                    onBlur={() => void saveNow()}
                     data-testid="session-duration-input"
                   />
-                  <span className="text-xs text-zinc-400">min</span>
+                  <span className="text-sm text-zinc-400">min</span>
                 </div>
 
                 {/* Planned content (read-only, only if different from actual) */}
@@ -467,17 +474,15 @@ function SessionEntry({
                       <CalendarDays className="h-3 w-3" />
                       Planned for next class
                     </p>
-                    <textarea
-                      value={nextPlanDraft}
-                      onChange={(e) => setNextPlanDraft(e.target.value)}
-                      onBlur={() => void handleFieldBlur('nextSessionTopics', nextPlanDraft, session.nextSessionTopics ?? '')}
-                      onKeyDown={(e) => { if (e.key === 'Escape') { isRevertingRef.current = true; setNextPlanDraft(session.nextSessionTopics ?? ''); e.currentTarget.blur() } }}
-                      placeholder="What to cover next time..."
-                      rows={3}
-                      className="w-full text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-amber-300 placeholder:text-amber-300"
+                    <Textarea
+                      className="text-sm text-amber-900 border-0 ring-1 ring-amber-200 focus-visible:ring-amber-400/60 rounded-xl bg-amber-50/50 resize-none min-h-[60px]"
+                      placeholder="Topics for next session…"
+                      value={localNextSessionTopics}
+                      onChange={(e) => setLocalNextSessionTopics(e.target.value)}
+                      onBlur={() => void saveNow()}
                       data-testid="session-next-plan-input"
                     />
-                    {session.nextSessionTopics && (
+                    {(session.nextSessionTopics || localNextSessionTopics) && (
                       <button
                         className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 hover:text-amber-900 transition-colors"
                         onClick={() => onStartNextSession()}
