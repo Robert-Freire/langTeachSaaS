@@ -14,12 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-
-function statusChipClass(status: string): string {
-  if (status === 'Cancelled') return 'bg-red-50 text-red-600'
-  if (status === 'Draft') return 'bg-amber-50 text-amber-700'
-  return 'bg-zinc-100 text-zinc-500'
-}
+import { getDisplayStatus, sessionStatusChipClass } from '@/utils/sessionStatusUtils'
 
 function groupByDate(items: SessionListItem[]): Map<string, SessionListItem[]> {
   const map = new Map<string, SessionListItem[]>()
@@ -59,10 +54,10 @@ function SessionRow({ session, onClick }: SessionRowProps) {
       <span
         className={cn(
           'text-[0.6875rem] font-bold uppercase tracking-[0.05em] px-2 py-0.5 rounded shrink-0',
-          statusChipClass(session.status)
+          sessionStatusChipClass(getDisplayStatus(session.status, session.sessionDate))
         )}
       >
-        {session.status}
+        {getDisplayStatus(session.status, session.sessionDate)}
       </span>
       <ChevronRight className="h-4 w-4 text-zinc-300 shrink-0" />
     </button>

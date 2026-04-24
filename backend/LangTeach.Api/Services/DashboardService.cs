@@ -183,8 +183,7 @@ public class DashboardService : IDashboardService
             .ToListAsync(cancellationToken);
 
         var recentRaw = await baseQuery
-            .Where(sl => !sl.IsCancelled
-                      && sl.SessionDate!.Value >= recentCutoff
+            .Where(sl => sl.SessionDate!.Value >= recentCutoff
                       && sl.SessionDate!.Value.Date < today)
             .OrderByDescending(sl => sl.SessionDate)
             .ToListAsync(cancellationToken);
