@@ -113,13 +113,13 @@ describe('Sessions page', () => {
     expect(screen.getByTestId('student-filter')).toBeTruthy()
   })
 
-  it('row click navigates to student detail', async () => {
+  it('row click navigates to LogSession edit mode', async () => {
     mockGetSessionsList.mockResolvedValue(makeDataWithSessions())
     renderSessions()
     await screen.findByTestId('sessions-list')
     const row = screen.getByTestId('session-row-sl-future')
     fireEvent.click(row)
-    expect(mockNavigate).toHaveBeenCalledWith('/students/student-1')
+    expect(mockNavigate).toHaveBeenCalledWith('/students/student-1/sessions/sl-future/edit')
   })
 
   it('calls getSessionsList initially without studentId', async () => {

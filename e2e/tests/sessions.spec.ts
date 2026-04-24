@@ -88,7 +88,7 @@ test('sessions filter by student narrows results', async ({ browser }) => {
   }
 })
 
-test('clicking session row navigates to student detail', async ({ browser }) => {
+test('clicking session row navigates to LogSession edit mode', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
@@ -102,8 +102,9 @@ test('clicking session row navigates to student detail', async ({ browser }) => 
     await expect(firstRow).toBeVisible({ timeout: UI_TIMEOUT })
     await firstRow.click()
 
-    // Should navigate to a student detail page
-    await expect(page).toHaveURL(/\/students\//, { timeout: NAV_TIMEOUT })
+    // Should navigate to LogSession in edit mode
+    await expect(page).toHaveURL(/\/students\/.+\/sessions\/.+\/edit/, { timeout: NAV_TIMEOUT })
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
   } finally {
     await context.close()
   }

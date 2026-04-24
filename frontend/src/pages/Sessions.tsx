@@ -33,13 +33,13 @@ function formatTime(iso: string): string {
 
 interface SessionRowProps {
   session: SessionListItem
-  onClick: () => void
+  onClick: (studentId: string, sessionLogId: string) => void
 }
 
 function SessionRow({ session, onClick }: SessionRowProps) {
   return (
     <button
-      onClick={onClick}
+      onClick={() => onClick(session.studentId, session.sessionLogId)}
       className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[#F4F2FD] transition-colors text-left"
       data-testid={`session-row-${session.sessionLogId}`}
     >
@@ -68,7 +68,7 @@ interface SectionProps {
   title: string
   items: SessionListItem[]
   grouped?: boolean
-  onSessionClick: (studentId: string) => void
+  onSessionClick: (studentId: string, sessionLogId: string) => void
 }
 
 function Section({ title, items, grouped = false, onSessionClick }: SectionProps) {
@@ -91,13 +91,13 @@ function Section({ title, items, grouped = false, onSessionClick }: SectionProps
                 </span>
               </div>
               {groupSessions.map(s => (
-                <SessionRow key={s.sessionLogId} session={s} onClick={() => onSessionClick(s.studentId)} />
+                <SessionRow key={s.sessionLogId} session={s} onClick={onSessionClick} />
               ))}
             </div>
           ))
         ) : (
           items.map(s => (
-            <SessionRow key={s.sessionLogId} session={s} onClick={() => onSessionClick(s.studentId)} />
+            <SessionRow key={s.sessionLogId} session={s} onClick={onSessionClick} />
           ))
         )}
       </div>
@@ -144,7 +144,7 @@ export default function Sessions() {
     queryFn: () => getSessionsList(studentId),
   })
 
-  const handleSessionClick = (sId: string) => navigate(`/students/${sId}`)
+  const handleSessionClick = (sId: string, slId: string) => navigate(`/students/${sId}/sessions/${slId}/edit`)
   const handleStudentChange = (v: string | null) => setSelectedStudentId(v ?? 'all')
 
   const isEmpty = data && data.upcoming.length === 0 && data.today.length === 0 && data.recent.length === 0
