@@ -1526,7 +1526,7 @@ public class PromptService : IPromptService
             You are a tool that helps language teachers structure their post-class notes.
             Extract structured information from a teacher's free-form reflection text.
 
-            IMPORTANT: Preserve the original language of the teacher's text. Do not translate any field value into another language.
+            IMPORTANT: All text values in your response MUST be written in the same language as the teacher's input text. If the teacher writes in Spanish, every string value — including sessionTitle, topicTags, teachingTodos, teacherFollowups, and all summaries — must be in Spanish. Never translate or switch to English.
 
             Today is {today.DayOfWeek}, {today:yyyy-MM-dd}.
             {difficultiesSection}
@@ -1554,7 +1554,7 @@ public class PromptService : IPromptService
                 Return null if no next-session ideas are mentioned.
             - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) of the session being described. Resolve date references using today's date and day of week: "hoy"/"today" = today, "ayer"/"yesterday" = yesterday, "el lunes pasado"/"el pasado lunes" = the most recent Monday before today (not the Monday of this week if today is Monday), "el martes pasado"/"el pasado martes" = the most recent Tuesday before today, and so on for any weekday. Always pick the last occurrence of the named weekday strictly before today. Null if no date is mentioned.
             - sessionStartTime: string or null — 24-hour time (HH:MM) when the session started (e.g. "09:00", "18:30"). Null if not mentioned.
-            - sessionTitle: string or null — a concise title (under 60 chars) for this session derived from what was covered. Examples: "Subjunctive in time clauses", "Pasado compuesto — revisión". Null if no content is mentioned.
+            - sessionTitle: string or null — a concise title (under 60 chars) for this session derived from what was covered, written in the same language as the teacher's input. Examples (Spanish input): "Subjuntivo en cláusulas temporales", "Pasado compuesto — revisión". Null if no content is mentioned.
             - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
             - topicTags: array of objects with "tag" (string) and "category" (string or null) — topics, grammar structures, vocabulary areas covered. Each tag as a concise noun phrase. Empty array if none mentioned.
             - previousHomeworkStatus: "done" | "partial" | "notDone" | null — whether the student completed homework from the previous session. Null if not mentioned.
