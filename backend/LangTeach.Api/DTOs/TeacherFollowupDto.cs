@@ -30,6 +30,7 @@ public record CreateTeacherFollowupRequest(
 
 public record UpdateTeacherFollowupRequest(
     [Required]
+    // Allowed values defined in TeacherFollowupStatuses; regex must stay as string literal for attributes
     [RegularExpression("^(pending|done|covered|dismissed)$",
         ErrorMessage = "Status must be 'pending', 'done', 'covered', or 'dismissed'.")]
     string Status);

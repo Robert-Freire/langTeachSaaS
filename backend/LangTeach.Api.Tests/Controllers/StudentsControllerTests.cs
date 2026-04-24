@@ -449,12 +449,12 @@ public class StudentsControllerTests
         var withTodo = await appendResponse.Content.ReadFromJsonAsync<StudentDto>();
         var todoId = withTodo!.Profile.TeachingTodos[0].Id;
 
-        // "Pending" capitalized should be accepted (OrdinalIgnoreCase)
+        // Title-case "Pending" must now be rejected — only lowercase is valid (#931)
         var updateResponse = await client.PatchAsJsonAsync(
             $"/api/students/{student.Id}/teaching-todos/{todoId}",
             new UpdateTeachingTodoDto("Pending", null, null));
 
-        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]

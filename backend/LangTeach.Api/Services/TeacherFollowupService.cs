@@ -21,7 +21,7 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
     public async Task<List<TeacherFollowupDto>> GetPendingAsync(Guid teacherId, CancellationToken cancellationToken)
     {
         return await db.TeacherFollowups
-            .Where(f => f.TeacherId == teacherId && f.Status == "pending" && f.Kind == TeacherFollowupKinds.Operational)
+            .Where(f => f.TeacherId == teacherId && f.Status == TeacherFollowupStatuses.Pending && f.Kind == TeacherFollowupKinds.Operational)
             .Include(f => f.Student)
             .OrderBy(f => f.CreatedAt)
             .Select(f => ToDto(f, f.Student != null ? f.Student.Name : null))
@@ -63,7 +63,7 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
             TeacherId = teacherId,
             StudentId = request.StudentId,
             Text = request.Text,
-            Status = "pending",
+            Status = TeacherFollowupStatuses.Pending,
             Kind = request.Kind ?? TeacherFollowupKinds.Operational,
             CreatedAt = DateTime.UtcNow,
             DueDate = request.DueDate,
@@ -84,8 +84,9 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
 
         if (followup is null) return null;
 
+        // .ToLowerInvariant() guards against any title-case values that bypassed DTO validation
         followup.Status = request.Status.ToLowerInvariant();
-        followup.CompletedAt = followup.Status is "done" or "covered" ? DateTime.UtcNow : null;
+        followup.CompletedAt = followup.Status is TeacherFollowupStatuses.Done or TeacherFollowupStatuses.Covered ? DateTime.UtcNow : null;
 
         await db.SaveChangesAsync(cancellationToken);
         return ToDto(followup, followup.Student?.Name);

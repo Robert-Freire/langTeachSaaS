@@ -217,7 +217,7 @@ public static class ScenarioSeeder
             TeacherId          = teacherId,
             StudentId          = anaVisual.Id,
             Text               = "Send link to reflexive verb exercises",
-            Status             = "pending",
+            Status             = TeacherFollowupStatuses.Pending,
             SourceSessionLogId = pastSession.Id,
             CreatedAt          = pastSession.SessionDate!.Value,
         });
@@ -298,7 +298,7 @@ public static class ScenarioSeeder
             TeacherId = teacherId,
             StudentId = marcoB1.Id,
             Text      = "Check Marco has textbook chapter 4 before next session",
-            Status    = "pending",
+            Status    = TeacherFollowupStatuses.Pending,
             CreatedAt = now.AddDays(-2),
         });
 
@@ -332,7 +332,7 @@ public static class ScenarioSeeder
                 TeacherId = teacherId,
                 StudentId = nadiaB2.Id,
                 Text      = "Check Nadia completed the listening exercises",
-                Status    = "pending",
+                Status    = TeacherFollowupStatuses.Pending,
                 CreatedAt = now, // today → green "TODAY"
             },
             new TeacherFollowup
@@ -341,7 +341,7 @@ public static class ScenarioSeeder
                 TeacherId = teacherId,
                 StudentId = nadiaB2.Id,
                 Text      = "Send Nadia the verb conjugation reference sheet",
-                Status    = "pending",
+                Status    = TeacherFollowupStatuses.Pending,
                 CreatedAt = now.AddDays(-2), // 2 days ago → amber "2D OLD"
             },
             new TeacherFollowup
@@ -350,7 +350,7 @@ public static class ScenarioSeeder
                 TeacherId = teacherId,
                 StudentId = nadiaB2.Id,
                 Text      = "Follow up on Nadia's pronunciation practice plan",
-                Status    = "pending",
+                Status    = TeacherFollowupStatuses.Pending,
                 CreatedAt = now.AddDays(-7), // 7 days ago → red "7D OVERDUE"
             }
         );
@@ -417,7 +417,7 @@ public static class ScenarioSeeder
         {
             Id = Guid.NewGuid(), TeacherId = teacherId, StudentId = claraSeed.Id,
             Text = "Review Clara's subjunctive triggers — exercises not completed",
-            Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = now.AddDays(-3),
+            Status = TeacherFollowupStatuses.Pending, Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = now.AddDays(-3),
         });
 
         // Diego Seed: restore skill overrides (WipeAsync clears them) so Progress tab shows chart
@@ -550,7 +550,7 @@ public static class ScenarioSeeder
                 TeacherId          = teacherId,
                 StudentId          = hansB1.Id,
                 Text               = "Find recording of native speaker conversation for Hans",
-                Status             = "pending",
+                Status             = TeacherFollowupStatuses.Pending,
                 SourceSessionLogId = pastSession.Id,
                 CreatedAt          = pastSession.SessionDate!.Value,
             },
@@ -560,7 +560,7 @@ public static class ScenarioSeeder
                 TeacherId          = teacherId,
                 StudentId          = hansB1.Id,
                 Text               = "Prepare vocabulary list on travel for Hans",
-                Status             = "pending",
+                Status             = TeacherFollowupStatuses.Pending,
                 SourceSessionLogId = pastSession.Id,
                 CreatedAt          = pastSession.SessionDate!.Value,
             }
@@ -602,8 +602,8 @@ public static class ScenarioSeeder
         anaVisual.SkillLevelOverrides = """{"Reading":"B2","Writing":"B1"}""";
 
         db.TeacherFollowups.AddRange(
-            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = teacherId, StudentId = anaVisual.Id, Text = "Prepare a set of subjunctive trigger cards for next class", Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = now.AddDays(-5) },
-            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = teacherId, StudentId = anaVisual.Id, Text = "Find an authentic news article about Latin American culture at B2 level", Status = "pending", Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = now.AddDays(-2) });
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = teacherId, StudentId = anaVisual.Id, Text = "Prepare a set of subjunctive trigger cards for next class", Status = TeacherFollowupStatuses.Pending, Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = now.AddDays(-5) },
+            new TeacherFollowup { Id = Guid.NewGuid(), TeacherId = teacherId, StudentId = anaVisual.Id, Text = "Find an authentic news article about Latin American culture at B2 level", Status = TeacherFollowupStatuses.Pending, Kind = TeacherFollowupKinds.Pedagogical, CreatedAt = now.AddDays(-2) });
 
         anaVisual.ShortTermObjectives = $$"""[{"id":"obj1","text":"Master subjunctive in nominal clauses (WEIRDO verbs)","targetDate":"{{now.AddDays(-3):yyyy-MM-dd}}"},{"id":"obj2","text":"Achieve confident use of ser vs estar in all tenses","targetDate":"{{now.AddDays(5):yyyy-MM-dd}}"},{"id":"obj3","text":"Build travel and business vocabulary to 500 items","targetDate":"{{now.AddDays(28):yyyy-MM-dd}}"}]""";
 
@@ -662,7 +662,7 @@ public static class ScenarioSeeder
             TeacherId          = teacherId,
             StudentId          = anaVisual.Id,
             Text               = "Send Ana the link to the RAE online subjunctive guide",
-            Status             = "pending",
+            Status             = TeacherFollowupStatuses.Pending,
             DueDate            = DateOnly.FromDateTime(now.AddDays(3)),
             SourceSessionLogId = session2.Id,
             CreatedAt          = session2.SessionDate!.Value,
@@ -698,7 +698,7 @@ public static class ScenarioSeeder
             TeacherId = teacherId,
             StudentId = anaVisual.Id,
             Text      = "Check if Ana's company offers Spanish conversation groups she could join",
-            Status    = "pending",
+            Status    = TeacherFollowupStatuses.Pending,
             CreatedAt = now.AddDays(-2),
         });
 
