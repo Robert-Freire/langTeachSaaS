@@ -29,7 +29,7 @@ function NavLink({ to, label, icon: Icon, location }: {
       className={cn(
         'flex items-center gap-3 py-2.5 pl-4 pr-3 text-base font-medium font-inter transition-colors',
         active
-          ? 'bg-white border-l-[3px] border-l-indigo-600 text-indigo-700 rounded-r-md'
+          ? 'border-l-[3px] border-l-indigo-600 text-indigo-700 rounded-r-md'
           : 'text-zinc-500 hover:bg-[#E6E0F8] hover:text-zinc-900 rounded-md border-l-[3px] border-l-transparent'
       )}
     >

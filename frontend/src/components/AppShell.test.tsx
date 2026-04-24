@@ -123,6 +123,42 @@ describe('AppShell', () => {
     expect(screen.queryByText('My Profile')).not.toBeInTheDocument()
   })
 
+  it('active nav item has left-border indicator and no background fill', () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/sessions']}>
+          <AppShell />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    const sessionsLinks = screen.getAllByRole('link', { name: /^sessions$/i })
+    const activeLink = sessionsLinks[0]
+    expect(activeLink.className).toContain('border-l-indigo-600')
+    expect(activeLink.className).not.toContain('bg-white')
+    expect(activeLink.className).not.toContain('bg-indigo')
+  })
+
+  it('sidebar renders the same nav items regardless of route', () => {
+    const routes = ['/', '/sessions', '/settings']
+    const expectedLabels = ['Dashboard', 'Students', 'Sessions', 'Courses', 'Lessons', 'Settings']
+
+    for (const route of routes) {
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      const { unmount } = render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={[route]}>
+            <AppShell />
+          </MemoryRouter>
+        </QueryClientProvider>
+      )
+      const links = document.querySelector('aside')?.querySelectorAll('a')
+      const labels = Array.from(links ?? []).map(a => a.textContent?.trim())
+      expect(labels).toEqual(expectedLabels)
+      unmount()
+    }
+  })
+
   it('renders LANGUAGE CURATOR subtitle below logo', () => {
     renderShell()
     const subtitles = screen.getAllByText(/language curator/i)
