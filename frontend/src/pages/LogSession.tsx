@@ -373,9 +373,16 @@ export default function LogSession() {
     if (isEditMode) {
       // Edit mode: autosave persists on every change and updates the RQ cache on
       // success, so there is nothing to "discard" - clicking back should silently
-      // flush any pending debounced save and navigate away.
+      // flush any pending debounced save and navigate away. If the flush fails we
+      // must NOT navigate: that would leave the user thinking their last edits
+      // were saved when they were not.
       if (hasChanges) {
-        await saveNow()
+        setDoneError(null)
+        const sid = await saveNow()
+        if (!sid) {
+          setDoneError('Failed to save session. Please try again.')
+          return
+        }
       }
       navigate(doneNavTarget)
       return

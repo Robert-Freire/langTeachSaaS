@@ -115,12 +115,14 @@ export function useSessionAutosave(
     const baseData = getFormData.current?.()
     if (!baseData) return null
     const data = override ? { ...baseData, ...override } : baseData
-    // Cancel any in-flight GET for this session so that a late refetch response
-    // doesn't overwrite the optimistic cache update we're about to make in onSuccess.
-    if (sessionIdRef.current) {
-      await queryClient.cancelQueries({ queryKey: ['session', studentId, sessionIdRef.current] })
-    }
     try {
+      // Cancel any in-flight GET for this session so that a late refetch response
+      // doesn't overwrite the optimistic cache update we're about to make in onSuccess.
+      // Inside the try so any (unexpected) rejection still yields a null return
+      // and keeps doSave's failure semantics uniform for scheduleTextSave callers.
+      if (sessionIdRef.current) {
+        await queryClient.cancelQueries({ queryKey: ['session', studentId, sessionIdRef.current] })
+      }
       const result = await mutateAsync({ reqStudentId: studentId, data })
       return result.id
     } catch {

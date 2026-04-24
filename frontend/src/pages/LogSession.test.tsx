@@ -699,34 +699,54 @@ describe('LogSession — edit mode', () => {
     })
   })
 
-  it('form state does not reset when the session cache is updated in place (same id)', async () => {
-    // Mount with original session; user types new content; re-render with a cache-updated session
-    // (same id, newer updatedAt). The initializedForIdRef guard must prevent re-population.
-    const { rerender } = renderEditSession()
+  it('back arrow in edit mode does NOT navigate when the flush save fails', async () => {
+    // Persistent rejection so the mutation exhausts its retries and reports error
+    vi.mocked(sessionLogsApi.updateSession).mockRejectedValue(new Error('boom'))
+    renderEditSession()
     await screen.findByTestId('actual-content')
-    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'User is typing' } })
-    // Simulate a background cache update (e.g. autosave onSuccess setQueryData)
-    vi.mocked(sessionLogsApi.getSession).mockResolvedValue({
-      ...EDIT_SESSION,
-      actualContent: 'Server echoed the saved value',
-      updatedAt: '2026-04-01T12:00:00Z',
-    })
-    // Force a re-render so the effect sees the new editSession reference
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Will fail to save' } })
+    await act(async () => { fireEvent.click(screen.getByTestId('back-button')) })
+    // Error message surfaced (matches handleDone's error UI) — the mutation retries,
+    // so this waits out the retry window before asserting.
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to save session/i)).toBeInTheDocument()
+    }, { timeout: 15000 })
+    // And we did NOT navigate — user's last edits would otherwise appear lost
+    expect(mockNavigate).not.toHaveBeenCalledWith(`/students/${STUDENT_ID}?tab=sessions`)
+  }, 20000)
+
+  it('form state does not reset when the session cache is updated in place (same id)', async () => {
+    // Mount with original session; user types new content; then an autosave-style
+    // cache update writes a fresh SessionLog into the SAME QueryClient for the
+    // SAME session id. The initializedForIdRef guard must prevent the populate
+    // effect from running a second time and wiping the in-progress edit.
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    rerender(
+    render(
       <QueryClientProvider client={client}>
         <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
           <Routes>
             <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+            <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>
     )
-    // The in-progress value is preserved once the component has settled on the same session id.
-    // NOTE: rerendering in a new QueryClient actually re-mounts; the key guarantee here is that
-    // within a single mount, repeated editSession identity changes don't wipe state. That is
-    // covered by the existing test at line ~215; this test documents the same invariant for edit mode.
     await screen.findByTestId('actual-content')
+    fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'User is typing' } })
+    // Simulate the autosave onSuccess cache update on the same QueryClient.
+    // Keys must match those used by the page: ['session', studentId, sessionId].
+    await act(async () => {
+      client.setQueryData(['session', STUDENT_ID, SESSION_ID], {
+        ...EDIT_SESSION,
+        actualContent: 'Server echoed the saved value',
+        updatedAt: '2026-04-01T12:00:00Z',
+      })
+    })
+    // The effect is keyed off editSession.id (same id here), so it must not re-run
+    // and the user's in-progress text must remain intact.
+    await waitFor(() => {
+      expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('User is typing')
+    })
   })
 })
 
