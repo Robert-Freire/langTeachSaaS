@@ -183,7 +183,11 @@ export default function LogSession() {
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
 
   // Edit mode: track whether we've initialized form state from the fetched session
-  const [didInitEdit, setDidInitEdit] = useState(false)
+  // Tracks the session ID that the form state was last populated for. Lets the
+  // populate effect run exactly once per unique session id, so a cache update for
+  // the same session does not wipe the teacher's in-progress edits, but navigation
+  // to a different session will re-initialize correctly.
+  const initializedForIdRef = useRef<string | null>(null)
   // Create mode: track whether we've pre-populated actualContent from plannedForToday
   const [didInitContent, setDidInitContent] = useState(false)
 
@@ -244,7 +248,8 @@ export default function LogSession() {
   // Edit mode: pre-populate form state from the fetched session
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (!editSession || didInitEdit) return
+    if (!editSession) return
+    if (initializedForIdRef.current === editSession.id) return
     const [datePart, timePart] = (editSession.sessionDate ?? '').split('T')
     setSessionDate(datePart || todayISO())
     setSessionTime(timePart?.slice(0, 5) || nowTimeHHMM())
@@ -278,8 +283,8 @@ export default function LogSession() {
       const parsed = JSON.parse(editSession.suggestedDifficulties || '[]') as unknown[]
       setSuggestedDifficulties(Array.isArray(parsed) ? parsed.filter(isSuggestedDifficulty) : [])
     } catch { setSuggestedDifficulties([]) }
-    setDidInitEdit(true)
-  }, [editSession, didInitEdit])
+    initializedForIdRef.current = editSession.id
+  }, [editSession])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Keep durationChoiceRef current so async extraction callbacks read the latest value, not a stale closure
@@ -346,7 +351,7 @@ export default function LogSession() {
 
   // Disable autosave in edit mode until the session data has loaded (prevents spurious createSession calls)
   const autosaveStudentId = isEditMode ? (editSession ? id : undefined) : id
-  const { status: saveStatus, sessionId: autosavedSessionId, scheduleTextSave, saveNow } = useSessionAutosave(
+  const { status: saveStatus, sessionId: autosavedSessionId, lastSavedAt, scheduleTextSave, saveNow } = useSessionAutosave(
     autosaveStudentId,
     getFormDataRef,
     isEditMode ? editSession?.id : undefined,
@@ -364,11 +369,20 @@ export default function LogSession() {
 
   const doneNavTarget = isEditMode ? `/students/${id}?tab=sessions` : `/students/${id}`
 
-  function handleBack() {
-    // In edit mode, autosavedSessionId is seeded from the existing session,
-    // so only hasChanges determines whether the user made edits.
-    // In create mode, an autosavedSessionId means a session was created by autosave.
-    const isDirty = hasChanges || (!isEditMode && !!autosavedSessionId)
+  async function handleBack() {
+    if (isEditMode) {
+      // Edit mode: autosave persists on every change and updates the RQ cache on
+      // success, so there is nothing to "discard" - clicking back should silently
+      // flush any pending debounced save and navigate away.
+      if (hasChanges) {
+        await saveNow()
+      }
+      navigate(doneNavTarget)
+      return
+    }
+    // Create mode: the "Discard" banner still makes sense because autosave
+    // progressively creates a draft and the user may want to throw it away.
+    const isDirty = hasChanges || !!autosavedSessionId
     if (!isDirty) {
       navigate(doneNavTarget)
       return
@@ -844,8 +858,8 @@ export default function LogSession() {
               {saveStatus === 'error' && (
                 <><RefreshCw className="h-3.5 w-3.5 text-red-500" /><span className="text-red-500">Couldn't save</span></>
               )}
-              {isEditMode && saveStatus === 'idle' && editSession?.updatedAt && (
-                <span className="text-zinc-400">Last saved {relativeTime(editSession.updatedAt)}</span>
+              {isEditMode && saveStatus === 'idle' && (lastSavedAt || editSession?.updatedAt) && (
+                <span className="text-zinc-400">Last saved {relativeTime(lastSavedAt ?? editSession!.updatedAt)}</span>
               )}
             </span>
 

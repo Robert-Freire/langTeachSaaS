@@ -817,3 +817,112 @@ test('session title: blank title shows date fallback in session list', async ({ 
     await context.close()
   }
 })
+
+// ── Edit mode: autosave + back navigation preserves saved data (#899) ─────
+
+test('edit mode: Previous Homework change survives back + reopen (no discard banner)', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    const studentName = `Edit Homework Test ${Date.now()}`
+    const student = await createStudentViaApi(page, { name: studentName })
+
+    // Seed a session with homework assigned so the next edit session can show Previous Homework controls
+    const seedRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+      data: {
+        sessionDate: '2026-03-20',
+        actualContent: 'Prior session',
+        homeworkAssigned: 'Exercise 1',
+        previousHomeworkStatus: 'NotApplicable',
+        status: 'Confirmed',
+      },
+    })
+    expect(seedRes.ok()).toBeTruthy()
+
+    // Create a second session via API (the one we will edit). Start with Previous Homework = NotDone.
+    const editSeedRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+      data: {
+        sessionDate: '2026-03-27',
+        actualContent: 'Session to edit',
+        previousHomeworkStatus: 'NotDone',
+        status: 'Confirmed',
+      },
+    })
+    expect(editSeedRes.ok()).toBeTruthy()
+    const editSeed = await editSeedRes.json() as { id: string }
+
+    // Open the edit page for the second session
+    await page.goto(`/students/${student.id}/sessions/${editSeed.id}/edit`)
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
+    await expect(page.getByTestId('prev-hw-notdone')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // Click "Done" for previous homework and wait for autosave confirmation
+    await page.getByTestId('prev-hw-done').click()
+    await expect(page.getByTestId('autosave-status')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
+
+    // Click back. In edit mode the "Discard" banner must NOT appear.
+    await page.getByTestId('back-button').click()
+    await expect(page.getByTestId('discard-confirm-bar')).not.toBeVisible()
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}\\?tab=sessions`), { timeout: UI_TIMEOUT })
+
+    // Reopen the session via the Sessions list → "Edit full session" link
+    const entry = page.getByTestId('session-entry').first()
+    await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
+    await entry.getByTestId('session-entry-toggle').click()
+    await entry.getByTestId('edit-full-session-link').click()
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: UI_TIMEOUT })
+
+    // The Previous Homework = Done state from our edit is visible (active styling)
+    const doneBtn = page.getByTestId('prev-hw-done')
+    await expect(doneBtn).toBeVisible({ timeout: UI_TIMEOUT })
+    // Active state is indicated by the bg-indigo-600 class on the selected button
+    await expect(doneBtn).toHaveClass(/bg-indigo-600/)
+  } finally {
+    await context.close()
+  }
+})
+
+test('edit mode: text typed just before clicking back is persisted (no debounce loss)', async ({ browser }) => {
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+
+  try {
+    const studentName = `Edit Debounce Test ${Date.now()}`
+    const student = await createStudentViaApi(page, { name: studentName })
+
+    const seedRes = await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+      data: {
+        sessionDate: '2026-03-28',
+        actualContent: 'Original content',
+        previousHomeworkStatus: 'NotApplicable',
+        status: 'Confirmed',
+      },
+    })
+    expect(seedRes.ok()).toBeTruthy()
+    const seed = await seedRes.json() as { id: string }
+
+    await page.goto(`/students/${student.id}/sessions/${seed.id}/edit`)
+    await expect(page.getByTestId('log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
+    await expect(page.getByTestId('actual-content')).toHaveValue('Original content')
+
+    // Type a new value and IMMEDIATELY click back before the 400ms debounce completes.
+    // handleBack must flush the pending save before navigating.
+    await page.getByTestId('actual-content').fill('Edited right before leaving')
+    await page.getByTestId('back-button').click()
+    await expect(page).toHaveURL(new RegExp(`/students/${student.id}\\?tab=sessions`), { timeout: UI_TIMEOUT })
+
+    // Reload the session from the server and verify the new content persisted
+    const getRes = await page.request.get(`${API_BASE}/api/students/${student.id}/sessions/${seed.id}`, {
+      headers: { Authorization: 'Bearer test-token' },
+    })
+    expect(getRes.ok()).toBeTruthy()
+    const session = await getRes.json() as { actualContent: string }
+    expect(session.actualContent).toBe('Edited right before leaving')
+  } finally {
+    await context.close()
+  }
+})
