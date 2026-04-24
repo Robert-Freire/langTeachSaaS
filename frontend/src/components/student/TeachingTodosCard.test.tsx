@@ -211,6 +211,30 @@ describe('TeachingTodosCard', () => {
     fireEvent.keyDown(screen.getByTestId('todo-add-input'), { key: 'Enter' })
     await waitFor(() => expect(studentsApi.appendTeachingTodo).toHaveBeenCalledWith('s1', 'Via enter'))
   })
+
+  it('todo toggle is a BUTTON element with aria-pressed (DS §11.4 keyboard accessibility)', () => {
+    render(<TeachingTodosCard {...defaultProps} />, { wrapper })
+    const btn = screen.getByTestId(`todo-toggle-${PENDING_TODO.id}`)
+    expect(btn.tagName).toBe('BUTTON')
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+    // covered todo (already completed) toggle shows aria-pressed=true
+    fireEvent.click(screen.getByTestId('todo-show-completed-toggle'))
+    const coveredBtn = screen.getByTestId(`todo-toggle-${COVERED_TODO.id}`)
+    expect(coveredBtn.tagName).toBe('BUTTON')
+    expect(coveredBtn).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('optimistic todo toggle is non-interactive (disabled state analog)', () => {
+    vi.mocked(studentsApi.updateTeachingTodo).mockResolvedValue(makeStudent([]))
+    render(<TeachingTodosCard todos={[]} studentId="s1" onStudentChange={vi.fn()} />, { wrapper })
+    // Add an item optimistically
+    fireEvent.change(screen.getByTestId('todo-add-input'), { target: { value: 'Optimistic item' } })
+    fireEvent.keyDown(screen.getByTestId('todo-add-input'), { key: 'Enter' })
+    const btn = screen.getByTestId(/^todo-toggle-temp-/)
+    fireEvent.click(btn)
+    // updateTeachingTodo must not be called for optimistic items
+    expect(studentsApi.updateTeachingTodo).not.toHaveBeenCalled()
+  })
 })
 
 describe('TeachingTodosCard - controlled showAddForm mode', () => {

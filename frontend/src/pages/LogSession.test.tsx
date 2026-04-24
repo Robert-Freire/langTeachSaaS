@@ -238,7 +238,7 @@ describe('LogSession', () => {
     expect(screen.getAllByText('Subjunctive revision').length).toBeGreaterThan(0)
   })
 
-  it('shows teaching todos as checkboxes', async () => {
+  it('shows teaching todos with DS §11.4 indigo square toggle', async () => {
     const todo: TeachingTodo = {
       id: 'todo-1', text: 'Check homework', status: 'Pending',
       createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, coveredInSessionLogId: null,
@@ -250,10 +250,29 @@ describe('LogSession', () => {
     renderLogSession()
     await screen.findByTestId('teaching-todo-item')
     expect(screen.getByText('Check homework')).toBeDefined()
-    const cb = screen.getByTestId('teaching-todo-checkbox') as HTMLInputElement
-    expect(cb.checked).toBe(false)
-    fireEvent.click(cb)
-    expect(cb.checked).toBe(true)
+    const btn = screen.getByTestId('teaching-todo-toggle')
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('teaching todo toggle can be toggled off (round-trip)', async () => {
+    const todo: TeachingTodo = {
+      id: 'todo-1', text: 'Check homework', status: 'Pending',
+      createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, coveredInSessionLogId: null,
+    }
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...SAMPLE_STUDENT,
+      profile: { ...SAMPLE_STUDENT.profile, teachingTodos: [todo] },
+    })
+    renderLogSession()
+    const btn = await screen.findByTestId('teaching-todo-toggle')
+    expect(btn.tagName).toBe('BUTTON')
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('shows Cancelled toggle aligned with Date/Time/Duration cells (spacer present)', async () => {
@@ -349,8 +368,8 @@ describe('LogSession', () => {
     }
     vi.mocked(studentsApi.getStudent).mockResolvedValue({ ...SAMPLE_STUDENT, profile: { ...SAMPLE_STUDENT.profile, teachingTodos: [todo] } })
     renderLogSession()
-    await screen.findByTestId('teaching-todo-checkbox')
-    fireEvent.click(screen.getByTestId('teaching-todo-checkbox'))
+    await screen.findByTestId('teaching-todo-toggle')
+    fireEvent.click(screen.getByTestId('teaching-todo-toggle'))
     await screen.findByTestId('actual-content')
     fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Session content' } })
     await act(async () => {
@@ -396,7 +415,7 @@ describe('LogSession', () => {
     })
   })
 
-  it('pending followups shown as checkboxes in left panel', async () => {
+  it('pending followups shown with DS §11.4 amber circle toggle in left panel', async () => {
     vi.mocked(followupsApi.getFollowups).mockResolvedValue([
       {
         id: 'f-1', text: 'Send grammar sheet', status: 'pending',
@@ -407,10 +426,48 @@ describe('LogSession', () => {
     renderLogSession()
     await screen.findByTestId('followup-item')
     expect(screen.getByText('Send grammar sheet')).toBeDefined()
-    const cb = screen.getByTestId('followup-checkbox') as HTMLInputElement
-    expect(cb.checked).toBe(false)
-    fireEvent.click(cb)
-    expect(cb.checked).toBe(true)
+    const btn = screen.getByTestId('followup-toggle')
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('followup toggle can be toggled off (round-trip)', async () => {
+    vi.mocked(followupsApi.getFollowups).mockResolvedValue([
+      {
+        id: 'f-1', text: 'Send grammar sheet', status: 'pending',
+        studentId: STUDENT_ID, studentName: 'Ana Seed', dueDate: null,
+        createdAt: '2026-01-01T00:00:00Z', completedAt: null, sourceSessionLogId: null,
+      },
+    ])
+    renderLogSession()
+    const btn = await screen.findByTestId('followup-toggle')
+    expect(btn.tagName).toBe('BUTTON')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('student difficulty uses DS §11.4 amber circle toggle and can be toggled off', async () => {
+    vi.mocked(studentsApi.getStudent).mockResolvedValue({
+      ...SAMPLE_STUDENT,
+      profile: {
+        ...SAMPLE_STUDENT.profile,
+        difficulties: [{
+          id: 'd-1', description: 'Ser vs estar', competency: 'Grammar',
+          subcategory: 'Verbs', severity: 'high', trend: 'stable', status: 'Active',
+        }],
+      },
+    })
+    renderLogSession()
+    const btn = await screen.findByTestId('difficulty-toggle')
+    expect(btn.tagName).toBe('BUTTON')
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(btn)
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('shows previousHomeworkStatus buttons when prev session had homework', async () => {

@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Plus, X, ChevronDown,
-  Loader2, CheckCircle, RefreshCw,
+  Loader2, CheckCircle, RefreshCw, Check,
 } from 'lucide-react'
 import { getStudent, appendTeachingTodo, updateTeachingTodo } from '@/api/students'
 import {
@@ -655,22 +655,29 @@ export default function LogSession() {
           <PanelSection label="Teaching Todos">
             <div className="space-y-1.5">
               {pendingTodos.map(todo => (
-                <label
+                <div
                   key={todo.id}
-                  className="flex items-start gap-2.5 cursor-pointer group"
+                  className="flex items-start gap-2.5"
                   data-testid="teaching-todo-item"
                 >
-                  <input
-                    type="checkbox"
-                    checked={checkedTodoIds.has(todo.id)}
-                    onChange={() => toggleTodo(todo.id)}
-                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-indigo-600 shrink-0"
-                    data-testid="teaching-todo-checkbox"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleTodo(todo.id)}
+                    aria-label={checkedTodoIds.has(todo.id) ? 'Mark uncovered' : 'Mark covered'}
+                    aria-pressed={checkedTodoIds.has(todo.id)}
+                    data-testid="teaching-todo-toggle"
+                    className={`mt-0.5 shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+                      checkedTodoIds.has(todo.id)
+                        ? 'bg-green-500 border-green-500'
+                        : 'border-indigo-400 hover:border-indigo-600'
+                    }`}
+                  >
+                    {checkedTodoIds.has(todo.id) && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+                  </button>
                   <span className={`text-sm leading-snug ${checkedTodoIds.has(todo.id) ? 'line-through text-zinc-400' : 'text-[#1A1B22]'}`}>
                     {todo.text}
                   </span>
-                </label>
+                </div>
               ))}
             </div>
             {checkedTodoIds.size > 0 && (
@@ -685,17 +692,22 @@ export default function LogSession() {
             <p className="text-xs text-zinc-400 -mt-1">Check items you addressed in this session</p>
             <div className="space-y-1.5">
               {pendingFollowups.map(f => (
-                <label
+                <div
                   key={f.id}
-                  className="flex items-start gap-2.5 cursor-pointer"
+                  className="flex items-start gap-2.5"
                   data-testid="followup-item"
                 >
-                  <input
-                    type="checkbox"
-                    checked={checkedFollowupIds.has(f.id)}
-                    onChange={() => toggleFollowup(f.id)}
-                    className="mt-0.5 h-4 w-4 rounded border-amber-300 accent-amber-500 shrink-0"
-                    data-testid="followup-checkbox"
+                  <button
+                    type="button"
+                    onClick={() => toggleFollowup(f.id)}
+                    aria-label={checkedFollowupIds.has(f.id) ? 'Mark pending' : 'Mark done'}
+                    aria-pressed={checkedFollowupIds.has(f.id)}
+                    data-testid="followup-toggle"
+                    className={`mt-0.5 shrink-0 w-3 h-3 rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+                      checkedFollowupIds.has(f.id)
+                        ? 'bg-emerald-500 border-emerald-500'
+                        : 'border-amber-400 bg-amber-100 hover:bg-amber-500'
+                    }`}
                   />
                   <span className={`text-sm leading-snug transition-all duration-150 ${checkedFollowupIds.has(f.id) ? 'line-through text-zinc-400 opacity-60' : 'text-[#1A1B22]'}`}>
                     {f.text}
@@ -703,7 +715,7 @@ export default function LogSession() {
                       <span className="ml-1.5 text-xs text-amber-600">{formatDate(f.dueDate)}</span>
                     )}
                   </span>
-                </label>
+                </div>
               ))}
             </div>
           </PanelSection>
@@ -785,12 +797,18 @@ export default function LogSession() {
               {activeDifficulties.map(d => {
                 const key = `${d.competency}|${d.subcategory}`
                 return (
-                  <label key={d.id} className="flex items-start gap-2.5 cursor-pointer" data-testid="difficulty-item">
-                    <input
-                      type="checkbox"
-                      checked={mentionedDifficultyKeys.has(key)}
-                      onChange={() => toggleDifficulty(key)}
-                      className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-indigo-600 shrink-0"
+                  <div key={d.id} className="flex items-start gap-2.5" data-testid="difficulty-item">
+                    <button
+                      type="button"
+                      onClick={() => toggleDifficulty(key)}
+                      aria-label={mentionedDifficultyKeys.has(key) ? 'Mark unmentioned' : 'Mark mentioned'}
+                      aria-pressed={mentionedDifficultyKeys.has(key)}
+                      data-testid="difficulty-toggle"
+                      className={`mt-0.5 shrink-0 w-3 h-3 rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+                        mentionedDifficultyKeys.has(key)
+                          ? 'bg-emerald-500 border-emerald-500'
+                          : 'border-amber-400 bg-amber-100 hover:bg-amber-500'
+                      }`}
                     />
                     <span className="text-sm text-[#1A1B22] leading-snug">
                       <span className={d.description.length > 80 && !expandedDifficulties.has(key) ? 'line-clamp-2' : ''}>
@@ -807,7 +825,7 @@ export default function LogSession() {
                         </button>
                       )}
                     </span>
-                  </label>
+                  </div>
                 )
               })}
             </div>

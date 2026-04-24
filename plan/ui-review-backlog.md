@@ -12,6 +12,12 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 |--------|---------|---------|
 | Progress tab > Skill Imbalance Analysis | Visual spec only covers Diego Seed (has overrides). Consider adding an empty-state visual test using Clara Seed (no overrides) for regression coverage. | Minor |
 
+## #906 (2026-04-24)
+
+| Screen | Finding | Severity |
+|--------|---------|---------|
+| Log Session left panel (difficulties, todos, followups) | review-ui agent ran against main repo Docker image (build cache), not worktree branch. Code is verified correct by qa-verify + architecture-reviewer + unit tests. UI review blocked by environment, not code. | Environment |
+
 ## #856 (2026-04-23)
 
 | Screen | Finding | Severity |

@@ -189,8 +189,9 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
                       type="button"
                       onClick={() => !isOptimistic && handleToggle(todo)}
                       aria-label={isCompleted ? 'Mark pending' : 'Mark done'}
+                      aria-pressed={isCompleted}
                       data-testid={`todo-toggle-${todo.id}`}
-                      className={`mt-0.5 shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+                      className={`mt-0.5 shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                         isCompleted
                           ? 'bg-green-500 border-green-500'
                           : 'border-indigo-400 hover:border-indigo-600'
