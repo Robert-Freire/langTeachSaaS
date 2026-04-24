@@ -382,7 +382,7 @@ export default function LessonEditor() {
           <Skeleton className="h-8 w-8 rounded-md" />
           <Skeleton className="h-8 w-8 rounded-md" />
         </div>
-        <Card className="bg-white border border-zinc-200">
+        <Card className="bg-white shadow-sm">
           <CardHeader className="py-3 px-6">
             <div className="flex items-center gap-2">
               <Skeleton className="h-5 w-16 rounded-full" />
@@ -394,7 +394,7 @@ export default function LessonEditor() {
         <div className="space-y-4">
           <Skeleton className="h-5 w-32" />
           {[1, 2, 3].map(i => (
-            <Card key={i} className="bg-white border border-zinc-200">
+            <Card key={i} className="bg-white shadow-sm">
               <CardHeader className="py-3 px-6"><Skeleton className="h-4 w-24" /></CardHeader>
               <CardContent className="px-6 pb-4"><Skeleton className="h-24 w-full" /></CardContent>
             </Card>
@@ -636,7 +636,7 @@ export default function LessonEditor() {
 
       {/* Edit details form */}
       {editingMeta && (
-        <Card className="bg-white border border-zinc-200">
+        <Card className="bg-white shadow-sm">
           <CardContent className="px-6 py-4">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -710,7 +710,7 @@ export default function LessonEditor() {
           const canRemove = lesson.sections.length > 1
 
           return (
-            <Card key={type} className="bg-white border border-zinc-200" data-testid={`section-card-${type.toLowerCase()}`}>
+            <Card key={type} className="bg-white shadow-sm" data-testid={`section-card-${type.toLowerCase()}`}>
               <CardHeader className="py-3 px-6 pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium text-zinc-700">{SECTION_LABELS[type]}</CardTitle>

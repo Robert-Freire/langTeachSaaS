@@ -20,7 +20,7 @@ interface RosterSignal {
 function buildRosterSignal(student: ActiveStudent): RosterSignal | null {
   // 1. Cancelled 2x (highest priority)
   if (student.cancelledSessionsLast30Days >= 2) {
-    return { label: 'Cancelled 2x', className: 'bg-[#1A1B22] text-white', redDot: true }
+    return { label: 'Cancelled 2x', className: 'bg-red-700 text-white', redDot: true }
   }
 
   const now = Date.now()
@@ -43,7 +43,7 @@ function buildRosterSignal(student: ActiveStudent): RosterSignal | null {
     ? Math.floor((now - lastSessionMs) / (1000 * 60 * 60 * 24))
     : null
   if (lastSessionGapDays != null && lastSessionGapDays > 21 && student.nextSessionDate != null) {
-    return { label: 'Returning', className: 'bg-violet-600 text-white' }
+    return { label: 'Returning', className: 'bg-indigo-700 text-white' }
   }
 
   // 4. Homework not done / partial

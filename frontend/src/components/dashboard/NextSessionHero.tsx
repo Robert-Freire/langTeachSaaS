@@ -53,6 +53,7 @@ function formatSessionDay(sessionDate: string): string {
   return d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })
 }
 
+// Canonical format: short month + numeric day ("Mar 28"), matching Sessions list section headers.
 function formatLastSessionDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
@@ -110,7 +111,7 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
           </h2>
           {(session.teachingLanguage || session.totalSessionCount > 0) && (
             <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mt-0.5" data-testid="hero-identity-subtitle">
-              {[session.teachingLanguage, session.totalSessionCount > 0 ? `Session #${session.totalSessionCount}` : null].filter(Boolean).join(' · ')}
+              {[session.teachingLanguage, session.totalSessionCount === 1 ? 'First Session' : session.totalSessionCount > 1 ? `Session #${session.totalSessionCount}` : null].filter(Boolean).join(' · ')}
             </p>
           )}
         </div>
