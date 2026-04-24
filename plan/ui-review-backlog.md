@@ -6,6 +6,12 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 
 *Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Seeder coverage gaps batched into #834. UX polish items (combobox summary, Focus Areas description) batched into #840. Remaining entries deleted (intentional per Stitch spec, covered by unit tests, or pre-existing infrastructure).*
 
+## #904 (2026-04-24)
+
+| Screen | Finding | Severity |
+|--------|---------|---------|
+| Progress tab > Skill Imbalance Analysis | Visual spec only covers Diego Seed (has overrides). Consider adding an empty-state visual test using Clara Seed (no overrides) for regression coverage. | Minor |
+
 ## #856 (2026-04-23)
 
 | Screen | Finding | Severity |
