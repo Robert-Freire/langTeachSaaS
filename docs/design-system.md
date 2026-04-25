@@ -219,7 +219,9 @@ Sessions are edited inline in their expanded row. No modal, no separate edit pag
 - Delete is accessible via a destructive icon in the expanded state or a confirmation prompt — never the primary affordance.
 - Double-click to edit is not permitted (too hidden for a professional tool).
 
-> **Overflow fields:** The full-page session editor (`/sessions/:id/edit`) remains accessible for fields not yet inline-editable (topic tags, homework assigned, level reassessment, session status). A link to it may appear at the bottom of the expanded row. Its label must describe what is there ("Edit topic tags, homework & more"), not imply that the inline edit is partial or incomplete. As fields migrate inline, the link should shrink in scope and eventually be removed.
+> **Overflow fields:** The full-page session editor (`/sessions/:id/edit`) remains accessible for fields not yet inline-editable (topic tags, homework assigned, level reassessment, session status, voice notes, teaching todos, followups). A link to it may appear at the bottom of the expanded row. When the link covers only 1-3 specific fields, its label should name them ("Edit topic tags & homework"). When the editor covers many fields, a general label ("Open full session") is acceptable. The label must never imply the inline edit is partial or incomplete. As fields migrate inline, the link scope shrinks and is eventually removed.
+>
+> **Escape-hatch styling:** Style this link as a ghost button (transparent background, `text-indigo-600`, hover `#F4F2FD`). This is intentional and does not conflict with §8.3 — the ghost button is a low-prominence secondary affordance that makes the full editor discoverable without competing with the inline-edit fields.
 
 ---
 
