@@ -107,7 +107,7 @@ export function AudioRecorder({ onVoiceNote, disabled }: AudioRecorderProps) {
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file || state !== 'idle') return
     e.target.value = ''
 
     if (!ALLOWED_UPLOAD_TYPES.includes(file.type)) {

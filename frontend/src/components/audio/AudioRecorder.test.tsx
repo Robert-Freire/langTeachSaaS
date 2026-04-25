@@ -139,4 +139,31 @@ describe('AudioRecorder', () => {
     expect(screen.getByTestId('record-button')).toBeDisabled()
     expect(screen.getByTestId('upload-audio-button')).toBeDisabled()
   })
+
+  it('does not trigger a second upload if handleFileChange fires twice in quick succession', async () => {
+    let resolveUpload: (v: VoiceNote) => void
+    vi.mocked(voiceNotesApi.uploadVoiceNote).mockReturnValue(
+      new Promise((r) => { resolveUpload = r })
+    )
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} />)
+
+    const input = screen.getByTestId('audio-file-input')
+    const file = new File(['data'], 'audio.webm', { type: 'audio/webm' })
+
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [file] } })
+    })
+
+    // Second fire while upload is still in progress — uploadVoiceNote should only be called once
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [file] } })
+    })
+
+    resolveUpload!(SAMPLE_NOTE)
+
+    await waitFor(() => {
+      expect(voiceNotesApi.uploadVoiceNote).toHaveBeenCalledTimes(1)
+    })
+  })
 })
