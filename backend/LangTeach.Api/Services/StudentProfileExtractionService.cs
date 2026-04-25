@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Helpers;
@@ -7,6 +9,9 @@ namespace LangTeach.Api.Services;
 
 public class StudentProfileExtractionService : IStudentProfileExtractionService
 {
+    private static readonly Regex CefrLevelRegex =
+        new(@"^[ABC][12]\+?$", RegexOptions.Compiled);
+
     private readonly IClaudeClient _claude;
     private readonly IPromptService _prompts;
     private readonly ILogger<StudentProfileExtractionService> _logger;
@@ -67,6 +72,7 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to parse student profile extraction JSON (length: {Length})", json?.Length ?? 0);
+            _logger.LogDebug("Unparseable Claude response: {Preview}...", json is null ? null : json[..Math.Min(200, json.Length)]);
             return Empty();
         }
     }
@@ -107,9 +113,6 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
         }
         return result;
     }
-
-    private static readonly System.Text.RegularExpressions.Regex CefrLevelRegex =
-        new(@"^[ABC][12]\+?$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
     private static string? ParseCefrLevel(JsonElement root, string key)
     {
@@ -156,9 +159,9 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
     {
         var raw = GetStringOrNull(root, key);
         if (raw is null) return null;
-        return DateOnly.TryParseExact(raw, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.None, out var parsed)
-            ? parsed.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
+        return DateOnly.TryParseExact(raw, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var parsed)
+            ? parsed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
             : null;
     }
 }
