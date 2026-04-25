@@ -75,6 +75,8 @@ Reviews are invoked as **agents** (Agent tool with `subagent_type`), never as sk
 
 Path: see `project_langteach_plans.md` memory. Each plan in its own subfolder (never root). Multi-task features: all task files in the **same** feature subfolder (`task1-*.md`, `task2-*.md`).
 
+**Per-task plans are gitignored** (`plan/**/task*-*.md`, `plan/**/t[0-9]*-*.md`). They exist in the worktree, `review-plan` reads them locally, and they vanish when the worktree is removed after merge. Do NOT try to commit task plans; the "why" lives in the PR description and code, not in a stale plan file. Cross-task documents (sprint scopes, design notes, behavior docs, backlogs) stay tracked as before.
+
 ## Shell
 
 Bash tool = Git Bash on Windows. `Test-Path` → `[ -f ]`/`[ -d ]`, `Get-ChildItem` → `ls`. Use `$HOME` not `~\`.

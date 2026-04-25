@@ -66,3 +66,10 @@ package-lock.json
 plan/langteach-beta/demo feedback 1/imgs/*
 backend/LangTeach.MigrationTool/publish/*
 graphify-out/**
+
+# Per-task implementation plans live only in their worktree.
+# review-plan reads them locally; they disappear when the worktree
+# is removed after merge. Cross-task plans (sprint scopes, design
+# notes, behavior docs, backlogs) are not matched and stay tracked.
+plan/**/task*-*.md
+plan/**/t[0-9]*-*.md
