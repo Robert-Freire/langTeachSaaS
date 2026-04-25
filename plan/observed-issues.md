@@ -3,6 +3,7 @@
 Out-of-scope observations logged by agents during implementation. Each row is something an agent noticed but did not fix because it was outside the current task's scope. These get batched into future GitHub issues by the PM.
 
 | Source issue | Date | Severity | Observation |
+| #605 | 2026-04-25 | low | VoiceNote upload API/DTO layer does not validate BlobPath/OriginalFileName/ContentType length at input boundary; EF MaxLength only enforces at DB write, giving a runtime error instead of a clean 400. |
 | #908 | 2026-04-24 | low | Tab bar at 375px clips "Progress" label (shows "Progre") -- pre-existing tab overflow at mobile width, outside StudentDetailHeader scope |
 | #834 | 2026-04-22 | low | EnsureAnaVisualExtrasAsync.UpdatedAt uses DateTime.UtcNow inline instead of caller's now (pre-existing inconsistency, not introduced by this task) |
 | #809 | 2026-04-22 | low | languages.json has duplicate concepts: "Mandarin" and "Chinese (Mandarin)" - requires data migration to consolidate; filed #874 |
