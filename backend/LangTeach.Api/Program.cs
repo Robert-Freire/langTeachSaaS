@@ -178,6 +178,10 @@ if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnv
 else
     builder.Services.AddScoped<IReflectionExtractionService, ReflectionExtractionService>();
 if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddScoped<IStudentProfileExtractionService, StubStudentProfileExtractionService>();
+else
+    builder.Services.AddScoped<IStudentProfileExtractionService, StudentProfileExtractionService>();
+if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddScoped<IReplanSuggestionService, StubReplanSuggestionService>();
 else
     builder.Services.AddScoped<IReplanSuggestionService, ReplanSuggestionService>();
