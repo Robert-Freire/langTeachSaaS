@@ -108,13 +108,11 @@ resource activationFailedAlert 'microsoft.insights/scheduledQueryRules@2022-06-1
     enabled: true
     scopes: [logAnalytics.id]
     evaluationFrequency: 'PT5M'
-    windowSize: 'PT6M'
+    windowSize: 'PT10M'
     criteria: {
       allOf: [
         {
-          // Note: ContainerAppSystemLogs uses Log_s for the free-text message field.
-          // If Azure changes this field name in a future API version, update the query here.
-          query: 'ContainerAppSystemLogs | where Log_s contains "ActivationFailed"'
+          query: 'ContainerAppSystemLogs | where Log contains "ActivationFailed"'
           timeAggregation: 'Count'
           operator: 'GreaterThan'
           threshold: 0
