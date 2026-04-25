@@ -1579,6 +1579,50 @@ public class PromptService : IPromptService
         return new ClaudeRequest(SystemPrompt: system, UserPrompt: teacherText, Model: ClaudeModel.Haiku, MaxTokens: 2048);
     }
 
+    // --- Student profile extraction ---
+
+    public ClaudeRequest BuildStudentProfileExtractionPrompt(string text)
+    {
+        const string system = """
+            You are a tool that helps language teachers capture student information from free-form voice notes.
+            Extract structured student profile fields from a teacher's free-form text.
+
+            IMPORTANT: Be conservative. Only extract a field if the teacher stated it clearly and explicitly.
+            When ambiguous or uncertain, return null for that field rather than guessing.
+            A confirmation drawer full of wrong guesses destroys teacher trust after one use.
+            It is better to extract 3 accurate fields than 10 speculative ones.
+
+            Respond ONLY with a valid JSON object using these exact keys:
+            - name: string or null — student's full name. Null if not clearly stated.
+            - birthYear: integer or null — student's year of birth (e.g. 1990). Null if not clearly stated or only an age is mentioned without a computable birth year.
+            - profession: string or null — student's job or occupation. Null if not mentioned.
+            - countryOfResidence: string or null — country where the student currently lives. Null if not mentioned.
+            - cityOfResidence: string or null — city where the student currently lives. Null if not mentioned.
+            - reasonForStudying: string or null — why the student is learning the language. Null if not mentioned.
+            - nativeLanguages: array of strings — student's native or mother tongue(s). Empty array [] if not mentioned.
+            - spokenLanguages: array of strings — other languages the student speaks (not the target language being taught, not the native language). Empty array [] if not mentioned.
+            - cefrLevel: string or null — teacher's own CEFR assessment of the student (e.g. "B1", "B2+"). Null if not mentioned.
+            - officialCefrLevel: string or null — official/exam-certified CEFR level (e.g. from a DELE, DELF certificate). Null if not mentioned.
+            - shortTermObjectives: array of objects — near-term learning goals mentioned by the teacher. Each object has:
+                - text: string — description of the objective
+                - targetDate: string or null — ISO 8601 date (YYYY-MM-DD) if a date is mentioned, otherwise null
+              Empty array [] if no objectives mentioned.
+            - difficulties: array of objects — student weaknesses or trouble areas explicitly mentioned. Each object has:
+                - description: string — full description of the difficulty
+                - competency: string — broad area (e.g. "Grammar", "Vocabulary", "Pronunciation", "Listening", "Speaking", "Reading", "Writing")
+                - subcategory: string — specific item (e.g. "ser/estar", "subjunctive", "past tense"), free text
+              Empty array [] if no difficulties mentioned.
+            - teachingTodoTexts: array of strings — pedagogical ideas or reminders for the teacher regarding this student. Empty array [] if none.
+            - interests: array of strings — personal interests, hobbies, or topics the student enjoys. Empty array [] if not mentioned.
+
+            Use null for scalar fields that cannot be clearly inferred from the text.
+            Keep each value concise.
+            Respond with JSON only, no markdown, no explanation.
+            """;
+
+        return new ClaudeRequest(SystemPrompt: system, UserPrompt: InputSanitizer.Sanitize(text), Model: ClaudeModel.Haiku, MaxTokens: 1024);
+    }
+
     // --- Replan suggestion ---
 
     public ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx)

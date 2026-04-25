@@ -26,6 +26,7 @@ public interface IPromptService
     ClaudeRequest BuildNoticingTaskPrompt(GenerationContext ctx);
     ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx);
     ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx);
+    ClaudeRequest BuildStudentProfileExtractionPrompt(string text);
     ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx);
     ClaudeRequest BuildCurriculumValidationPrompt(CurriculumValidationContext ctx);
 }
