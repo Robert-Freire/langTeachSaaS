@@ -9,3 +9,4 @@ param swaLocation       = 'westeurope'
 param sqlAdminPassword  = readEnvironmentVariable('LANGTEACH_SQL_PASSWORD')
 // Set the env var before deploying: $env:LANGTEACH_SQL_PASSWORD="<from Bitwarden: LangTeach SQL Admin>"
 param alertEmail        = 'robert.freire@gmail.com'
+param allowedOriginSwa  = 'https://white-cliff-02f270f03.4.azurestaticapps.net'
