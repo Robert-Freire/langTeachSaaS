@@ -31,11 +31,12 @@ Four stages:
 
 **Stage 1b (branch-level review):** Review the full sprint branch diff against `main` for cross-cutting issues that per-PR reviews miss. This catches architectural drift, duplicated patterns, and inconsistencies across all tasks merged during the sprint.
 
-Run these three reviewers sequentially (not in background), each against the full diff:
+Run these four reviewers sequentially (not in background), each against the full diff:
 
 1. **Sophy** (`subagent_type: "sophy"`): model drift, duplicated logic, over-engineering, KISS/SOLID violations across the aggregate changes.
 2. **Architecture reviewer** (`subagent_type: "architecture-reviewer"`): pattern violations, convention breaks, missed reuse of shared utilities.
 3. **Prompt health reviewer** (`subagent_type: "prompt-health-reviewer"`): stale instructions, contradictions, or redundancy in AI generation prompt templates (especially after sprints that change student fields or content types).
+4. **Security reviewer** (`subagent_type: "security-reviewer"`): secrets in code, missing auth, injection paths, PII in logs, prompt-injection vectors, CORS/TLS misconfig, dependency hygiene. NEEDS FIXES blocks the sprint from moving to Stage 2.
 
 Each reviewer prompt must include:
 - Instruction to focus on **cross-cutting concerns** (duplication, drift, inconsistency), not line-level nits (CodeRabbit already covers those per-PR).

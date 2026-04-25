@@ -22,14 +22,14 @@ Key queries:
 - Must-haves: `gh issue list --milestone "<milestone-name>" --label "P1:must" --state open`
 - Ready to pick up: `gh issue list --milestone "<milestone-name>" --label "qa:ready" --state open`
 
-**Active sprint branch:** `sprint/stabilisation` (milestone #17)
-Agents must PR against the active sprint branch, not `main`. See CLAUDE.md "Sprint Branch Workflow" section.
+**Active sprint branch:** none (between sprints as of 2026-04-25)
+No sprint is currently active. Agents should not pick up issue work until a new sprint is created. See CLAUDE.md "Sprint Branch Workflow" section.
 
 ## Milestone Sequence (newest first)
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| Stabilisation | ACTIVE | milestone #17, sprint/stabilisation branch active |
+| Stabilisation | CLOSED 2026-04-25 | milestone #17, merged to main, branch deleted |
 | UI Redesign & Student Profile Polish | CLOSED 2026-04-22 | milestone #16, merged to main, branch deleted |
 | Adaptive Replanning | CLOSED 2026-04-08 | 22/22 done, merged to main |
 | Post-Class Tracking | CLOSED 2026-04-04 | 23/23 done, merged to main |
