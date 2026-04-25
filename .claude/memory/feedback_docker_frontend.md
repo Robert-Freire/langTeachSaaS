@@ -1,18 +1,20 @@
 ---
 name: Docker frontend workflow
-description: Frontend runs only in Docker; restart container after any frontend file change (Vite HMR broken on Windows volume mounts)
+description: Frontend runs only in Docker for normal dev; for e2e mock-auth tests run locally via npm run dev:e2e on port 5174
 type: feedback
 originSessionId: 16259888-ac9c-4212-80e1-8b4865a397c7
 ---
-The frontend runs exclusively inside Docker via `docker compose up`. Never run `npm run dev`, `npx vite`, or any local Vite dev server on the host. Port 5173 conflicts with the container, and `node_modules` only exists inside the container image (missing deps on host, e.g. @dnd-kit).
+The frontend runs exclusively inside Docker via `docker compose up` for normal development. Never run `npm run dev` or any local Vite dev server for regular dev work. Port 5173 is the Docker container port.
 
-**HMR is broken on Windows volume mounts.** After any frontend file change (new file, edit, git operation), restart the container:
+**HMR works correctly** on WSL Linux filesystem mounts. No container restart needed after frontend file edits.
 
-```powershell
-docker compose restart frontend
-docker compose logs frontend --tail=20
+**For e2e mock-auth tests only:** the mock-auth Playwright project expects the frontend on port 5174 with `VITE_E2E_TEST_MODE=true`. Run the stack as:
+
+```bash
+ASPNETCORE_ENVIRONMENT=E2ETesting docker compose up sqlserver api -d
+npm run dev:e2e   # from frontend/ directory, binds to port 5174
 ```
 
-Wait for `VITE vX.X.X ready in NNN ms` before testing. Always after: editing any file in `frontend/src/`, adding new files, `git cherry-pick`/`merge`/`rebase` touching frontend.
+Requires `frontend/.env.e2e` with `VITE_E2E_TEST_MODE=true` (not in repo, must exist locally).
 
-**Why:** combined fix for two recurring failure modes, host Vite (dep + port conflicts) and silently stale containers (HMR doesn't fire through Windows mounts).
+**Why:** normal dev uses Docker frontend (port 5173, HMR works natively on Linux). Mock-auth e2e needs a separate local frontend with the mock Auth0 provider active.

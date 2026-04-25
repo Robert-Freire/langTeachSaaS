@@ -14,10 +14,6 @@ Before starting any task:
 
 Never work directly in the main repo directory for task work.
 
-## Git Bash Path Mangling (Windows)
-
-Git Bash auto-translates Unix paths, breaking `docker exec`. Always prefix with `MSYS_NO_PATHCONV=1`.
-
 ## E2E Stack Coordination
 
 See `.claude/procedures/e2e-stack.md` when starting the e2e stack directly. Does NOT apply to the `review-ui` agent (manages its own stack).
@@ -31,6 +27,7 @@ All feature work targets the active sprint branch, never main directly. Hierarch
 - Full lifecycle: `.claude/procedures/sprint-lifecycle.md`.
 
 ### Exceptions (can target main directly)
+
 - Non-code: `.claude/memory/`, `.claude/skills/`, `plan/`.
 - Hotfixes: branch from main, PR to main.
 - Infra/workflow changes: require user approval.
@@ -79,7 +76,7 @@ Path: see `project_langteach_plans.md` memory. Each plan in its own subfolder (n
 
 ## Shell
 
-Bash tool = Git Bash on Windows. `Test-Path` → `[ -f ]`/`[ -d ]`, `Get-ChildItem` → `ls`. Use `$HOME` not `~\`.
+Bash tool = bash in WSL Ubuntu (Linux). Standard Unix commands throughout.
 
 ## Context & Subagents
 
@@ -92,5 +89,4 @@ Bash tool = Git Bash on Windows. `Test-Path` → `[ -f ]`/`[ -d ]`, `Get-ChildIt
 
 ## Response Style
 
-- Commands shown to user: **PowerShell syntax** (`$env:VAR`), single line.
 - Never use em dashes (--) or en dashes (-) in responses or generated files. Use commas, parentheses, or restructure.

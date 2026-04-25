@@ -6,7 +6,7 @@ type: feedback
 
 When working inside a worktree, **all file edits and bash commands must use the worktree path**, not the main repo path.
 
-**Failure pattern observed (task #202):** The agent created a worktree at `.claude/worktrees/task-t202-teacher-qa-triage/` and wrote plan files there correctly, but when it started running Playwright tests and fixing selectors, it used absolute paths to the main repo (`/c/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/...`) instead of the worktree path. All edits landed in the main repo's working tree, polluting the sprint branch with uncommitted changes.
+**Failure pattern observed (task #202):** The agent created a worktree at `.claude/worktrees/task-t202-teacher-qa-triage/` and wrote plan files there correctly, but when it started running Playwright tests and fixing selectors, it used absolute paths to the main repo (`/home/rfreire/projects/langTeachSaaS/.claude/skills/...`) instead of the worktree path. All edits landed in the main repo's working tree, polluting the sprint branch with uncommitted changes.
 
 **Root cause:** The agent "knows" the project root from initial context and defaults to it, especially when constructing `cd` commands or using tool paths.
 
