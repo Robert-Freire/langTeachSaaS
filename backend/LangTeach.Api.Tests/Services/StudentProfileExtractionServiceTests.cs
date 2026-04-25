@@ -246,6 +246,42 @@ public class StudentProfileExtractionServiceTests
     }
 
     [Fact]
+    public async Task ExtractAsync_WhenClaudeReturnsValidJson_ReturnsPopulatedDto()
+    {
+        var validJson = """
+            {
+              "name": "Ana López",
+              "birthYear": 1988,
+              "profession": "Doctor",
+              "countryOfResidence": "Mexico",
+              "cityOfResidence": "Ciudad de México",
+              "reasonForStudying": "Move to Spain",
+              "nativeLanguages": ["Spanish"],
+              "spokenLanguages": ["English"],
+              "cefrLevel": "B1",
+              "officialCefrLevel": null,
+              "shortTermObjectives": [{"text": "Improve writing", "targetDate": null}],
+              "difficulties": [{"description": "Struggles with subjunctive", "competency": "Grammar", "subcategory": "subjunctive"}],
+              "teachingTodoTexts": ["Send grammar exercises"],
+              "interests": ["Cinema", "Photography"]
+            }
+            """;
+        var sut = CreateSut(validJson);
+
+        var result = await sut.ExtractAsync("Ana López es médica, nació en 1988...");
+
+        result.Name.Should().Be("Ana López");
+        result.BirthYear.Should().Be(1988);
+        result.Profession.Should().Be("Doctor");
+        result.CefrLevel.Should().Be("B1");
+        result.NativeLanguages.Should().BeEquivalentTo(["Spanish"]);
+        result.Difficulties.Should().HaveCount(1);
+        result.ShortTermObjectives.Should().HaveCount(1);
+        result.TeachingTodoTexts.Should().BeEquivalentTo(["Send grammar exercises"]);
+        result.Interests.Should().BeEquivalentTo(["Cinema", "Photography"]);
+    }
+
+    [Fact]
     public async Task ExtractAsync_CallsClaudeWithHaikuModel()
     {
         ClaudeRequest? captured = null;
