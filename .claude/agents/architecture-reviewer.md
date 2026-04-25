@@ -142,6 +142,36 @@ Compare against all other e2e specs:
 
 ---
 
+### Step 4b: Behavior parallel check (cross-cutting consistency)
+
+Step 4 compares the changed file against 2 reference files of the same category. Step 4b is broader: scan for **parallel implementations of the same behavior** that may have diverged from what the diff introduces.
+
+For each changed file, identify the **behaviors** it modifies (not just patterns):
+
+- A validation rule, error message, or constraint
+- A date/time/number/currency format
+- A permission or auth check
+- A label or display string for a domain concept (e.g. "CEFR level", "lesson status", "student level", "session phase")
+- A default value or fallback
+- An API call shape or endpoint URL
+- A field name on a shared concept (e.g. `cefrLevel` vs `level` vs `currentLevel`)
+- An empty-state, loading-state, or error-state convention
+
+For each behavior:
+
+1. **Grep the codebase by concept name**, casting a wider net than the 2 reference files. Search for the field name, the string literal, the function name, and adjacent variants.
+
+2. **Compare implementations.** If the diff changes behavior X in file A, do files B, C, D also implement X but differently from the new version? Does the codebase now have two definitions of the same conceptual rule?
+
+3. **Flag as Inconsistency** when:
+   - The diff changes behavior X in file A, AND
+   - File B (not in the diff) implements the same conceptual rule X differently from A's new version, AND
+   - Both should plausibly behave the same way.
+
+This catches the "we changed it here but forgot the other 3 places" pattern that per-file pattern comparison misses. It is the safety net for ripples that should have been caught at plan-review time.
+
+---
+
 ### Step 5: Produce the report
 
 Classify each finding into one of four categories:

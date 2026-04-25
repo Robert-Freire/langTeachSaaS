@@ -39,6 +39,7 @@ Run these three reviewers sequentially (not in background), each against the ful
 
 Each reviewer prompt must include:
 - Instruction to focus on **cross-cutting concerns** (duplication, drift, inconsistency), not line-level nits (CodeRabbit already covers those per-PR).
+- **Consistency sweep instruction (mandatory):** "Scan the full sprint diff for parallel implementations of the same behavior — validation rules, labels for domain concepts (CEFR level, lesson status, etc.), error message formats, default values, permission checks, empty/loading/error state conventions, and UI patterns for the same concept. When the same conceptual rule appears with two different implementations across tasks in this sprint, flag it as Inconsistency. This is the highest-value finding at sprint level — it catches 'screen A was polished but screen B still uses the old pattern' issues that per-PR review misses entirely."
 - A summary of known deferred items from the Stage 1 backlog triage, so reviewers do not re-flag them.
 - The sprint story file path so reviewers understand the intent behind the changes.
 

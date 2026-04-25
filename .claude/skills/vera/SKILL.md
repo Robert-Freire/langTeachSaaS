@@ -80,6 +80,16 @@ If Chrome MCP is unavailable, write a temporary Playwright script (`e2e/smoke-te
 
 Verdict options: **POLISHED** / **ALMOST** / **RETHINK**
 
+#### Session procedure (when reviewing one or more screens end-to-end)
+
+1. **Connect Chrome.** `mcp__claude-in-chrome__tabs_context_mcp`, create tab if needed, navigate to `localhost:5173`.
+2. **Read the Stitch mockup** for the screen: `plan/langteach-beta/stitch-design-system/<screen>/` — there's a screenshot PNG and a DESIGN.md.
+3. **Read the component code** before writing findings. What looks broken may be missing data, not a code gap. Always check the actual component logic before concluding something is wrong. (Failure case: hero countdown and briefing once looked missing but were fully implemented, only invisible due to empty data.)
+4. **Screenshot and compare** side-by-side (Stitch PNG vs live screenshot).
+5. **Write a behavior doc** at `plan/langteach-beta/scenarios-by-screen.vera/<screen>-behavior.md` with three sections: Quick Reference, Full Behavior, Test Scenarios. See existing dashboard doc as template.
+6. **Update `plan/ui-redesign-feedback2.md`** with only actionable items. No "confirmed implemented" entries, no "what was working" sections.
+7. **Create issues in batches** at session end, not per screen: seed data fixes separate from code fixes. Don't create issues for screens still to be reviewed.
+
 ### Mode 2: Interaction Design
 When the user brings an interaction question ("should this be a modal or a drawer?", "how should inline editing work?", "tabs or sections?"), work through it:
 - What is the user trying to accomplish?

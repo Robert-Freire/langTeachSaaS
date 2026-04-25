@@ -20,36 +20,20 @@
 - [Sprint overviews](project_sprint_overviews.md) — PM-only: sequence, story files, milestone map
 
 ## Feedback
-- [No autonomous Azure destructive ops](feedback_azure_destructive_ops.md) — give command, don't run
-- [Project memory discipline](feedback_project_memory_discipline.md) — update task status memory after every task
-- [Trust memory selectively](feedback_no_redundant_file_reads.md) — verify GitHub issue state live; don't trust memory snapshots
+- [Azure destructive ops](feedback_azure_destructive_ops.md) — give command, don't run
+- [Docker frontend workflow](feedback_docker_frontend.md) — Docker only, restart after every change (Vite HMR broken on Windows)
 - [E2E coverage required](feedback_e2e_coverage_requirement.md) — every feature needs e2e happy path
-- [Docker Vite restart](feedback_docker_vite_restart.md) — restart frontend after merge adds files
+- [Feedback intake pipeline](feedback_pipeline.md) — save raw, reply with summary, wait 4 days, then create issues
+- [Findings become issues](feedback_findings_become_issues.md) — every deferral/finding gets a GitHub issue immediately
 - [Frontend unit tests](feedback_frontend_unit_tests.md) — Vitest+RTL+msw for modified components/hooks
-- [Email/feedback pipeline](feedback_email_and_feedback_pipeline.md) — check, save, log, issue, reply via SMTP
-- [Batch related issues](feedback_issue_batching.md)
-- [Verify project board after sprint prep](feedback_verify_project_board.md)
-- [Self-assign via gh CLI only](feedback_self_assign_issues.md) — `gh issue edit <N> --add-assignee "@me"`; MCP picks wrong account
-- [Reply with understanding before acting](feedback_reply_before_acting.md) — summary+planned, wait 4 days
+- [GitHub interaction quirks](feedback_github_interaction.md) — MCP default; search_issues with wildcards; gh CLI for @me
+- [Issue discipline](feedback_issue_discipline.md) — all decisions/labels at creation; batching; epics; board verification
+- [Memory hygiene](feedback_memory_hygiene.md) — trust slow facts, verify volatile state; preserve script-parsed format
+- [Process changes](feedback_process_changes.md) — agents/rules first, then sync dev-workflow.md
 - [Report observations not acted upon](feedback_report_noted_not_acted.md)
-- [Update dev-workflow.md on workflow changes](feedback_update_dev_workflow_doc.md)
-- [Prefer GitHub MCP over gh CLI](feedback_prefer_github_mcp.md) — use search_issues for milestone filtering
-- [Milestone search quoting](feedback_github_search_milestone_quoting.md) — `milestone:*slug*` for multi-word
-- [Worktree CWD discipline](feedback_worktree_cwd_discipline.md) — use worktree paths, never main repo absolute
-- [Sprint creation updates](feedback_sprint_creation_updates.md) — update overviews/PM skill/task status
-- [Verify issues after creation](feedback_verify_issues_after_creation.md) — wrong milestone = invisible to bots
-- [Epic management](feedback_epic_management.md) — close epics on split; flat issues
-- [Process changes go to agents/rules first](feedback_process_change_priority.md) — memory doesn't change behavior
-- [Sophy on hardcoded rules](feedback_sophy_hardcoded_rules.md) — call Sophy when PromptService gets if/switch on language/level/template
-- [Never defer without an issue](feedback_never_defer_without_issue.md)
-- [No local frontend dev](feedback_no_local_frontend_dev.md) — Docker only
-- [Vera screen review procedure](feedback_vera_screen_review_procedure.md) — Chrome+Stitch+code+behavior+feedback2+issues
+- [Sprint operations](feedback_sprint_operations.md) — three-place updates, board verification, branch name on merge
 - [Stop on infra gaps](feedback_stop_on_infra_gaps.md) — ask user; don't invent frontend workarounds
-- [Review findings → issues](feedback_review_findings_must_be_issues.md) — file before sprint close
-- [Task status format is script-parsed](feedback_task_status_format_stability.md)
-- [State sprint branch at merge green light](feedback_sprint_merge_branch_name.md)
-- [Issue creation discipline](feedback_issue_creation_discipline.md) — all decisions/labels set; checklist in issue-management.md
-- [QA-ready label discipline](feedback_qa_ready_label.md)
+- [Worktree CWD discipline](feedback_worktree_cwd_discipline.md) — use worktree paths, never main repo absolute
 
 ## Reference
 - [Screen behavior docs (Vera)](reference_screen_behavior_docs.md) — `plan/langteach-beta/scenarios-by-screen.vera/`

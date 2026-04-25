@@ -22,6 +22,7 @@ gh issue view <N> --json labels --jq '.labels[].name'
 | Diff adds or modifies a file that references `ClaudeRequest`, `IClaudeClient`, or contains an inline `SystemPrompt` constant (i.e., prompt construction outside PromptService) | Sophy | `sophy` |
 | Diff touches `**/DifficultyConstants.cs` or files that define domain taxonomy enums/sets (competencies, severities, content types) | Sophy | `sophy` |
 | Diff touches `data/pedagogy/*.json`, `data/section-profiles/*.json`, `data/pedagogy/cefr-level-rules/*.json` | Isaac | `pedagogy-reviewer` |
+| Diff touches `**/PromptService.cs`, prompt builders, or `data/section-profiles/*.json` (per-PR prompt health gate) | Prompt health reviewer | `prompt-health-reviewer` |
 
 **IMPORTANT: Sophy and Arch are different agents.** Do not confuse them.
 - **Sophy** (`subagent_type: "sophy"`): data model design, config vs code drift, prompt architecture
@@ -48,5 +49,8 @@ gh issue view <N> --json labels --jq '.labels[].name'
 | Isaac | RETHINK | Fix pedagogical issues before pushing |
 | Isaac | ADJUST | Fix corrections, re-commit, re-run Isaac |
 | Isaac | SOUND | Proceed |
+| Prompt health | URGENT | Block push, fix contradictions/critical issues, re-run |
+| Prompt health | NEEDS CLEANUP | Address findings or log to `plan/code-review-backlog.md` if minor |
+| Prompt health | CLEAN | Proceed |
 
 All reviewers at PASS or equivalent (after addressing/logging notes): proceed to UI review (or push if not applicable).

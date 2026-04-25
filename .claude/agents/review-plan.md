@@ -37,6 +37,29 @@ The user will provide a path to the plan file, if you don;t have it you should a
 - Are error/edge cases addressed? (null inputs, empty arrays, concurrent access, auth boundaries)
 - If new dependencies or utilities are referenced (e.g., custom validation attributes), does the plan include creating them?
 
+### Behavior change ripple check
+
+This is the highest-leverage check. Many bugs come from changing behavior in one place without updating parallel implementations elsewhere — "we polished screen A but screens B, C, D still use the old pattern." Run this sweep before approving any plan that modifies shared behavior.
+
+1. **Identify behaviors the plan changes.** Not just files — behaviors. Examples: a validation rule, a date format, an error message shape, a label for a domain concept (e.g. "CEFR level", "lesson status"), a default value, an API call shape, a permission check, a button's loading-state pattern, an empty-state copy convention.
+
+2. **Grep the codebase for parallel implementations.** For each behavior, search broadly:
+   - If the plan changes how field X is rendered on screen A, grep for X across `frontend/src/**/*.tsx` and list every other screen/component that renders it.
+   - If the plan changes a validation rule, grep for the rule's keyword (field name, regex pattern, error message stem) across the whole repo.
+   - If the plan changes a function used elsewhere, grep for callers.
+   - If the plan changes a label or string, grep for the string and adjacent variants.
+
+3. **For each parallel occurrence, verify the plan addresses it.** The plan must either:
+   - Update the parallel occurrence in the same change (consistency), OR
+   - Explicitly leave it as legacy with a written reason, OR
+   - File a follow-up issue and cite the issue number in the plan.
+
+4. **Flag as Critical** if the codebase has 2+ parallel implementations of the changed behavior and the plan is silent about them.
+
+5. **Flag as Important** if exactly one parallel implementation exists and the plan doesn't mention it.
+
+Skip this section only if the plan touches a single isolated component with no shared concept (rare). When in doubt, run the grep.
+
 ### Test strategy
 This is a critical section. Every plan must have explicit test coverage. Check for:
 
