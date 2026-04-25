@@ -22,8 +22,7 @@ Key queries:
 - Must-haves: `gh issue list --milestone "<milestone-name>" --label "P1:must" --state open`
 - Ready to pick up: `gh issue list --milestone "<milestone-name>" --label "qa:ready" --state open`
 
-**Active sprint branch:** none (between sprints as of 2026-04-25)
-No sprint is currently active. Agents should not pick up issue work until a new sprint is created. See CLAUDE.md "Sprint Branch Workflow" section.
+**Active sprint branch:** sprint/student-profile-voice-input (milestone #18, Student Profile Voice Input)
 
 ## Milestone Sequence (newest first)
 
