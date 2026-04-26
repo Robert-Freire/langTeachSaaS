@@ -12,7 +12,7 @@ internal static class JsonStorageHelper
     public static List<T> DeserializeList<T>(string? json)
     {
         if (string.IsNullOrEmpty(json)) return [];
-        try { return JsonSerializer.Deserialize<List<T>>(json, CaseInsensitive) ?? []; }
+        try { return (JsonSerializer.Deserialize<List<T>>(json, CaseInsensitive) ?? []).Where(x => x != null).ToList(); }
         catch (JsonException) { return []; }
     }
 
@@ -22,7 +22,7 @@ internal static class JsonStorageHelper
     public static List<T>? DeserializeListNullable<T>(string? json)
     {
         if (string.IsNullOrEmpty(json)) return null;
-        try { return JsonSerializer.Deserialize<List<T>>(json, CaseInsensitive); }
+        try { return JsonSerializer.Deserialize<List<T>>(json, CaseInsensitive)?.Where(x => x != null).ToList(); }
         catch (JsonException) { return null; }
     }
 
