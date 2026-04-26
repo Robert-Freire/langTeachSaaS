@@ -129,20 +129,20 @@ function PedagogicalProfileCard({ student }: { student: Student }) {
       </div>
 
       {/* Language tags — always rendered; target language always present */}
-      <div className="mt-5 pt-4 border-t border-white/50 flex flex-wrap gap-2" data-testid="language-tags">
+      <div className="mt-5 pt-4 border-t border-white/50 flex flex-wrap items-center gap-2" data-testid="language-tags">
         {student.languages.nativeLanguages.map((lang) => (
           <span
             key={`L-${lang}`}
-            className="bg-[#E2DFFF] text-[#3323CC] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+            className="inline-block bg-[#E2DFFF] text-[#3323CC] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
             data-testid="native-language-tag"
           >
             L-{lang.toUpperCase()}
           </span>
         ))}
         <Tooltip>
-          <TooltipTrigger render={<span />}>
+          <TooltipTrigger render={<span className="inline-flex items-center" />}>
             <span
-              className="bg-[#D0F4DE] text-[#1A6636] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide cursor-default"
+              className="inline-block bg-[#D0F4DE] text-[#1A6636] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide cursor-default"
               data-testid="target-language-tag"
             >
               T-{student.learningLanguage.toUpperCase()}
