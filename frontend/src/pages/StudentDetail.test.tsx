@@ -45,6 +45,38 @@ vi.mock('../components/student/ProgressDashboard', () => ({
   ProgressDashboard: () => <div data-testid="progress-dashboard" />,
 }))
 
+vi.mock('@/components/audio/AudioRecorder', () => ({
+  AudioRecorder: ({
+    onVoiceNote,
+    showUploadFallbackLink,
+  }: {
+    onVoiceNote: (note: { transcription: string | null }) => void
+    autoStart?: boolean
+    showUploadFallbackLink?: boolean
+  }) => (
+    <>
+      <button data-testid="audio-recorder-mock" onClick={() => onVoiceNote({ transcription: 'Ana speaks German now' })}>
+        Record
+      </button>
+      {showUploadFallbackLink && (
+        <button data-testid="switch-to-upload-link">or upload an audio file instead</button>
+      )}
+    </>
+  ),
+}))
+
+vi.mock('@/api/studentExtraction', () => ({
+  extractStudentProfile: vi.fn(),
+}))
+
+vi.mock('@/components/student/VoiceUpdateDrawer', () => ({
+  VoiceUpdateDrawer: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="voice-update-drawer">
+      <button onClick={onClose}>close-drawer</button>
+    </div>
+  ),
+}))
+
 const MOCK_STUDENT: studentsApi.Student = {
   id: 'student-1',
   name: 'Ana Garcia',
@@ -252,6 +284,23 @@ describe('StudentDetail', () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
     expect(screen.getByTestId('edit-profile-link')).toHaveTextContent('Edit Student')
+  })
+
+  it('clicking "Update via voice" opens the recording panel with the upload-fallback link enabled', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    fireEvent.click(screen.getByTestId('voice-update-button'))
+    expect(screen.getByTestId('voice-recorder-panel')).toBeInTheDocument()
+    expect(await screen.findByTestId('switch-to-upload-link')).toBeInTheDocument()
+  })
+
+  it('Cancel dismisses the voice panel', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    fireEvent.click(screen.getByTestId('voice-update-button'))
+    expect(screen.getByTestId('voice-recorder-panel')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByTestId('voice-recorder-panel')).not.toBeInTheDocument()
   })
 })
 

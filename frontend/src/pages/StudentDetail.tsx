@@ -51,6 +51,12 @@ export default function StudentDetail() {
   const [extractedProfile, setExtractedProfile] = useState<ExtractedStudentProfile | null>(null)
   const [voiceError, setVoiceError] = useState<string | null>(null)
 
+  function cancelVoiceFlow() {
+    setVoiceFlow('idle')
+    setExtractedProfile(null)
+    setVoiceError(null)
+  }
+
   const { data: student, isLoading, isError } = useQuery({
     queryKey: ['student', id],
     queryFn: () => getStudent(id!),
@@ -287,9 +293,13 @@ export default function StudentDetail() {
       {voiceFlow === 'recording' && (
         <div className="rounded-2xl bg-white p-4 flex flex-col gap-2" data-testid="voice-recorder-panel">
           <p className="text-xs font-semibold tracking-widest uppercase text-gray-400">Update via voice</p>
-          <AudioRecorder onVoiceNote={handleVoiceNote} />
+          <AudioRecorder
+            autoStart
+            showUploadFallbackLink
+            onVoiceNote={handleVoiceNote}
+          />
           {voiceError && <p className="text-sm text-red-500">{voiceError}</p>}
-          <Button variant="ghost" size="sm" className="self-start" onClick={() => { setVoiceFlow('idle'); setVoiceError(null) }}>
+          <Button variant="ghost" size="sm" className="self-start" onClick={cancelVoiceFlow}>
             Cancel
           </Button>
         </div>
@@ -309,7 +319,7 @@ export default function StudentDetail() {
           saving={voiceFlow === 'saving'}
           saveError={voiceError}
           onSave={(patch: VoiceMergePatch) => handleVoiceSave(patch)}
-          onClose={() => { setVoiceFlow('idle'); setExtractedProfile(null); setVoiceError(null) }}
+          onClose={cancelVoiceFlow}
         />
       )}
 
