@@ -3,6 +3,7 @@
 Out-of-scope observations logged by agents during implementation. Each row is something an agent noticed but did not fix because it was outside the current task's scope. These get batched into future GitHub issues by the PM.
 
 | Source issue | Date | Severity | Observation |
+| #945 | 2026-04-26 | low | `activeDifficulties` (LogSession.tsx:265) is computed inline on every render and used in a useEffect deps array -- ESLint react-hooks/exhaustive-deps warns it recreates a new array reference each render. Pre-existing before this PR. Fix: wrap in `useMemo`. |
 | #605 | 2026-04-25 | low | VoiceNote upload API/DTO layer does not validate BlobPath/OriginalFileName/ContentType length at input boundary; EF MaxLength only enforces at DB write, giving a runtime error instead of a clean 400. |
 | #908 | 2026-04-24 | low | Tab bar at 375px clips "Progress" label (shows "Progre") -- pre-existing tab overflow at mobile width, outside StudentDetailHeader scope |
 | #834 | 2026-04-22 | low | EnsureAnaVisualExtrasAsync.UpdatedAt uses DateTime.UtcNow inline instead of caller's now (pre-existing inconsistency, not introduced by this task) |
