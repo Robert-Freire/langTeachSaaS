@@ -3301,6 +3301,28 @@ public class PromptServiceTests
         request.SystemPrompt.Should().NotContain("Student's known difficulties");
     }
 
+    // --- BuildStudentProfileExtractionPrompt ---
+
+    [Fact]
+    public void BuildStudentProfileExtractionPrompt_ContainsLanguagePreservationInstruction()
+    {
+        var request = _sut.BuildStudentProfileExtractionPrompt("teacher notes");
+
+        request.SystemPrompt.Should().Contain("same language as the teacher's input");
+        request.SystemPrompt.Should().Contain("Never translate or switch to English");
+    }
+
+    [Fact]
+    public void BuildStudentProfileExtractionPrompt_SetsHaikuModelAndPassesTeacherText()
+    {
+        const string teacherText = "El alumno es B1 y quiere preparar el DELE.";
+
+        var request = _sut.BuildStudentProfileExtractionPrompt(teacherText);
+
+        request.Model.Should().Be(ClaudeModel.Haiku);
+        request.UserPrompt.Should().Contain("DELE");
+    }
+
     // --- BuildReplanSuggestionPrompt ---
 
     [Fact]
