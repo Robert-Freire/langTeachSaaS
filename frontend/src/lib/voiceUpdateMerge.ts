@@ -1,4 +1,5 @@
 import { newId } from '@/lib/newId'
+import { normalizeLanguages, normalizeCompetency } from '@/lib/extractionNormalizer'
 import type { Student, Difficulty, ShortTermObjective, TeachingTodo, StudentFormData } from '@/api/students'
 import type { ExtractedStudentProfile, ExtractedObjective, ExtractedDifficulty } from '@/api/studentExtraction'
 
@@ -122,7 +123,9 @@ export function mergeExtractedIntoStudent(
     patch.birthYear = /^\d{4}$/.test(v) && Number.isFinite(parsed) ? parsed : null
   }
 
-  const confirmedNativeLangs = confirmedRows.filter((r) => r.fieldKey === 'nativeLanguages').map((r) => r.value)
+  const confirmedNativeLangs = normalizeLanguages(
+    confirmedRows.filter((r) => r.fieldKey === 'nativeLanguages').map((r) => r.value)
+  )
   if (confirmedNativeLangs.length > 0) {
     const existing = student.languages.nativeLanguages
     const deduped = [...existing]
@@ -132,7 +135,9 @@ export function mergeExtractedIntoStudent(
     patch.nativeLanguages = deduped
   }
 
-  const confirmedSpokenLangs = confirmedRows.filter((r) => r.fieldKey === 'spokenLanguages').map((r) => r.value)
+  const confirmedSpokenLangs = normalizeLanguages(
+    confirmedRows.filter((r) => r.fieldKey === 'spokenLanguages').map((r) => r.value)
+  )
   if (confirmedSpokenLangs.length > 0) {
     const existing = student.languages.spokenLanguages
     const deduped = [...existing]
@@ -178,7 +183,7 @@ export function mergeExtractedIntoStudent(
         toAdd.push({
           id: newId(),
           description: row.value,
-          competency: row.extractedDifficulty?.competency ?? 'general',
+          competency: normalizeCompetency(row.extractedDifficulty?.competency),
           subcategory: row.extractedDifficulty?.subcategory ?? 'general',
           severity: 'medium',
           trend: 'stable',
@@ -273,14 +278,14 @@ export function buildCreateRequestFromRows(rows: DrawerRow[]): StudentFormData {
     learningLanguage: DEFAULT_LEARNING_LANGUAGE,
     cefrLevel: get('cefrLevel') ?? 'A1',
     interests: getAll('interests'),
-    nativeLanguages: getAll('nativeLanguages'),
-    spokenLanguages: getAll('spokenLanguages'),
+    nativeLanguages: normalizeLanguages(getAll('nativeLanguages')),
+    spokenLanguages: normalizeLanguages(getAll('spokenLanguages')),
     learningGoals: [],
     weaknesses: [],
     difficulties: rows.filter(r => r.fieldKey === 'difficulties').map(r => ({
       id: newId(),
       description: r.value,
-      competency: r.extractedDifficulty?.competency ?? 'general',
+      competency: normalizeCompetency(r.extractedDifficulty?.competency),
       subcategory: r.extractedDifficulty?.subcategory ?? 'general',
       severity: 'medium',
       trend: 'stable',
