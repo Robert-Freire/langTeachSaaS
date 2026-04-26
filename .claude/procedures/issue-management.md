@@ -31,6 +31,31 @@ Before adding `qa:ready`, verify:
 - [ ] **Dependencies**: if this issue depends on another, state it explicitly.
 - [ ] **Full-stack split**: if both `area:frontend` and `area:backend`, the body must justify why it's one issue (see "Full-stack issues" section below).
 
+### UX-affecting issue body structure (REQUIRED for area:frontend / area:design)
+
+Issues that read like a code shopping list ("change line 94 from X to Y") cause implementers to literally do those changes and stop. Two real examples from sprint `student-profile-voice-input`:
+
+- **#951/#952** (truncation): issues named exact lines + exact CSS to change. Implementer changed exactly those. Missed the upstream JS slice in `sessionUtils.ts` that pre-baked `'...'` into the title data. Fix issued in #965.
+- **#964** (voice trigger autostart): issue gave a complete recipe (add `autoStart` prop, hide chooser, add fallback link). Implementer did all three. Never asked "what does the user see while `getUserMedia` is pending?", which produced the blank-panel regression in #971.
+
+In both cases, **all acceptance criteria passed but the user goal was broken**. The fix is not stricter ACs, it is reframing the body around the user's perception, with explicit negative space and mandatory in-browser verification.
+
+For any issue with `area:frontend` or `area:design`, the body MUST include these sections, in this order:
+
+1. **What the teacher experiences today**: current state from user POV (gestures, confusion, what they see and feel).
+2. **What we want them to experience**: desired feel, flow, gestures, tempo. Use second person if it helps.
+3. **What MUST NOT happen**: three or more bullets describing failure modes the user must never encounter. This is the negative-space contract that forces defensive thinking. Without it, edge cases get optimized away.
+4. **Edge cases / states the implementer must handle**: pending, error, denied, empty data, first-time user, slow network, no mic. If you do not list them, they do not get handled.
+5. **Where to start looking (the fix may extend further)**: files/components as investigation starting points, not "fix exactly here." Phrase as investigation, not prescription.
+6. **Verification (in a real browser)**: `- [ ]` checklist of user gestures and expected results. Unit tests alone do NOT satisfy this section.
+
+Anti-patterns to avoid:
+
+- **Specific line numbers as the contract** ("Affected line: 94"). Line numbers rot, and they push the implementer to skip upstream investigation. Use them as starting points only, never as ACs.
+- **Implementation prescriptions in ACs** ("Add an `autoStart?: boolean` prop", "AudioRecorder is now a forwardRef"). The user does not care. Replace with the user-facing outcome the change enables. If the architecture is contested, an "Implementation hint, not prescriptive" section can be present, but ACs stay user-facing.
+- **Issue body listing only the happy path**. The implementer will only build the happy path.
+- **Verification entirely in unit tests**. Unit tests mock the states real users hit (e.g., a resolved or rejected `getUserMedia` promise instead of a pending one). UX-affecting issues need browser verification.
+
 ### Specialist gates (check before adding qa:ready)
 
 These replace the qa-ready agent's specialist checks. Only apply when the trigger matches.
