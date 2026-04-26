@@ -75,7 +75,7 @@ export function LastSessionCard({ session, studentId }: Props) {
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               to={`/students/${studentId}/sessions/${session.id}/edit`}
-              className="text-[#1A1B22] hover:text-indigo-700 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="text-[#1A1B22] hover:text-indigo-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
               data-testid="last-session-title-link"
             >
               <h4

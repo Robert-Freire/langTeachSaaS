@@ -18,7 +18,9 @@ export function getSessionTitle(session: SessionLog): string {
  * Compact display title for a session in overview/card views.
  * Returns the explicit title (unless it is the generic "Session"),
  * falls back to actualContent / generalNotes / plannedContent, or "Session".
- * Callers are responsible for visual overflow (CSS line-clamp), per design system §7.
+ * Returns the raw string -- design system §7 forbids JS truncation, so any
+ * visual overflow is a styling decision left to the caller (CSS line-clamp,
+ * truncate, or letting the text flow freely).
  */
 export function getDisplayTitle(session: SessionLog): string {
   if (session.title && session.title !== 'Session') return session.title
