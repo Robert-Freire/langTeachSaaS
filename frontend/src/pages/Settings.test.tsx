@@ -104,7 +104,7 @@ describe('Settings error states', () => {
     } as unknown as ReturnType<typeof useProfile>)
 
     wrapper(<Settings />)
-    expect(screen.getByRole('button', { name: 'Save Profile' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument()
   })
 })
 
@@ -135,7 +135,7 @@ describe('Settings validation and toast behavior', () => {
     await user.clear(input)
 
     // Submit
-    await user.click(screen.getByRole('button', { name: 'Save Profile' }))
+    await user.click(screen.getByRole('button', { name: 'Done' }))
 
     // Validation error appears, success is hidden
     expect(screen.getByTestId('validation-error')).toHaveTextContent('Display Name is required.')
@@ -158,12 +158,12 @@ describe('Settings validation and toast behavior', () => {
     // Clear name and submit to trigger validation error
     const input = screen.getByLabelText('Name')
     await user.clear(input)
-    await user.click(screen.getByRole('button', { name: 'Save Profile' }))
+    await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(screen.getByTestId('validation-error')).toBeInTheDocument()
 
     // Type a name and submit again
     await user.type(input, 'New Teacher')
-    await user.click(screen.getByRole('button', { name: 'Save Profile' }))
+    await user.click(screen.getByRole('button', { name: 'Done' }))
 
     // Validation error gone, mutate called
     expect(screen.queryByTestId('validation-error')).not.toBeInTheDocument()
@@ -184,7 +184,7 @@ describe('Settings validation and toast behavior', () => {
 
     // Clear and submit
     await user.clear(screen.getByLabelText('Name'))
-    await user.click(screen.getByRole('button', { name: 'Save Profile' }))
+    await user.click(screen.getByRole('button', { name: 'Done' }))
 
     // Only validation error visible, not both
     expect(screen.getByTestId('validation-error')).toBeInTheDocument()
