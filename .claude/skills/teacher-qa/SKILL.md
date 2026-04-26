@@ -104,6 +104,18 @@ docker ps --filter "name=langteachsaas-qa" --format "{{.Names}}"
   done
   ```
 
+### Step 2.5: Ensure QA Teacher is Pro Tier
+
+Run after the stack is healthy (every QA cycle, including after volume resets).
+This prevents the Free tier 50-generation monthly limit from blocking QA runs.
+
+```bash
+source .env.qa && docker compose -f docker-compose.qa.yml --env-file .env.qa exec -T api dotnet LangTeach.Api.dll --qa-seed "$TEACHER_QA_EMAIL"
+```
+
+Expected output: `--qa-seed: teacher <email> set to Pro/approved.`
+If the command fails with "no teacher found", the QA user has not logged in yet — complete the One-Time QA User Onboarding steps above first.
+
 ### Step 3: Run Playwright Personas
 
 For each selected persona, run the corresponding spec:
