@@ -188,7 +188,7 @@ export function StudentDetailHeader({ student, nextSession, sessionFrequency, on
             <button
               onClick={onVoiceUpdateClick}
               disabled={voiceFlowActive}
-              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               data-testid="voice-update-button"
             >
               <Mic className="h-3.5 w-3.5" />
