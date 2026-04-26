@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { Search, UserPlus, Users, ChevronsUpDown, ChevronDown } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Search, UserPlus, Users, ChevronsUpDown, ChevronDown, Mic, Loader2 } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
-import { getStudents, type Student } from '../api/students'
+import { getStudents, createStudent, type Student } from '../api/students'
 import { getDashboard, type ActiveStudent } from '../api/dashboard'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,11 @@ import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { cn } from '@/lib/utils'
 import { calendarRelativeDay } from '@/utils/formatDate'
 import { getInitials } from '@/utils/nameUtils'
+import { AudioRecorder } from '@/components/audio/AudioRecorder'
+import { VoiceUpdateDrawer } from '@/components/student/VoiceUpdateDrawer'
+import { extractStudentProfile, type ExtractedStudentProfile } from '@/api/studentExtraction'
+import { buildCreateRequestFromRows, type DrawerRow } from '@/lib/voiceUpdateMerge'
+import { logger } from '@/lib/logger'
 
 // ── Avatar helpers ──────────────────────────────────────────────────────────
 
@@ -200,7 +205,13 @@ const TABLE_HEADERS = ['', 'Name', 'CEFR LEVEL', 'LANGUAGE', 'Last Session', 'Ne
 
 export default function Students() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
+
+  type VoiceFlow = 'idle' | 'recording' | 'extracting' | 'confirming' | 'saving'
+  const [voiceFlow, setVoiceFlow] = useState<VoiceFlow>('idle')
+  const [extractedProfile, setExtractedProfile] = useState<ExtractedStudentProfile | null>(null)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
 
   const cefrFilter = searchParams.get('level') ?? 'All'
   const sortBy = (searchParams.get('sort') as SortOption) ?? 'lastSession'
@@ -306,6 +317,45 @@ export default function Students() {
 
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? 'Last Session'
 
+  async function handleVoiceNote(voiceNote: { transcription: string | null }) {
+    if (!voiceNote.transcription || !voiceNote.transcription.trim()) {
+      setVoiceError('Transcription failed. Please try recording again.')
+      setVoiceFlow('idle')
+      return
+    }
+    setVoiceFlow('extracting')
+    setVoiceError(null)
+    try {
+      const result = await extractStudentProfile(voiceNote.transcription)
+      setExtractedProfile(result)
+      setVoiceFlow('confirming')
+    } catch (err) {
+      logger.error('Students', 'Voice extraction failed', err)
+      setVoiceError('Extraction failed. Please try again.')
+      setVoiceFlow('idle')
+    }
+  }
+
+  async function handleVoiceCreate(rows: DrawerRow[]) {
+    setVoiceFlow('saving')
+    try {
+      const data = buildCreateRequestFromRows(rows)
+      const newStudent = await createStudent(data)
+      queryClient.invalidateQueries({ queryKey: ['students'] })
+      navigate(`/students/${newStudent.id}`)
+    } catch (err) {
+      logger.error('Students', 'Voice create failed', err)
+      setVoiceError('Could not create student. Please try again.')
+      setVoiceFlow('confirming')
+    }
+  }
+
+  function cancelVoiceFlow() {
+    setVoiceFlow('idle')
+    setExtractedProfile(null)
+    setVoiceError(null)
+  }
+
   if (isStudentsLoading) {
     return (
       <div className="space-y-6">
@@ -352,18 +402,60 @@ export default function Students() {
         title="Student Roster"
         subtitle={allStudents.length > 0 ? buildSubtitle() : undefined}
         actions={
-          <Link
-            to="/students/new"
-            className={cn(
-              buttonVariants(),
-              'bg-gradient-to-br from-[#3525CD] to-[#4F46E5] hover:opacity-90 text-white border-0'
-            )}
-          >
-            <UserPlus className="h-4 w-4 mr-1.5" />
-            Add Student
-          </Link>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setVoiceFlow('recording')}
+              disabled={voiceFlow !== 'idle'}
+              data-testid="voice-new-student-button"
+              className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+            >
+              <Mic className="h-4 w-4 mr-1.5" />
+              New student via voice
+            </Button>
+            <Link
+              to="/students/new"
+              className={cn(
+                buttonVariants(),
+                'bg-gradient-to-br from-[#3525CD] to-[#4F46E5] hover:opacity-90 text-white border-0'
+              )}
+            >
+              <UserPlus className="h-4 w-4 mr-1.5" />
+              Add Student
+            </Link>
+          </div>
         }
       />
+
+      {voiceFlow === 'recording' && (
+        <div className="rounded-2xl bg-white p-4 flex flex-col gap-2" data-testid="voice-recorder-panel">
+          <p className="text-xs font-semibold tracking-widest uppercase text-gray-400">New student via voice</p>
+          <AudioRecorder onVoiceNote={handleVoiceNote} />
+          {voiceError && <p className="text-sm text-red-500">{voiceError}</p>}
+          <Button variant="ghost" size="sm" className="self-start" onClick={cancelVoiceFlow}>
+            Cancel
+          </Button>
+        </div>
+      )}
+
+      {voiceFlow === 'extracting' && (
+        <div className="rounded-2xl bg-white p-4 flex items-center gap-2 text-sm text-gray-500" data-testid="extracting-indicator">
+          <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
+          Analysing recording...
+        </div>
+      )}
+
+      {(voiceFlow === 'confirming' || voiceFlow === 'saving') && extractedProfile && (
+        <VoiceUpdateDrawer
+          mode="create"
+          extracted={extractedProfile}
+          saving={voiceFlow === 'saving'}
+          saveError={voiceError}
+          onSave={(rows: DrawerRow[]) => handleVoiceCreate(rows)}
+          onClose={cancelVoiceFlow}
+        />
+      )}
 
       {/* Search, filter and sort bar */}
       {allStudents.length > 0 && (

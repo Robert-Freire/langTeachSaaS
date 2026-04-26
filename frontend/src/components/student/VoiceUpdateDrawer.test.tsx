@@ -106,6 +106,62 @@ describe('VoiceUpdateDrawer', () => {
   })
 })
 
+describe('VoiceUpdateDrawer — create mode', () => {
+  function renderCreateDrawer(extracted: Partial<ExtractedStudentProfile> = {}) {
+    const onSave = vi.fn()
+    const onClose = vi.fn()
+    render(
+      <VoiceUpdateDrawer
+        mode="create"
+        extracted={{ ...EMPTY_EXTRACTED, ...extracted }}
+        saving={false}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    )
+    return { onSave, onClose }
+  }
+
+  it('shows empty state when nothing extracted (no name)', () => {
+    renderCreateDrawer()
+    expect(screen.getByTestId('empty-extraction')).toBeInTheDocument()
+  })
+
+  it('renders all rows with NEW badge', () => {
+    renderCreateDrawer({ name: 'María', profession: 'Nurse', interests: ['Travel'] })
+    const badges = screen.getAllByTestId('badge-NEW')
+    expect(badges.length).toBeGreaterThanOrEqual(3)
+    expect(screen.queryByTestId('badge-CHANGED')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('badge-ADDED')).not.toBeInTheDocument()
+  })
+
+  it('CTA label is "Create student"', () => {
+    renderCreateDrawer({ name: 'María' })
+    expect(screen.getByTestId('drawer-save')).toHaveTextContent('Create student')
+  })
+
+  it('shows name-required warning when name absent', () => {
+    renderCreateDrawer({ profession: 'Nurse' })
+    expect(screen.getByTestId('name-required-warning')).toBeInTheDocument()
+    expect(screen.getByTestId('drawer-save')).toBeDisabled()
+  })
+
+  it('save is enabled when name is present', () => {
+    renderCreateDrawer({ name: 'María', profession: 'Nurse' })
+    expect(screen.queryByTestId('name-required-warning')).not.toBeInTheDocument()
+    expect(screen.getByTestId('drawer-save')).not.toBeDisabled()
+  })
+
+  it('onSave receives rows when confirmed', () => {
+    const { onSave } = renderCreateDrawer({ name: 'María', profession: 'Nurse' })
+    fireEvent.click(screen.getByTestId('drawer-save'))
+    expect(onSave).toHaveBeenCalledTimes(1)
+    const rows = onSave.mock.calls[0][0]
+    expect(Array.isArray(rows)).toBe(true)
+    expect(rows.some((r: { fieldKey: string }) => r.fieldKey === 'name')).toBe(true)
+  })
+})
+
 describe('mergeExtractedIntoStudent', () => {
   function makeRow(fieldKey: string, value: string, badge: 'CHANGED' | 'NEW' | 'ADDED' = 'NEW') {
     return { id: 'r1', fieldKey, label: fieldKey, badge, currentValue: null, value }
