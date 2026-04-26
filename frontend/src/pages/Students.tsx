@@ -404,12 +404,11 @@ export default function Students() {
         actions={
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => setVoiceFlow('recording')}
               disabled={voiceFlow !== 'idle'}
               data-testid="voice-new-student-button"
-              className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
             >
               <Mic className="h-4 w-4 mr-1.5" />
               New student via voice
