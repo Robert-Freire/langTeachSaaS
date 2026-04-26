@@ -150,13 +150,23 @@ export function AudioRecorder({
 
   useEffect(() => {
     if (!autoStart || autoStartedRef.current || state !== 'idle' || error) return
-    autoStartedRef.current = true
     // Defer to a microtask so the effect body does not trigger a synchronous
-    // setState cascade. startRecording() awaits getUserMedia before its first
-    // setState anyway, but the deferred call also satisfies the
-    // react-hooks/set-state-in-effect lint rule.
-    const handle = setTimeout(() => { void startRecordingRef.current() }, 0)
-    return () => clearTimeout(handle)
+    // setState cascade. The local cancelled flag + autoStartedRef set inside
+    // the timeout (rather than synchronously) keeps React 18 StrictMode dev
+    // happy: when StrictMode runs the cleanup before the timeout fires, we
+    // cancel cleanly and the re-mount can re-arm. Setting autoStartedRef
+    // synchronously here would gate off the re-mount and recording would
+    // never start in dev.
+    let cancelled = false
+    const handle = setTimeout(() => {
+      if (cancelled) return
+      autoStartedRef.current = true
+      void startRecordingRef.current()
+    }, 0)
+    return () => {
+      cancelled = true
+      clearTimeout(handle)
+    }
   }, [autoStart, state, error])
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
