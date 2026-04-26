@@ -152,6 +152,9 @@ describe('LastSessionCard', () => {
     const titleLink = screen.getByTestId('last-session-title-link')
     expect(titleLink).toHaveAttribute('href', '/students/student-1/sessions/sess-x/edit')
     expect(titleLink).toContainElement(screen.getByTestId('last-session-title'))
+    // Hover state per design system: indigo + underline on hover, no underline at rest.
+    expect(titleLink.className).toContain('hover:text-indigo-700')
+    expect(titleLink.className).toContain('hover:underline')
   })
 
   it('renders View session link with correct href', () => {
