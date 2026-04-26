@@ -11,3 +11,4 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 | Issue | Date | Finding | Severity |
 |-------|------|---------|----------|
 | #928 | 2026-04-25 | `Button variant="ghost"` uses `hover:bg-muted` (near-white gray) while the app's surface-container-low hover color `#F4F2FD` (lavender) is hardcoded in 10+ places. Pre-existing divergence between the shared Button component and app-level ghost-style links. Consider aligning `--muted` token to `#F4F2FD` or introducing a `surface-container-low` CSS variable. | Low |
+| #951 | 2026-04-26 | Indigo inline-link hover treatment inconsistent across student cards: `LastSessionCard` uses `hover:text-indigo-800` only (per issue AC), `LessonHistoryCard` adds `hover:underline`. Consider standardising to one pattern (add `hover:underline` everywhere, or drop it everywhere). | Low |
