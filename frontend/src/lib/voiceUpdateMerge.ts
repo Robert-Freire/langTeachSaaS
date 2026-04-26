@@ -1,6 +1,8 @@
 import { newId } from '@/lib/newId'
-import type { Student, Difficulty, ShortTermObjective, TeachingTodo } from '@/api/students'
+import type { Student, Difficulty, ShortTermObjective, TeachingTodo, StudentFormData } from '@/api/students'
 import type { ExtractedStudentProfile, ExtractedObjective, ExtractedDifficulty } from '@/api/studentExtraction'
+
+const DEFAULT_LEARNING_LANGUAGE = 'Spanish'
 
 export interface DrawerRow {
   id: string
@@ -202,4 +204,113 @@ export function mergeExtractedIntoStudent(
   }
 
   return patch
+}
+
+export function buildCreateDrawerRows(extracted: ExtractedStudentProfile): DrawerRow[] {
+  const rows: DrawerRow[] = []
+
+  function addNew(fieldKey: string, label: string, value: string | number | null | undefined) {
+    if (value == null || value === '') return
+    rows.push({ id: newId(), fieldKey, label, badge: 'NEW', currentValue: null, value: String(value) })
+  }
+
+  addNew('name', 'Name', extracted.name)
+  addNew('cefrLevel', 'CEFR Level', extracted.cefrLevel)
+  addNew('profession', 'Profession', extracted.profession)
+  addNew('reasonForStudying', 'Reason for Studying', extracted.reasonForStudying)
+  addNew('birthYear', 'Birth Year', extracted.birthYear)
+  addNew('countryOfResidence', 'Country of Residence', extracted.countryOfResidence)
+  addNew('cityOfResidence', 'City of Residence', extracted.cityOfResidence)
+
+  for (const lang of extracted.nativeLanguages) {
+    rows.push({ id: newId(), fieldKey: 'nativeLanguages', label: 'Native Language', badge: 'NEW', currentValue: null, value: lang })
+  }
+  for (const lang of extracted.spokenLanguages) {
+    rows.push({ id: newId(), fieldKey: 'spokenLanguages', label: 'Spoken Language', badge: 'NEW', currentValue: null, value: lang })
+  }
+  for (const interest of extracted.interests) {
+    rows.push({ id: newId(), fieldKey: 'interests', label: 'Interest', badge: 'NEW', currentValue: null, value: interest })
+  }
+  for (const obj of extracted.shortTermObjectives) {
+    rows.push({
+      id: newId(),
+      fieldKey: 'shortTermObjectives',
+      label: 'Short-term Objective',
+      badge: 'NEW',
+      currentValue: null,
+      value: obj.targetDate ? `${obj.text} (by ${obj.targetDate})` : obj.text,
+      extractedObjective: obj,
+    })
+  }
+  for (const diff of extracted.difficulties) {
+    rows.push({
+      id: newId(),
+      fieldKey: 'difficulties',
+      label: 'Difficulty',
+      badge: 'NEW',
+      currentValue: null,
+      value: diff.description,
+      extractedDifficulty: diff,
+    })
+  }
+  for (const todo of extracted.teachingTodoTexts) {
+    rows.push({ id: newId(), fieldKey: 'teachingTodos', label: 'Idea for Next Class', badge: 'NEW', currentValue: null, value: todo })
+  }
+
+  return rows
+}
+
+export function buildCreateRequestFromRows(rows: DrawerRow[]): StudentFormData {
+  const get = (key: string) => rows.find(r => r.fieldKey === key)?.value ?? null
+  const getAll = (key: string) => rows.filter(r => r.fieldKey === key).map(r => r.value)
+
+  const birthYearStr = get('birthYear')?.trim() ?? ''
+  const birthYearParsed = parseInt(birthYearStr, 10)
+  const birthYear = /^\d{4}$/.test(birthYearStr) && Number.isFinite(birthYearParsed) ? birthYearParsed : null
+
+  return {
+    name: get('name') ?? '',
+    learningLanguage: DEFAULT_LEARNING_LANGUAGE,
+    cefrLevel: get('cefrLevel') ?? 'A1',
+    interests: getAll('interests'),
+    nativeLanguages: getAll('nativeLanguages'),
+    spokenLanguages: getAll('spokenLanguages'),
+    learningGoals: [],
+    weaknesses: [],
+    difficulties: rows.filter(r => r.fieldKey === 'difficulties').map(r => ({
+      id: newId(),
+      description: r.value,
+      competency: r.extractedDifficulty?.competency ?? 'general',
+      subcategory: r.extractedDifficulty?.subcategory ?? 'general',
+      severity: 'medium',
+      trend: 'stable',
+      status: 'Active',
+    })),
+    birthYear,
+    profession: get('profession'),
+    countryOfOrigin: null,
+    cityOfOrigin: null,
+    countryOfResidence: get('countryOfResidence'),
+    cityOfResidence: get('cityOfResidence'),
+    reasonForStudying: get('reasonForStudying'),
+    officialCefrLevel: get('officialCefrLevel'),
+    shortTermObjectives: rows.filter(r => r.fieldKey === 'shortTermObjectives').map(r => ({
+      id: newId(),
+      text: r.extractedObjective?.text ?? r.value,
+      targetDate: r.extractedObjective?.targetDate ?? null,
+      objectiveType: 'other' as const,
+    })),
+    teachingTodos: rows.filter(r => r.fieldKey === 'teachingTodos').map(r => ({
+      id: newId(),
+      text: r.value,
+      createdAt: new Date().toISOString(),
+      sourceSessionLogId: null,
+      status: 'pending',
+      coveredInSessionLogId: null,
+    })),
+    isActive: true,
+    isCorporate: false,
+    rate: null,
+    skillLevelOverrides: {},
+  }
 }

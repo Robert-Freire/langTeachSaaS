@@ -5,18 +5,32 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Students from './Students'
 import * as studentsApi from '../api/students'
 import * as dashboardApi from '../api/dashboard'
+import * as studentExtractionApi from '../api/studentExtraction'
 
 vi.mock('../api/students', () => ({
   getStudents: vi.fn(),
   deleteStudent: vi.fn(),
+  createStudent: vi.fn(),
 }))
 
 vi.mock('../api/dashboard', () => ({
   getDashboard: vi.fn(),
 }))
 
+vi.mock('../api/studentExtraction', () => ({
+  extractStudentProfile: vi.fn(),
+}))
+
 vi.mock('../lib/logger', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
+}))
+
+vi.mock('@/components/audio/AudioRecorder', () => ({
+  AudioRecorder: ({ onVoiceNote }: { onVoiceNote: (note: { transcription: string | null }) => void }) => (
+    <button data-testid="audio-recorder-mock" onClick={() => onVoiceNote({ transcription: 'María is a nurse from Madrid' })}>
+      Record
+    </button>
+  ),
 }))
 
 const emptyDashboard = { nextSession: null, todaySessions: [], activeStudents: [], pendingFollowups: [], upcomingThisWeek: [] }
@@ -597,6 +611,38 @@ describe('Students page', () => {
     await screen.findByTestId('student-name')
     expect(screen.getByText('Cancelled 2x')).toBeInTheDocument()
     expect(screen.queryByText('RETURNING')).not.toBeInTheDocument()
+  })
+
+  it('"New student via voice" button is visible', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse([makeStudent()]))
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    expect(screen.getByTestId('voice-new-student-button')).toBeInTheDocument()
+  })
+
+  it('clicking voice button shows AudioRecorder panel', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse([makeStudent()]))
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    fireEvent.click(screen.getByTestId('voice-new-student-button'))
+    expect(screen.getByTestId('voice-recorder-panel')).toBeInTheDocument()
+    expect(screen.getByTestId('audio-recorder-mock')).toBeInTheDocument()
+  })
+
+  it('shows VoiceUpdateDrawer in create mode after extraction', async () => {
+    const emptyProfile: studentExtractionApi.ExtractedStudentProfile = {
+      name: 'María López', birthYear: null, profession: 'Nurse', countryOfResidence: 'Spain',
+      cityOfResidence: null, reasonForStudying: null, nativeLanguages: [], spokenLanguages: [],
+      cefrLevel: null, officialCefrLevel: null, shortTermObjectives: [], difficulties: [], teachingTodoTexts: [], interests: [],
+    }
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse([makeStudent()]))
+    vi.mocked(studentExtractionApi.extractStudentProfile).mockResolvedValue(emptyProfile)
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    fireEvent.click(screen.getByTestId('voice-new-student-button'))
+    fireEvent.click(screen.getByTestId('audio-recorder-mock'))
+    await screen.findByTestId('voice-update-drawer')
+    expect(screen.getByTestId('drawer-save')).toHaveTextContent('Create student')
   })
 
   it('shows absolute date format for next session more than 6 days in the future', async () => {
