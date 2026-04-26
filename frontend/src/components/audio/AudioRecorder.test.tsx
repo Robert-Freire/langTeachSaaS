@@ -1,3 +1,4 @@
+import { StrictMode } from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AudioRecorder } from './AudioRecorder'
@@ -165,6 +166,32 @@ describe('AudioRecorder', () => {
     expect(screen.queryByTestId('record-button')).not.toBeInTheDocument()
     expect(screen.queryByTestId('upload-audio-button')).not.toBeInTheDocument()
     expect(screen.queryByTestId('stop-button')).not.toBeInTheDocument()
+  })
+
+  it('still starts recording under React StrictMode (mount, cleanup, re-mount cycle)', async () => {
+    // Regression: React 18 StrictMode runs effects twice in dev (mount,
+    // cleanup, mount again). The previous implementation set autoStartedRef
+    // synchronously inside the effect body, then scheduled setTimeout(0)
+    // for startRecording. StrictMode's cleanup ran clearTimeout, cancelling
+    // the pending call, but autoStartedRef stayed true (refs persist), so
+    // the second mount returned early at the gate. getUserMedia was never
+    // called and the recorder hung in the starting state.
+    //
+    // The fix flips autoStartedRef inside the setTimeout callback (after
+    // the cancelled check), so the first cleanup leaves the gate open for
+    // the re-mount to re-arm.
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+
+    render(
+      <StrictMode>
+        <AudioRecorder onVoiceNote={vi.fn()} autoStart />
+      </StrictMode>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('stop-button')).toBeInTheDocument()
+    })
   })
 
   it('still starts recording when the parent rerenders with a new onVoiceNote reference', async () => {
