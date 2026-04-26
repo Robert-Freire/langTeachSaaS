@@ -62,11 +62,11 @@ describe('getDisplayTitle', () => {
     expect(getDisplayTitle(makeSession({ title: 'Subjunctive intro' }))).toBe('Subjunctive intro')
   })
 
-  it('falls back to truncated actualContent when title is "Session"', () => {
+  it('returns the full actualContent string when title is "Session" (no JS truncation)', () => {
     const content = 'a'.repeat(60)
     const result = getDisplayTitle(makeSession({ title: 'Session', actualContent: content }))
-    expect(result).toHaveLength(58) // 55 chars + '...'
-    expect(result.endsWith('...')).toBe(true)
+    expect(result).toBe(content)
+    expect(result).not.toContain('...')
   })
 
   it('falls back to actualContent without ellipsis when short', () => {

@@ -73,12 +73,18 @@ export function LastSessionCard({ session, studentId }: Props) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h4
-              className="font-manrope text-base font-bold text-[#1A1B22] leading-snug"
-              data-testid="last-session-title"
+            <Link
+              to={`/students/${studentId}/sessions/${session.id}/edit`}
+              className="text-[#1A1B22] hover:text-indigo-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+              data-testid="last-session-title-link"
             >
-              {title}
-            </h4>
+              <h4
+                className="font-manrope text-base font-bold leading-snug"
+                data-testid="last-session-title"
+              >
+                {title}
+              </h4>
+            </Link>
             {session.duration && (
               <span
                 className="text-xs text-zinc-500 bg-[#F4F2FD] rounded px-2 py-0.5"
