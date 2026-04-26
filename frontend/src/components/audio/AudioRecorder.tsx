@@ -244,17 +244,16 @@ export function AudioRecorder({
             <button
               type="button"
               onClick={() => {
-                // Same path as the imperative handle: discard the in-flight
-                // recording, release the mic, then open the file picker.
+                // Discard the in-flight recording (skip onstop's upload),
+                // release the mic, reset visible state, then open the file
+                // picker. autoStartedRef is set so the autoStart effect does
+                // not retrigger after we land back in idle.
                 discardOnStopRef.current = true
                 stopInterval()
                 if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
                   mediaRecorderRef.current.stop()
                 }
-                setState('idle')
-                setError(null)
-                setElapsed(0)
-                setDurationWarning(false)
+                reset()
                 autoStartedRef.current = true
                 fileInputRef.current?.click()
               }}
