@@ -189,7 +189,7 @@ function CompactSessionCard({ session, isMostRecent, studentId }: { session: Ses
   return (
     <Link
       to={`/students/${studentId}/sessions/${session.id}/edit`}
-      className="bg-white rounded-xl px-4 py-3 flex items-start gap-3 cursor-pointer hover:bg-[#F4F2FD] transition-colors"
+      className="bg-white rounded-xl px-4 py-3 flex items-start gap-3 hover:bg-[#F4F2FD] transition-colors"
       style={{ boxShadow: '0 4px 16px rgba(26, 27, 34, 0.05)', minHeight: '72px' }}
       data-testid="recent-session-item"
     >
