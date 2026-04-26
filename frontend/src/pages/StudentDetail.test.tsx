@@ -1,3 +1,4 @@
+import { forwardRef, useEffect, useImperativeHandle } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -45,6 +46,41 @@ vi.mock('../components/student/ProgressDashboard', () => ({
   ProgressDashboard: () => <div data-testid="progress-dashboard" />,
 }))
 
+const switchToFileUploadSpy = vi.fn()
+
+vi.mock('@/components/audio/AudioRecorder', () => ({
+  AudioRecorder: forwardRef<
+    { switchToFileUpload(): void },
+    {
+      onVoiceNote: (note: { transcription: string | null }) => void
+      autoStart?: boolean
+      onStateChange?: (state: 'idle' | 'recording' | 'uploading' | 'done' | 'error') => void
+    }
+  >(function MockAudioRecorder({ onVoiceNote, autoStart, onStateChange }, ref) {
+    useImperativeHandle(ref, () => ({ switchToFileUpload: switchToFileUploadSpy }), [])
+    useEffect(() => {
+      if (autoStart) onStateChange?.('recording')
+    }, [autoStart, onStateChange])
+    return (
+      <button data-testid="audio-recorder-mock" onClick={() => onVoiceNote({ transcription: 'Ana speaks German now' })}>
+        Record
+      </button>
+    )
+  }),
+}))
+
+vi.mock('@/api/studentExtraction', () => ({
+  extractStudentProfile: vi.fn(),
+}))
+
+vi.mock('@/components/student/VoiceUpdateDrawer', () => ({
+  VoiceUpdateDrawer: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="voice-update-drawer">
+      <button onClick={onClose}>close-drawer</button>
+    </div>
+  ),
+}))
+
 const MOCK_STUDENT: studentsApi.Student = {
   id: 'student-1',
   name: 'Ana Garcia',
@@ -86,6 +122,7 @@ function wrapper(studentId = 'student-1') {
 
 describe('StudentDetail', () => {
   beforeEach(() => {
+    switchToFileUploadSpy.mockReset()
     vi.mocked(studentsApi.getStudent).mockResolvedValue(MOCK_STUDENT)
   })
 
@@ -252,6 +289,31 @@ describe('StudentDetail', () => {
     wrapper()
     await screen.findByTestId('student-detail-name')
     expect(screen.getByTestId('edit-profile-link')).toHaveTextContent('Edit Student')
+  })
+
+  it('clicking "Update via voice" opens the recording panel with the upload-instead link', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    fireEvent.click(screen.getByTestId('voice-update-button'))
+    expect(screen.getByTestId('voice-recorder-panel')).toBeInTheDocument()
+    expect(await screen.findByTestId('switch-to-upload-link')).toBeInTheDocument()
+  })
+
+  it('clicking the upload-instead link calls AudioRecorder.switchToFileUpload', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    fireEvent.click(screen.getByTestId('voice-update-button'))
+    fireEvent.click(await screen.findByTestId('switch-to-upload-link'))
+    expect(switchToFileUploadSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('Cancel dismisses the voice panel', async () => {
+    wrapper()
+    await screen.findByTestId('student-detail-name')
+    fireEvent.click(screen.getByTestId('voice-update-button'))
+    expect(screen.getByTestId('voice-recorder-panel')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByTestId('voice-recorder-panel')).not.toBeInTheDocument()
   })
 })
 

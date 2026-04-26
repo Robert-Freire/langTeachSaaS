@@ -15,7 +15,7 @@ import { StudentProfileTab } from '@/components/student/StudentProfileTab'
 import { StudentOverviewTab } from '@/components/student/StudentOverviewTab'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
-import { AudioRecorder } from '@/components/audio/AudioRecorder'
+import { AudioRecorder, type AudioRecorderHandle, type RecorderState } from '@/components/audio/AudioRecorder'
 import { VoiceUpdateDrawer } from '@/components/student/VoiceUpdateDrawer'
 import type { VoiceMergePatch } from '@/lib/voiceUpdateMerge'
 import { extractStudentProfile } from '@/api/studentExtraction'
@@ -50,6 +50,15 @@ export default function StudentDetail() {
   const [voiceFlow, setVoiceFlow] = useState<VoiceFlow>('idle')
   const [extractedProfile, setExtractedProfile] = useState<ExtractedStudentProfile | null>(null)
   const [voiceError, setVoiceError] = useState<string | null>(null)
+  const [recorderState, setRecorderState] = useState<RecorderState>('idle')
+  const audioRecorderRef = useRef<AudioRecorderHandle>(null)
+
+  function cancelVoiceFlow() {
+    setVoiceFlow('idle')
+    setExtractedProfile(null)
+    setVoiceError(null)
+    setRecorderState('idle')
+  }
 
   const { data: student, isLoading, isError } = useQuery({
     queryKey: ['student', id],
@@ -287,9 +296,24 @@ export default function StudentDetail() {
       {voiceFlow === 'recording' && (
         <div className="rounded-2xl bg-white p-4 flex flex-col gap-2" data-testid="voice-recorder-panel">
           <p className="text-xs font-semibold tracking-widest uppercase text-gray-400">Update via voice</p>
-          <AudioRecorder onVoiceNote={handleVoiceNote} />
+          <AudioRecorder
+            ref={audioRecorderRef}
+            autoStart
+            onVoiceNote={handleVoiceNote}
+            onStateChange={setRecorderState}
+          />
+          {recorderState === 'recording' && (
+            <button
+              type="button"
+              onClick={() => audioRecorderRef.current?.switchToFileUpload()}
+              className="self-start text-xs font-medium text-indigo-600 hover:underline"
+              data-testid="switch-to-upload-link"
+            >
+              or upload an audio file instead
+            </button>
+          )}
           {voiceError && <p className="text-sm text-red-500">{voiceError}</p>}
-          <Button variant="ghost" size="sm" className="self-start" onClick={() => { setVoiceFlow('idle'); setVoiceError(null) }}>
+          <Button variant="ghost" size="sm" className="self-start" onClick={cancelVoiceFlow}>
             Cancel
           </Button>
         </div>
@@ -309,7 +333,7 @@ export default function StudentDetail() {
           saving={voiceFlow === 'saving'}
           saveError={voiceError}
           onSave={(patch: VoiceMergePatch) => handleVoiceSave(patch)}
-          onClose={() => { setVoiceFlow('idle'); setExtractedProfile(null); setVoiceError(null) }}
+          onClose={cancelVoiceFlow}
         />
       )}
 
