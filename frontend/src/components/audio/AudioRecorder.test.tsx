@@ -153,6 +153,20 @@ describe('AudioRecorder', () => {
     expect(screen.queryByTestId('upload-audio-button')).not.toBeInTheDocument()
   })
 
+  it('shows a starting indicator while autoStart is awaiting mic permission', async () => {
+    // getUserMedia stays pending: mimics the user not having decided on the
+    // OS-level permission prompt yet. Without the starting indicator the
+    // panel renders empty and the teacher thinks the feature is broken.
+    mockGetUserMedia.mockReturnValue(new Promise(() => {}))
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} autoStart />)
+
+    expect(await screen.findByTestId('recorder-starting')).toBeInTheDocument()
+    expect(screen.queryByTestId('record-button')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('upload-audio-button')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('stop-button')).not.toBeInTheDocument()
+  })
+
   it('reveals the chooser when autoStart fails because mic permission is denied', async () => {
     mockGetUserMedia.mockRejectedValue(new Error('Permission denied'))
 
