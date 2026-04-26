@@ -3313,7 +3313,7 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public void BuildStudentProfileExtractionPrompt_SetsHaikuModelAndSanitizesUserText()
+    public void BuildStudentProfileExtractionPrompt_SetsHaikuModelAndPassesTeacherText()
     {
         const string teacherText = "El alumno es B1 y quiere preparar el DELE.";
 
