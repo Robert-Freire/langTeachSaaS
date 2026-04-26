@@ -1,0 +1,186 @@
+import { newId } from '@/lib/newId'
+import type { Student, Difficulty, ShortTermObjective, TeachingTodo } from '@/api/students'
+import type { ExtractedStudentProfile } from '@/api/studentExtraction'
+
+export interface DrawerRow {
+  id: string
+  fieldKey: string
+  label: string
+  badge: 'CHANGED' | 'ADDED' | 'NEW'
+  currentValue: string | null
+  value: string
+}
+
+export type VoiceMergePatch = {
+  cefrLevel?: string
+  officialCefrLevel?: string | null
+  profession?: string | null
+  reasonForStudying?: string | null
+  birthYear?: number | null
+  countryOfResidence?: string | null
+  cityOfResidence?: string | null
+  nativeLanguages?: string[]
+  spokenLanguages?: string[]
+  interests?: string[]
+  shortTermObjectives?: ShortTermObjective[]
+  difficulties?: Difficulty[]
+  teachingTodos?: TeachingTodo[]
+}
+
+export function buildDrawerRows(extracted: ExtractedStudentProfile, student: Student): DrawerRow[] {
+  const rows: DrawerRow[] = []
+
+  function addScalar(
+    fieldKey: string,
+    label: string,
+    extractedVal: string | number | null | undefined,
+    currentVal: string | number | null | undefined
+  ) {
+    if (extractedVal == null || extractedVal === '') return
+    const extStr = String(extractedVal)
+    const currStr = currentVal != null ? String(currentVal) : null
+    if (currStr !== null && currStr.toLowerCase() === extStr.toLowerCase()) return
+    rows.push({
+      id: newId(),
+      fieldKey,
+      label,
+      badge: currStr != null ? 'CHANGED' : 'NEW',
+      currentValue: currStr,
+      value: extStr,
+    })
+  }
+
+  addScalar('cefrLevel', 'CEFR Level', extracted.cefrLevel, student.level.cefrLevel)
+  addScalar('officialCefrLevel', 'Official CEFR', extracted.officialCefrLevel, student.level.officialCefrLevel)
+  addScalar('profession', 'Profession', extracted.profession, student.identity.profession)
+  addScalar('reasonForStudying', 'Reason for Studying', extracted.reasonForStudying, student.profile.reasonForStudying)
+  addScalar('birthYear', 'Birth Year', extracted.birthYear, student.identity.birthYear)
+  addScalar('countryOfResidence', 'Country of Residence', extracted.countryOfResidence, student.identity.countryOfResidence)
+  addScalar('cityOfResidence', 'City of Residence', extracted.cityOfResidence, student.identity.cityOfResidence)
+
+  for (const lang of extracted.nativeLanguages) {
+    rows.push({ id: newId(), fieldKey: 'nativeLanguages', label: 'Native Language', badge: 'ADDED', currentValue: null, value: lang })
+  }
+  for (const lang of extracted.spokenLanguages) {
+    rows.push({ id: newId(), fieldKey: 'spokenLanguages', label: 'Spoken Language', badge: 'ADDED', currentValue: null, value: lang })
+  }
+  for (const interest of extracted.interests) {
+    rows.push({ id: newId(), fieldKey: 'interests', label: 'Interest', badge: 'ADDED', currentValue: null, value: interest })
+  }
+  for (const obj of extracted.shortTermObjectives) {
+    rows.push({ id: newId(), fieldKey: 'shortTermObjectives', label: 'Short-term Objective', badge: 'ADDED', currentValue: null, value: obj.targetDate ? `${obj.text} (by ${obj.targetDate})` : obj.text })
+  }
+  for (const diff of extracted.difficulties) {
+    rows.push({ id: newId(), fieldKey: 'difficulties', label: 'Difficulty', badge: 'ADDED', currentValue: null, value: diff.description })
+  }
+  for (const todo of extracted.teachingTodoTexts) {
+    rows.push({ id: newId(), fieldKey: 'teachingTodos', label: 'Idea for Next Class', badge: 'ADDED', currentValue: null, value: todo })
+  }
+
+  return rows
+}
+
+export function mergeExtractedIntoStudent(
+  confirmedRows: DrawerRow[],
+  extracted: ExtractedStudentProfile,
+  student: Student
+): VoiceMergePatch {
+  const patch: VoiceMergePatch = {}
+
+  const has = (fieldKey: string) => confirmedRows.some((r) => r.fieldKey === fieldKey)
+  const rowValue = (fieldKey: string) => confirmedRows.find((r) => r.fieldKey === fieldKey)?.value ?? null
+
+  if (has('cefrLevel')) patch.cefrLevel = rowValue('cefrLevel')!
+  if (has('officialCefrLevel')) patch.officialCefrLevel = rowValue('officialCefrLevel')
+  if (has('profession')) patch.profession = rowValue('profession')
+  if (has('reasonForStudying')) patch.reasonForStudying = rowValue('reasonForStudying')
+  if (has('countryOfResidence')) patch.countryOfResidence = rowValue('countryOfResidence')
+  if (has('cityOfResidence')) patch.cityOfResidence = rowValue('cityOfResidence')
+  if (has('birthYear')) {
+    const v = rowValue('birthYear')
+    patch.birthYear = v ? parseInt(v, 10) : null
+  }
+
+  const confirmedNativeLangs = confirmedRows.filter((r) => r.fieldKey === 'nativeLanguages').map((r) => r.value)
+  if (confirmedNativeLangs.length > 0) {
+    const existing = student.languages.nativeLanguages
+    const deduped = [...existing]
+    for (const lang of confirmedNativeLangs) {
+      if (!deduped.some((l) => l.toLowerCase() === lang.toLowerCase())) deduped.push(lang)
+    }
+    patch.nativeLanguages = deduped
+  }
+
+  const confirmedSpokenLangs = confirmedRows.filter((r) => r.fieldKey === 'spokenLanguages').map((r) => r.value)
+  if (confirmedSpokenLangs.length > 0) {
+    const existing = student.languages.spokenLanguages
+    const deduped = [...existing]
+    for (const lang of confirmedSpokenLangs) {
+      if (!deduped.some((l) => l.toLowerCase() === lang.toLowerCase())) deduped.push(lang)
+    }
+    patch.spokenLanguages = deduped
+  }
+
+  const confirmedInterests = confirmedRows.filter((r) => r.fieldKey === 'interests').map((r) => r.value)
+  if (confirmedInterests.length > 0) {
+    const existing = student.profile.interests
+    const deduped = [...existing]
+    for (const item of confirmedInterests) {
+      if (!deduped.some((i) => i.toLowerCase() === item.toLowerCase())) deduped.push(item)
+    }
+    patch.interests = deduped
+  }
+
+  const confirmedObjectives = confirmedRows.filter((r) => r.fieldKey === 'shortTermObjectives')
+  if (confirmedObjectives.length > 0) {
+    const existing = student.profile.shortTermObjectives
+    const extractedObjMap = new Map(extracted.shortTermObjectives.map((o) => [o.text, o]))
+    const toAdd: ShortTermObjective[] = []
+    for (const row of confirmedObjectives) {
+      const rawText = row.value.replace(/ \(by [^)]+\)$/, '')
+      const orig = extractedObjMap.get(rawText)
+      if (!existing.some((e) => e.text.toLowerCase() === rawText.toLowerCase())) {
+        toAdd.push({ id: newId(), text: rawText, targetDate: orig?.targetDate ?? null, objectiveType: 'other' })
+      }
+    }
+    patch.shortTermObjectives = [...existing, ...toAdd]
+  }
+
+  const confirmedDifficulties = confirmedRows.filter((r) => r.fieldKey === 'difficulties')
+  if (confirmedDifficulties.length > 0) {
+    const existing = student.profile.difficulties
+    const extractedDiffMap = new Map(extracted.difficulties.map((d) => [d.description, d]))
+    const toAdd: Difficulty[] = []
+    for (const row of confirmedDifficulties) {
+      const orig = extractedDiffMap.get(row.value)
+      if (!existing.some((e) => e.description.toLowerCase() === row.value.toLowerCase())) {
+        toAdd.push({
+          id: newId(),
+          description: row.value,
+          competency: orig?.competency ?? 'general',
+          subcategory: orig?.subcategory ?? 'general',
+          severity: 'medium',
+          trend: 'stable',
+          status: 'Active',
+        })
+      }
+    }
+    patch.difficulties = [...existing, ...toAdd]
+  }
+
+  const confirmedTodos = confirmedRows.filter((r) => r.fieldKey === 'teachingTodos')
+  if (confirmedTodos.length > 0) {
+    const existing = student.profile.teachingTodos
+    const toAdd: TeachingTodo[] = confirmedTodos.map((row) => ({
+      id: newId(),
+      text: row.value,
+      createdAt: new Date().toISOString(),
+      sourceSessionLogId: null,
+      status: 'Pending',
+      coveredInSessionLogId: null,
+    }))
+    patch.teachingTodos = [...existing, ...toAdd]
+  }
+
+  return patch
+}

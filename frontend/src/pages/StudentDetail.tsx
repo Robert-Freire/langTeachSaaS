@@ -14,6 +14,11 @@ import { StudentProfileTab } from '@/components/student/StudentProfileTab'
 import { StudentOverviewTab } from '@/components/student/StudentOverviewTab'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
+import { AudioRecorder } from '@/components/audio/AudioRecorder'
+import { VoiceUpdateDrawer } from '@/components/student/VoiceUpdateDrawer'
+import type { VoiceMergePatch } from '@/lib/voiceUpdateMerge'
+import { extractStudentProfile } from '@/api/studentExtraction'
+import type { ExtractedStudentProfile } from '@/api/studentExtraction'
 
 function calcSessionFrequency(sessions: SessionLog[]): string | null {
   const past = sessions
@@ -39,6 +44,11 @@ export default function StudentDetail() {
   const activeTab = searchParams.get('tab') ?? 'overview'
   const [difficultyToggleError, setDifficultyToggleError] = useState<string | null>(null)
   const difficultyToggleAttemptRef = useRef(0)
+
+  type VoiceFlow = 'idle' | 'recording' | 'extracting' | 'confirming' | 'saving'
+  const [voiceFlow, setVoiceFlow] = useState<VoiceFlow>('idle')
+  const [extractedProfile, setExtractedProfile] = useState<ExtractedStudentProfile | null>(null)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
 
   const { data: student, isLoading, isError } = useQuery({
     queryKey: ['student', id],
@@ -195,6 +205,39 @@ export default function StudentDetail() {
     },
   })
 
+  async function handleVoiceNote(voiceNote: { transcription: string | null }) {
+    if (!voiceNote.transcription || !voiceNote.transcription.trim()) {
+      setVoiceError('Transcription failed. Please try recording again.')
+      setVoiceFlow('idle')
+      return
+    }
+    setVoiceFlow('extracting')
+    setVoiceError(null)
+    try {
+      const result = await extractStudentProfile(voiceNote.transcription)
+      setExtractedProfile(result)
+      setVoiceFlow('confirming')
+    } catch (err) {
+      logger.error('StudentDetail', 'Voice extraction failed', err)
+      setVoiceError('Extraction failed. Please try again.')
+      setVoiceFlow('idle')
+    }
+  }
+
+  async function handleVoiceSave(patch: VoiceMergePatch) {
+    if (!student) return
+    setVoiceFlow('saving')
+    try {
+      await updateStudent(id!, { ...buildStudentPayload(), ...patch })
+      queryClient.invalidateQueries({ queryKey: ['student', id] })
+      setVoiceFlow('idle')
+      setExtractedProfile(null)
+    } catch (err) {
+      logger.error('StudentDetail', 'Voice save failed', err)
+      setVoiceFlow('confirming')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -235,7 +278,37 @@ export default function StudentDetail() {
         student={student}
         nextSession={nextSession}
         sessionFrequency={sessionFrequency}
+        onVoiceUpdateClick={() => setVoiceFlow('recording')}
+        voiceFlowActive={voiceFlow !== 'idle'}
       />
+
+      {voiceFlow === 'recording' && (
+        <div className="rounded-2xl bg-white p-4 flex flex-col gap-2" data-testid="voice-recorder-panel">
+          <p className="text-xs font-semibold tracking-widest uppercase text-gray-400">Update via voice</p>
+          <AudioRecorder onVoiceNote={handleVoiceNote} />
+          {voiceError && <p className="text-sm text-red-500">{voiceError}</p>}
+          <Button variant="ghost" size="sm" className="self-start" onClick={() => { setVoiceFlow('idle'); setVoiceError(null) }}>
+            Cancel
+          </Button>
+        </div>
+      )}
+
+      {voiceFlow === 'extracting' && (
+        <div className="rounded-2xl bg-white p-4 flex items-center gap-2 text-sm text-gray-500" data-testid="extracting-indicator">
+          <span className="inline-block h-4 w-4 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+          Analysing recording...
+        </div>
+      )}
+
+      {(voiceFlow === 'confirming' || voiceFlow === 'saving') && extractedProfile && (
+        <VoiceUpdateDrawer
+          student={student}
+          extracted={extractedProfile}
+          saving={voiceFlow === 'saving'}
+          onSave={(patch: VoiceMergePatch) => handleVoiceSave(patch)}
+          onClose={() => { setVoiceFlow('idle'); setExtractedProfile(null) }}
+        />
+      )}
 
       {/* Tab bar */}
       <div className="flex gap-1" role="tablist">
