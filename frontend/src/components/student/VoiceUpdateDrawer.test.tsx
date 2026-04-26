@@ -200,6 +200,27 @@ describe('mergeExtractedIntoStudent', () => {
     expect((patch as { nativeLanguages: string[] }).nativeLanguages).toEqual(['English'])
   })
 
+  it('normalizes Spanish-language values to canonical English before sending', () => {
+    const rows = [
+      makeRow('nativeLanguages', 'Catalán', 'ADDED'),
+      { ...makeRow('spokenLanguages', 'Inglés', 'ADDED'), id: 'r2' },
+    ]
+    const patch = mergeExtractedIntoStudent(rows, BASE_STUDENT)
+    expect((patch as { nativeLanguages: string[] }).nativeLanguages).toContain('Catalan')
+    expect((patch as { spokenLanguages: string[] }).spokenLanguages).toEqual(['English'])
+  })
+
+  it('normalizes Spanish difficulty competency to a backend-valid value', () => {
+    const row = {
+      id: 'd1', fieldKey: 'difficulties', label: 'Difficulty', badge: 'ADDED' as const,
+      currentValue: null, value: 'Confuses ser and estar',
+      extractedDifficulty: { description: 'Confuses ser and estar', competency: 'Gramática', subcategory: 'ser/estar' },
+    }
+    const patch = mergeExtractedIntoStudent([row], BASE_STUDENT)
+    const diffs = (patch as { difficulties: { competency: string }[] }).difficulties
+    expect(diffs[diffs.length - 1].competency).toBe('Grammar')
+  })
+
   it('returns empty patch when no rows', () => {
     const patch = mergeExtractedIntoStudent([], BASE_STUDENT)
     expect(Object.keys(patch)).toHaveLength(0)
