@@ -31,6 +31,22 @@ import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
 import { HOMEWORK_STATUS_PILL_OPTIONS } from '@/utils/homeworkStatusUtils'
 
+const HIGHLIGHT_TIMEOUT_MS = 2000
+const UNDO_BAR_TIMEOUT_MS = 8000
+
+type ExtractionSnapshot = {
+  sessionTitle: string | undefined
+  sessionDate: string
+  sessionTime: string
+  durationChoice: string
+  durationOther: string
+  actualContent: string
+  homeworkAssigned: string
+  nextSessionTopics: string
+  generalNotes: string
+  topicTags: TopicTag[]
+}
+
 const DURATION_OPTIONS = [
   { value: '25', label: '25 min' },
   { value: '30', label: '30 min' },
@@ -154,18 +170,6 @@ export default function LogSession() {
 
   // Voice extraction highlight + undo
   const [highlightedFields, setHighlightedFields] = useState<Set<string>>(new Set())
-  type ExtractionSnapshot = {
-    sessionTitle: string | undefined
-    sessionDate: string
-    sessionTime: string
-    durationChoice: string
-    durationOther: string
-    actualContent: string
-    homeworkAssigned: string
-    nextSessionTopics: string
-    generalNotes: string
-    topicTags: TopicTag[]
-  }
   const [extractionSnapshot, setExtractionSnapshot] = useState<ExtractionSnapshot | null>(null)
   const [showUndoBar, setShowUndoBar] = useState(false)
   const [undoBarCount, setUndoBarCount] = useState(0)
@@ -989,6 +993,8 @@ export default function LogSession() {
           {/* Undo extraction bar */}
           {showUndoBar && (
             <div
+              role="status"
+              aria-live="polite"
               className="flex items-center gap-3 rounded-xl px-4 py-2.5"
               style={{ background: '#EEF0FD' }}
               data-testid="undo-extraction-bar"
@@ -1143,7 +1149,11 @@ export default function LogSession() {
                     if (extracted.sessionTitle && extracted.sessionTitle !== snapshot.sessionTitle) changed.add('sessionTitle')
                     if (extracted.sessionDate && extracted.sessionDate !== snapshot.sessionDate) changed.add('sessionDate')
                     if (extracted.sessionStartTime && extracted.sessionStartTime !== snapshot.sessionTime) changed.add('sessionTime')
-                    if (extracted.durationMinutes && durationChoiceRef.current === '50') changed.add('durationChoice')
+                    if (extracted.durationMinutes && durationChoiceRef.current === '50') {
+                      const presets = ['25', '30', '45', '50', '60', '90']
+                      const newDurChoice = presets.includes(String(extracted.durationMinutes)) ? String(extracted.durationMinutes) : 'other'
+                      if (newDurChoice !== snapshot.durationChoice) changed.add('durationChoice')
+                    }
                     if (nextActualContent !== null && nextActualContent !== snapshot.actualContent) changed.add('actualContent')
                     if (nextGeneralNotes !== null && nextGeneralNotes !== snapshot.generalNotes) changed.add('generalNotes')
                     if (nextHomeworkAssigned !== null && nextHomeworkAssigned !== snapshot.homeworkAssigned) changed.add('homeworkAssigned')
@@ -1154,9 +1164,9 @@ export default function LogSession() {
                       setUndoBarCount(changed.size)
                       setShowUndoBar(true)
                       if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
-                      highlightTimerRef.current = setTimeout(() => setHighlightedFields(new Set()), 2000)
+                      highlightTimerRef.current = setTimeout(() => setHighlightedFields(new Set()), HIGHLIGHT_TIMEOUT_MS)
                       if (undoBarTimerRef.current) clearTimeout(undoBarTimerRef.current)
-                      undoBarTimerRef.current = setTimeout(() => setShowUndoBar(false), 8000)
+                      undoBarTimerRef.current = setTimeout(() => setShowUndoBar(false), UNDO_BAR_TIMEOUT_MS)
                     }
 
                     markChangedAndSaveNow(saveOverride)

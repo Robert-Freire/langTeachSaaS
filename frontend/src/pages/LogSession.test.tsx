@@ -590,14 +590,13 @@ describe('LogSession', () => {
       expect(screen.getByTestId('undo-extraction-bar')).toHaveTextContent('fields filled from recording')
     })
 
-    it('undo bar has an 8-second auto-dismiss timer set on extraction', async () => {
+    it('undo bar has an auto-dismiss timer set on extraction', async () => {
       const setSpy = vi.spyOn(globalThis, 'setTimeout')
       await triggerExtraction()
       await waitFor(() => {
         expect(screen.getByTestId('undo-extraction-bar')).toBeInTheDocument()
       })
-      const undoBarTimer = setSpy.mock.calls.find(([, delay]) => delay === 8000)
-      expect(undoBarTimer).toBeDefined()
+      expect(setSpy.mock.calls.some(([, delay]) => delay === 8000)).toBe(true)
       setSpy.mockRestore()
     })
 
@@ -651,14 +650,13 @@ describe('LogSession', () => {
       expect(screen.getByTestId('session-time').className).not.toContain('ring-indigo-500/40')
     })
 
-    it('highlight ring has a 2-second clear timer set on extraction', async () => {
+    it('highlight ring has a clear timer set on extraction', async () => {
       const setSpy = vi.spyOn(globalThis, 'setTimeout')
       await triggerExtraction()
       await waitFor(() => {
         expect(screen.getByTestId('actual-content').className).toContain('ring-indigo-500/40')
       })
-      const highlightTimer = setSpy.mock.calls.find(([, delay]) => delay === 2000)
-      expect(highlightTimer).toBeDefined()
+      expect(setSpy.mock.calls.some(([, delay]) => delay === 2000)).toBe(true)
       setSpy.mockRestore()
     })
 
