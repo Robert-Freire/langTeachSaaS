@@ -1,4 +1,5 @@
 import { ALL_LANGUAGES } from './languages'
+import { COMPETENCY_OPTIONS } from './studentOptions'
 
 /**
  * Normalizes language and difficulty-competency strings extracted by the
@@ -94,25 +95,21 @@ export function normalizeLanguages(inputs: readonly string[]): string[] {
 }
 
 /**
- * Backend taxonomy is `["Grammar","Vocabulary","Pronunciation","Interaction","Discourse","Mediation"]`
- * (data/pedagogy/difficulty-taxonomy.json). The extraction prompt also lists
- * the four macro-skills (Listening, Speaking, Reading, Writing) as examples;
- * those are mapped to the closest backend competency:
+ * Canonical competencies are sourced from COMPETENCY_OPTIONS, which mirrors
+ * the backend taxonomy in data/pedagogy/difficulty-taxonomy.json
+ * (Grammar, Vocabulary, Pronunciation, Interaction, Discourse, Mediation).
+ * The extraction prompt also lists the four macro-skills (Listening, Speaking,
+ * Reading, Writing) as examples; those are mapped to the closest backend
+ * competency:
  *   Listening/Speaking → Interaction (oral exchange)
  *   Reading/Writing    → Discourse (extended text)
  * Unknown values fall back to "Grammar". The literal "general" mentioned in
  * issue #963 is not used because it is not in the backend allowlist.
  */
+const CANONICAL_COMPETENCIES = COMPETENCY_OPTIONS.map((o) => o.value)
 const COMPETENCY_FALLBACK = 'Grammar'
 
 const COMPETENCY_ALIASES: Record<string, string> = {
-  // English canonical (taxonomy)
-  grammar: 'Grammar',
-  vocabulary: 'Vocabulary',
-  pronunciation: 'Pronunciation',
-  interaction: 'Interaction',
-  discourse: 'Discourse',
-  mediation: 'Mediation',
   // English macro-skills from the prompt → mapped to closest taxonomy entry
   listening: 'Interaction',
   speaking: 'Interaction',
@@ -144,9 +141,18 @@ const COMPETENCY_ALIASES: Record<string, string> = {
   pronuncia: 'Pronunciation',
 }
 
+const COMPETENCY_LOOKUP: Map<string, string> = (() => {
+  const map = new Map<string, string>()
+  for (const canonical of CANONICAL_COMPETENCIES) map.set(key(canonical), canonical)
+  for (const [alias, canonical] of Object.entries(COMPETENCY_ALIASES)) {
+    if (!map.has(alias)) map.set(alias, canonical)
+  }
+  return map
+})()
+
 export function normalizeCompetency(input: string | null | undefined): string {
   if (input == null) return COMPETENCY_FALLBACK
   const k = key(input)
   if (k.length === 0) return COMPETENCY_FALLBACK
-  return COMPETENCY_ALIASES[k] ?? COMPETENCY_FALLBACK
+  return COMPETENCY_LOOKUP.get(k) ?? COMPETENCY_FALLBACK
 }
