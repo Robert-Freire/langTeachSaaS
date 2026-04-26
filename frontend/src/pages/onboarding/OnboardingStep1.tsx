@@ -4,30 +4,12 @@ import { useProfile, useUpdateProfile } from '../../hooks/useProfile'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { SelectionChip } from '@/components/SelectionChip'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { LANGUAGES } from '@/lib/languages'
 
 const STYLES = ['Formal', 'Conversational', 'Exam-prep']
 
-function ToggleBadge({ label, selected, onToggle }: { label: string; selected: boolean; onToggle: () => void }) {
-  return (
-    <button type="button" onClick={onToggle} aria-pressed={selected}>
-      <Badge
-        variant={selected ? 'default' : 'outline'}
-        className={cn(
-          'cursor-pointer select-none transition-colors text-sm px-3 py-1',
-          selected
-            ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-transparent'
-            : 'bg-white text-zinc-600 border-zinc-200 hover:border-indigo-400 hover:text-indigo-600'
-        )}
-      >
-        {label}
-      </Badge>
-    </button>
-  )
-}
 
 interface OnboardingStep1Props {
   onNext: () => void
@@ -101,7 +83,7 @@ export default function OnboardingStep1({ onNext }: OnboardingStep1Props) {
         <Label>Languages I teach</Label>
         <div className="flex flex-wrap gap-2">
           {LANGUAGES.map(lang => (
-            <ToggleBadge
+            <SelectionChip
               key={lang}
               label={lang}
               selected={teachingLanguages.includes(lang)}
@@ -115,7 +97,7 @@ export default function OnboardingStep1({ onNext }: OnboardingStep1Props) {
         <Label>CEFR levels I teach</Label>
         <div className="flex flex-wrap gap-2">
           {CEFR_LEVELS.map(level => (
-            <ToggleBadge
+            <SelectionChip
               key={level}
               label={level}
               selected={cefrLevels.includes(level)}
@@ -129,7 +111,7 @@ export default function OnboardingStep1({ onNext }: OnboardingStep1Props) {
         <Label>Preferred content style</Label>
         <div className="flex flex-wrap gap-2">
           {STYLES.map(style => (
-            <ToggleBadge
+            <SelectionChip
               key={style}
               label={style}
               selected={preferredStyle === style}

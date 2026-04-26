@@ -5,33 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/PageHeader'
+import { SelectionChip } from '@/components/SelectionChip'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { LANGUAGES } from '@/lib/languages'
 import { TelegramCard } from '@/components/settings/TelegramCard'
 
 const STYLES = ['Formal', 'Conversational', 'Exam-prep']
-
-function ToggleBadge({ label, selected, onToggle }: { label: string; selected: boolean; onToggle: () => void }) {
-  return (
-    <button type="button" onClick={onToggle} aria-pressed={selected}>
-      <Badge
-        variant={selected ? 'default' : 'outline'}
-        className={cn(
-          'cursor-pointer select-none transition-colors text-sm px-3 py-1',
-          selected
-            ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-transparent'
-            : 'bg-white text-zinc-600 border-zinc-200 hover:border-indigo-400 hover:text-indigo-600'
-        )}
-      >
-        {label}
-      </Badge>
-    </button>
-  )
-}
 
 export default function Settings() {
   const { data: profile, isLoading, isError: isProfileError } = useProfile()
@@ -130,7 +111,7 @@ export default function Settings() {
               <span className="text-sm text-red-600 font-medium">Save failed. Please try again.</span>
             )}
             <Button type="submit" form="profile-form" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700">
-              {isPending ? 'Saving...' : 'Save Profile'}
+              {isPending ? 'Saving...' : 'Done'}
             </Button>
           </div>
         }
@@ -168,7 +149,7 @@ export default function Settings() {
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {LANGUAGES.map(lang => (
-                <ToggleBadge
+                <SelectionChip
                   key={lang}
                   label={lang}
                   selected={teachingLanguages.includes(lang)}
@@ -187,7 +168,7 @@ export default function Settings() {
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {CEFR_LEVELS.map(level => (
-                <ToggleBadge
+                <SelectionChip
                   key={level}
                   label={level}
                   selected={cefrLevels.includes(level)}
@@ -206,24 +187,12 @@ export default function Settings() {
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {STYLES.map(style => (
-                <button
+                <SelectionChip
                   key={style}
-                  type="button"
-                  onClick={() => setPreferredStyle(style)}
-                  aria-pressed={preferredStyle === style}
-                >
-                  <Badge
-                    variant={preferredStyle === style ? 'default' : 'outline'}
-                    className={cn(
-                      'cursor-pointer select-none transition-colors text-sm px-3 py-1',
-                      preferredStyle === style
-                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-transparent'
-                        : 'bg-white text-zinc-600 border-zinc-200 hover:border-indigo-400 hover:text-indigo-600'
-                    )}
-                  >
-                    {style}
-                  </Badge>
-                </button>
+                  label={style}
+                  selected={preferredStyle === style}
+                  onToggle={() => setPreferredStyle(style)}
+                />
               ))}
             </div>
           </CardContent>
