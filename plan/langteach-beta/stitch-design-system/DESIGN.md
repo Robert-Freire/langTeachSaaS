@@ -80,3 +80,35 @@ Instead of standard pill shapes, use a **square-format badge** with `md` (0.375r
 *   **Don’t** use pure black (#000000). Always use `on-surface` (#1A1B22) for text to maintain the "warm zinc" aesthetic.
 *   **Don’t** use default 1px dividers. If you must separate content, use a 4px wide `surface-container-low` gap.
 *   **Don’t** use high-saturation reds for errors. Use the `error` (#BA1A1A) token which is calibrated to feel urgent but professional, not "alarming."
+
+---
+
+## 7. Text Truncation
+
+Truncation is a last resort, not a default. The Academic Atelier aesthetic values breathing room and information density over hiding content. Apply these rules consistently so the teacher always knows what they are and are not seeing.
+
+### The escape hatch rule
+
+**Never clamp text without a clear escape.** A teacher who sees "tambien el lo de..." with no way to read the rest has been given worse information than no preview at all. Every truncated element must satisfy at least one of:
+
+*   **Expandable in place:** clicking the element (or a chevron) reveals the full content inline.
+*   **Navigable:** the row or card is a clickable link to a screen where the full content is visible.
+*   **Tooltipped:** the full text appears on hover (only for short labels, never for multi-sentence content).
+
+### Rules by context
+
+| Context | Rule | Tailwind |
+|---------|------|----------|
+| List row title (expandable row) | Single line, clip at container edge | `truncate` |
+| List row title (navigable row) | Up to 2 lines before clipping | `line-clamp-2` |
+| List row subtitle / snippet | Up to 2 lines | `line-clamp-2` |
+| Dedicated card (single subject, not a list) | No clamping. Let content flow. | none |
+| Compact label / chip / badge | Single line, clip at container edge | `truncate` |
+| Short metadata (homework, tags) | Use CSS truncation, not JS slice | `truncate` or `line-clamp-1` |
+
+### What not to do
+
+*   **Don’t** apply `line-clamp-*` to a dedicated card that has no "view more" affordance.
+*   **Don’t** use JavaScript string slicing (`str.slice(0, 40) + ‘...’`) for truncation. Use `line-clamp-1` or `truncate` so the browser handles it and it responds to container width.
+*   **Don’t** mix `truncate` and `line-clamp-*` on sibling elements within the same card — pick one strategy per card type and apply it consistently.
+*   **Don’t** apply `truncate` to a flex child without `min-w-0` on its parent. Without `min-w-0`, the flex item will not shrink and truncation will silently fail.

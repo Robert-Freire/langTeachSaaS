@@ -22,12 +22,13 @@ Key queries:
 - Must-haves: `gh issue list --milestone "<milestone-name>" --label "P1:must" --state open`
 - Ready to pick up: `gh issue list --milestone "<milestone-name>" --label "qa:ready" --state open`
 
-**Active sprint branch:** sprint/student-profile-voice-input (milestone #18, Student Profile Voice Input)
+**Active sprint branch:** `sprint/student-profile-voice-input` (milestone #18, Student Profile Voice Input)
 
 ## Milestone Sequence (newest first)
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
+| Student Profile Voice Input | ACTIVE | sprint/student-profile-voice-input |
 | Stabilisation | CLOSED 2026-04-25 | milestone #17, merged to main, branch deleted |
 | UI Redesign & Student Profile Polish | CLOSED 2026-04-22 | milestone #16, merged to main, branch deleted |
 | Adaptive Replanning | CLOSED 2026-04-08 | 22/22 done, merged to main |

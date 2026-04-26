@@ -2,8 +2,8 @@
 """
 Copy a teacher's complete dataset from Azure SQL to local Docker SQL Server.
 
-Usage (PowerShell):
-  python scripts/copy-azure-teacher.py --teacher-email "jordi@example.com"
+Usage:
+  python3 scripts/copy-azure-teacher.py --teacher-email "jordi@example.com"
   python scripts/copy-azure-teacher.py --teacher-email "jordi@example.com" --dry-run
   python scripts/copy-azure-teacher.py --teacher-email "jordi@example.com" --clean
   python scripts/copy-azure-teacher.py --teacher-email "jordi@example.com" --target-email "me@example.com" --clean
@@ -41,9 +41,8 @@ LOCAL_DATABASE = "LangTeach"
 
 def get_azure_connection_string():
     """Fetch the Azure SQL connection string from Key Vault via az CLI."""
-    # On Windows, az is a .cmd script; invoke via cmd /c so it resolves via PATH
     result = subprocess.run(
-        ["cmd", "/c", "az", "keyvault", "secret", "show",
+        ["az", "keyvault", "secret", "show",
          "--vault-name", KEY_VAULT_NAME, "--name", KEY_VAULT_SECRET,
          "--query", "value", "-o", "tsv"],
         capture_output=True, text=True
