@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Search, UserPlus, Users, ChevronsUpDown, ChevronDown, Mic, Loader2 } from 'lucide-react'
@@ -318,7 +318,11 @@ export default function Students() {
 
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? 'Last Session'
 
-  async function handleVoiceNote(voiceNote: { transcription: string | null }) {
+  // Memoised so the AudioRecorder autoStart effect does not retrigger on every
+  // parent render. An unstable callback cascades into a new startRecording
+  // identity, which causes the autoStart cleanup to clearTimeout the pending
+  // call before it fires (recording never starts). See AudioRecorder.tsx.
+  const handleVoiceNote = useCallback(async (voiceNote: { transcription: string | null }) => {
     if (!voiceNote.transcription || !voiceNote.transcription.trim()) {
       setVoiceError('Transcription failed. Please try recording again.')
       setVoiceFlow('recording')
@@ -335,7 +339,7 @@ export default function Students() {
       setVoiceError('Extraction failed. Please try again.')
       setVoiceFlow('recording')
     }
-  }
+  }, [])
 
   async function handleVoiceCreate(rows: DrawerRow[]) {
     setVoiceFlow('saving')
