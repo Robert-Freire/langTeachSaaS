@@ -64,7 +64,7 @@ public class DashboardService : IDashboardService
             try
             {
                 lastSessionTopicTags = (JsonSerializer.Deserialize<List<TopicTagEntry>>(lastPast.TopicTags) ?? [])
-                    .Select(t => t.Tag).ToList();
+                    .Select(t => t.Tag).Where(t => !string.IsNullOrEmpty(t)).ToList();
             }
             catch (JsonException)
             {
