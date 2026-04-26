@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import LogSession from './LogSession'
@@ -573,6 +573,10 @@ describe('LogSession', () => {
       vi.mocked(sessionLogsApi.createSession).mockResolvedValue({ ...SAMPLE_SESSION, id: 'new-session' })
     })
 
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
     async function triggerExtraction() {
       renderLogSession()
       await screen.findByTestId('audio-recorder')
@@ -590,14 +594,14 @@ describe('LogSession', () => {
       expect(screen.getByTestId('undo-extraction-bar')).toHaveTextContent('fields filled from recording')
     })
 
-    it('undo bar has an auto-dismiss timer set on extraction', async () => {
-      const setSpy = vi.spyOn(globalThis, 'setTimeout')
+    it('undo bar auto-dismisses after 8 seconds', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
       await triggerExtraction()
       await waitFor(() => {
         expect(screen.getByTestId('undo-extraction-bar')).toBeInTheDocument()
       })
-      expect(setSpy.mock.calls.some(([, delay]) => delay === 8000)).toBe(true)
-      setSpy.mockRestore()
+      act(() => { vi.advanceTimersByTime(8001) })
+      expect(screen.queryByTestId('undo-extraction-bar')).not.toBeInTheDocument()
     })
 
     it('X button dismisses bar without reverting fields', async () => {
@@ -650,14 +654,14 @@ describe('LogSession', () => {
       expect(screen.getByTestId('session-time').className).not.toContain('ring-indigo-500/40')
     })
 
-    it('highlight ring has a clear timer set on extraction', async () => {
-      const setSpy = vi.spyOn(globalThis, 'setTimeout')
+    it('highlight ring clears after 2 seconds', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
       await triggerExtraction()
       await waitFor(() => {
         expect(screen.getByTestId('actual-content').className).toContain('ring-indigo-500/40')
       })
-      expect(setSpy.mock.calls.some(([, delay]) => delay === 2000)).toBe(true)
-      setSpy.mockRestore()
+      act(() => { vi.advanceTimersByTime(2001) })
+      expect(screen.getByTestId('actual-content').className).not.toContain('ring-indigo-500/40')
     })
 
     it('undo bar does not appear when extraction produces no field changes', async () => {
