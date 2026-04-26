@@ -1,4 +1,3 @@
-using System.Text.Json;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
@@ -61,15 +60,8 @@ public class DashboardService : IDashboardService
         List<string> lastSessionTopicTags = [];
         if (lastPast is not null)
         {
-            try
-            {
-                lastSessionTopicTags = (JsonSerializer.Deserialize<List<TopicTagEntry>>(lastPast.TopicTags) ?? [])
-                    .Select(t => t.Tag).Where(t => !string.IsNullOrEmpty(t)).ToList();
-            }
-            catch (JsonException)
-            {
-                _logger.LogWarning("Failed to deserialize TopicTags for session {SessionId}", lastPast.Id);
-            }
+            lastSessionTopicTags = JsonStorageHelper.DeserializeList<TopicTagEntry>(lastPast.TopicTags)
+                .Select(t => t.Tag).Where(t => !string.IsNullOrEmpty(t)).ToList();
         }
 
         var lastSessionFollowups = lastPast is not null
