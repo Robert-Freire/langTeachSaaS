@@ -187,6 +187,18 @@ describe('StudentOverviewTab - LastSessionCard + RecentSessions', () => {
     expect(items[1]).toHaveTextContent('Session 3')
   })
 
+  it('compact session rows link to the session edit page', () => {
+    const sessions: SessionLog[] = [1, 2, 3].map((i) => ({
+      ...MOCK_SESSION,
+      id: `sess-${i}`,
+      sessionDate: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+      title: `Session ${i}`,
+    }))
+    renderOverview(BASE_STUDENT, sessions)
+    const items = screen.getAllByTestId('recent-session-item')
+    expect(items[0]).toHaveAttribute('href', `/students/student-1/sessions/sess-2/edit`)
+  })
+
   it('shows view all sessions button and calls callback', () => {
     const sessions: SessionLog[] = [1, 2, 3].map((i) => ({
       ...MOCK_SESSION,
