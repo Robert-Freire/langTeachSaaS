@@ -212,7 +212,9 @@ export default function StudentDetail() {
     },
   })
 
-  async function handleVoiceNote(voiceNote: { transcription: string | null }) {
+  // Memoised so the AudioRecorder autoStart effect does not retrigger on every
+  // parent render. See AudioRecorder.tsx for why callback identity matters here.
+  const handleVoiceNote = useCallback(async (voiceNote: { transcription: string | null }) => {
     if (!voiceNote.transcription || !voiceNote.transcription.trim()) {
       setVoiceError('Transcription failed. Please try recording again.')
       setVoiceFlow('idle')
@@ -229,7 +231,7 @@ export default function StudentDetail() {
       setVoiceError('Extraction failed. Please try again.')
       setVoiceFlow('idle')
     }
-  }
+  }, [])
 
   async function handleVoiceSave(patch: VoiceMergePatch) {
     if (!student) return

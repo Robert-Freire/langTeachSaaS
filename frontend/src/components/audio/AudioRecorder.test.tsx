@@ -167,6 +167,28 @@ describe('AudioRecorder', () => {
     expect(screen.queryByTestId('stop-button')).not.toBeInTheDocument()
   })
 
+  it('still starts recording when the parent rerenders with a new onVoiceNote reference', async () => {
+    // Regression: an unstable onVoiceNote from the parent (no useCallback)
+    // used to cascade into a new startRecording identity, retrigger the
+    // autoStart effect, clearTimeout the pending startRecording call, and
+    // leave autoStartedRef true so it never restarted. Result: spinner
+    // forever, no stop button. This test renders the parent twice in quick
+    // succession (mimicking a React re-render) and asserts recording starts.
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+
+    const { rerender } = render(
+      <AudioRecorder onVoiceNote={() => {}} autoStart />
+    )
+    // Force a parent rerender BEFORE the queued setTimeout(0) startRecording
+    // fires. A new inline arrow function gives the prop a new identity.
+    rerender(<AudioRecorder onVoiceNote={() => {}} autoStart />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('stop-button')).toBeInTheDocument()
+    })
+  })
+
   it('reveals the chooser when autoStart fails because mic permission is denied', async () => {
     mockGetUserMedia.mockRejectedValue(new Error('Permission denied'))
 

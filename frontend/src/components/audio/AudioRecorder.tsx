@@ -138,6 +138,16 @@ export function AudioRecorder({
     }, 1000)
   }, [stopRecording, uploadFile])
 
+  // Hold startRecording in a ref so the autoStart effect does not depend on
+  // its identity. Without this, an unstable onVoiceNote prop from the parent
+  // (a non-memoised handleVoiceNote) cascades into a new startRecording on
+  // every parent render. The cleanup then clearTimeouts the pending call
+  // before it fires, autoStartedRef stays true, and recording never starts.
+  const startRecordingRef = useRef(startRecording)
+  useEffect(() => {
+    startRecordingRef.current = startRecording
+  }, [startRecording])
+
   useEffect(() => {
     if (!autoStart || autoStartedRef.current || state !== 'idle' || error) return
     autoStartedRef.current = true
@@ -145,9 +155,9 @@ export function AudioRecorder({
     // setState cascade. startRecording() awaits getUserMedia before its first
     // setState anyway, but the deferred call also satisfies the
     // react-hooks/set-state-in-effect lint rule.
-    const handle = setTimeout(() => { void startRecording() }, 0)
+    const handle = setTimeout(() => { void startRecordingRef.current() }, 0)
     return () => clearTimeout(handle)
-  }, [autoStart, state, error, startRecording])
+  }, [autoStart, state, error])
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
