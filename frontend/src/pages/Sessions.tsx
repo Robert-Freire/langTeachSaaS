@@ -144,7 +144,7 @@ export default function Sessions() {
     queryFn: () => getSessionsList(studentId),
   })
 
-  const handleSessionClick = (sId: string, slId: string) => navigate(`/students/${sId}/sessions/${slId}/edit`)
+  const handleSessionClick = (sId: string, slId: string) => navigate(`/students/${sId}/sessions/${slId}/edit`, { state: { from: 'sessions' } })
   const handleStudentChange = (v: string | null) => setSelectedStudentId(v ?? 'all')
 
   const isEmpty = data && data.upcoming.length === 0 && data.today.length === 0 && data.recent.length === 0

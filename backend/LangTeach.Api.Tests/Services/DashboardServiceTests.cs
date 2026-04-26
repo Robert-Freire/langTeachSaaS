@@ -504,6 +504,23 @@ public class DashboardServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetAsync_TopicTagsWithNullEntries_StripsNullsFromLastSessionTopicTags()
+    {
+        var past = DateTime.UtcNow.AddDays(-7);
+        var future = DateTime.UtcNow.AddDays(1);
+        var pastSession = MakeSession(_studentId, past);
+        pastSession.TopicTags = "[{\"Tag\":\"Subjuntivo\",\"Category\":null},{\"Tag\":null,\"Category\":null},{\"Tag\":\"Concesivas\",\"Category\":null}]";
+        _db.SessionLogs.Add(pastSession);
+        _db.SessionLogs.Add(MakeSession(_studentId, future));
+        _db.SaveChanges();
+
+        var result = await _sut.GetAsync(_teacherId);
+
+        result.NextSession!.LastSessionTopicTags.Should().Equal("Subjuntivo", "Concesivas");
+        result.NextSession!.LastSessionTopicTags.Should().NotContainNulls();
+    }
+
+    [Fact]
     public async Task GetAsync_FutureSessionWithPastSession_PopulatesLastSessionHomework()
     {
         var past = DateTime.UtcNow.AddDays(-7);

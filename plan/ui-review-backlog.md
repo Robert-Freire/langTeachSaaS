@@ -30,3 +30,9 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | Screen | Finding | Severity |
 |--------|---------|---------|
 | Student overview > TeachingTodosCard | "Show N completed / Hide completed (N)" toggle is plain muted text with no explicit button shape. Hover changes color but no background/border affordance. DS ghost-button treatment may be more appropriate for list-level expand/collapse actions. | Minor |
+
+## #952 (2026-04-26)
+
+| Screen | Finding | Severity |
+|--------|---------|---------|
+| Student overview > Session History compact rows | Row is a full-card link but has no passive affordance (no chevron, no trailing arrow). Hover bg is the only clickability signal. Design system §5 does not specify whether link-rows need a passive icon. Needs Vera guidance on whether a trailing chevron should be added. | Minor |
