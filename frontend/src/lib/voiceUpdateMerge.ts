@@ -1,6 +1,6 @@
 import { newId } from '@/lib/newId'
 import type { Student, Difficulty, ShortTermObjective, TeachingTodo } from '@/api/students'
-import type { ExtractedStudentProfile } from '@/api/studentExtraction'
+import type { ExtractedStudentProfile, ExtractedObjective, ExtractedDifficulty } from '@/api/studentExtraction'
 
 export interface DrawerRow {
   id: string
@@ -9,6 +9,9 @@ export interface DrawerRow {
   badge: 'CHANGED' | 'ADDED' | 'NEW'
   currentValue: string | null
   value: string
+  /** Original extracted metadata — preserved so edits to value don't lose targetDate/competency/subcategory */
+  extractedObjective?: ExtractedObjective
+  extractedDifficulty?: ExtractedDifficulty
 }
 
 export type VoiceMergePatch = {
@@ -68,10 +71,26 @@ export function buildDrawerRows(extracted: ExtractedStudentProfile, student: Stu
     rows.push({ id: newId(), fieldKey: 'interests', label: 'Interest', badge: 'ADDED', currentValue: null, value: interest })
   }
   for (const obj of extracted.shortTermObjectives) {
-    rows.push({ id: newId(), fieldKey: 'shortTermObjectives', label: 'Short-term Objective', badge: 'ADDED', currentValue: null, value: obj.targetDate ? `${obj.text} (by ${obj.targetDate})` : obj.text })
+    rows.push({
+      id: newId(),
+      fieldKey: 'shortTermObjectives',
+      label: 'Short-term Objective',
+      badge: 'ADDED',
+      currentValue: null,
+      value: obj.targetDate ? `${obj.text} (by ${obj.targetDate})` : obj.text,
+      extractedObjective: obj,
+    })
   }
   for (const diff of extracted.difficulties) {
-    rows.push({ id: newId(), fieldKey: 'difficulties', label: 'Difficulty', badge: 'ADDED', currentValue: null, value: diff.description })
+    rows.push({
+      id: newId(),
+      fieldKey: 'difficulties',
+      label: 'Difficulty',
+      badge: 'ADDED',
+      currentValue: null,
+      value: diff.description,
+      extractedDifficulty: diff,
+    })
   }
   for (const todo of extracted.teachingTodoTexts) {
     rows.push({ id: newId(), fieldKey: 'teachingTodos', label: 'Idea for Next Class', badge: 'ADDED', currentValue: null, value: todo })
@@ -82,7 +101,6 @@ export function buildDrawerRows(extracted: ExtractedStudentProfile, student: Stu
 
 export function mergeExtractedIntoStudent(
   confirmedRows: DrawerRow[],
-  extracted: ExtractedStudentProfile,
   student: Student
 ): VoiceMergePatch {
   const patch: VoiceMergePatch = {}
@@ -97,8 +115,9 @@ export function mergeExtractedIntoStudent(
   if (has('countryOfResidence')) patch.countryOfResidence = rowValue('countryOfResidence')
   if (has('cityOfResidence')) patch.cityOfResidence = rowValue('cityOfResidence')
   if (has('birthYear')) {
-    const v = rowValue('birthYear')
-    patch.birthYear = v ? parseInt(v, 10) : null
+    const v = rowValue('birthYear')?.trim() ?? ''
+    const parsed = parseInt(v, 10)
+    patch.birthYear = /^\d{4}$/.test(v) && Number.isFinite(parsed) ? parsed : null
   }
 
   const confirmedNativeLangs = confirmedRows.filter((r) => r.fieldKey === 'nativeLanguages').map((r) => r.value)
@@ -134,13 +153,15 @@ export function mergeExtractedIntoStudent(
   const confirmedObjectives = confirmedRows.filter((r) => r.fieldKey === 'shortTermObjectives')
   if (confirmedObjectives.length > 0) {
     const existing = student.profile.shortTermObjectives
-    const extractedObjMap = new Map(extracted.shortTermObjectives.map((o) => [o.text, o]))
     const toAdd: ShortTermObjective[] = []
     for (const row of confirmedObjectives) {
-      const rawText = row.value.replace(/ \(by [^)]+\)$/, '')
-      const orig = extractedObjMap.get(rawText)
-      if (!existing.some((e) => e.text.toLowerCase() === rawText.toLowerCase())) {
-        toAdd.push({ id: newId(), text: rawText, targetDate: orig?.targetDate ?? null, objectiveType: 'other' })
+      if (!existing.some((e) => e.text.toLowerCase() === row.value.toLowerCase())) {
+        toAdd.push({
+          id: newId(),
+          text: row.value,
+          targetDate: row.extractedObjective?.targetDate ?? null,
+          objectiveType: 'other',
+        })
       }
     }
     patch.shortTermObjectives = [...existing, ...toAdd]
@@ -149,16 +170,14 @@ export function mergeExtractedIntoStudent(
   const confirmedDifficulties = confirmedRows.filter((r) => r.fieldKey === 'difficulties')
   if (confirmedDifficulties.length > 0) {
     const existing = student.profile.difficulties
-    const extractedDiffMap = new Map(extracted.difficulties.map((d) => [d.description, d]))
     const toAdd: Difficulty[] = []
     for (const row of confirmedDifficulties) {
-      const orig = extractedDiffMap.get(row.value)
       if (!existing.some((e) => e.description.toLowerCase() === row.value.toLowerCase())) {
         toAdd.push({
           id: newId(),
           description: row.value,
-          competency: orig?.competency ?? 'general',
-          subcategory: orig?.subcategory ?? 'general',
+          competency: row.extractedDifficulty?.competency ?? 'general',
+          subcategory: row.extractedDifficulty?.subcategory ?? 'general',
           severity: 'medium',
           trend: 'stable',
           status: 'Active',

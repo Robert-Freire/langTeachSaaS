@@ -235,6 +235,7 @@ export default function StudentDetail() {
       setExtractedProfile(null)
     } catch (err) {
       logger.error('StudentDetail', 'Voice save failed', err)
+      setVoiceError('Save failed. Please try again.')
       setVoiceFlow('confirming')
     }
   }
@@ -306,8 +307,9 @@ export default function StudentDetail() {
           student={student}
           extracted={extractedProfile}
           saving={voiceFlow === 'saving'}
+          saveError={voiceError}
           onSave={(patch: VoiceMergePatch) => handleVoiceSave(patch)}
-          onClose={() => { setVoiceFlow('idle'); setExtractedProfile(null) }}
+          onClose={() => { setVoiceFlow('idle'); setExtractedProfile(null); setVoiceError(null) }}
         />
       )}
 

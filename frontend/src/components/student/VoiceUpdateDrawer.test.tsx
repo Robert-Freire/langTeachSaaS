@@ -113,20 +113,20 @@ describe('mergeExtractedIntoStudent', () => {
 
   it('replaces scalar field', () => {
     const rows = [makeRow('cefrLevel', 'B2', 'CHANGED')]
-    const patch = mergeExtractedIntoStudent(rows, EMPTY_EXTRACTED, BASE_STUDENT)
+    const patch = mergeExtractedIntoStudent(rows, BASE_STUDENT)
     expect(patch.cefrLevel).toBe('B2')
   })
 
   it('deduplicates interests case-insensitively', () => {
     const student: Student = { ...BASE_STUDENT, profile: { ...BASE_STUDENT.profile, interests: ['cooking'] } }
     const rows = [makeRow('interests', 'Cooking', 'ADDED')]
-    const patch = mergeExtractedIntoStudent(rows, EMPTY_EXTRACTED, student)
+    const patch = mergeExtractedIntoStudent(rows, student)
     expect((patch as { interests: string[] }).interests).toEqual(['cooking'])
   })
 
   it('appends unique interest', () => {
     const rows = [makeRow('interests', 'Travel', 'ADDED')]
-    const patch = mergeExtractedIntoStudent(rows, EMPTY_EXTRACTED, BASE_STUDENT)
+    const patch = mergeExtractedIntoStudent(rows, BASE_STUDENT)
     expect((patch as { interests: string[] }).interests).toContain('Travel')
   })
 
@@ -134,18 +134,18 @@ describe('mergeExtractedIntoStudent', () => {
     const existing = [{ id: 'e1', text: 'Practice vocab', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'pending', coveredInSessionLogId: null }]
     const student: Student = { ...BASE_STUDENT, profile: { ...BASE_STUDENT.profile, teachingTodos: existing } }
     const rows = [makeRow('teachingTodos', 'Practice vocab', 'ADDED')]
-    const patch = mergeExtractedIntoStudent(rows, EMPTY_EXTRACTED, student)
+    const patch = mergeExtractedIntoStudent(rows, student)
     expect((patch as { teachingTodos: unknown[] }).teachingTodos).toHaveLength(2)
   })
 
   it('deduplicates native languages case-insensitively', () => {
     const rows = [makeRow('nativeLanguages', 'english', 'ADDED')]
-    const patch = mergeExtractedIntoStudent(rows, EMPTY_EXTRACTED, BASE_STUDENT)
+    const patch = mergeExtractedIntoStudent(rows, BASE_STUDENT)
     expect((patch as { nativeLanguages: string[] }).nativeLanguages).toEqual(['English'])
   })
 
   it('returns empty patch when no rows', () => {
-    const patch = mergeExtractedIntoStudent([], EMPTY_EXTRACTED, BASE_STUDENT)
+    const patch = mergeExtractedIntoStudent([], BASE_STUDENT)
     expect(Object.keys(patch)).toHaveLength(0)
   })
 })

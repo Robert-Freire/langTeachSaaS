@@ -29,11 +29,12 @@ interface VoiceUpdateDrawerProps {
   student: Student
   extracted: ExtractedStudentProfile
   saving: boolean
+  saveError?: string | null
   onSave: (patch: VoiceMergePatch) => void
   onClose: () => void
 }
 
-export function VoiceUpdateDrawer({ student, extracted, saving, onSave, onClose }: VoiceUpdateDrawerProps) {
+export function VoiceUpdateDrawer({ student, extracted, saving, saveError, onSave, onClose }: VoiceUpdateDrawerProps) {
   const [rows, setRows] = useState<DrawerRow[]>(() => buildDrawerRows(extracted, student))
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
@@ -56,7 +57,7 @@ export function VoiceUpdateDrawer({ student, extracted, saving, onSave, onClose 
   }
 
   function handleSave() {
-    onSave(mergeExtractedIntoStudent(rows, extracted, student))
+    onSave(mergeExtractedIntoStudent(rows, student))
   }
 
   return (
@@ -165,7 +166,9 @@ export function VoiceUpdateDrawer({ student, extracted, saving, onSave, onClose 
 
         {/* Footer */}
         {!isEmpty && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 bg-white/60">
+          <div className="flex flex-col gap-2 px-6 py-4 bg-white/60">
+            {saveError && <p className="text-sm text-red-500 text-right" data-testid="save-error">{saveError}</p>}
+          <div className="flex items-center justify-end gap-3">
             <Button variant="ghost" size="sm" onClick={onClose} disabled={saving} data-testid="drawer-cancel">
               Cancel
             </Button>
@@ -183,6 +186,7 @@ export function VoiceUpdateDrawer({ student, extracted, saving, onSave, onClose 
                 `Save ${rows.length} change${rows.length === 1 ? '' : 's'}`
               )}
             </Button>
+          </div>
           </div>
         )}
       </div>
