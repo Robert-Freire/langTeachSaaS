@@ -1,7 +1,6 @@
-import { createRef } from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { AudioRecorder, type AudioRecorderHandle } from './AudioRecorder'
+import { AudioRecorder } from './AudioRecorder'
 import * as voiceNotesApi from '../../api/voiceNotes'
 import type { VoiceNote } from '../../api/voiceNotes'
 
@@ -166,54 +165,44 @@ describe('AudioRecorder', () => {
     expect(screen.getByTestId('upload-audio-button')).toBeInTheDocument()
   })
 
-  it('switchToFileUpload aborts an in-flight recording without invoking onVoiceNote and clicks the file input', async () => {
+  it('shows the upload-fallback link during recording when showUploadFallbackLink is true', async () => {
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} autoStart showUploadFallbackLink />)
+
+    expect(await screen.findByTestId('switch-to-upload-link')).toBeInTheDocument()
+  })
+
+  it('does not show the upload-fallback link when showUploadFallbackLink is omitted', async () => {
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} autoStart />)
+
+    await waitFor(() => screen.getByTestId('stop-button'))
+    expect(screen.queryByTestId('switch-to-upload-link')).not.toBeInTheDocument()
+  })
+
+  it('clicking the upload-fallback link discards the in-flight recording without uploading and opens the file picker', async () => {
     const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
     mockGetUserMedia.mockResolvedValue(mockStream)
     const onVoiceNote = vi.fn()
-    const ref = createRef<AudioRecorderHandle>()
 
-    render(<AudioRecorder ref={ref} onVoiceNote={onVoiceNote} autoStart />)
+    render(<AudioRecorder onVoiceNote={onVoiceNote} autoStart showUploadFallbackLink />)
 
-    await waitFor(() => screen.getByTestId('stop-button'))
+    await waitFor(() => screen.getByTestId('switch-to-upload-link'))
 
     const fileInput = screen.getByTestId('audio-file-input') as HTMLInputElement
     const clickSpy = vi.spyOn(fileInput, 'click')
 
     await act(async () => {
-      ref.current!.switchToFileUpload()
+      fireEvent.click(screen.getByTestId('switch-to-upload-link'))
     })
 
     expect(clickSpy).toHaveBeenCalledTimes(1)
     expect(onVoiceNote).not.toHaveBeenCalled()
     expect(voiceNotesApi.uploadVoiceNote).not.toHaveBeenCalled()
-  })
-
-  it('switchToFileUpload from idle just opens the file picker', async () => {
-    const ref = createRef<AudioRecorderHandle>()
-
-    render(<AudioRecorder ref={ref} onVoiceNote={vi.fn()} />)
-
-    const fileInput = screen.getByTestId('audio-file-input') as HTMLInputElement
-    const clickSpy = vi.spyOn(fileInput, 'click')
-
-    await act(async () => {
-      ref.current!.switchToFileUpload()
-    })
-
-    expect(clickSpy).toHaveBeenCalledTimes(1)
-    expect(mockGetUserMedia).not.toHaveBeenCalled()
-  })
-
-  it('fires onStateChange when recording starts', async () => {
-    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
-    mockGetUserMedia.mockResolvedValue(mockStream)
-    const onStateChange = vi.fn()
-
-    render(<AudioRecorder onVoiceNote={vi.fn()} autoStart onStateChange={onStateChange} />)
-
-    await waitFor(() => screen.getByTestId('stop-button'))
-
-    expect(onStateChange).toHaveBeenCalledWith('recording')
   })
 
   it('does not trigger a second upload if handleFileChange fires twice in quick succession', async () => {

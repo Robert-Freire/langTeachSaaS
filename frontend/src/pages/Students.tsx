@@ -13,7 +13,7 @@ import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { cn } from '@/lib/utils'
 import { calendarRelativeDay } from '@/utils/formatDate'
 import { getInitials } from '@/utils/nameUtils'
-import { AudioRecorder, type AudioRecorderHandle, type RecorderState } from '@/components/audio/AudioRecorder'
+import { AudioRecorder } from '@/components/audio/AudioRecorder'
 import { VoiceUpdateDrawer } from '@/components/student/VoiceUpdateDrawer'
 import { extractStudentProfile, type ExtractedStudentProfile } from '@/api/studentExtraction'
 import { buildCreateRequestFromRows, type DrawerRow } from '@/lib/voiceUpdateMerge'
@@ -212,9 +212,7 @@ export default function Students() {
   const [voiceFlow, setVoiceFlow] = useState<VoiceFlow>('idle')
   const [extractedProfile, setExtractedProfile] = useState<ExtractedStudentProfile | null>(null)
   const [voiceError, setVoiceError] = useState<string | null>(null)
-  const [recorderState, setRecorderState] = useState<RecorderState>('idle')
   const voiceSaveTokenRef = useRef(0)
-  const audioRecorderRef = useRef<AudioRecorderHandle>(null)
 
   const cefrFilter = searchParams.get('level') ?? 'All'
   const sortBy = (searchParams.get('sort') as SortOption) ?? 'lastSession'
@@ -361,7 +359,6 @@ export default function Students() {
     setVoiceFlow('idle')
     setExtractedProfile(null)
     setVoiceError(null)
-    setRecorderState('idle')
   }
 
   if (isStudentsLoading) {
@@ -439,21 +436,10 @@ export default function Students() {
         <div className="rounded-2xl bg-white p-4 flex flex-col gap-2" data-testid="voice-recorder-panel">
           <p className="text-xs font-semibold tracking-widest uppercase text-gray-400">New student via voice</p>
           <AudioRecorder
-            ref={audioRecorderRef}
             autoStart
+            showUploadFallbackLink
             onVoiceNote={handleVoiceNote}
-            onStateChange={setRecorderState}
           />
-          {recorderState === 'recording' && (
-            <button
-              type="button"
-              onClick={() => audioRecorderRef.current?.switchToFileUpload()}
-              className="self-start text-xs font-medium text-indigo-600 hover:underline"
-              data-testid="switch-to-upload-link"
-            >
-              or upload an audio file instead
-            </button>
-          )}
           {voiceError && <p className="text-sm text-red-500">{voiceError}</p>}
           <Button variant="ghost" size="sm" className="self-start" onClick={cancelVoiceFlow}>
             Cancel

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Mic, Square, Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { uploadVoiceNote, type VoiceNote } from '../../api/voiceNotes'
@@ -12,17 +12,22 @@ export interface AudioRecorderProps {
   onVoiceNote: (note: VoiceNote) => void
   disabled?: boolean
   autoStart?: boolean
-  onStateChange?: (state: RecorderState) => void
+  /**
+   * When true, while the recorder is actively recording it shows an inline
+   * "or upload an audio file instead" link below the timer. Clicking it
+   * discards the current recording and opens the file picker. Used by the
+   * voice-create / voice-update entry panels where there is no longer a
+   * chooser at the start.
+   */
+  showUploadFallbackLink?: boolean
 }
 
-export interface AudioRecorderHandle {
-  switchToFileUpload(): void
-}
-
-export const AudioRecorder = forwardRef<AudioRecorderHandle, AudioRecorderProps>(function AudioRecorder(
-  { onVoiceNote, disabled, autoStart, onStateChange },
-  ref,
-) {
+export function AudioRecorder({
+  onVoiceNote,
+  disabled,
+  autoStart,
+  showUploadFallbackLink,
+}: AudioRecorderProps) {
   const [state, setState] = useState<RecorderState>('idle')
   const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -133,35 +138,16 @@ export const AudioRecorder = forwardRef<AudioRecorderHandle, AudioRecorderProps>
     }, 1000)
   }, [stopRecording, uploadFile])
 
-  useImperativeHandle(ref, () => ({
-    switchToFileUpload() {
-      const recorder = mediaRecorderRef.current
-      if (recorder && recorder.state !== 'inactive') {
-        discardOnStopRef.current = true
-        stopInterval()
-        recorder.stop()
-      }
-      // Synchronously force idle so the next render's handleFileChange closure
-      // sees state === 'idle' (it guards on `state !== 'idle'`).
-      setState('idle')
-      setError(null)
-      setElapsed(0)
-      setDurationWarning(false)
-      autoStartedRef.current = true // do not re-trigger autoStart after switching
-      fileInputRef.current?.click()
-    },
-  }), [stopInterval])
-
   useEffect(() => {
-    if (autoStart && !autoStartedRef.current && state === 'idle' && !error) {
-      autoStartedRef.current = true
-      startRecording()
-    }
+    if (!autoStart || autoStartedRef.current || state !== 'idle' || error) return
+    autoStartedRef.current = true
+    // Defer to a microtask so the effect body does not trigger a synchronous
+    // setState cascade. startRecording() awaits getUserMedia before its first
+    // setState anyway, but the deferred call also satisfies the
+    // react-hooks/set-state-in-effect lint rule.
+    const handle = setTimeout(() => { void startRecording() }, 0)
+    return () => clearTimeout(handle)
   }, [autoStart, state, error, startRecording])
-
-  useEffect(() => {
-    onStateChange?.(state)
-  }, [state, onStateChange])
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -234,24 +220,50 @@ export const AudioRecorder = forwardRef<AudioRecorderHandle, AudioRecorderProps>
 
 
       {state === 'recording' && (
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1 text-sm text-red-600 font-medium">
-            <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-            Recording {formatTime(elapsed)}
-          </span>
-          {durationWarning && (
-            <span className="text-xs text-amber-600">Max duration reached</span>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1 text-sm text-red-600 font-medium">
+              <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+              Recording {formatTime(elapsed)}
+            </span>
+            {durationWarning && (
+              <span className="text-xs text-amber-600">Max duration reached</span>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={stopRecording}
+              data-testid="stop-button"
+            >
+              <Square className="h-4 w-4 mr-1" />
+              Stop
+            </Button>
+          </div>
+          {showUploadFallbackLink && (
+            <button
+              type="button"
+              onClick={() => {
+                // Same path as the imperative handle: discard the in-flight
+                // recording, release the mic, then open the file picker.
+                discardOnStopRef.current = true
+                stopInterval()
+                if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                  mediaRecorderRef.current.stop()
+                }
+                setState('idle')
+                setError(null)
+                setElapsed(0)
+                setDurationWarning(false)
+                autoStartedRef.current = true
+                fileInputRef.current?.click()
+              }}
+              className="self-start text-xs font-medium text-indigo-600 hover:underline"
+              data-testid="switch-to-upload-link"
+            >
+              or upload an audio file instead
+            </button>
           )}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={stopRecording}
-            data-testid="stop-button"
-          >
-            <Square className="h-4 w-4 mr-1" />
-            Stop
-          </Button>
         </div>
       )}
 
@@ -303,4 +315,4 @@ export const AudioRecorder = forwardRef<AudioRecorderHandle, AudioRecorderProps>
       )}
     </div>
   )
-})
+}

@@ -1,4 +1,3 @@
-import { forwardRef, useEffect, useImperativeHandle } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
@@ -26,27 +25,24 @@ vi.mock('../lib/logger', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }))
 
-const switchToFileUploadSpy = vi.fn()
-
 vi.mock('@/components/audio/AudioRecorder', () => ({
-  AudioRecorder: forwardRef<
-    { switchToFileUpload(): void },
-    {
-      onVoiceNote: (note: { transcription: string | null }) => void
-      autoStart?: boolean
-      onStateChange?: (state: 'idle' | 'recording' | 'uploading' | 'done' | 'error') => void
-    }
-  >(function MockAudioRecorder({ onVoiceNote, autoStart, onStateChange }, ref) {
-    useImperativeHandle(ref, () => ({ switchToFileUpload: switchToFileUploadSpy }), [])
-    useEffect(() => {
-      if (autoStart) onStateChange?.('recording')
-    }, [autoStart, onStateChange])
-    return (
+  AudioRecorder: ({
+    onVoiceNote,
+    showUploadFallbackLink,
+  }: {
+    onVoiceNote: (note: { transcription: string | null }) => void
+    autoStart?: boolean
+    showUploadFallbackLink?: boolean
+  }) => (
+    <>
       <button data-testid="audio-recorder-mock" onClick={() => onVoiceNote({ transcription: 'María is a nurse from Madrid' })}>
         Record
       </button>
-    )
-  }),
+      {showUploadFallbackLink && (
+        <button data-testid="switch-to-upload-link">or upload an audio file instead</button>
+      )}
+    </>
+  ),
 }))
 
 const emptyDashboard = { nextSession: null, todaySessions: [], activeStudents: [], pendingFollowups: [], upcomingThisWeek: [] }
@@ -139,7 +135,6 @@ function wrapper(ui: React.ReactElement, initialSearch = '') {
 describe('Students page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    switchToFileUploadSpy.mockReset()
     vi.mocked(dashboardApi.getDashboard).mockResolvedValue(emptyDashboard)
   })
 
@@ -646,21 +641,12 @@ describe('Students page', () => {
     expect(screen.getByTestId('audio-recorder-mock')).toBeInTheDocument()
   })
 
-  it('voice panel renders the "or upload an audio file instead" link during recording', async () => {
+  it('voice panel renders the AudioRecorder with the upload-fallback link enabled', async () => {
     vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse([makeStudent()]))
     wrapper(<Students />)
     await screen.findByTestId('student-name')
     fireEvent.click(screen.getByTestId('voice-new-student-button'))
     expect(await screen.findByTestId('switch-to-upload-link')).toBeInTheDocument()
-  })
-
-  it('clicking the upload-instead link calls AudioRecorder.switchToFileUpload', async () => {
-    vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse([makeStudent()]))
-    wrapper(<Students />)
-    await screen.findByTestId('student-name')
-    fireEvent.click(screen.getByTestId('voice-new-student-button'))
-    fireEvent.click(await screen.findByTestId('switch-to-upload-link'))
-    expect(switchToFileUploadSpy).toHaveBeenCalledTimes(1)
   })
 
   it('shows VoiceUpdateDrawer in create mode after extraction', async () => {
