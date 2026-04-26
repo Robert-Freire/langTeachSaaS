@@ -107,6 +107,26 @@ Check whether the ACs include an item requiring the agent to update `prior-findi
 - **Issue originates from a Teacher QA triage** (references a triage file or finding IDs like CQ-1, GAP-1): this item is required. If missing, route through PM to add it before approving.
 - **New AI quality change not from triage**: flag to the user: "This changes AI generation behavior. Should a row be added to prior-findings.md?" If yes, add the AC item before approving.
 
+### UX-contract gate
+
+**Trigger:** issue has `area:frontend` OR `area:design` label.
+
+This gate exists because two recent regressions (#951/#952 truncation, #964 voice trigger) had all ACs pass but broke the user goal. Small issues are where this fails most often: the bot follows the literal instruction and loses sight of the global outcome. The fix is to require negative-space and end-to-end verification regardless of size.
+
+Refer to `.claude/procedures/issue-management.md` ("UX-affecting issue body structure") for the full body structure spec.
+
+**Hard gates (block `qa:ready` until resolved):**
+
+1. **Negative-space section present.** The body MUST include a section describing what MUST NOT happen from the user's perspective, with at least one bullet. Look for headings like "What MUST NOT happen", "Failure modes", "The teacher must never...", or equivalent. A body that only describes the happy path FAILS this gate. The bot follows literal instructions; without explicit failure modes, the bot will not check for them.
+
+2. **Browser verification present.** The body MUST include a verification section describing at least one end-to-end gesture in a real browser (e.g., "click the title, page navigates to session edit"). Unit-test-only verification FAILS this gate. Unit tests mock the states real users hit (resolved promises instead of pending ones, present DOM instead of empty initial render). For trivial XS issues, a single browser gesture is enough.
+
+**Soft flag (note in QA comment, do not block):**
+
+3. **Implementation prescriptions in ACs.** Flag if ACs contain prop names ("add an `autoStart?: boolean` prop"), refactoring directives ("AudioRecorder is now a forwardRef"), exact line numbers, or specific CSS class names. These push the implementer toward a prescribed shape instead of the user-facing outcome. Note as a recommendation, do not block. If the architecture is genuinely contested, the body should have an "Implementation hint, not prescriptive" section, with ACs staying user-facing.
+
+**On failure:** route through the PM agent with the gap noted, asking for the missing section to be drafted. Do not add `qa:ready` until both hard gates pass.
+
 ### Visual test coverage gate
 
 **Trigger:** issue has `area:frontend` label.
@@ -174,6 +194,7 @@ Post this on every reviewed issue:
 ### Specialist Gates
 - Sophy: N/A | approved | NEEDS CLARIFICATION (questions added to body)
 - AI traceability: N/A | traceability AC present | AC added
+- UX contract: N/A | both hard gates pass | NEEDS WORK (negative-space and/or browser verification missing)
 - Visual coverage: N/A | all screens covered | GAPS (list below)
 
 ### PM Coordination
