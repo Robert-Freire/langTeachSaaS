@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { BookOpen, NotebookPen } from 'lucide-react'
+import { BookOpen, ExternalLink, NotebookPen } from 'lucide-react'
 import type { SessionLog } from '@/api/sessionLogs'
 import { parseTopicTags } from '@/api/sessionLogs'
 import { getDisplayTitle } from '@/lib/sessionUtils'
@@ -91,7 +91,7 @@ export function LastSessionCard({ session, studentId }: Props) {
 
           {actual && (
             <p
-              className="text-sm text-zinc-700 mt-2 line-clamp-4 whitespace-pre-wrap"
+              className="text-sm text-zinc-700 mt-2 whitespace-pre-wrap"
               data-testid="last-session-content"
             >
               {actual}
@@ -123,6 +123,16 @@ export function LastSessionCard({ session, studentId }: Props) {
               </p>
             </div>
           )}
+          <div className="mt-4">
+            <Link
+              to={`/students/${studentId}/sessions/${session.id}/edit`}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800"
+              data-testid="last-session-view-link"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              View session
+            </Link>
+          </div>
         </div>
       </div>
     </section>
