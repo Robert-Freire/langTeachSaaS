@@ -391,6 +391,15 @@ export default function LogSession() {
     })
   }
 
+  function fieldMarkerClass(field: string, opts?: { wrapper?: boolean }): string {
+    const parts: string[] = []
+    if (pulsingFields.has(field)) parts.push('animate-extraction-pulse')
+    if (extractedFields.has(field)) {
+      parts.push(opts?.wrapper ? 'border-l-[3px] border-indigo-500 pl-2' : 'border-l-[3px] border-indigo-500')
+    }
+    return parts.join(' ')
+  }
+
   function markChangedAndSchedule() {
     setHasChanges(true)
     scheduleTextSave()
@@ -1210,7 +1219,7 @@ export default function LogSession() {
                 type="date"
                 value={sessionDate}
                 onChange={e => { setSessionDate(e.target.value); trackManualEdit('sessionDate'); markChangedAndSchedule() }}
-                className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 ${pulsingFields.has('sessionDate') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('sessionDate') ? '!border-l-[3px] !border-indigo-500' : ''}`}
+                className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 ${fieldMarkerClass('sessionDate')}`}
                 data-testid="session-date"
               />
             </div>
@@ -1223,7 +1232,7 @@ export default function LogSession() {
                 type="time"
                 value={sessionTime}
                 onChange={e => { setSessionTime(e.target.value); trackManualEdit('sessionTime'); markChangedAndSchedule() }}
-                className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 ${pulsingFields.has('sessionTime') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('sessionTime') ? '!border-l-[3px] !border-indigo-500' : ''}`}
+                className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 ${fieldMarkerClass('sessionTime')}`}
                 data-testid="session-time"
               />
             </div>
@@ -1233,7 +1242,7 @@ export default function LogSession() {
               <Label htmlFor="duration" className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Duration</Label>
               <div className="flex items-center gap-2">
                 <Select value={durationChoice} onValueChange={(v) => { const val = v ?? durationChoice; setDurationChoice(val); trackManualEdit('durationChoice'); markChangedAndSaveNow({ duration: val === 'other' ? null : parseInt(val, 10) }) }}>
-                  <SelectTrigger id="duration" className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 flex-1 ${pulsingFields.has('durationChoice') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('durationChoice') ? '!border-l-[3px] !border-indigo-500' : ''}`} data-testid="duration-select">
+                  <SelectTrigger id="duration" className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 flex-1 ${fieldMarkerClass('durationChoice')}`} data-testid="duration-select">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1286,7 +1295,7 @@ export default function LogSession() {
               onChange={e => { setSessionTitle(e.target.value || undefined); trackManualEdit('sessionTitle'); markChangedAndSchedule() }}
               placeholder="What did you work on? (optional)"
               maxLength={120}
-              className={`text-sm bg-white ${pulsingFields.has('sessionTitle') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('sessionTitle') ? 'border-l-[3px] border-indigo-500' : ''}`}
+              className={`text-sm bg-white ${fieldMarkerClass('sessionTitle')}`}
               data-testid="log-session-title-input"
             />
           </div>
@@ -1346,7 +1355,7 @@ export default function LogSession() {
                   onChange={e => { setActualContent(e.target.value); trackManualEdit('actualContent'); markChangedAndSchedule() }}
                   placeholder="Describe what happened in the session..."
                   rows={6}
-                  className={`resize-none text-sm bg-white ${pulsingFields.has('actualContent') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('actualContent') ? 'border-l-[3px] border-indigo-500' : ''}`}
+                  className={`resize-none text-sm bg-white ${fieldMarkerClass('actualContent')}`}
                   data-testid="actual-content"
                 />
               </div>
@@ -1375,7 +1384,7 @@ export default function LogSession() {
                     ))}
                   </div>
                 )}
-                <div className={`rounded-md ${pulsingFields.has('topicTags') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('topicTags') ? 'border-l-[3px] border-indigo-500 pl-2' : ''}`} data-testid="topic-tags-highlight-wrapper">
+                <div className={`rounded-md ${fieldMarkerClass('topicTags', { wrapper: true })}`} data-testid="topic-tags-highlight-wrapper">
                   <TopicTagsInput
                     value={topicTags}
                     onChange={(tags) => { setTopicTags(tags); trackManualEdit('topicTags'); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
@@ -1483,7 +1492,7 @@ export default function LogSession() {
                   value={homeworkAssigned}
                   onChange={e => { setHomeworkAssigned(e.target.value); trackManualEdit('homeworkAssigned'); markChangedAndSchedule() }}
                   placeholder="e.g. Workbook page 42, exercises 3-5"
-                  className={`text-sm bg-white ${pulsingFields.has('homeworkAssigned') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('homeworkAssigned') ? 'border-l-[3px] border-indigo-500' : ''}`}
+                  className={`text-sm bg-white ${fieldMarkerClass('homeworkAssigned')}`}
                   data-testid="homework-assigned"
                 />
               </div>
@@ -1499,7 +1508,7 @@ export default function LogSession() {
                   onChange={e => { setNextSessionTopics(e.target.value); trackManualEdit('nextSessionTopics'); markChangedAndSchedule() }}
                   placeholder="What to focus on next time..."
                   rows={3}
-                  className={`resize-none text-sm bg-white ${pulsingFields.has('nextSessionTopics') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('nextSessionTopics') ? 'border-l-[3px] border-indigo-500' : ''}`}
+                  className={`resize-none text-sm bg-white ${fieldMarkerClass('nextSessionTopics')}`}
                   data-testid="next-session-topics"
                 />
               </div>
@@ -1593,7 +1602,7 @@ export default function LogSession() {
                       onChange={e => { setGeneralNotes(e.target.value); trackManualEdit('generalNotes'); markChangedAndSchedule() }}
                       placeholder="Observations on mood, energy levels, context..."
                       rows={3}
-                      className={`resize-none text-sm bg-white ${pulsingFields.has('generalNotes') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('generalNotes') ? 'border-l-[3px] border-indigo-500' : ''}`}
+                      className={`resize-none text-sm bg-white ${fieldMarkerClass('generalNotes')}`}
                       data-testid="general-notes"
                     />
                   </div>
@@ -1664,7 +1673,7 @@ export default function LogSession() {
               {/* Topics Covered */}
               <div className="space-y-1 pt-4">
                 <Label className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">Topics Covered</Label>
-                <div className={`rounded-md ${pulsingFields.has('topicTags') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('topicTags') ? 'border-l-[3px] border-indigo-500 pl-2' : ''}`}>
+                <div className={`rounded-md ${fieldMarkerClass('topicTags', { wrapper: true })}`}>
                   <TopicTagsInput
                     value={topicTags}
                     onChange={(tags) => { setTopicTags(tags); trackManualEdit('topicTags'); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
@@ -1683,7 +1692,7 @@ export default function LogSession() {
                   onChange={e => { setGeneralNotes(e.target.value); trackManualEdit('generalNotes'); markChangedAndSchedule() }}
                   placeholder="Notes about the cancellation..."
                   rows={3}
-                  className={`resize-none text-sm bg-white ${pulsingFields.has('generalNotes') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('generalNotes') ? 'border-l-[3px] border-indigo-500' : ''}`}
+                  className={`resize-none text-sm bg-white ${fieldMarkerClass('generalNotes')}`}
                   data-testid="general-notes"
                 />
               </div>

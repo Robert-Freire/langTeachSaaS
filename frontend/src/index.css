@@ -10,14 +10,12 @@
 @theme {
   --font-inter: 'Inter Variable', sans-serif;
   --font-manrope: 'Manrope Variable', sans-serif;
+  --animate-extraction-pulse: extraction-pulse 1.4s ease-in-out 2;
 }
 
 @keyframes extraction-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgb(99 102 241 / 0); }
   50%      { box-shadow: 0 0 0 4px rgb(99 102 241 / 0.35); }
-}
-.animate-extraction-pulse {
-  animation: extraction-pulse 1.4s ease-in-out 2;
 }
 
 :root {
