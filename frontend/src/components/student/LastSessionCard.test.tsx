@@ -147,6 +147,13 @@ describe('LastSessionCard', () => {
     expect(screen.getByTestId('last-session-title')).toHaveTextContent('Most recent')
   })
 
+  it('wraps the title in a link to the session edit page', () => {
+    renderCard(makeSession())
+    const titleLink = screen.getByTestId('last-session-title-link')
+    expect(titleLink).toHaveAttribute('href', '/students/student-1/sessions/sess-x/edit')
+    expect(titleLink).toContainElement(screen.getByTestId('last-session-title'))
+  })
+
   it('renders View session link with correct href', () => {
     renderCard(makeSession())
     const link = screen.getByTestId('last-session-view-link')

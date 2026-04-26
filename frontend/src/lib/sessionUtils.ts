@@ -17,13 +17,12 @@ export function getSessionTitle(session: SessionLog): string {
 /**
  * Compact display title for a session in overview/card views.
  * Returns the explicit title (unless it is the generic "Session"),
- * falls back to truncated content, or "Session" as last resort.
+ * falls back to actualContent / generalNotes / plannedContent, or "Session".
+ * Callers are responsible for visual overflow (CSS line-clamp), per design system §7.
  */
 export function getDisplayTitle(session: SessionLog): string {
   if (session.title && session.title !== 'Session') return session.title
-  const fallback = session.actualContent || session.generalNotes || session.plannedContent
-  if (fallback) return fallback.slice(0, 55) + (fallback.length > 55 ? '...' : '')
-  return 'Session'
+  return session.actualContent || session.generalNotes || session.plannedContent || 'Session'
 }
 
 /**
