@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, NotebookPen, Pencil, CalendarClock } from 'lucide-react'
+import { ArrowLeft, NotebookPen, Pencil, CalendarClock, Mic } from 'lucide-react'
 import type { Student } from '@/api/students'
 import type { SessionLog } from '@/api/sessionLogs'
 import { formatDateShort } from '@/utils/formatDate'
@@ -71,12 +71,14 @@ function HeaderObjective({ student }: { student: Student }) {
 }
 
 interface StudentDetailHeaderProps {
+  onVoiceUpdateClick?: () => void
+  voiceFlowActive?: boolean
   student: Student
   nextSession: SessionLog | null
   sessionFrequency: string | null
 }
 
-export function StudentDetailHeader({ student, nextSession, sessionFrequency }: StudentDetailHeaderProps) {
+export function StudentDetailHeader({ student, nextSession, sessionFrequency, onVoiceUpdateClick, voiceFlowActive }: StudentDetailHeaderProps) {
   const navigate = useNavigate()
   const identitySubtitle = buildIdentitySubtitle(student)
 
@@ -182,6 +184,17 @@ export function StudentDetailHeader({ student, nextSession, sessionFrequency }: 
 
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0 md:self-start">
+          {onVoiceUpdateClick && (
+            <button
+              onClick={onVoiceUpdateClick}
+              disabled={voiceFlowActive}
+              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              data-testid="voice-update-button"
+            >
+              <Mic className="h-3.5 w-3.5" />
+              Update via voice
+            </button>
+          )}
           <Link
             to={`/students/${student.id}/edit`}
             className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
