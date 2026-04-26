@@ -151,6 +151,27 @@ export default function LogSession() {
   const [sessionTitle, setSessionTitle] = useState<string | undefined>()
   const [isExtracting, setIsExtracting] = useState(false)
   const [extractionError, setExtractionError] = useState<string | null>(null)
+
+  // Voice extraction highlight + undo
+  const [highlightedFields, setHighlightedFields] = useState<Set<string>>(new Set())
+  type ExtractionSnapshot = {
+    sessionTitle: string | undefined
+    sessionDate: string
+    sessionTime: string
+    durationChoice: string
+    durationOther: string
+    actualContent: string
+    homeworkAssigned: string
+    nextSessionTopics: string
+    generalNotes: string
+    topicTags: TopicTag[]
+  }
+  const [extractionSnapshot, setExtractionSnapshot] = useState<ExtractionSnapshot | null>(null)
+  const [showUndoBar, setShowUndoBar] = useState(false)
+  const [undoBarCount, setUndoBarCount] = useState(0)
+  const [postExtractionEdits, setPostExtractionEdits] = useState<Set<string>>(new Set())
+  const undoBarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [secondaryOpen, setSecondaryOpen] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [suggestedDifficulties, setSuggestedDifficulties] = useState<SuggestedDifficulty[]>([])
@@ -354,6 +375,17 @@ export default function LogSession() {
     isEditMode ? editSession?.id : undefined,
   )
 
+  useEffect(() => () => {
+    if (undoBarTimerRef.current) clearTimeout(undoBarTimerRef.current)
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
+  }, [])
+
+  function trackManualEdit(fieldName: string) {
+    if (extractionSnapshot) {
+      setPostExtractionEdits(prev => { const next = new Set(prev); next.add(fieldName); return next })
+    }
+  }
+
   function markChangedAndSchedule() {
     setHasChanges(true)
     scheduleTextSave()
@@ -448,6 +480,29 @@ export default function LogSession() {
       setDoneError('Something went wrong. Please try again.')
       setIsDone(false)
     }
+  }
+
+  function handleUndoExtraction() {
+    if (!extractionSnapshot) return
+    const skip = postExtractionEdits
+    if (!skip.has('sessionTitle')) setSessionTitle(extractionSnapshot.sessionTitle)
+    if (!skip.has('sessionDate')) setSessionDate(extractionSnapshot.sessionDate)
+    if (!skip.has('sessionTime')) setSessionTime(extractionSnapshot.sessionTime)
+    if (!skip.has('durationChoice')) {
+      setDurationChoice(extractionSnapshot.durationChoice)
+      setDurationOther(extractionSnapshot.durationOther)
+    }
+    if (!skip.has('actualContent')) setActualContent(extractionSnapshot.actualContent)
+    if (!skip.has('homeworkAssigned')) setHomeworkAssigned(extractionSnapshot.homeworkAssigned)
+    if (!skip.has('nextSessionTopics')) setNextSessionTopics(extractionSnapshot.nextSessionTopics)
+    if (!skip.has('generalNotes')) setGeneralNotes(extractionSnapshot.generalNotes)
+    if (!skip.has('topicTags')) setTopicTags(extractionSnapshot.topicTags)
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
+    if (undoBarTimerRef.current) clearTimeout(undoBarTimerRef.current)
+    setHighlightedFields(new Set())
+    setShowUndoBar(false)
+    setExtractionSnapshot(null)
+    markChangedAndSchedule()
   }
 
   function toggleTodo(todoId: string) {
@@ -931,6 +986,41 @@ export default function LogSession() {
             </div>
           )}
 
+          {/* Undo extraction bar */}
+          {showUndoBar && (
+            <div
+              className="flex items-center gap-3 rounded-xl px-4 py-2.5"
+              style={{ background: '#EEF0FD' }}
+              data-testid="undo-extraction-bar"
+            >
+              <span className="text-sm text-indigo-800 flex-1">
+                {undoBarCount} {undoBarCount === 1 ? 'field' : 'fields'} filled from recording
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={handleUndoExtraction}
+                className="text-indigo-700 hover:text-indigo-900 hover:bg-indigo-100 shrink-0 h-7 px-2"
+                data-testid="undo-extraction-btn"
+              >
+                Undo extraction
+              </Button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (undoBarTimerRef.current) clearTimeout(undoBarTimerRef.current)
+                  setShowUndoBar(false)
+                }}
+                className="text-indigo-500 hover:text-indigo-700 shrink-0"
+                aria-label="Dismiss"
+                data-testid="dismiss-undo-bar"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
           {/* Voice recorder: primary alternative to filling the entire form manually */}
           <div
             className="flex items-center gap-3 rounded-xl px-4 py-3"
@@ -951,6 +1041,20 @@ export default function LogSession() {
                   return
                 }
                 setVoiceNoteTranscription(transcription)
+                const snapshot: ExtractionSnapshot = {
+                  sessionTitle,
+                  sessionDate: sessionDateRef.current,
+                  sessionTime: sessionTimeRef.current,
+                  durationChoice: durationChoiceRef.current,
+                  durationOther,
+                  actualContent: latestFieldsRef.current.actualContent,
+                  homeworkAssigned: latestFieldsRef.current.homeworkAssigned,
+                  nextSessionTopics: latestFieldsRef.current.nextSessionTopics,
+                  generalNotes: latestFieldsRef.current.generalNotes,
+                  topicTags: [...topicTags],
+                }
+                setExtractionSnapshot(snapshot)
+                setPostExtractionEdits(new Set())
                 setIsExtracting(true)
                 extractSessionReflection(id, transcription)
                   .then(extracted => {
@@ -983,13 +1087,14 @@ export default function LogSession() {
                       saveOverride.actualContent = nextActualContent
                       setActualContent(nextActualContent)
                     }
+                    let nextGeneralNotes: string | null = null
                     if (extracted.areasToImprove || extracted.emotionalSignals) {
                       // emotionalSignals has no mode; always include it. Only include areasToImprove value if mode != 'skip'.
                       const areasValue = extracted.areasToImprove?.mode !== 'skip' ? extracted.areasToImprove?.value : null
                       const combinedValue = [areasValue, extracted.emotionalSignals].filter(Boolean).join(' ')
                       const effectiveMode = areasValue ? (extracted.areasToImprove?.mode ?? 'replace') : 'replace'
                       const combinedField = combinedValue ? { value: combinedValue, mode: effectiveMode } : null
-                      const nextGeneralNotes = applyMode(curGeneralNotes, combinedField)
+                      nextGeneralNotes = applyMode(curGeneralNotes, combinedField)
                       if (nextGeneralNotes !== null) {
                         saveOverride.generalNotes = nextGeneralNotes
                         setGeneralNotes(nextGeneralNotes)
@@ -1032,6 +1137,28 @@ export default function LogSession() {
                         if (newChoice === 'other') setDurationOther(String(dur))
                       }
                     }
+
+                    // Detect changed fields for highlight + undo bar
+                    const changed = new Set<string>()
+                    if (extracted.sessionTitle && extracted.sessionTitle !== snapshot.sessionTitle) changed.add('sessionTitle')
+                    if (extracted.sessionDate && extracted.sessionDate !== snapshot.sessionDate) changed.add('sessionDate')
+                    if (extracted.sessionStartTime && extracted.sessionStartTime !== snapshot.sessionTime) changed.add('sessionTime')
+                    if (extracted.durationMinutes && durationChoiceRef.current === '50') changed.add('durationChoice')
+                    if (nextActualContent !== null && nextActualContent !== snapshot.actualContent) changed.add('actualContent')
+                    if (nextGeneralNotes !== null && nextGeneralNotes !== snapshot.generalNotes) changed.add('generalNotes')
+                    if (nextHomeworkAssigned !== null && nextHomeworkAssigned !== snapshot.homeworkAssigned) changed.add('homeworkAssigned')
+                    if (nextSessionTopicsNext !== null && nextSessionTopicsNext !== snapshot.nextSessionTopics) changed.add('nextSessionTopics')
+                    if (extracted.topicTags && extracted.topicTags.length > 0) changed.add('topicTags')
+                    if (changed.size > 0) {
+                      setHighlightedFields(changed)
+                      setUndoBarCount(changed.size)
+                      setShowUndoBar(true)
+                      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
+                      highlightTimerRef.current = setTimeout(() => setHighlightedFields(new Set()), 2000)
+                      if (undoBarTimerRef.current) clearTimeout(undoBarTimerRef.current)
+                      undoBarTimerRef.current = setTimeout(() => setShowUndoBar(false), 8000)
+                    }
+
                     markChangedAndSaveNow(saveOverride)
                   })
                   .catch((err: unknown) => {
@@ -1064,8 +1191,8 @@ export default function LogSession() {
                 id="session-date"
                 type="date"
                 value={sessionDate}
-                onChange={e => { setSessionDate(e.target.value); markChangedAndSchedule() }}
-                className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20"
+                onChange={e => { setSessionDate(e.target.value); trackManualEdit('sessionDate'); markChangedAndSchedule() }}
+                className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 transition-shadow duration-300 ${highlightedFields.has('sessionDate') ? 'ring-2 ring-indigo-500/40' : ''}`}
                 data-testid="session-date"
               />
             </div>
@@ -1077,8 +1204,8 @@ export default function LogSession() {
                 id="session-time"
                 type="time"
                 value={sessionTime}
-                onChange={e => { setSessionTime(e.target.value); markChangedAndSchedule() }}
-                className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20"
+                onChange={e => { setSessionTime(e.target.value); trackManualEdit('sessionTime'); markChangedAndSchedule() }}
+                className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 transition-shadow duration-300 ${highlightedFields.has('sessionTime') ? 'ring-2 ring-indigo-500/40' : ''}`}
                 data-testid="session-time"
               />
             </div>
@@ -1087,8 +1214,8 @@ export default function LogSession() {
             <div className="space-y-1">
               <Label htmlFor="duration" className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Duration</Label>
               <div className="flex items-center gap-2">
-                <Select value={durationChoice} onValueChange={(v) => { const val = v ?? durationChoice; setDurationChoice(val); markChangedAndSaveNow({ duration: val === 'other' ? null : parseInt(val, 10) }) }}>
-                  <SelectTrigger id="duration" className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 flex-1" data-testid="duration-select">
+                <Select value={durationChoice} onValueChange={(v) => { const val = v ?? durationChoice; setDurationChoice(val); trackManualEdit('durationChoice'); markChangedAndSaveNow({ duration: val === 'other' ? null : parseInt(val, 10) }) }}>
+                  <SelectTrigger id="duration" className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 flex-1 transition-shadow duration-300 ${highlightedFields.has('durationChoice') ? 'ring-2 ring-indigo-500/40' : ''}`} data-testid="duration-select">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1138,10 +1265,10 @@ export default function LogSession() {
             <Input
               id="session-title"
               value={sessionTitle ?? ''}
-              onChange={e => { setSessionTitle(e.target.value || undefined); markChangedAndSchedule() }}
+              onChange={e => { setSessionTitle(e.target.value || undefined); trackManualEdit('sessionTitle'); markChangedAndSchedule() }}
               placeholder="What did you work on? (optional)"
               maxLength={120}
-              className="text-sm bg-white"
+              className={`text-sm bg-white transition-shadow duration-300 ${highlightedFields.has('sessionTitle') ? 'ring-2 ring-indigo-500/40' : ''}`}
               data-testid="log-session-title-input"
             />
           </div>
@@ -1198,10 +1325,10 @@ export default function LogSession() {
                 <Textarea
                   id="actual-content"
                   value={actualContent}
-                  onChange={e => { setActualContent(e.target.value); markChangedAndSchedule() }}
+                  onChange={e => { setActualContent(e.target.value); trackManualEdit('actualContent'); markChangedAndSchedule() }}
                   placeholder="Describe what happened in the session..."
                   rows={6}
-                  className="resize-none text-sm bg-white"
+                  className={`resize-none text-sm bg-white transition-shadow duration-300 ${highlightedFields.has('actualContent') ? 'ring-2 ring-indigo-500/40' : ''}`}
                   data-testid="actual-content"
                 />
               </div>
@@ -1230,10 +1357,12 @@ export default function LogSession() {
                     ))}
                   </div>
                 )}
-                <TopicTagsInput
-                  value={topicTags}
-                  onChange={(tags) => { setTopicTags(tags); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
-                />
+                <div className={`transition-shadow duration-300 rounded-md ${highlightedFields.has('topicTags') ? 'ring-2 ring-indigo-500/40' : ''}`} data-testid="topic-tags-highlight-wrapper">
+                  <TopicTagsInput
+                    value={topicTags}
+                    onChange={(tags) => { setTopicTags(tags); trackManualEdit('topicTags'); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
+                  />
+                </div>
               </div>
 
               {/* Difficulties Observed — always visible; populated by AI voice extraction or manual add */}
@@ -1334,9 +1463,9 @@ export default function LogSession() {
                 <Input
                   id="homework-assigned"
                   value={homeworkAssigned}
-                  onChange={e => { setHomeworkAssigned(e.target.value); markChangedAndSchedule() }}
+                  onChange={e => { setHomeworkAssigned(e.target.value); trackManualEdit('homeworkAssigned'); markChangedAndSchedule() }}
                   placeholder="e.g. Workbook page 42, exercises 3-5"
-                  className="text-sm bg-white"
+                  className={`text-sm bg-white transition-shadow duration-300 ${highlightedFields.has('homeworkAssigned') ? 'ring-2 ring-indigo-500/40' : ''}`}
                   data-testid="homework-assigned"
                 />
               </div>
@@ -1349,10 +1478,10 @@ export default function LogSession() {
                 <Textarea
                   id="next-session-topics"
                   value={nextSessionTopics}
-                  onChange={e => { setNextSessionTopics(e.target.value); markChangedAndSchedule() }}
+                  onChange={e => { setNextSessionTopics(e.target.value); trackManualEdit('nextSessionTopics'); markChangedAndSchedule() }}
                   placeholder="What to focus on next time..."
                   rows={3}
-                  className="resize-none text-sm bg-white"
+                  className={`resize-none text-sm bg-white transition-shadow duration-300 ${highlightedFields.has('nextSessionTopics') ? 'ring-2 ring-indigo-500/40' : ''}`}
                   data-testid="next-session-topics"
                 />
               </div>
@@ -1443,10 +1572,10 @@ export default function LogSession() {
                     <Textarea
                       id="general-notes"
                       value={generalNotes}
-                      onChange={e => { setGeneralNotes(e.target.value); markChangedAndSchedule() }}
+                      onChange={e => { setGeneralNotes(e.target.value); trackManualEdit('generalNotes'); markChangedAndSchedule() }}
                       placeholder="Observations on mood, energy levels, context..."
                       rows={3}
-                      className="resize-none text-sm bg-white"
+                      className={`resize-none text-sm bg-white transition-shadow duration-300 ${highlightedFields.has('generalNotes') ? 'ring-2 ring-indigo-500/40' : ''}`}
                       data-testid="general-notes"
                     />
                   </div>
@@ -1517,10 +1646,12 @@ export default function LogSession() {
               {/* Topics Covered */}
               <div className="space-y-1 pt-4">
                 <Label className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">Topics Covered</Label>
-                <TopicTagsInput
-                  value={topicTags}
-                  onChange={(tags) => { setTopicTags(tags); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
-                />
+                <div className={`transition-shadow duration-300 rounded-md ${highlightedFields.has('topicTags') ? 'ring-2 ring-indigo-500/40' : ''}`}>
+                  <TopicTagsInput
+                    value={topicTags}
+                    onChange={(tags) => { setTopicTags(tags); trackManualEdit('topicTags'); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
+                  />
+                </div>
               </div>
 
               {/* Today's Context */}
@@ -1531,10 +1662,10 @@ export default function LogSession() {
                 <Textarea
                   id="general-notes"
                   value={generalNotes}
-                  onChange={e => { setGeneralNotes(e.target.value); markChangedAndSchedule() }}
+                  onChange={e => { setGeneralNotes(e.target.value); trackManualEdit('generalNotes'); markChangedAndSchedule() }}
                   placeholder="Notes about the cancellation..."
                   rows={3}
-                  className="resize-none text-sm bg-white"
+                  className={`resize-none text-sm bg-white transition-shadow duration-300 ${highlightedFields.has('generalNotes') ? 'ring-2 ring-indigo-500/40' : ''}`}
                   data-testid="general-notes"
                 />
               </div>

@@ -551,6 +551,141 @@ describe('LogSession', () => {
       expect(chip.className).toContain('bg-indigo-100')
     })
   })
+
+  describe('voice extraction highlight + undo bar', () => {
+    const MOCK_EXTRACTION = {
+      rawExtractionJson: '{}',
+      sessionTitle: 'Great session',
+      whatWasCovered: { value: 'Practiced subjunctive', mode: 'replace' as const },
+      homeworkAssigned: { value: 'Page 10', mode: 'replace' as const },
+      nextLessonIdeas: { value: 'Review ser/estar', mode: 'replace' as const },
+      areasToImprove: null,
+      emotionalSignals: null,
+      topicTags: [],
+      suggestedDifficulties: [],
+      sessionDate: null,
+      sessionStartTime: null,
+      durationMinutes: null,
+    }
+
+    beforeEach(() => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue(MOCK_EXTRACTION)
+      vi.mocked(sessionLogsApi.createSession).mockResolvedValue({ ...SAMPLE_SESSION, id: 'new-session' })
+    })
+
+    async function triggerExtraction() {
+      renderLogSession()
+      await screen.findByTestId('audio-recorder')
+      await act(async () => {
+        capturedOnVoiceNote?.({ id: 'note-1', transcription: 'Great session today' })
+        await Promise.resolve()
+      })
+    }
+
+    it('shows undo bar after extraction with correct field count', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('undo-extraction-bar')).toBeInTheDocument()
+      })
+      expect(screen.getByTestId('undo-extraction-bar')).toHaveTextContent('fields filled from recording')
+    })
+
+    it('undo bar has an 8-second auto-dismiss timer set on extraction', async () => {
+      const setSpy = vi.spyOn(globalThis, 'setTimeout')
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('undo-extraction-bar')).toBeInTheDocument()
+      })
+      const undoBarTimer = setSpy.mock.calls.find(([, delay]) => delay === 8000)
+      expect(undoBarTimer).toBeDefined()
+      setSpy.mockRestore()
+    })
+
+    it('X button dismisses bar without reverting fields', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content')).toHaveValue('Practiced subjunctive')
+      })
+      fireEvent.click(screen.getByTestId('dismiss-undo-bar'))
+      expect(screen.queryByTestId('undo-extraction-bar')).not.toBeInTheDocument()
+      expect(screen.getByTestId('actual-content')).toHaveValue('Practiced subjunctive')
+    })
+
+    it('Undo extraction reverts extracted fields to pre-extraction values', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content')).toHaveValue('Practiced subjunctive')
+      })
+      fireEvent.click(screen.getByTestId('undo-extraction-btn'))
+      expect(screen.queryByTestId('undo-extraction-bar')).not.toBeInTheDocument()
+      expect(screen.getByTestId('actual-content')).toHaveValue('')
+    })
+
+    it('field manually edited after extraction is NOT reverted on undo', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content')).toHaveValue('Practiced subjunctive')
+      })
+      fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'My own content' } })
+      fireEvent.click(screen.getByTestId('undo-extraction-btn'))
+      expect(screen.queryByTestId('undo-extraction-bar')).not.toBeInTheDocument()
+      expect(screen.getByTestId('actual-content')).toHaveValue('My own content')
+    })
+
+    it('highlight ring is applied to all changed fields after extraction', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('ring-indigo-500/40')
+      })
+      expect(screen.getByTestId('homework-assigned').className).toContain('ring-indigo-500/40')
+      expect(screen.getByTestId('next-session-topics').className).toContain('ring-indigo-500/40')
+      expect(screen.getByTestId('log-session-title-input').className).toContain('ring-indigo-500/40')
+    })
+
+    it('unchanged fields do not receive highlight ring after extraction', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('ring-indigo-500/40')
+      })
+      expect(screen.getByTestId('session-date').className).not.toContain('ring-indigo-500/40')
+      expect(screen.getByTestId('session-time').className).not.toContain('ring-indigo-500/40')
+    })
+
+    it('highlight ring has a 2-second clear timer set on extraction', async () => {
+      const setSpy = vi.spyOn(globalThis, 'setTimeout')
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('ring-indigo-500/40')
+      })
+      const highlightTimer = setSpy.mock.calls.find(([, delay]) => delay === 2000)
+      expect(highlightTimer).toBeDefined()
+      setSpy.mockRestore()
+    })
+
+    it('undo bar does not appear when extraction produces no field changes', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        rawExtractionJson: '{}',
+        sessionTitle: null,
+        whatWasCovered: null,
+        homeworkAssigned: null,
+        nextLessonIdeas: null,
+        areasToImprove: null,
+        emotionalSignals: null,
+        topicTags: [],
+        suggestedDifficulties: [],
+        sessionDate: null,
+        sessionStartTime: null,
+        durationMinutes: null,
+      })
+      renderLogSession()
+      await screen.findByTestId('audio-recorder')
+      await act(async () => {
+        capturedOnVoiceNote?.({ id: 'note-1', transcription: 'Something quiet' })
+        await Promise.resolve()
+      })
+      expect(screen.queryByTestId('undo-extraction-bar')).not.toBeInTheDocument()
+    })
+  })
 })
 
 const SESSION_ID = 'session-edit-1'
