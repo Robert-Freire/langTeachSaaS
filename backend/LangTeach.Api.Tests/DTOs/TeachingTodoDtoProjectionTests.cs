@@ -11,7 +11,7 @@ public class TeachingTodoDtoProjectionTests
         {
             Id = Guid.NewGuid(),
             Text = "Work on subjunctive",
-            Status = "pending",
+            Status = TeacherFollowupStatuses.Pending,
             CreatedAt = new DateTime(2026, 1, 15, 10, 0, 0, DateTimeKind.Utc),
             SourceSessionLogId = sourceSessionLogId,
             CoveredInSessionLogId = coveredInSessionLogId
