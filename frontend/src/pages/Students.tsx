@@ -212,6 +212,7 @@ export default function Students() {
   const [voiceFlow, setVoiceFlow] = useState<VoiceFlow>('idle')
   const [extractedProfile, setExtractedProfile] = useState<ExtractedStudentProfile | null>(null)
   const [voiceError, setVoiceError] = useState<string | null>(null)
+  const voiceSaveTokenRef = useRef(0)
 
   const cefrFilter = searchParams.get('level') ?? 'All'
   const sortBy = (searchParams.get('sort') as SortOption) ?? 'lastSession'
@@ -320,7 +321,7 @@ export default function Students() {
   async function handleVoiceNote(voiceNote: { transcription: string | null }) {
     if (!voiceNote.transcription || !voiceNote.transcription.trim()) {
       setVoiceError('Transcription failed. Please try recording again.')
-      setVoiceFlow('idle')
+      setVoiceFlow('recording')
       return
     }
     setVoiceFlow('extracting')
@@ -332,18 +333,21 @@ export default function Students() {
     } catch (err) {
       logger.error('Students', 'Voice extraction failed', err)
       setVoiceError('Extraction failed. Please try again.')
-      setVoiceFlow('idle')
+      setVoiceFlow('recording')
     }
   }
 
   async function handleVoiceCreate(rows: DrawerRow[]) {
     setVoiceFlow('saving')
+    const saveToken = ++voiceSaveTokenRef.current
     try {
       const data = buildCreateRequestFromRows(rows)
       const newStudent = await createStudent(data)
+      if (saveToken !== voiceSaveTokenRef.current) return
       queryClient.invalidateQueries({ queryKey: ['students'] })
       navigate(`/students/${newStudent.id}`)
     } catch (err) {
+      if (saveToken !== voiceSaveTokenRef.current) return
       logger.error('Students', 'Voice create failed', err)
       setVoiceError('Could not create student. Please try again.')
       setVoiceFlow('confirming')
@@ -351,6 +355,7 @@ export default function Students() {
   }
 
   function cancelVoiceFlow() {
+    voiceSaveTokenRef.current++
     setVoiceFlow('idle')
     setExtractedProfile(null)
     setVoiceError(null)

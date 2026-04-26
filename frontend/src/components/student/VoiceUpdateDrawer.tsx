@@ -95,7 +95,7 @@ export function VoiceUpdateDrawer(props: VoiceUpdateDrawerProps) {
     <div className="fixed inset-0 z-50 flex justify-end" data-testid="voice-update-drawer">
       <div
         className="absolute inset-0 bg-black/20"
-        onClick={onClose}
+        onClick={saving ? undefined : onClose}
         data-testid="drawer-backdrop"
       />
       <div

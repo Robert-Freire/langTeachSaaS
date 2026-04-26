@@ -296,7 +296,7 @@ export function buildCreateRequestFromRows(rows: DrawerRow[]): StudentFormData {
     officialCefrLevel: get('officialCefrLevel'),
     shortTermObjectives: rows.filter(r => r.fieldKey === 'shortTermObjectives').map(r => ({
       id: newId(),
-      text: r.value,
+      text: r.extractedObjective?.text ?? r.value,
       targetDate: r.extractedObjective?.targetDate ?? null,
       objectiveType: 'other' as const,
     })),
