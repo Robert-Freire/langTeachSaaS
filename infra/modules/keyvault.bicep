@@ -5,6 +5,8 @@ param sqlConnectionString string
 param appPrincipalId string
 @secure()
 param storageConnectionString string
+param auth0Domain string
+param auth0Audience string
 
 // Built-in role: Key Vault Secrets User — same ID in every Azure tenant
 var kvSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
@@ -43,21 +45,19 @@ resource connStringSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   }
 }
 
-// Placeholder — update after T3 (Auth0 setup)
 resource auth0DomainSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: kv
   name: 'Auth0--Domain'
   properties: {
-    value: 'REPLACE_AFTER_T3'
+    value: auth0Domain
   }
 }
 
-// Placeholder — update after T3 (Auth0 setup)
 resource auth0AudienceSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: kv
   name: 'Auth0--Audience'
   properties: {
-    value: 'REPLACE_AFTER_T3'
+    value: auth0Audience
   }
 }
 

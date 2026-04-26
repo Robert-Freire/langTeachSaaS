@@ -26,6 +26,12 @@ param allowedOriginSwa string
 @description('Email address for ActivationFailed and infrastructure alerts')
 param alertEmail string
 
+@description('Auth0 tenant domain (e.g. langteach-dev.eu.auth0.com)')
+param auth0Domain string
+
+@description('Auth0 API audience (e.g. https://api.langteach.io)')
+param auth0Audience string
+
 // ── Derived names ─────────────────────────────────────────────────────────────
 
 var sqlServerName = 'langteach-sql-${env}'
@@ -81,6 +87,8 @@ module kv 'modules/keyvault.bicep' = {
     sqlConnectionString: 'Server=tcp:${sqlServerName}${environment().suffixes.sqlServerHostname},1433;Initial Catalog=${sqlDbName};User ID=${sqlAdminUser};Password=${sqlAdminPassword};Encrypt=True;Connection Timeout=30;'
     appPrincipalId: containerApp.outputs.principalId
     storageConnectionString: storage.outputs.connectionString
+    auth0Domain: auth0Domain
+    auth0Audience: auth0Audience
   }
 }
 
