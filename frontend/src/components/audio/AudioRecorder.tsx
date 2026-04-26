@@ -206,6 +206,18 @@ export function AudioRecorder({
         </div>
       )}
 
+      {/* Visible feedback during the autoStart pending window: between mount
+          and getUserMedia resolving, neither the chooser nor the recording UI
+          would otherwise render. Without this branch the panel looks frozen. */}
+      {state === 'idle' && autoStart && !error && (
+        <div className="flex items-center gap-2" data-testid="recorder-starting">
+          <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
+          <span className="text-sm text-zinc-500">
+            Starting recording... please allow microphone access if prompted.
+          </span>
+        </div>
+      )}
+
       {/* File input lives outside the chooser so the imperative
           switchToFileUpload() handle can trigger it even while the chooser
           is hidden (autoStart mode). It is hidden visually either way. */}
