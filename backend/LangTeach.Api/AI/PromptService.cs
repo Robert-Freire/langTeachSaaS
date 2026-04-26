@@ -1587,6 +1587,8 @@ public class PromptService : IPromptService
             You are a tool that helps language teachers capture student information from free-form voice notes.
             Extract structured student profile fields from a teacher's free-form text.
 
+            IMPORTANT: All text values in your response MUST be written in the same language as the teacher's input text. If the teacher writes in Spanish, every string value (including profession, reasonForStudying, shortTermObjectives.text, difficulties.description, difficulties.subcategory, interests, and teachingTodoTexts) must be in Spanish. Never translate or switch to English.
+
             IMPORTANT: Be conservative. Only extract a field if the teacher stated it clearly and explicitly.
             When ambiguous or uncertain, return null for that field rather than guessing.
             A confirmation drawer full of wrong guesses destroys teacher trust after one use.
