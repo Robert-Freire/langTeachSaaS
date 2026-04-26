@@ -3,7 +3,7 @@ import { Pencil, X, ChevronRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { Student } from '@/api/students'
 import type { ExtractedStudentProfile } from '@/api/studentExtraction'
-import { buildDrawerRows, mergeExtractedIntoStudent } from '@/lib/voiceUpdateMerge'
+import { buildDrawerRows, buildCreateDrawerRows, mergeExtractedIntoStudent } from '@/lib/voiceUpdateMerge'
 import type { DrawerRow, VoiceMergePatch } from '@/lib/voiceUpdateMerge'
 
 type RowBadge = DrawerRow['badge']
@@ -14,7 +14,8 @@ const BADGE_STYLES: Record<RowBadge, string> = {
   NEW: 'bg-emerald-50 text-emerald-700',
 }
 
-function isEmptyExtraction(extracted: ExtractedStudentProfile): boolean {
+function isEmptyExtraction(extracted: ExtractedStudentProfile, includeNameCheck = false): boolean {
+  if (includeNameCheck && extracted.name) return false
   return (
     !extracted.cefrLevel && !extracted.officialCefrLevel && !extracted.profession &&
     !extracted.reasonForStudying && !extracted.birthYear && !extracted.countryOfResidence &&
@@ -25,21 +26,43 @@ function isEmptyExtraction(extracted: ExtractedStudentProfile): boolean {
   )
 }
 
-interface VoiceUpdateDrawerProps {
-  student: Student
+type VoiceUpdateDrawerBaseProps = {
   extracted: ExtractedStudentProfile
   saving: boolean
   saveError?: string | null
-  onSave: (patch: VoiceMergePatch) => void
   onClose: () => void
 }
 
-export function VoiceUpdateDrawer({ student, extracted, saving, saveError, onSave, onClose }: VoiceUpdateDrawerProps) {
-  const [rows, setRows] = useState<DrawerRow[]>(() => buildDrawerRows(extracted, student))
+type VoiceUpdateDrawerUpdateProps = VoiceUpdateDrawerBaseProps & {
+  mode?: 'update'
+  student: Student
+  onSave: (patch: VoiceMergePatch) => void
+}
+
+type VoiceUpdateDrawerCreateProps = VoiceUpdateDrawerBaseProps & {
+  mode: 'create'
+  onSave: (rows: DrawerRow[]) => void
+}
+
+export type VoiceUpdateDrawerProps = VoiceUpdateDrawerUpdateProps | VoiceUpdateDrawerCreateProps
+
+export function VoiceUpdateDrawer(props: VoiceUpdateDrawerProps) {
+  const { extracted, saving, saveError, onClose } = props
+  const isCreateMode = props.mode === 'create'
+
+  const [rows, setRows] = useState<DrawerRow[]>(() =>
+    isCreateMode
+      ? buildCreateDrawerRows(extracted)
+      : buildDrawerRows(extracted, (props as VoiceUpdateDrawerUpdateProps).student)
+  )
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
 
-  const isEmpty = isEmptyExtraction(extracted)
+  const isEmpty = isEmptyExtraction(extracted, isCreateMode)
+
+  const nameRow = isCreateMode ? rows.find(r => r.fieldKey === 'name') : undefined
+  const hasValidName = !isCreateMode || (nameRow != null && nameRow.value.trim().length > 0)
+  const showNameWarning = isCreateMode && rows.length > 0 && !hasValidName
 
   function removeRow(id: string) {
     setRows((prev) => prev.filter((r) => r.id !== id))
@@ -57,14 +80,22 @@ export function VoiceUpdateDrawer({ student, extracted, saving, saveError, onSav
   }
 
   function handleSave() {
-    onSave(mergeExtractedIntoStudent(rows, student))
+    if (isCreateMode) {
+      (props as VoiceUpdateDrawerCreateProps).onSave(rows)
+    } else {
+      const updateProps = props as VoiceUpdateDrawerUpdateProps
+      updateProps.onSave(mergeExtractedIntoStudent(rows, updateProps.student))
+    }
   }
+
+  const ctaLabel = isCreateMode ? 'Create student' : `Save ${rows.length} change${rows.length === 1 ? '' : 's'}`
+  const saveDisabled = saving || rows.length === 0 || !hasValidName
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" data-testid="voice-update-drawer">
       <div
         className="absolute inset-0 bg-black/20"
-        onClick={onClose}
+        onClick={saving ? undefined : onClose}
         data-testid="drawer-backdrop"
       />
       <div
@@ -167,26 +198,31 @@ export function VoiceUpdateDrawer({ student, extracted, saving, saveError, onSav
         {/* Footer */}
         {!isEmpty && (
           <div className="flex flex-col gap-2 px-6 py-4 bg-white/60">
+            {showNameWarning && (
+              <p className="text-sm text-amber-600" data-testid="name-required-warning">
+                Name is required to create a student.
+              </p>
+            )}
             {saveError && <p className="text-sm text-red-500 text-right" data-testid="save-error">{saveError}</p>}
-          <div className="flex items-center justify-end gap-3">
-            <Button variant="ghost" size="sm" onClick={onClose} disabled={saving} data-testid="drawer-cancel">
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={saving || rows.length === 0}
-              className="text-white min-w-[120px]"
-              style={{ background: 'linear-gradient(135deg, #3525CD, #4F46E5)' }}
-              data-testid="drawer-save"
-            >
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                `Save ${rows.length} change${rows.length === 1 ? '' : 's'}`
-              )}
-            </Button>
-          </div>
+            <div className="flex items-center justify-end gap-3">
+              <Button variant="ghost" size="sm" onClick={onClose} disabled={saving} data-testid="drawer-cancel">
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={saveDisabled}
+                className="text-white min-w-[120px]"
+                style={{ background: 'linear-gradient(135deg, #3525CD, #4F46E5)' }}
+                data-testid="drawer-save"
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  ctaLabel
+                )}
+              </Button>
+            </div>
           </div>
         )}
       </div>
