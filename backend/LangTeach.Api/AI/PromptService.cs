@@ -1535,7 +1535,7 @@ public class PromptService : IPromptService
                 Set mode to "append" if the teacher adds to existing coverage notes (signal words: "además", "también", "y también cubrimos", "también hicimos").
                 Set mode to "replace" if the teacher corrects or restates what was covered (signal words: "me equivoqué", "en realidad", "no, mejor dicho", "quiero decir", "corrijo").
                 Set mode to "skip" if this field should not be updated.
-                Return null if nothing about session content is mentioned.
+                Return null ONLY if topicTags would be empty AND areasToImprove would be null AND the teacher said nothing about session content. If topicTags would be non-empty OR areasToImprove would be populated, you MUST synthesise a prose summary in whatWasCovered — never return null in that case.
             - areasToImprove: object or null. When present, the object has two keys: "value" (string, narrative summary of student difficulties and struggles — prose, not a list) and "mode" (one of "append", "replace", or "skip").
                 Set mode to "append" if teacher adds new difficulties to existing notes (signal words: "además", "también tiene problemas con", "y otra cosa").
                 Set mode to "replace" if teacher corrects prior notes (signal words: "me equivoqué", "en realidad", "no, mejor").

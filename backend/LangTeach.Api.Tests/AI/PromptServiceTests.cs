@@ -3301,6 +3301,16 @@ public class PromptServiceTests
         request.SystemPrompt.Should().NotContain("Student's known difficulties");
     }
 
+    [Fact]
+    public void BuildReflectionExtractionPrompt_WhatWasCovered_MandatoryWhenTopicTagsOrAreasToImprovePresent()
+    {
+        var today = new DateOnly(2026, 4, 11);
+        var request = _sut.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(today, "notes"));
+
+        request.SystemPrompt.Should().Contain("topicTags would be non-empty OR areasToImprove would be populated, you MUST synthesise a prose summary in whatWasCovered");
+        request.SystemPrompt.Should().Contain("never return null in that case");
+    }
+
     // --- BuildStudentProfileExtractionPrompt ---
 
     [Fact]
