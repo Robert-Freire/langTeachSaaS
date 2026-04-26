@@ -716,6 +716,44 @@ describe('LogSession', () => {
       expect(screen.queryByTestId('undo-extraction-bar')).not.toBeInTheDocument()
     })
 
+    it('subsequent extraction replaces marker set, not stacks', async () => {
+      // First extraction touches actualContent + homework + nextLessonIdeas + sessionTitle
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+      })
+      // Manually edit actualContent so it would NOT be reverted by undo
+      fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'My own content' } })
+      expect(screen.getByTestId('actual-content').className).not.toContain('border-indigo-500')
+
+      // Second recording: only fills homeworkAssigned this time
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        rawExtractionJson: '{}',
+        sessionTitle: null,
+        whatWasCovered: null,
+        homeworkAssigned: { value: 'Page 99', mode: 'replace' as const },
+        nextLessonIdeas: null,
+        areasToImprove: null,
+        emotionalSignals: null,
+        topicTags: [],
+        suggestedDifficulties: [],
+        sessionDate: null,
+        sessionStartTime: null,
+        durationMinutes: null,
+      })
+      await act(async () => {
+        capturedOnVoiceNote?.({ id: 'note-2', transcription: 'Second recording' })
+        await Promise.resolve()
+      })
+      await waitFor(() => {
+        expect(screen.getByTestId('homework-assigned')).toHaveValue('Page 99')
+      })
+      // Only homework gets the marker now; the first recording's other fields lose theirs
+      expect(screen.getByTestId('homework-assigned').className).toContain('border-indigo-500')
+      expect(screen.getByTestId('next-session-topics').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('log-session-title-input').className).not.toContain('border-indigo-500')
+    })
+
     it('undo bar does not appear when extraction produces no field changes', async () => {
       vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
         rawExtractionJson: '{}',
