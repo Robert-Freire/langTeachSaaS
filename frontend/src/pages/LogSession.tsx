@@ -1017,6 +1017,8 @@ export default function LogSession() {
                 onClick={() => {
                   if (undoBarTimerRef.current) clearTimeout(undoBarTimerRef.current)
                   setShowUndoBar(false)
+                  setExtractionSnapshot(null)
+                  setPostExtractionEdits(new Set())
                 }}
                 className="text-indigo-500 hover:text-indigo-700 shrink-0"
                 aria-label="Dismiss"
@@ -1158,7 +1160,10 @@ export default function LogSession() {
                     if (nextGeneralNotes !== null && nextGeneralNotes !== snapshot.generalNotes) changed.add('generalNotes')
                     if (nextHomeworkAssigned !== null && nextHomeworkAssigned !== snapshot.homeworkAssigned) changed.add('homeworkAssigned')
                     if (nextSessionTopicsNext !== null && nextSessionTopicsNext !== snapshot.nextSessionTopics) changed.add('nextSessionTopics')
-                    if (extracted.topicTags && extracted.topicTags.length > 0) changed.add('topicTags')
+                    if (
+                      extracted.topicTags && extracted.topicTags.length > 0 &&
+                      extracted.topicTags.some(t => !snapshot.topicTags.some(s => s.tag.toLowerCase() === t.tag.toLowerCase()))
+                    ) changed.add('topicTags')
                     if (changed.size > 0) {
                       setHighlightedFields(changed)
                       setUndoBarCount(changed.size)
@@ -1166,7 +1171,13 @@ export default function LogSession() {
                       if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
                       highlightTimerRef.current = setTimeout(() => setHighlightedFields(new Set()), HIGHLIGHT_TIMEOUT_MS)
                       if (undoBarTimerRef.current) clearTimeout(undoBarTimerRef.current)
-                      undoBarTimerRef.current = setTimeout(() => setShowUndoBar(false), UNDO_BAR_TIMEOUT_MS)
+                      undoBarTimerRef.current = setTimeout(() => {
+                        setShowUndoBar(false)
+                        setExtractionSnapshot(null)
+                        setPostExtractionEdits(new Set())
+                      }, UNDO_BAR_TIMEOUT_MS)
+                    } else {
+                      setExtractionSnapshot(null)
                     }
 
                     markChangedAndSaveNow(saveOverride)
@@ -1174,6 +1185,7 @@ export default function LogSession() {
                   .catch((err: unknown) => {
                     logger.error('LogSession', 'Voice note extraction failed', err)
                     setExtractionError('Could not analyse the recording. Fields were not filled in automatically.')
+                    setExtractionSnapshot(null)
                     markChangedAndSaveNow({ voiceNoteId: note.id, voiceNoteTranscription: transcription })
                   })
                   .finally(() => setIsExtracting(false))
