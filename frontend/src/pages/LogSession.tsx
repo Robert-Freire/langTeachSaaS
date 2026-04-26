@@ -31,8 +31,7 @@ import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
 import { HOMEWORK_STATUS_PILL_OPTIONS } from '@/utils/homeworkStatusUtils'
 
-const HIGHLIGHT_TIMEOUT_MS = 2000
-const UNDO_BAR_TIMEOUT_MS = 8000
+const PULSE_TIMEOUT_MS = 2800
 
 type ExtractionSnapshot = {
   sessionTitle: string | undefined
@@ -168,14 +167,11 @@ export default function LogSession() {
   const [isExtracting, setIsExtracting] = useState(false)
   const [extractionError, setExtractionError] = useState<string | null>(null)
 
-  // Voice extraction highlight + undo
-  const [highlightedFields, setHighlightedFields] = useState<Set<string>>(new Set())
+  // Voice extraction: pulse (one-shot, transient) + persistent marker until first edit / undo / next extraction
+  const [pulsingFields, setPulsingFields] = useState<Set<string>>(new Set())
+  const [extractedFields, setExtractedFields] = useState<Set<string>>(new Set())
   const [extractionSnapshot, setExtractionSnapshot] = useState<ExtractionSnapshot | null>(null)
-  const [showUndoBar, setShowUndoBar] = useState(false)
-  const [undoBarCount, setUndoBarCount] = useState(0)
-  const [postExtractionEdits, setPostExtractionEdits] = useState<Set<string>>(new Set())
-  const undoBarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [secondaryOpen, setSecondaryOpen] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [suggestedDifficulties, setSuggestedDifficulties] = useState<SuggestedDifficulty[]>([])
@@ -380,14 +376,19 @@ export default function LogSession() {
   )
 
   useEffect(() => () => {
-    if (undoBarTimerRef.current) clearTimeout(undoBarTimerRef.current)
-    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
+    if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current)
   }, [])
 
   function trackManualEdit(fieldName: string) {
-    if (extractionSnapshot) {
-      setPostExtractionEdits(prev => { const next = new Set(prev); next.add(fieldName); return next })
-    }
+    if (!extractionSnapshot) return
+    setExtractedFields(prev => {
+      if (!prev.has(fieldName)) return prev
+      const next = new Set(prev); next.delete(fieldName); return next
+    })
+    setPulsingFields(prev => {
+      if (!prev.has(fieldName)) return prev
+      const next = new Set(prev); next.delete(fieldName); return next
+    })
   }
 
   function markChangedAndSchedule() {
@@ -488,23 +489,22 @@ export default function LogSession() {
 
   function handleUndoExtraction() {
     if (!extractionSnapshot) return
-    const skip = postExtractionEdits
-    if (!skip.has('sessionTitle')) setSessionTitle(extractionSnapshot.sessionTitle)
-    if (!skip.has('sessionDate')) setSessionDate(extractionSnapshot.sessionDate)
-    if (!skip.has('sessionTime')) setSessionTime(extractionSnapshot.sessionTime)
-    if (!skip.has('durationChoice')) {
+    const keep = extractedFields
+    if (keep.has('sessionTitle')) setSessionTitle(extractionSnapshot.sessionTitle)
+    if (keep.has('sessionDate')) setSessionDate(extractionSnapshot.sessionDate)
+    if (keep.has('sessionTime')) setSessionTime(extractionSnapshot.sessionTime)
+    if (keep.has('durationChoice')) {
       setDurationChoice(extractionSnapshot.durationChoice)
       setDurationOther(extractionSnapshot.durationOther)
     }
-    if (!skip.has('actualContent')) setActualContent(extractionSnapshot.actualContent)
-    if (!skip.has('homeworkAssigned')) setHomeworkAssigned(extractionSnapshot.homeworkAssigned)
-    if (!skip.has('nextSessionTopics')) setNextSessionTopics(extractionSnapshot.nextSessionTopics)
-    if (!skip.has('generalNotes')) setGeneralNotes(extractionSnapshot.generalNotes)
-    if (!skip.has('topicTags')) setTopicTags(extractionSnapshot.topicTags)
-    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
-    if (undoBarTimerRef.current) clearTimeout(undoBarTimerRef.current)
-    setHighlightedFields(new Set())
-    setShowUndoBar(false)
+    if (keep.has('actualContent')) setActualContent(extractionSnapshot.actualContent)
+    if (keep.has('homeworkAssigned')) setHomeworkAssigned(extractionSnapshot.homeworkAssigned)
+    if (keep.has('nextSessionTopics')) setNextSessionTopics(extractionSnapshot.nextSessionTopics)
+    if (keep.has('generalNotes')) setGeneralNotes(extractionSnapshot.generalNotes)
+    if (keep.has('topicTags')) setTopicTags(extractionSnapshot.topicTags)
+    if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current)
+    setPulsingFields(new Set())
+    setExtractedFields(new Set())
     setExtractionSnapshot(null)
     markChangedAndSchedule()
   }
@@ -990,17 +990,17 @@ export default function LogSession() {
             </div>
           )}
 
-          {/* Undo extraction bar */}
-          {showUndoBar && (
+          {/* Undo extraction bar — sticky so it follows scroll while teacher reviews */}
+          {extractedFields.size > 0 && (
             <div
               role="status"
               aria-live="polite"
-              className="flex items-center gap-3 rounded-xl px-4 py-2.5"
+              className="sticky top-2 z-20 flex items-center gap-3 rounded-xl px-4 py-2.5 shadow-sm"
               style={{ background: '#EEF0FD' }}
               data-testid="undo-extraction-bar"
             >
               <span className="text-sm text-indigo-800 flex-1">
-                {undoBarCount} {undoBarCount === 1 ? 'field' : 'fields'} filled from recording
+                {extractedFields.size} {extractedFields.size === 1 ? 'field' : 'fields'} filled from recording
               </span>
               <Button
                 type="button"
@@ -1015,10 +1015,10 @@ export default function LogSession() {
               <button
                 type="button"
                 onClick={() => {
-                  if (undoBarTimerRef.current) clearTimeout(undoBarTimerRef.current)
-                  setShowUndoBar(false)
+                  if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current)
+                  setPulsingFields(new Set())
+                  setExtractedFields(new Set())
                   setExtractionSnapshot(null)
-                  setPostExtractionEdits(new Set())
                 }}
                 className="text-indigo-500 hover:text-indigo-700 shrink-0"
                 aria-label="Dismiss"
@@ -1062,7 +1062,10 @@ export default function LogSession() {
                   topicTags: [...topicTags],
                 }
                 setExtractionSnapshot(snapshot)
-                setPostExtractionEdits(new Set())
+                // Replace, not stack: a new recording on the same session starts fresh
+                if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current)
+                setPulsingFields(new Set())
+                setExtractedFields(new Set())
                 setIsExtracting(true)
                 extractSessionReflection(id, transcription)
                   .then(extracted => {
@@ -1165,17 +1168,10 @@ export default function LogSession() {
                       extracted.topicTags.some(t => !snapshot.topicTags.some(s => s.tag.toLowerCase() === t.tag.toLowerCase()))
                     ) changed.add('topicTags')
                     if (changed.size > 0) {
-                      setHighlightedFields(changed)
-                      setUndoBarCount(changed.size)
-                      setShowUndoBar(true)
-                      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
-                      highlightTimerRef.current = setTimeout(() => setHighlightedFields(new Set()), HIGHLIGHT_TIMEOUT_MS)
-                      if (undoBarTimerRef.current) clearTimeout(undoBarTimerRef.current)
-                      undoBarTimerRef.current = setTimeout(() => {
-                        setShowUndoBar(false)
-                        setExtractionSnapshot(null)
-                        setPostExtractionEdits(new Set())
-                      }, UNDO_BAR_TIMEOUT_MS)
+                      setPulsingFields(changed)
+                      setExtractedFields(changed)
+                      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current)
+                      pulseTimerRef.current = setTimeout(() => setPulsingFields(new Set()), PULSE_TIMEOUT_MS)
                     } else {
                       setExtractionSnapshot(null)
                     }
@@ -1214,7 +1210,7 @@ export default function LogSession() {
                 type="date"
                 value={sessionDate}
                 onChange={e => { setSessionDate(e.target.value); trackManualEdit('sessionDate'); markChangedAndSchedule() }}
-                className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 transition-shadow duration-300 ${highlightedFields.has('sessionDate') ? 'ring-2 ring-indigo-500/40' : ''}`}
+                className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 ${pulsingFields.has('sessionDate') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('sessionDate') ? '!border-l-[3px] !border-indigo-500' : ''}`}
                 data-testid="session-date"
               />
             </div>
@@ -1227,7 +1223,7 @@ export default function LogSession() {
                 type="time"
                 value={sessionTime}
                 onChange={e => { setSessionTime(e.target.value); trackManualEdit('sessionTime'); markChangedAndSchedule() }}
-                className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 transition-shadow duration-300 ${highlightedFields.has('sessionTime') ? 'ring-2 ring-indigo-500/40' : ''}`}
+                className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 ${pulsingFields.has('sessionTime') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('sessionTime') ? '!border-l-[3px] !border-indigo-500' : ''}`}
                 data-testid="session-time"
               />
             </div>
@@ -1237,7 +1233,7 @@ export default function LogSession() {
               <Label htmlFor="duration" className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Duration</Label>
               <div className="flex items-center gap-2">
                 <Select value={durationChoice} onValueChange={(v) => { const val = v ?? durationChoice; setDurationChoice(val); trackManualEdit('durationChoice'); markChangedAndSaveNow({ duration: val === 'other' ? null : parseInt(val, 10) }) }}>
-                  <SelectTrigger id="duration" className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 flex-1 transition-shadow duration-300 ${highlightedFields.has('durationChoice') ? 'ring-2 ring-indigo-500/40' : ''}`} data-testid="duration-select">
+                  <SelectTrigger id="duration" className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 flex-1 ${pulsingFields.has('durationChoice') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('durationChoice') ? '!border-l-[3px] !border-indigo-500' : ''}`} data-testid="duration-select">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1290,7 +1286,7 @@ export default function LogSession() {
               onChange={e => { setSessionTitle(e.target.value || undefined); trackManualEdit('sessionTitle'); markChangedAndSchedule() }}
               placeholder="What did you work on? (optional)"
               maxLength={120}
-              className={`text-sm bg-white transition-shadow duration-300 ${highlightedFields.has('sessionTitle') ? 'ring-2 ring-indigo-500/40' : ''}`}
+              className={`text-sm bg-white ${pulsingFields.has('sessionTitle') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('sessionTitle') ? 'border-l-[3px] border-indigo-500' : ''}`}
               data-testid="log-session-title-input"
             />
           </div>
@@ -1350,7 +1346,7 @@ export default function LogSession() {
                   onChange={e => { setActualContent(e.target.value); trackManualEdit('actualContent'); markChangedAndSchedule() }}
                   placeholder="Describe what happened in the session..."
                   rows={6}
-                  className={`resize-none text-sm bg-white transition-shadow duration-300 ${highlightedFields.has('actualContent') ? 'ring-2 ring-indigo-500/40' : ''}`}
+                  className={`resize-none text-sm bg-white ${pulsingFields.has('actualContent') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('actualContent') ? 'border-l-[3px] border-indigo-500' : ''}`}
                   data-testid="actual-content"
                 />
               </div>
@@ -1379,7 +1375,7 @@ export default function LogSession() {
                     ))}
                   </div>
                 )}
-                <div className={`transition-shadow duration-300 rounded-md ${highlightedFields.has('topicTags') ? 'ring-2 ring-indigo-500/40' : ''}`} data-testid="topic-tags-highlight-wrapper">
+                <div className={`rounded-md ${pulsingFields.has('topicTags') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('topicTags') ? 'border-l-[3px] border-indigo-500 pl-2' : ''}`} data-testid="topic-tags-highlight-wrapper">
                   <TopicTagsInput
                     value={topicTags}
                     onChange={(tags) => { setTopicTags(tags); trackManualEdit('topicTags'); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
@@ -1487,7 +1483,7 @@ export default function LogSession() {
                   value={homeworkAssigned}
                   onChange={e => { setHomeworkAssigned(e.target.value); trackManualEdit('homeworkAssigned'); markChangedAndSchedule() }}
                   placeholder="e.g. Workbook page 42, exercises 3-5"
-                  className={`text-sm bg-white transition-shadow duration-300 ${highlightedFields.has('homeworkAssigned') ? 'ring-2 ring-indigo-500/40' : ''}`}
+                  className={`text-sm bg-white ${pulsingFields.has('homeworkAssigned') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('homeworkAssigned') ? 'border-l-[3px] border-indigo-500' : ''}`}
                   data-testid="homework-assigned"
                 />
               </div>
@@ -1503,7 +1499,7 @@ export default function LogSession() {
                   onChange={e => { setNextSessionTopics(e.target.value); trackManualEdit('nextSessionTopics'); markChangedAndSchedule() }}
                   placeholder="What to focus on next time..."
                   rows={3}
-                  className={`resize-none text-sm bg-white transition-shadow duration-300 ${highlightedFields.has('nextSessionTopics') ? 'ring-2 ring-indigo-500/40' : ''}`}
+                  className={`resize-none text-sm bg-white ${pulsingFields.has('nextSessionTopics') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('nextSessionTopics') ? 'border-l-[3px] border-indigo-500' : ''}`}
                   data-testid="next-session-topics"
                 />
               </div>
@@ -1597,7 +1593,7 @@ export default function LogSession() {
                       onChange={e => { setGeneralNotes(e.target.value); trackManualEdit('generalNotes'); markChangedAndSchedule() }}
                       placeholder="Observations on mood, energy levels, context..."
                       rows={3}
-                      className={`resize-none text-sm bg-white transition-shadow duration-300 ${highlightedFields.has('generalNotes') ? 'ring-2 ring-indigo-500/40' : ''}`}
+                      className={`resize-none text-sm bg-white ${pulsingFields.has('generalNotes') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('generalNotes') ? 'border-l-[3px] border-indigo-500' : ''}`}
                       data-testid="general-notes"
                     />
                   </div>
@@ -1668,7 +1664,7 @@ export default function LogSession() {
               {/* Topics Covered */}
               <div className="space-y-1 pt-4">
                 <Label className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">Topics Covered</Label>
-                <div className={`transition-shadow duration-300 rounded-md ${highlightedFields.has('topicTags') ? 'ring-2 ring-indigo-500/40' : ''}`}>
+                <div className={`rounded-md ${pulsingFields.has('topicTags') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('topicTags') ? 'border-l-[3px] border-indigo-500 pl-2' : ''}`}>
                   <TopicTagsInput
                     value={topicTags}
                     onChange={(tags) => { setTopicTags(tags); trackManualEdit('topicTags'); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
@@ -1687,7 +1683,7 @@ export default function LogSession() {
                   onChange={e => { setGeneralNotes(e.target.value); trackManualEdit('generalNotes'); markChangedAndSchedule() }}
                   placeholder="Notes about the cancellation..."
                   rows={3}
-                  className={`resize-none text-sm bg-white transition-shadow duration-300 ${highlightedFields.has('generalNotes') ? 'ring-2 ring-indigo-500/40' : ''}`}
+                  className={`resize-none text-sm bg-white ${pulsingFields.has('generalNotes') ? 'animate-extraction-pulse' : ''} ${extractedFields.has('generalNotes') ? 'border-l-[3px] border-indigo-500' : ''}`}
                   data-testid="general-notes"
                 />
               </div>

@@ -594,14 +594,14 @@ describe('LogSession', () => {
       expect(screen.getByTestId('undo-extraction-bar')).toHaveTextContent('fields filled from recording')
     })
 
-    it('undo bar auto-dismisses after 8 seconds', async () => {
+    it('undo bar persists after 30 simulated seconds (no auto-dismiss timer)', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
       await triggerExtraction()
       await waitFor(() => {
         expect(screen.getByTestId('undo-extraction-bar')).toBeInTheDocument()
       })
-      act(() => { vi.advanceTimersByTime(8001) })
-      expect(screen.queryByTestId('undo-extraction-bar')).not.toBeInTheDocument()
+      act(() => { vi.advanceTimersByTime(30000) })
+      expect(screen.getByTestId('undo-extraction-bar')).toBeInTheDocument()
     })
 
     it('X button dismisses bar without reverting fields', async () => {
@@ -624,6 +624,18 @@ describe('LogSession', () => {
       expect(screen.getByTestId('actual-content')).toHaveValue('')
     })
 
+    it('Undo clears all persistent markers in the same gesture', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+      })
+      fireEvent.click(screen.getByTestId('undo-extraction-btn'))
+      expect(screen.getByTestId('actual-content').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('homework-assigned').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('next-session-topics').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('log-session-title-input').className).not.toContain('border-indigo-500')
+    })
+
     it('field manually edited after extraction is NOT reverted on undo', async () => {
       await triggerExtraction()
       await waitFor(() => {
@@ -635,33 +647,73 @@ describe('LogSession', () => {
       expect(screen.getByTestId('actual-content')).toHaveValue('My own content')
     })
 
-    it('highlight ring is applied to all changed fields after extraction', async () => {
+    it('persistent marker and pulse are applied to all changed fields after extraction', async () => {
       await triggerExtraction()
       await waitFor(() => {
-        expect(screen.getByTestId('actual-content').className).toContain('ring-indigo-500/40')
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
       })
-      expect(screen.getByTestId('homework-assigned').className).toContain('ring-indigo-500/40')
-      expect(screen.getByTestId('next-session-topics').className).toContain('ring-indigo-500/40')
-      expect(screen.getByTestId('log-session-title-input').className).toContain('ring-indigo-500/40')
+      expect(screen.getByTestId('actual-content').className).toContain('animate-extraction-pulse')
+      expect(screen.getByTestId('homework-assigned').className).toContain('border-indigo-500')
+      expect(screen.getByTestId('next-session-topics').className).toContain('border-indigo-500')
+      expect(screen.getByTestId('log-session-title-input').className).toContain('border-indigo-500')
     })
 
-    it('unchanged fields do not receive highlight ring after extraction', async () => {
+    it('unchanged fields do not receive marker or pulse after extraction', async () => {
       await triggerExtraction()
       await waitFor(() => {
-        expect(screen.getByTestId('actual-content').className).toContain('ring-indigo-500/40')
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
       })
-      expect(screen.getByTestId('session-date').className).not.toContain('ring-indigo-500/40')
-      expect(screen.getByTestId('session-time').className).not.toContain('ring-indigo-500/40')
+      expect(screen.getByTestId('session-date').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('session-time').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('session-date').className).not.toContain('animate-extraction-pulse')
     })
 
-    it('highlight ring clears after 2 seconds', async () => {
+    it('persistent marker remains after 30 simulated seconds (no auto-clear timer)', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
       await triggerExtraction()
       await waitFor(() => {
-        expect(screen.getByTestId('actual-content').className).toContain('ring-indigo-500/40')
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
       })
-      act(() => { vi.advanceTimersByTime(2001) })
-      expect(screen.getByTestId('actual-content').className).not.toContain('ring-indigo-500/40')
+      act(() => { vi.advanceTimersByTime(30000) })
+      expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+    })
+
+    it('pulse animation clears after ~2.8 seconds but persistent marker remains', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('animate-extraction-pulse')
+      })
+      act(() => { vi.advanceTimersByTime(2900) })
+      expect(screen.getByTestId('actual-content').className).not.toContain('animate-extraction-pulse')
+      expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+    })
+
+    it('editing one marked field clears its marker only and decrements bar count', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+      })
+      const initialCount = screen.getByTestId('undo-extraction-bar').textContent || ''
+      const initialN = parseInt(initialCount.match(/\d+/)?.[0] || '0', 10)
+      fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Edited' } })
+      expect(screen.getByTestId('actual-content').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('homework-assigned').className).toContain('border-indigo-500')
+      const updatedCount = screen.getByTestId('undo-extraction-bar').textContent || ''
+      const updatedN = parseInt(updatedCount.match(/\d+/)?.[0] || '0', 10)
+      expect(updatedN).toBe(initialN - 1)
+    })
+
+    it('editing every marked field hides the undo bar', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+      })
+      fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'A' } })
+      fireEvent.change(screen.getByTestId('homework-assigned'), { target: { value: 'B' } })
+      fireEvent.change(screen.getByTestId('next-session-topics'), { target: { value: 'C' } })
+      fireEvent.change(screen.getByTestId('log-session-title-input'), { target: { value: 'D' } })
+      expect(screen.queryByTestId('undo-extraction-bar')).not.toBeInTheDocument()
     })
 
     it('undo bar does not appear when extraction produces no field changes', async () => {
