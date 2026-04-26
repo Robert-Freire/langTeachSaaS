@@ -126,6 +126,10 @@ Text: `Label-SM` bold (e.g. "B2").
 - Labels: always above the input, never inline or placeholder-only.
 - Helper text: below the field, `Label-SM` in muted color.
 
+### SelectionChip
+
+Toggle-style pill for multi-select groups (Languages I Teach, CEFR Levels, Teaching Style). Unselected: `#F4F2FD` background, no border. Selected: `bg-indigo-600 text-white`. Shape: `rounded-full`, min-height 36px.
+
 ### Vocabulary Chips / Tags
 
 - Background: `secondary-fixed-dim`, text: `on-secondary-fixed`.

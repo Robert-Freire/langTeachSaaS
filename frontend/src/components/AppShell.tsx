@@ -16,13 +16,23 @@ const mainNavItems = [
   { to: '/lessons', label: 'Lessons', icon: BookOpen },
 ]
 
+const SESSION_EDIT_RE = /^\/students\/[^/]+\/sessions\/[^/]+\/edit$/
+
+function getEffectiveNavPath(location: ReturnType<typeof useLocation>): string {
+  if (SESSION_EDIT_RE.test(location.pathname) && (location.state as Record<string, unknown> | null)?.from === 'sessions') {
+    return '/sessions'
+  }
+  return location.pathname
+}
+
 function NavLink({ to, label, icon: Icon, location }: {
   to: string
   label: string
   icon: ElementType
   location: ReturnType<typeof useLocation>
 }) {
-  const active = location.pathname === to || (to !== '/' && location.pathname.startsWith(`${to}/`))
+  const effectivePath = getEffectiveNavPath(location)
+  const active = effectivePath === to || (to !== '/' && effectivePath.startsWith(`${to}/`))
   return (
     <Link
       to={to}
