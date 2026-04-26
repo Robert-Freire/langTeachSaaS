@@ -131,7 +131,7 @@ describe('mergeExtractedIntoStudent', () => {
   })
 
   it('always appends teachingTodos without dedup', () => {
-    const existing = [{ id: 'e1', text: 'Practice vocab', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'Pending', coveredInSessionLogId: null }]
+    const existing = [{ id: 'e1', text: 'Practice vocab', createdAt: '2026-01-01T00:00:00Z', sourceSessionLogId: null, status: 'pending', coveredInSessionLogId: null }]
     const student: Student = { ...BASE_STUDENT, profile: { ...BASE_STUDENT.profile, teachingTodos: existing } }
     const rows = [makeRow('teachingTodos', 'Practice vocab', 'ADDED')]
     const patch = mergeExtractedIntoStudent(rows, EMPTY_EXTRACTED, student)

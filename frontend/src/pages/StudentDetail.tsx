@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getStudent, updateStudent } from '../api/students'
@@ -295,7 +296,7 @@ export default function StudentDetail() {
 
       {voiceFlow === 'extracting' && (
         <div className="rounded-2xl bg-white p-4 flex items-center gap-2 text-sm text-gray-500" data-testid="extracting-indicator">
-          <span className="inline-block h-4 w-4 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
           Analysing recording...
         </div>
       )}

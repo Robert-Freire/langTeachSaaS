@@ -176,7 +176,7 @@ export function mergeExtractedIntoStudent(
       text: row.value,
       createdAt: new Date().toISOString(),
       sourceSessionLogId: null,
-      status: 'Pending',
+      status: 'pending',
       coveredInSessionLogId: null,
     }))
     patch.teachingTodos = [...existing, ...toAdd]
