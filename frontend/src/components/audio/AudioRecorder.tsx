@@ -33,6 +33,16 @@ export function AudioRecorder({ onVoiceNote, disabled }: AudioRecorderProps) {
 
   useEffect(() => () => stopInterval(), [stopInterval])
 
+  useEffect(() => {
+    return () => {
+      const recorder = mediaRecorderRef.current
+      if (recorder && recorder.state !== 'inactive') {
+        recorder.stream?.getTracks().forEach((t) => t.stop())
+        recorder.stop()
+      }
+    }
+  }, [])
+
   async function uploadFile(file: File) {
     setState('uploading')
     setError(null)
