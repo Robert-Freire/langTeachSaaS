@@ -140,6 +140,71 @@ describe('AudioRecorder', () => {
     expect(screen.getByTestId('upload-audio-button')).toBeDisabled()
   })
 
+  it('auto-starts recording on mount when autoStart is true', async () => {
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} autoStart />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('stop-button')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('record-button')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('upload-audio-button')).not.toBeInTheDocument()
+  })
+
+  it('reveals the chooser when autoStart fails because mic permission is denied', async () => {
+    mockGetUserMedia.mockRejectedValue(new Error('Permission denied'))
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} autoStart />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('error-message')).toHaveTextContent('Microphone access denied')
+    })
+    expect(screen.getByTestId('record-button')).toBeInTheDocument()
+    expect(screen.getByTestId('upload-audio-button')).toBeInTheDocument()
+  })
+
+  it('shows the upload-fallback link during recording when showUploadFallbackLink is true', async () => {
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} autoStart showUploadFallbackLink />)
+
+    expect(await screen.findByTestId('switch-to-upload-link')).toBeInTheDocument()
+  })
+
+  it('does not show the upload-fallback link when showUploadFallbackLink is omitted', async () => {
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} autoStart />)
+
+    await waitFor(() => screen.getByTestId('stop-button'))
+    expect(screen.queryByTestId('switch-to-upload-link')).not.toBeInTheDocument()
+  })
+
+  it('clicking the upload-fallback link discards the in-flight recording without uploading and opens the file picker', async () => {
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+    const onVoiceNote = vi.fn()
+
+    render(<AudioRecorder onVoiceNote={onVoiceNote} autoStart showUploadFallbackLink />)
+
+    await waitFor(() => screen.getByTestId('switch-to-upload-link'))
+
+    const fileInput = screen.getByTestId('audio-file-input') as HTMLInputElement
+    const clickSpy = vi.spyOn(fileInput, 'click')
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('switch-to-upload-link'))
+    })
+
+    expect(clickSpy).toHaveBeenCalledTimes(1)
+    expect(onVoiceNote).not.toHaveBeenCalled()
+    expect(voiceNotesApi.uploadVoiceNote).not.toHaveBeenCalled()
+  })
+
   it('does not trigger a second upload if handleFileChange fires twice in quick succession', async () => {
     let resolveUpload: (v: VoiceNote) => void
     vi.mocked(voiceNotesApi.uploadVoiceNote).mockReturnValue(

@@ -26,10 +26,22 @@ vi.mock('../lib/logger', () => ({
 }))
 
 vi.mock('@/components/audio/AudioRecorder', () => ({
-  AudioRecorder: ({ onVoiceNote }: { onVoiceNote: (note: { transcription: string | null }) => void }) => (
-    <button data-testid="audio-recorder-mock" onClick={() => onVoiceNote({ transcription: 'María is a nurse from Madrid' })}>
-      Record
-    </button>
+  AudioRecorder: ({
+    onVoiceNote,
+    showUploadFallbackLink,
+  }: {
+    onVoiceNote: (note: { transcription: string | null }) => void
+    autoStart?: boolean
+    showUploadFallbackLink?: boolean
+  }) => (
+    <>
+      <button data-testid="audio-recorder-mock" onClick={() => onVoiceNote({ transcription: 'María is a nurse from Madrid' })}>
+        Record
+      </button>
+      {showUploadFallbackLink && (
+        <button data-testid="switch-to-upload-link">or upload an audio file instead</button>
+      )}
+    </>
   ),
 }))
 
@@ -627,6 +639,14 @@ describe('Students page', () => {
     fireEvent.click(screen.getByTestId('voice-new-student-button'))
     expect(screen.getByTestId('voice-recorder-panel')).toBeInTheDocument()
     expect(screen.getByTestId('audio-recorder-mock')).toBeInTheDocument()
+  })
+
+  it('voice panel renders the AudioRecorder with the upload-fallback link enabled', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse([makeStudent()]))
+    wrapper(<Students />)
+    await screen.findByTestId('student-name')
+    fireEvent.click(screen.getByTestId('voice-new-student-button'))
+    expect(await screen.findByTestId('switch-to-upload-link')).toBeInTheDocument()
   })
 
   it('shows VoiceUpdateDrawer in create mode after extraction', async () => {

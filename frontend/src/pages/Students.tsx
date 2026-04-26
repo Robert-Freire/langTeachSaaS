@@ -435,7 +435,11 @@ export default function Students() {
       {voiceFlow === 'recording' && (
         <div className="rounded-2xl bg-white p-4 flex flex-col gap-2" data-testid="voice-recorder-panel">
           <p className="text-xs font-semibold tracking-widest uppercase text-gray-400">New student via voice</p>
-          <AudioRecorder onVoiceNote={handleVoiceNote} />
+          <AudioRecorder
+            autoStart
+            showUploadFallbackLink
+            onVoiceNote={handleVoiceNote}
+          />
           {voiceError && <p className="text-sm text-red-500">{voiceError}</p>}
           <Button variant="ghost" size="sm" className="self-start" onClick={cancelVoiceFlow}>
             Cancel
