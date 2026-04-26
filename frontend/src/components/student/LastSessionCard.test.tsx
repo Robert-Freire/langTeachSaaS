@@ -147,6 +147,21 @@ describe('LastSessionCard', () => {
     expect(screen.getByTestId('last-session-title')).toHaveTextContent('Most recent')
   })
 
+  it('renders View session link with correct href', () => {
+    renderCard(makeSession())
+    const link = screen.getByTestId('last-session-view-link')
+    expect(link).toBeInTheDocument()
+    expect(link).toHaveAttribute('href', '/students/student-1/sessions/sess-x/edit')
+    expect(link).toHaveTextContent('View session')
+  })
+
+  it('renders View session link even when actualContent is null', () => {
+    renderCard(makeSession({ actualContent: null }))
+    expect(screen.queryByTestId('last-session-content')).not.toBeInTheDocument()
+    const link = screen.getByTestId('last-session-view-link')
+    expect(link).toHaveAttribute('href', '/students/student-1/sessions/sess-x/edit')
+  })
+
   it('does not render an edit control (read-only)', () => {
     renderCard(makeSession())
     const card = screen.getByTestId('last-session-card')
