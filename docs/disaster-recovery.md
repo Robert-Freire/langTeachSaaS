@@ -18,7 +18,7 @@
 
 ## Applying IaC Changes Without a Full Bicep Redeploy
 
-The bicep modules are the source of truth for future full deploys. To apply individual changes safely to the running prod environment without risking secret overwrites, use these targeted CLI commands.
+The bicep modules are the source of truth for future full deploys. To apply individual changes safely to the running production environment (currently `rg-langteach-dev`) without risking secret overwrites, use these targeted CLI commands.
 
 ```bash
 # 1. SQL geo-redundant backup
@@ -55,7 +55,7 @@ az keyvault update \
   --enable-purge-protection true
 ```
 
-After applying step 5, update `KEY_VAULT_NAME` in `.github/workflows/db-backup.yml` with the actual vault name and commit.
+The `db-backup.yml` workflow resolves the Key Vault name dynamically by prefix (`kv-lt-`), so no manual update is needed after running step 5.
 
 ## Resource Inventory
 
@@ -95,12 +95,12 @@ $env:LANGTEACH_SWA_URL_PROD   = "<prod SWA URL>"
    az group create --name rg-langteach-dev --location northeurope
    ```
 
-2. Deploy bicep:
+2. Deploy bicep (note: `prod.bicepparam` sets `env='prod'` which affects resource naming; the current running environment was deployed with `env='dev'` via `dev.bicepparam` — use whichever matches the target):
    ```bash
    az deployment group create \
      --resource-group rg-langteach-dev \
      --template-file infra/main.bicep \
-     --parameters infra/parameters/prod.bicepparam
+     --parameters infra/parameters/dev.bicepparam
    ```
 
 3. Provision Key Vault secrets (done automatically by bicep for connection strings and Auth0 values). Verify with `validate-secrets` GitHub Actions job.

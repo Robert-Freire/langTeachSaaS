@@ -1,26 +1,24 @@
 name: Weekly DB Backup (BACPAC)
 
+# NOTE: This workflow backs up the production environment, which currently lives
+# in rg-langteach-dev (the only deployed environment; there is no separate prod RG).
+
 on:
   schedule:
     - cron: '0 2 * * 0'   # Sundays at 02:00 UTC
   workflow_dispatch:        # allow manual trigger
-
-permissions:
-  contents: read
-  issues:   write           # required for failure-notification step (gh issue create)
 
 concurrency:
   group: db-backup
   cancel-in-progress: false
 
 env:
-  RESOURCE_GROUP:    rg-langteach-dev
-  SQL_SERVER:        langteach-sql-dev
-  SQL_DB:            langteachdb
-  KEY_VAULT_NAME:    kv-lt-dev-5ba22u
-  STORAGE_ACCOUNT:   stlangteachdev
-  BACKUP_CONTAINER:  backups
-  RETENTION_DAYS:    90
+  RESOURCE_GROUP:   rg-langteach-dev
+  SQL_SERVER:       langteach-sql-dev
+  SQL_DB:           langteachdb
+  STORAGE_ACCOUNT:  stlangteachdev
+  BACKUP_CONTAINER: backups
+  RETENTION_DAYS:   90
 
 jobs:
   bacpac-export:
@@ -29,7 +27,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-      issues:   write
+      issues:   write   # required for failure-notification step (gh issue create)
 
     steps:
       - name: Azure login (OIDC)
@@ -39,15 +37,17 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Validate Key Vault exists
+      - name: Resolve Key Vault name
+        id: kv
         run: |
-          az keyvault show \
-            --name "${{ env.KEY_VAULT_NAME }}" \
+          KV_NAME=$(az keyvault list \
             --resource-group "${{ env.RESOURCE_GROUP }}" \
-            --output none || {
-              echo "ERROR: Key Vault '${{ env.KEY_VAULT_NAME }}' not found in ${{ env.RESOURCE_GROUP }}"
-              exit 1
-            }
+            --query "[?starts_with(name, 'kv-lt-')].name | [0]" -o tsv)
+          if [ -z "$KV_NAME" ]; then
+            echo "ERROR: No Key Vault found in ${{ env.RESOURCE_GROUP }}"
+            exit 1
+          fi
+          echo "name=${KV_NAME}" >> "$GITHUB_OUTPUT"
 
       - name: Fetch SQL credentials from Key Vault
         id: secrets
@@ -55,7 +55,7 @@ jobs:
           # Extract User ID and Password from the connection string stored in KV.
           # Format: ...User ID=<user>;Password=<value>;... (set by bicep keyvault module)
           CONN_STR=$(az keyvault secret show \
-            --vault-name "${{ env.KEY_VAULT_NAME }}" \
+            --vault-name "${{ steps.kv.outputs.name }}" \
             --name ConnectionStrings--Default \
             --query value -o tsv)
           SQL_ADMIN_USER=$(echo "$CONN_STR" | grep -oP '(?i)(?<=User ID=)[^;]+' || true)
