@@ -1579,6 +1579,48 @@ public class PromptService : IPromptService
         return new ClaudeRequest(SystemPrompt: system, UserPrompt: teacherText, Model: ClaudeModel.Haiku, MaxTokens: 2048);
     }
 
+    // --- whatWasCovered fallback synthesis ---
+    // Used when the main reflection extraction returns null/skip for whatWasCovered
+    // but produced topic tags or areas to improve. Haiku in the main schema-driven
+    // call ignores soft "MUST synthesise" rules on short inputs; this dedicated
+    // single-task prompt is reliable.
+
+    public ClaudeRequest BuildWhatWasCoveredFallbackPrompt(WhatWasCoveredFallbackContext ctx)
+    {
+        const string system = """
+            You are a tool that summarises a language class in one sentence.
+
+            Given the topic tags and any difficulty notes from a class, write ONE short sentence (under 30 words) describing what was covered in the class.
+
+            All output MUST be written in the same language as the teacher's input text. Respond with the sentence only, no formatting.
+            """;
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Teacher's original transcription:");
+        sb.AppendLine(InputSanitizer.Sanitize(ctx.OriginalText));
+        sb.AppendLine();
+
+        if (ctx.TopicTags.Count > 0)
+        {
+            sb.AppendLine("Topics covered:");
+            foreach (var t in ctx.TopicTags)
+            {
+                var tag = InputSanitizer.Sanitize(t.Tag);
+                var category = string.IsNullOrWhiteSpace(t.Category) ? null : InputSanitizer.Sanitize(t.Category);
+                sb.AppendLine(category is null ? $"- {tag}" : $"- {tag} ({category})");
+            }
+            sb.AppendLine();
+        }
+
+        if (!string.IsNullOrWhiteSpace(ctx.AreasToImprove))
+        {
+            sb.AppendLine("Areas the student struggled with:");
+            sb.AppendLine(InputSanitizer.Sanitize(ctx.AreasToImprove));
+        }
+
+        return new ClaudeRequest(SystemPrompt: system, UserPrompt: sb.ToString(), Model: ClaudeModel.Haiku, MaxTokens: 200);
+    }
+
     // --- Student profile extraction ---
 
     public ClaudeRequest BuildStudentProfileExtractionPrompt(string text)
