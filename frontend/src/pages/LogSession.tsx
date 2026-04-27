@@ -1176,6 +1176,12 @@ export default function LogSession() {
                       extracted.topicTags && extracted.topicTags.length > 0 &&
                       extracted.topicTags.some(t => !snapshot.topicTags.some(s => s.tag.toLowerCase() === t.tag.toLowerCase()))
                     ) changed.add('topicTags')
+
+                    if (extracted.teachingTodos && extracted.teachingTodos.length > 0)
+                      setNewTodos(prev => [...prev, ...extracted.teachingTodos!.filter(t => !prev.includes(t))])
+                    if (extracted.teacherFollowups && extracted.teacherFollowups.length > 0)
+                      setNewFollowups(prev => [...prev, ...extracted.teacherFollowups!.filter(f => !prev.includes(f))])
+
                     if (changed.size > 0) {
                       setPulsingFields(changed)
                       setExtractedFields(changed)
