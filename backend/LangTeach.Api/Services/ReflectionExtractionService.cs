@@ -81,6 +81,10 @@ public class ReflectionExtractionService : IReflectionExtractionService
         var areas = dto.AreasToImprove is { Mode: not ExtractionMode.Skip } a ? a.Value : null;
         var ctx = new WhatWasCoveredFallbackContext(originalText, dto.TopicTags, areas);
 
+        _logger.LogInformation(
+            "whatWasCovered fallback synthesis triggered (topicTags={TopicCount}, hasAreas={HasAreas})",
+            dto.TopicTags.Count, areas is not null);
+
         try
         {
             var resp = await _claude.CompleteAsync(_prompts.BuildWhatWasCoveredFallbackPrompt(ctx), ct);
@@ -88,7 +92,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
             if (!string.IsNullOrWhiteSpace(sentence)) return sentence;
             _logger.LogInformation("Fallback whatWasCovered synthesis returned empty content; using deterministic join");
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogWarning(ex, "Fallback whatWasCovered synthesis call failed; using deterministic join");
         }

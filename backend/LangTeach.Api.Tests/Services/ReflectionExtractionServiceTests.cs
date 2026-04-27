@@ -842,11 +842,39 @@ public class ReflectionExtractionServiceTests
         var mainJson = MainExtractionJson(
             whatWasCoveredObj: """{"value":"Practicamos el pretérito.","mode":"replace"}""",
             topicTagsArray: """[{"tag":"pretérito","category":"grammar"}]""");
-        var sut = CreateSutWithSequencedResponses(mainJson, "should-not-be-used");
+        var calls = 0;
+        var client = new ReflectionClaudeClient(_ =>
+        {
+            calls++;
+            return new ClaudeResponse(mainJson, "claude-haiku", 10, 20);
+        });
+        var sut = new ReflectionExtractionService(client, new FakePromptService(), PedagogyService, NullLogger<ReflectionExtractionService>.Instance);
 
         var result = await sut.ExtractAsync("hicimos el pretérito");
 
         result.WhatWasCovered!.Value.Should().Be("Practicamos el pretérito.");
+        calls.Should().Be(1, because: "no fallback call should be made when main extraction returns a usable value");
+    }
+
+    [Fact]
+    public async Task ExtractAsync_FallbackPropagatesCancellation_DoesNotFallToDeterministicJoin()
+    {
+        var mainJson = MainExtractionJson(
+            whatWasCoveredObj: "null",
+            topicTagsArray: """[{"tag":"x","category":null}]""");
+        var calls = 0;
+        var client = new ReflectionClaudeClient(_ =>
+        {
+            calls++;
+            if (calls == 1) return new ClaudeResponse(mainJson, "claude-haiku", 10, 20);
+            throw new OperationCanceledException();
+        });
+        var sut = new ReflectionExtractionService(client, new FakePromptService(), PedagogyService, NullLogger<ReflectionExtractionService>.Instance);
+
+        var act = async () => await sut.ExtractAsync("trabajamos x");
+
+        await act.Should().ThrowAsync<OperationCanceledException>(
+            because: "cancellation must propagate, not be swallowed and replaced with a deterministic Spanish sentence");
     }
 
     [Fact]
