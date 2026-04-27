@@ -16,6 +16,47 @@
 - **GRS replication lag.** After enabling GRS on the storage account, the secondary replica may take several hours to reach full parity with the primary. The first RPO window after enabling GRS is longer than steady-state.
 - **BACPAC consistency.** `az sql db export` runs against the live database and captures a transactionally consistent snapshot via SQL Server's internal mechanism. At low-traffic periods (02:00 UTC Sunday) this is acceptable; it is not equivalent to a quiesced dump.
 
+## Applying IaC Changes Without a Full Bicep Redeploy
+
+The bicep modules are the source of truth for future full deploys. To apply individual changes safely to the running prod environment without risking secret overwrites, use these targeted CLI commands.
+
+```bash
+# 1. SQL geo-redundant backup
+az sql db update \
+  --name langteachdb \
+  --server langteach-sql-prod \
+  --resource-group rg-langteach-prod \
+  --backup-storage-redundancy Geo
+
+# 2. Storage: upgrade to GRS
+az storage account update \
+  --name stlangteachprod \
+  --resource-group rg-langteach-prod \
+  --sku Standard_GRS
+
+# 3. Storage: enable blob soft-delete (14-day retention)
+az storage blob service-properties delete-policy update \
+  --account-name stlangteachprod \
+  --enable true \
+  --days-retained 14
+
+# 4. Storage: create backups container (idempotent)
+az storage container create \
+  --name backups \
+  --account-name stlangteachprod
+
+# 5. Key Vault: enable purge protection (IRREVERSIBLE)
+#    Look up the actual KV name first:
+KV=$(az keyvault list --resource-group rg-langteach-prod --query "[0].name" -o tsv)
+echo "Key Vault: $KV"
+az keyvault update \
+  --name "$KV" \
+  --resource-group rg-langteach-prod \
+  --enable-purge-protection true
+```
+
+After applying step 5, update `KEY_VAULT_NAME` in `.github/workflows/db-backup.yml` with the actual vault name and commit.
+
 ## Resource Inventory
 
 | Resource | Name | Resource Group |
