@@ -25,7 +25,7 @@ resource sqlDb 'Microsoft.Sql/servers/databases@2023-05-01-preview' = {
     capacity: 5
   }
   properties: {
-    requestedBackupStorageRedundancy: 'Local'
+    requestedBackupStorageRedundancy: 'Geo'
   }
 }
 

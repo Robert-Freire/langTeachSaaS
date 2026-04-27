@@ -1,0 +1,104 @@
+name: Weekly DB Backup (BACPAC)
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'   # Sundays at 02:00 UTC
+  workflow_dispatch:        # allow manual trigger
+
+permissions:
+  contents: read
+
+env:
+  RESOURCE_GROUP:    rg-langteach-prod
+  SQL_SERVER:        langteach-sql-prod
+  SQL_DB:            langteachdb
+  SQL_ADMIN_USER:    langteachadmin
+  STORAGE_ACCOUNT:   stlangteachprod
+  BACKUP_CONTAINER:  backups
+  RETENTION_DAYS:    90
+
+jobs:
+  bacpac-export:
+    name: Export BACPAC to blob storage
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve Key Vault name
+        id: kv
+        run: |
+          KV_NAME=$(az keyvault list \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query "[?starts_with(name, 'kv-lt-')].name | [0]" -o tsv)
+          if [ -z "$KV_NAME" ]; then
+            echo "ERROR: No Key Vault found in ${{ env.RESOURCE_GROUP }}"
+            exit 1
+          fi
+          echo "name=${KV_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch SQL admin password from Key Vault
+        id: secrets
+        run: |
+          SQL_PASSWORD=$(az keyvault secret show \
+            --vault-name ${{ steps.kv.outputs.name }} \
+            --name ConnectionStrings--Default \
+            --query value -o tsv | grep -oP '(?<=Password=)[^;]+')
+          echo "::add-mask::${SQL_PASSWORD}"
+          echo "sql_password=${SQL_PASSWORD}" >> "$GITHUB_OUTPUT"
+
+      - name: Get storage account key
+        id: storage
+        run: |
+          STORAGE_KEY=$(az storage account keys list \
+            --account-name ${{ env.STORAGE_ACCOUNT }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query "[0].value" -o tsv)
+          echo "::add-mask::${STORAGE_KEY}"
+          echo "key=${STORAGE_KEY}" >> "$GITHUB_OUTPUT"
+
+      - name: Export BACPAC
+        run: |
+          TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
+          BLOB_NAME="backup-${TIMESTAMP}.bacpac"
+          STORAGE_URI="https://${{ env.STORAGE_ACCOUNT }}.blob.core.windows.net/${{ env.BACKUP_CONTAINER }}/${BLOB_NAME}"
+
+          echo "Exporting ${BLOB_NAME} ..."
+          az sql db export \
+            --admin-user   "${{ env.SQL_ADMIN_USER }}" \
+            --admin-password "${{ steps.secrets.outputs.sql_password }}" \
+            --auth-type    Sql \
+            --storage-key  "${{ steps.storage.outputs.key }}" \
+            --storage-key-type StorageAccessKey \
+            --storage-uri  "${STORAGE_URI}" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --server       "${{ env.SQL_SERVER }}" \
+            --name         "${{ env.SQL_DB }}"
+
+          echo "Export complete: ${STORAGE_URI}"
+
+      - name: Delete backups older than ${{ env.RETENTION_DAYS }} days
+        run: |
+          CUTOFF=$(date -u -d "-${{ env.RETENTION_DAYS }} days" +%Y-%m-%dT%H:%M:%SZ)
+          echo "Removing backups older than ${CUTOFF}"
+          az storage blob list \
+            --account-name "${{ env.STORAGE_ACCOUNT }}" \
+            --account-key  "${{ steps.storage.outputs.key }}" \
+            --container-name "${{ env.BACKUP_CONTAINER }}" \
+            --query "[?properties.lastModified < '${CUTOFF}'].name" \
+            -o tsv | while read -r BLOB; do
+              echo "Deleting ${BLOB}"
+              az storage blob delete \
+                --account-name "${{ env.STORAGE_ACCOUNT }}" \
+                --account-key  "${{ steps.storage.outputs.key }}" \
+                --container-name "${{ env.BACKUP_CONTAINER }}" \
+                --name "${BLOB}"
+            done

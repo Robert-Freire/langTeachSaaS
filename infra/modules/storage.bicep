@@ -9,7 +9,7 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: accountName
   location: location
   sku: {
-    name: 'Standard_LRS'
+    name: 'Standard_GRS'
   }
   kind: 'StorageV2'
   properties: {
@@ -27,6 +27,14 @@ resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01'
 resource materialsContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
   parent: blobService
   name: 'materials'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+
+resource backupsContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
+  parent: blobService
+  name: 'backups'
   properties: {
     publicAccess: 'None'
   }
