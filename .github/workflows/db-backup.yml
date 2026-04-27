@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
 env:
   RESOURCE_GROUP:    rg-langteach-prod
   SQL_SERVER:        langteach-sql-prod
@@ -48,10 +52,17 @@ jobs:
       - name: Fetch SQL admin password from Key Vault
         id: secrets
         run: |
-          SQL_PASSWORD=$(az keyvault secret show \
+          # Extract Password field from the connection string stored in KV.
+          # Format: ...Password=<value>;... (set by bicep keyvault module, format is stable)
+          CONN_STR=$(az keyvault secret show \
             --vault-name ${{ steps.kv.outputs.name }} \
             --name ConnectionStrings--Default \
-            --query value -o tsv | grep -oP '(?<=Password=)[^;]+')
+            --query value -o tsv)
+          SQL_PASSWORD=$(echo "$CONN_STR" | grep -oP '(?i)(?<=Password=)[^;]+' || true)
+          if [ -z "$SQL_PASSWORD" ]; then
+            echo "ERROR: Could not extract SQL password from connection string secret."
+            exit 1
+          fi
           echo "::add-mask::${SQL_PASSWORD}"
           echo "sql_password=${SQL_PASSWORD}" >> "$GITHUB_OUTPUT"
 
@@ -62,6 +73,10 @@ jobs:
             --account-name ${{ env.STORAGE_ACCOUNT }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --query "[0].value" -o tsv)
+          if [ -z "$STORAGE_KEY" ]; then
+            echo "ERROR: Could not retrieve storage account key."
+            exit 1
+          fi
           echo "::add-mask::${STORAGE_KEY}"
           echo "key=${STORAGE_KEY}" >> "$GITHUB_OUTPUT"
 
@@ -102,3 +117,14 @@ jobs:
                 --container-name "${{ env.BACKUP_CONTAINER }}" \
                 --name "${BLOB}"
             done
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          gh issue create \
+            --repo "${{ github.repository }}" \
+            --title "BACPAC backup failed $(date -u +%Y-%m-%d)" \
+            --body "The weekly BACPAC export workflow failed on $(date -u). Check the [run logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) and restore from Azure geo-backup if needed." \
+            --label "P1:must,area:infra" || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

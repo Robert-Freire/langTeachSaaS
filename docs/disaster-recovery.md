@@ -10,6 +10,12 @@
 | HIGH | Secrets (Key Vault) | latest committed infra | 30min |
 | LOW | Container image | latest stable tag in ACR | 15min |
 
+## Important Notes
+
+- **Key Vault purge protection is irreversible.** Once `enablePurgeProtection: true` is applied it cannot be disabled. The vault and its secrets cannot be permanently deleted within the 90-day soft-delete retention window. This is intentional and correct.
+- **GRS replication lag.** After enabling GRS on the storage account, the secondary replica may take several hours to reach full parity with the primary. The first RPO window after enabling GRS is longer than steady-state.
+- **BACPAC consistency.** `az sql db export` runs against the live database and captures a transactionally consistent snapshot via SQL Server's internal mechanism. At low-traffic periods (02:00 UTC Sunday) this is acceptable; it is not equivalent to a quiesced dump.
+
 ## Resource Inventory
 
 | Resource | Name | Resource Group |

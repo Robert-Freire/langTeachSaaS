@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: auth0-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Deploy Auth0 tenant config
