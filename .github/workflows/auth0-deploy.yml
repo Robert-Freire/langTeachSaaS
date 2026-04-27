@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Auth0 Deploy CLI
-        run: npm install -g auth0-deploy-cli
+        run: npm install -g auth0-deploy-cli@7.20.0
 
       - name: Deploy tenant config
         env:
