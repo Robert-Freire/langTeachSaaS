@@ -99,14 +99,20 @@ public class ReflectionExtractionService : IReflectionExtractionService
             _logger.LogWarning(ex, "Fallback whatWasCovered synthesis call failed; using deterministic join");
         }
 
-        return DeterministicWhatWasCoveredFromTopics(dto.TopicTags);
+        return DeterministicWhatWasCoveredFromSignals(dto.TopicTags, areas);
     }
 
-    internal static string? DeterministicWhatWasCoveredFromTopics(IReadOnlyList<TopicTagDto> tags)
+    internal static string? DeterministicWhatWasCoveredFromSignals(IReadOnlyList<TopicTagDto> tags, string? areasToImprove)
     {
-        if (tags.Count == 0) return null;
-        var joined = string.Join(", ", tags.Select(t => t.Tag));
-        return $"Trabajamos: {joined}.";
+        var joinedTags = string.Join(", ", tags.Select(t => t.Tag).Where(t => !string.IsNullOrWhiteSpace(t)));
+        if (!string.IsNullOrWhiteSpace(joinedTags))
+            return $"Trabajamos: {joinedTags}.";
+
+        var areas = areasToImprove?.Trim();
+        if (!string.IsNullOrWhiteSpace(areas))
+            return $"Trabajamos: {areas.TrimEnd('.')}.";
+
+        return null;
     }
 
     internal ExtractedReflectionDto ParseResponse(string json)

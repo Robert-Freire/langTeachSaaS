@@ -933,9 +933,40 @@ public class ReflectionExtractionServiceTests
     }
 
     [Fact]
-    public void DeterministicWhatWasCoveredFromTopics_EmptyList_ReturnsNull()
+    public void DeterministicWhatWasCoveredFromSignals_EmptyTagsAndNoAreas_ReturnsNull()
     {
-        ReflectionExtractionService.DeterministicWhatWasCoveredFromTopics(new List<TopicTagDto>()).Should().BeNull();
+        ReflectionExtractionService.DeterministicWhatWasCoveredFromSignals(new List<TopicTagDto>(), null).Should().BeNull();
+    }
+
+    [Fact]
+    public void DeterministicWhatWasCoveredFromSignals_EmptyTagsButAreasPresent_UsesAreas()
+    {
+        var result = ReflectionExtractionService.DeterministicWhatWasCoveredFromSignals(
+            new List<TopicTagDto>(), "subjuntivo");
+        result.Should().Be("Trabajamos: subjuntivo.");
+    }
+
+    [Fact]
+    public async Task ExtractAsync_FallbackUsesAreas_WhenHaikuThrowsAndOnlyAreasPopulated()
+    {
+        var mainJson = MainExtractionJson(
+            whatWasCoveredObj: "null",
+            topicTagsArray: "[]",
+            areasToImproveObj: """{"value":"subjuntivo","mode":"replace"}""");
+        var calls = 0;
+        var client = new ReflectionClaudeClient(_ =>
+        {
+            calls++;
+            if (calls == 1) return new ClaudeResponse(mainJson, "claude-haiku", 10, 20);
+            throw new HttpRequestException("network error");
+        });
+        var sut = new ReflectionExtractionService(client, new FakePromptService(), PedagogyService, NullLogger<ReflectionExtractionService>.Instance);
+
+        var result = await sut.ExtractAsync("la alumna tiene problemas con el subjuntivo");
+
+        result.WhatWasCovered.Should().NotBeNull(
+            because: "areas-only fallback path must still produce a value when Haiku fails");
+        result.WhatWasCovered!.Value.Should().Be("Trabajamos: subjuntivo.");
     }
 
     private static ExtractedReflectionDto MakeDto(
