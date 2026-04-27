@@ -1590,7 +1590,9 @@ public class PromptService : IPromptService
         const string system = """
             You are a tool that summarises a language class in one sentence.
 
-            Given the topic tags and any difficulty notes from a class, write ONE short sentence (under 30 words) in the SAME LANGUAGE as the teacher's original transcription, describing what was covered in the class. Do not add information that is not implied by the inputs. Respond with the sentence only — no JSON, no quotes, no preamble.
+            Given the topic tags and any difficulty notes from a class, write ONE short sentence (under 30 words) describing what was covered in the class.
+
+            All output MUST be written in the same language as the teacher's input text. Respond with the sentence only, no formatting.
             """;
 
         var sb = new StringBuilder();
@@ -1610,8 +1612,11 @@ public class PromptService : IPromptService
             sb.AppendLine();
         }
 
-        sb.AppendLine("Areas the student struggled with:");
-        sb.AppendLine(string.IsNullOrWhiteSpace(ctx.AreasToImprove) ? "(none)" : InputSanitizer.Sanitize(ctx.AreasToImprove));
+        if (!string.IsNullOrWhiteSpace(ctx.AreasToImprove))
+        {
+            sb.AppendLine("Areas the student struggled with:");
+            sb.AppendLine(InputSanitizer.Sanitize(ctx.AreasToImprove));
+        }
 
         return new ClaudeRequest(SystemPrompt: system, UserPrompt: sb.ToString(), Model: ClaudeModel.Haiku, MaxTokens: 200);
     }

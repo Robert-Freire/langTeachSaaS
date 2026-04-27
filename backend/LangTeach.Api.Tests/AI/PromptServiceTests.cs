@@ -3580,7 +3580,7 @@ public class PromptServiceTests
         request.UserPrompt.Should().Contain("por y para");
         request.UserPrompt.Should().Contain("ser/estar");
         request.UserPrompt.Should().Contain("alumna confunde por y para");
-        request.SystemPrompt.Should().Contain("SAME LANGUAGE",
+        request.SystemPrompt.Should().Contain("same language",
             because: "the synthesised sentence must mirror the teacher's input language");
         request.SystemPrompt.Should().Contain("ONE short sentence",
             because: "the prompt must constrain output to a single short sentence");
@@ -3599,6 +3599,21 @@ public class PromptServiceTests
         request.UserPrompt.Should().NotContain("Topics covered:");
         request.UserPrompt.Should().Contain("Areas the student struggled with:");
         request.UserPrompt.Should().Contain("subjuntivo");
+    }
+
+    [Fact]
+    public void BuildWhatWasCoveredFallbackPrompt_OmitsAreasSection_WhenAreasNullOrEmpty()
+    {
+        var ctx = new WhatWasCoveredFallbackContext(
+            OriginalText: "estuvimos trabajando el por y para",
+            TopicTags: new List<TopicTagDto> { new("por y para", "grammar") },
+            AreasToImprove: null);
+
+        var request = _sut.BuildWhatWasCoveredFallbackPrompt(ctx);
+
+        request.UserPrompt.Should().NotContain("Areas the student struggled with:",
+            because: "an empty Areas section anchors the model to invent difficulty filler");
+        request.UserPrompt.Should().NotContain("(none)");
     }
 }
 
