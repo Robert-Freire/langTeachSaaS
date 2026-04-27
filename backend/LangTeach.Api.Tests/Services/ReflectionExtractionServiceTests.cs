@@ -730,4 +730,196 @@ public class ReflectionExtractionServiceTests
         request.SystemPrompt.Should().NotContain("Subjunctive in time clauses",
             because: "English examples in sessionTitle bias Haiku to generate English titles from Spanish input");
     }
+
+    // ---------------------------------------------------------------------
+    // whatWasCovered fallback synthesis (issue #986)
+    // ---------------------------------------------------------------------
+
+    private static string MainExtractionJson(string? whatWasCoveredObj, string topicTagsArray, string? areasToImproveObj = null, bool isCancelled = false)
+    {
+        var wcc = whatWasCoveredObj ?? "null";
+        var areas = areasToImproveObj ?? "null";
+        var cancel = isCancelled ? "true" : "null";
+        return $$"""
+            {
+              "whatWasCovered": {{wcc}},
+              "areasToImprove": {{areas}},
+              "emotionalSignals": null,
+              "homeworkAssigned": null,
+              "nextLessonIdeas": null,
+              "topicTags": {{topicTagsArray}},
+              "isCancelled": {{cancel}}
+            }
+            """;
+    }
+
+    private static ReflectionExtractionService CreateSutWithSequencedResponses(params string[] contents)
+    {
+        var idx = 0;
+        var client = new ReflectionClaudeClient(_ =>
+        {
+            var c = contents[Math.Min(idx, contents.Length - 1)];
+            idx++;
+            return new ClaudeResponse(c, "claude-haiku", 10, 20);
+        });
+        return new ReflectionExtractionService(client, new FakePromptService(), PedagogyService, NullLogger<ReflectionExtractionService>.Instance);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_FallbackFires_WhenWhatWasCoveredNullAndTopicTagsPresent()
+    {
+        var mainJson = MainExtractionJson(
+            whatWasCoveredObj: "null",
+            topicTagsArray: """[{"tag":"por y para","category":"grammar"}]""");
+        var sut = CreateSutWithSequencedResponses(mainJson, "Trabajamos el contraste entre por y para.");
+
+        var result = await sut.ExtractAsync("estuvimos trabajando el por y para");
+
+        result.WhatWasCovered.Should().NotBeNull();
+        result.WhatWasCovered!.Value.Should().Be("Trabajamos el contraste entre por y para.");
+        result.WhatWasCovered.Mode.Should().Be(ExtractionMode.Replace);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_FallbackFires_WhenWhatWasCoveredHasSkipMode()
+    {
+        var mainJson = MainExtractionJson(
+            whatWasCoveredObj: """{"value":"","mode":"skip"}""",
+            topicTagsArray: """[{"tag":"subjuntivo","category":"grammar"}]""");
+        var sut = CreateSutWithSequencedResponses(mainJson, "Practicamos el subjuntivo.");
+
+        var result = await sut.ExtractAsync("practicamos el subjuntivo");
+
+        result.WhatWasCovered!.Value.Should().Be("Practicamos el subjuntivo.");
+        result.WhatWasCovered.Mode.Should().Be(ExtractionMode.Replace);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_FallbackFires_WhenOnlyAreasToImproveIsPopulated()
+    {
+        var mainJson = MainExtractionJson(
+            whatWasCoveredObj: "null",
+            topicTagsArray: "[]",
+            areasToImproveObj: """{"value":"struggles with subjunctive","mode":"replace"}""");
+        var sut = CreateSutWithSequencedResponses(mainJson, "La alumna tuvo dificultades con el subjuntivo.");
+
+        var result = await sut.ExtractAsync("la alumna tuvo problemas con el subjuntivo");
+
+        result.WhatWasCovered!.Value.Should().Be("La alumna tuvo dificultades con el subjuntivo.");
+    }
+
+    [Fact]
+    public async Task ExtractAsync_FallbackSkipped_WhenIsCancelledTrue()
+    {
+        var mainJson = MainExtractionJson(
+            whatWasCoveredObj: "null",
+            topicTagsArray: """[{"tag":"x","category":null}]""",
+            isCancelled: true);
+        var sut = CreateSutWithSequencedResponses(mainJson, "should-not-be-used");
+
+        var result = await sut.ExtractAsync("el alumno no vino hoy");
+
+        result.WhatWasCovered.Should().BeNull();
+        result.IsCancelled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ExtractAsync_FallbackSkipped_WhenNoTopicsAndNoAreas()
+    {
+        var mainJson = MainExtractionJson(
+            whatWasCoveredObj: "null",
+            topicTagsArray: "[]");
+        var sut = CreateSutWithSequencedResponses(mainJson, "should-not-be-used");
+
+        var result = await sut.ExtractAsync("hola");
+
+        result.WhatWasCovered.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ExtractAsync_FallbackSkipped_WhenMainPromptReturnsValue()
+    {
+        var mainJson = MainExtractionJson(
+            whatWasCoveredObj: """{"value":"Practicamos el pretérito.","mode":"replace"}""",
+            topicTagsArray: """[{"tag":"pretérito","category":"grammar"}]""");
+        var sut = CreateSutWithSequencedResponses(mainJson, "should-not-be-used");
+
+        var result = await sut.ExtractAsync("hicimos el pretérito");
+
+        result.WhatWasCovered!.Value.Should().Be("Practicamos el pretérito.");
+    }
+
+    [Fact]
+    public async Task ExtractAsync_FallbackUsesDeterministicJoin_WhenSecondCallReturnsEmpty()
+    {
+        var mainJson = MainExtractionJson(
+            whatWasCoveredObj: "null",
+            topicTagsArray: """[{"tag":"por y para","category":"grammar"},{"tag":"ser/estar","category":"grammar"}]""");
+        var sut = CreateSutWithSequencedResponses(mainJson, "   ");
+
+        var result = await sut.ExtractAsync("estuvimos trabajando el por y para y ser/estar");
+
+        result.WhatWasCovered!.Value.Should().Be("Trabajamos: por y para, ser/estar.");
+        result.WhatWasCovered.Mode.Should().Be(ExtractionMode.Replace);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_FallbackUsesDeterministicJoin_WhenSecondCallThrows()
+    {
+        var mainJson = MainExtractionJson(
+            whatWasCoveredObj: "null",
+            topicTagsArray: """[{"tag":"subjuntivo","category":null}]""");
+        var calls = 0;
+        var client = new ReflectionClaudeClient(_ =>
+        {
+            calls++;
+            if (calls == 1) return new ClaudeResponse(mainJson, "claude-haiku", 10, 20);
+            throw new HttpRequestException("network error");
+        });
+        var sut = new ReflectionExtractionService(client, new FakePromptService(), PedagogyService, NullLogger<ReflectionExtractionService>.Instance);
+
+        var result = await sut.ExtractAsync("trabajamos el subjuntivo");
+
+        result.WhatWasCovered!.Value.Should().Be("Trabajamos: subjuntivo.");
+    }
+
+    [Fact]
+    public void NeedsWhatWasCoveredFallback_AreasToImproveWithSkipMode_DoesNotTriggerFallback()
+    {
+        var dto = MakeDto(
+            whatWasCovered: null,
+            areasToImprove: new ExtractedTextFieldDto("not used", ExtractionMode.Skip),
+            topicTags: new List<TopicTagDto>());
+
+        ReflectionExtractionService.NeedsWhatWasCoveredFallback(dto).Should().BeFalse();
+    }
+
+    [Fact]
+    public void NeedsWhatWasCoveredFallback_AppendModeWithValue_DoesNotTriggerFallback()
+    {
+        var dto = MakeDto(
+            whatWasCovered: new ExtractedTextFieldDto("more notes", ExtractionMode.Append),
+            topicTags: new List<TopicTagDto> { new("x", null) });
+
+        ReflectionExtractionService.NeedsWhatWasCoveredFallback(dto).Should().BeFalse();
+    }
+
+    [Fact]
+    public void DeterministicWhatWasCoveredFromTopics_EmptyList_ReturnsNull()
+    {
+        ReflectionExtractionService.DeterministicWhatWasCoveredFromTopics(new List<TopicTagDto>()).Should().BeNull();
+    }
+
+    private static ExtractedReflectionDto MakeDto(
+        ExtractedTextFieldDto? whatWasCovered = null,
+        ExtractedTextFieldDto? areasToImprove = null,
+        List<TopicTagDto>? topicTags = null,
+        bool? isCancelled = null) =>
+        new(
+            WhatWasCovered: whatWasCovered, AreasToImprove: areasToImprove, EmotionalSignals: null,
+            HomeworkAssigned: null, NextLessonIdeas: null, SessionDate: null,
+            SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
+            TopicTags: topicTags ?? [], PreviousHomeworkStatus: null, TeachingTodos: [],
+            TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
+            IsCancelled: isCancelled, DifficultiesWorkedOn: [], SessionStartTime: null);
 }

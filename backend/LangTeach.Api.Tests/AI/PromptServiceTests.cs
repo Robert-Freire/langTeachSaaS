@@ -3549,5 +3549,56 @@ public class PromptServiceTests
         request.SystemPrompt.Should().Contain("teacher assessment");
         request.SystemPrompt.Should().Contain("content difficulty decisions");
     }
+
+    // --- BuildWhatWasCoveredFallbackPrompt (issue #986) ---
+
+    [Fact]
+    public void BuildWhatWasCoveredFallbackPrompt_TargetsHaikuWithSmallMaxTokens()
+    {
+        var ctx = new WhatWasCoveredFallbackContext(
+            OriginalText: "estuvimos trabajando el por y para",
+            TopicTags: new List<TopicTagDto> { new("por y para", "grammar") },
+            AreasToImprove: null);
+
+        var request = _sut.BuildWhatWasCoveredFallbackPrompt(ctx);
+
+        request.Model.Should().Be(ClaudeModel.Haiku);
+        request.MaxTokens.Should().BeLessThanOrEqualTo(300, because: "this is a single-sentence summarisation task");
+    }
+
+    [Fact]
+    public void BuildWhatWasCoveredFallbackPrompt_IncludesOriginalTextTopicsAndAreas()
+    {
+        var ctx = new WhatWasCoveredFallbackContext(
+            OriginalText: "estuvimos trabajando el por y para",
+            TopicTags: new List<TopicTagDto> { new("por y para", "grammar"), new("ser/estar", null) },
+            AreasToImprove: "alumna confunde por y para");
+
+        var request = _sut.BuildWhatWasCoveredFallbackPrompt(ctx);
+
+        request.UserPrompt.Should().Contain("estuvimos trabajando el por y para");
+        request.UserPrompt.Should().Contain("por y para");
+        request.UserPrompt.Should().Contain("ser/estar");
+        request.UserPrompt.Should().Contain("alumna confunde por y para");
+        request.SystemPrompt.Should().Contain("SAME LANGUAGE",
+            because: "the synthesised sentence must mirror the teacher's input language");
+        request.SystemPrompt.Should().Contain("ONE short sentence",
+            because: "the prompt must constrain output to a single short sentence");
+    }
+
+    [Fact]
+    public void BuildWhatWasCoveredFallbackPrompt_OmitsTopicsSection_WhenNoTags()
+    {
+        var ctx = new WhatWasCoveredFallbackContext(
+            OriginalText: "la alumna tuvo problemas con el subjuntivo",
+            TopicTags: new List<TopicTagDto>(),
+            AreasToImprove: "subjuntivo");
+
+        var request = _sut.BuildWhatWasCoveredFallbackPrompt(ctx);
+
+        request.UserPrompt.Should().NotContain("Topics covered:");
+        request.UserPrompt.Should().Contain("Areas the student struggled with:");
+        request.UserPrompt.Should().Contain("subjuntivo");
+    }
 }
 
