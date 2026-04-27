@@ -1625,7 +1625,9 @@ public class PromptService : IPromptService
 
     public ClaudeRequest BuildStudentProfileExtractionPrompt(string text)
     {
-        const string system = """
+        var currentYear = DateTime.UtcNow.Year;
+        var competencies = string.Join(", ", _pedagogy.GetValidDifficultyCompetencies().OrderBy(x => x));
+        var system = $"""
             You are a tool that helps language teachers capture student information from free-form voice notes.
             Extract structured student profile fields from a teacher's free-form text.
 
@@ -1638,7 +1640,7 @@ public class PromptService : IPromptService
 
             Respond ONLY with a valid JSON object using these exact keys:
             - name: string or null — student's full name. Null if not clearly stated.
-            - birthYear: integer or null — student's year of birth (e.g. 1990). Null if not clearly stated or only an age is mentioned without a computable birth year.
+            - birthYear: integer or null — student's year of birth (e.g. 1990). If the teacher states an age rather than a year, compute the birth year as {currentYear} minus the stated age. Null if neither a birth year nor an age is mentioned.
             - profession: string or null — student's job or occupation. Null if not mentioned.
             - countryOfResidence: string or null — country where the student currently lives. Null if not mentioned.
             - cityOfResidence: string or null — city where the student currently lives. Null if not mentioned.
@@ -1653,7 +1655,7 @@ public class PromptService : IPromptService
               Empty array [] if no objectives mentioned.
             - difficulties: array of objects — student weaknesses or trouble areas explicitly mentioned. Each object has:
                 - description: string — full description of the difficulty
-                - competency: string — broad area (e.g. "Grammar", "Vocabulary", "Pronunciation", "Listening", "Speaking", "Reading", "Writing")
+                - competency: string — must be one of: {competencies}
                 - subcategory: string — specific item (e.g. "ser/estar", "subjunctive", "past tense"), free text
               Empty array [] if no difficulties mentioned.
             - teachingTodoTexts: array of strings — pedagogical ideas or reminders for the teacher regarding this student. Empty array [] if none.
@@ -1661,7 +1663,6 @@ public class PromptService : IPromptService
 
             Use null for scalar fields that cannot be clearly inferred from the text.
             Keep each value concise.
-            Respond with JSON only, no markdown, no explanation.
             """;
 
         return new ClaudeRequest(SystemPrompt: system, UserPrompt: InputSanitizer.Sanitize(text), Model: ClaudeModel.Haiku, MaxTokens: 1024);
