@@ -94,6 +94,8 @@ public class ReflectionExtractionService : IReflectionExtractionService
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // Warning, not Error: the primary extraction already succeeded; this fallback
+            // is best-effort and we have a deterministic backup.
             _logger.LogWarning(ex, "Fallback whatWasCovered synthesis call failed; using deterministic join");
         }
 
