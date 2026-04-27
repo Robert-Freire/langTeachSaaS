@@ -1,0 +1,133 @@
+name: Weekly DB Backup (BACPAC)
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'   # Sundays at 02:00 UTC
+  workflow_dispatch:        # allow manual trigger
+
+permissions:
+  contents: read
+  issues:   write           # required for failure-notification step (gh issue create)
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+env:
+  RESOURCE_GROUP:    rg-langteach-prod
+  SQL_SERVER:        langteach-sql-prod
+  SQL_DB:            langteachdb
+  KEY_VAULT_NAME:    kv-lt-prod-REPLACE  # replace with actual KV name after first bicep deploy
+  STORAGE_ACCOUNT:   stlangteachprod
+  BACKUP_CONTAINER:  backups
+  RETENTION_DAYS:    90
+
+jobs:
+  bacpac-export:
+    name: Export BACPAC to blob storage
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      issues:   write
+
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate Key Vault exists
+        run: |
+          az keyvault show \
+            --name "${{ env.KEY_VAULT_NAME }}" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --output none || {
+              echo "ERROR: Key Vault '${{ env.KEY_VAULT_NAME }}' not found in ${{ env.RESOURCE_GROUP }}"
+              exit 1
+            }
+
+      - name: Fetch SQL credentials from Key Vault
+        id: secrets
+        run: |
+          # Extract User ID and Password from the connection string stored in KV.
+          # Format: ...User ID=<user>;Password=<value>;... (set by bicep keyvault module)
+          CONN_STR=$(az keyvault secret show \
+            --vault-name "${{ env.KEY_VAULT_NAME }}" \
+            --name ConnectionStrings--Default \
+            --query value -o tsv)
+          SQL_ADMIN_USER=$(echo "$CONN_STR" | grep -oP '(?i)(?<=User ID=)[^;]+' || true)
+          SQL_PASSWORD=$(echo "$CONN_STR" | grep -oP '(?i)(?<=Password=)[^;]+' || true)
+          if [ -z "$SQL_ADMIN_USER" ] || [ -z "$SQL_PASSWORD" ]; then
+            echo "ERROR: Could not extract SQL credentials from connection string secret."
+            exit 1
+          fi
+          echo "::add-mask::${SQL_ADMIN_USER}"
+          echo "::add-mask::${SQL_PASSWORD}"
+          echo "sql_admin_user=${SQL_ADMIN_USER}" >> "$GITHUB_OUTPUT"
+          echo "sql_password=${SQL_PASSWORD}" >> "$GITHUB_OUTPUT"
+
+      - name: Get storage account key
+        id: storage
+        run: |
+          STORAGE_KEY=$(az storage account keys list \
+            --account-name "${{ env.STORAGE_ACCOUNT }}" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --query "[0].value" -o tsv)
+          if [ -z "$STORAGE_KEY" ]; then
+            echo "ERROR: Could not retrieve storage account key."
+            exit 1
+          fi
+          echo "::add-mask::${STORAGE_KEY}"
+          echo "key=${STORAGE_KEY}" >> "$GITHUB_OUTPUT"
+
+      - name: Export BACPAC
+        run: |
+          TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
+          BLOB_NAME="backup-${TIMESTAMP}.bacpac"
+          STORAGE_URI="https://${{ env.STORAGE_ACCOUNT }}.blob.core.windows.net/${{ env.BACKUP_CONTAINER }}/${BLOB_NAME}"
+
+          echo "Exporting ${BLOB_NAME} ..."
+          az sql db export \
+            --admin-user     "${{ steps.secrets.outputs.sql_admin_user }}" \
+            --admin-password "${{ steps.secrets.outputs.sql_password }}" \
+            --auth-type      Sql \
+            --storage-key    "${{ steps.storage.outputs.key }}" \
+            --storage-key-type StorageAccessKey \
+            --storage-uri    "${STORAGE_URI}" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --server         "${{ env.SQL_SERVER }}" \
+            --name           "${{ env.SQL_DB }}"
+
+          echo "Export complete: ${STORAGE_URI}"
+
+      - name: Delete backups older than ${{ env.RETENTION_DAYS }} days
+        run: |
+          CUTOFF=$(date -u -d "-${{ env.RETENTION_DAYS }} days" +%Y-%m-%dT%H:%M:%SZ)
+          echo "Removing backups older than ${CUTOFF}"
+          az storage blob list \
+            --account-name   "${{ env.STORAGE_ACCOUNT }}" \
+            --account-key    "${{ steps.storage.outputs.key }}" \
+            --container-name "${{ env.BACKUP_CONTAINER }}" \
+            --query "[?properties.lastModified < '${CUTOFF}'].name" \
+            -o tsv | while read -r BLOB; do
+              echo "Deleting ${BLOB}"
+              az storage blob delete \
+                --account-name   "${{ env.STORAGE_ACCOUNT }}" \
+                --account-key    "${{ steps.storage.outputs.key }}" \
+                --container-name "${{ env.BACKUP_CONTAINER }}" \
+                --name "${BLOB}"
+            done
+
+      - name: Notify on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --repo  "${{ github.repository }}" \
+            --title "BACPAC backup failed $(date -u +%Y-%m-%d)" \
+            --body  "The weekly BACPAC export workflow failed on $(date -u). Check the [run logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) and restore from Azure geo-backup if needed." \
+            --label "P1:must,area:infra"
