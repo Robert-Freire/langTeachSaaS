@@ -196,7 +196,8 @@ public class StudentsController : ControllerBase
         if (Auth0Id is null) return Unauthorized();
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        _logger.LogInformation("POST /api/students/extract-profile. Auth0Id={Auth0Id} TextLength={TextLength}", Auth0Id, request.Text.Length);
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        _logger.LogInformation("POST /api/students/extract-profile. TeacherId={TeacherId} TextLength={TextLength}", teacherId, request.Text.Length);
         var extracted = await _extractionService.ExtractAsync(request.Text, cancellationToken);
         return Ok(extracted);
     }
