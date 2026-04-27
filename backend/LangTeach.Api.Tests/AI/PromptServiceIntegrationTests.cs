@@ -167,4 +167,22 @@ public class PromptServiceIntegrationTests
         sections.TryGetProperty("warmUp", out _).Should().BeTrue();
         sections.TryGetProperty("production", out _).Should().BeTrue();
     }
+
+    [SkipIfNoClaudeApiKey]
+    public async Task ReflectionExtraction_AñadeFollowUp_ExtractsTeacherFollowup()
+    {
+        using var tc = BuildClients();
+
+        var pedagogyService = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance,
+            new SectionProfileService(NullLogger<SectionProfileService>.Instance));
+        var sut = new ReflectionExtractionService(tc.Client, tc.Prompts, pedagogyService,
+            NullLogger<ReflectionExtractionService>.Instance);
+
+        var result = await sut.ExtractAsync("añade follow up tengo que preparar ejercicios");
+
+        result.TeacherFollowups.Should().NotBeEmpty(
+            "expected 'añade follow up tengo que preparar ejercicios' to produce a teacherFollowups entry");
+        result.TeacherFollowups[0].Should().ContainAny("ejercicio", "preparar",
+            "expected the extracted followup to mention preparing exercises");
+    }
 }

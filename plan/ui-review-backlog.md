@@ -25,6 +25,13 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 | AudioRecorder component (voice recording panel) | "Upload audio" button uses ghost/outline style next to filled Primary "Record" button. DS section 5 forbids ghost + Primary pairing. Pre-existing from #944, not introduced by #947. | Minor |
 | AudioRecorder component | Record + Upload audio two-button layout is a new pattern not defined in the design system. Pre-existing from #944. | Minor |
 
+## #944 (2026-04-26)
+
+| Screen | Finding | Severity |
+|--------|---------|---------|
+| VoiceUpdateDrawer footer | Ghost Cancel + filled Primary Save on same row inside a drawer/modal footer. DS §5 forbids this pairing for screen-level buttons; rule is ambiguous for modal footers. Needs explicit drawer footer spec in design-system.md. | Minor |
+| VoiceUpdateDrawer inline row edit | Per-row edit uses raw `<input>` (not shadcn `<Input>`). DS §11.1 targets List-Add controls; inline transient edit within a drawer row is not covered. Needs design decision. | Minor |
+
 ## #856 (2026-04-23)
 
 | Screen | Finding | Severity |
