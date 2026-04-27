@@ -4,13 +4,9 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-04-24)
+## In-Flight Tasks (2026-04-27)
 
-Task #899 merged (PR #900).
-Task #874 PR #895 open, awaiting merge.
-Task #860 + #861 bundled PR #891 open, awaiting merge.
-
-Task #852 merged (PR #872). Task #846 merged (PR #873). Task #841 merged (PR #876). Task #840 merged (PR #877). Task #834 PR #865 open, awaiting merge. Task #839 PR #867 open, awaiting merge. Task #809 PR #875 open, awaiting merge. Task #849 PR #878 open, awaiting merge. Task #850 PR #879 open, awaiting merge. Task #853 PR #882 open, awaiting merge. Task #855 PR #884 open, awaiting merge. Task #857 PR #885 open, awaiting merge. Task #856 PR #886 open, awaiting merge.
+No tasks currently in flight. Next sprint not yet started.
 
 ## Live Tracker: GitHub Issues
 
@@ -22,13 +18,14 @@ Key queries:
 - Must-haves: `gh issue list --milestone "<milestone-name>" --label "P1:must" --state open`
 - Ready to pick up: `gh issue list --milestone "<milestone-name>" --label "qa:ready" --state open`
 
-**Active sprint branch:** `sprint/student-profile-voice-input` (milestone #18, Student Profile Voice Input)
+**Active sprint branch:** `sprint/unified-voice-chat` (milestone #19, Unified Voice & Chat)
 
 ## Milestone Sequence (newest first)
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| Student Profile Voice Input | ACTIVE | sprint/student-profile-voice-input |
+| Unified Voice & Chat | ACTIVE | sprint/unified-voice-chat, milestone #19, 17 open issues. Sprint story: plan/sprints/unified-voice-chat.md |
+| Student Profile Voice Input | CLOSED 2026-04-27 | milestone #18, merged to main, branch deleted |
 | Stabilisation | CLOSED 2026-04-25 | milestone #17, merged to main, branch deleted |
 | UI Redesign & Student Profile Polish | CLOSED 2026-04-22 | milestone #16, merged to main, branch deleted |
 | Adaptive Replanning | CLOSED 2026-04-08 | 22/22 done, merged to main |
@@ -42,8 +39,8 @@ Key queries:
 
 ## Upcoming Milestones (not yet started)
 
-- Listening Comprehension: after Stabilisation (milestone #14)
-- Solo Whiteboard: after Listening Comprehension
+- Listening Comprehension: deferred
+- Solo Whiteboard: deferred
 - Group Classes: FUTURE
 - Phase 2B: Production (caching, usage limits, CI pipeline)
 - Phase 3: Growth (student portal, evaluation, content library, payments)
