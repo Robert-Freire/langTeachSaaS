@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import LogSession from './LogSession'
@@ -549,6 +549,233 @@ describe('LogSession', () => {
       const chip = screen.getByTestId('tag-suggestion-subjuntivo')
       expect(chip.className).not.toContain('border-indigo')
       expect(chip.className).toContain('bg-indigo-100')
+    })
+  })
+
+  describe('voice extraction highlight + undo bar', () => {
+    const MOCK_EXTRACTION = {
+      rawExtractionJson: '{}',
+      sessionTitle: 'Great session',
+      whatWasCovered: { value: 'Practiced subjunctive', mode: 'replace' as const },
+      homeworkAssigned: { value: 'Page 10', mode: 'replace' as const },
+      nextLessonIdeas: { value: 'Review ser/estar', mode: 'replace' as const },
+      areasToImprove: null,
+      emotionalSignals: null,
+      topicTags: [],
+      suggestedDifficulties: [],
+      sessionDate: null,
+      sessionStartTime: null,
+      durationMinutes: null,
+    }
+
+    beforeEach(() => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue(MOCK_EXTRACTION)
+      vi.mocked(sessionLogsApi.createSession).mockResolvedValue({ ...SAMPLE_SESSION, id: 'new-session' })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    async function triggerExtraction() {
+      renderLogSession()
+      await screen.findByTestId('audio-recorder')
+      await act(async () => {
+        capturedOnVoiceNote?.({ id: 'note-1', transcription: 'Great session today' })
+        await Promise.resolve()
+      })
+    }
+
+    it('shows undo bar after extraction with correct field count', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('undo-extraction-bar')).toBeInTheDocument()
+      })
+      expect(screen.getByTestId('undo-extraction-bar')).toHaveTextContent('fields filled from recording')
+    })
+
+    it('undo bar persists after 30 simulated seconds (no auto-dismiss timer)', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('undo-extraction-bar')).toBeInTheDocument()
+      })
+      act(() => { vi.advanceTimersByTime(30000) })
+      expect(screen.getByTestId('undo-extraction-bar')).toBeInTheDocument()
+    })
+
+    it('X button dismisses bar without reverting fields', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content')).toHaveValue('Practiced subjunctive')
+      })
+      fireEvent.click(screen.getByTestId('dismiss-undo-bar'))
+      expect(screen.queryByTestId('undo-extraction-bar')).not.toBeInTheDocument()
+      expect(screen.getByTestId('actual-content')).toHaveValue('Practiced subjunctive')
+    })
+
+    it('Undo extraction reverts extracted fields to pre-extraction values', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content')).toHaveValue('Practiced subjunctive')
+      })
+      fireEvent.click(screen.getByTestId('undo-extraction-btn'))
+      expect(screen.queryByTestId('undo-extraction-bar')).not.toBeInTheDocument()
+      expect(screen.getByTestId('actual-content')).toHaveValue('')
+    })
+
+    it('Undo clears all persistent markers in the same gesture', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+      })
+      fireEvent.click(screen.getByTestId('undo-extraction-btn'))
+      expect(screen.getByTestId('actual-content').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('homework-assigned').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('next-session-topics').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('log-session-title-input').className).not.toContain('border-indigo-500')
+    })
+
+    it('field manually edited after extraction is NOT reverted on undo', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content')).toHaveValue('Practiced subjunctive')
+      })
+      fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'My own content' } })
+      fireEvent.click(screen.getByTestId('undo-extraction-btn'))
+      expect(screen.queryByTestId('undo-extraction-bar')).not.toBeInTheDocument()
+      expect(screen.getByTestId('actual-content')).toHaveValue('My own content')
+    })
+
+    it('persistent marker and pulse are applied to all changed fields after extraction', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+      })
+      expect(screen.getByTestId('actual-content').className).toContain('animate-extraction-pulse')
+      expect(screen.getByTestId('homework-assigned').className).toContain('border-indigo-500')
+      expect(screen.getByTestId('next-session-topics').className).toContain('border-indigo-500')
+      expect(screen.getByTestId('log-session-title-input').className).toContain('border-indigo-500')
+    })
+
+    it('unchanged fields do not receive marker or pulse after extraction', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+      })
+      expect(screen.getByTestId('session-date').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('session-time').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('session-date').className).not.toContain('animate-extraction-pulse')
+    })
+
+    it('persistent marker remains after 30 simulated seconds (no auto-clear timer)', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+      })
+      act(() => { vi.advanceTimersByTime(30000) })
+      expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+    })
+
+    it('pulse animation clears after ~2.8 seconds but persistent marker remains', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('animate-extraction-pulse')
+      })
+      act(() => { vi.advanceTimersByTime(2900) })
+      expect(screen.getByTestId('actual-content').className).not.toContain('animate-extraction-pulse')
+      expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+    })
+
+    it('editing one marked field clears its marker only and decrements bar count', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+      })
+      const initialCount = screen.getByTestId('undo-extraction-bar').textContent || ''
+      const initialN = parseInt(initialCount.match(/\d+/)?.[0] || '0', 10)
+      fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'Edited' } })
+      expect(screen.getByTestId('actual-content').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('homework-assigned').className).toContain('border-indigo-500')
+      const updatedCount = screen.getByTestId('undo-extraction-bar').textContent || ''
+      const updatedN = parseInt(updatedCount.match(/\d+/)?.[0] || '0', 10)
+      expect(updatedN).toBe(initialN - 1)
+    })
+
+    it('editing every marked field hides the undo bar', async () => {
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+      })
+      fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'A' } })
+      fireEvent.change(screen.getByTestId('homework-assigned'), { target: { value: 'B' } })
+      fireEvent.change(screen.getByTestId('next-session-topics'), { target: { value: 'C' } })
+      fireEvent.change(screen.getByTestId('log-session-title-input'), { target: { value: 'D' } })
+      expect(screen.queryByTestId('undo-extraction-bar')).not.toBeInTheDocument()
+    })
+
+    it('subsequent extraction replaces marker set, not stacks', async () => {
+      // First extraction touches actualContent + homework + nextLessonIdeas + sessionTitle
+      await triggerExtraction()
+      await waitFor(() => {
+        expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
+      })
+      // Manually edit actualContent so it would NOT be reverted by undo
+      fireEvent.change(screen.getByTestId('actual-content'), { target: { value: 'My own content' } })
+      expect(screen.getByTestId('actual-content').className).not.toContain('border-indigo-500')
+
+      // Second recording: only fills homeworkAssigned this time
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        rawExtractionJson: '{}',
+        sessionTitle: null,
+        whatWasCovered: null,
+        homeworkAssigned: { value: 'Page 99', mode: 'replace' as const },
+        nextLessonIdeas: null,
+        areasToImprove: null,
+        emotionalSignals: null,
+        topicTags: [],
+        suggestedDifficulties: [],
+        sessionDate: null,
+        sessionStartTime: null,
+        durationMinutes: null,
+      })
+      await act(async () => {
+        capturedOnVoiceNote?.({ id: 'note-2', transcription: 'Second recording' })
+        await Promise.resolve()
+      })
+      await waitFor(() => {
+        expect(screen.getByTestId('homework-assigned')).toHaveValue('Page 99')
+      })
+      // Only homework gets the marker now; the first recording's other fields lose theirs
+      expect(screen.getByTestId('homework-assigned').className).toContain('border-indigo-500')
+      expect(screen.getByTestId('next-session-topics').className).not.toContain('border-indigo-500')
+      expect(screen.getByTestId('log-session-title-input').className).not.toContain('border-indigo-500')
+    })
+
+    it('undo bar does not appear when extraction produces no field changes', async () => {
+      vi.mocked(sessionLogsApi.extractSessionReflection).mockResolvedValue({
+        rawExtractionJson: '{}',
+        sessionTitle: null,
+        whatWasCovered: null,
+        homeworkAssigned: null,
+        nextLessonIdeas: null,
+        areasToImprove: null,
+        emotionalSignals: null,
+        topicTags: [],
+        suggestedDifficulties: [],
+        sessionDate: null,
+        sessionStartTime: null,
+        durationMinutes: null,
+      })
+      renderLogSession()
+      await screen.findByTestId('audio-recorder')
+      await act(async () => {
+        capturedOnVoiceNote?.({ id: 'note-1', transcription: 'Something quiet' })
+        await Promise.resolve()
+      })
+      expect(screen.queryByTestId('undo-extraction-bar')).not.toBeInTheDocument()
     })
   })
 })

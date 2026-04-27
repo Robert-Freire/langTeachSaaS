@@ -15,17 +15,20 @@ public class StudentsController : ControllerBase
     private readonly IStudentService _studentService;
     private readonly ILessonNoteService _lessonNoteService;
     private readonly IProfileService _profileService;
+    private readonly IStudentProfileExtractionService _extractionService;
     private readonly ILogger<StudentsController> _logger;
 
     public StudentsController(
         IStudentService studentService,
         ILessonNoteService lessonNoteService,
         IProfileService profileService,
+        IStudentProfileExtractionService extractionService,
         ILogger<StudentsController> logger)
     {
         _studentService = studentService;
         _lessonNoteService = lessonNoteService;
         _profileService = profileService;
+        _extractionService = extractionService;
         _logger = logger;
     }
 
@@ -185,6 +188,18 @@ public class StudentsController : ControllerBase
             return NotFound();
         }
         return Ok(student);
+    }
+
+    [HttpPost("extract-profile")]
+    public async Task<IActionResult> ExtractProfile([FromBody] ExtractStudentProfileRequest request, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        _logger.LogInformation("POST /api/students/extract-profile. TeacherId={TeacherId} TextLength={TextLength}", teacherId, request.Text.Length);
+        var extracted = await _extractionService.ExtractAsync(request.Text, cancellationToken);
+        return Ok(extracted);
     }
 
     [HttpDelete("{id:guid}")]

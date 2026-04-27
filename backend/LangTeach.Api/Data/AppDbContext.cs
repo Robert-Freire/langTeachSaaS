@@ -220,6 +220,9 @@ public class AppDbContext : DbContext
              .WithMany()
              .HasForeignKey(v => v.TeacherId)
              .OnDelete(DeleteBehavior.Cascade);
+            e.Property(v => v.BlobPath).HasMaxLength(500);
+            e.Property(v => v.OriginalFileName).HasMaxLength(255);
+            e.Property(v => v.ContentType).HasMaxLength(100);
             // TranscribedAt: null = not transcribed, non-null = transcription complete (timestamp provides timing)
         });
 

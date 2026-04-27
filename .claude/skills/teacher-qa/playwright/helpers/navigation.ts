@@ -140,6 +140,99 @@ export async function upsertStudent(page: Page, data: StudentData): Promise<stri
   return createStudent(page, data)
 }
 
+/**
+ * Ensures a student has a short-term objective with the given type.
+ * Navigates to the student edit form and adds the objective if none exist.
+ * No-op if the student already has at least one objective.
+ */
+export async function ensureStudentShortTermObjective(
+  page: Page,
+  studentId: string,
+  objective: { text: string; objectiveType: string }
+): Promise<void> {
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5175'
+  await page.goto(`${baseURL}/students/${studentId}/edit`)
+
+  const emptyLocator = page.locator('[data-testid="objectives-empty"]')
+  const rowLocator   = page.locator('[data-testid="objective-row"]').first()
+
+  // Wait until either the empty state or at least one row is visible
+  await Promise.race([
+    emptyLocator.waitFor({ state: 'visible', timeout: 10000 }),
+    rowLocator.waitFor({ state: 'visible', timeout: 10000 }),
+  ]).catch(() => {})
+
+  if (!(await emptyLocator.isVisible())) return
+
+  // Add the objective and wait for the autosave PUT
+  const [putResponse] = await Promise.all([
+    page.waitForResponse(
+      resp =>
+        resp.url().includes('/api/students/') &&
+        resp.request().method() === 'PUT' &&
+        resp.status() === 200,
+      { timeout: 15000 }
+    ),
+    (async () => {
+      await page.click('[data-testid="add-objective"]')
+      await page.fill('[data-testid="objective-text-input"]', objective.text)
+      await page.locator('[data-testid="objective-type-select"]').click()
+      await page.getByRole('option', { name: new RegExp(objective.objectiveType, 'i') }).click()
+      // Blur the text field to trigger autosave
+      await page.locator('[data-testid="objective-text-input"]').blur()
+    })(),
+  ])
+
+  if (!putResponse.ok()) {
+    console.warn(`[teacher-qa] ensureStudentShortTermObjective: PUT /api/students/${studentId} returned ${putResponse.status()}`)
+  }
+}
+
+/**
+ * Ensures a student has at least one confirmed session log.
+ * Navigates to the log-session page and clicks Done if no sessions exist.
+ * No-op if at least one session already exists.
+ */
+export async function ensureStudentHasSessionLog(
+  page: Page,
+  studentId: string
+): Promise<void> {
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5175'
+
+  // Check existing sessions via the summary endpoint
+  const [summaryResponse] = await Promise.all([
+    page.waitForResponse(
+      resp =>
+        resp.url().includes(`/api/students/${studentId}/sessions/summary`) &&
+        resp.status() === 200 &&
+        resp.request().resourceType() === 'xhr',
+      { timeout: 10000 }
+    ),
+    page.goto(`${baseURL}/students/${studentId}?tab=sessions`),
+  ])
+
+  const summary: { totalSessions?: number } = await summaryResponse.json()
+  if ((summary.totalSessions ?? 0) > 0) return
+
+  // No sessions — create a minimal confirmed one via the log-session UI
+  await page.goto(`${baseURL}/students/${studentId}/log-session`)
+  await page.locator('[data-testid="log-session-page"]').waitFor({ state: 'visible', timeout: 15000 })
+
+  // Wait for autosave to create the Draft session before clicking Done
+  await page.waitForResponse(
+    resp =>
+      resp.url().includes(`/api/students/${studentId}/sessions`) &&
+      resp.request().method() === 'POST' &&
+      resp.status() === 201,
+    { timeout: 15000 }
+  )
+
+  await page.click('[data-testid="done-btn"]')
+
+  // Wait until redirected away from the log-session page
+  await page.waitForURL(`${baseURL}/students/${studentId}**`, { timeout: 15000 })
+}
+
 // ---------------------------------------------------------------------------
 // Lessons
 // ---------------------------------------------------------------------------

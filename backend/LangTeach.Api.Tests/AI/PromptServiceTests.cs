@@ -3301,6 +3301,38 @@ public class PromptServiceTests
         request.SystemPrompt.Should().NotContain("Student's known difficulties");
     }
 
+    [Fact]
+    public void BuildReflectionExtractionPrompt_WhatWasCovered_MandatoryWhenTopicTagsOrAreasToImprovePresent()
+    {
+        var today = new DateOnly(2026, 4, 11);
+        var request = _sut.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(today, "notes"));
+
+        request.SystemPrompt.Should().Contain("Return null only if the teacher genuinely said nothing about session content");
+        request.SystemPrompt.Should().Contain("you MUST synthesise a prose summary here");
+    }
+
+    // --- BuildStudentProfileExtractionPrompt ---
+
+    [Fact]
+    public void BuildStudentProfileExtractionPrompt_ContainsLanguagePreservationInstruction()
+    {
+        var request = _sut.BuildStudentProfileExtractionPrompt("teacher notes");
+
+        request.SystemPrompt.Should().Contain("same language as the teacher's input");
+        request.SystemPrompt.Should().Contain("Never translate or switch to English");
+    }
+
+    [Fact]
+    public void BuildStudentProfileExtractionPrompt_SetsHaikuModelAndPassesTeacherText()
+    {
+        const string teacherText = "El alumno es B1 y quiere preparar el DELE.";
+
+        var request = _sut.BuildStudentProfileExtractionPrompt(teacherText);
+
+        request.Model.Should().Be(ClaudeModel.Haiku);
+        request.UserPrompt.Should().Contain("DELE");
+    }
+
     // --- BuildReplanSuggestionPrompt ---
 
     [Fact]
@@ -3516,6 +3548,72 @@ public class PromptServiceTests
 
         request.SystemPrompt.Should().Contain("teacher assessment");
         request.SystemPrompt.Should().Contain("content difficulty decisions");
+    }
+
+    // --- BuildWhatWasCoveredFallbackPrompt (issue #986) ---
+
+    [Fact]
+    public void BuildWhatWasCoveredFallbackPrompt_TargetsHaikuWithSmallMaxTokens()
+    {
+        var ctx = new WhatWasCoveredFallbackContext(
+            OriginalText: "estuvimos trabajando el por y para",
+            TopicTags: new List<TopicTagDto> { new("por y para", "grammar") },
+            AreasToImprove: null);
+
+        var request = _sut.BuildWhatWasCoveredFallbackPrompt(ctx);
+
+        request.Model.Should().Be(ClaudeModel.Haiku);
+        request.MaxTokens.Should().BeLessThanOrEqualTo(300, because: "this is a single-sentence summarisation task");
+    }
+
+    [Fact]
+    public void BuildWhatWasCoveredFallbackPrompt_IncludesOriginalTextTopicsAndAreas()
+    {
+        var ctx = new WhatWasCoveredFallbackContext(
+            OriginalText: "estuvimos trabajando el por y para",
+            TopicTags: new List<TopicTagDto> { new("por y para", "grammar"), new("ser/estar", null) },
+            AreasToImprove: "alumna confunde por y para");
+
+        var request = _sut.BuildWhatWasCoveredFallbackPrompt(ctx);
+
+        request.UserPrompt.Should().Contain("estuvimos trabajando el por y para");
+        request.UserPrompt.Should().Contain("por y para");
+        request.UserPrompt.Should().Contain("ser/estar");
+        request.UserPrompt.Should().Contain("alumna confunde por y para");
+        request.SystemPrompt.Should().Contain("same language",
+            because: "the synthesised sentence must mirror the teacher's input language");
+        request.SystemPrompt.Should().Contain("ONE short sentence",
+            because: "the prompt must constrain output to a single short sentence");
+    }
+
+    [Fact]
+    public void BuildWhatWasCoveredFallbackPrompt_OmitsTopicsSection_WhenNoTags()
+    {
+        var ctx = new WhatWasCoveredFallbackContext(
+            OriginalText: "la alumna tuvo problemas con el subjuntivo",
+            TopicTags: new List<TopicTagDto>(),
+            AreasToImprove: "subjuntivo");
+
+        var request = _sut.BuildWhatWasCoveredFallbackPrompt(ctx);
+
+        request.UserPrompt.Should().NotContain("Topics covered:");
+        request.UserPrompt.Should().Contain("Areas the student struggled with:");
+        request.UserPrompt.Should().Contain("subjuntivo");
+    }
+
+    [Fact]
+    public void BuildWhatWasCoveredFallbackPrompt_OmitsAreasSection_WhenAreasNullOrEmpty()
+    {
+        var ctx = new WhatWasCoveredFallbackContext(
+            OriginalText: "estuvimos trabajando el por y para",
+            TopicTags: new List<TopicTagDto> { new("por y para", "grammar") },
+            AreasToImprove: null);
+
+        var request = _sut.BuildWhatWasCoveredFallbackPrompt(ctx);
+
+        request.UserPrompt.Should().NotContain("Areas the student struggled with:",
+            because: "an empty Areas section anchors the model to invent difficulty filler");
+        request.UserPrompt.Should().NotContain("(none)");
     }
 }
 

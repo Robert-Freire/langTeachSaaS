@@ -36,8 +36,17 @@ def gh(*args: str) -> str:
     return result.stdout.strip()
 
 
-def extract_sprint_info() -> tuple[str, str]:
+def extract_sprint_info() -> tuple[str, str] | None:
+    """Return (branch, milestone) or None if between sprints."""
     text = MEMORY_FILE.read_text(encoding="utf-8")
+
+    # Detect explicit "none" / "between sprints" state before trying to extract
+    no_sprint_match = re.search(
+        r"\*\*Active sprint branch:\*\*\s*none\b", text, re.IGNORECASE
+    )
+    if no_sprint_match:
+        return None
+
     branch_match = re.search(r"\*\*Active sprint branch:\*\*\s*`?(sprint/[\w-]+)`?", text)
     if not branch_match:
         branch_match = re.search(r"Active sprint branch:\*\*\s*`?(sprint/[\w-]+)`?", text)
@@ -69,6 +78,19 @@ def extract_priority(labels: list[str]) -> str:
 def extract_deps(issue: dict) -> list[str]:
     body = issue.get("body") or ""
     return list(dict.fromkeys(DEP_PATTERN.findall(body)))
+
+
+def get_closed_prs_for_issue(issue_num: int) -> list[dict]:
+    """Return closed (unmerged) PRs that reference the given issue number."""
+    raw = gh(
+        "pr", "list",
+        "--state", "closed",
+        "--search", f"#{issue_num}",
+        "--json", "number,title,mergedAt,url",
+        "--limit", "10",
+    )
+    prs = json.loads(raw)
+    return [p for p in prs if not p.get("mergedAt")]
 
 
 def get_inflight_issue_nums() -> set[int]:
@@ -113,7 +135,12 @@ def get_issue_labels(issue_num: int) -> list[str]:
 
 
 def main() -> None:
-    sprint_branch, milestone = extract_sprint_info()
+    info = extract_sprint_info()
+    if info is None:
+        print("NONE: Between sprints — no active sprint branch. Create a new sprint before picking tasks.")
+        print("FRONTEND_BLOCKED: no")
+        return
+    sprint_branch, milestone = info
 
     # Detect in-flight tasks via open PRs (works for any number of concurrent bots)
     inflight_nums = get_inflight_issue_nums()
@@ -170,6 +197,11 @@ def main() -> None:
     labels_str = ", ".join(pick["_labels"])
     print(f"PICK: #{pick['number']} — {pick['title']} ({pick['_prio']})   [labels: {labels_str}]")
     print(f"FRONTEND_BLOCKED: {'yes' if frontend_in_flight else 'no'}")
+
+    closed_prs = get_closed_prs_for_issue(pick["number"])
+    for pr in closed_prs:
+        print(f"WARNING: closed unmerged PR #{pr['number']} exists for this issue — {pr['url']}")
+        print(f"         Verify before starting: was this rejected, deferred, or abandoned?")
 
 
 if __name__ == "__main__":

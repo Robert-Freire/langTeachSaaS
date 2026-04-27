@@ -21,6 +21,8 @@ import path from 'path'
 import { createQAAuthContext } from '../helpers/auth'
 import {
   upsertStudent,
+  ensureStudentShortTermObjective,
+  ensureStudentHasSessionLog,
   createLesson,
   triggerFullGeneration,
   extractLessonContent,
@@ -70,7 +72,16 @@ test('Sprint Reviewer — integration test for current sprint features', async (
   const page = await context.newPage()
 
   // 1. Ensure student [QA] Sprint Tester exists (create if first run, reuse on subsequent runs)
-  await upsertStudent(page, PERSONA.student)
+  const studentId = await upsertStudent(page, PERSONA.student)
+
+  // 1a. Ensure the student has a short-term objective (type: communicative) for #857 feature
+  await ensureStudentShortTermObjective(page, studentId, {
+    text: 'Hold a natural conversation in Spanish',
+    objectiveType: 'communicative',
+  })
+
+  // 1b. Ensure the student has at least one session log for #858 last-session summary card
+  await ensureStudentHasSessionLog(page, studentId)
 
   // 2. Create lesson with the sprint-specific topic
   const lessonData = { ...PERSONA.lesson, studentName: PERSONA.student.name }

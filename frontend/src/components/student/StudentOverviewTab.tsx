@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ArrowRight, Brain, Plus, BookOpen } from 'lucide-react'
 import type { Student } from '@/api/students'
 import type { TeacherFollowup } from '@/api/followups'
@@ -128,20 +129,20 @@ function PedagogicalProfileCard({ student }: { student: Student }) {
       </div>
 
       {/* Language tags — always rendered; target language always present */}
-      <div className="mt-5 pt-4 border-t border-white/50 flex flex-wrap gap-2" data-testid="language-tags">
+      <div className="mt-5 pt-4 border-t border-white/50 flex flex-wrap items-center gap-2" data-testid="language-tags">
         {student.languages.nativeLanguages.map((lang) => (
           <span
             key={`L-${lang}`}
-            className="bg-[#E2DFFF] text-[#3323CC] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+            className="inline-block bg-[#E2DFFF] text-[#3323CC] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
             data-testid="native-language-tag"
           >
             L-{lang.toUpperCase()}
           </span>
         ))}
         <Tooltip>
-          <TooltipTrigger render={<span />}>
+          <TooltipTrigger render={<span className="inline-flex items-center" />}>
             <span
-              className="bg-[#D0F4DE] text-[#1A6636] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide cursor-default"
+              className="inline-block bg-[#D0F4DE] text-[#1A6636] rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide cursor-default"
               data-testid="target-language-tag"
             >
               T-{student.learningLanguage.toUpperCase()}
@@ -181,13 +182,14 @@ function CalendarBlock({ dateStr, isMostRecent }: { dateStr: string; isMostRecen
   )
 }
 
-function CompactSessionCard({ session, isMostRecent }: { session: SessionLog; isMostRecent: boolean }) {
+function CompactSessionCard({ session, isMostRecent, studentId }: { session: SessionLog; isMostRecent: boolean; studentId: string }) {
   const title = getDisplayTitle(session)
   const hw = session.homeworkAssigned
 
   return (
-    <div
-      className="bg-white rounded-xl px-4 py-3 flex items-start gap-3"
+    <Link
+      to={`/students/${studentId}/sessions/${session.id}/edit`}
+      className="bg-white rounded-xl px-4 py-3 flex items-start gap-3 hover:bg-[#F4F2FD] transition-colors"
       style={{ boxShadow: '0 4px 16px rgba(26, 27, 34, 0.05)', minHeight: '72px' }}
       data-testid="recent-session-item"
     >
@@ -196,8 +198,8 @@ function CompactSessionCard({ session, isMostRecent }: { session: SessionLog; is
       )}
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 justify-between">
-          <p className="text-sm font-bold text-[#1A1B22] truncate leading-snug" data-testid="compact-session-title">
+        <div className="flex items-start gap-2 justify-between">
+          <p className="text-sm font-bold text-[#1A1B22] line-clamp-2 leading-snug" data-testid="compact-session-title">
             {title}
           </p>
           <div className="flex items-center gap-2 shrink-0">
@@ -213,15 +215,15 @@ function CompactSessionCard({ session, isMostRecent }: { session: SessionLog; is
           <div className="flex items-center gap-1 mt-1.5">
             <BookOpen className="h-3 w-3 text-[#7E3000] shrink-0" />
             <span
-              className="text-[10px] font-semibold text-[#7E3000] bg-amber-50 rounded-full px-2 py-0.5 truncate"
+              className="text-[10px] font-semibold text-[#7E3000] bg-amber-50 rounded-full px-2 py-0.5 line-clamp-1"
               data-testid="compact-session-homework"
             >
-              {hw.length > 40 ? hw.slice(0, 40) + '...' : hw}
+              {hw}
             </span>
           </div>
         )}
       </div>
-    </div>
+    </Link>
   )
 }
 
@@ -229,10 +231,12 @@ function RecentSessions({
   sessions,
   onViewAll,
   skipFirst = false,
+  studentId,
 }: {
   sessions: SessionLog[]
   onViewAll?: () => void
   skipFirst?: boolean
+  studentId: string
 }) {
   const sorted = [...sessions]
     .filter(s => s.sessionDate && !s.isCancelled)
@@ -264,7 +268,7 @@ function RecentSessions({
       ) : (
         <div className="space-y-2">
           {recent.map((session, idx) => (
-            <CompactSessionCard key={session.id} session={session} isMostRecent={idx === 0} />
+            <CompactSessionCard key={session.id} session={session} isMostRecent={idx === 0} studentId={studentId} />
           ))}
         </div>
       )}
@@ -507,7 +511,7 @@ export function StudentOverviewTab({
 
       {/* Compact Session History -- skip the top entry when LastSessionCard is showing it */}
       {lastSession !== null && (
-        <RecentSessions sessions={sessions} onViewAll={onViewAllSessions} skipFirst />
+        <RecentSessions sessions={sessions} onViewAll={onViewAllSessions} skipFirst studentId={student.id} />
       )}
 
       {/* Teacher's Working Memory */}

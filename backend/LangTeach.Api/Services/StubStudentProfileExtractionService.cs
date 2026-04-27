@@ -1,0 +1,34 @@
+using LangTeach.Api.DTOs;
+
+namespace LangTeach.Api.Services;
+
+public class StubStudentProfileExtractionService : IStudentProfileExtractionService
+{
+    private readonly ILogger<StubStudentProfileExtractionService> _logger;
+
+    public StubStudentProfileExtractionService(ILogger<StubStudentProfileExtractionService> logger)
+    {
+        _logger = logger;
+    }
+
+    public Task<ExtractedStudentProfileDto> ExtractAsync(string text, CancellationToken ct = default)
+    {
+        _logger.LogInformation("StubStudentProfileExtractionService.ExtractAsync called with {Length} chars", text.Length);
+        return Task.FromResult(new ExtractedStudentProfileDto(
+            Name: "[Extracted] María García",
+            BirthYear: 1990,
+            Profession: "[Extracted] Engineer",
+            CountryOfResidence: "[Extracted] Spain",
+            CityOfResidence: "[Extracted] Madrid",
+            ReasonForStudying: "[Extracted] Work promotion",
+            NativeLanguages: ["Spanish"],
+            SpokenLanguages: ["English"],
+            CefrLevel: "B2",
+            OfficialCefrLevel: null,
+            ShortTermObjectives: [new ExtractedObjectiveDto("[Extracted] Pass B2 exam", "2026-06-30")],
+            Difficulties: [new ExtractedDifficultyDto("[Extracted] Subjunctive usage", "Grammar", "subjunctive")],
+            TeachingTodoTexts: ["[Extracted] Send subjunctive exercises"],
+            Interests: ["[Extracted] Travel", "[Extracted] Cooking"]
+        ));
+    }
+}

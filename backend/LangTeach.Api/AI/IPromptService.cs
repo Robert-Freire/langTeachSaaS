@@ -26,6 +26,8 @@ public interface IPromptService
     ClaudeRequest BuildNoticingTaskPrompt(GenerationContext ctx);
     ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx);
     ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx);
+    ClaudeRequest BuildWhatWasCoveredFallbackPrompt(WhatWasCoveredFallbackContext ctx);
+    ClaudeRequest BuildStudentProfileExtractionPrompt(string text);
     ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx);
     ClaudeRequest BuildCurriculumValidationPrompt(CurriculumValidationContext ctx);
 }
@@ -81,6 +83,11 @@ public record SessionHistoryContext(
 );
 
 public record ReflectionExtractionContext(DateOnly Today, string TeacherText, IReadOnlyList<string>? KnownDifficulties = null);
+
+public record WhatWasCoveredFallbackContext(
+    string OriginalText,
+    IReadOnlyList<TopicTagDto> TopicTags,
+    string? AreasToImprove);
 
 public record TaughtEntryContext(string Topic, string? GrammarFocus, string? WhatWasCovered, string? AreasToImprove);
 public record PlannedEntryContext(Guid Id, int OrderIndex, string Topic, string? GrammarFocus);

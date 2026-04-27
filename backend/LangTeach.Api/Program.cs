@@ -178,6 +178,10 @@ if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnv
 else
     builder.Services.AddScoped<IReflectionExtractionService, ReflectionExtractionService>();
 if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddScoped<IStudentProfileExtractionService, StubStudentProfileExtractionService>();
+else
+    builder.Services.AddScoped<IStudentProfileExtractionService, StudentProfileExtractionService>();
+if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddScoped<IReplanSuggestionService, StubReplanSuggestionService>();
 else
     builder.Services.AddScoped<IReplanSuggestionService, ReplanSuggestionService>();
@@ -299,6 +303,39 @@ if (visualSeedIndex >= 0)
     var visualSeedLogger = visualSeedScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var seeded = await DemoSeeder.SeedVisualAsync(visualSeedDb, teacherLookup, visualSeedLogger);
     return seeded ? 0 : 1;
+}
+
+// QA seed: dotnet LangTeach.Api.dll --qa-seed <auth0-user-id|email>
+// Idempotent. Ensures the QA teacher is SubscriptionTier=Pro, IsApproved, HasCompletedOnboarding.
+// Run this after each QA stack start (including after volume resets) to prevent Free tier limits.
+var qaSeedIndex = Array.IndexOf(args, "--qa-seed");
+if (qaSeedIndex >= 0)
+{
+    var teacherLookup = (qaSeedIndex + 1 < args.Length ? args[qaSeedIndex + 1] : null)?.Trim();
+    if (string.IsNullOrWhiteSpace(teacherLookup))
+    {
+        Console.Error.WriteLine("Usage: --qa-seed <auth0-user-id|email>");
+        return 1;
+    }
+
+    using var qaSeedScope = app.Services.CreateScope();
+    var qaSeedDb     = qaSeedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var qaSeedLogger = qaSeedScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var teacher = teacherLookup.StartsWith("auth0|", StringComparison.OrdinalIgnoreCase)
+        ? await qaSeedDb.Teachers.FirstOrDefaultAsync(t => t.Auth0UserId == teacherLookup)
+        : await qaSeedDb.Teachers.FirstOrDefaultAsync(t => t.Email == teacherLookup);
+    if (teacher is null)
+    {
+        qaSeedLogger.LogError("--qa-seed: no teacher found for '{Lookup}'. Log in at least once before seeding.", teacherLookup);
+        return 1;
+    }
+    teacher.SubscriptionTier       = LangTeach.Api.Data.Models.SubscriptionTier.Pro;
+    teacher.IsApproved              = true;
+    teacher.HasCompletedOnboarding  = true;
+    teacher.UpdatedAt               = DateTime.UtcNow;
+    await qaSeedDb.SaveChangesAsync();
+    qaSeedLogger.LogInformation("--qa-seed: teacher {Email} set to Pro/approved.", teacher.Email);
+    return 0;
 }
 
 app.UseSerilogRequestLogging(options =>

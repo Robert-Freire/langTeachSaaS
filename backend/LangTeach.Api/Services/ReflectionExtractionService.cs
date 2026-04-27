@@ -47,7 +47,72 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null);
         }
 
-        return ParseResponse(response.Content);
+        var dto = ParseResponse(response.Content);
+
+        if (NeedsWhatWasCoveredFallback(dto))
+        {
+            var synthesised = await SynthesiseWhatWasCoveredAsync(text, dto, ct);
+            if (!string.IsNullOrWhiteSpace(synthesised))
+            {
+                dto = dto with { WhatWasCovered = new ExtractedTextFieldDto(synthesised, ExtractionMode.Replace) };
+            }
+        }
+
+        return dto;
+    }
+
+    internal static bool NeedsWhatWasCoveredFallback(ExtractedReflectionDto dto)
+    {
+        if (dto.IsCancelled == true) return false;
+
+        var hasTopics = dto.TopicTags.Count > 0;
+        var hasAreas = dto.AreasToImprove is { Mode: not ExtractionMode.Skip } areas
+            && !string.IsNullOrWhiteSpace(areas.Value);
+        if (!hasTopics && !hasAreas) return false;
+
+        var current = dto.WhatWasCovered;
+        return current is null
+            || current.Mode == ExtractionMode.Skip
+            || string.IsNullOrWhiteSpace(current.Value);
+    }
+
+    private async Task<string?> SynthesiseWhatWasCoveredAsync(string originalText, ExtractedReflectionDto dto, CancellationToken ct)
+    {
+        var areas = dto.AreasToImprove is { Mode: not ExtractionMode.Skip } a ? a.Value : null;
+        var ctx = new WhatWasCoveredFallbackContext(originalText, dto.TopicTags, areas);
+
+        _logger.LogInformation(
+            "whatWasCovered fallback synthesis triggered (topicTags={TopicCount}, hasAreas={HasAreas})",
+            dto.TopicTags.Count, areas is not null);
+
+        try
+        {
+            var resp = await _claude.CompleteAsync(_prompts.BuildWhatWasCoveredFallbackPrompt(ctx), ct);
+            var sentence = resp.Content?.Trim().Trim('"').Trim();
+            if (!string.IsNullOrWhiteSpace(sentence)) return sentence;
+            _logger.LogInformation("Fallback whatWasCovered synthesis returned empty content; using deterministic join");
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Warning, not Error: the primary extraction already succeeded; this fallback
+            // is best-effort and we have a deterministic backup.
+            _logger.LogWarning(ex, "Fallback whatWasCovered synthesis call failed; using deterministic join");
+        }
+
+        return DeterministicWhatWasCoveredFromSignals(dto.TopicTags, areas);
+    }
+
+    internal static string? DeterministicWhatWasCoveredFromSignals(IReadOnlyList<TopicTagDto> tags, string? areasToImprove)
+    {
+        var joinedTags = string.Join(", ", tags.Select(t => t.Tag).Where(t => !string.IsNullOrWhiteSpace(t)));
+        if (!string.IsNullOrWhiteSpace(joinedTags))
+            return $"Trabajamos: {joinedTags}.";
+
+        var areas = areasToImprove?.Trim();
+        if (!string.IsNullOrWhiteSpace(areas))
+            return $"Trabajamos: {areas.TrimEnd('.')}.";
+
+        return null;
     }
 
     internal ExtractedReflectionDto ParseResponse(string json)

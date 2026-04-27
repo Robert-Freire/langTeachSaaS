@@ -20,6 +20,7 @@
 - [Sprint overviews](project_sprint_overviews.md) — PM-only: sequence, story files, milestone map
 
 ## Feedback
+- [Backlog triage GitHub state](feedback_backlog_triage_github_state.md) — always verify live GitHub state before surfacing backlog items; log files are not live trackers
 - [Azure destructive ops](feedback_azure_destructive_ops.md) — give command, don't run
 - [Docker frontend workflow](feedback_docker_frontend.md) — Docker only, restart after every change (Vite HMR broken on Windows)
 - [E2E coverage required](feedback_e2e_coverage_requirement.md) — every feature needs e2e happy path

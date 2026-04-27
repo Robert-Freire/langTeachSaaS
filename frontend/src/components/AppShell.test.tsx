@@ -177,4 +177,34 @@ describe('AppShell', () => {
     // At least one in mobile top bar and one in desktop sidebar
     expect(logoTexts.length).toBeGreaterThanOrEqual(2)
   })
+
+  it('shows Sessions as active nav when on session edit page reached from sessions list', () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[{ pathname: '/students/1/sessions/2/edit', state: { from: 'sessions' } }]}>
+          <AppShell />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    const sessionsLinks = screen.getAllByRole('link', { name: /^sessions$/i })
+    expect(sessionsLinks[0].className).toContain('border-l-indigo-600')
+    const studentsLinks = screen.getAllByRole('link', { name: /^students$/i })
+    expect(studentsLinks[0].className).not.toContain('border-l-indigo-600')
+  })
+
+  it('shows Students as active nav when on session edit page reached from student detail', () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[{ pathname: '/students/1/sessions/2/edit' }]}>
+          <AppShell />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    const studentsLinks = screen.getAllByRole('link', { name: /^students$/i })
+    expect(studentsLinks[0].className).toContain('border-l-indigo-600')
+    const sessionsLinks = screen.getAllByRole('link', { name: /^sessions$/i })
+    expect(sessionsLinks[0].className).not.toContain('border-l-indigo-600')
+  })
 })

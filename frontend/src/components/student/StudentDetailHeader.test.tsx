@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { StudentDetailHeader } from './StudentDetailHeader'
 import type { Student } from '@/api/students'
@@ -176,5 +176,39 @@ describe('StudentDetailHeader', () => {
     expect(screen.getByTestId('primary-objective-card')).toBeInTheDocument()
     expect(screen.getByTestId('edit-profile-link')).toBeInTheDocument()
     expect(screen.getByTestId('log-session-button')).toBeInTheDocument()
+  })
+
+  it('does not render voice update button when onVoiceUpdateClick is not provided', () => {
+    renderHeader()
+    expect(screen.queryByTestId('voice-update-button')).not.toBeInTheDocument()
+  })
+
+  it('renders voice update button when onVoiceUpdateClick is provided', () => {
+    render(
+      <MemoryRouter>
+        <StudentDetailHeader
+          student={BASE_STUDENT}
+          nextSession={null}
+          sessionFrequency={null}
+          onVoiceUpdateClick={vi.fn()}
+        />
+      </MemoryRouter>
+    )
+    expect(screen.getByTestId('voice-update-button')).toBeInTheDocument()
+  })
+
+  it('disables voice update button when voiceFlowActive is true', () => {
+    render(
+      <MemoryRouter>
+        <StudentDetailHeader
+          student={BASE_STUDENT}
+          nextSession={null}
+          sessionFrequency={null}
+          onVoiceUpdateClick={vi.fn()}
+          voiceFlowActive={true}
+        />
+      </MemoryRouter>
+    )
+    expect(screen.getByTestId('voice-update-button')).toBeDisabled()
   })
 })

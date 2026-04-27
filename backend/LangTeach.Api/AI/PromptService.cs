@@ -1535,7 +1535,7 @@ public class PromptService : IPromptService
                 Set mode to "append" if the teacher adds to existing coverage notes (signal words: "además", "también", "y también cubrimos", "también hicimos").
                 Set mode to "replace" if the teacher corrects or restates what was covered (signal words: "me equivoqué", "en realidad", "no, mejor dicho", "quiero decir", "corrijo").
                 Set mode to "skip" if this field should not be updated.
-                Return null if nothing about session content is mentioned.
+                Return null only if the teacher genuinely said nothing about session content. If any topics, grammar structures, vocabulary, or activities were mentioned, you MUST synthesise a prose summary here.
             - areasToImprove: object or null. When present, the object has two keys: "value" (string, narrative summary of student difficulties and struggles — prose, not a list) and "mode" (one of "append", "replace", or "skip").
                 Set mode to "append" if teacher adds new difficulties to existing notes (signal words: "además", "también tiene problemas con", "y otra cosa").
                 Set mode to "replace" if teacher corrects prior notes (signal words: "me equivoqué", "en realidad", "no, mejor").
@@ -1558,8 +1558,8 @@ public class PromptService : IPromptService
             - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
             - topicTags: array of objects with "tag" (string) and "category" (string or null) — topics, grammar structures, vocabulary areas covered. Each tag as a concise noun phrase. Empty array if none mentioned.
             - previousHomeworkStatus: "done" | "partial" | "notDone" | null — whether the student completed homework from the previous session. Null if not mentioned.
-            - teachingTodos: array of strings — pedagogical ideas for future sessions (grammar points to revisit, vocabulary to practise, skills to develop; e.g. "hay que practicar el subjuntivo"). Empty array if none.
-            - teacherFollowups: array of strings — operational actions owed by the teacher (send materials, book a test, contact a school; e.g. "le tengo que mandar ejercicios"). Empty array if none.
+            - teachingTodos: array of strings — pedagogical ideas for future sessions (grammar points to revisit, vocabulary to practise, skills to develop; e.g. "hay que practicar el subjuntivo"). Also triggered by imperative phrases like "apunta como teaching todo [X]", "añade como idea [X]". Empty array if none.
+            - teacherFollowups: array of strings — operational actions owed by the teacher (send materials, book a test, contact a school; e.g. "le tengo que mandar ejercicios", "tengo que preparar ejercicios"). Also triggered by imperative phrases like "añade follow up [X]", "apunta follow up [X]", "añade como follow up [X]" — extract the action after the trigger phrase. Empty array if none.
             - levelReassessment: CEFR level string (e.g. "B1", "B2+") or null — if the teacher mentions reassessing or updating the student's level. Null if not mentioned.
             - durationMinutes: integer or null — session duration in minutes. Null if not mentioned.
             - isCancelled: true | false | null — true only if the session was cancelled or the student did not show up. Null if not mentioned.
@@ -1577,6 +1577,95 @@ public class PromptService : IPromptService
             """;
 
         return new ClaudeRequest(SystemPrompt: system, UserPrompt: teacherText, Model: ClaudeModel.Haiku, MaxTokens: 2048);
+    }
+
+    // --- whatWasCovered fallback synthesis ---
+    // Used when the main reflection extraction returns null/skip for whatWasCovered
+    // but produced topic tags or areas to improve. Haiku in the main schema-driven
+    // call ignores soft "MUST synthesise" rules on short inputs; this dedicated
+    // single-task prompt is reliable.
+
+    public ClaudeRequest BuildWhatWasCoveredFallbackPrompt(WhatWasCoveredFallbackContext ctx)
+    {
+        const string system = """
+            You are a tool that summarises a language class in one sentence.
+
+            Given the topic tags and any difficulty notes from a class, write ONE short sentence (under 30 words) describing what was covered in the class.
+
+            All output MUST be written in the same language as the teacher's input text. Respond with the sentence only, no formatting.
+            """;
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Teacher's original transcription:");
+        sb.AppendLine(InputSanitizer.Sanitize(ctx.OriginalText));
+        sb.AppendLine();
+
+        if (ctx.TopicTags.Count > 0)
+        {
+            sb.AppendLine("Topics covered:");
+            foreach (var t in ctx.TopicTags)
+            {
+                var tag = InputSanitizer.Sanitize(t.Tag);
+                var category = string.IsNullOrWhiteSpace(t.Category) ? null : InputSanitizer.Sanitize(t.Category);
+                sb.AppendLine(category is null ? $"- {tag}" : $"- {tag} ({category})");
+            }
+            sb.AppendLine();
+        }
+
+        if (!string.IsNullOrWhiteSpace(ctx.AreasToImprove))
+        {
+            sb.AppendLine("Areas the student struggled with:");
+            sb.AppendLine(InputSanitizer.Sanitize(ctx.AreasToImprove));
+        }
+
+        return new ClaudeRequest(SystemPrompt: system, UserPrompt: sb.ToString(), Model: ClaudeModel.Haiku, MaxTokens: 200);
+    }
+
+    // --- Student profile extraction ---
+
+    public ClaudeRequest BuildStudentProfileExtractionPrompt(string text)
+    {
+        var currentYear = DateTime.UtcNow.Year;
+        var competencies = string.Join(", ", _pedagogy.GetValidDifficultyCompetencies().OrderBy(x => x));
+        var system = $"""
+            You are a tool that helps language teachers capture student information from free-form voice notes.
+            Extract structured student profile fields from a teacher's free-form text.
+
+            IMPORTANT: All text values in your response MUST be written in the same language as the teacher's input text. If the teacher writes in Spanish, every string value (including profession, reasonForStudying, shortTermObjectives.text, difficulties.description, difficulties.subcategory, interests, and teachingTodoTexts) must be in Spanish. Never translate or switch to English.
+
+            IMPORTANT: Be conservative. Only extract a field if the teacher stated it clearly and explicitly.
+            When ambiguous or uncertain, return null for that field rather than guessing.
+            A confirmation drawer full of wrong guesses destroys teacher trust after one use.
+            It is better to extract 3 accurate fields than 10 speculative ones.
+
+            Respond ONLY with a valid JSON object using these exact keys:
+            - name: string or null — student's full name. Null if not clearly stated.
+            - birthYear: integer or null — student's year of birth (e.g. 1990). If the teacher states an age rather than a year, compute the birth year as {currentYear} minus the stated age. Null if neither a birth year nor an age is mentioned.
+            - profession: string or null — student's job or occupation. Null if not mentioned.
+            - countryOfResidence: string or null — country where the student currently lives. Null if not mentioned.
+            - cityOfResidence: string or null — city where the student currently lives. Null if not mentioned.
+            - reasonForStudying: string or null — why the student is learning the language. Null if not mentioned.
+            - nativeLanguages: array of strings — student's native or mother tongue(s). Empty array [] if not mentioned.
+            - spokenLanguages: array of strings — other languages the student speaks (not the target language being taught, not the native language). Empty array [] if not mentioned.
+            - cefrLevel: string or null — teacher's own CEFR assessment of the student (e.g. "B1", "B2+"). Null if not mentioned.
+            - officialCefrLevel: string or null — official/exam-certified CEFR level (e.g. from a DELE, DELF certificate). Null if not mentioned.
+            - shortTermObjectives: array of objects — near-term learning goals mentioned by the teacher. Each object has:
+                - text: string — description of the objective
+                - targetDate: string or null — ISO 8601 date (YYYY-MM-DD) if a date is mentioned, otherwise null
+              Empty array [] if no objectives mentioned.
+            - difficulties: array of objects — student weaknesses or trouble areas explicitly mentioned. Each object has:
+                - description: string — full description of the difficulty
+                - competency: string — must be one of: {competencies}
+                - subcategory: string — specific item (e.g. "ser/estar", "subjunctive", "past tense"), free text
+              Empty array [] if no difficulties mentioned.
+            - teachingTodoTexts: array of strings — pedagogical ideas or reminders for the teacher regarding this student. Empty array [] if none.
+            - interests: array of strings — personal interests, hobbies, or topics the student enjoys. Empty array [] if not mentioned.
+
+            Use null for scalar fields that cannot be clearly inferred from the text.
+            Keep each value concise.
+            """;
+
+        return new ClaudeRequest(SystemPrompt: system, UserPrompt: InputSanitizer.Sanitize(text), Model: ClaudeModel.Haiku, MaxTokens: 1024);
     }
 
     // --- Replan suggestion ---

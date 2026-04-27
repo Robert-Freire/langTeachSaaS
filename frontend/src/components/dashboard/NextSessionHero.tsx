@@ -81,6 +81,7 @@ export function NextSessionHero({ session }: NextSessionHeroProps) {
   const urgency = getUrgencyBadge(session.sessionDate)
   const hwStatus = getHomeworkStatusInfoSafe(session.previousHomeworkStatus)
 
+  // Belt-and-suspenders: backend strips nulls/empty tags, but guard here too
   const filteredTopicTags = session.lastSessionTopicTags.filter((t) => t != null && t.trim() !== '')
   const hasTopics = filteredTopicTags.length > 0
   const hasResponse = !!session.lastSessionNotes

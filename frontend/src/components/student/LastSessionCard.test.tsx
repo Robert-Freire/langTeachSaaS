@@ -147,6 +147,30 @@ describe('LastSessionCard', () => {
     expect(screen.getByTestId('last-session-title')).toHaveTextContent('Most recent')
   })
 
+  it('wraps the title in a link to the session edit page', () => {
+    renderCard(makeSession())
+    const titleLink = screen.getByTestId('last-session-title-link')
+    expect(titleLink).toHaveAttribute('href', '/students/student-1/sessions/sess-x/edit')
+    expect(titleLink).toContainElement(screen.getByTestId('last-session-title'))
+    // Hover state per design system: indigo + underline on hover, no underline at rest.
+    expect(titleLink).toHaveClass('hover:text-indigo-700', 'hover:underline')
+  })
+
+  it('renders View session link with correct href', () => {
+    renderCard(makeSession())
+    const link = screen.getByTestId('last-session-view-link')
+    expect(link).toBeInTheDocument()
+    expect(link).toHaveAttribute('href', '/students/student-1/sessions/sess-x/edit')
+    expect(link).toHaveTextContent('View session')
+  })
+
+  it('renders View session link even when actualContent is null', () => {
+    renderCard(makeSession({ actualContent: null }))
+    expect(screen.queryByTestId('last-session-content')).not.toBeInTheDocument()
+    const link = screen.getByTestId('last-session-view-link')
+    expect(link).toHaveAttribute('href', '/students/student-1/sessions/sess-x/edit')
+  })
+
   it('does not render an edit control (read-only)', () => {
     renderCard(makeSession())
     const card = screen.getByTestId('last-session-card')

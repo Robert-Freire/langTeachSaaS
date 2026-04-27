@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Usage: ./infra/deploy.sh [dev|prod]
-# Loads infra/.env, then deploys the Bicep stack for the given environment.
+# Deploys the full Bicep stack. Use only for TRUE INFRA CHANGES (new resources, etc).
+# For app config changes (scale rules, env vars) use az containerapp update directly.
+# Requires: export LANGTEACH_SQL_PASSWORD="<password>" before running.
 
 set -euo pipefail
 

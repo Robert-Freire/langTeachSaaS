@@ -1,3 +1,4 @@
+import { StrictMode } from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AudioRecorder } from './AudioRecorder'
@@ -138,5 +139,159 @@ describe('AudioRecorder', () => {
     render(<AudioRecorder onVoiceNote={vi.fn()} disabled />)
     expect(screen.getByTestId('record-button')).toBeDisabled()
     expect(screen.getByTestId('upload-audio-button')).toBeDisabled()
+  })
+
+  it('auto-starts recording on mount when autoStart is true', async () => {
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} autoStart />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('stop-button')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('record-button')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('upload-audio-button')).not.toBeInTheDocument()
+  })
+
+  it('shows a starting indicator while autoStart is awaiting mic permission', async () => {
+    // getUserMedia stays pending: mimics the user not having decided on the
+    // OS-level permission prompt yet. Without the starting indicator the
+    // panel renders empty and the teacher thinks the feature is broken.
+    mockGetUserMedia.mockReturnValue(new Promise(() => {}))
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} autoStart />)
+
+    expect(await screen.findByTestId('recorder-starting')).toBeInTheDocument()
+    expect(screen.queryByTestId('record-button')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('upload-audio-button')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('stop-button')).not.toBeInTheDocument()
+  })
+
+  it('still starts recording under React StrictMode (mount, cleanup, re-mount cycle)', async () => {
+    // Regression: React 18 StrictMode runs effects twice in dev (mount,
+    // cleanup, mount again). The previous implementation set autoStartedRef
+    // synchronously inside the effect body, then scheduled setTimeout(0)
+    // for startRecording. StrictMode's cleanup ran clearTimeout, cancelling
+    // the pending call, but autoStartedRef stayed true (refs persist), so
+    // the second mount returned early at the gate. getUserMedia was never
+    // called and the recorder hung in the starting state.
+    //
+    // The fix flips autoStartedRef inside the setTimeout callback (after
+    // the cancelled check), so the first cleanup leaves the gate open for
+    // the re-mount to re-arm.
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+
+    render(
+      <StrictMode>
+        <AudioRecorder onVoiceNote={vi.fn()} autoStart />
+      </StrictMode>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('stop-button')).toBeInTheDocument()
+    })
+  })
+
+  it('still starts recording when the parent rerenders with a new onVoiceNote reference', async () => {
+    // Regression: an unstable onVoiceNote from the parent (no useCallback)
+    // used to cascade into a new startRecording identity, retrigger the
+    // autoStart effect, clearTimeout the pending startRecording call, and
+    // leave autoStartedRef true so it never restarted. Result: spinner
+    // forever, no stop button. This test renders the parent twice in quick
+    // succession (mimicking a React re-render) and asserts recording starts.
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+
+    const { rerender } = render(
+      <AudioRecorder onVoiceNote={() => {}} autoStart />
+    )
+    // Force a parent rerender BEFORE the queued setTimeout(0) startRecording
+    // fires. A new inline arrow function gives the prop a new identity.
+    rerender(<AudioRecorder onVoiceNote={() => {}} autoStart />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('stop-button')).toBeInTheDocument()
+    })
+  })
+
+  it('reveals the chooser when autoStart fails because mic permission is denied', async () => {
+    mockGetUserMedia.mockRejectedValue(new Error('Permission denied'))
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} autoStart />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('error-message')).toHaveTextContent('Microphone access denied')
+    })
+    expect(screen.getByTestId('record-button')).toBeInTheDocument()
+    expect(screen.getByTestId('upload-audio-button')).toBeInTheDocument()
+  })
+
+  it('shows the upload-fallback link during recording when showUploadFallbackLink is true', async () => {
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} autoStart showUploadFallbackLink />)
+
+    expect(await screen.findByTestId('switch-to-upload-link')).toBeInTheDocument()
+  })
+
+  it('does not show the upload-fallback link when showUploadFallbackLink is omitted', async () => {
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} autoStart />)
+
+    await waitFor(() => screen.getByTestId('stop-button'))
+    expect(screen.queryByTestId('switch-to-upload-link')).not.toBeInTheDocument()
+  })
+
+  it('clicking the upload-fallback link discards the in-flight recording without uploading and opens the file picker', async () => {
+    const mockStream = { getTracks: () => [{ stop: vi.fn() }] }
+    mockGetUserMedia.mockResolvedValue(mockStream)
+    const onVoiceNote = vi.fn()
+
+    render(<AudioRecorder onVoiceNote={onVoiceNote} autoStart showUploadFallbackLink />)
+
+    await waitFor(() => screen.getByTestId('switch-to-upload-link'))
+
+    const fileInput = screen.getByTestId('audio-file-input') as HTMLInputElement
+    const clickSpy = vi.spyOn(fileInput, 'click')
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('switch-to-upload-link'))
+    })
+
+    expect(clickSpy).toHaveBeenCalledTimes(1)
+    expect(onVoiceNote).not.toHaveBeenCalled()
+    expect(voiceNotesApi.uploadVoiceNote).not.toHaveBeenCalled()
+  })
+
+  it('does not trigger a second upload if handleFileChange fires twice in quick succession', async () => {
+    let resolveUpload: (v: VoiceNote) => void
+    vi.mocked(voiceNotesApi.uploadVoiceNote).mockReturnValue(
+      new Promise((r) => { resolveUpload = r })
+    )
+
+    render(<AudioRecorder onVoiceNote={vi.fn()} />)
+
+    const input = screen.getByTestId('audio-file-input')
+    const file = new File(['data'], 'audio.webm', { type: 'audio/webm' })
+
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [file] } })
+    })
+
+    // Second fire while upload is still in progress — uploadVoiceNote should only be called once
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [file] } })
+    })
+
+    resolveUpload!(SAMPLE_NOTE)
+
+    await waitFor(() => {
+      expect(voiceNotesApi.uploadVoiceNote).toHaveBeenCalledTimes(1)
+    })
   })
 })

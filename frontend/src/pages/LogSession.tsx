@@ -31,6 +31,21 @@ import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
 import { HOMEWORK_STATUS_PILL_OPTIONS } from '@/utils/homeworkStatusUtils'
 
+const PULSE_TIMEOUT_MS = 2800
+
+type ExtractionSnapshot = {
+  sessionTitle: string | undefined
+  sessionDate: string
+  sessionTime: string
+  durationChoice: string
+  durationOther: string
+  actualContent: string
+  homeworkAssigned: string
+  nextSessionTopics: string
+  generalNotes: string
+  topicTags: TopicTag[]
+}
+
 const DURATION_OPTIONS = [
   { value: '25', label: '25 min' },
   { value: '30', label: '30 min' },
@@ -151,6 +166,12 @@ export default function LogSession() {
   const [sessionTitle, setSessionTitle] = useState<string | undefined>()
   const [isExtracting, setIsExtracting] = useState(false)
   const [extractionError, setExtractionError] = useState<string | null>(null)
+
+  // Voice extraction: pulse (one-shot, transient) + persistent marker until first edit / undo / next extraction
+  const [pulsingFields, setPulsingFields] = useState<Set<string>>(new Set())
+  const [extractedFields, setExtractedFields] = useState<Set<string>>(new Set())
+  const [extractionSnapshot, setExtractionSnapshot] = useState<ExtractionSnapshot | null>(null)
+  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [secondaryOpen, setSecondaryOpen] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [suggestedDifficulties, setSuggestedDifficulties] = useState<SuggestedDifficulty[]>([])
@@ -354,6 +375,31 @@ export default function LogSession() {
     isEditMode ? editSession?.id : undefined,
   )
 
+  useEffect(() => () => {
+    if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current)
+  }, [])
+
+  function trackManualEdit(fieldName: string) {
+    if (!extractionSnapshot) return
+    setExtractedFields(prev => {
+      if (!prev.has(fieldName)) return prev
+      const next = new Set(prev); next.delete(fieldName); return next
+    })
+    setPulsingFields(prev => {
+      if (!prev.has(fieldName)) return prev
+      const next = new Set(prev); next.delete(fieldName); return next
+    })
+  }
+
+  function fieldMarkerClass(field: string, opts?: { wrapper?: boolean }): string {
+    const parts: string[] = []
+    if (pulsingFields.has(field)) parts.push('animate-extraction-pulse')
+    if (extractedFields.has(field)) {
+      parts.push(opts?.wrapper ? 'border-l-[3px] border-indigo-500 pl-2' : 'border-l-[3px] border-indigo-500')
+    }
+    return parts.join(' ')
+  }
+
   function markChangedAndSchedule() {
     setHasChanges(true)
     scheduleTextSave()
@@ -448,6 +494,28 @@ export default function LogSession() {
       setDoneError('Something went wrong. Please try again.')
       setIsDone(false)
     }
+  }
+
+  function handleUndoExtraction() {
+    if (!extractionSnapshot) return
+    const keep = extractedFields
+    if (keep.has('sessionTitle')) setSessionTitle(extractionSnapshot.sessionTitle)
+    if (keep.has('sessionDate')) setSessionDate(extractionSnapshot.sessionDate)
+    if (keep.has('sessionTime')) setSessionTime(extractionSnapshot.sessionTime)
+    if (keep.has('durationChoice')) {
+      setDurationChoice(extractionSnapshot.durationChoice)
+      setDurationOther(extractionSnapshot.durationOther)
+    }
+    if (keep.has('actualContent')) setActualContent(extractionSnapshot.actualContent)
+    if (keep.has('homeworkAssigned')) setHomeworkAssigned(extractionSnapshot.homeworkAssigned)
+    if (keep.has('nextSessionTopics')) setNextSessionTopics(extractionSnapshot.nextSessionTopics)
+    if (keep.has('generalNotes')) setGeneralNotes(extractionSnapshot.generalNotes)
+    if (keep.has('topicTags')) setTopicTags(extractionSnapshot.topicTags)
+    if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current)
+    setPulsingFields(new Set())
+    setExtractedFields(new Set())
+    setExtractionSnapshot(null)
+    markChangedAndSchedule()
   }
 
   function toggleTodo(todoId: string) {
@@ -931,6 +999,45 @@ export default function LogSession() {
             </div>
           )}
 
+          {/* Undo extraction bar — sticky so it follows scroll while teacher reviews */}
+          {extractedFields.size > 0 && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="sticky top-2 z-20 flex items-center gap-3 rounded-xl px-4 py-2.5 shadow-sm"
+              style={{ background: '#EEF0FD' }}
+              data-testid="undo-extraction-bar"
+            >
+              <span className="text-sm text-indigo-800 flex-1">
+                {extractedFields.size} {extractedFields.size === 1 ? 'field' : 'fields'} filled from recording
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={handleUndoExtraction}
+                className="text-indigo-700 hover:text-indigo-900 hover:bg-indigo-100 shrink-0 h-7 px-2"
+                data-testid="undo-extraction-btn"
+              >
+                Undo extraction
+              </Button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current)
+                  setPulsingFields(new Set())
+                  setExtractedFields(new Set())
+                  setExtractionSnapshot(null)
+                }}
+                className="text-indigo-500 hover:text-indigo-700 shrink-0"
+                aria-label="Dismiss"
+                data-testid="dismiss-undo-bar"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
           {/* Voice recorder: primary alternative to filling the entire form manually */}
           <div
             className="flex items-center gap-3 rounded-xl px-4 py-3"
@@ -951,6 +1058,23 @@ export default function LogSession() {
                   return
                 }
                 setVoiceNoteTranscription(transcription)
+                const snapshot: ExtractionSnapshot = {
+                  sessionTitle,
+                  sessionDate: sessionDateRef.current,
+                  sessionTime: sessionTimeRef.current,
+                  durationChoice: durationChoiceRef.current,
+                  durationOther,
+                  actualContent: latestFieldsRef.current.actualContent,
+                  homeworkAssigned: latestFieldsRef.current.homeworkAssigned,
+                  nextSessionTopics: latestFieldsRef.current.nextSessionTopics,
+                  generalNotes: latestFieldsRef.current.generalNotes,
+                  topicTags: [...topicTags],
+                }
+                setExtractionSnapshot(snapshot)
+                // Replace, not stack: a new recording on the same session starts fresh
+                if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current)
+                setPulsingFields(new Set())
+                setExtractedFields(new Set())
                 setIsExtracting(true)
                 extractSessionReflection(id, transcription)
                   .then(extracted => {
@@ -983,13 +1107,14 @@ export default function LogSession() {
                       saveOverride.actualContent = nextActualContent
                       setActualContent(nextActualContent)
                     }
+                    let nextGeneralNotes: string | null = null
                     if (extracted.areasToImprove || extracted.emotionalSignals) {
                       // emotionalSignals has no mode; always include it. Only include areasToImprove value if mode != 'skip'.
                       const areasValue = extracted.areasToImprove?.mode !== 'skip' ? extracted.areasToImprove?.value : null
                       const combinedValue = [areasValue, extracted.emotionalSignals].filter(Boolean).join(' ')
                       const effectiveMode = areasValue ? (extracted.areasToImprove?.mode ?? 'replace') : 'replace'
                       const combinedField = combinedValue ? { value: combinedValue, mode: effectiveMode } : null
-                      const nextGeneralNotes = applyMode(curGeneralNotes, combinedField)
+                      nextGeneralNotes = applyMode(curGeneralNotes, combinedField)
                       if (nextGeneralNotes !== null) {
                         saveOverride.generalNotes = nextGeneralNotes
                         setGeneralNotes(nextGeneralNotes)
@@ -1032,11 +1157,46 @@ export default function LogSession() {
                         if (newChoice === 'other') setDurationOther(String(dur))
                       }
                     }
+
+                    // Detect changed fields for highlight + undo bar
+                    const changed = new Set<string>()
+                    if (extracted.sessionTitle && extracted.sessionTitle !== snapshot.sessionTitle) changed.add('sessionTitle')
+                    if (extracted.sessionDate && extracted.sessionDate !== snapshot.sessionDate) changed.add('sessionDate')
+                    if (extracted.sessionStartTime && extracted.sessionStartTime !== snapshot.sessionTime) changed.add('sessionTime')
+                    if (extracted.durationMinutes && durationChoiceRef.current === '50') {
+                      const presets = ['25', '30', '45', '50', '60', '90']
+                      const newDurChoice = presets.includes(String(extracted.durationMinutes)) ? String(extracted.durationMinutes) : 'other'
+                      if (newDurChoice !== snapshot.durationChoice) changed.add('durationChoice')
+                    }
+                    if (nextActualContent !== null && nextActualContent !== snapshot.actualContent) changed.add('actualContent')
+                    if (nextGeneralNotes !== null && nextGeneralNotes !== snapshot.generalNotes) changed.add('generalNotes')
+                    if (nextHomeworkAssigned !== null && nextHomeworkAssigned !== snapshot.homeworkAssigned) changed.add('homeworkAssigned')
+                    if (nextSessionTopicsNext !== null && nextSessionTopicsNext !== snapshot.nextSessionTopics) changed.add('nextSessionTopics')
+                    if (
+                      extracted.topicTags && extracted.topicTags.length > 0 &&
+                      extracted.topicTags.some(t => !snapshot.topicTags.some(s => s.tag.toLowerCase() === t.tag.toLowerCase()))
+                    ) changed.add('topicTags')
+
+                    if (extracted.teachingTodos && extracted.teachingTodos.length > 0)
+                      setNewTodos(prev => [...prev, ...extracted.teachingTodos!.filter(t => !prev.includes(t))])
+                    if (extracted.teacherFollowups && extracted.teacherFollowups.length > 0)
+                      setNewFollowups(prev => [...prev, ...extracted.teacherFollowups!.filter(f => !prev.includes(f))])
+
+                    if (changed.size > 0) {
+                      setPulsingFields(changed)
+                      setExtractedFields(changed)
+                      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current)
+                      pulseTimerRef.current = setTimeout(() => setPulsingFields(new Set()), PULSE_TIMEOUT_MS)
+                    } else {
+                      setExtractionSnapshot(null)
+                    }
+
                     markChangedAndSaveNow(saveOverride)
                   })
                   .catch((err: unknown) => {
                     logger.error('LogSession', 'Voice note extraction failed', err)
                     setExtractionError('Could not analyse the recording. Fields were not filled in automatically.')
+                    setExtractionSnapshot(null)
                     markChangedAndSaveNow({ voiceNoteId: note.id, voiceNoteTranscription: transcription })
                   })
                   .finally(() => setIsExtracting(false))
@@ -1064,8 +1224,8 @@ export default function LogSession() {
                 id="session-date"
                 type="date"
                 value={sessionDate}
-                onChange={e => { setSessionDate(e.target.value); markChangedAndSchedule() }}
-                className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20"
+                onChange={e => { setSessionDate(e.target.value); trackManualEdit('sessionDate'); markChangedAndSchedule() }}
+                className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 ${fieldMarkerClass('sessionDate')}`}
                 data-testid="session-date"
               />
             </div>
@@ -1077,8 +1237,8 @@ export default function LogSession() {
                 id="session-time"
                 type="time"
                 value={sessionTime}
-                onChange={e => { setSessionTime(e.target.value); markChangedAndSchedule() }}
-                className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20"
+                onChange={e => { setSessionTime(e.target.value); trackManualEdit('sessionTime'); markChangedAndSchedule() }}
+                className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 ${fieldMarkerClass('sessionTime')}`}
                 data-testid="session-time"
               />
             </div>
@@ -1087,8 +1247,8 @@ export default function LogSession() {
             <div className="space-y-1">
               <Label htmlFor="duration" className="text-xs font-medium text-zinc-400 uppercase tracking-wide">Duration</Label>
               <div className="flex items-center gap-2">
-                <Select value={durationChoice} onValueChange={(v) => { const val = v ?? durationChoice; setDurationChoice(val); markChangedAndSaveNow({ duration: val === 'other' ? null : parseInt(val, 10) }) }}>
-                  <SelectTrigger id="duration" className="text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 flex-1" data-testid="duration-select">
+                <Select value={durationChoice} onValueChange={(v) => { const val = v ?? durationChoice; setDurationChoice(val); trackManualEdit('durationChoice'); markChangedAndSaveNow({ duration: val === 'other' ? null : parseInt(val, 10) }) }}>
+                  <SelectTrigger id="duration" className={`text-sm bg-zinc-100 border-none h-8 px-2.5 focus-visible:border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 flex-1 ${fieldMarkerClass('durationChoice')}`} data-testid="duration-select">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1138,10 +1298,10 @@ export default function LogSession() {
             <Input
               id="session-title"
               value={sessionTitle ?? ''}
-              onChange={e => { setSessionTitle(e.target.value || undefined); markChangedAndSchedule() }}
+              onChange={e => { setSessionTitle(e.target.value || undefined); trackManualEdit('sessionTitle'); markChangedAndSchedule() }}
               placeholder="What did you work on? (optional)"
               maxLength={120}
-              className="text-sm bg-white"
+              className={`text-sm bg-white ${fieldMarkerClass('sessionTitle')}`}
               data-testid="log-session-title-input"
             />
           </div>
@@ -1198,10 +1358,10 @@ export default function LogSession() {
                 <Textarea
                   id="actual-content"
                   value={actualContent}
-                  onChange={e => { setActualContent(e.target.value); markChangedAndSchedule() }}
+                  onChange={e => { setActualContent(e.target.value); trackManualEdit('actualContent'); markChangedAndSchedule() }}
                   placeholder="Describe what happened in the session..."
                   rows={6}
-                  className="resize-none text-sm bg-white"
+                  className={`resize-none text-sm bg-white ${fieldMarkerClass('actualContent')}`}
                   data-testid="actual-content"
                 />
               </div>
@@ -1230,10 +1390,12 @@ export default function LogSession() {
                     ))}
                   </div>
                 )}
-                <TopicTagsInput
-                  value={topicTags}
-                  onChange={(tags) => { setTopicTags(tags); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
-                />
+                <div className={`rounded-md ${fieldMarkerClass('topicTags', { wrapper: true })}`} data-testid="topic-tags-highlight-wrapper">
+                  <TopicTagsInput
+                    value={topicTags}
+                    onChange={(tags) => { setTopicTags(tags); trackManualEdit('topicTags'); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
+                  />
+                </div>
               </div>
 
               {/* Difficulties Observed — always visible; populated by AI voice extraction or manual add */}
@@ -1334,9 +1496,9 @@ export default function LogSession() {
                 <Input
                   id="homework-assigned"
                   value={homeworkAssigned}
-                  onChange={e => { setHomeworkAssigned(e.target.value); markChangedAndSchedule() }}
+                  onChange={e => { setHomeworkAssigned(e.target.value); trackManualEdit('homeworkAssigned'); markChangedAndSchedule() }}
                   placeholder="e.g. Workbook page 42, exercises 3-5"
-                  className="text-sm bg-white"
+                  className={`text-sm bg-white ${fieldMarkerClass('homeworkAssigned')}`}
                   data-testid="homework-assigned"
                 />
               </div>
@@ -1349,10 +1511,10 @@ export default function LogSession() {
                 <Textarea
                   id="next-session-topics"
                   value={nextSessionTopics}
-                  onChange={e => { setNextSessionTopics(e.target.value); markChangedAndSchedule() }}
+                  onChange={e => { setNextSessionTopics(e.target.value); trackManualEdit('nextSessionTopics'); markChangedAndSchedule() }}
                   placeholder="What to focus on next time..."
                   rows={3}
-                  className="resize-none text-sm bg-white"
+                  className={`resize-none text-sm bg-white ${fieldMarkerClass('nextSessionTopics')}`}
                   data-testid="next-session-topics"
                 />
               </div>
@@ -1443,10 +1605,10 @@ export default function LogSession() {
                     <Textarea
                       id="general-notes"
                       value={generalNotes}
-                      onChange={e => { setGeneralNotes(e.target.value); markChangedAndSchedule() }}
+                      onChange={e => { setGeneralNotes(e.target.value); trackManualEdit('generalNotes'); markChangedAndSchedule() }}
                       placeholder="Observations on mood, energy levels, context..."
                       rows={3}
-                      className="resize-none text-sm bg-white"
+                      className={`resize-none text-sm bg-white ${fieldMarkerClass('generalNotes')}`}
                       data-testid="general-notes"
                     />
                   </div>
@@ -1517,10 +1679,12 @@ export default function LogSession() {
               {/* Topics Covered */}
               <div className="space-y-1 pt-4">
                 <Label className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-zinc-400">Topics Covered</Label>
-                <TopicTagsInput
-                  value={topicTags}
-                  onChange={(tags) => { setTopicTags(tags); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
-                />
+                <div className={`rounded-md ${fieldMarkerClass('topicTags', { wrapper: true })}`}>
+                  <TopicTagsInput
+                    value={topicTags}
+                    onChange={(tags) => { setTopicTags(tags); trackManualEdit('topicTags'); markChangedAndSaveNow({ topicTags: tags.length > 0 ? serializeTopicTags(tags) : null }) }}
+                  />
+                </div>
               </div>
 
               {/* Today's Context */}
@@ -1531,10 +1695,10 @@ export default function LogSession() {
                 <Textarea
                   id="general-notes"
                   value={generalNotes}
-                  onChange={e => { setGeneralNotes(e.target.value); markChangedAndSchedule() }}
+                  onChange={e => { setGeneralNotes(e.target.value); trackManualEdit('generalNotes'); markChangedAndSchedule() }}
                   placeholder="Notes about the cancellation..."
                   rows={3}
-                  className="resize-none text-sm bg-white"
+                  className={`resize-none text-sm bg-white ${fieldMarkerClass('generalNotes')}`}
                   data-testid="general-notes"
                 />
               </div>

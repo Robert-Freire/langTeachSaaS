@@ -33,6 +33,8 @@ internal sealed class FakePromptService : IPromptService
     }
 
     public ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx) => Dummy();
+    public ClaudeRequest BuildWhatWasCoveredFallbackPrompt(WhatWasCoveredFallbackContext ctx) => Dummy();
+    public ClaudeRequest BuildStudentProfileExtractionPrompt(string text) => Dummy();
     public ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx) => Dummy();
     public ClaudeRequest BuildCurriculumValidationPrompt(CurriculumValidationContext ctx) => Dummy();
 

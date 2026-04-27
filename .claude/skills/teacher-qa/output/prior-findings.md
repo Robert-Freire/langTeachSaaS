@@ -173,3 +173,11 @@ The reflection extraction prompt now returns a structured object for 4 text fiel
 **Fields unchanged:** `sessionTitle` (always plain string, always replaces), `topicTags` (always array, always merges+deduplicates), `emotionalSignals` (plain string, combined into generalNotes).
 
 **Verify:** If a teacher voice note returns mode "append" for nextLessonIdeas, the existing field content should be concatenated with the extracted value, not ignored or replaced.
+
+---
+
+## From: #946 - Student profile extraction service and endpoint (2026-04-25, PR #949)
+
+### New BuildStudentProfileExtractionPrompt added to PromptService
+
+Fix: New `BuildStudentProfileExtractionPrompt` added to PromptService for student profile voice extraction, Issue #946 (PR #949), Deployed? Yes, merged 2026-04-25

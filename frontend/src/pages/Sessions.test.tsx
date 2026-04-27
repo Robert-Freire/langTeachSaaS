@@ -119,7 +119,7 @@ describe('Sessions page', () => {
     await screen.findByTestId('sessions-list')
     const row = screen.getByTestId('session-row-sl-future')
     fireEvent.click(row)
-    expect(mockNavigate).toHaveBeenCalledWith('/students/student-1/sessions/sl-future/edit')
+    expect(mockNavigate).toHaveBeenCalledWith('/students/student-1/sessions/sl-future/edit', { state: { from: 'sessions' } })
   })
 
   it('calls getSessionsList initially without studentId', async () => {
