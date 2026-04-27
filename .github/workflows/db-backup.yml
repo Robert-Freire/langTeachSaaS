@@ -14,11 +14,11 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  RESOURCE_GROUP:    rg-langteach-prod
-  SQL_SERVER:        langteach-sql-prod
+  RESOURCE_GROUP:    rg-langteach-dev
+  SQL_SERVER:        langteach-sql-dev
   SQL_DB:            langteachdb
-  KEY_VAULT_NAME:    kv-lt-prod-REPLACE  # replace with actual KV name after first bicep deploy
-  STORAGE_ACCOUNT:   stlangteachprod
+  KEY_VAULT_NAME:    kv-lt-dev-5ba22u
+  STORAGE_ACCOUNT:   stlangteachdev
   BACKUP_CONTAINER:  backups
   RETENTION_DAYS:    90
 

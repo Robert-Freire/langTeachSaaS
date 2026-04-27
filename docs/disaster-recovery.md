@@ -24,34 +24,34 @@ The bicep modules are the source of truth for future full deploys. To apply indi
 # 1. SQL geo-redundant backup
 az sql db update \
   --name langteachdb \
-  --server langteach-sql-prod \
-  --resource-group rg-langteach-prod \
+  --server langteach-sql-dev \
+  --resource-group rg-langteach-dev \
   --backup-storage-redundancy Geo
 
 # 2. Storage: upgrade to GRS
 az storage account update \
-  --name stlangteachprod \
-  --resource-group rg-langteach-prod \
+  --name stlangteachdev \
+  --resource-group rg-langteach-dev \
   --sku Standard_GRS
 
 # 3. Storage: enable blob soft-delete (14-day retention)
 az storage blob service-properties delete-policy update \
-  --account-name stlangteachprod \
+  --account-name stlangteachdev \
   --enable true \
   --days-retained 14
 
 # 4. Storage: create backups container (idempotent)
 az storage container create \
   --name backups \
-  --account-name stlangteachprod
+  --account-name stlangteachdev
 
 # 5. Key Vault: enable purge protection (IRREVERSIBLE)
 #    Look up the actual KV name first:
-KV=$(az keyvault list --resource-group rg-langteach-prod --query "[0].name" -o tsv)
+KV=$(az keyvault list --resource-group rg-langteach-dev --query "[0].name" -o tsv)
 echo "Key Vault: $KV"
 az keyvault update \
   --name "$KV" \
-  --resource-group rg-langteach-prod \
+  --resource-group rg-langteach-dev \
   --enable-purge-protection true
 ```
 
@@ -61,13 +61,13 @@ After applying step 5, update `KEY_VAULT_NAME` in `.github/workflows/db-backup.y
 
 | Resource | Name | Resource Group |
 |----------|------|----------------|
-| SQL Server | `langteach-sql-prod` | `rg-langteach-prod` |
-| SQL Database | `langteachdb` | `rg-langteach-prod` |
-| Storage Account | `stlangteachprod` | `rg-langteach-prod` |
-| Key Vault | `kv-lt-prod-<hash>` (look up in Azure portal) | `rg-langteach-prod` |
-| Container App | `app-langteach-api-prod` | `rg-langteach-prod` |
-| ACR | `crlangteachprod` | `rg-langteach-prod` |
-| Static Web App | `swa-langteach-prod` | `rg-langteach-prod` |
+| SQL Server | `langteach-sql-dev` | `rg-langteach-dev` |
+| SQL Database | `langteachdb` | `rg-langteach-dev` |
+| Storage Account | `stlangteachdev` | `rg-langteach-dev` |
+| Key Vault | `kv-lt-dev-5ba22u` (look up in Azure portal) | `rg-langteach-dev` |
+| Container App | `app-langteach-api-dev` | `rg-langteach-dev` |
+| ACR | `crlangteachdev` | `rg-langteach-dev` |
+| Static Web App | `swa-langteach-dev` | `rg-langteach-dev` |
 
 Credentials: stored in Bitwarden under "LangTeach" collection.
 
@@ -92,13 +92,13 @@ $env:LANGTEACH_SWA_URL_PROD   = "<prod SWA URL>"
 
 1. Create resource group if missing:
    ```bash
-   az group create --name rg-langteach-prod --location northeurope
+   az group create --name rg-langteach-dev --location northeurope
    ```
 
 2. Deploy bicep:
    ```bash
    az deployment group create \
-     --resource-group rg-langteach-prod \
+     --resource-group rg-langteach-dev \
      --template-file infra/main.bicep \
      --parameters infra/parameters/prod.bicepparam
    ```
@@ -128,8 +128,8 @@ In Azure portal: SQL server > Databases > Restore, choose a restore point. Or:
 az sql db restore \
   --dest-name langteachdb-restored \
   --name langteachdb \
-  --server langteach-sql-prod \
-  --resource-group rg-langteach-prod \
+  --server langteach-sql-dev \
+  --resource-group rg-langteach-dev \
   --time "<ISO8601 timestamp>"
 ```
 
@@ -137,10 +137,10 @@ Then rename/swap once validated.
 
 ### Option B: From weekly BACPAC (backups container in storage)
 
-1. Find the latest BACPAC in `stlangteachprod/backups/`:
+1. Find the latest BACPAC in `stlangteachdev/backups/`:
    ```bash
    az storage blob list \
-     --account-name stlangteachprod \
+     --account-name stlangteachdev \
      --container-name backups \
      --query "reverse(sort_by([], &properties.lastModified))[0].name" \
      -o tsv
@@ -149,7 +149,7 @@ Then rename/swap once validated.
 2. Download locally:
    ```bash
    az storage blob download \
-     --account-name stlangteachprod \
+     --account-name stlangteachdev \
      --container-name backups \
      --name "<blob-name>" \
      --file restore.bacpac
@@ -163,9 +163,9 @@ Then rename/swap once validated.
      --auth-type Sql \
      --storage-key "<storage key>" \
      --storage-key-type StorageAccessKey \
-     --storage-uri "https://stlangteachprod.blob.core.windows.net/backups/<blob-name>" \
-     --resource-group rg-langteach-prod \
-     --server langteach-sql-prod \
+     --storage-uri "https://stlangteachdev.blob.core.windows.net/backups/<blob-name>" \
+     --resource-group rg-langteach-dev \
+     --server langteach-sql-dev \
      --name langteachdb
    ```
 
@@ -176,16 +176,16 @@ Then rename/swap once validated.
 Storage uses GRS; Azure fails over automatically for availability events. For data corruption:
 
 1. Access the secondary endpoint (read-only until failover):
-   `https://stlangteachprod-secondary.blob.core.windows.net`
+   `https://stlangteachdev-secondary.blob.core.windows.net`
 
 2. For a full account failover (causes potential data loss of async-replicated writes):
    ```bash
-   az storage account failover --name stlangteachprod --resource-group rg-langteach-prod
+   az storage account failover --name stlangteachdev --resource-group rg-langteach-dev
    ```
 
 3. After failover, account becomes LRS in the new primary region. Re-enable GRS:
    ```bash
-   az storage account update --name stlangteachprod --resource-group rg-langteach-prod --sku Standard_GRS
+   az storage account update --name stlangteachdev --resource-group rg-langteach-dev --sku Standard_GRS
    ```
 
 ---
