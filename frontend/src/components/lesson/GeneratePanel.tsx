@@ -416,7 +416,7 @@ export function GeneratePanel({
             size="sm"
             onClick={handleGenerate}
             disabled={isQuotaExhausted || quotaExceeded || allowedTypes.length === 0}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
+            className="bg-primary hover:bg-primary/90 text-white text-xs"
             data-testid="generate-btn"
           >
             {isError && !quotaExceeded ? 'Retry' : 'Generate'}
@@ -438,7 +438,7 @@ export function GeneratePanel({
               size="sm"
               onClick={handleInsertOrReplace}
               disabled={inserting}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
+              className="bg-primary hover:bg-primary/90 text-white text-xs"
               data-testid="insert-btn"
             >
               {inserting

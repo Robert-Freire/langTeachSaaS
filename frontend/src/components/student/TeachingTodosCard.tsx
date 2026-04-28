@@ -291,7 +291,7 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
             disabled={addMutation.isPending || !newText.trim()}
             data-testid="todo-add-btn"
             aria-label="Add todo"
-            className="shrink-0 rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+            className="shrink-0 rounded-lg bg-primary p-1.5 text-white hover:bg-primary/90 disabled:opacity-40 transition-colors"
           >
             <Plus className="h-4 w-4" />
           </button>

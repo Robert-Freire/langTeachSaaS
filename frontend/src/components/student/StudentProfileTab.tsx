@@ -120,7 +120,7 @@ function InlineAddInput({
         type="button"
         onClick={handleSave}
         disabled={saving || !text.trim()}
-        className="shrink-0 rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+        className="shrink-0 rounded-lg bg-primary p-1.5 text-white hover:bg-primary/90 disabled:opacity-40 transition-colors"
         data-testid={`${testId}-save`}
       >
         <Check className="h-4 w-4" />
@@ -215,7 +215,7 @@ function InlineAddDifficulty({
           type="button"
           onClick={handleSave}
           disabled={saving || !competency.trim() || !description.trim()}
-          className="shrink-0 rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+          className="shrink-0 rounded-lg bg-primary p-1.5 text-white hover:bg-primary/90 disabled:opacity-40 transition-colors"
           data-testid="difficulty-add-save"
         >
           <Check className="h-4 w-4" />

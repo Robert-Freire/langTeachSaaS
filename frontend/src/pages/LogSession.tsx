@@ -120,7 +120,7 @@ function ToggleSwitch({
       onClick={() => onChange(!checked)}
       data-testid={testId}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-        checked ? 'bg-indigo-600' : 'bg-zinc-300'
+        checked ? 'bg-primary' : 'bg-zinc-300'
       }`}
     >
       <span
@@ -1335,7 +1335,7 @@ export default function LogSession() {
                         onClick={() => { setPrevHomeworkStatus(s.value); markChangedAndSaveNow({ previousHomeworkStatus: s.value }) }}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                           prevHomeworkStatus === s.value
-                            ? 'bg-indigo-600 text-white'
+                            ? 'bg-primary text-white'
                             : 'bg-[#F4F2FD] text-zinc-600 hover:bg-[#E8E7F1]'
                         }`}
                         data-testid={`prev-hw-${s.value.toLowerCase()}`}
@@ -1479,7 +1479,7 @@ export default function LogSession() {
                         setNewDifficulty({ description: '', competency: '', subcategory: '' })
                         markChangedAndSaveNow({ suggestedDifficulties: next })
                       }}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 disabled:opacity-50"
+                      className="bg-primary hover:bg-primary/90 text-white shrink-0 disabled:opacity-50"
                       data-testid="add-difficulty-btn"
                     >
                       <Plus className="h-4 w-4" />
@@ -1546,7 +1546,7 @@ export default function LogSession() {
                       className="text-sm bg-white flex-1"
                       data-testid="new-todo-input"
                     />
-                    <Button type="button" size="sm" onClick={addTodo} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                    <Button type="button" size="sm" onClick={addTodo} className="bg-primary hover:bg-primary/90 text-white">
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
