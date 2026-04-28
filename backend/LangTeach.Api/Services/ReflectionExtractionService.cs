@@ -58,6 +58,15 @@ public class ReflectionExtractionService : IReflectionExtractionService
             }
         }
 
+        if (dto.TopicTags.Count > 0
+            && (dto.WhatWasCovered is null
+                || string.IsNullOrWhiteSpace(dto.WhatWasCovered.Value)))
+        {
+            _logger.LogWarning(
+                "Extraction invariant: topicTags non-empty but whatWasCovered null after extraction and fallback (TagCount={Count})",
+                dto.TopicTags.Count);
+        }
+
         return dto;
     }
 

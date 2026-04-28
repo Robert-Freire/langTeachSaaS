@@ -42,6 +42,8 @@
                       Link="Pedagogy\grammar-validation-rules.json" />
     <EmbeddedResource Include="..\..\data\pedagogy\difficulty-taxonomy.json"
                       Link="Pedagogy\difficulty-taxonomy.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\prompt-fragments.json"
+                      Link="Pedagogy\prompt-fragments.json" />
   </ItemGroup>
 
   <ItemGroup>
