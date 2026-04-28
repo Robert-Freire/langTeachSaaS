@@ -68,23 +68,11 @@ public class SessionHistoryService : ISessionHistoryService
             if (string.IsNullOrWhiteSpace(session.TopicTags) || session.TopicTags == "[]")
                 continue;
 
-            try
+            foreach (var tag in JsonStorageHelper.DeserializeList<TopicTagEntry>(session.TopicTags))
             {
-                var tags = JsonSerializer.Deserialize<List<TopicTagEntry>>(session.TopicTags,
-                    JsonOptions);
-
-                if (tags is null) continue;
-
-                foreach (var tag in tags)
-                {
-                    if (string.IsNullOrWhiteSpace(tag.Tag)) continue;
-                    if (!seen.Add(tag.Tag.Trim())) continue;
-                    result.Add(new CoveredTopicEntry(tag.Tag.Trim(), tag.Category));
-                }
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogWarning(ex, "Malformed TopicTags on session {SessionId}", session.Id);
+                if (string.IsNullOrWhiteSpace(tag.Tag)) continue;
+                if (!seen.Add(tag.Tag.Trim())) continue;
+                result.Add(new CoveredTopicEntry(tag.Tag.Trim(), tag.Category));
             }
         }
 

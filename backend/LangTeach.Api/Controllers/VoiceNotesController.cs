@@ -33,6 +33,12 @@ public class VoiceNotesController : ControllerBase
     public async Task<IActionResult> Upload(IFormFile file, CancellationToken ct)
     {
         if (Auth0Id is null) return Unauthorized();
+
+        if (string.IsNullOrEmpty(file.FileName) || file.FileName.Length > 255)
+            return BadRequest(new { error = "File name is missing or exceeds maximum length of 255 characters." });
+        if (string.IsNullOrEmpty(file.ContentType) || file.ContentType.Length > 100)
+            return BadRequest(new { error = "Content type is missing or exceeds maximum length of 100 characters." });
+
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
 
         try

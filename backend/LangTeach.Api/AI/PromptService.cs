@@ -1,4 +1,6 @@
+using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using LangTeach.Api.Services;
 using Microsoft.Extensions.Logging;
@@ -11,6 +13,23 @@ public class PromptService : IPromptService
     private readonly IPedagogyConfigService _pedagogy;
     private readonly ILogger<PromptService> _logger;
     private readonly IContentSchemaService _schemas;
+
+    private static readonly PromptFragmentsConfig _fragments = LoadFragments();
+
+    private static PromptFragmentsConfig LoadFragments()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        using var stream = assembly.GetManifestResourceStream("LangTeach.Api.Pedagogy.prompt-fragments.json")
+            ?? throw new InvalidOperationException("Embedded resource 'LangTeach.Api.Pedagogy.prompt-fragments.json' not found.");
+        return JsonSerializer.Deserialize<PromptFragmentsConfig>(stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+            ?? throw new InvalidOperationException("prompt-fragments.json deserialized as null.");
+    }
+
+    private sealed record PromptFragmentsConfig(
+        string CefrCue,
+        string[] NativeLanguageBullets,
+        string PersonalisationDirective,
+        string MotivationSuffix);
 
     public PromptService(ISectionProfileService profiles, IPedagogyConfigService pedagogy,
         ILogger<PromptService> logger, IContentSchemaService schemas)
@@ -391,7 +410,7 @@ public class PromptService : IPromptService
         sb.AppendLine($"You are an expert {language} teacher creating materials for a {cefrLevel} level lesson.");
         sb.AppendLine($"Teaching style: {style}. Topic: {topic}. Duration: {ctx.DurationMinutes} minutes.");
         sb.AppendLine();
-        sb.AppendLine($"Write all examples, sentences, and instructions using vocabulary and grammar appropriate for {cefrLevel}. Do not use structures above this level in examples. Definitions and explanations aimed at the teacher may use higher-level language.");
+        sb.AppendLine(_fragments.CefrCue.Replace("{cefrLevel}", cefrLevel));
 
         if (ctx.GrammarConstraints is { Count: > 0 })
         {
@@ -421,9 +440,8 @@ public class PromptService : IPromptService
             if (ctx.StudentNativeLanguage is not null)
             {
                 sb.AppendLine($"- Native language: {nativeLang}");
-                sb.AppendLine($"- For grammar explanations, note where {language} differs from {nativeLang}.");
-                sb.AppendLine($"- Flag false cognates between {nativeLang} and {language} when relevant.");
-                sb.AppendLine($"- Be aware of common errors {nativeLang} speakers make in {language}.");
+                foreach (var bullet in _fragments.NativeLanguageBullets)
+                    sb.AppendLine($"- {bullet.Replace("{targetLanguage}", language).Replace("{nativeLanguage}", nativeLang)}");
             }
 
             if (interests.Length > 0)
@@ -473,9 +491,9 @@ public class PromptService : IPromptService
 
             sb.AppendLine();
             var motivationSuffix = reasonForStudying.Length > 0
-                ? $", and anchor vocabulary to their stated study motivation: {reasonForStudying}"
+                ? _fragments.MotivationSuffix.Replace("{reasonForStudying}", reasonForStudying)
                 : string.Empty;
-            sb.AppendLine($"Personalize content for this student. Reference their interests in examples{motivationSuffix}.");
+            sb.AppendLine(_fragments.PersonalisationDirective.Replace("{motivationSuffix}", motivationSuffix));
 
             if (spokenLangs.Length > 0)
                 sb.AppendLine("Where relevant, leverage cross-language awareness and cognates from the student's other languages.");
