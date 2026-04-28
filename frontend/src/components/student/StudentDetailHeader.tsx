@@ -205,8 +205,7 @@ export function StudentDetailHeader({ student, nextSession, sessionFrequency, on
           </Link>
           <Button
             onClick={() => navigate(`/students/${student.id}/log-session`)}
-            className="rounded-xl text-white text-sm font-medium"
-            style={{ background: 'linear-gradient(135deg, #3525CD, #4F46E5)' }}
+            className="rounded-xl text-sm font-medium"
             size="sm"
             data-testid="log-session-button"
           >

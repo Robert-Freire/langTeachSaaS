@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Brain, Plus, BookOpen } from 'lucide-react'
 import type { Student } from '@/api/students'
@@ -349,14 +350,14 @@ function TeachingNotesPanel({
               />
               {saveError && <p className="text-sm text-red-300">{saveError}</p>}
               <div className="flex gap-2">
-                <button
+                <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="rounded-xl bg-primary hover:bg-primary/90 px-4 py-1.5 text-sm font-bold transition-all disabled:opacity-50"
+                  className="rounded-xl px-4 py-1.5 font-bold"
                   data-testid="teaching-notes-save-btn"
                 >
                   Save
-                </button>
+                </Button>
                 <button
                   onClick={() => setEditing(false)}
                   className="rounded-xl bg-white/10 hover:bg-white/20 px-4 py-1.5 text-sm font-medium transition-all"
@@ -381,13 +382,13 @@ function TeachingNotesPanel({
                 </p>
               )}
               {onSaveTeachingNotes && (
-                <button
+                <Button
                   onClick={handleEdit}
-                  className="rounded-xl bg-primary hover:bg-primary/90 px-5 py-2 text-sm font-bold transition-all"
+                  className="rounded-xl px-5 py-2 font-bold"
                   data-testid="add-memory-btn"
                 >
                   Add Memory
-                </button>
+                </Button>
               )}
             </>
           )}

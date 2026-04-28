@@ -133,6 +133,10 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@utility lt-gradient-primary {
+  background-image: linear-gradient(135deg, #3525CD 0%, #4F46E5 50%, #6366f1 100%);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

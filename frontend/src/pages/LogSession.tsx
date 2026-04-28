@@ -1482,7 +1482,7 @@ export default function LogSession() {
                         setNewDifficulty({ description: '', competency: '', subcategory: '' })
                         markChangedAndSaveNow({ suggestedDifficulties: next })
                       }}
-                      className="bg-primary hover:bg-primary/90 text-white shrink-0 disabled:opacity-50"
+                      className="shrink-0"
                       data-testid="add-difficulty-btn"
                     >
                       <Plus className="h-4 w-4" />
@@ -1549,7 +1549,7 @@ export default function LogSession() {
                       className="text-sm bg-white flex-1"
                       data-testid="new-todo-input"
                     />
-                    <Button type="button" size="sm" onClick={addTodo} className="bg-primary hover:bg-primary/90 text-white">
+                    <Button type="button" size="sm" onClick={addTodo}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>

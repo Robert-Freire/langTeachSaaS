@@ -212,8 +212,7 @@ export function VoiceUpdateDrawer(props: VoiceUpdateDrawerProps) {
                 size="sm"
                 onClick={handleSave}
                 disabled={saveDisabled}
-                className="text-white min-w-[120px]"
-                style={{ background: 'linear-gradient(135deg, #3525CD, #4F46E5)' }}
+                className="min-w-[120px]"
                 data-testid="drawer-save"
               >
                 {saving ? (

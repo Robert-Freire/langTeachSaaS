@@ -152,7 +152,7 @@ export default function Lessons() {
         actions={
           <Link
             to="/lessons/new"
-            className={cn(buttonVariants(), 'bg-primary hover:bg-primary/90 text-white')}
+            className={cn(buttonVariants())}
             data-testid="new-lesson-btn"
           >
             <PlusCircle className="h-4 w-4 mr-1.5" />
@@ -219,7 +219,7 @@ export default function Lessons() {
           <p className="text-sm text-zinc-500 mb-6">Create your first lesson to get started.</p>
           <Link
             to="/lessons/new"
-            className={cn(buttonVariants(), 'bg-primary hover:bg-primary/90 text-white')}
+            className={cn(buttonVariants())}
           >
             Create your first lesson
           </Link>
