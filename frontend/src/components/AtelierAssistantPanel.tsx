@@ -12,6 +12,7 @@ type MicState = 'idle' | 'recording' | 'uploading' | 'error'
 type MicError = 'permission-denied' | 'no-hardware' | 'upload-failed' | 'empty-transcription' | null
 
 function getMicMimeType(): string {
+  if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') return ''
   if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus'
   if (MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4'
   return ''
@@ -72,6 +73,7 @@ export default function AtelierAssistantPanel({
   const uploadCancelledRef = useRef(false)
   const slowSttTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const tooShortTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const startInFlightRef = useRef(false)
   const [showSlowSttCancel, setShowSlowSttCancel] = useState(false)
 
   const stopInterval = useCallback(() => {
@@ -87,9 +89,14 @@ export default function AtelierAssistantPanel({
       if (slowSttTimerRef.current) clearTimeout(slowSttTimerRef.current)
       if (tooShortTimerRef.current) clearTimeout(tooShortTimerRef.current)
       uploadCancelledRef.current = true
+      discardRef.current = true
       streamRef.current?.getTracks().forEach((t) => t.stop())
       const recorder = mediaRecorderRef.current
-      if (recorder && recorder.state !== 'inactive') recorder.stop()
+      if (recorder && recorder.state !== 'inactive') {
+        recorder.ondataavailable = null
+        recorder.onstop = null
+        recorder.stop()
+      }
     }
   }, [stopInterval])
 
@@ -120,16 +127,19 @@ export default function AtelierAssistantPanel({
     setDurationWarning(false)
     setMicError(null)
     setShowSlowSttCancel(false)
-    uploadCancelledRef.current = false
     chunksRef.current = []
   }
 
   async function startMicRecording() {
+    if (micState !== 'idle' || startInFlightRef.current) return
+    startInFlightRef.current = true
+
     setMicError(null)
     setTooShortHint(false)
 
-    if (!navigator.mediaDevices?.getUserMedia) {
+    if (typeof MediaRecorder === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
       setMicError('no-hardware')
+      startInFlightRef.current = false
       return
     }
 
@@ -145,6 +155,7 @@ export default function AtelierAssistantPanel({
       } else {
         setMicError('permission-denied')
       }
+      startInFlightRef.current = false
       return
     }
 
@@ -183,7 +194,7 @@ export default function AtelierAssistantPanel({
       const file = new File([blob], `recording.${ext}`, { type: finalMimeType })
       chunksRef.current = []
 
-      uploadCancelledRef.current = false
+      uploadCancelledRef.current = false  // reset before each new upload cycle
       setMicState('uploading')
       slowSttTimerRef.current = setTimeout(() => {
         setShowSlowSttCancel(true)
@@ -211,11 +222,12 @@ export default function AtelierAssistantPanel({
             clearTimeout(slowSttTimerRef.current)
             slowSttTimerRef.current = null
           }
-          setShowSlowSttCancel(false)
+          if (!uploadCancelledRef.current) setShowSlowSttCancel(false)
         })
     }
 
     recorder.start(500)
+    startInFlightRef.current = false
     setMicState('recording')
     setMicElapsed(0)
     setDurationWarning(false)

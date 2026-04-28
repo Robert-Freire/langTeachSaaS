@@ -1,12 +1,13 @@
 import { render, screen, act, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { vi, describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest'
 import AtelierAssistantPanel from './AtelierAssistantPanel'
 import type { VoiceNote } from '@/api/voiceNotes'
 
 // ---------------------------------------------------------------------------
 // MediaDevices mock
 // ---------------------------------------------------------------------------
+const originalMediaDevices = window.navigator.mediaDevices
 const mockGetUserMedia = vi.fn()
 Object.defineProperty(window.navigator, 'mediaDevices', {
   value: { getUserMedia: mockGetUserMedia },
@@ -31,6 +32,14 @@ class MockMediaRecorder {
   })
 }
 vi.stubGlobal('MediaRecorder', MockMediaRecorder)
+
+afterAll(() => {
+  vi.unstubAllGlobals()
+  Object.defineProperty(window.navigator, 'mediaDevices', {
+    value: originalMediaDevices,
+    configurable: true,
+  })
+})
 
 // ---------------------------------------------------------------------------
 // uploadVoiceNote mock
