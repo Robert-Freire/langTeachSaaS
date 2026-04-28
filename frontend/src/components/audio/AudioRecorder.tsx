@@ -214,7 +214,7 @@ export function AudioRecorder({
           </Button>
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={isDisabled}
