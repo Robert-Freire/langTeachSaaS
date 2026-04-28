@@ -5,6 +5,8 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | Source issue | Date | Severity | Observation |
 | #1002 | 2026-04-28 | low | Keyboard shortcut hint (⌘K label-sm text below sidebar CTA) is an undocumented pattern in the design system. Needs Vera sign-off before it becomes a reusable convention. |
 | #1002 | 2026-04-28 | medium | AppShell sidebar links to `/help` (added by #1002) but no route exists in App.tsx. Clicking Help navigates to an unmatched screen. Needs a Help page or the link removed. |
+| #1004 | 2026-04-28 | low | `TeachingTodosCard.test.tsx` line 141 flakes in full suite runs (passes in isolation) due to date-relative text matching combined with test ordering. Pre-existing; not introduced by this task. |
+| #1004 | 2026-04-28 | low | Low-confidence STT visual cues (underline/italic on uncertain words) cannot be implemented: `VoiceNote` API only returns a `transcription: string`. Backend would need to add a confidence-regions field before frontend can render per-token cues. |
 
 *Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Actionable entries batched into: #833 (bug batch), #834 (seeder gaps), #835 (e2e session-log rewrite), #836 (ScenarioSeeder Hans B1), #837 (deduplication), #838 (session title from web UI), #839 (debug log privacy), #840 (Edit Student UX), #841 (stale closure + LogSession pre-populate). Already-tracked entries removed (referenced #737/#707/#644/#714/#715/#716/#683/#741/#742/#756/#809/#657). Dismissed entries removed (defensive-only, intentional, or resolved).*
 
