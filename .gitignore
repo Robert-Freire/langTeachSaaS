@@ -53,7 +53,7 @@ coverage/
 
 # Playwright test results
 e2e/test-results/
-e2e/screenshots/
+e2e/screenshots/**/*.png
 test-results/
 
 # Bicep compiled output

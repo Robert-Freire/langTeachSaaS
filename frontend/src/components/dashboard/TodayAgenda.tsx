@@ -117,7 +117,7 @@ export function TodayAgenda({ sessions, nextSessionId, upcomingThisWeek }: Today
               to={`/students/${session.studentId}`}
               className={[
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-[#F4F2FD]',
-                isNext ? 'border-l-[3px] border-l-indigo-600 bg-[#ECEAFD]' : '',
+                isNext ? 'border-l-[3px] border-l-primary bg-[#ECEAFD]' : '',
               ].join(' ')}
             >
               <span className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter w-12 shrink-0">

@@ -24,7 +24,7 @@ export function SessionSummaryHeader({ studentId }: SessionSummaryHeaderProps) {
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-zinc-200 bg-white p-4 space-y-2" data-testid="session-summary-loading">
+      <div className="rounded-lg bg-white shadow-[0_12px_40px_0_rgba(26,27,34,0.06)] p-4 space-y-2" data-testid="session-summary-loading">
         <Skeleton className="h-4 w-48" />
         <Skeleton className="h-4 w-32" />
       </div>
@@ -38,7 +38,7 @@ export function SessionSummaryHeader({ studentId }: SessionSummaryHeaderProps) {
   if (data.totalSessions === 0) {
     return (
       <div
-        className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-400"
+        className="rounded-lg bg-white shadow-[0_12px_40px_0_rgba(26,27,34,0.06)] px-4 py-3 text-sm text-zinc-400"
         data-testid="session-summary-no-sessions"
       >
         No sessions yet
@@ -51,7 +51,7 @@ export function SessionSummaryHeader({ studentId }: SessionSummaryHeaderProps) {
 
   return (
     <div
-      className="rounded-lg border border-zinc-200 bg-white divide-y divide-zinc-100"
+      className="rounded-lg bg-white shadow-[0_12px_40px_0_rgba(26,27,34,0.06)]"
       data-testid="session-summary-header"
     >
       {/* Stats row */}

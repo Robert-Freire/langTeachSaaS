@@ -113,7 +113,7 @@ export default function Lessons() {
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <Card key={i} className="bg-white border border-zinc-200">
+            <Card key={i} className="bg-white shadow-[0_12px_40px_0_rgba(26,27,34,0.06)]">
               <CardContent className="flex items-center justify-between py-4 px-6">
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-3">
@@ -152,7 +152,7 @@ export default function Lessons() {
         actions={
           <Link
             to="/lessons/new"
-            className={cn(buttonVariants(), 'bg-indigo-600 hover:bg-indigo-700 text-white')}
+            className={cn(buttonVariants(), 'bg-primary hover:bg-primary/90 text-white')}
             data-testid="new-lesson-btn"
           >
             <PlusCircle className="h-4 w-4 mr-1.5" />
@@ -219,7 +219,7 @@ export default function Lessons() {
           <p className="text-sm text-zinc-500 mb-6">Create your first lesson to get started.</p>
           <Link
             to="/lessons/new"
-            className={cn(buttonVariants(), 'bg-indigo-600 hover:bg-indigo-700 text-white')}
+            className={cn(buttonVariants(), 'bg-primary hover:bg-primary/90 text-white')}
           >
             Create your first lesson
           </Link>
@@ -230,7 +230,7 @@ export default function Lessons() {
       {lessons.length > 0 && (
         <div className="space-y-3">
           {lessons.map((lesson) => (
-            <Card key={lesson.id} className="bg-white border border-zinc-200 shadow-sm transition-all hover:shadow-md hover:border-zinc-300" data-testid={`lesson-row-${lesson.id}`}>
+            <Card key={lesson.id} className="bg-white shadow-[0_12px_40px_0_rgba(26,27,34,0.06)] transition-all" data-testid={`lesson-row-${lesson.id}`}>
               <CardContent className="flex items-center justify-between py-4 px-4 sm:px-6">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">

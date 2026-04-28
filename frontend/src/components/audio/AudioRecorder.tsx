@@ -206,7 +206,7 @@ export function AudioRecorder({
             size="sm"
             onClick={startRecording}
             disabled={isDisabled}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="bg-primary hover:bg-primary/90 text-white"
             data-testid="record-button"
           >
             <Mic className="h-4 w-4 mr-1" />

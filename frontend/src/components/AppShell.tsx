@@ -39,11 +39,11 @@ function NavLink({ to, label, icon: Icon, location }: {
       className={cn(
         'flex items-center gap-3 py-2.5 pl-4 pr-3 text-base font-medium font-inter transition-colors',
         active
-          ? 'border-l-[3px] border-l-indigo-600 text-indigo-700 rounded-r-md'
+          ? 'border-l-[3px] border-l-primary text-indigo-700 rounded-r-md'
           : 'text-zinc-500 hover:bg-[#E6E0F8] hover:text-zinc-900 rounded-md border-l-[3px] border-l-transparent'
       )}
     >
-      <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-indigo-600' : 'text-zinc-400')} />
+      <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-primary' : 'text-zinc-400')} />
       {label}
     </Link>
   )
@@ -61,7 +61,7 @@ function SidebarContent({ user, initials, logout, location }: {
       <div className="px-6 pt-7 pb-8">
         <div className="flex items-center gap-2.5">
           <LangTeachLogo size={28} />
-          <span className="text-indigo-600 font-extrabold text-xl tracking-tight font-manrope">LangTeach</span>
+          <span className="text-primary font-extrabold text-xl tracking-tight font-manrope">LangTeach</span>
         </div>
         <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 mt-1 ml-[38px] font-inter">
           Language Curator
@@ -83,7 +83,7 @@ function SidebarContent({ user, initials, logout, location }: {
         <div className="bg-white rounded-xl p-3 flex items-center gap-3" data-testid="teacher-profile-card">
           <Avatar className="h-9 w-9 shrink-0">
             <AvatarImage src={user?.picture} alt={user?.name} />
-            <AvatarFallback className="bg-indigo-600 text-white text-xs font-semibold">{initials}</AvatarFallback>
+            <AvatarFallback className="bg-primary text-white text-xs font-semibold">{initials}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col overflow-hidden min-w-0 flex-1">
             <span className="text-sm font-bold text-zinc-900 truncate font-inter">{user?.name ?? user?.email}</span>
@@ -136,11 +136,11 @@ export default function AppShell() {
         </Button>
         <div className="flex items-center gap-2">
           <LangTeachLogo size={24} />
-          <span className="text-indigo-600 font-bold text-base tracking-tight font-manrope">LangTeach</span>
+          <span className="text-primary font-bold text-base tracking-tight font-manrope">LangTeach</span>
         </div>
         <Avatar className="h-8 w-8">
           <AvatarImage src={user?.picture} alt={user?.name} />
-          <AvatarFallback className="bg-indigo-600 text-white text-xs">{initials}</AvatarFallback>
+          <AvatarFallback className="bg-primary text-white text-xs">{initials}</AvatarFallback>
         </Avatar>
       </div>
 
