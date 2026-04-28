@@ -120,6 +120,64 @@ public class StudentsController : ControllerBase
         }
     }
 
+    [HttpPatch("{id:guid}")]
+    public async Task<IActionResult> PatchStudent(Guid id, [FromBody] PatchStudentRequest patch, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var student = await _studentService.GetByIdAsync(teacherId, id, cancellationToken);
+        if (student is null) return NotFound();
+
+        // Pre-populate all required fields from current state, then overwrite only provided fields.
+        var request = MapStudentToUpdateRequest(student);
+        if (patch.CefrLevel is not null) request.CefrLevel = patch.CefrLevel;
+        if (patch.Profession is not null) request.Profession = patch.Profession;
+        if (patch.CountryOfResidence is not null) request.CountryOfResidence = patch.CountryOfResidence;
+
+        try
+        {
+            var updated = await _studentService.UpdateAsync(teacherId, id, request, cancellationToken);
+            if (updated is null) return NotFound();
+            return Ok(updated);
+        }
+        catch (ValidationException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
+        }
+    }
+
+    private static UpdateStudentRequest MapStudentToUpdateRequest(StudentDto s) => new()
+    {
+        Name = s.Name,
+        LearningLanguage = s.LearningLanguage,
+        CefrLevel = s.Level.CefrLevel,
+        OfficialCefrLevel = s.Level.OfficialCefrLevel,
+        SkillLevelOverrides = s.Level.SkillLevelOverrides,
+        Interests = s.Profile.Interests,
+        NativeLanguages = s.Languages.NativeLanguages,
+        SpokenLanguages = s.Languages.SpokenLanguages,
+        LearningGoals = s.Profile.LearningGoals,
+        Weaknesses = s.Profile.Weaknesses,
+        Difficulties = s.Profile.Difficulties,
+        PersonalNotes = s.Profile.PersonalNotes,
+        TeachingNotes = s.Profile.TeachingNotes,
+        ShortTermObjectives = s.Profile.ShortTermObjectives,
+        TeachingTodos = s.Profile.TeachingTodos,
+        BirthYear = s.Identity.BirthYear,
+        Profession = s.Identity.Profession,
+        CountryOfOrigin = s.Identity.CountryOfOrigin,
+        CityOfOrigin = s.Identity.CityOfOrigin,
+        CountryOfResidence = s.Identity.CountryOfResidence,
+        CityOfResidence = s.Identity.CityOfResidence,
+        ReasonForStudying = s.Profile.ReasonForStudying,
+        IsActive = s.Commercial.IsActive,
+        IsCorporate = s.Commercial.IsCorporate,
+        Rate = s.Commercial.Rate,
+    };
+
     [HttpGet("{studentId:guid}/lesson-history")]
     public async Task<IActionResult> GetLessonHistory(Guid studentId, CancellationToken cancellationToken)
     {

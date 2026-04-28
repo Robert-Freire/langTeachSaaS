@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest'
 import AtelierAssistantPanel from './AtelierAssistantPanel'
 import type { VoiceNote } from '@/api/voiceNotes'
+import type { ProposalWithStatus } from '@/hooks/useAtelierAssistant'
 
 // ---------------------------------------------------------------------------
 // MediaDevices mock
@@ -68,17 +69,40 @@ function makeStream() {
   return { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream
 }
 
-function renderPanel(overrides: Partial<Parameters<typeof AtelierAssistantPanel>[0]> = {}) {
-  const props = {
-    open: true,
-    onClose: vi.fn(),
-    onCloseDiscarding: vi.fn(),
-    studentName: undefined,
-    transcription: null,
-    onSubmit: vi.fn(),
+const defaultProps = {
+  open: true,
+  onClose: vi.fn(),
+  onCloseDiscarding: vi.fn(),
+  studentName: undefined as string | undefined,
+  transcription: null as string | null,
+  processing: false,
+  proposals: [] as ProposalWithStatus[],
+  onSubmit: vi.fn(),
+  onApply: vi.fn(),
+  onDismiss: vi.fn(),
+  onUndo: vi.fn(),
+  onRetry: vi.fn(),
+  onApplyAll: vi.fn(),
+  onDismissAll: vi.fn(),
+}
+
+function renderPanel(overrides: Partial<typeof defaultProps> = {}) {
+  const props = { ...defaultProps, ...overrides }
+  return { ...render(<AtelierAssistantPanel {...props} />), props }
+}
+
+function makeProposal(overrides: Partial<ProposalWithStatus> = {}): ProposalWithStatus {
+  return {
+    id: 'p1',
+    type: 'student',
+    field: 'cefrLevel',
+    label: 'CEFR Level',
+    oldValue: 'A2',
+    newValue: 'B1',
+    status: 'proposed',
+    undoVisible: false,
     ...overrides,
   }
-  return { ...render(<AtelierAssistantPanel {...props} />), props }
 }
 
 // ---------------------------------------------------------------------------
@@ -95,7 +119,7 @@ describe('AtelierAssistantPanel', () => {
     vi.useRealTimers()
   })
 
-  // ---- existing text-input tests -----------------------------------------
+  // ---- header / status -------------------------------------------------------
 
   it('renders header: title, status indicator, and close button', () => {
     renderPanel()
@@ -103,6 +127,19 @@ describe('AtelierAssistantPanel', () => {
     expect(screen.getByText('Ready')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /close assistant/i })).toBeInTheDocument()
   })
+
+  it('shows PROCESSING INSIGHT status when processing', () => {
+    renderPanel({ processing: true, transcription: 'some text' })
+    expect(screen.getByText(/processing insight/i)).toBeInTheDocument()
+  })
+
+  it('disables input and send button when processing', () => {
+    renderPanel({ processing: true })
+    expect(screen.getByTestId('assistant-input')).toBeDisabled()
+    expect(screen.getByRole('button', { name: /send message/i })).toBeDisabled()
+  })
+
+  // ---- empty state ------------------------------------------------------------
 
   it('renders empty state with generic prompt when no student name', () => {
     renderPanel({ transcription: null, studentName: undefined })
@@ -114,6 +151,8 @@ describe('AtelierAssistantPanel', () => {
     renderPanel({ transcription: null, studentName: 'Ana' })
     expect(screen.getByText(/What did you cover with Ana today/i)).toBeInTheDocument()
   })
+
+  // ---- text input -------------------------------------------------------------
 
   it('renders text input and send button', () => {
     renderPanel()
@@ -148,12 +187,54 @@ describe('AtelierAssistantPanel', () => {
     expect(screen.getByRole('button', { name: /send message/i })).toBeDisabled()
   })
 
-  it('shows transcription block and proposals stub', () => {
-    renderPanel({ transcription: 'Worked on present perfect.' })
+  // ---- transcription + proposals ----------------------------------------------
+
+  it('shows transcription block and empty proposals message after submission', () => {
+    renderPanel({ transcription: 'Worked on present perfect.', proposals: [] })
     expect(screen.getByTestId('transcription-block')).toBeInTheDocument()
     expect(screen.getByText('Worked on present perfect.')).toBeInTheDocument()
     expect(screen.getByText('Proposed Updates')).toBeInTheDocument()
-    expect(screen.getByText('(coming soon)')).toBeInTheDocument()
+    expect(screen.getByTestId('proposals-empty')).toBeInTheDocument()
+  })
+
+  it('shows loading indicator while processing with transcription', () => {
+    renderPanel({ transcription: 'some text', processing: true, proposals: [] })
+    expect(screen.getByTestId('proposals-loading')).toBeInTheDocument()
+  })
+
+  it('renders proposal cards when proposals are provided', () => {
+    const proposal = makeProposal()
+    renderPanel({ transcription: 'some text', proposals: [proposal] })
+    expect(screen.getByTestId('proposals-list')).toBeInTheDocument()
+    expect(screen.getByTestId(`proposal-card-${proposal.id}`)).toBeInTheDocument()
+  })
+
+  it('shows batch actions footer when there are proposed cards', () => {
+    renderPanel({ transcription: 'some text', proposals: [makeProposal({ status: 'proposed' })] })
+    expect(screen.getByTestId('batch-actions')).toBeInTheDocument()
+    expect(screen.getByTestId('apply-all-btn')).toBeInTheDocument()
+    expect(screen.getByTestId('dismiss-all-btn')).toBeInTheDocument()
+  })
+
+  it('hides batch actions footer when no proposed cards remain', () => {
+    renderPanel({ transcription: 'some text', proposals: [makeProposal({ status: 'applied' })] })
+    expect(screen.queryByTestId('batch-actions')).not.toBeInTheDocument()
+  })
+
+  it('calls onApplyAll on Apply All Remaining click', async () => {
+    const user = userEvent.setup()
+    const onApplyAll = vi.fn()
+    renderPanel({ transcription: 'text', proposals: [makeProposal()], onApplyAll })
+    await user.click(screen.getByTestId('apply-all-btn'))
+    expect(onApplyAll).toHaveBeenCalled()
+  })
+
+  it('calls onDismissAll on Dismiss All Remaining click', async () => {
+    const user = userEvent.setup()
+    const onDismissAll = vi.fn()
+    renderPanel({ transcription: 'text', proposals: [makeProposal()], onDismissAll })
+    await user.click(screen.getByTestId('dismiss-all-btn'))
+    expect(onDismissAll).toHaveBeenCalled()
   })
 
   it('shows transcription in italic blockquote style', () => {
@@ -162,6 +243,8 @@ describe('AtelierAssistantPanel', () => {
     expect(block.tagName.toLowerCase()).toBe('blockquote')
     expect(block.className).toContain('italic')
   })
+
+  // ---- close / discard --------------------------------------------------------
 
   it('calls onClose immediately on X click when no transcription', async () => {
     const user = userEvent.setup()
@@ -202,7 +285,7 @@ describe('AtelierAssistantPanel', () => {
     expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
   })
 
-  // ---- voice input tests --------------------------------------------------
+  // ---- voice input tests ------------------------------------------------------
 
   it('renders mic button in idle state', () => {
     renderPanel()
@@ -258,7 +341,6 @@ describe('AtelierAssistantPanel', () => {
     renderPanel({ onSubmit })
 
     await act(async () => { fireEvent.click(screen.getByTestId('mic-btn')) })
-    // elapsed stays 0 — stop immediately without advancing timers
     await act(async () => { fireEvent.click(screen.getByTestId('stop-recording-btn')) })
     vi.useRealTimers()
 
@@ -287,6 +369,21 @@ describe('AtelierAssistantPanel', () => {
     await user.click(screen.getByTestId('mic-retry-btn'))
     expect(screen.queryByTestId('mic-permission-error')).not.toBeInTheDocument()
     expect(screen.getByTestId('mic-btn')).toBeInTheDocument()
+  })
+
+  it('empty transcription shows friendly hint and does not call onSubmit', async () => {
+    vi.useFakeTimers()
+    const onSubmit = vi.fn()
+    mockUpload.mockResolvedValue({ ...SAMPLE_NOTE, transcription: '' })
+    renderPanel({ onSubmit })
+
+    await act(async () => { fireEvent.click(screen.getByTestId('mic-btn')) })
+    act(() => { vi.advanceTimersByTime(2000) })
+    await act(async () => { fireEvent.click(screen.getByTestId('stop-recording-btn')) })
+    vi.useRealTimers()
+
+    expect(await screen.findByTestId('empty-transcription-hint')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 
   it('upload error shows retry affordance', async () => {
@@ -320,24 +417,8 @@ describe('AtelierAssistantPanel', () => {
     expect(screen.queryByTestId('upload-error')).not.toBeInTheDocument()
   })
 
-  it('empty transcription shows friendly hint and does not call onSubmit', async () => {
-    vi.useFakeTimers()
-    const onSubmit = vi.fn()
-    mockUpload.mockResolvedValue({ ...SAMPLE_NOTE, transcription: '' })
-    renderPanel({ onSubmit })
-
-    await act(async () => { fireEvent.click(screen.getByTestId('mic-btn')) })
-    act(() => { vi.advanceTimersByTime(2000) })
-    await act(async () => { fireEvent.click(screen.getByTestId('stop-recording-btn')) })
-    vi.useRealTimers()
-
-    expect(await screen.findByTestId('empty-transcription-hint')).toBeInTheDocument()
-    expect(onSubmit).not.toHaveBeenCalled()
-  })
-
   it('slow STT (>15s) shows Cancel button that resets to idle', async () => {
     vi.useFakeTimers()
-    // Make upload hang indefinitely
     mockUpload.mockReturnValue(new Promise(() => {}))
     renderPanel()
 
