@@ -383,7 +383,7 @@ function TeachingNotesPanel({
               {onSaveTeachingNotes && (
                 <button
                   onClick={handleEdit}
-                  className="rounded-xl lt-gradient-primary bg-primary text-white hover:shadow-md active:brightness-90 px-5 py-2 text-sm font-bold transition-all"
+                  className="rounded-xl lt-gradient-primary bg-primary text-white hover:shadow-md active:brightness-90 disabled:[background-image:none] disabled:opacity-50 px-5 py-2 text-sm font-bold transition-all"
                   data-testid="add-memory-btn"
                 >
                   Add Memory
