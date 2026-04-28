@@ -266,6 +266,21 @@ describe('AppShell', () => {
     expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
   })
 
+  it('Escape with transcription shows inline discard confirm instead of closing', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    const aside = document.querySelector('aside')
+    const openBtn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(openBtn)
+    const input = screen.getByTestId('assistant-input')
+    await user.type(input, 'Hoy hemos trabajado el subjuntivo')
+    await user.click(screen.getByTestId('assistant-send-btn'))
+    // Now there is a transcription — Escape should show confirm, not close
+    await user.keyboard('{Escape}')
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
+    expect(screen.getByTestId('discard-confirm')).toBeInTheDocument()
+  })
+
   it('Open Assistant button shows active state class when panel is open', async () => {
     const user = userEvent.setup()
     renderShell()
