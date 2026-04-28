@@ -24,6 +24,7 @@ function renderCard(proposal: ProposalWithStatus, handlers = {}) {
     onDismiss: vi.fn(),
     onUndo: vi.fn(),
     onRetry: vi.fn(),
+    onModify: vi.fn(),
     ...handlers,
   }
   return { ...render(<ProposalCard proposal={proposal} {...props} />), props }
@@ -119,5 +120,86 @@ describe('ProposalCard', () => {
   it('todo type: uses CheckSquare icon config (emerald accent)', () => {
     const { container } = renderCard(makeProposal({ type: 'todo', oldValue: null, newValue: 'Review passive voice' }))
     expect(container.querySelector('.bg-emerald-500')).toBeInTheDocument()
+  })
+
+  it('proposed: shows Modify button', () => {
+    renderCard(makeProposal({ status: 'proposed' }))
+    expect(screen.getByTestId('modify-btn-p1')).toBeInTheDocument()
+  })
+
+  it('applied: does not show Modify button', () => {
+    renderCard(makeProposal({ status: 'applied' }))
+    expect(screen.queryByTestId('modify-btn-p1')).not.toBeInTheDocument()
+  })
+
+  it('dismissed: does not show Modify button', () => {
+    renderCard(makeProposal({ status: 'dismissed', undoVisible: false }))
+    expect(screen.queryByTestId('modify-btn-p1')).not.toBeInTheDocument()
+  })
+
+  it('clicking Modify shows inline input with current value', async () => {
+    const user = userEvent.setup()
+    renderCard(makeProposal({ status: 'proposed', newValue: 'B1' }))
+    await user.click(screen.getByTestId('modify-btn-p1'))
+    const input = screen.getByTestId('modify-input-p1') as HTMLInputElement
+    expect(input).toBeInTheDocument()
+    expect(input.value).toBe('B1')
+  })
+
+  it('Enter in inline input commits and calls onModify', async () => {
+    const user = userEvent.setup()
+    const onModify = vi.fn()
+    renderCard(makeProposal({ status: 'proposed', newValue: 'B1' }), { onModify })
+    await user.click(screen.getByTestId('modify-btn-p1'))
+    const input = screen.getByTestId('modify-input-p1')
+    await user.clear(input)
+    await user.type(input, 'B2')
+    await user.keyboard('{Enter}')
+    expect(onModify).toHaveBeenCalledWith('p1', 'B2')
+    expect(screen.queryByTestId('modify-input-p1')).not.toBeInTheDocument()
+  })
+
+  it('Escape in inline input cancels without calling onModify', async () => {
+    const user = userEvent.setup()
+    const onModify = vi.fn()
+    renderCard(makeProposal({ status: 'proposed', newValue: 'B1' }), { onModify })
+    await user.click(screen.getByTestId('modify-btn-p1'))
+    await user.type(screen.getByTestId('modify-input-p1'), 'B2')
+    await user.keyboard('{Escape}')
+    expect(onModify).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('modify-input-p1')).not.toBeInTheDocument()
+  })
+
+  it('Save button commits and calls onModify', async () => {
+    const user = userEvent.setup()
+    const onModify = vi.fn()
+    renderCard(makeProposal({ status: 'proposed', newValue: 'B1' }), { onModify })
+    await user.click(screen.getByTestId('modify-btn-p1'))
+    const input = screen.getByTestId('modify-input-p1')
+    await user.clear(input)
+    await user.type(input, 'B2')
+    await user.click(screen.getByTestId('modify-save-btn-p1'))
+    expect(onModify).toHaveBeenCalledWith('p1', 'B2')
+  })
+
+  it('Cancel button exits edit mode without calling onModify', async () => {
+    const user = userEvent.setup()
+    const onModify = vi.fn()
+    renderCard(makeProposal({ status: 'proposed', newValue: 'B1' }), { onModify })
+    await user.click(screen.getByTestId('modify-btn-p1'))
+    await user.click(screen.getByTestId('modify-cancel-btn-p1'))
+    expect(onModify).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('modify-input-p1')).not.toBeInTheDocument()
+  })
+
+  it('empty value on Enter does not call onModify', async () => {
+    const user = userEvent.setup()
+    const onModify = vi.fn()
+    renderCard(makeProposal({ status: 'proposed', newValue: 'B1' }), { onModify })
+    await user.click(screen.getByTestId('modify-btn-p1'))
+    const input = screen.getByTestId('modify-input-p1')
+    await user.clear(input)
+    await user.keyboard('{Enter}')
+    expect(onModify).not.toHaveBeenCalled()
   })
 })

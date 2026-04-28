@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { Calendar, CheckSquare, Loader2, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ProposalWithStatus } from '@/hooks/useAtelierAssistant'
@@ -8,7 +9,10 @@ interface Props {
   onDismiss: (id: string) => void
   onUndo: (id: string) => void
   onRetry: (id: string) => void
+  onModify: (id: string, newValue: string) => void
 }
+
+const MULTILINE_FIELDS = new Set(['actualContent', 'generalNotes', 'homeworkAssigned'])
 
 const TYPE_CONFIG = {
   student: {
@@ -31,7 +35,7 @@ const TYPE_CONFIG = {
   },
 } as const
 
-export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry }: Props) {
+export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onModify }: Props) {
   const config = TYPE_CONFIG[proposal.type]
   const { Icon } = config
 
@@ -39,6 +43,58 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
   const isApplied = proposal.status === 'applied'
   const isApplying = proposal.status === 'applying'
   const isError = proposal.status === 'error'
+
+  const [editing, setEditing] = useState(false)
+  const [editValue, setEditValue] = useState('')
+  const editingRef = useRef(false)
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
+
+  useEffect(() => {
+    editingRef.current = editing
+  }, [editing])
+
+  function startEdit() {
+    setEditValue(proposal.newValue)
+    setEditing(true)
+  }
+
+  function commitEdit() {
+    const trimmed = editValue.trim()
+    setEditing(false)
+    if (trimmed && trimmed !== proposal.newValue) {
+      onModify(proposal.id, trimmed)
+    }
+  }
+
+  function cancelEdit() {
+    setEditing(false)
+  }
+
+  function handleEditKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      commitEdit()
+    } else if (e.key === 'Escape') {
+      cancelEdit()
+    }
+  }
+
+  function handleEditBlur() {
+    if (!editingRef.current) return
+    const trimmed = editValue.trim()
+    setEditing(false)
+    if (trimmed && trimmed !== proposal.newValue) {
+      onModify(proposal.id, trimmed)
+    }
+  }
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus()
+    }
+  }, [editing])
+
+  const isMultiline = MULTILINE_FIELDS.has(proposal.field)
 
   return (
     <div
@@ -79,9 +135,33 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
           )}
         </div>
 
-        {/* Diff */}
+        {/* Diff / inline edit */}
         <div className="text-sm font-inter text-zinc-700 mb-2.5 leading-relaxed">
-          {proposal.oldValue ? (
+          {editing ? (
+            isMultiline ? (
+              <textarea
+                ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+                value={editValue}
+                onChange={e => setEditValue(e.target.value)}
+                onKeyDown={handleEditKeyDown}
+                onBlur={handleEditBlur}
+                rows={3}
+                data-testid={`modify-input-${proposal.id}`}
+                className="w-full border border-indigo-300 rounded-lg px-2 py-1.5 text-sm font-inter text-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+              />
+            ) : (
+              <input
+                ref={inputRef as React.RefObject<HTMLInputElement>}
+                type="text"
+                value={editValue}
+                onChange={e => setEditValue(e.target.value)}
+                onKeyDown={handleEditKeyDown}
+                onBlur={handleEditBlur}
+                data-testid={`modify-input-${proposal.id}`}
+                className="w-full border border-indigo-300 rounded-lg px-2 py-1.5 text-sm font-inter text-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+            )
+          ) : proposal.oldValue ? (
             <span>
               <span className="line-through text-zinc-400">{proposal.oldValue}</span>
               {' '}
@@ -101,7 +181,7 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {proposal.status === 'proposed' && (
+          {proposal.status === 'proposed' && !editing && (
             <>
               <button
                 onClick={() => onApply(proposal.id)}
@@ -116,6 +196,32 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
                 className="text-xs font-semibold font-inter text-zinc-500 hover:text-zinc-700 px-3 py-1 rounded-lg hover:bg-zinc-100 transition-colors"
               >
                 Dismiss
+              </button>
+              <button
+                onClick={startEdit}
+                data-testid={`modify-btn-${proposal.id}`}
+                className="text-xs font-semibold font-inter text-indigo-600 hover:text-indigo-700 px-3 py-1 rounded-lg hover:bg-indigo-50 transition-colors"
+              >
+                Modify
+              </button>
+            </>
+          )}
+
+          {proposal.status === 'proposed' && editing && (
+            <>
+              <button
+                onMouseDown={e => { e.preventDefault(); commitEdit() }}
+                data-testid={`modify-save-btn-${proposal.id}`}
+                className="text-xs font-semibold font-inter text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded-lg transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onMouseDown={e => { e.preventDefault(); cancelEdit() }}
+                data-testid={`modify-cancel-btn-${proposal.id}`}
+                className="text-xs font-semibold font-inter text-zinc-500 hover:text-zinc-700 px-3 py-1 rounded-lg hover:bg-zinc-100 transition-colors"
+              >
+                Cancel
               </button>
             </>
           )}

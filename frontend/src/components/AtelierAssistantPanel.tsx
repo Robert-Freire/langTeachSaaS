@@ -53,6 +53,7 @@ interface Props {
   onDismiss: (id: string) => void
   onUndo: (id: string) => void
   onRetry: (id: string) => void
+  onModify: (id: string, newValue: string) => void
   onApplyAll: () => void
   onDismissAll: () => void
 }
@@ -70,6 +71,7 @@ export default function AtelierAssistantPanel({
   onDismiss,
   onUndo,
   onRetry,
+  onModify,
   onApplyAll,
   onDismissAll,
 }: Props) {
@@ -434,6 +436,7 @@ export default function AtelierAssistantPanel({
                         onDismiss={onDismiss}
                         onUndo={onUndo}
                         onRetry={onRetry}
+                        onModify={onModify}
                       />
                     ))}
                   </div>
