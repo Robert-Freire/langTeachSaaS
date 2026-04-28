@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Text.Json;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -142,6 +143,73 @@ public class SessionLogsController : ControllerBase
             ModelState.AddModelError(string.Empty, ex.Message);
             return BadRequest(ModelState);
         }
+    }
+
+    [HttpPatch("{sessionId:guid}")]
+    public async Task<IActionResult> PatchSession(Guid studentId, Guid sessionId, [FromBody] Dictionary<string, JsonElement> fields, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var session = await _sessionLogService.GetByIdAsync(teacherId, studentId, sessionId, cancellationToken);
+        if (session is null) return NotFound();
+
+        var request = MapSessionToUpdateRequest(session);
+
+        foreach (var (key, value) in fields)
+        {
+            switch (key.ToLowerInvariant())
+            {
+                case "title":
+                    request.Title = value.GetString();
+                    break;
+                case "actualcontent":
+                    request.ActualContent = value.GetString();
+                    break;
+                case "generalnotes":
+                    request.GeneralNotes = value.GetString();
+                    break;
+                case "homeworkassigned":
+                    request.HomeworkAssigned = value.GetString();
+                    break;
+            }
+        }
+
+        try
+        {
+            var updated = await _sessionLogService.UpdateAsync(teacherId, studentId, sessionId, request, cancellationToken);
+            if (updated is null) return NotFound();
+            return Ok(updated);
+        }
+        catch (ValidationException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
+        }
+    }
+
+    private static UpdateSessionLogRequest MapSessionToUpdateRequest(SessionLogDto s)
+    {
+        // MentionedDifficultyPairs and SuggestedDifficulties are stored as JSON strings in the DTO;
+        // passing null here is safe — UpdateAsync treats null as "clear" for those fields.
+        return new UpdateSessionLogRequest
+        {
+            SessionDate = s.SessionDate,
+            PlannedContent = s.PlannedContent,
+            ActualContent = s.ActualContent,
+            HomeworkAssigned = s.HomeworkAssigned,
+            PreviousHomeworkStatus = s.PreviousHomeworkStatus,
+            NextSessionTopics = s.NextSessionTopics,
+            GeneralNotes = s.GeneralNotes,
+            LevelReassessmentSkill = s.LevelReassessmentSkill,
+            LevelReassessmentLevel = s.LevelReassessmentLevel,
+            LinkedLessonId = s.LinkedLessonId,
+            TopicTags = s.TopicTags,
+            IsCancelled = s.IsCancelled,
+            Status = s.Status,
+            Duration = s.Duration,
+            Title = s.Title,
+        };
     }
 
     [HttpDelete("{sessionId:guid}")]

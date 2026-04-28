@@ -5,6 +5,13 @@ import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AppShell from './AppShell'
 
+vi.mock('../api/assistant', () => ({
+  proposeAssistant: vi.fn().mockResolvedValue({ proposals: [] }),
+  applyStudentProposal: vi.fn().mockResolvedValue(undefined),
+  applySessionProposal: vi.fn().mockResolvedValue(undefined),
+  applyTodoProposal: vi.fn().mockResolvedValue(undefined),
+}))
+
 const mockLogout = vi.fn()
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: () => ({

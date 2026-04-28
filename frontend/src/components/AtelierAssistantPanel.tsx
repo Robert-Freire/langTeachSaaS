@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Sparkles, X, Send } from 'lucide-react'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
+import type { ProposalWithStatus } from '@/hooks/useAtelierAssistant'
+import ProposalCard from '@/components/assistant/ProposalCard'
 
 interface Props {
   open: boolean
@@ -9,7 +11,15 @@ interface Props {
   onCloseDiscarding: () => void
   studentName?: string
   transcription: string | null
+  processing: boolean
+  proposals: ProposalWithStatus[]
   onSubmit: (text: string) => void
+  onApply: (id: string) => void
+  onDismiss: (id: string) => void
+  onUndo: (id: string) => void
+  onRetry: (id: string) => void
+  onApplyAll: () => void
+  onDismissAll: () => void
 }
 
 export default function AtelierAssistantPanel({
@@ -18,7 +28,15 @@ export default function AtelierAssistantPanel({
   onCloseDiscarding,
   studentName,
   transcription,
+  processing,
+  proposals,
   onSubmit,
+  onApply,
+  onDismiss,
+  onUndo,
+  onRetry,
+  onApplyAll,
+  onDismissAll,
 }: Props) {
   const [inputValue, setInputValue] = useState('')
   const [pendingClose, setPendingClose] = useState(false)
@@ -41,7 +59,7 @@ export default function AtelierAssistantPanel({
 
   function handleSubmit() {
     const text = inputValue.trim()
-    if (!text) return
+    if (!text || processing) return
     onSubmit(text)
     setInputValue('')
     setPendingClose(false)
@@ -58,6 +76,8 @@ export default function AtelierAssistantPanel({
     ? `What did you cover with ${studentName} today?`
     : 'What would you like to cover today?'
 
+  const pendingProposals = proposals.filter(p => p.status === 'proposed')
+
   return (
     <Sheet open={open} onOpenChange={handleSheetOpenChange}>
       <SheetContent
@@ -70,9 +90,18 @@ export default function AtelierAssistantPanel({
             <Sparkles className="h-3.5 w-3.5 text-white" aria-hidden="true" />
           </div>
           <span className="font-semibold font-inter text-sm text-[#1A1B22] flex-1">Atelier Assistant</span>
-          <div className="flex items-center gap-1.5 mr-3" role="status" aria-label="Status: Ready">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" aria-hidden="true" />
-            <span className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter">Ready</span>
+          <div
+            className="flex items-center gap-1.5 mr-3"
+            role="status"
+            aria-label={processing ? 'Status: Processing' : 'Status: Ready'}
+          >
+            <span
+              className={processing ? 'h-2 w-2 rounded-full bg-amber-400 shrink-0 animate-pulse' : 'h-2 w-2 rounded-full bg-emerald-500 shrink-0'}
+              aria-hidden="true"
+            />
+            <span className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter">
+              {processing ? 'Processing Insight' : 'Ready'}
+            </span>
           </div>
           <button
             onClick={handleCloseAttempt}
@@ -133,11 +162,52 @@ export default function AtelierAssistantPanel({
                 <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mb-2">
                   Proposed Updates
                 </p>
-                <p className="text-sm font-inter text-zinc-400">(coming soon)</p>
+                {processing ? (
+                  <p className="text-sm font-inter text-zinc-400" data-testid="proposals-loading">
+                    Analysing…
+                  </p>
+                ) : proposals.length === 0 ? (
+                  <p className="text-sm font-inter text-zinc-400" data-testid="proposals-empty">
+                    No updates suggested.
+                  </p>
+                ) : (
+                  <div className="space-y-2" data-testid="proposals-list">
+                    {proposals.map(proposal => (
+                      <ProposalCard
+                        key={proposal.id}
+                        proposal={proposal}
+                        onApply={onApply}
+                        onDismiss={onDismiss}
+                        onUndo={onUndo}
+                        onRetry={onRetry}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
+
+        {/* Batch actions footer */}
+        {pendingProposals.length > 0 && (
+          <div className="px-4 pb-3 pt-1 shrink-0 space-y-1.5" data-testid="batch-actions">
+            <button
+              onClick={onApplyAll}
+              className="w-full py-2.5 rounded-xl font-inter font-semibold text-sm text-white bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] hover:brightness-105 transition-all"
+              data-testid="apply-all-btn"
+            >
+              Apply All Remaining
+            </button>
+            <button
+              onClick={onDismissAll}
+              className="w-full py-2 rounded-xl font-inter font-semibold text-sm text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+              data-testid="dismiss-all-btn"
+            >
+              Dismiss All Remaining
+            </button>
+          </div>
+        )}
 
         {/* Footer: text input */}
         <div className="px-4 pb-4 pt-2 shrink-0">
@@ -147,12 +217,13 @@ export default function AtelierAssistantPanel({
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="What did you cover today?"
-              className="flex-1 bg-[#F4F2FD] border-0 focus-visible:ring-0 rounded-xl h-10 px-4 text-sm font-inter"
+              disabled={processing}
+              className="flex-1 bg-[#F4F2FD] border-0 focus-visible:ring-0 rounded-xl h-10 px-4 text-sm font-inter disabled:opacity-50"
               data-testid="assistant-input"
             />
             <button
               onClick={handleSubmit}
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || processing}
               aria-label="Send message"
               className="h-10 w-10 flex items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] text-white disabled:opacity-40 transition-opacity shrink-0"
               data-testid="assistant-send-btn"

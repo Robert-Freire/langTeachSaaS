@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Text.Json;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -119,6 +120,75 @@ public class StudentsController : ControllerBase
             return BadRequest(ModelState);
         }
     }
+
+    [HttpPatch("{id:guid}")]
+    public async Task<IActionResult> PatchStudent(Guid id, [FromBody] Dictionary<string, JsonElement> fields, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var student = await _studentService.GetByIdAsync(teacherId, id, cancellationToken);
+        if (student is null) return NotFound();
+
+        var request = MapStudentToUpdateRequest(student);
+
+        foreach (var (key, value) in fields)
+        {
+            switch (key.ToLowerInvariant())
+            {
+                case "cefrlevel":
+                    request.CefrLevel = value.GetString() ?? request.CefrLevel;
+                    break;
+                case "profession":
+                    request.Profession = value.GetString();
+                    break;
+                case "countryofresidence":
+                    request.CountryOfResidence = value.GetString();
+                    break;
+            }
+        }
+
+        try
+        {
+            var updated = await _studentService.UpdateAsync(teacherId, id, request, cancellationToken);
+            if (updated is null) return NotFound();
+            return Ok(updated);
+        }
+        catch (ValidationException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
+        }
+    }
+
+    private static UpdateStudentRequest MapStudentToUpdateRequest(StudentDto s) => new()
+    {
+        Name = s.Name,
+        LearningLanguage = s.LearningLanguage,
+        CefrLevel = s.Level.CefrLevel,
+        OfficialCefrLevel = s.Level.OfficialCefrLevel,
+        SkillLevelOverrides = s.Level.SkillLevelOverrides,
+        Interests = s.Profile.Interests,
+        NativeLanguages = s.Languages.NativeLanguages,
+        SpokenLanguages = s.Languages.SpokenLanguages,
+        LearningGoals = s.Profile.LearningGoals,
+        Weaknesses = s.Profile.Weaknesses,
+        Difficulties = s.Profile.Difficulties,
+        PersonalNotes = s.Profile.PersonalNotes,
+        TeachingNotes = s.Profile.TeachingNotes,
+        ShortTermObjectives = s.Profile.ShortTermObjectives,
+        TeachingTodos = s.Profile.TeachingTodos,
+        BirthYear = s.Identity.BirthYear,
+        Profession = s.Identity.Profession,
+        CountryOfOrigin = s.Identity.CountryOfOrigin,
+        CityOfOrigin = s.Identity.CityOfOrigin,
+        CountryOfResidence = s.Identity.CountryOfResidence,
+        CityOfResidence = s.Identity.CityOfResidence,
+        ReasonForStudying = s.Profile.ReasonForStudying,
+        IsActive = s.Commercial.IsActive,
+        IsCorporate = s.Commercial.IsCorporate,
+        Rate = s.Commercial.Rate,
+    };
 
     [HttpGet("{studentId:guid}/lesson-history")]
     public async Task<IActionResult> GetLessonHistory(Guid studentId, CancellationToken cancellationToken)
