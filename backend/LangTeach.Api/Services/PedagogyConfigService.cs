@@ -26,6 +26,7 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly SessionGapPolicyFile _sessionGapPolicy;
     private readonly FrozenSet<string> _difficultyCompetencies;
     private readonly FrozenSet<string> _difficultySeverities;
+    public PromptFragmentsConfig PromptFragments { get; }
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -125,6 +126,10 @@ public class PedagogyConfigService : IPedagogyConfigService
                 "PedagogyConfigService: difficulty-taxonomy.json must define at least one competency and one severity.");
         _difficultyCompetencies = taxonomy.Competencies.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
         _difficultySeverities = taxonomy.Severities.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+
+        // Load prompt fragments
+        PromptFragments = LoadJson<PromptFragmentsConfig>(assembly, "LangTeach.Api.Pedagogy.prompt-fragments.json");
+        ValidatePromptFragments(PromptFragments);
 
         // Validate cross-layer references — fail fast on dangling IDs
         ValidateCrossLayerRefs();
@@ -446,6 +451,27 @@ public class PedagogyConfigService : IPedagogyConfigService
     }
 
     // --- Private helpers ---
+
+    private static readonly HashSet<string> KnownPromptTokens = new(StringComparer.Ordinal)
+    {
+        "{cefrLevel}", "{targetLanguage}", "{nativeLanguage}", "{reasonForStudying}", "{motivationSuffix}"
+    };
+
+    private static void ValidatePromptFragments(PromptFragmentsConfig f)
+    {
+        var allStrings = new[] { f.CefrCue, f.PersonalisationDirective, f.MotivationSuffix }
+            .Concat(f.NativeLanguageBullets);
+        foreach (var s in allStrings)
+        {
+            foreach (System.Text.RegularExpressions.Match m in
+                System.Text.RegularExpressions.Regex.Matches(s, @"\{[^}]+\}"))
+            {
+                if (!KnownPromptTokens.Contains(m.Value))
+                    throw new InvalidOperationException(
+                        $"PedagogyConfigService: unknown token '{m.Value}' in prompt-fragments.json. Known tokens: {string.Join(", ", KnownPromptTokens)}");
+            }
+        }
+    }
 
     private static T LoadJson<T>(Assembly assembly, string resourceName)
     {
