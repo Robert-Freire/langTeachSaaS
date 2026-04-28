@@ -1,22 +1,16 @@
-import { useMemo } from 'react'
 import type { NewStudentData } from '@/api/assistant'
 
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
 interface Props {
-  value: string
+  payload: NewStudentData
   proposalId: string
-  onEdit: (id: string, newValue: string) => void
+  onEditPayload: (id: string, payload: NewStudentData) => void
 }
 
-export default function NewStudentFields({ value, proposalId, onEdit }: Props) {
-  const fields = useMemo<NewStudentData>(() => {
-    try { return JSON.parse(value) as NewStudentData }
-    catch { return { name: '' } }
-  }, [value])
-
+export default function NewStudentFields({ payload, proposalId, onEditPayload }: Props) {
   const update = (patch: Partial<NewStudentData>) => {
-    onEdit(proposalId, JSON.stringify({ ...fields, ...patch }))
+    onEditPayload(proposalId, { ...payload, ...patch })
   }
 
   return (
@@ -24,41 +18,41 @@ export default function NewStudentFields({ value, proposalId, onEdit }: Props) {
       <FieldRow
         label="Name"
         required
-        value={fields.name}
+        value={payload.name}
         onChange={v => update({ name: v })}
       />
       <FieldRow
         label="Learning Language"
         required
-        value={fields.learningLanguage ?? ''}
+        value={payload.learningLanguage ?? ''}
         onChange={v => update({ learningLanguage: v || null })}
       />
       <SelectRow
         label="CEFR Level"
         required
-        value={fields.cefrLevel ?? ''}
+        value={payload.cefrLevel ?? ''}
         options={CEFR_LEVELS}
         onChange={v => update({ cefrLevel: v || null })}
       />
       <FieldRow
         label="Profession"
-        value={fields.profession ?? ''}
+        value={payload.profession ?? ''}
         onChange={v => update({ profession: v || null })}
       />
       <FieldRow
         label="City"
-        value={fields.cityOfResidence ?? ''}
+        value={payload.cityOfResidence ?? ''}
         onChange={v => update({ cityOfResidence: v || null })}
       />
       <FieldRow
         label="Native Language(s)"
-        value={fields.nativeLanguages?.join(', ') ?? ''}
+        value={payload.nativeLanguages?.join(', ') ?? ''}
         onChange={v => update({ nativeLanguages: v ? v.split(',').map(s => s.trim()).filter(Boolean) : [] })}
         placeholder="e.g. Spanish, Catalan"
       />
       <FieldRow
         label="Reason for Studying"
-        value={fields.reasonForStudying ?? ''}
+        value={payload.reasonForStudying ?? ''}
         onChange={v => update({ reasonForStudying: v || null })}
       />
     </div>

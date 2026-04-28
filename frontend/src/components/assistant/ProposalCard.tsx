@@ -1,6 +1,6 @@
 import { Calendar, CheckSquare, Loader2, User, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { ProposalWithStatus } from '@/hooks/useAtelierAssistant'
+import type { NewStudentData, ProposalWithStatus } from '@/hooks/useAtelierAssistant'
 import NewStudentFields from './NewStudentFields'
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
   onDismiss: (id: string) => void
   onUndo: (id: string) => void
   onRetry: (id: string) => void
-  onEdit?: (id: string, newValue: string) => void
+  onEditPayload?: (id: string, payload: NewStudentData) => void
 }
 
 const TYPE_CONFIG = {
@@ -39,7 +39,7 @@ const TYPE_CONFIG = {
   },
 } as const
 
-export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onEdit }: Props) {
+export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onEditPayload }: Props) {
   const config = TYPE_CONFIG[proposal.type]
   const { Icon } = config
 
@@ -91,9 +91,9 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
         <div className="mb-2.5">
           {proposal.type === 'newStudent' ? (
             <NewStudentFields
-              value={proposal.newValue}
+              payload={proposal.payload as NewStudentData ?? { name: proposal.newValue }}
               proposalId={proposal.id}
-              onEdit={onEdit ?? (() => {})}
+              onEditPayload={onEditPayload ?? (() => {})}
             />
           ) : (
             <div className="text-sm font-inter text-zinc-700 leading-relaxed">

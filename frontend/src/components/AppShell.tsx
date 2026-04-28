@@ -275,7 +275,7 @@ export default function AppShell() {
         onRetry={assistant.apply}
         onApplyAll={assistant.applyAll}
         onDismissAll={assistant.dismissAll}
-        onEdit={assistant.onEdit}
+        onEditPayload={assistant.onEditPayload}
       />
     </div>
   )

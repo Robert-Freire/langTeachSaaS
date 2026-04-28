@@ -89,8 +89,9 @@ public class AssistantController : ControllerBase
                 cefrLevel = studentExtraction.CefrLevel,
                 reasonForStudying = studentExtraction.ReasonForStudying,
             };
-            var json = JsonSerializer.Serialize(newStudentPayload, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-            proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "newStudent", "profile", "New Student", null, json));
+            var opts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var payloadElement = JsonSerializer.SerializeToElement(newStudentPayload, opts);
+            proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "newStudent", "profile", "New Student", null, extractedName!, payloadElement));
         }
 
         if (student != null)

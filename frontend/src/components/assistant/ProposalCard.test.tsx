@@ -24,6 +24,7 @@ function renderCard(proposal: ProposalWithStatus, handlers = {}) {
     onDismiss: vi.fn(),
     onUndo: vi.fn(),
     onRetry: vi.fn(),
+    onEditPayload: vi.fn(),
     ...handlers,
   }
   return { ...render(<ProposalCard proposal={proposal} {...props} />), props }
@@ -122,33 +123,37 @@ describe('ProposalCard', () => {
   })
 
   it('newStudent type: uses teal accent', () => {
-    const newStudentPayload = JSON.stringify({ name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' })
-    const { container } = renderCard(makeProposal({ type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: newStudentPayload }))
+    const { container } = renderCard(makeProposal({
+      type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
+      payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+    }))
     expect(container.querySelector('.bg-teal-500')).toBeInTheDocument()
   })
 
   it('newStudent type: renders inline field inputs instead of diff', () => {
-    const newStudentPayload = JSON.stringify({ name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' })
-    renderCard(makeProposal({ type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: newStudentPayload }))
+    renderCard(makeProposal({
+      type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
+      payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+    }))
     expect(screen.getByDisplayValue('Sofía')).toBeInTheDocument()
     expect(screen.getByDisplayValue('inglés')).toBeInTheDocument()
   })
 
-  it('newStudent type: calls onEdit when a field is changed', async () => {
+  it('newStudent type: calls onEditPayload when a field is changed', async () => {
     const user = userEvent.setup()
-    const onEdit = vi.fn()
-    const newStudentPayload = JSON.stringify({ name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' })
+    const onEditPayload = vi.fn()
     renderCard(
-      makeProposal({ type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: newStudentPayload }),
-      { onEdit },
+      makeProposal({
+        type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
+        payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+      }),
+      { onEditPayload },
     )
-    // Component is fully controlled: typing appends to the current prop value
     const nameInput = screen.getByDisplayValue('Sofía')
     await user.type(nameInput, 'X')
-    expect(onEdit).toHaveBeenCalled()
-    const lastCall = onEdit.mock.calls[onEdit.mock.calls.length - 1]
+    expect(onEditPayload).toHaveBeenCalled()
+    const lastCall = onEditPayload.mock.calls[onEditPayload.mock.calls.length - 1]
     expect(lastCall[0]).toBe('p1')
-    // The name field has the original value plus the typed character
-    expect(JSON.parse(lastCall[1]).name).toBe('SofíaX')
+    expect(lastCall[1].name).toBe('SofíaX')
   })
 })

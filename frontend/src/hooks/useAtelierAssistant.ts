@@ -8,6 +8,8 @@ import {
   type ProposalDto,
   proposeAssistant,
 } from '../api/assistant'
+// Re-export NewStudentData so consumers don't need to import from api/assistant directly
+export type { NewStudentData }
 import { createStudent } from '../api/students'
 
 export type ProposalStatus = 'proposed' | 'applying' | 'applied' | 'dismissed' | 'error'
@@ -32,7 +34,7 @@ export interface AtelierAssistantActions {
   applyAll: () => void
   dismissAll: () => void
   reset: () => void
-  onEdit: (id: string, newValue: string) => void
+  onEditPayload: (id: string, payload: NewStudentData) => void
 }
 
 export function useAtelierAssistant(
@@ -92,7 +94,8 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'todo' && studentId) {
         await applyTodoProposal(studentId, proposal.newValue)
       } else if (proposal.type === 'newStudent') {
-        const data = JSON.parse(proposal.newValue) as NewStudentData
+        const data = proposal.payload as NewStudentData | null | undefined
+        if (!data) throw new Error('Student data is missing.')
         if (!data.name?.trim()) throw new Error('Name is required.')
         if (!data.learningLanguage?.trim()) throw new Error('Learning Language is required.')
         if (!data.cefrLevel?.trim()) throw new Error('CEFR Level is required.')
@@ -100,7 +103,7 @@ export function useAtelierAssistant(
         const cached = queryClient.getQueryData<{ items: Array<{ name: string }> }>(['students'])
         if (cached && data.name) {
           const exists = cached.items.some(
-            s => s.name.trim().toLowerCase() === data.name.trim().toLowerCase()
+            s => s.name.trim().toLowerCase() === data.name!.trim().toLowerCase()
           )
           if (exists) throw new Error(`A student named "${data.name}" already exists.`)
         }
@@ -164,8 +167,8 @@ export function useAtelierAssistant(
     proposalsRef.current.filter(p => p.status === 'proposed').forEach(p => dismiss(p.id))
   }, [dismiss])
 
-  const onEdit = useCallback((id: string, newValue: string) => {
-    setProposals(prev => prev.map(p => p.id === id ? { ...p, newValue } : p))
+  const onEditPayload = useCallback((id: string, payload: NewStudentData) => {
+    setProposals(prev => prev.map(p => p.id === id ? { ...p, payload } : p))
   }, [])
 
   const reset = useCallback(() => {
@@ -187,6 +190,6 @@ export function useAtelierAssistant(
     applyAll,
     dismissAll,
     reset,
-    onEdit,
+    onEditPayload,
   }
 }

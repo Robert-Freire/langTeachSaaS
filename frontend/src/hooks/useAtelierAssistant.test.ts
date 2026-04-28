@@ -178,8 +178,8 @@ describe('useAtelierAssistant', () => {
   })
 
   it('apply: routes newStudent proposal to createStudent and invalidates students query', async () => {
-    const payload = JSON.stringify({ name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' })
-    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: payload }
+    const studentPayload = { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' }
+    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía', payload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
     mockCreateStudent.mockResolvedValueOnce({
       id: 'new-student-id', name: 'Sofía', learningLanguage: 'inglés',
@@ -201,18 +201,18 @@ describe('useAtelierAssistant', () => {
     expect(result.current.proposals[0].status).toBe('applied')
   })
 
-  it('onEdit: updates newValue of proposal with matching id', async () => {
-    const payload = JSON.stringify({ name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' })
-    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: payload }
+  it('onEditPayload: updates payload of proposal with matching id', async () => {
+    const studentPayload = { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' }
+    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía', payload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
 
     const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
     act(() => { result.current.submit('text') })
     await act(async () => { await vi.runAllTimersAsync() })
 
-    const updatedPayload = JSON.stringify({ name: 'Lucía', learningLanguage: 'inglés', cefrLevel: 'B1' })
-    act(() => { result.current.onEdit('p4', updatedPayload) })
-    expect(result.current.proposals[0].newValue).toBe(updatedPayload)
+    const updatedPayload = { name: 'Lucía', learningLanguage: 'inglés', cefrLevel: 'B1' }
+    act(() => { result.current.onEditPayload('p4', updatedPayload) })
+    expect(result.current.proposals[0].payload).toEqual(updatedPayload)
   })
 
   it('reset: clears transcription, processing, and proposals', async () => {

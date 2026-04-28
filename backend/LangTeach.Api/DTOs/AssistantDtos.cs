@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 
 namespace LangTeach.Api.DTOs;
 
@@ -11,13 +12,16 @@ public class AssistantProposeRequest
     public Guid? SessionId { get; set; }
 }
 
+// Payload carries structured data for compound proposal types (e.g. newStudent).
+// Scalar proposal types (student, session, todo) leave Payload null.
 public record ProposalDto(
     string Id,
     string Type,
     string Field,
     string Label,
     string? OldValue,
-    string NewValue
+    string NewValue,
+    JsonElement? Payload = null
 );
 
 public record AssistantProposeResponse(List<ProposalDto> Proposals);

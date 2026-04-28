@@ -1,14 +1,5 @@
 import { apiClient } from '../lib/apiClient'
 
-export interface ProposalDto {
-  id: string
-  type: 'student' | 'session' | 'todo' | 'newStudent'
-  field: string
-  label: string
-  oldValue: string | null
-  newValue: string
-}
-
 export interface NewStudentData {
   name: string
   birthYear?: number | null
@@ -18,6 +9,16 @@ export interface NewStudentData {
   learningLanguage?: string | null
   cefrLevel?: string | null
   reasonForStudying?: string | null
+}
+
+export interface ProposalDto {
+  id: string
+  type: 'student' | 'session' | 'todo' | 'newStudent'
+  field: string
+  label: string
+  oldValue: string | null
+  newValue: string
+  payload?: NewStudentData | null
 }
 
 export interface ProposeResponse {
