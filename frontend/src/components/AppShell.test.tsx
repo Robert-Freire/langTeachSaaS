@@ -247,4 +247,32 @@ describe('AppShell', () => {
     renderShell()
     expect(screen.getByTestId('open-assistant-mobile-btn')).toBeInTheDocument()
   })
+
+  it('Escape key closes the assistant panel', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    const aside = document.querySelector('aside')
+    const openBtn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(openBtn)
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+  })
+
+  it('Ctrl+K opens the assistant panel', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+    await user.keyboard('{Control>}k{/Control}')
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
+  })
+
+  it('Open Assistant button shows active state class when panel is open', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    const aside = document.querySelector('aside')
+    const btn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(btn)
+    expect(btn.className).toContain('brightness-90')
+  })
 })
