@@ -13,7 +13,7 @@ test.beforeAll(async ({ browser }) => {
 })
 
 test('@visual atelier-999 dashboard', async ({ browser }) => {
-  fs.mkdirSync('screenshots/atelier-999', { recursive: true })
+  fs.mkdirSync('screenshots', { recursive: true })
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
   const consoleErrors: string[] = []
@@ -22,14 +22,14 @@ test('@visual atelier-999 dashboard', async ({ browser }) => {
   await page.goto('/')
   await expect(page.locator('h1')).toBeVisible({ timeout: NAV_TIMEOUT })
   await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT })
-  await page.screenshot({ path: 'screenshots/atelier-999/dashboard.png', fullPage: true })
+  await page.screenshot({ path: 'screenshots/atelier-999-dashboard.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()
 })
 
 test('@visual atelier-999 student-roster', async ({ browser }) => {
-  fs.mkdirSync('screenshots/atelier-999', { recursive: true })
+  fs.mkdirSync('screenshots', { recursive: true })
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
   const consoleErrors: string[] = []
@@ -38,14 +38,14 @@ test('@visual atelier-999 student-roster', async ({ browser }) => {
   await page.goto('/students')
   await expect(page.locator('h1')).toBeVisible({ timeout: NAV_TIMEOUT })
   await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT })
-  await page.screenshot({ path: 'screenshots/atelier-999/student-roster.png', fullPage: true })
+  await page.screenshot({ path: 'screenshots/atelier-999-student-roster.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()
 })
 
 test('@visual atelier-999 student-overview', async ({ browser }) => {
-  fs.mkdirSync('screenshots/atelier-999', { recursive: true })
+  fs.mkdirSync('screenshots', { recursive: true })
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
   const consoleErrors: string[] = []
@@ -59,14 +59,14 @@ test('@visual atelier-999 student-overview', async ({ browser }) => {
   await anaLink.click()
   await expect(page.locator('[data-testid="student-detail-name"]')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT })
-  await page.screenshot({ path: 'screenshots/atelier-999/student-overview.png', fullPage: true })
+  await page.screenshot({ path: 'screenshots/atelier-999-student-overview.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()
 })
 
 test('@visual atelier-999 sessions', async ({ browser }) => {
-  fs.mkdirSync('screenshots/atelier-999', { recursive: true })
+  fs.mkdirSync('screenshots', { recursive: true })
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
   const consoleErrors: string[] = []
@@ -75,14 +75,14 @@ test('@visual atelier-999 sessions', async ({ browser }) => {
   await page.goto('/sessions')
   await expect(page.locator('h1')).toBeVisible({ timeout: NAV_TIMEOUT })
   await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT })
-  await page.screenshot({ path: 'screenshots/atelier-999/sessions.png', fullPage: true })
+  await page.screenshot({ path: 'screenshots/atelier-999-sessions.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()
 })
 
 test('@visual atelier-999 lessons', async ({ browser }) => {
-  fs.mkdirSync('screenshots/atelier-999', { recursive: true })
+  fs.mkdirSync('screenshots', { recursive: true })
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
   const consoleErrors: string[] = []
@@ -91,7 +91,7 @@ test('@visual atelier-999 lessons', async ({ browser }) => {
   await page.goto('/lessons')
   await expect(page.locator('h1')).toBeVisible({ timeout: NAV_TIMEOUT })
   await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT })
-  await page.screenshot({ path: 'screenshots/atelier-999/lessons.png', fullPage: true })
+  await page.screenshot({ path: 'screenshots/atelier-999-lessons.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()
