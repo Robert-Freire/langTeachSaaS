@@ -9,7 +9,7 @@ const WARN_DURATION_S = 50
 const MAX_DURATION_S = 60
 
 type MicState = 'idle' | 'recording' | 'uploading' | 'error'
-type MicError = 'permission-denied' | 'no-hardware' | 'upload-failed' | null
+type MicError = 'permission-denied' | 'no-hardware' | 'upload-failed' | 'empty-transcription' | null
 
 function getMicMimeType(): string {
   if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus'
@@ -69,6 +69,9 @@ export default function AtelierAssistantPanel({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const discardRef = useRef(false)
   const elapsedRef = useRef(0)
+  const uploadCancelledRef = useRef(false)
+  const slowSttTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [showSlowSttCancel, setShowSlowSttCancel] = useState(false)
 
   const stopInterval = useCallback(() => {
     if (intervalRef.current) {
@@ -99,11 +102,17 @@ export default function AtelierAssistantPanel({
 
   function resetMicState() {
     stopInterval()
+    if (slowSttTimerRef.current) {
+      clearTimeout(slowSttTimerRef.current)
+      slowSttTimerRef.current = null
+    }
     setMicState('idle')
     setMicElapsed(0)
     elapsedRef.current = 0
     setDurationWarning(false)
     setMicError(null)
+    setShowSlowSttCancel(false)
+    uploadCancelledRef.current = false
     chunksRef.current = []
   }
 
@@ -161,15 +170,35 @@ export default function AtelierAssistantPanel({
       const file = new File([blob], `recording.${ext}`, { type: finalMimeType })
       chunksRef.current = []
 
+      uploadCancelledRef.current = false
       setMicState('uploading')
+      slowSttTimerRef.current = setTimeout(() => {
+        setShowSlowSttCancel(true)
+      }, 15000)
+
       uploadVoiceNote(file)
         .then((note) => {
-          resetMicState()
-          onSubmit(note.transcription ?? '')
+          if (uploadCancelledRef.current) return
+          const text = note.transcription?.trim() ?? ''
+          if (!text) {
+            setMicState('error')
+            setMicError('empty-transcription')
+          } else {
+            resetMicState()
+            onSubmit(text)
+          }
         })
         .catch(() => {
+          if (uploadCancelledRef.current) return
           setMicState('error')
           setMicError('upload-failed')
+        })
+        .finally(() => {
+          if (slowSttTimerRef.current) {
+            clearTimeout(slowSttTimerRef.current)
+            slowSttTimerRef.current = null
+          }
+          setShowSlowSttCancel(false)
         })
     }
 
@@ -350,6 +379,20 @@ export default function AtelierAssistantPanel({
             </p>
           )}
 
+          {/* Empty transcription error */}
+          {micError === 'empty-transcription' && (
+            <div className="flex items-center gap-2 text-sm font-inter text-zinc-500" data-testid="empty-transcription-hint">
+              <span>I didn't catch that — try again.</span>
+              <button
+                onClick={() => { setMicState('idle'); setMicError(null) }}
+                className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+                data-testid="empty-transcription-retry-btn"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
           {/* Upload error */}
           {micError === 'upload-failed' && (
             <div className="flex items-center gap-2 text-sm font-inter text-red-600" data-testid="upload-error">
@@ -433,9 +476,21 @@ export default function AtelierAssistantPanel({
             )}
 
             {micState === 'uploading' && (
-              <div className="flex items-center gap-2 text-sm font-inter text-zinc-500 px-1" data-testid="transcribing-state">
-                <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
-                Transcribing...
+              <div className="flex items-center gap-2 text-sm font-inter text-zinc-500 px-1 flex-1" data-testid="transcribing-state">
+                <Loader2 className="h-4 w-4 animate-spin text-indigo-500 shrink-0" />
+                <span>Transcribing...</span>
+                {showSlowSttCancel && (
+                  <button
+                    onClick={() => {
+                      uploadCancelledRef.current = true
+                      resetMicState()
+                    }}
+                    className="ml-auto text-sm font-inter font-medium text-zinc-400 hover:text-zinc-600 transition-colors"
+                    data-testid="cancel-transcription-btn"
+                  >
+                    Cancel
+                  </button>
+                )}
               </div>
             )}
           </div>

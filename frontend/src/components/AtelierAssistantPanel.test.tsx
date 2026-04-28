@@ -311,6 +311,43 @@ describe('AtelierAssistantPanel', () => {
     expect(screen.queryByTestId('upload-error')).not.toBeInTheDocument()
   })
 
+  it('empty transcription shows friendly hint and does not call onSubmit', async () => {
+    vi.useFakeTimers()
+    const onSubmit = vi.fn()
+    mockUpload.mockResolvedValue({ ...SAMPLE_NOTE, transcription: '' })
+    renderPanel({ onSubmit })
+
+    await act(async () => { fireEvent.click(screen.getByTestId('mic-btn')) })
+    act(() => { vi.advanceTimersByTime(2000) })
+    await act(async () => { fireEvent.click(screen.getByTestId('stop-recording-btn')) })
+    vi.useRealTimers()
+
+    expect(await screen.findByTestId('empty-transcription-hint')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('slow STT (>15s) shows Cancel button that resets to idle', async () => {
+    vi.useFakeTimers()
+    // Make upload hang indefinitely
+    mockUpload.mockReturnValue(new Promise(() => {}))
+    renderPanel()
+
+    await act(async () => { fireEvent.click(screen.getByTestId('mic-btn')) })
+    act(() => { vi.advanceTimersByTime(2000) })
+    await act(async () => { fireEvent.click(screen.getByTestId('stop-recording-btn')) })
+    expect(screen.getByTestId('transcribing-state')).toBeInTheDocument()
+    expect(screen.queryByTestId('cancel-transcription-btn')).not.toBeInTheDocument()
+
+    act(() => { vi.advanceTimersByTime(15000) })
+    vi.useRealTimers()
+
+    expect(await screen.findByTestId('cancel-transcription-btn')).toBeInTheDocument()
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('cancel-transcription-btn'))
+    expect(screen.getByTestId('mic-btn')).toBeInTheDocument()
+    expect(screen.queryByTestId('transcribing-state')).not.toBeInTheDocument()
+  })
+
   it('closing panel during recording cancels without submitting', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn()
