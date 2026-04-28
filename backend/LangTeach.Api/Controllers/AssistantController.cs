@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -68,6 +69,29 @@ public class AssistantController : ControllerBase
             session = await _sessionLogService.GetByIdAsync(teacherId, student.Id, request.SessionId.Value, ct);
 
         var proposals = new List<ProposalDto>();
+
+        // Detect new student intent: extracted name is present and differs from current student context
+        var extractedName = studentExtraction.Name?.Trim();
+        bool isNewStudentIntent = !string.IsNullOrWhiteSpace(extractedName)
+            && (student == null
+                || !string.Equals(student.Name.Trim(), extractedName, StringComparison.OrdinalIgnoreCase));
+
+        if (isNewStudentIntent)
+        {
+            var newStudentPayload = new
+            {
+                name = extractedName,
+                birthYear = studentExtraction.BirthYear,
+                profession = studentExtraction.Profession,
+                cityOfResidence = studentExtraction.CityOfResidence,
+                nativeLanguages = studentExtraction.NativeLanguages,
+                learningLanguage = studentExtraction.LearningLanguage,
+                cefrLevel = studentExtraction.CefrLevel,
+                reasonForStudying = studentExtraction.ReasonForStudying,
+            };
+            var json = JsonSerializer.Serialize(newStudentPayload, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "newStudent", "profile", "New Student", null, json));
+        }
 
         if (student != null)
         {

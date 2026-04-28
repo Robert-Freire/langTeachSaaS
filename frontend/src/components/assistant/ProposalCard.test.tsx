@@ -120,4 +120,34 @@ describe('ProposalCard', () => {
     const { container } = renderCard(makeProposal({ type: 'todo', oldValue: null, newValue: 'Review passive voice' }))
     expect(container.querySelector('.bg-emerald-500')).toBeInTheDocument()
   })
+
+  it('newStudent type: uses teal accent', () => {
+    const newStudentPayload = JSON.stringify({ name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' })
+    const { container } = renderCard(makeProposal({ type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: newStudentPayload }))
+    expect(container.querySelector('.bg-teal-500')).toBeInTheDocument()
+  })
+
+  it('newStudent type: renders inline field inputs instead of diff', () => {
+    const newStudentPayload = JSON.stringify({ name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' })
+    renderCard(makeProposal({ type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: newStudentPayload }))
+    expect(screen.getByDisplayValue('Sofía')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('inglés')).toBeInTheDocument()
+  })
+
+  it('newStudent type: calls onEdit when a field is changed', async () => {
+    const user = userEvent.setup()
+    const onEdit = vi.fn()
+    const newStudentPayload = JSON.stringify({ name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' })
+    renderCard(
+      makeProposal({ type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: newStudentPayload }),
+      { onEdit },
+    )
+    const nameInput = screen.getByDisplayValue('Sofía')
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Lucía')
+    expect(onEdit).toHaveBeenCalled()
+    const lastCall = onEdit.mock.calls[onEdit.mock.calls.length - 1]
+    expect(lastCall[0]).toBe('p1')
+    expect(JSON.parse(lastCall[1]).name).toBe('Lucía')
+  })
 })

@@ -61,6 +61,7 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
                 ReasonForStudying: GetStringOrNull(root, "reasonForStudying"),
                 NativeLanguages: ParseStringArray(root, "nativeLanguages"),
                 SpokenLanguages: ParseStringArray(root, "spokenLanguages"),
+                LearningLanguage: GetStringOrNull(root, "learningLanguage"),
                 CefrLevel: ParseCefrLevel(root, "cefrLevel"),
                 OfficialCefrLevel: ParseCefrLevel(root, "officialCefrLevel"),
                 ShortTermObjectives: ParseObjectives(root),
@@ -78,7 +79,7 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
     }
 
     private static ExtractedStudentProfileDto Empty() =>
-        new(null, null, null, null, null, null, [], [], null, null, [], [], [], []);
+        new(null, null, null, null, null, null, [], [], null, null, null, [], [], [], []);
 
     private static string? GetStringOrNull(JsonElement root, string key)
     {

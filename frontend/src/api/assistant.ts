@@ -2,11 +2,22 @@ import { apiClient } from '../lib/apiClient'
 
 export interface ProposalDto {
   id: string
-  type: 'student' | 'session' | 'todo'
+  type: 'student' | 'session' | 'todo' | 'newStudent'
   field: string
   label: string
   oldValue: string | null
   newValue: string
+}
+
+export interface NewStudentData {
+  name: string
+  birthYear?: number | null
+  profession?: string | null
+  cityOfResidence?: string | null
+  nativeLanguages?: string[]
+  learningLanguage?: string | null
+  cefrLevel?: string | null
+  reasonForStudying?: string | null
 }
 
 export interface ProposeResponse {
@@ -50,4 +61,9 @@ export async function applyTodoProposal(
   text: string,
 ): Promise<void> {
   await apiClient.post(`/api/students/${studentId}/teaching-todos`, { text })
+}
+
+export async function createStudentFromAssistant(data: NewStudentData): Promise<{ id: string }> {
+  const res = await apiClient.post<{ id: string }>('/api/students', data)
+  return res.data
 }

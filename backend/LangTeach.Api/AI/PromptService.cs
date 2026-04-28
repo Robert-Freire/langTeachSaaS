@@ -1655,6 +1655,7 @@ public class PromptService : IPromptService
             - reasonForStudying: string or null — why the student is learning the language. Null if not mentioned.
             - nativeLanguages: array of strings — student's native or mother tongue(s). Empty array [] if not mentioned.
             - spokenLanguages: array of strings — other languages the student speaks (not the target language being taught, not the native language). Empty array [] if not mentioned.
+            - learningLanguage: string or null — the language the student is learning or being taught (e.g. "English", "French", "inglés"). Null if not mentioned.
             - cefrLevel: string or null — teacher's own CEFR assessment of the student (e.g. "B1", "B2+"). Null if not mentioned.
             - officialCefrLevel: string or null — official/exam-certified CEFR level (e.g. from a DELE, DELF certificate). Null if not mentioned.
             - shortTermObjectives: array of objects — near-term learning goals mentioned by the teacher. Each object has:

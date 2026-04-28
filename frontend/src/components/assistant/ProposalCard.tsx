@@ -1,6 +1,7 @@
-import { Calendar, CheckSquare, Loader2, User } from 'lucide-react'
+import { Calendar, CheckSquare, Loader2, User, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ProposalWithStatus } from '@/hooks/useAtelierAssistant'
+import NewStudentFields from './NewStudentFields'
 
 interface Props {
   proposal: ProposalWithStatus
@@ -8,6 +9,7 @@ interface Props {
   onDismiss: (id: string) => void
   onUndo: (id: string) => void
   onRetry: (id: string) => void
+  onEdit?: (id: string, newValue: string) => void
 }
 
 const TYPE_CONFIG = {
@@ -29,9 +31,15 @@ const TYPE_CONFIG = {
     iconBg: 'bg-emerald-100',
     iconColor: 'text-emerald-600',
   },
+  newStudent: {
+    Icon: UserPlus,
+    accent: 'bg-teal-500',
+    iconBg: 'bg-teal-100',
+    iconColor: 'text-teal-600',
+  },
 } as const
 
-export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry }: Props) {
+export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onEdit }: Props) {
   const config = TYPE_CONFIG[proposal.type]
   const { Icon } = config
 
@@ -79,18 +87,28 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
           )}
         </div>
 
-        {/* Diff */}
-        <div className="text-sm font-inter text-zinc-700 mb-2.5 leading-relaxed">
-          {proposal.oldValue ? (
-            <span>
-              <span className="line-through text-zinc-400">{proposal.oldValue}</span>
-              {' '}
-              <span className="text-zinc-400 mx-0.5">→</span>
-              {' '}
-              <span className="font-semibold text-zinc-800">{proposal.newValue}</span>
-            </span>
+        {/* Content */}
+        <div className="mb-2.5">
+          {proposal.type === 'newStudent' ? (
+            <NewStudentFields
+              value={proposal.newValue}
+              proposalId={proposal.id}
+              onEdit={onEdit ?? (() => {})}
+            />
           ) : (
-            <span className="font-semibold text-zinc-800">{proposal.newValue}</span>
+            <div className="text-sm font-inter text-zinc-700 leading-relaxed">
+              {proposal.oldValue ? (
+                <span>
+                  <span className="line-through text-zinc-400">{proposal.oldValue}</span>
+                  {' '}
+                  <span className="text-zinc-400 mx-0.5">→</span>
+                  {' '}
+                  <span className="font-semibold text-zinc-800">{proposal.newValue}</span>
+                </span>
+              ) : (
+                <span className="font-semibold text-zinc-800">{proposal.newValue}</span>
+              )}
+            </div>
           )}
         </div>
 

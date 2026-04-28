@@ -23,6 +23,7 @@ public class StubStudentProfileExtractionService : IStudentProfileExtractionServ
             ReasonForStudying: "[Extracted] Work promotion",
             NativeLanguages: ["Spanish"],
             SpokenLanguages: ["English"],
+            LearningLanguage: "[Extracted] English",
             CefrLevel: "B2",
             OfficialCefrLevel: null,
             ShortTermObjectives: [new ExtractedObjectiveDto("[Extracted] Pass B2 exam", "2026-06-30")],

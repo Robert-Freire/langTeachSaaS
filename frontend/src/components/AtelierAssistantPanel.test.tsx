@@ -84,6 +84,7 @@ const defaultProps = {
   onRetry: vi.fn(),
   onApplyAll: vi.fn(),
   onDismissAll: vi.fn(),
+  onEdit: vi.fn(),
 }
 
 function renderPanel(overrides: Partial<typeof defaultProps> = {}) {

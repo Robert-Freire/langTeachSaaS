@@ -4,6 +4,8 @@ import {
   applySessionProposal,
   applyStudentProposal,
   applyTodoProposal,
+  createStudentFromAssistant,
+  type NewStudentData,
   type ProposalDto,
   proposeAssistant,
 } from '../api/assistant'
@@ -30,6 +32,7 @@ export interface AtelierAssistantActions {
   applyAll: () => void
   dismissAll: () => void
   reset: () => void
+  onEdit: (id: string, newValue: string) => void
 }
 
 export function useAtelierAssistant(
@@ -88,6 +91,9 @@ export function useAtelierAssistant(
         await applySessionProposal(studentId, sessionId, proposal.field, proposal.newValue)
       } else if (proposal.type === 'todo' && studentId) {
         await applyTodoProposal(studentId, proposal.newValue)
+      } else if (proposal.type === 'newStudent') {
+        const data = JSON.parse(proposal.newValue) as NewStudentData
+        await createStudentFromAssistant(data)
       }
       updateProposal(id, { status: 'applied' })
       // Invalidate relevant queries so the rest of the UI reflects the change
@@ -96,6 +102,8 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await queryClient.invalidateQueries({ queryKey: ['session', studentId, sessionId] })
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+      } else if (proposal.type === 'newStudent') {
+        await queryClient.invalidateQueries({ queryKey: ['students'] })
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to apply change.'
@@ -132,6 +140,10 @@ export function useAtelierAssistant(
     proposalsRef.current.filter(p => p.status === 'proposed').forEach(p => dismiss(p.id))
   }, [dismiss])
 
+  const onEdit = useCallback((id: string, newValue: string) => {
+    setProposals(prev => prev.map(p => p.id === id ? { ...p, newValue } : p))
+  }, [])
+
   const reset = useCallback(() => {
     undoTimers.current.forEach(timer => clearTimeout(timer))
     undoTimers.current.clear()
@@ -151,5 +163,6 @@ export function useAtelierAssistant(
     applyAll,
     dismissAll,
     reset,
+    onEdit,
   }
 }

@@ -15,6 +15,7 @@ vi.mock('../api/assistant', () => ({
   applyStudentProposal: vi.fn(),
   applySessionProposal: vi.fn(),
   applyTodoProposal: vi.fn(),
+  createStudentFromAssistant: vi.fn(),
 }))
 
 import * as assistantApi from '../api/assistant'
@@ -23,6 +24,7 @@ const mockPropose = vi.mocked(assistantApi.proposeAssistant)
 const mockApplyStudent = vi.mocked(assistantApi.applyStudentProposal)
 const mockApplySession = vi.mocked(assistantApi.applySessionProposal)
 const mockApplyTodo = vi.mocked(assistantApi.applyTodoProposal)
+const mockCreateStudent = vi.mocked(assistantApi.createStudentFromAssistant)
 
 const sampleProposals = [
   { id: 'p1', type: 'student' as const, field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' },
@@ -169,6 +171,36 @@ describe('useAtelierAssistant', () => {
 
     await act(async () => { await result.current.applyAll() })
     expect(result.current.proposals.every(p => p.status === 'applied')).toBe(true)
+  })
+
+  it('apply: routes newStudent proposal to createStudentFromAssistant and invalidates students query', async () => {
+    const payload = JSON.stringify({ name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' })
+    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: payload }
+    mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
+    mockCreateStudent.mockResolvedValueOnce({ id: 'new-student-id' })
+
+    const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('Nueva alumna Sofía') })
+    await act(async () => { await vi.runAllTimersAsync() })
+    expect(result.current.proposals).toHaveLength(1)
+
+    await act(async () => { await result.current.apply('p4') })
+    expect(mockCreateStudent).toHaveBeenCalledWith({ name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' })
+    expect(result.current.proposals[0].status).toBe('applied')
+  })
+
+  it('onEdit: updates newValue of proposal with matching id', async () => {
+    const payload = JSON.stringify({ name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' })
+    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: payload }
+    mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
+
+    const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('text') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    const updatedPayload = JSON.stringify({ name: 'Lucía', learningLanguage: 'inglés', cefrLevel: 'B1' })
+    act(() => { result.current.onEdit('p4', updatedPayload) })
+    expect(result.current.proposals[0].newValue).toBe(updatedPayload)
   })
 
   it('reset: clears transcription, processing, and proposals', async () => {

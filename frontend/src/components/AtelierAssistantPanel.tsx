@@ -55,6 +55,7 @@ interface Props {
   onRetry: (id: string) => void
   onApplyAll: () => void
   onDismissAll: () => void
+  onEdit?: (id: string, newValue: string) => void
 }
 
 export default function AtelierAssistantPanel({
@@ -72,6 +73,7 @@ export default function AtelierAssistantPanel({
   onRetry,
   onApplyAll,
   onDismissAll,
+  onEdit,
 }: Props) {
   const [inputValue, setInputValue] = useState('')
   const [pendingClose, setPendingClose] = useState(false)
@@ -434,6 +436,7 @@ export default function AtelierAssistantPanel({
                         onDismiss={onDismiss}
                         onUndo={onUndo}
                         onRetry={onRetry}
+                        onEdit={onEdit}
                       />
                     ))}
                   </div>
