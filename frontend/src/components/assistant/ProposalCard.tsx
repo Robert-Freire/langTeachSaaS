@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { Calendar, CheckSquare, Loader2, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import type { ProposalWithStatus } from '@/hooks/useAtelierAssistant'
 
 interface Props {
@@ -53,12 +55,6 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
 
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState('')
-  const editingRef = useRef(false)
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
-
-  useEffect(() => {
-    editingRef.current = editing
-  }, [editing])
 
   function startEdit() {
     setEditValue(proposal.newValue)
@@ -87,19 +83,12 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
   }
 
   function handleEditBlur() {
-    if (!editingRef.current) return
     const trimmed = editValue.trim()
     setEditing(false)
     if (trimmed && trimmed !== proposal.newValue) {
       onModify(proposal.id, trimmed)
     }
   }
-
-  useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus()
-    }
-  }, [editing])
 
   const isMultiline = MULTILINE_FIELDS.has(proposal.field)
 
@@ -146,26 +135,26 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
         <div className="text-sm font-inter text-zinc-700 mb-2.5 leading-relaxed">
           {editing ? (
             isMultiline ? (
-              <textarea
-                ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+              <Textarea
                 value={editValue}
                 onChange={e => setEditValue(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 onBlur={handleEditBlur}
                 rows={3}
+                autoFocus
                 data-testid={`modify-input-${proposal.id}`}
-                className="w-full border border-indigo-300 rounded-lg px-2 py-1.5 text-sm font-inter text-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+                className="text-sm font-inter resize-none"
               />
             ) : (
-              <input
-                ref={inputRef as React.RefObject<HTMLInputElement>}
+              <Input
                 type="text"
                 value={editValue}
                 onChange={e => setEditValue(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 onBlur={handleEditBlur}
+                autoFocus
                 data-testid={`modify-input-${proposal.id}`}
-                className="w-full border border-indigo-300 rounded-lg px-2 py-1.5 text-sm font-inter text-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="text-sm font-inter"
               />
             )
           ) : proposal.oldValue ? (
