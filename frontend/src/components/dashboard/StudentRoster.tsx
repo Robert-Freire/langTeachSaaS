@@ -160,7 +160,7 @@ export function StudentRoster({ students }: StudentRosterProps) {
             {sortOpen && (
               <div
                 role="listbox"
-                className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-zinc-100 z-10 py-1"
+                className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg z-10 py-1"
               >
                 {SORT_OPTIONS.map(opt => (
                   <button

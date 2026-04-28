@@ -21,13 +21,13 @@ function StepIndicator({ current }: { current: number }) {
         return (
           <div key={label} className="flex items-center gap-2">
             {i > 0 && (
-              <div className={`h-px w-8 ${isCompleted ? 'bg-indigo-600' : 'bg-zinc-200'}`} />
+              <div className={`h-px w-8 ${isCompleted ? 'bg-primary' : 'bg-zinc-200'}`} />
             )}
             <div className="flex items-center gap-1.5">
               <div
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${
                   isActive
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-primary text-white'
                     : isCompleted
                       ? 'bg-indigo-100 text-indigo-700'
                       : 'bg-zinc-100 text-zinc-400'

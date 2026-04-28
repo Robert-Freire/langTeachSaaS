@@ -42,7 +42,7 @@ function cefrBarWidth(level: string): number {
 function cefrBarColor(level: string): string {
   const prefix = level[0]?.toUpperCase()
   if (prefix === 'C') return 'bg-[#7E3000]'
-  if (prefix === 'B') return 'bg-indigo-600'
+  if (prefix === 'B') return 'bg-primary'
   return 'bg-indigo-300'
 }
 
@@ -352,7 +352,7 @@ function TeachingNotesPanel({
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-1.5 text-sm font-bold transition-all disabled:opacity-50"
+                  className="rounded-xl bg-primary hover:bg-primary/90 px-4 py-1.5 text-sm font-bold transition-all disabled:opacity-50"
                   data-testid="teaching-notes-save-btn"
                 >
                   Save
@@ -383,7 +383,7 @@ function TeachingNotesPanel({
               {onSaveTeachingNotes && (
                 <button
                   onClick={handleEdit}
-                  className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-2 text-sm font-bold transition-all"
+                  className="rounded-xl bg-primary hover:bg-primary/90 px-5 py-2 text-sm font-bold transition-all"
                   data-testid="add-memory-btn"
                 >
                   Add Memory

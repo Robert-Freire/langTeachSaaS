@@ -554,7 +554,7 @@ export default function Students() {
           <p className="text-sm text-zinc-500 mb-6">Add your first student to get started.</p>
           <Link
             to="/students/new"
-            className={cn(buttonVariants(), 'bg-indigo-600 hover:bg-indigo-700 text-white')}
+            className={cn(buttonVariants(), 'bg-primary hover:bg-primary/90 text-white')}
           >
             Add your first student
           </Link>

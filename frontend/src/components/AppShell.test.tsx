@@ -134,7 +134,7 @@ describe('AppShell', () => {
     )
     const sessionsLinks = screen.getAllByRole('link', { name: /^sessions$/i })
     const activeLink = sessionsLinks[0]
-    expect(activeLink.className).toContain('border-l-indigo-600')
+    expect(activeLink.className).toContain('border-l-primary')
     expect(activeLink.className).not.toContain('bg-white')
     expect(activeLink.className).not.toContain('bg-indigo')
   })
@@ -188,9 +188,9 @@ describe('AppShell', () => {
       </QueryClientProvider>
     )
     const sessionsLinks = screen.getAllByRole('link', { name: /^sessions$/i })
-    expect(sessionsLinks[0].className).toContain('border-l-indigo-600')
+    expect(sessionsLinks[0].className).toContain('border-l-primary')
     const studentsLinks = screen.getAllByRole('link', { name: /^students$/i })
-    expect(studentsLinks[0].className).not.toContain('border-l-indigo-600')
+    expect(studentsLinks[0].className).not.toContain('border-l-primary')
   })
 
   it('shows Students as active nav when on session edit page reached from student detail', () => {
@@ -203,8 +203,8 @@ describe('AppShell', () => {
       </QueryClientProvider>
     )
     const studentsLinks = screen.getAllByRole('link', { name: /^students$/i })
-    expect(studentsLinks[0].className).toContain('border-l-indigo-600')
+    expect(studentsLinks[0].className).toContain('border-l-primary')
     const sessionsLinks = screen.getAllByRole('link', { name: /^sessions$/i })
-    expect(sessionsLinks[0].className).not.toContain('border-l-indigo-600')
+    expect(sessionsLinks[0].className).not.toContain('border-l-primary')
   })
 })
