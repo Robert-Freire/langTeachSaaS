@@ -31,6 +31,7 @@ export async function applyStudentProposal(
   field: string,
   value: string,
 ): Promise<void> {
+  // field is one of: cefrLevel, profession, countryOfResidence — matches PatchStudentRequest
   await apiClient.patch(`/api/students/${studentId}`, { [field]: value })
 }
 
@@ -40,6 +41,7 @@ export async function applySessionProposal(
   field: string,
   value: string,
 ): Promise<void> {
+  // field is one of: title, actualContent, generalNotes, homeworkAssigned — matches PatchSessionRequest
   await apiClient.patch(`/api/students/${studentId}/sessions/${sessionId}`, { [field]: value })
 }
 

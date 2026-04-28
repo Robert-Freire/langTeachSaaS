@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LangTeach.Api.Controllers;
 
 [ApiController]
-[Route("api/assistant")]
+[Route("api/[controller]")]
 [Authorize]
 public class AssistantController : ControllerBase
 {

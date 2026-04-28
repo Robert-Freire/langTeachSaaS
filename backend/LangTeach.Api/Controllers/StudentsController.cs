@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-using System.Text.Json;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -122,31 +121,20 @@ public class StudentsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}")]
-    public async Task<IActionResult> PatchStudent(Guid id, [FromBody] Dictionary<string, JsonElement> fields, CancellationToken cancellationToken)
+    public async Task<IActionResult> PatchStudent(Guid id, [FromBody] PatchStudentRequest patch, CancellationToken cancellationToken)
     {
         if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
         var student = await _studentService.GetByIdAsync(teacherId, id, cancellationToken);
         if (student is null) return NotFound();
 
+        // Pre-populate all required fields from current state, then overwrite only provided fields.
         var request = MapStudentToUpdateRequest(student);
-
-        foreach (var (key, value) in fields)
-        {
-            switch (key.ToLowerInvariant())
-            {
-                case "cefrlevel":
-                    request.CefrLevel = value.GetString() ?? request.CefrLevel;
-                    break;
-                case "profession":
-                    request.Profession = value.GetString();
-                    break;
-                case "countryofresidence":
-                    request.CountryOfResidence = value.GetString();
-                    break;
-            }
-        }
+        if (patch.CefrLevel is not null) request.CefrLevel = patch.CefrLevel;
+        if (patch.Profession is not null) request.Profession = patch.Profession;
+        if (patch.CountryOfResidence is not null) request.CountryOfResidence = patch.CountryOfResidence;
 
         try
         {

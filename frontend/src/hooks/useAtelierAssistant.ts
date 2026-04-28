@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   applySessionProposal,
   applyStudentProposal,
@@ -35,6 +36,7 @@ export function useAtelierAssistant(
   studentId: string | null,
   sessionId: string | null,
 ): AtelierAssistantState & AtelierAssistantActions {
+  const queryClient = useQueryClient()
   const [transcription, setTranscription] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [proposals, setProposals] = useState<ProposalWithStatus[]>([])
@@ -64,7 +66,7 @@ export function useAtelierAssistant(
 
   const apply = useCallback(async (id: string) => {
     const proposal = proposals.find(p => p.id === id)
-    if (!proposal || proposal.status !== 'proposed') return
+    if (!proposal || (proposal.status !== 'proposed' && proposal.status !== 'error')) return
 
     updateProposal(id, { status: 'applying', errorMessage: undefined })
 
@@ -77,6 +79,13 @@ export function useAtelierAssistant(
         await applyTodoProposal(studentId, proposal.newValue)
       }
       updateProposal(id, { status: 'applied' })
+      // Invalidate relevant queries so the rest of the UI reflects the change
+      if (proposal.type === 'student' && studentId) {
+        await queryClient.invalidateQueries({ queryKey: ['student', studentId] })
+      } else if (proposal.type === 'session' && studentId && sessionId) {
+        await queryClient.invalidateQueries({ queryKey: ['session', studentId, sessionId] })
+        await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to apply change.'
       updateProposal(id, { status: 'error', errorMessage: message })

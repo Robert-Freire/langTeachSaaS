@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-using System.Text.Json;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -146,34 +145,21 @@ public class SessionLogsController : ControllerBase
     }
 
     [HttpPatch("{sessionId:guid}")]
-    public async Task<IActionResult> PatchSession(Guid studentId, Guid sessionId, [FromBody] Dictionary<string, JsonElement> fields, CancellationToken cancellationToken)
+    public async Task<IActionResult> PatchSession(Guid studentId, Guid sessionId, [FromBody] PatchSessionRequest patch, CancellationToken cancellationToken)
     {
         if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
         var session = await _sessionLogService.GetByIdAsync(teacherId, studentId, sessionId, cancellationToken);
         if (session is null) return NotFound();
 
+        // Pre-populate all fields from current state, then overwrite only provided fields.
         var request = MapSessionToUpdateRequest(session);
-
-        foreach (var (key, value) in fields)
-        {
-            switch (key.ToLowerInvariant())
-            {
-                case "title":
-                    request.Title = value.GetString();
-                    break;
-                case "actualcontent":
-                    request.ActualContent = value.GetString();
-                    break;
-                case "generalnotes":
-                    request.GeneralNotes = value.GetString();
-                    break;
-                case "homeworkassigned":
-                    request.HomeworkAssigned = value.GetString();
-                    break;
-            }
-        }
+        if (patch.Title is not null) request.Title = patch.Title;
+        if (patch.ActualContent is not null) request.ActualContent = patch.ActualContent;
+        if (patch.GeneralNotes is not null) request.GeneralNotes = patch.GeneralNotes;
+        if (patch.HomeworkAssigned is not null) request.HomeworkAssigned = patch.HomeworkAssigned;
 
         try
         {
