@@ -49,6 +49,7 @@ test('@visual atelier-999 student-overview', async ({ browser }) => {
 
   const anaLink = page.getByText('Ana Visual').first()
   await anaLink.click()
+  await page.waitForSelector('[data-testid="student-detail-name"]', { timeout: UI_TIMEOUT })
   await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/atelier-999/student-overview.png', fullPage: true })
 
