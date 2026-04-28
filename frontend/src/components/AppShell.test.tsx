@@ -26,11 +26,11 @@ vi.mock('../hooks/useProfile', () => ({
   }),
 }))
 
-function renderShell() {
+function renderShell(initialPath = '/') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialPath]}>
         <AppShell />
       </MemoryRouter>
     </QueryClientProvider>
@@ -78,19 +78,18 @@ describe('AppShell', () => {
     expect(allDashboardLinks.length).toBeGreaterThanOrEqual(2)
   })
 
-  it('renders nav items in correct order: Dashboard, Students, Sessions, Courses, Lessons, then Settings separated at bottom', () => {
+  it('renders nav items in correct order: Dashboard, Students, Sessions, Courses, Lessons, then Help and Settings separated at bottom', () => {
     renderShell()
     const links = document.querySelector('aside')?.querySelectorAll('a')
     const labels = Array.from(links ?? []).map(a => a.textContent?.trim())
-    expect(labels).toEqual(['Dashboard', 'Students', 'Sessions', 'Courses', 'Lessons', 'Settings'])
+    expect(labels).toEqual(['Dashboard', 'Students', 'Sessions', 'Courses', 'Lessons', 'Help', 'Settings'])
   })
 
-  it('Settings link is outside the main nav element', () => {
+  it('Settings and Help links are outside the main nav element', () => {
     renderShell()
-    // Settings must not be inside the <nav> (main nav group)
     const nav = screen.getByRole('navigation')
     expect(within(nav).queryByRole('link', { name: /^settings$/i })).not.toBeInTheDocument()
-    // Settings must still render as a link in the overall sidebar
+    expect(within(nav).queryByRole('link', { name: /^help$/i })).not.toBeInTheDocument()
     const settingsLinks = screen.getAllByRole('link', { name: /^settings$/i })
     expect(settingsLinks.length).toBeGreaterThanOrEqual(1)
   })
@@ -141,7 +140,7 @@ describe('AppShell', () => {
 
   it('sidebar renders the same nav items regardless of route', () => {
     const routes = ['/', '/sessions', '/settings']
-    const expectedLabels = ['Dashboard', 'Students', 'Sessions', 'Courses', 'Lessons', 'Settings']
+    const expectedLabels = ['Dashboard', 'Students', 'Sessions', 'Courses', 'Lessons', 'Help', 'Settings']
 
     for (const route of routes) {
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -206,5 +205,73 @@ describe('AppShell', () => {
     expect(studentsLinks[0].className).toContain('border-l-primary')
     const sessionsLinks = screen.getAllByRole('link', { name: /^sessions$/i })
     expect(sessionsLinks[0].className).not.toContain('border-l-primary')
+  })
+
+  it('renders the Open Assistant button in the desktop sidebar', () => {
+    renderShell()
+    const aside = document.querySelector('aside')
+    const btn = aside?.querySelector('[data-testid="open-assistant-btn"]')
+    expect(btn).toBeInTheDocument()
+    expect(btn?.textContent).toContain('Open Assistant')
+  })
+
+  it('Open Assistant button is outside the main nav element', () => {
+    renderShell()
+    const nav = screen.getByRole('navigation')
+    expect(within(nav).queryByTestId('open-assistant-btn')).not.toBeInTheDocument()
+  })
+
+  it('clicking Open Assistant opens the stub panel', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+    const aside = document.querySelector('aside')
+    const btn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(btn)
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
+  })
+
+  it('closing the assistant panel removes it from the DOM', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    const aside = document.querySelector('aside')
+    const openBtn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(openBtn)
+    const closeBtn = screen.getByRole('button', { name: /close assistant/i })
+    await user.click(closeBtn)
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+  })
+
+  it('renders the Open Assistant mobile button in the top bar', () => {
+    renderShell()
+    expect(screen.getByTestId('open-assistant-mobile-btn')).toBeInTheDocument()
+  })
+
+  it('Escape key closes the assistant panel', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    const aside = document.querySelector('aside')
+    const openBtn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(openBtn)
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+  })
+
+  it('Ctrl+K opens the assistant panel', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+    await user.keyboard('{Control>}k{/Control}')
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
+  })
+
+  it('Open Assistant button shows active state class when panel is open', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    const aside = document.querySelector('aside')
+    const btn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(btn)
+    expect(btn.className).toContain('brightness-90')
   })
 })
