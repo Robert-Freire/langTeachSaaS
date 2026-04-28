@@ -568,7 +568,7 @@ export default function LessonEditor() {
               data-testid="inline-schedule-input"
             />
             <div className="flex items-center gap-2 shrink-0">
-              <Button size="sm" onClick={handleQuickSchedule} disabled={!inlineScheduleDate} className="bg-primary hover:bg-primary/90 text-white">Save</Button>
+              <Button size="sm" onClick={handleQuickSchedule} disabled={!inlineScheduleDate}>Save</Button>
               <Button variant="ghost" size="sm" onClick={() => { setSchedulingInline(false); setInlineScheduleDate('') }}>Cancel</Button>
             </div>
           </div>
@@ -691,7 +691,7 @@ export default function LessonEditor() {
               </div>
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" size="sm" onClick={() => setEditingMeta(false)}>Cancel</Button>
-                <Button size="sm" onClick={handleMetaSave} className="bg-primary hover:bg-primary/90 text-white">Save</Button>
+                <Button size="sm" onClick={handleMetaSave}>Save</Button>
               </div>
             </div>
           </CardContent>
@@ -926,7 +926,6 @@ export default function LessonEditor() {
             <AlertDialogAction
               onClick={handleLinkStudent}
               disabled={!linkStudentId}
-              className="bg-primary hover:bg-primary/90 text-white"
             >
               Link Student
             </AlertDialogAction>

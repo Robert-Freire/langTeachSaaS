@@ -352,7 +352,7 @@ function TeachingNotesPanel({
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="rounded-xl bg-primary hover:bg-primary/90 px-4 py-1.5 text-sm font-bold transition-all disabled:opacity-50"
+                  className="rounded-xl lt-gradient-primary bg-primary text-white hover:shadow-md active:brightness-90 disabled:[background-image:none] disabled:opacity-50 px-4 py-1.5 text-sm font-bold transition-all"
                   data-testid="teaching-notes-save-btn"
                 >
                   Save
@@ -383,7 +383,7 @@ function TeachingNotesPanel({
               {onSaveTeachingNotes && (
                 <button
                   onClick={handleEdit}
-                  className="rounded-xl bg-primary hover:bg-primary/90 px-5 py-2 text-sm font-bold transition-all"
+                  className="rounded-xl lt-gradient-primary bg-primary text-white hover:shadow-md active:brightness-90 px-5 py-2 text-sm font-bold transition-all"
                   data-testid="add-memory-btn"
                 >
                   Add Memory

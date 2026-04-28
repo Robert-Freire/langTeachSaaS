@@ -114,7 +114,7 @@ export default function OnboardingStep3({ student, onBack, onSkip }: OnboardingS
               Skip, I'll do this later
             </button>
           )}
-          <Button type="submit" disabled={isPending} className="bg-primary hover:bg-primary/90" data-testid="onboarding-next">
+          <Button type="submit" disabled={isPending} data-testid="onboarding-next">
             {isPending ? 'Creating...' : 'Finish & Open Lesson'}
           </Button>
         </div>
