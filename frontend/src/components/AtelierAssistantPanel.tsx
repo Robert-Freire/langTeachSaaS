@@ -71,6 +71,7 @@ export default function AtelierAssistantPanel({
   const elapsedRef = useRef(0)
   const uploadCancelledRef = useRef(false)
   const slowSttTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const tooShortTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [showSlowSttCancel, setShowSlowSttCancel] = useState(false)
 
   const stopInterval = useCallback(() => {
@@ -83,6 +84,9 @@ export default function AtelierAssistantPanel({
   useEffect(() => {
     return () => {
       stopInterval()
+      if (slowSttTimerRef.current) clearTimeout(slowSttTimerRef.current)
+      if (tooShortTimerRef.current) clearTimeout(tooShortTimerRef.current)
+      uploadCancelledRef.current = true
       streamRef.current?.getTracks().forEach((t) => t.stop())
       const recorder = mediaRecorderRef.current
       if (recorder && recorder.state !== 'inactive') recorder.stop()
@@ -106,6 +110,10 @@ export default function AtelierAssistantPanel({
       clearTimeout(slowSttTimerRef.current)
       slowSttTimerRef.current = null
     }
+    if (tooShortTimerRef.current) {
+      clearTimeout(tooShortTimerRef.current)
+      tooShortTimerRef.current = null
+    }
     setMicState('idle')
     setMicElapsed(0)
     elapsedRef.current = 0
@@ -119,6 +127,11 @@ export default function AtelierAssistantPanel({
   async function startMicRecording() {
     setMicError(null)
     setTooShortHint(false)
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMicError('no-hardware')
+      return
+    }
 
     let stream: MediaStream
     try {
@@ -159,7 +172,7 @@ export default function AtelierAssistantPanel({
 
       if (elapsedRef.current < MIN_DURATION_S) {
         setTooShortHint(true)
-        setTimeout(() => setTooShortHint(false), 3000)
+        tooShortTimerRef.current = setTimeout(() => setTooShortHint(false), 3000)
         resetMicState()
         return
       }
@@ -441,7 +454,7 @@ export default function AtelierAssistantPanel({
                   onClick={handleSubmit}
                   disabled={!inputValue.trim()}
                   aria-label="Send message"
-                  className="h-10 w-10 flex items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] text-white disabled:opacity-40 transition-opacity shrink-0"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] text-white disabled:opacity-40 transition-opacity shrink-0"
                   data-testid="assistant-send-btn"
                 >
                   <Send className="h-4 w-4" />
