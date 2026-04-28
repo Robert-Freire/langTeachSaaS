@@ -93,6 +93,14 @@ export function useAtelierAssistant(
         await applyTodoProposal(studentId, proposal.newValue)
       } else if (proposal.type === 'newStudent') {
         const data = JSON.parse(proposal.newValue) as NewStudentData
+        // Guard against creating a duplicate if the students list is cached
+        const cached = queryClient.getQueryData<{ items: Array<{ name: string }> }>(['students'])
+        if (cached && data.name) {
+          const exists = cached.items.some(
+            s => s.name.trim().toLowerCase() === data.name.trim().toLowerCase()
+          )
+          if (exists) throw new Error(`A student named "${data.name}" already exists.`)
+        }
         await createStudentFromAssistant(data)
       }
       updateProposal(id, { status: 'applied' })
