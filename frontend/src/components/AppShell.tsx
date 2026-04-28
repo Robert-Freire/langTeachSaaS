@@ -139,7 +139,8 @@ const STUDENT_ID_RE = /^\/students\/([^/]+)/
 
 function extractStudentId(pathname: string): string | null {
   const match = pathname.match(STUDENT_ID_RE)
-  return match ? match[1] : null
+  if (!match) return null
+  return match[1] === 'new' ? null : match[1]
 }
 
 export default function AppShell() {
@@ -156,7 +157,6 @@ export default function AppShell() {
     queryFn: () => getStudent(studentId!),
     enabled: studentId !== null,
     select: (s) => s.name,
-    staleTime: 5 * 60 * 1000,
   })
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
