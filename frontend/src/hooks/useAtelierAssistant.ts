@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   applySessionProposal,
@@ -41,6 +41,17 @@ export function useAtelierAssistant(
   const [processing, setProcessing] = useState(false)
   const [proposals, setProposals] = useState<ProposalWithStatus[]>([])
   const undoTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  // Ref keeps apply/applyAll free of stale closure on proposals
+  const proposalsRef = useRef<ProposalWithStatus[]>([])
+  useEffect(() => { proposalsRef.current = proposals }, [proposals])
+
+  // Clear all undo timers on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      undoTimers.current.forEach(timer => clearTimeout(timer))
+      undoTimers.current.clear()
+    }
+  }, [])
 
   const updateProposal = useCallback((id: string, patch: Partial<ProposalWithStatus>) => {
     setProposals(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p))
@@ -58,14 +69,14 @@ export function useAtelierAssistant(
       )
       setProposals(raw.map(p => ({ ...p, status: 'proposed', undoVisible: false })))
     } catch {
-      // Error state shown via empty proposals list; processing clears
+      // Error shown via empty proposals list; processing clears
     } finally {
       setProcessing(false)
     }
   }, [studentId, sessionId])
 
   const apply = useCallback(async (id: string) => {
-    const proposal = proposals.find(p => p.id === id)
+    const proposal = proposalsRef.current.find(p => p.id === id)
     if (!proposal || (proposal.status !== 'proposed' && proposal.status !== 'error')) return
 
     updateProposal(id, { status: 'applying', errorMessage: undefined })
@@ -90,7 +101,7 @@ export function useAtelierAssistant(
       const message = err instanceof Error ? err.message : 'Failed to apply change.'
       updateProposal(id, { status: 'error', errorMessage: message })
     }
-  }, [proposals, studentId, sessionId, updateProposal])
+  }, [studentId, sessionId, updateProposal, queryClient])
 
   const dismiss = useCallback((id: string) => {
     updateProposal(id, { status: 'dismissed', undoVisible: true })
@@ -111,15 +122,15 @@ export function useAtelierAssistant(
   }, [updateProposal])
 
   const applyAll = useCallback(async () => {
-    const pending = proposals.filter(p => p.status === 'proposed')
+    const pending = proposalsRef.current.filter(p => p.status === 'proposed')
     for (const p of pending) {
       await apply(p.id)
     }
-  }, [proposals, apply])
+  }, [apply])
 
   const dismissAll = useCallback(() => {
-    proposals.filter(p => p.status === 'proposed').forEach(p => dismiss(p.id))
-  }, [proposals, dismiss])
+    proposalsRef.current.filter(p => p.status === 'proposed').forEach(p => dismiss(p.id))
+  }, [dismiss])
 
   const reset = useCallback(() => {
     undoTimers.current.forEach(timer => clearTimeout(timer))

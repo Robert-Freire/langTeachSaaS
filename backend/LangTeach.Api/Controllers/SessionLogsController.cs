@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Text.Json;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -174,10 +175,16 @@ public class SessionLogsController : ControllerBase
         }
     }
 
+    private static readonly JsonSerializerOptions _caseInsensitive =
+        new() { PropertyNameCaseInsensitive = true };
+
     private static UpdateSessionLogRequest MapSessionToUpdateRequest(SessionLogDto s)
     {
-        // MentionedDifficultyPairs and SuggestedDifficulties are stored as JSON strings in the DTO;
-        // passing null here is safe — UpdateAsync treats null as "clear" for those fields.
+        // MentionedDifficultyPairs and SuggestedDifficulties are stored as JSON strings in the DTO.
+        // Deserialize them so UpdateAsync round-trips the existing data rather than clearing it.
+        var pairs = TryDeserialize<List<DifficultyPairDto>>(s.MentionedDifficultyPairs);
+        var difficulties = TryDeserialize<List<SuggestedDifficultyDto>>(s.SuggestedDifficulties);
+
         return new UpdateSessionLogRequest
         {
             SessionDate = s.SessionDate,
@@ -195,7 +202,16 @@ public class SessionLogsController : ControllerBase
             Status = s.Status,
             Duration = s.Duration,
             Title = s.Title,
+            MentionedDifficultyPairs = pairs,
+            SuggestedDifficulties = difficulties,
         };
+    }
+
+    private static T? TryDeserialize<T>(string? json) where T : class
+    {
+        if (string.IsNullOrWhiteSpace(json) || json == "[]") return null;
+        try { return JsonSerializer.Deserialize<T>(json, _caseInsensitive); }
+        catch { return null; }
     }
 
     [HttpDelete("{sessionId:guid}")]
