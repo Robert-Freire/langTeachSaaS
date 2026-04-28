@@ -116,7 +116,7 @@ test('@visual student detail sessions tab - expanded row with editable fields', 
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.getByTestId('session-entry-toggle').first().click()
   await expect(page.getByTestId('session-entry-detail').first()).toBeVisible({ timeout: UI_TIMEOUT })
-  await expect(page.getByTestId('log-session-title-input').first()).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('session-title-input').first()).toBeVisible({ timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/student-detail-session-expanded.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
