@@ -1,4 +1,5 @@
 import type { NewStudentData } from '@/api/assistant'
+import { Input } from '@/components/ui/input'
 
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
@@ -14,7 +15,7 @@ export default function NewStudentFields({ payload, proposalId, onEditPayload }:
   }
 
   return (
-    <div className="space-y-2 text-sm font-inter">
+    <div className="space-y-2.5">
       <FieldRow
         label="Name"
         required
@@ -69,16 +70,16 @@ interface FieldRowProps {
 
 function FieldRow({ label, value, onChange, required, placeholder }: FieldRowProps) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-32 shrink-0 text-xs text-zinc-500 font-inter">
+    <div className="space-y-0.5">
+      <label className="text-xs font-medium text-zinc-500 font-inter">
         {label}{required && <span className="text-red-500 ml-0.5">*</span>}
-      </span>
-      <input
+      </label>
+      <Input
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="flex-1 text-xs text-zinc-800 border border-zinc-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white min-w-0"
+        className="h-7 text-xs"
       />
     </div>
   )
@@ -94,14 +95,14 @@ interface SelectRowProps {
 
 function SelectRow({ label, value, options, onChange, required }: SelectRowProps) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-32 shrink-0 text-xs text-zinc-500 font-inter">
+    <div className="space-y-0.5">
+      <label className="text-xs font-medium text-zinc-500 font-inter">
         {label}{required && <span className="text-red-500 ml-0.5">*</span>}
-      </span>
+      </label>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="flex-1 text-xs text-zinc-800 border border-zinc-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white min-w-0"
+        className="h-7 w-full text-xs text-zinc-800 rounded-lg border border-input bg-transparent px-2.5 py-1 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 transition-colors"
       >
         <option value="">-- select --</option>
         {options.map(o => (
