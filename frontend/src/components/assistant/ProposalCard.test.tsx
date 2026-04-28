@@ -142,12 +142,13 @@ describe('ProposalCard', () => {
       makeProposal({ type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: newStudentPayload }),
       { onEdit },
     )
+    // Component is fully controlled: typing appends to the current prop value
     const nameInput = screen.getByDisplayValue('Sofía')
-    await user.clear(nameInput)
-    await user.type(nameInput, 'Lucía')
+    await user.type(nameInput, 'X')
     expect(onEdit).toHaveBeenCalled()
     const lastCall = onEdit.mock.calls[onEdit.mock.calls.length - 1]
     expect(lastCall[0]).toBe('p1')
-    expect(JSON.parse(lastCall[1]).name).toBe('Lucía')
+    // The name field has the original value plus the typed character
+    expect(JSON.parse(lastCall[1]).name).toBe('SofíaX')
   })
 })

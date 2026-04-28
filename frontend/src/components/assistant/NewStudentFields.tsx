@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import type { NewStudentData } from '@/api/assistant'
 
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
@@ -10,21 +10,13 @@ interface Props {
 }
 
 export default function NewStudentFields({ value, proposalId, onEdit }: Props) {
-  const [fields, setFields] = useState<NewStudentData>({ name: '' })
-
-  useEffect(() => {
-    try {
-      const parsed = JSON.parse(value) as NewStudentData
-      setFields(parsed)
-    } catch {
-      // keep previous state
-    }
+  const fields = useMemo<NewStudentData>(() => {
+    try { return JSON.parse(value) as NewStudentData }
+    catch { return { name: '' } }
   }, [value])
 
   const update = (patch: Partial<NewStudentData>) => {
-    const updated = { ...fields, ...patch }
-    setFields(updated)
-    onEdit(proposalId, JSON.stringify(updated))
+    onEdit(proposalId, JSON.stringify({ ...fields, ...patch }))
   }
 
   return (
