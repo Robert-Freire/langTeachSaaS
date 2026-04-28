@@ -75,6 +75,12 @@ export function useAtelierAssistant(
         setProposals(prev => {
           const updated = [...prev]
           for (const incoming of raw) {
+            // todos share type+field ('todo'+'text') so type+field is not a unique key;
+            // always append them rather than risk overwriting the wrong card
+            if (incoming.type === 'todo') {
+              updated.push({ ...incoming, status: 'proposed', undoVisible: false })
+              continue
+            }
             const idx = updated.findIndex(
               e => e.type === incoming.type && e.field === incoming.field
             )

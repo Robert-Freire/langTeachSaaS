@@ -259,6 +259,26 @@ describe('useAtelierAssistant', () => {
     expect(result.current.proposals[1].status).toBe('proposed')
   })
 
+  it('submit follow-up: always appends todo cards (type+field not unique)', async () => {
+    const firstTodo = { id: 'pt1', type: 'todo' as const, field: 'text', label: 'Teaching Todo', oldValue: null, newValue: 'Review passive voice' }
+    mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[0], firstTodo] })
+    const { result } = renderHook(() => useAtelierAssistant('student-1', 'session-1'), { wrapper: makeWrapper() })
+
+    act(() => { result.current.submit('first') })
+    await act(async () => { await vi.runAllTimersAsync() })
+    expect(result.current.proposals).toHaveLength(2)
+
+    const secondTodo = { id: 'pt2', type: 'todo' as const, field: 'text', label: 'Teaching Todo', oldValue: null, newValue: 'Practice subjunctive' }
+    mockPropose.mockResolvedValueOnce({ proposals: [secondTodo] })
+    act(() => { result.current.submit('also add another todo') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    const todos = result.current.proposals.filter(p => p.type === 'todo')
+    expect(todos).toHaveLength(2)
+    expect(todos.find(p => p.newValue === 'Review passive voice')).toBeDefined()
+    expect(todos.find(p => p.newValue === 'Practice subjunctive')).toBeDefined()
+  })
+
   it('submit follow-up: does not re-propose applied card', async () => {
     mockPropose.mockResolvedValueOnce({ proposals: sampleProposals.slice(0, 2) })
     mockApplyStudent.mockResolvedValueOnce(undefined)
