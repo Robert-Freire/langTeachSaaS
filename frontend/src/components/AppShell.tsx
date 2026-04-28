@@ -105,7 +105,7 @@ function SidebarContent({ user, initials, logout, location, assistantOpen, onTog
 
       {/* Bottom: Help + Settings (visually separated) + teacher profile with tucked logout */}
       <div className="px-3 py-4 space-y-3">
-        <div className="border-t border-zinc-200/60 pt-3 space-y-0.5">
+        <div className="pt-2 space-y-0.5">
           <NavLink to="/help" label="Help" icon={HelpCircle} location={location} />
           <NavLink to="/settings" label="Settings" icon={Settings} location={location} />
         </div>
