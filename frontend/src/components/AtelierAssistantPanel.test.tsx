@@ -2,18 +2,42 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import AtelierAssistantPanel from './AtelierAssistantPanel'
+import type { ProposalWithStatus } from '@/hooks/useAtelierAssistant'
 
-function renderPanel(overrides: Partial<Parameters<typeof AtelierAssistantPanel>[0]> = {}) {
-  const props = {
-    open: true,
-    onClose: vi.fn(),
-    onCloseDiscarding: vi.fn(),
-    studentName: undefined,
-    transcription: null,
-    onSubmit: vi.fn(),
+const defaultProps = {
+  open: true,
+  onClose: vi.fn(),
+  onCloseDiscarding: vi.fn(),
+  studentName: undefined as string | undefined,
+  transcription: null as string | null,
+  processing: false,
+  proposals: [] as ProposalWithStatus[],
+  onSubmit: vi.fn(),
+  onApply: vi.fn(),
+  onDismiss: vi.fn(),
+  onUndo: vi.fn(),
+  onRetry: vi.fn(),
+  onApplyAll: vi.fn(),
+  onDismissAll: vi.fn(),
+}
+
+function renderPanel(overrides: Partial<typeof defaultProps> = {}) {
+  const props = { ...defaultProps, ...overrides }
+  return { ...render(<AtelierAssistantPanel {...props} />), props }
+}
+
+function makeProposal(overrides: Partial<ProposalWithStatus> = {}): ProposalWithStatus {
+  return {
+    id: 'p1',
+    type: 'student',
+    field: 'cefrLevel',
+    label: 'CEFR Level',
+    oldValue: 'A2',
+    newValue: 'B1',
+    status: 'proposed',
+    undoVisible: false,
     ...overrides,
   }
-  return { ...render(<AtelierAssistantPanel {...props} />), props }
 }
 
 describe('AtelierAssistantPanel', () => {
@@ -26,6 +50,17 @@ describe('AtelierAssistantPanel', () => {
     expect(screen.getByText('Atelier Assistant')).toBeInTheDocument()
     expect(screen.getByText('Ready')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /close assistant/i })).toBeInTheDocument()
+  })
+
+  it('shows PROCESSING INSIGHT status when processing', () => {
+    renderPanel({ processing: true, transcription: 'some text' })
+    expect(screen.getByText(/processing insight/i)).toBeInTheDocument()
+  })
+
+  it('disables input and send button when processing', () => {
+    renderPanel({ processing: true })
+    expect(screen.getByTestId('assistant-input')).toBeDisabled()
+    expect(screen.getByRole('button', { name: /send message/i })).toBeDisabled()
   })
 
   it('renders empty state with generic prompt when no student name', () => {
@@ -72,12 +107,52 @@ describe('AtelierAssistantPanel', () => {
     expect(screen.getByRole('button', { name: /send message/i })).toBeDisabled()
   })
 
-  it('shows transcription block and proposals stub after submission', () => {
-    renderPanel({ transcription: 'Worked on present perfect.' })
+  it('shows transcription block and empty proposals message after submission', () => {
+    renderPanel({ transcription: 'Worked on present perfect.', proposals: [] })
     expect(screen.getByTestId('transcription-block')).toBeInTheDocument()
     expect(screen.getByText('Worked on present perfect.')).toBeInTheDocument()
     expect(screen.getByText('Proposed Updates')).toBeInTheDocument()
-    expect(screen.getByText('(coming soon)')).toBeInTheDocument()
+    expect(screen.getByTestId('proposals-empty')).toBeInTheDocument()
+  })
+
+  it('shows loading indicator while processing with transcription', () => {
+    renderPanel({ transcription: 'some text', processing: true, proposals: [] })
+    expect(screen.getByTestId('proposals-loading')).toBeInTheDocument()
+  })
+
+  it('renders proposal cards when proposals are provided', () => {
+    const proposal = makeProposal()
+    renderPanel({ transcription: 'some text', proposals: [proposal] })
+    expect(screen.getByTestId('proposals-list')).toBeInTheDocument()
+    expect(screen.getByTestId(`proposal-card-${proposal.id}`)).toBeInTheDocument()
+  })
+
+  it('shows batch actions footer when there are proposed cards', () => {
+    renderPanel({ transcription: 'some text', proposals: [makeProposal({ status: 'proposed' })] })
+    expect(screen.getByTestId('batch-actions')).toBeInTheDocument()
+    expect(screen.getByTestId('apply-all-btn')).toBeInTheDocument()
+    expect(screen.getByTestId('dismiss-all-btn')).toBeInTheDocument()
+  })
+
+  it('hides batch actions footer when no proposed cards remain', () => {
+    renderPanel({ transcription: 'some text', proposals: [makeProposal({ status: 'applied' })] })
+    expect(screen.queryByTestId('batch-actions')).not.toBeInTheDocument()
+  })
+
+  it('calls onApplyAll on Apply All Remaining click', async () => {
+    const user = userEvent.setup()
+    const onApplyAll = vi.fn()
+    renderPanel({ transcription: 'text', proposals: [makeProposal()], onApplyAll })
+    await user.click(screen.getByTestId('apply-all-btn'))
+    expect(onApplyAll).toHaveBeenCalled()
+  })
+
+  it('calls onDismissAll on Dismiss All Remaining click', async () => {
+    const user = userEvent.setup()
+    const onDismissAll = vi.fn()
+    renderPanel({ transcription: 'text', proposals: [makeProposal()], onDismissAll })
+    await user.click(screen.getByTestId('dismiss-all-btn'))
+    expect(onDismissAll).toHaveBeenCalled()
   })
 
   it('shows transcription in italic blockquote style', () => {

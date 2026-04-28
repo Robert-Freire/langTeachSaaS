@@ -9,6 +9,7 @@ import LangTeachLogo from '@/components/LangTeachLogo'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import AtelierAssistantPanel from '@/components/AtelierAssistantPanel'
+import { useAtelierAssistant } from '@/hooks/useAtelierAssistant'
 import { getStudent } from '@/api/students'
 
 const mainNavItems = [
@@ -136,6 +137,7 @@ function SidebarContent({ user, initials, logout, location, assistantOpen, onTog
 }
 
 const STUDENT_ID_RE = /^\/students\/([^/]+)/
+const SESSION_ID_RE = /^\/students\/[^/]+\/sessions\/([^/]+)/
 
 function extractStudentId(pathname: string): string | null {
   const match = pathname.match(STUDENT_ID_RE)
@@ -143,14 +145,19 @@ function extractStudentId(pathname: string): string | null {
   return match[1] === 'new' ? null : match[1]
 }
 
+function extractSessionId(pathname: string): string | null {
+  const match = pathname.match(SESSION_ID_RE)
+  return match ? match[1] : null
+}
+
 export default function AppShell() {
   const { user, logout } = useAuth0()
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [assistantOpen, setAssistantOpen] = useState(false)
-  const [transcription, setTranscription] = useState<string | null>(null)
 
   const studentId = extractStudentId(location.pathname)
+  const sessionId = extractSessionId(location.pathname)
 
   const { data: studentData } = useQuery({
     queryKey: ['student', studentId],
@@ -158,6 +165,8 @@ export default function AppShell() {
     enabled: studentId !== null,
     select: (s) => s.name,
   })
+
+  const assistant = useAtelierAssistant(studentId, sessionId)
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setDrawerOpen(false) }, [location.pathname])
@@ -254,10 +263,18 @@ export default function AppShell() {
       <AtelierAssistantPanel
         open={assistantOpen}
         onClose={() => setAssistantOpen(false)}
-        onCloseDiscarding={() => { setAssistantOpen(false); setTranscription(null) }}
+        onCloseDiscarding={() => { setAssistantOpen(false); assistant.reset() }}
         studentName={studentData}
-        transcription={transcription}
-        onSubmit={(text) => setTranscription(text)}
+        transcription={assistant.transcription}
+        processing={assistant.processing}
+        proposals={assistant.proposals}
+        onSubmit={assistant.submit}
+        onApply={assistant.apply}
+        onDismiss={assistant.dismiss}
+        onUndo={assistant.undoDismiss}
+        onRetry={assistant.apply}
+        onApplyAll={assistant.applyAll}
+        onDismissAll={assistant.dismissAll}
       />
     </div>
   )
