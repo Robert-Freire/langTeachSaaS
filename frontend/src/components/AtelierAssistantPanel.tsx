@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Sparkles, X, Send } from 'lucide-react'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
@@ -23,12 +23,6 @@ export default function AtelierAssistantPanel({
   const [inputValue, setInputValue] = useState('')
   const [pendingClose, setPendingClose] = useState(false)
 
-  useEffect(() => {
-    if (!open || transcription === null) {
-      setPendingClose(false)
-    }
-  }, [open, transcription])
-
   function handleCloseAttempt() {
     if (transcription !== null) {
       setPendingClose(true)
@@ -38,7 +32,11 @@ export default function AtelierAssistantPanel({
   }
 
   function handleSheetOpenChange(newOpen: boolean) {
-    if (!newOpen) handleCloseAttempt()
+    if (newOpen) {
+      setPendingClose(false)
+    } else {
+      handleCloseAttempt()
+    }
   }
 
   function handleSubmit() {
