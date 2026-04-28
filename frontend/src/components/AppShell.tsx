@@ -1,12 +1,15 @@
 import { useState, useEffect, type ElementType } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
-import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings, LogOut, Menu, Sparkles, HelpCircle, X } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings, LogOut, Menu, Sparkles, HelpCircle } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import LangTeachLogo from '@/components/LangTeachLogo'
-import { Sheet, SheetClose, SheetContent } from '@/components/ui/sheet'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
+import AtelierAssistantPanel from '@/components/AtelierAssistantPanel'
+import { getStudent } from '@/api/students'
 
 const mainNavItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -132,11 +135,29 @@ function SidebarContent({ user, initials, logout, location, assistantOpen, onTog
   )
 }
 
+const STUDENT_ID_RE = /^\/students\/([^/]+)/
+
+function extractStudentId(pathname: string): string | null {
+  const match = pathname.match(STUDENT_ID_RE)
+  if (!match) return null
+  return match[1] === 'new' ? null : match[1]
+}
+
 export default function AppShell() {
   const { user, logout } = useAuth0()
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [assistantOpen, setAssistantOpen] = useState(false)
+  const [transcription, setTranscription] = useState<string | null>(null)
+
+  const studentId = extractStudentId(location.pathname)
+
+  const { data: studentData } = useQuery({
+    queryKey: ['student', studentId],
+    queryFn: () => getStudent(studentId!),
+    enabled: studentId !== null,
+    select: (s) => s.name,
+  })
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setDrawerOpen(false) }, [location.pathname])
@@ -229,34 +250,15 @@ export default function AppShell() {
         </main>
       </div>
 
-      {/* Assistant stub panel */}
-      <Sheet open={assistantOpen} onOpenChange={setAssistantOpen}>
-        <SheetContent
-          data-testid="assistant-panel"
-          className="right-0 left-auto w-[360px] max-w-full flex flex-col p-0 shadow-[0_8px_40px_0_rgb(26_27_34_/_0.12)] data-open:slide-in-from-right data-closed:slide-out-to-right"
-        >
-          <div className="flex items-center justify-between px-5 py-4">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-full bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] flex items-center justify-center">
-                <Sparkles className="h-3.5 w-3.5 text-white" />
-              </div>
-              <span className="font-semibold font-inter text-sm text-zinc-900">Atelier Assistant</span>
-            </div>
-            <SheetClose
-              aria-label="Close Assistant"
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </SheetClose>
-          </div>
-          <div className="flex-1 flex items-center justify-center px-6 text-center">
-            <div className="space-y-2">
-              <Sparkles className="h-8 w-8 text-zinc-200 mx-auto" />
-              <p className="text-sm text-zinc-400 font-inter">Voice and chat assistant coming soon.</p>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Atelier Assistant panel */}
+      <AtelierAssistantPanel
+        open={assistantOpen}
+        onClose={() => setAssistantOpen(false)}
+        onCloseDiscarding={() => { setAssistantOpen(false); setTranscription(null) }}
+        studentName={studentData}
+        transcription={transcription}
+        onSubmit={(text) => setTranscription(text)}
+      />
     </div>
   )
 }

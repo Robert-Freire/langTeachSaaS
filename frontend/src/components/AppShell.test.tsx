@@ -266,6 +266,40 @@ describe('AppShell', () => {
     expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
   })
 
+  it('assistant empty state shows generic prompt on /students/new (not student-specific)', async () => {
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { unmount } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/students/new']}>
+          <AppShell />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    const aside = document.querySelector('aside')
+    const openBtn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(openBtn)
+    // Should show generic prompt, not "What did you cover with new today?"
+    expect(screen.queryByText(/What did you cover with/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/What would you like to cover today/i)).toBeInTheDocument()
+    unmount()
+  })
+
+  it('Escape with transcription shows inline discard confirm instead of closing', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    const aside = document.querySelector('aside')
+    const openBtn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(openBtn)
+    const input = screen.getByTestId('assistant-input')
+    await user.type(input, 'Hoy hemos trabajado el subjuntivo')
+    await user.click(screen.getByTestId('assistant-send-btn'))
+    // Now there is a transcription — Escape should show confirm, not close
+    await user.keyboard('{Escape}')
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
+    expect(screen.getByTestId('discard-confirm')).toBeInTheDocument()
+  })
+
   it('Open Assistant button shows active state class when panel is open', async () => {
     const user = userEvent.setup()
     renderShell()
