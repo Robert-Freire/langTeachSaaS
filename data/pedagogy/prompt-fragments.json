@@ -1,9 +1,9 @@
 {
-  "cefrCue": "Write all examples, sentences, and instructions using vocabulary and grammar appropriate for {cefrLevel}. Do not use structures above this level in examples. Definitions and explanations aimed at the teacher may use higher-level language.",
+  "cefrCue": "Write all student-facing examples, sentences, and instructions using only vocabulary and grammar appropriate for {cefrLevel}. Definitions and explanations aimed at the teacher may use higher-level language.",
   "nativeLanguageBullets": [
     "For grammar explanations, note where {targetLanguage} differs from {nativeLanguage}.",
     "Flag false cognates between {nativeLanguage} and {targetLanguage} when relevant.",
-    "Be aware of common errors {nativeLanguage} speakers make in {targetLanguage}."
+    "Be aware of the most common errors {nativeLanguage} speakers make in {targetLanguage}."
   ],
   "personalisationDirective": "Personalize content for this student. Reference their interests in examples{motivationSuffix}.",
   "motivationSuffix": ", and anchor vocabulary to their stated study motivation: {reasonForStudying}"
