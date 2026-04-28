@@ -125,11 +125,11 @@ public class TelegramControllerTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
-    private async Task<Guid> GetTeacherIdAsync(string auth0Id)
+    private Task<Guid> GetTeacherIdAsync(string auth0Id)
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var teacher = db.Teachers.First(t => t.Auth0UserId == auth0Id);
-        return teacher.Id;
+        return Task.FromResult(teacher.Id);
     }
 }
