@@ -5,7 +5,7 @@ import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import LangTeachLogo from '@/components/LangTeachLogo'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Sheet, SheetClose, SheetContent } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 
 const mainNavItems = [
@@ -147,13 +147,10 @@ export default function AppShell() {
         e.preventDefault()
         setAssistantOpen(open => !open)
       }
-      if (e.key === 'Escape' && assistantOpen) {
-        setAssistantOpen(false)
-      }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [assistantOpen])
+  }, [])
 
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
@@ -233,13 +230,10 @@ export default function AppShell() {
       </div>
 
       {/* Assistant stub panel */}
-      {assistantOpen && (
-        <div
-          role="dialog"
-          aria-label="Assistant"
-          aria-modal="true"
+      <Sheet open={assistantOpen} onOpenChange={setAssistantOpen}>
+        <SheetContent
           data-testid="assistant-panel"
-          className="fixed inset-y-0 right-0 z-50 w-[360px] max-w-full bg-white flex flex-col shadow-[0_8px_40px_0_rgb(26_27_34_/_0.12)] animate-in slide-in-from-right duration-200"
+          className="right-0 left-auto w-[360px] max-w-full flex flex-col p-0 shadow-[0_8px_40px_0_rgb(26_27_34_/_0.12)] data-open:slide-in-from-right data-closed:slide-out-to-right"
         >
           <div className="flex items-center justify-between px-5 py-4">
             <div className="flex items-center gap-2">
@@ -248,13 +242,12 @@ export default function AppShell() {
               </div>
               <span className="font-semibold font-inter text-sm text-zinc-900">Atelier Assistant</span>
             </div>
-            <button
-              onClick={() => setAssistantOpen(false)}
+            <SheetClose
               aria-label="Close Assistant"
               className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
             >
               <X className="h-4 w-4" />
-            </button>
+            </SheetClose>
           </div>
           <div className="flex-1 flex items-center justify-center px-6 text-center">
             <div className="space-y-2">
@@ -262,8 +255,8 @@ export default function AppShell() {
               <p className="text-sm text-zinc-400 font-inter">Voice and chat assistant coming soon.</p>
             </div>
           </div>
-        </div>
-      )}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

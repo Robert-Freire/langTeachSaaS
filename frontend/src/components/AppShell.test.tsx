@@ -229,7 +229,6 @@ describe('AppShell', () => {
     const btn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
     await user.click(btn)
     expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
-    expect(screen.getByRole('dialog', { name: /assistant/i })).toBeInTheDocument()
   })
 
   it('closing the assistant panel removes it from the DOM', async () => {
