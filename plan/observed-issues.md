@@ -12,3 +12,4 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #994-sophy | 2026-04-27 | low | voiceUpdateMerge.ts: case-insensitive dedup pattern repeated 5× (nativeLanguages, spokenLanguages, interests, objectives, difficulties). Extract mergeUnique helper. |
 | #994-sophy | 2026-04-27 | low | extractionNormalizer.ts: 30-entry multi-language alias table is config-in-code. Move to data/ or tighten prompt to return canonical English values. |
 | #994-security | 2026-04-27 | low | POST /api/students/extract-profile has no per-user rate limit — any authenticated teacher can fire it in a tight loop. Add sliding-window policy or propagate ClaudeRateLimitException as 429. |
+| #990-arch | 2026-04-28 | low | LogSession.tsx: activeDifficulties wrapped in useMemo but adjacent pendingFollowups/pendingTodos/showPrevHomework are inline filters on the same student dep — inconsistent; no other page uses useMemo selectively. |

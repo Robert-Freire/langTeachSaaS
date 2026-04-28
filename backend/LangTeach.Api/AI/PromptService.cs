@@ -13,17 +13,7 @@ public class PromptService : IPromptService
     private readonly IPedagogyConfigService _pedagogy;
     private readonly ILogger<PromptService> _logger;
     private readonly IContentSchemaService _schemas;
-
-    private static readonly PromptFragmentsConfig _fragments = LoadFragments();
-
-    private static PromptFragmentsConfig LoadFragments()
-    {
-        var assembly = Assembly.GetExecutingAssembly();
-        using var stream = assembly.GetManifestResourceStream("LangTeach.Api.Pedagogy.prompt-fragments.json")
-            ?? throw new InvalidOperationException("Embedded resource 'LangTeach.Api.Pedagogy.prompt-fragments.json' not found.");
-        return JsonSerializer.Deserialize<PromptFragmentsConfig>(stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-            ?? throw new InvalidOperationException("prompt-fragments.json deserialized as null.");
-    }
+    private readonly PromptFragmentsConfig _fragments;
 
     private sealed record PromptFragmentsConfig(
         string CefrCue,
@@ -38,39 +28,45 @@ public class PromptService : IPromptService
         _pedagogy = pedagogy;
         _logger = logger;
         _schemas = schemas;
+
+        var assembly = Assembly.GetExecutingAssembly();
+        using var stream = assembly.GetManifestResourceStream("LangTeach.Api.Pedagogy.prompt-fragments.json")
+            ?? throw new InvalidOperationException("Embedded resource 'LangTeach.Api.Pedagogy.prompt-fragments.json' not found.");
+        _fragments = JsonSerializer.Deserialize<PromptFragmentsConfig>(stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+            ?? throw new InvalidOperationException("prompt-fragments.json deserialized as null.");
     }
 
     public ClaudeRequest BuildLessonPlanPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _fragments);
         var user   = LessonPlanUserPrompt(ctx);
         return BuildRequest("lesson-plan", "lesson-plan", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 8192);
     }
 
     public ClaudeRequest BuildVocabularyPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _fragments);
         var user   = VocabularyUserPrompt(ctx);
         return BuildRequest("vocabulary", "vocabulary", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Haiku, 2048);
     }
 
     public ClaudeRequest BuildGrammarPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _fragments);
         var user   = GrammarUserPrompt(ctx);
         return BuildRequest("grammar", "grammar", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 3000);
     }
 
     public ClaudeRequest BuildExercisesPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _fragments);
         var user   = ExercisesUserPrompt(ctx);
         return BuildRequest("exercises", "practice", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 8192);
     }
 
     public ClaudeRequest BuildConversationPrompt(GenerationContext ctx)
     {
-        var system  = BuildSystemPrompt(ctx);
+        var system  = BuildSystemPrompt(ctx, _fragments);
         var user    = ConversationUserPrompt(ctx);
         var section = ctx.SectionType ?? "conversation";
         return BuildRequest("conversation", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Haiku, 3000);
@@ -78,21 +74,21 @@ public class PromptService : IPromptService
 
     public ClaudeRequest BuildReadingPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _fragments);
         var user   = ReadingUserPrompt(ctx);
         return BuildRequest("reading", "reading", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 4096);
     }
 
     public ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _fragments);
         var user   = HomeworkUserPrompt(ctx);
         return BuildRequest("homework", "homework", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 1024);
     }
 
     public ClaudeRequest BuildFreeTextPrompt(GenerationContext ctx)
     {
-        var system  = BuildSystemPrompt(ctx);
+        var system  = BuildSystemPrompt(ctx, _fragments);
         var user    = FreeTextUserPrompt(ctx);
         var section = ctx.SectionType ?? "free-text";
         return BuildRequest("free-text", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Haiku, 1024);
@@ -100,7 +96,7 @@ public class PromptService : IPromptService
 
     public ClaudeRequest BuildGuidedWritingPrompt(GenerationContext ctx)
     {
-        var system  = BuildSystemPrompt(ctx);
+        var system  = BuildSystemPrompt(ctx, _fragments);
         var user    = GuidedWritingUserPrompt(ctx);
         var section = ctx.SectionType ?? DefaultSectionType;
         return BuildRequest("guided-writing", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 2048);
@@ -108,14 +104,14 @@ public class PromptService : IPromptService
 
     public ClaudeRequest BuildErrorCorrectionPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _fragments);
         var user   = ErrorCorrectionUserPrompt(ctx);
         return BuildRequest("error-correction", "practice", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 3000);
     }
 
     public ClaudeRequest BuildNoticingTaskPrompt(GenerationContext ctx)
     {
-        var system  = BuildSystemPrompt(ctx);
+        var system  = BuildSystemPrompt(ctx, _fragments);
         var user    = NoticingTaskUserPrompt(ctx);
         var section = ctx.SectionType ?? "presentation";
         return BuildRequest("noticing-task", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 3000);
@@ -394,7 +390,7 @@ public class PromptService : IPromptService
 
     // --- System prompt (shared across all content types) ---
 
-    private static string BuildSystemPrompt(GenerationContext ctx)
+    private static string BuildSystemPrompt(GenerationContext ctx, PromptFragmentsConfig fragments)
     {
         var language      = InputSanitizer.Sanitize(ctx.Language);
         var cefrLevel     = InputSanitizer.Sanitize(ctx.CefrLevel);
@@ -410,7 +406,7 @@ public class PromptService : IPromptService
         sb.AppendLine($"You are an expert {language} teacher creating materials for a {cefrLevel} level lesson.");
         sb.AppendLine($"Teaching style: {style}. Topic: {topic}. Duration: {ctx.DurationMinutes} minutes.");
         sb.AppendLine();
-        sb.AppendLine(_fragments.CefrCue.Replace("{cefrLevel}", cefrLevel));
+        sb.AppendLine(fragments.CefrCue.Replace("{cefrLevel}", cefrLevel));
 
         if (ctx.GrammarConstraints is { Count: > 0 })
         {
@@ -440,7 +436,7 @@ public class PromptService : IPromptService
             if (ctx.StudentNativeLanguage is not null)
             {
                 sb.AppendLine($"- Native language: {nativeLang}");
-                foreach (var bullet in _fragments.NativeLanguageBullets)
+                foreach (var bullet in fragments.NativeLanguageBullets)
                     sb.AppendLine($"- {bullet.Replace("{targetLanguage}", language).Replace("{nativeLanguage}", nativeLang)}");
             }
 
@@ -491,9 +487,9 @@ public class PromptService : IPromptService
 
             sb.AppendLine();
             var motivationSuffix = reasonForStudying.Length > 0
-                ? _fragments.MotivationSuffix.Replace("{reasonForStudying}", reasonForStudying)
+                ? fragments.MotivationSuffix.Replace("{reasonForStudying}", reasonForStudying)
                 : string.Empty;
-            sb.AppendLine(_fragments.PersonalisationDirective.Replace("{motivationSuffix}", motivationSuffix));
+            sb.AppendLine(fragments.PersonalisationDirective.Replace("{motivationSuffix}", motivationSuffix));
 
             if (spokenLangs.Length > 0)
                 sb.AppendLine("Where relevant, leverage cross-language awareness and cognates from the student's other languages.");
