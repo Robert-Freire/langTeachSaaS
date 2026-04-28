@@ -1,7 +1,7 @@
 import { useState, useEffect, type ElementType } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
-import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings, LogOut, Menu } from 'lucide-react'
+import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings, LogOut, Menu, Sparkles, HelpCircle, X } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import LangTeachLogo from '@/components/LangTeachLogo'
@@ -49,11 +49,13 @@ function NavLink({ to, label, icon: Icon, location }: {
   )
 }
 
-function SidebarContent({ user, initials, logout, location }: {
+function SidebarContent({ user, initials, logout, location, assistantOpen, onToggleAssistant }: {
   user: ReturnType<typeof useAuth0>['user']
   initials: string
   logout: ReturnType<typeof useAuth0>['logout']
   location: ReturnType<typeof useLocation>
+  assistantOpen: boolean
+  onToggleAssistant: () => void
 }) {
   return (
     <>
@@ -75,9 +77,36 @@ function SidebarContent({ user, initials, logout, location }: {
         ))}
       </nav>
 
-      {/* Bottom: Settings (visually separated) + teacher profile with tucked logout */}
+      {/* Open Assistant zone */}
+      <div className="px-3 pb-3 pt-4">
+        <button
+          onClick={onToggleAssistant}
+          aria-haspopup="dialog"
+          aria-expanded={assistantOpen}
+          aria-label="Open Assistant"
+          data-testid="open-assistant-btn"
+          className={cn(
+            'w-full flex items-center gap-2.5 px-5 py-3.5 rounded-xl font-inter font-semibold text-sm text-white',
+            'bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)]',
+            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+            'transition-all duration-150',
+            assistantOpen
+              ? 'brightness-90 shadow-inner'
+              : 'hover:shadow-[0_4px_16px_0_rgb(53_37_205_/_0.22)] hover:brightness-105 active:brightness-90'
+          )}
+        >
+          <Sparkles className="h-4 w-4 shrink-0" />
+          Open Assistant
+        </button>
+        <p className="text-center text-[0.625rem] font-inter text-zinc-400 mt-1.5 tracking-wider select-none">
+          ⌘K
+        </p>
+      </div>
+
+      {/* Bottom: Help + Settings (visually separated) + teacher profile with tucked logout */}
       <div className="px-3 py-4 space-y-3">
-        <div className="border-t border-zinc-200/60 pt-3">
+        <div className="border-t border-zinc-200/60 pt-3 space-y-0.5">
+          <NavLink to="/help" label="Help" icon={HelpCircle} location={location} />
           <NavLink to="/settings" label="Settings" icon={Settings} location={location} />
         </div>
         <div className="bg-white rounded-xl p-3 flex items-center gap-3" data-testid="teacher-profile-card">
@@ -107,19 +136,43 @@ export default function AppShell() {
   const { user, logout } = useAuth0()
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [assistantOpen, setAssistantOpen] = useState(false)
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setDrawerOpen(false) }, [location.pathname])
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setAssistantOpen(open => !open)
+      }
+      if (e.key === 'Escape' && assistantOpen) {
+        setAssistantOpen(false)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [assistantOpen])
 
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : '?'
 
+  const toggleAssistant = () => setAssistantOpen(open => !open)
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#FBF8FF]">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-64 flex-col bg-[#F4F2FD]">
-        <SidebarContent user={user} initials={initials} logout={logout} location={location} />
+        <SidebarContent
+          user={user}
+          initials={initials}
+          logout={logout}
+          location={location}
+          assistantOpen={assistantOpen}
+          onToggleAssistant={toggleAssistant}
+        />
       </aside>
 
       {/* Mobile top bar */}
@@ -138,17 +191,36 @@ export default function AppShell() {
           <LangTeachLogo size={24} />
           <span className="text-primary font-bold text-base tracking-tight font-manrope">LangTeach</span>
         </div>
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={user?.picture} alt={user?.name} />
-          <AvatarFallback className="bg-primary text-white text-xs">{initials}</AvatarFallback>
-        </Avatar>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={toggleAssistant}
+            aria-label="Open Assistant"
+            aria-haspopup="dialog"
+            aria-expanded={assistantOpen}
+            data-testid="open-assistant-mobile-btn"
+            className="h-8 w-8 rounded-full flex items-center justify-center bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-all"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+          </button>
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={user?.picture} alt={user?.name} />
+            <AvatarFallback className="bg-primary text-white text-xs">{initials}</AvatarFallback>
+          </Avatar>
+        </div>
       </div>
 
       {/* Mobile drawer */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
         <SheetContent className="bg-[#F4F2FD] p-0">
           <div className="flex flex-col h-full">
-            <SidebarContent user={user} initials={initials} logout={logout} location={location} />
+            <SidebarContent
+              user={user}
+              initials={initials}
+              logout={logout}
+              location={location}
+              assistantOpen={assistantOpen}
+              onToggleAssistant={() => { setDrawerOpen(false); setAssistantOpen(true) }}
+            />
           </div>
         </SheetContent>
       </Sheet>
@@ -159,6 +231,39 @@ export default function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      {/* Assistant stub panel */}
+      {assistantOpen && (
+        <div
+          role="dialog"
+          aria-label="Assistant"
+          aria-modal="true"
+          data-testid="assistant-panel"
+          className="fixed inset-y-0 right-0 z-50 w-[360px] max-w-full bg-white flex flex-col shadow-[0_8px_40px_0_rgb(26_27_34_/_0.12)] animate-in slide-in-from-right duration-200"
+        >
+          <div className="flex items-center justify-between px-5 py-4">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-full bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] flex items-center justify-center">
+                <Sparkles className="h-3.5 w-3.5 text-white" />
+              </div>
+              <span className="font-semibold font-inter text-sm text-zinc-900">Atelier Assistant</span>
+            </div>
+            <button
+              onClick={() => setAssistantOpen(false)}
+              aria-label="Close Assistant"
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center px-6 text-center">
+            <div className="space-y-2">
+              <Sparkles className="h-8 w-8 text-zinc-200 mx-auto" />
+              <p className="text-sm text-zinc-400 font-inter">Voice and chat assistant coming soon.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
