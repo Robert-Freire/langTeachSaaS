@@ -25,6 +25,7 @@ function renderCard(proposal: ProposalWithStatus, handlers = {}) {
     onUndo: vi.fn(),
     onRetry: vi.fn(),
     onModify: vi.fn(),
+    onRedirectToChat: vi.fn(),
     ...handlers,
   }
   return { ...render(<ProposalCard proposal={proposal} {...props} />), props }
@@ -189,6 +190,16 @@ describe('ProposalCard', () => {
     await user.click(screen.getByTestId('modify-btn-p1'))
     await user.click(screen.getByTestId('modify-cancel-btn-p1'))
     expect(onModify).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('modify-input-p1')).not.toBeInTheDocument()
+  })
+
+  it('Wrong entity button calls onRedirectToChat with prefill and exits edit mode', async () => {
+    const user = userEvent.setup()
+    const onRedirectToChat = vi.fn()
+    renderCard(makeProposal({ status: 'proposed', type: 'session', field: 'title' }), { onRedirectToChat })
+    await user.click(screen.getByTestId('modify-btn-p1'))
+    await user.click(screen.getByTestId('redirect-to-chat-btn-p1'))
+    expect(onRedirectToChat).toHaveBeenCalledWith(expect.stringContaining('student profile'))
     expect(screen.queryByTestId('modify-input-p1')).not.toBeInTheDocument()
   })
 

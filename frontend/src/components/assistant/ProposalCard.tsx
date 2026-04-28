@@ -10,9 +10,16 @@ interface Props {
   onUndo: (id: string) => void
   onRetry: (id: string) => void
   onModify: (id: string, newValue: string) => void
+  onRedirectToChat: (prefill: string) => void
 }
 
 const MULTILINE_FIELDS = new Set(['actualContent', 'generalNotes', 'homeworkAssigned'])
+
+function getRedirectPrefill(type: string): string {
+  if (type === 'session') return 'Actually for the student profile not the session — '
+  if (type === 'student') return 'Actually for the session not the student — '
+  return 'Actually — '
+}
 
 const TYPE_CONFIG = {
   student: {
@@ -35,7 +42,7 @@ const TYPE_CONFIG = {
   },
 } as const
 
-export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onModify }: Props) {
+export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onModify, onRedirectToChat }: Props) {
   const config = TYPE_CONFIG[proposal.type]
   const { Icon } = config
 
@@ -222,6 +229,14 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
                 className="text-xs font-semibold font-inter text-zinc-500 hover:text-zinc-700 px-3 py-1 rounded-lg hover:bg-zinc-100 transition-colors"
               >
                 Cancel
+              </button>
+              <button
+                onMouseDown={e => { e.preventDefault(); cancelEdit(); onRedirectToChat(getRedirectPrefill(proposal.type)) }}
+                data-testid={`redirect-to-chat-btn-${proposal.id}`}
+                className="text-xs font-inter text-zinc-400 hover:text-indigo-600 px-2 py-1 rounded-lg hover:bg-indigo-50 transition-colors ml-auto"
+                title="Wrong entity or scope? Redirect to chat"
+              >
+                Wrong entity?
               </button>
             </>
           )}
