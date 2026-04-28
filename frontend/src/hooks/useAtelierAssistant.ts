@@ -4,11 +4,11 @@ import {
   applySessionProposal,
   applyStudentProposal,
   applyTodoProposal,
-  createStudentFromAssistant,
   type NewStudentData,
   type ProposalDto,
   proposeAssistant,
 } from '../api/assistant'
+import { createStudent } from '../api/students'
 
 export type ProposalStatus = 'proposed' | 'applying' | 'applied' | 'dismissed' | 'error'
 
@@ -93,6 +93,9 @@ export function useAtelierAssistant(
         await applyTodoProposal(studentId, proposal.newValue)
       } else if (proposal.type === 'newStudent') {
         const data = JSON.parse(proposal.newValue) as NewStudentData
+        if (!data.name?.trim()) throw new Error('Name is required.')
+        if (!data.learningLanguage?.trim()) throw new Error('Learning Language is required.')
+        if (!data.cefrLevel?.trim()) throw new Error('CEFR Level is required.')
         // Guard against creating a duplicate if the students list is cached
         const cached = queryClient.getQueryData<{ items: Array<{ name: string }> }>(['students'])
         if (cached && data.name) {
@@ -101,7 +104,20 @@ export function useAtelierAssistant(
           )
           if (exists) throw new Error(`A student named "${data.name}" already exists.`)
         }
-        await createStudentFromAssistant(data)
+        await createStudent({
+          name: data.name,
+          learningLanguage: data.learningLanguage,
+          cefrLevel: data.cefrLevel,
+          birthYear: data.birthYear ?? null,
+          profession: data.profession ?? null,
+          cityOfResidence: data.cityOfResidence ?? null,
+          nativeLanguages: data.nativeLanguages ?? [],
+          reasonForStudying: data.reasonForStudying ?? null,
+          interests: [],
+          learningGoals: [],
+          weaknesses: [],
+          difficulties: [],
+        })
       }
       updateProposal(id, { status: 'applied' })
       // Invalidate relevant queries so the rest of the UI reflects the change

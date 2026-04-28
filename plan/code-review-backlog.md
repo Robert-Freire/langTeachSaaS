@@ -12,6 +12,10 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 - **AppShell transcription state lift** (arch-reviewer): `transcription: string | null` for the Atelier Assistant lives in AppShell. This works for part 1 but deviates from the pattern of sub-panel state living local or in a dedicated context (compare `VoiceUpdateDrawer` state in `StudentDetail.tsx`). If parts 2/3 add more cross-cutting assistant state (proposals, selection, apply flow), refactor to a dedicated `AtelierAssistantContext` provider. Resolved at #1009: all state now lives in `useAtelierAssistant` hook. Context provider can be considered for Part 3 (#1010) if cross-route state is needed.
 
+## #1005 (2026-04-28)
+
+- **JSON-blob in ProposalDto.newValue for newStudent type** (arch-reviewer): All other proposal types store a plain human-readable string in `newValue`. The `newStudent` type encodes a JSON object. This diverges from the existing pattern and will complicate generic proposal handling if/when needed. Consider a proper discriminated union for proposals or a dedicated `newStudentPayload` field in the response DTO if compound proposals are added for other types in Part 3.
+
 ## #1009 (2026-04-28)
 
 - **Proposal field taxonomy hardcoded in C#** (Sophy): `AssistantController` emits `EmitProposal` calls for 7 hard-coded field/label pairs. `PatchStudentRequest`/`PatchSessionRequest` mirror this whitelist. Long-term: extract to `data/assistant/proposal-fields.json` consumed by both emission loop and patch dispatch. Assess at Part 3+ (#1010).

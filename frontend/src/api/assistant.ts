@@ -62,8 +62,3 @@ export async function applyTodoProposal(
 ): Promise<void> {
   await apiClient.post(`/api/students/${studentId}/teaching-todos`, { text })
 }
-
-export async function createStudentFromAssistant(data: NewStudentData): Promise<{ id: string }> {
-  const res = await apiClient.post<{ id: string }>('/api/students', data)
-  return res.data
-}
