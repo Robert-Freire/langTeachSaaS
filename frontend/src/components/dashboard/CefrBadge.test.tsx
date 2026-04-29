@@ -15,7 +15,7 @@ describe('CefrBadge', () => {
 
   it('applies B-level indigo styling', () => {
     const { container } = render(<CefrBadge level="B2" />)
-    expect(container.firstChild).toHaveClass('bg-[#ECEAFD]', 'text-[#3525CD]')
+    expect(container.firstChild).toHaveClass('bg-[#ECEAFD]', 'text-[#4338CA]')
   })
 
   it('applies C-level warm styling', () => {
