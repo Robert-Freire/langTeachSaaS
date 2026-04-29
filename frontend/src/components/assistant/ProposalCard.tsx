@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Calendar, CheckSquare, Loader2, User } from 'lucide-react'
+import { Calendar, CheckSquare, Loader2, User, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import type { ProposalWithStatus } from '@/hooks/useAtelierAssistant'
+import type { NewStudentData, ProposalWithStatus } from '@/hooks/useAtelierAssistant'
+import NewStudentFields from './NewStudentFields'
 
 interface Props {
   proposal: ProposalWithStatus
@@ -13,6 +14,7 @@ interface Props {
   onRetry: (id: string) => void
   onModify: (id: string, newValue: string) => void
   onRedirectToChat: (prefill: string) => void
+  onEditPayload?: (id: string, payload: NewStudentData) => void
 }
 
 const MULTILINE_FIELDS = new Set(['actualContent', 'generalNotes', 'homeworkAssigned'])
@@ -42,9 +44,15 @@ const TYPE_CONFIG = {
     iconBg: 'bg-emerald-100',
     iconColor: 'text-emerald-600',
   },
+  newStudent: {
+    Icon: UserPlus,
+    accent: 'bg-teal-500',
+    iconBg: 'bg-teal-100',
+    iconColor: 'text-teal-600',
+  },
 } as const
 
-export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onModify, onRedirectToChat }: Props) {
+export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onModify, onRedirectToChat, onEditPayload }: Props) {
   const config = TYPE_CONFIG[proposal.type]
   const { Icon } = config
 
@@ -91,6 +99,7 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
   }
 
   const isMultiline = MULTILINE_FIELDS.has(proposal.field)
+  const isNewStudent = proposal.type === 'newStudent'
 
   return (
     <div
@@ -131,42 +140,54 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
           )}
         </div>
 
-        {/* Diff / inline edit */}
-        <div className="text-sm font-inter text-zinc-700 mb-2.5 leading-relaxed">
-          {editing ? (
-            isMultiline ? (
-              <Textarea
-                value={editValue}
-                onChange={e => setEditValue(e.target.value)}
-                onKeyDown={handleEditKeyDown}
-                onBlur={handleEditBlur}
-                rows={3}
-                autoFocus
-                data-testid={`modify-input-${proposal.id}`}
-                className="text-sm font-inter resize-none"
-              />
-            ) : (
-              <Input
-                type="text"
-                value={editValue}
-                onChange={e => setEditValue(e.target.value)}
-                onKeyDown={handleEditKeyDown}
-                onBlur={handleEditBlur}
-                autoFocus
-                data-testid={`modify-input-${proposal.id}`}
-                className="text-sm font-inter"
-              />
-            )
-          ) : proposal.oldValue ? (
-            <span>
-              <span className="line-through text-zinc-400">{proposal.oldValue}</span>
-              {' '}
-              <span className="text-zinc-400 mx-0.5">→</span>
-              {' '}
-              <span className="font-semibold text-zinc-800">{proposal.newValue}</span>
-            </span>
+        {/* Content */}
+        <div className="mb-2.5">
+          {isNewStudent ? (
+            <NewStudentFields
+              payload={proposal.payload as NewStudentData ?? { name: proposal.newValue }}
+              proposalId={proposal.id}
+              onEditPayload={onEditPayload ?? (() => {})}
+            />
+          ) : editing ? (
+            <div className="text-sm font-inter text-zinc-700 leading-relaxed">
+              {isMultiline ? (
+                <Textarea
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  onKeyDown={handleEditKeyDown}
+                  onBlur={handleEditBlur}
+                  rows={3}
+                  autoFocus
+                  data-testid={`modify-input-${proposal.id}`}
+                  className="text-sm font-inter resize-none"
+                />
+              ) : (
+                <Input
+                  type="text"
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  onKeyDown={handleEditKeyDown}
+                  onBlur={handleEditBlur}
+                  autoFocus
+                  data-testid={`modify-input-${proposal.id}`}
+                  className="text-sm font-inter"
+                />
+              )}
+            </div>
           ) : (
-            <span className="font-semibold text-zinc-800">{proposal.newValue}</span>
+            <div className="text-sm font-inter text-zinc-700 leading-relaxed">
+              {proposal.oldValue ? (
+                <span>
+                  <span className="line-through text-zinc-400">{proposal.oldValue}</span>
+                  {' '}
+                  <span className="text-zinc-400 mx-0.5">→</span>
+                  {' '}
+                  <span className="font-semibold text-zinc-800">{proposal.newValue}</span>
+                </span>
+              ) : (
+                <span className="font-semibold text-zinc-800">{proposal.newValue}</span>
+              )}
+            </div>
           )}
         </div>
 
@@ -193,13 +214,15 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
               >
                 Dismiss
               </button>
-              <button
-                onClick={startEdit}
-                data-testid={`modify-btn-${proposal.id}`}
-                className="text-xs font-semibold font-inter text-indigo-600 hover:text-indigo-700 px-3 py-1 rounded-lg hover:bg-indigo-50 transition-colors"
-              >
-                Modify
-              </button>
+              {!isNewStudent && (
+                <button
+                  onClick={startEdit}
+                  data-testid={`modify-btn-${proposal.id}`}
+                  className="text-xs font-semibold font-inter text-indigo-600 hover:text-indigo-700 px-3 py-1 rounded-lg hover:bg-indigo-50 transition-colors"
+                >
+                  Modify
+                </button>
+              )}
             </>
           )}
 

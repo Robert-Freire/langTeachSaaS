@@ -276,6 +276,7 @@ export default function AppShell() {
         onModify={assistant.modifyProposal}
         onApplyAll={assistant.applyAll}
         onDismissAll={assistant.dismissAll}
+        onEditPayload={assistant.onEditPayload}
       />
     </div>
   )

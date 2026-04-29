@@ -56,6 +56,7 @@ interface Props {
   onModify: (id: string, newValue: string) => void
   onApplyAll: () => void
   onDismissAll: () => void
+  onEditPayload?: (id: string, payload: import('@/api/assistant').NewStudentData) => void
 }
 
 export default function AtelierAssistantPanel({
@@ -74,6 +75,7 @@ export default function AtelierAssistantPanel({
   onModify,
   onApplyAll,
   onDismissAll,
+  onEditPayload,
 }: Props) {
   const [inputValue, setInputValue] = useState('')
   const [pendingClose, setPendingClose] = useState(false)
@@ -444,6 +446,7 @@ export default function AtelierAssistantPanel({
                         onRetry={onRetry}
                         onModify={onModify}
                         onRedirectToChat={handleRedirectToChat}
+                        onEditPayload={onEditPayload}
                       />
                     ))}
                   </div>
@@ -533,7 +536,6 @@ export default function AtelierAssistantPanel({
                   <Mic className="h-4 w-4" />
                 </button>
                 <Input
-                  ref={chatInputRef}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}

@@ -26,6 +26,7 @@ function renderCard(proposal: ProposalWithStatus, handlers = {}) {
     onRetry: vi.fn(),
     onModify: vi.fn(),
     onRedirectToChat: vi.fn(),
+    onEditPayload: vi.fn(),
     ...handlers,
   }
   return { ...render(<ProposalCard proposal={proposal} {...props} />), props }
@@ -212,5 +213,48 @@ describe('ProposalCard', () => {
     await user.clear(input)
     await user.keyboard('{Enter}')
     expect(onModify).not.toHaveBeenCalled()
+  })
+
+  it('newStudent type: uses teal accent', () => {
+    const { container } = renderCard(makeProposal({
+      type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
+      payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+    }))
+    expect(container.querySelector('.bg-teal-500')).toBeInTheDocument()
+  })
+
+  it('newStudent type: renders inline field inputs instead of diff', () => {
+    renderCard(makeProposal({
+      type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
+      payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+    }))
+    expect(screen.getByDisplayValue('Sofía')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('inglés')).toBeInTheDocument()
+  })
+
+  it('newStudent type: does not show Modify button', () => {
+    renderCard(makeProposal({
+      type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
+      payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+    }))
+    expect(screen.queryByTestId('modify-btn-p1')).not.toBeInTheDocument()
+  })
+
+  it('newStudent type: calls onEditPayload when a field is changed', async () => {
+    const user = userEvent.setup()
+    const onEditPayload = vi.fn()
+    renderCard(
+      makeProposal({
+        type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
+        payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+      }),
+      { onEditPayload },
+    )
+    const nameInput = screen.getByDisplayValue('Sofía')
+    await user.type(nameInput, 'X')
+    expect(onEditPayload).toHaveBeenCalled()
+    const lastCall = onEditPayload.mock.calls[onEditPayload.mock.calls.length - 1]
+    expect(lastCall[0]).toBe('p1')
+    expect(lastCall[1].name).toBe('SofíaX')
   })
 })

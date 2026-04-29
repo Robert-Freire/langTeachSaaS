@@ -4,9 +4,13 @@ import {
   applySessionProposal,
   applyStudentProposal,
   applyTodoProposal,
+  type NewStudentData,
   type ProposalDto,
   proposeAssistant,
 } from '../api/assistant'
+// Re-export NewStudentData so consumers don't need to import from api/assistant directly
+export type { NewStudentData }
+import { createStudent } from '../api/students'
 
 export type ProposalStatus = 'proposed' | 'applying' | 'applied' | 'dismissed' | 'error'
 
@@ -31,6 +35,7 @@ export interface AtelierAssistantActions {
   applyAll: () => void
   dismissAll: () => void
   reset: () => void
+  onEditPayload: (id: string, payload: NewStudentData) => void
 }
 
 export function useAtelierAssistant(
@@ -42,6 +47,7 @@ export function useAtelierAssistant(
   const [processing, setProcessing] = useState(false)
   const [proposals, setProposals] = useState<ProposalWithStatus[]>([])
   const undoTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const applyingIdsRef = useRef<Set<string>>(new Set())
   // Ref keeps apply/applyAll free of stale closure on proposals
   const proposalsRef = useRef<ProposalWithStatus[]>([])
   useEffect(() => { proposalsRef.current = proposals }, [proposals])
@@ -104,9 +110,11 @@ export function useAtelierAssistant(
   }, [studentId, sessionId])
 
   const apply = useCallback(async (id: string) => {
+    if (applyingIdsRef.current.has(id)) return
     const proposal = proposalsRef.current.find(p => p.id === id)
     if (!proposal || (proposal.status !== 'proposed' && proposal.status !== 'error')) return
 
+    applyingIdsRef.current.add(id)
     updateProposal(id, { status: 'applying', errorMessage: undefined })
 
     try {
@@ -116,6 +124,34 @@ export function useAtelierAssistant(
         await applySessionProposal(studentId, sessionId, proposal.field, proposal.newValue)
       } else if (proposal.type === 'todo' && studentId) {
         await applyTodoProposal(studentId, proposal.newValue)
+      } else if (proposal.type === 'newStudent') {
+        const data = proposal.payload as NewStudentData | null | undefined
+        if (!data) throw new Error('Student data is missing.')
+        if (!data.name?.trim()) throw new Error('Name is required.')
+        if (!data.learningLanguage?.trim()) throw new Error('Learning Language is required.')
+        if (!data.cefrLevel?.trim()) throw new Error('CEFR Level is required.')
+        // Guard against creating a duplicate if the students list is cached
+        const cached = queryClient.getQueryData<{ items: Array<{ name: string }> }>(['students'])
+        if (cached && data.name) {
+          const exists = cached.items.some(
+            s => s.name.trim().toLowerCase() === data.name!.trim().toLowerCase()
+          )
+          if (exists) throw new Error(`A student named "${data.name}" already exists.`)
+        }
+        await createStudent({
+          name: data.name,
+          learningLanguage: data.learningLanguage,
+          cefrLevel: data.cefrLevel,
+          birthYear: data.birthYear ?? null,
+          profession: data.profession ?? null,
+          cityOfResidence: data.cityOfResidence ?? null,
+          nativeLanguages: data.nativeLanguages ?? [],
+          reasonForStudying: data.reasonForStudying ?? null,
+          interests: [],
+          learningGoals: [],
+          weaknesses: [],
+          difficulties: [],
+        })
       }
       updateProposal(id, { status: 'applied' })
       // Invalidate relevant queries so the rest of the UI reflects the change
@@ -124,10 +160,14 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await queryClient.invalidateQueries({ queryKey: ['session', studentId, sessionId] })
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+      } else if (proposal.type === 'newStudent') {
+        await queryClient.invalidateQueries({ queryKey: ['students'] })
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to apply change.'
       updateProposal(id, { status: 'error', errorMessage: message })
+    } finally {
+      applyingIdsRef.current.delete(id)
     }
   }, [studentId, sessionId, updateProposal, queryClient])
 
@@ -167,7 +207,12 @@ export function useAtelierAssistant(
     proposalsRef.current.filter(p => p.status === 'proposed').forEach(p => dismiss(p.id))
   }, [dismiss])
 
+  const onEditPayload = useCallback((id: string, payload: NewStudentData) => {
+    setProposals(prev => prev.map(p => p.id === id ? { ...p, payload } : p))
+  }, [])
+
   const reset = useCallback(() => {
+    applyingIdsRef.current.clear()
     undoTimers.current.forEach(timer => clearTimeout(timer))
     undoTimers.current.clear()
     setTranscription(null)
@@ -187,5 +232,6 @@ export function useAtelierAssistant(
     applyAll,
     dismissAll,
     reset,
+    onEditPayload,
   }
 }

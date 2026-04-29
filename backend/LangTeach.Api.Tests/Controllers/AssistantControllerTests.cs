@@ -95,14 +95,16 @@ public class AssistantControllerTests
     }
 
     [Fact]
-    public async Task Propose_WithoutStudentId_ReturnsOnlySessionProposals()
+    public async Task Propose_WithoutStudentId_ReturnsSessionAndNewStudentProposals()
     {
+        // StubStudentProfileExtractionService returns Name="[Extracted] María García".
+        // With no student context, this triggers new student intent.
         var (client, _) = await SeedTeacherWithStudent(
             "auth0|assistant-propose-nosid", "assistant-propose-nosid@example.com");
 
         var request = new AssistantProposeRequest
         {
-            Text = "We covered grammar topics today.",
+            Text = "Nueva alumna: María García, ingeniera, aprende inglés.",
             StudentId = null,
             SessionId = null,
         };
@@ -112,12 +114,91 @@ public class AssistantControllerTests
         var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
         body.Should().NotBeNull();
 
-        // No student or todo proposals when studentId is absent
+        // No per-field student or todo proposals when studentId is absent
         body!.Proposals.Should().NotContain(p => p.Type == "student");
         body.Proposals.Should().NotContain(p => p.Type == "todo");
 
+        // New student proposal should be present
+        body.Proposals.Should().Contain(p => p.Type == "newStudent" && p.Field == "profile");
+
         // Session proposals should still be present
         body.Proposals.Should().Contain(p => p.Type == "session");
+    }
+
+    [Fact]
+    public async Task Propose_WithStudentIdMatchingExtractedName_DoesNotEmitNewStudentProposal()
+    {
+        // Seed a student whose name exactly matches what the stub extracts.
+        // The stub always returns Name="[Extracted] María García".
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var teacher = new Teacher
+        {
+            Id = Guid.NewGuid(),
+            Auth0UserId = "auth0|assistant-same-name",
+            Email = "assistant-same-name@example.com",
+            DisplayName = "Same Name Teacher",
+            IsApproved = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Teachers.Add(teacher);
+        var student = new Student
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            Name = "[Extracted] María García",
+            LearningLanguage = "English",
+            CefrLevel = "A2",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Students.Add(student);
+        await db.SaveChangesAsync();
+
+        var client = _factory.CreateAuthenticatedClient("auth0|assistant-same-name", "assistant-same-name@example.com");
+        var request = new AssistantProposeRequest
+        {
+            Text = "Working on María García's pronunciation.",
+            StudentId = student.Id,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+
+        // No newStudent proposal when extracted name matches current student
+        body!.Proposals.Should().NotContain(p => p.Type == "newStudent");
+
+        // Regular student update proposals should still be present
+        body.Proposals.Should().Contain(p => p.Type == "student");
+    }
+
+    [Fact]
+    public async Task Propose_WithStudentIdButDifferentExtractedName_EmitsNewStudentProposal()
+    {
+        // Student "Ana" is context; stub extracts "[Extracted] María García" (different name).
+        // Should emit newStudent proposal alongside Ana's update proposals.
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-diff-name", "assistant-diff-name@example.com", cefrLevel: "A1");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Also I have a new student: María García, engineer, learning English at B2.",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+
+        // newStudent proposal for the new person
+        body!.Proposals.Should().Contain(p => p.Type == "newStudent" && p.Field == "profile");
+
+        // Regular student update proposals for Ana still present
+        body.Proposals.Should().Contain(p => p.Type == "student");
     }
 
     [Fact]

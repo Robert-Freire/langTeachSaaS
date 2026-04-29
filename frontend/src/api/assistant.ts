@@ -1,12 +1,24 @@
 import { apiClient } from '../lib/apiClient'
 
+export interface NewStudentData {
+  name: string
+  birthYear?: number | null
+  profession?: string | null
+  cityOfResidence?: string | null
+  nativeLanguages?: string[]
+  learningLanguage?: string | null
+  cefrLevel?: string | null
+  reasonForStudying?: string | null
+}
+
 export interface ProposalDto {
   id: string
-  type: 'student' | 'session' | 'todo'
+  type: 'student' | 'session' | 'todo' | 'newStudent'
   field: string
   label: string
   oldValue: string | null
   newValue: string
+  payload?: NewStudentData | null
 }
 
 export interface ProposeResponse {

@@ -18,6 +18,7 @@ public record ExtractedStudentProfileDto(
     string? ReasonForStudying,
     List<string> NativeLanguages,
     List<string> SpokenLanguages,
+    string? LearningLanguage,
     string? CefrLevel,
     string? OfficialCefrLevel,
     List<ExtractedObjectiveDto> ShortTermObjectives,
