@@ -27,6 +27,7 @@ export interface AtelierAssistantActions {
   apply: (id: string) => void
   dismiss: (id: string) => void
   undoDismiss: (id: string) => void
+  modifyProposal: (id: string, newValue: string) => void
   applyAll: () => void
   dismissAll: () => void
   reset: () => void
@@ -60,14 +61,41 @@ export function useAtelierAssistant(
   const submit = useCallback(async (text: string) => {
     setTranscription(text)
     setProcessing(true)
-    setProposals([])
+    const hasPending = proposalsRef.current.some(p => p.status === 'proposed')
+    if (!hasPending) setProposals([])
     try {
       const { proposals: raw } = await proposeAssistant(
         text,
         studentId ?? undefined,
         sessionId ?? undefined,
       )
-      setProposals(raw.map(p => ({ ...p, status: 'proposed', undoVisible: false })))
+      if (!hasPending) {
+        setProposals(raw.map(p => ({ ...p, status: 'proposed', undoVisible: false })))
+      } else {
+        setProposals(prev => {
+          const updated = [...prev]
+          for (const incoming of raw) {
+            // todos share type+field ('todo'+'text') so type+field is not a unique key;
+            // always append them rather than risk overwriting the wrong card
+            if (incoming.type === 'todo') {
+              updated.push({ ...incoming, status: 'proposed', undoVisible: false })
+              continue
+            }
+            const idx = updated.findIndex(
+              e => e.type === incoming.type && e.field === incoming.field
+            )
+            if (idx !== -1) {
+              if (updated[idx].status === 'proposed') {
+                updated[idx] = { ...updated[idx], newValue: incoming.newValue, oldValue: incoming.oldValue }
+              }
+              // applied/dismissed — leave untouched
+            } else {
+              updated.push({ ...incoming, status: 'proposed', undoVisible: false })
+            }
+          }
+          return updated
+        })
+      }
     } catch {
       // Error shown via empty proposals list; processing clears
     } finally {
@@ -112,6 +140,13 @@ export function useAtelierAssistant(
     undoTimers.current.set(id, timer)
   }, [updateProposal])
 
+  const modifyProposal = useCallback((id: string, newValue: string) => {
+    if (!newValue.trim()) return
+    setProposals(prev => prev.map(p =>
+      p.id === id && p.status === 'proposed' ? { ...p, newValue } : p
+    ))
+  }, [])
+
   const undoDismiss = useCallback((id: string) => {
     const timer = undoTimers.current.get(id)
     if (timer) {
@@ -148,6 +183,7 @@ export function useAtelierAssistant(
     apply,
     dismiss,
     undoDismiss,
+    modifyProposal,
     applyAll,
     dismissAll,
     reset,

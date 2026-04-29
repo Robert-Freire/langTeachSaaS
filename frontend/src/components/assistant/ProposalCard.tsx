@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { Calendar, CheckSquare, Loader2, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import type { ProposalWithStatus } from '@/hooks/useAtelierAssistant'
 
 interface Props {
@@ -8,6 +11,16 @@ interface Props {
   onDismiss: (id: string) => void
   onUndo: (id: string) => void
   onRetry: (id: string) => void
+  onModify: (id: string, newValue: string) => void
+  onRedirectToChat: (prefill: string) => void
+}
+
+const MULTILINE_FIELDS = new Set(['actualContent', 'generalNotes', 'homeworkAssigned'])
+
+function getRedirectPrefill(type: string): string {
+  if (type === 'session') return 'Actually for the student profile not the session — '
+  if (type === 'student') return 'Actually for the session not the student — '
+  return 'Actually — '
 }
 
 const TYPE_CONFIG = {
@@ -31,7 +44,7 @@ const TYPE_CONFIG = {
   },
 } as const
 
-export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry }: Props) {
+export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onModify, onRedirectToChat }: Props) {
   const config = TYPE_CONFIG[proposal.type]
   const { Icon } = config
 
@@ -39,6 +52,45 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
   const isApplied = proposal.status === 'applied'
   const isApplying = proposal.status === 'applying'
   const isError = proposal.status === 'error'
+
+  const [editing, setEditing] = useState(false)
+  const [editValue, setEditValue] = useState('')
+
+  function startEdit() {
+    setEditValue(proposal.newValue)
+    setEditing(true)
+  }
+
+  function commitEdit() {
+    const trimmed = editValue.trim()
+    setEditing(false)
+    if (trimmed && trimmed !== proposal.newValue) {
+      onModify(proposal.id, trimmed)
+    }
+  }
+
+  function cancelEdit() {
+    setEditing(false)
+  }
+
+  function handleEditKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      commitEdit()
+    } else if (e.key === 'Escape') {
+      cancelEdit()
+    }
+  }
+
+  function handleEditBlur() {
+    const trimmed = editValue.trim()
+    setEditing(false)
+    if (trimmed && trimmed !== proposal.newValue) {
+      onModify(proposal.id, trimmed)
+    }
+  }
+
+  const isMultiline = MULTILINE_FIELDS.has(proposal.field)
 
   return (
     <div
@@ -79,9 +131,33 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
           )}
         </div>
 
-        {/* Diff */}
+        {/* Diff / inline edit */}
         <div className="text-sm font-inter text-zinc-700 mb-2.5 leading-relaxed">
-          {proposal.oldValue ? (
+          {editing ? (
+            isMultiline ? (
+              <Textarea
+                value={editValue}
+                onChange={e => setEditValue(e.target.value)}
+                onKeyDown={handleEditKeyDown}
+                onBlur={handleEditBlur}
+                rows={3}
+                autoFocus
+                data-testid={`modify-input-${proposal.id}`}
+                className="text-sm font-inter resize-none"
+              />
+            ) : (
+              <Input
+                type="text"
+                value={editValue}
+                onChange={e => setEditValue(e.target.value)}
+                onKeyDown={handleEditKeyDown}
+                onBlur={handleEditBlur}
+                autoFocus
+                data-testid={`modify-input-${proposal.id}`}
+                className="text-sm font-inter"
+              />
+            )
+          ) : proposal.oldValue ? (
             <span>
               <span className="line-through text-zinc-400">{proposal.oldValue}</span>
               {' '}
@@ -101,7 +177,7 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {proposal.status === 'proposed' && (
+          {proposal.status === 'proposed' && !editing && (
             <>
               <button
                 onClick={() => onApply(proposal.id)}
@@ -116,6 +192,40 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
                 className="text-xs font-semibold font-inter text-zinc-500 hover:text-zinc-700 px-3 py-1 rounded-lg hover:bg-zinc-100 transition-colors"
               >
                 Dismiss
+              </button>
+              <button
+                onClick={startEdit}
+                data-testid={`modify-btn-${proposal.id}`}
+                className="text-xs font-semibold font-inter text-indigo-600 hover:text-indigo-700 px-3 py-1 rounded-lg hover:bg-indigo-50 transition-colors"
+              >
+                Modify
+              </button>
+            </>
+          )}
+
+          {proposal.status === 'proposed' && editing && (
+            <>
+              <button
+                onMouseDown={e => { e.preventDefault(); commitEdit() }}
+                data-testid={`modify-save-btn-${proposal.id}`}
+                className="text-xs font-semibold font-inter text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded-lg transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onMouseDown={e => { e.preventDefault(); cancelEdit() }}
+                data-testid={`modify-cancel-btn-${proposal.id}`}
+                className="text-xs font-semibold font-inter text-zinc-500 hover:text-zinc-700 px-3 py-1 rounded-lg hover:bg-zinc-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onMouseDown={e => { e.preventDefault(); cancelEdit(); onRedirectToChat(getRedirectPrefill(proposal.type)) }}
+                data-testid={`redirect-to-chat-btn-${proposal.id}`}
+                className="text-xs font-inter text-zinc-400 hover:text-indigo-600 px-2 py-1 rounded-lg hover:bg-indigo-50 transition-colors ml-auto"
+                title="Wrong entity or scope? Redirect to chat"
+              >
+                Wrong entity?
               </button>
             </>
           )}

@@ -53,6 +53,7 @@ interface Props {
   onDismiss: (id: string) => void
   onUndo: (id: string) => void
   onRetry: (id: string) => void
+  onModify: (id: string, newValue: string) => void
   onApplyAll: () => void
   onDismissAll: () => void
 }
@@ -70,11 +71,13 @@ export default function AtelierAssistantPanel({
   onDismiss,
   onUndo,
   onRetry,
+  onModify,
   onApplyAll,
   onDismissAll,
 }: Props) {
   const [inputValue, setInputValue] = useState('')
   const [pendingClose, setPendingClose] = useState(false)
+  const chatInputRef = useRef<HTMLInputElement>(null)
 
   const [micState, setMicState] = useState<MicState>('idle')
   const [micError, setMicError] = useState<MicError>(null)
@@ -307,6 +310,11 @@ export default function AtelierAssistantPanel({
     }
   }
 
+  function handleRedirectToChat(prefill: string) {
+    setInputValue(prefill)
+    setTimeout(() => chatInputRef.current?.focus(), 0)
+  }
+
   const emptyPrompt = studentName
     ? `What did you cover with ${studentName} today?`
     : 'What would you like to cover today?'
@@ -434,6 +442,8 @@ export default function AtelierAssistantPanel({
                         onDismiss={onDismiss}
                         onUndo={onUndo}
                         onRetry={onRetry}
+                        onModify={onModify}
+                        onRedirectToChat={handleRedirectToChat}
                       />
                     ))}
                   </div>
@@ -523,6 +533,7 @@ export default function AtelierAssistantPanel({
                   <Mic className="h-4 w-4" />
                 </button>
                 <Input
+                  ref={chatInputRef}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
