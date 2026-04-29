@@ -82,6 +82,7 @@ const defaultProps = {
   onDismiss: vi.fn(),
   onUndo: vi.fn(),
   onRetry: vi.fn(),
+  onModify: vi.fn(),
   onApplyAll: vi.fn(),
   onDismissAll: vi.fn(),
   onEditPayload: vi.fn(),
