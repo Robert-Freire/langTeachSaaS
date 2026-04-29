@@ -79,6 +79,7 @@ export default function AtelierAssistantPanel({
 }: Props) {
   const [inputValue, setInputValue] = useState('')
   const [pendingClose, setPendingClose] = useState(false)
+  const chatInputRef = useRef<HTMLInputElement>(null)
 
   const [micState, setMicState] = useState<MicState>('idle')
   const [micError, setMicError] = useState<MicError>(null)
