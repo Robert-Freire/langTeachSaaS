@@ -326,14 +326,14 @@ export default function StudentDetail() {
       )}
 
       {/* Tab bar */}
-      <div className="flex gap-1" role="tablist">
+      <div className="flex gap-1 overflow-x-auto scrollbar-none" role="tablist">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             role="tab"
             aria-selected={activeTab === tab.key}
             onClick={() => setSearchParams({ tab: tab.key })}
-            className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+            className={`shrink-0 px-3 py-2 sm:px-5 sm:py-2.5 text-sm font-medium rounded-lg transition-colors ${
               activeTab === tab.key
                 ? 'text-indigo-700 bg-white'
                 : 'text-zinc-500 hover:text-zinc-700 hover:bg-[#F4F2FD]'

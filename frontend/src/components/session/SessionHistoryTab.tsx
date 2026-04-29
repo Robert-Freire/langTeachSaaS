@@ -511,7 +511,7 @@ function SessionEntry({
             <div className="mt-6 pt-4 border-t border-[#C7C4D8]/10 flex items-center gap-3">
               <Link
                 to={`/students/${studentId}/sessions/${session.id}/edit`}
-                className="inline-flex items-center gap-1.5 text-xs text-indigo-600 bg-transparent hover:bg-[#F4F2FD] transition-colors px-3 py-1.5 rounded"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 bg-transparent hover:bg-[#F4F2FD] transition-colors px-3 py-1.5 rounded"
                 data-testid="edit-full-session-link"
               >
                 <Pencil className="h-3 w-3" />
