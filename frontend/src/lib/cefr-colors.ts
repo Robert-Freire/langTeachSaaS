@@ -3,7 +3,7 @@ export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
 export function cefrColors(level: string): string {
   const prefix = level[0]?.toUpperCase()
   if (prefix === 'A') return 'bg-[#DDE8F5] text-[#1A4B7A]'
-  if (prefix === 'B') return 'bg-[#ECEAFD] text-[#3525CD]'
+  if (prefix === 'B') return 'bg-[#ECEAFD] text-[#4338CA]'
   if (prefix === 'C') return 'bg-[#F8E9D6] text-[#7E3000]'
   return 'bg-zinc-100 text-zinc-700'
 }
