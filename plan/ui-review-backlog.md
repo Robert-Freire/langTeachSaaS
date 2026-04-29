@@ -8,6 +8,10 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 
 *Cleared 2026-04-27 during Student Profile Voice Input sprint close. DS/component findings batched into #989 (DS component polish batch). Seeder coverage gap (#904) batched into #991 (e2e test fixes). Environment-only entry (#906) deleted. Navigation findings batched into #992.*
 
+## #997 (2026-04-29) — Student detail header icon-only buttons
+
+- [1] `md:hidden lg:inline` responsive label pattern (icon-only at 768-1024px) has no visual spec coverage at the 768px breakpoint. Consider adding a `@visual header stable - sessions tab 768px` test to `student-detail.visual.spec.ts`. Pattern also not described in design-system.md — needs Vera discussion before it propagates to other screens.
+
 ## #1008 (2026-04-28) — Atelier Assistant panel (new patterns, not violations)
 
 - [1] Inline discard confirm (amber-50 bg, "Close and discard?" + Discard/Keep editing): new pattern for inline confirmation inside a Sheet panel — not covered in design-system.md. Works visually, needs Vera review before it becomes a repeated pattern.

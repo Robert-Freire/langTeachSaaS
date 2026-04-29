@@ -8,6 +8,10 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-04-27 during Student Profile Voice Input sprint close. Actionable entries batched into #989 (DS component polish), #990 (code hardening), #992 (navigation UX). Dismissed and cosmetic entries deleted (#927 dismissed, #947 rename too cosmetic).*
 
+## #997 (2026-04-29)
+
+- `StudentDetailHeader.tsx` uses `md:hidden lg:inline` for responsive button labels. Other components (`LessonEditor`, `CourseDetail`, `StudentRoster`) use `hidden sm:inline`. The wider breakpoint in the header is intentional: 3 buttons share a row with avatar/name/badges/objectives making it denser than typical toolbars. Low priority; worth aligning if a global responsive-label convention is ever formalised.
+
 ## #1008 (2026-04-28)
 
 - **AppShell transcription state lift** (arch-reviewer): `transcription: string | null` for the Atelier Assistant lives in AppShell. This works for part 1 but deviates from the pattern of sub-panel state living local or in a dedicated context (compare `VoiceUpdateDrawer` state in `StudentDetail.tsx`). If parts 2/3 add more cross-cutting assistant state (proposals, selection, apply flow), refactor to a dedicated `AtelierAssistantContext` provider. Resolved at #1009: all state now lives in `useAtelierAssistant` hook. Context provider can be considered for Part 3 (#1010) if cross-route state is needed.
