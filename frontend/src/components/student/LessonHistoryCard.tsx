@@ -57,7 +57,7 @@ export function LessonHistoryCard({ studentId }: LessonHistoryCardProps) {
                 <div className="flex items-center gap-2 flex-wrap">
                   <Link
                     to={`/lessons/${entry.lessonId}`}
-                    className="text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                    className="text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
                     data-testid="lesson-history-title"
                   >
                     {entry.title}

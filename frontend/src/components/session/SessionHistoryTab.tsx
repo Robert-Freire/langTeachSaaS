@@ -163,7 +163,7 @@ function SessionEntry({
         {/* Header row: expand button only (no kebab) */}
         <button
           onClick={handleToggle}
-          className="w-full text-left p-4 hover:bg-[#F4F2FD]/40 transition-colors"
+          className="group w-full text-left p-4 hover:bg-[#F4F2FD]/40 transition-colors"
           aria-expanded={expanded}
           data-testid="session-entry-toggle"
         >
@@ -293,9 +293,9 @@ function SessionEntry({
                 </span>
               )}
               {expanded ? (
-                <ChevronUp className="h-4 w-4 text-zinc-400" />
+                <ChevronUp className="h-4 w-4 text-zinc-400 group-hover:text-zinc-600 transition-colors" />
               ) : (
-                <ChevronDown className="h-4 w-4 text-zinc-400" />
+                <ChevronDown className="h-4 w-4 text-zinc-400 group-hover:text-zinc-600 transition-colors" />
               )}
             </div>
           </div>
