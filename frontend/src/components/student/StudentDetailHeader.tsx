@@ -188,29 +188,32 @@ export function StudentDetailHeader({ student, nextSession, sessionFrequency, on
             <button
               onClick={onVoiceUpdateClick}
               disabled={voiceFlowActive}
-              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              aria-label="Update via voice"
+              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               data-testid="voice-update-button"
             >
               <Mic className="h-3.5 w-3.5" />
-              Update via voice
+              <span className="md:hidden lg:inline">Update via voice</span>
             </button>
           )}
           <Link
             to={`/students/${student.id}/edit`}
+            aria-label="Edit Student"
             className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
             data-testid="edit-profile-link"
           >
             <Pencil className="h-3.5 w-3.5" />
-            Edit Student
+            <span className="md:hidden lg:inline">Edit Student</span>
           </Link>
           <Button
             onClick={() => navigate(`/students/${student.id}/log-session`)}
+            aria-label="Log Session"
             className="rounded-xl text-sm font-medium"
             size="sm"
             data-testid="log-session-button"
           >
-            <NotebookPen className="h-4 w-4 mr-1.5" />
-            Log Session
+            <NotebookPen className="h-4 w-4 lg:mr-1.5" />
+            <span className="md:hidden lg:inline">Log Session</span>
           </Button>
         </div>
       </div>
