@@ -254,6 +254,8 @@ Sessions are edited inline in their expanded row. No modal, no separate edit pag
 - No animation is better than gratuitous animation.
 - Avoid transitions longer than 300ms for any interactive element.
 
+**Interactive vs. ambient animations.** The 300ms cap applies to **interaction-response animations** (hover states, expand/collapse, click feedback). **Ambient state animations** (processing pulses, loading indicators, streaming cursors) are exempt from the cap -- they communicate ongoing background state, not user-action feedback. Ambient animations must still have purpose and should loop smoothly with `ease-in-out`. Example: `extraction-pulse` at 2.8s total is acceptable because it signals a background extraction process, not a user-triggered state change.
+
 ---
 
 ## 11. Cross-Screen Control Specifications
@@ -337,3 +339,42 @@ LogSession stages new todos and followups locally before committing on Done. Thi
 - New items (not yet committed) are displayed as plain text with an X remove button. They do not have status toggles because they are always pending by definition.
 - Existing items (from the left panel) use the full lifecycle controls from 11.4.
 - The colored container backgrounds (`#F0EFFF` for todos, `#FFFBEB` for followups) are permitted in LogSession to visually separate the "new items" area from the form fields.
+
+### 11.7 Toggle Pill Chips (Settings Language / CEFR)
+
+Used for toggle selections on the Settings page (interface language, CEFR level). Not to be confused with enter-to-add Interests chips.
+
+- **Shape:** `rounded-full px-3 py-1 text-sm font-medium`
+- **Selected:** `bg-indigo-100 text-indigo-800 ring-1 ring-indigo-300`
+- **Unselected:** `bg-zinc-100 text-zinc-600 hover:bg-zinc-200`
+- No border on unselected state (DS no-line rule). Ring on selected communicates active state without a decorative line.
+- CEFR chips: single-select (only one active at a time). Language chips: follow the field's cardinality.
+
+### 11.8 Compact Row Clickability Signal (Chevron)
+
+For any list row that navigates or expands on click, a trailing chevron is required as a passive affordance signal. Hover state alone is insufficient -- it is invisible to new users and absent on mobile.
+
+Use the parent `group` class and `group-hover:text-zinc-600 transition-colors` on the chevron icon.
+
+**Navigation rows** (click takes the user to a new page or detail view):
+- **Icon:** `<ChevronRight />` from `lucide-react`, `w-4 h-4`, `ml-auto`
+- Static -- does not change on expand/collapse.
+
+**Expand/collapse rows** (click reveals inline detail below the row):
+- **Icons:** `<ChevronDown />` when collapsed, `<ChevronUp />` when expanded, `w-4 h-4`
+- The icon change itself communicates expanded state; no separate affordance needed.
+- Example: session history compact rows.
+
+Both patterns:
+- **Color:** `text-zinc-400` at rest, `text-zinc-600` on row hover (`group-hover:text-zinc-600 transition-colors`)
+- **Transition:** `transition-colors` (150ms, matches DS default)
+
+### 11.9 Drawer Footer Button Pairing
+
+All drawer footers (side drawers overlaying the screen) use this exact button pairing in the footer action row:
+
+- **Cancel:** `<Button variant="ghost" size="sm">Cancel</Button>` -- ghost style, dismisses without saving
+- **Primary action:** `<Button size="sm">` (default variant, filled primary) -- confirms/saves the operation
+- **Layout:** `flex items-center justify-end gap-3` row, Cancel left of primary action
+- **Disabled state:** Primary action disabled while saving; Cancel also disabled while saving to prevent double-dismiss
+- The primary action label describes the operation (e.g. "Save 3 changes", "Create student"), not a generic "Save"

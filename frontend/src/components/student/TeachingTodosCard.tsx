@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Plus, Trash2, Check } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { TeachingTodo } from '@/api/students'
 import { appendTeachingTodo, updateTeachingTodo, deleteTeachingTodo } from '@/api/students'
 import { relativeTime } from '@/utils/formatDate'
@@ -252,14 +253,16 @@ export function TeachingTodosCard({ todos, studentId, onStudentChange, allowEdit
           )}
 
           {completedCount > 0 && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => setShowCompleted(v => !v)}
               data-testid="todo-show-completed-toggle"
-              className="mb-3 text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
+              className="mb-3 h-auto px-2 py-1 text-xs text-zinc-400 hover:text-zinc-600"
             >
               {showCompleted ? `Hide completed (${completedCount})` : `Show ${completedCount} completed`}
-            </button>
+            </Button>
           )}
         </>
       )}

@@ -3,6 +3,7 @@
 Out-of-scope observations logged by agents during implementation. Each row is something an agent noticed but did not fix because it was outside the current task's scope. These get batched into future GitHub issues by the PM.
 
 | Source issue | Date | Severity | Observation |
+| #1007 | 2026-04-29 | P3:nice | `hover:text-indigo-800` vs `hover:text-indigo-700` split across codebase -- lesson renderers, StudentRoster, PendingFollowups, CourseDetail still use -800; student cards now use -700. Needs a sweep to standardize. |
 | #1002 | 2026-04-28 | low | Keyboard shortcut hint (⌘K label-sm text below sidebar CTA) is an undocumented pattern in the design system. Needs Vera sign-off before it becomes a reusable convention. |
 | #1002 | 2026-04-28 | medium | AppShell sidebar links to `/help` (added by #1002) but no route exists in App.tsx. Clicking Help navigates to an unmatched screen. Needs a Help page or the link removed. |
 | #1004 | 2026-04-28 | low | `TeachingTodosCard.test.tsx` line 141 flakes in full suite runs (passes in isolation) due to date-relative text matching combined with test ordering. Pre-existing; not introduced by this task. |

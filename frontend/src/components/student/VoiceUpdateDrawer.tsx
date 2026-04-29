@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Pencil, X, ChevronRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import type { Student } from '@/api/students'
 import type { ExtractedStudentProfile } from '@/api/studentExtraction'
 import { buildDrawerRows, buildCreateDrawerRows, mergeExtractedIntoStudent } from '@/lib/voiceUpdateMerge'
@@ -157,9 +158,9 @@ export function VoiceUpdateDrawer(props: VoiceUpdateDrawerProps) {
                     </div>
                   )}
                   {editingId === row.id ? (
-                    <input
+                    <Input
                       autoFocus
-                      className="w-full text-sm text-indigo-700 font-medium bg-indigo-50 rounded-lg px-2 py-1 outline-none"
+                      className="h-auto w-full text-sm text-indigo-700 font-medium bg-indigo-50 border-0 ring-1 ring-indigo-200 focus-visible:ring-indigo-400 rounded-lg px-2 py-1"
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
                       onBlur={() => commitEdit(row.id)}
