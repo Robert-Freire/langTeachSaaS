@@ -53,6 +53,7 @@ interface Props {
   onDismiss: (id: string) => void
   onUndo: (id: string) => void
   onRetry: (id: string) => void
+  onModify: (id: string, newValue: string) => void
   onApplyAll: () => void
   onDismissAll: () => void
   onEditPayload?: (id: string, payload: import('@/api/assistant').NewStudentData) => void
@@ -71,6 +72,7 @@ export default function AtelierAssistantPanel({
   onDismiss,
   onUndo,
   onRetry,
+  onModify,
   onApplyAll,
   onDismissAll,
   onEditPayload,
@@ -309,6 +311,11 @@ export default function AtelierAssistantPanel({
     }
   }
 
+  function handleRedirectToChat(prefill: string) {
+    setInputValue(prefill)
+    setTimeout(() => chatInputRef.current?.focus(), 0)
+  }
+
   const emptyPrompt = studentName
     ? `What did you cover with ${studentName} today?`
     : 'What would you like to cover today?'
@@ -436,6 +443,8 @@ export default function AtelierAssistantPanel({
                         onDismiss={onDismiss}
                         onUndo={onUndo}
                         onRetry={onRetry}
+                        onModify={onModify}
+                        onRedirectToChat={handleRedirectToChat}
                         onEditPayload={onEditPayload}
                       />
                     ))}

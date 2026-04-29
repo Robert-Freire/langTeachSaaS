@@ -31,6 +31,7 @@ export interface AtelierAssistantActions {
   apply: (id: string) => void
   dismiss: (id: string) => void
   undoDismiss: (id: string) => void
+  modifyProposal: (id: string, newValue: string) => void
   applyAll: () => void
   dismissAll: () => void
   reset: () => void
@@ -46,6 +47,7 @@ export function useAtelierAssistant(
   const [processing, setProcessing] = useState(false)
   const [proposals, setProposals] = useState<ProposalWithStatus[]>([])
   const undoTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const applyingIdsRef = useRef<Set<string>>(new Set())
   // Ref keeps apply/applyAll free of stale closure on proposals
   const proposalsRef = useRef<ProposalWithStatus[]>([])
   useEffect(() => { proposalsRef.current = proposals }, [proposals])
@@ -81,9 +83,11 @@ export function useAtelierAssistant(
   }, [studentId, sessionId])
 
   const apply = useCallback(async (id: string) => {
+    if (applyingIdsRef.current.has(id)) return
     const proposal = proposalsRef.current.find(p => p.id === id)
     if (!proposal || (proposal.status !== 'proposed' && proposal.status !== 'error')) return
 
+    applyingIdsRef.current.add(id)
     updateProposal(id, { status: 'applying', errorMessage: undefined })
 
     try {
@@ -135,6 +139,8 @@ export function useAtelierAssistant(
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to apply change.'
       updateProposal(id, { status: 'error', errorMessage: message })
+    } finally {
+      applyingIdsRef.current.delete(id)
     }
   }, [studentId, sessionId, updateProposal, queryClient])
 
@@ -167,11 +173,19 @@ export function useAtelierAssistant(
     proposalsRef.current.filter(p => p.status === 'proposed').forEach(p => dismiss(p.id))
   }, [dismiss])
 
+  const modifyProposal = useCallback((id: string, newValue: string) => {
+    if (!newValue.trim()) return
+    setProposals(prev => prev.map(p =>
+      p.id === id && p.status === 'proposed' ? { ...p, newValue } : p
+    ))
+  }, [])
+
   const onEditPayload = useCallback((id: string, payload: NewStudentData) => {
     setProposals(prev => prev.map(p => p.id === id ? { ...p, payload } : p))
   }, [])
 
   const reset = useCallback(() => {
+    applyingIdsRef.current.clear()
     undoTimers.current.forEach(timer => clearTimeout(timer))
     undoTimers.current.clear()
     setTranscription(null)
@@ -187,6 +201,7 @@ export function useAtelierAssistant(
     apply,
     dismiss,
     undoDismiss,
+    modifyProposal,
     applyAll,
     dismissAll,
     reset,

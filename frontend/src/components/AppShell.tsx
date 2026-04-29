@@ -273,6 +273,7 @@ export default function AppShell() {
         onDismiss={assistant.dismiss}
         onUndo={assistant.undoDismiss}
         onRetry={assistant.apply}
+        onModify={assistant.modifyProposal}
         onApplyAll={assistant.applyAll}
         onDismissAll={assistant.dismissAll}
         onEditPayload={assistant.onEditPayload}
