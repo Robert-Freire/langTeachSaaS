@@ -15,6 +15,7 @@ public class StudentsController : ControllerBase
     private const string DefaultDifficultySeverity = "medium";
     private const string DefaultDifficultyTrend = "stable";
     private const string DefaultDifficultyStatus = "Active";
+    private const int MaxProfileListCount = 50;
 
     private readonly IStudentService _studentService;
     private readonly ILessonNoteService _lessonNoteService;
@@ -196,9 +197,16 @@ public class StudentsController : ControllerBase
         if (patch.AppendInterests is { Count: > 0 })
         {
             var existing = new HashSet<string>(request.Interests, StringComparer.OrdinalIgnoreCase);
-            request.Interests = request.Interests
-                .Concat(patch.AppendInterests.Where(i => !existing.Contains(i)))
-                .ToList();
+            foreach (var interest in patch.AppendInterests)
+            {
+                if (!string.IsNullOrWhiteSpace(interest) && existing.Add(interest))
+                    request.Interests.Add(interest);
+            }
+            if (request.Interests.Count > MaxProfileListCount)
+            {
+                ModelState.AddModelError(nameof(patch.AppendInterests), $"Cannot exceed {MaxProfileListCount} interests.");
+                return BadRequest(ModelState);
+            }
         }
 
         if (patch.AppendDifficulties is { Count: > 0 })
@@ -214,6 +222,11 @@ public class StudentsController : ControllerBase
                     Status: DefaultDifficultyStatus))
                 .ToList();
             request.Difficulties = request.Difficulties.Concat(newDiffs).ToList();
+            if (request.Difficulties.Count > MaxProfileListCount)
+            {
+                ModelState.AddModelError(nameof(patch.AppendDifficulties), $"Cannot exceed {MaxProfileListCount} difficulties.");
+                return BadRequest(ModelState);
+            }
         }
 
         if (patch.LearningGoals is { Count: > 0 })
