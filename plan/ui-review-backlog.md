@@ -28,3 +28,4 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 - [1] Ghost mic button paired with filled-primary send button in the same input row. design-system.md §5 forbids ghost + filled primary in the same row, but the mic is a mode-toggle affordance and the send is a submit CTA — semantically different roles. Compound input bar pattern not covered by design-system.md. Needs Vera discussion before it becomes a reusable pattern.
 
 | #1010 | 2026-04-28 | ProposalCard: three-button action row (Apply/Dismiss/Modify) is a new pattern in AI-generated cards with no DS spec. Document via Vera discussion before reusing. |
+| #1029 | 2026-05-02 | Atelier proposal card accent color palette (amber=newSession, indigo=student, violet=session, emerald=todo, teal=newStudent) not documented in design-system.md section 11.2. Needs Vera discussion to canonicalize before adding more proposal types. |
