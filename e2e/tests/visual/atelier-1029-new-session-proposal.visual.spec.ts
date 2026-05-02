@@ -38,11 +38,17 @@ test('@visual atelier-1029 new-session-proposal-card', async ({ browser }) => {
   await input.fill('Next Monday I want to do a session on the subjunctive. [schedule-new-session]')
   await page.locator('[data-testid="assistant-send-btn"]').click()
 
-  // Wait for proposals to appear
+  // Wait for proposals to appear, then scroll the newSession card into view
   await expect(page.locator('[data-testid="proposals-list"]')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT })
 
-  await page.screenshot({ path: 'screenshots/atelier-1029-new-session-proposal-card.png' })
+  // Scroll the date input chip into view so the newSession card is visible in the screenshot
+  const dateInput = page.locator('[data-testid^="session-date-input-"]').first()
+  if (await dateInput.count() > 0) {
+    await dateInput.scrollIntoViewIfNeeded()
+  }
+
+  await page.screenshot({ path: 'screenshots/atelier-1029-new-session-proposal-card.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()
@@ -70,11 +76,16 @@ test('@visual atelier-1029 new-session-proposal-no-student', async ({ browser })
   await input.fill('La semana que viene hagamos el subjuntivo. [schedule-new-session]')
   await page.locator('[data-testid="assistant-send-btn"]').click()
 
-  // Wait for proposals
+  // Wait for proposals; scroll to newSession card
   await expect(page.locator('[data-testid="proposals-list"]')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT })
 
-  await page.screenshot({ path: 'screenshots/atelier-1029-new-session-proposal-no-student.png' })
+  const dateInput2 = page.locator('[data-testid^="session-date-input-"]').first()
+  if (await dateInput2.count() > 0) {
+    await dateInput2.scrollIntoViewIfNeeded()
+  }
+
+  await page.screenshot({ path: 'screenshots/atelier-1029-new-session-proposal-no-student.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()
