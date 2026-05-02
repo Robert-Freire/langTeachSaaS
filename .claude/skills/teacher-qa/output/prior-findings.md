@@ -197,3 +197,15 @@ Both fields also distinguish from `nextLessonIdeas` (planning ideas without a sc
 **Controller behavior:** If `newSessionTitle` is extracted, a compound `newSession` proposal is emitted. If `newSessionDate` is null (no date inferred), the controller defaults to today's UTC date.
 
 **Verify:** A teacher saying "next Monday I want to do subjunctive" should produce a `newSession` proposal card with a forward-resolved date, not update the past session's `sessionTitle`.
+
+---
+
+## From: #1039 - Skill-level proposals wired (2026-05-02, PR #1045)
+
+### Per-skill CEFR level proposals now emitted by AssistantController
+
+Fix: skill-level proposals wired, Issue #1039 (PR #1045), Deployed? Yes, merged 2026-05-02
+
+The student profile extraction prompt now includes a `skillLevel` sub-object with keys `reading`, `writing`, `speaking`, `listening`. Values are validated against pattern `^[ABC][12](\.\d+)?[+]?$` (allows sub-levels like B1.2). `AssistantController.Propose` emits `student` proposals with `field = "skillLevel.<key>"` for each non-null extracted skill override. Frontend `applyStudentProposal` splits the dotted field and sends `{ skillLevelWriting: "B1" }` etc. to PATCH.
+
+**Verify:** A teacher saying "sube el nivel de escritura a B1" should produce a `student` proposal card with `field = skillLevel.writing` and `newValue = B1`. A teacher saying "no toco el nivel global" while specifying per-skill levels should produce only skill-level proposals, not a spurious `cefrLevel` proposal.
