@@ -322,6 +322,26 @@ describe('AtelierAssistantPanel', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
+  it('shows discard confirm when closing while recording and pending proposals exist', async () => {
+    const user = userEvent.setup()
+    renderPanel({ proposals: [makeProposal({ status: 'proposed' })] })
+    await user.click(screen.getByTestId('mic-btn'))
+    expect(screen.getByTestId('recording-bar')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /close assistant/i }))
+    expect(screen.getByTestId('discard-confirm')).toBeInTheDocument()
+  })
+
+  it('closes immediately when closing while recording and no pending proposals', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    renderPanel({ proposals: [], onClose })
+    await user.click(screen.getByTestId('mic-btn'))
+    expect(screen.getByTestId('recording-bar')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /close assistant/i }))
+    expect(onClose).toHaveBeenCalled()
+    expect(screen.queryByTestId('discard-confirm')).not.toBeInTheDocument()
+  })
+
   it('does not render when open is false', () => {
     renderPanel({ open: false })
     expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
