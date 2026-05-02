@@ -3353,6 +3353,18 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void BuildStudentProfileExtractionPrompt_SkillLevel_ContainsNegativeInstructionSuppression()
+    {
+        var request = _sut.BuildStudentProfileExtractionPrompt("teacher notes");
+
+        request.SystemPrompt.Should().Contain("no toco el nivel");
+        request.SystemPrompt.Should().Contain("no quiero cambiar el nivel");
+        request.SystemPrompt.Should().Contain("solo tomar nota");
+        // Positive example must still be present so the suppression rule is anchored by contrast.
+        request.SystemPrompt.Should().Contain("Carmen lee a nivel C1");
+    }
+
+    [Fact]
     public void BuildStudentProfileExtractionPrompt_SetsHaikuModelAndPassesTeacherText()
     {
         const string teacherText = "El alumno es B1 y quiere preparar el DELE.";
