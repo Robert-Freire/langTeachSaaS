@@ -54,5 +54,7 @@ public record ExtractedReflectionDto(
     int? DurationMinutes,
     bool? IsCancelled,
     List<string> DifficultiesWorkedOn,
-    string? SessionStartTime
+    string? SessionStartTime,
+    string? NewSessionTitle,
+    string? NewSessionDate
 );
