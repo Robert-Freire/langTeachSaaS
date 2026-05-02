@@ -516,6 +516,103 @@ public class StudentsControllerTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact]
+    public async Task PatchStudentProfile_AppendInterests_AddsToExistingList()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-profile-interests", "patch-profile-interests@example.com");
+        var student = await CreateStudentAsync(client, "Carmen");
+
+        var patch = new PatchStudentProfileRequest
+        {
+            AppendInterests = ["Flamenco", "Cine de Almodóvar"],
+        };
+        var response = await client.PatchAsJsonAsync($"/api/students/{student.Id}/profile", patch);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Profile.Interests.Should().Contain("Flamenco");
+        updated.Profile.Interests.Should().Contain("Cine de Almodóvar");
+    }
+
+    [Fact]
+    public async Task PatchStudentProfile_AppendDifficulties_AddsToExistingList()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-profile-diffs", "patch-profile-diffs@example.com");
+        var student = await CreateStudentAsync(client, "Ana");
+
+        var patch = new PatchStudentProfileRequest
+        {
+            AppendDifficulties =
+            [
+                new AppendDifficultyItem
+                {
+                    Description = "Indefinido vs perfecto compuesto",
+                    Competency = "Grammar",
+                    Subcategory = "past tense",
+                },
+            ],
+        };
+        var response = await client.PatchAsJsonAsync($"/api/students/{student.Id}/profile", patch);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Profile.Difficulties.Should().Contain(d => d.Description == "Indefinido vs perfecto compuesto");
+    }
+
+    [Fact]
+    public async Task PatchStudentProfile_ReplaceLearningGoals_ReplacesExistingGoals()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-profile-goals", "patch-profile-goals@example.com");
+        var student = await CreateStudentAsync(client, "Marco");
+
+        var patch = new PatchStudentProfileRequest
+        {
+            ReplaceLearningGoals = ["Presentaciones en español para clientes alemanes"],
+        };
+        var response = await client.PatchAsJsonAsync($"/api/students/{student.Id}/profile", patch);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Profile.LearningGoals.Should().ContainSingle(g => g.Text == "Presentaciones en español para clientes alemanes");
+    }
+
+    [Fact]
+    public async Task PatchStudentProfile_AppendTeachingNotes_AppendsToExistingNote()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-profile-notes", "patch-profile-notes@example.com");
+        var student = await CreateStudentAsync(client, "Hans");
+
+        var patch = new PatchStudentProfileRequest
+        {
+            AppendTeachingNotes = "Aprende bien a través de la música.",
+        };
+        var response = await client.PatchAsJsonAsync($"/api/students/{student.Id}/profile", patch);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Profile.TeachingNotes.Should().Contain("música");
+    }
+
+    [Fact]
+    public async Task PatchStudentProfile_AppendInterests_DoesNotAddDuplicates()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-profile-nodup", "patch-profile-nodup@example.com");
+        var student = await CreateStudentAsync(client, "Isabel");
+
+        // First append
+        await client.PatchAsJsonAsync($"/api/students/{student.Id}/profile",
+            new PatchStudentProfileRequest { AppendInterests = ["Flamenco"] });
+
+        // Second append with same interest + a new one
+        var response = await client.PatchAsJsonAsync($"/api/students/{student.Id}/profile",
+            new PatchStudentProfileRequest { AppendInterests = ["Flamenco", "Fotografía"] });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Profile.Interests.Where(i => i.Equals("Flamenco", StringComparison.OrdinalIgnoreCase)).Should().HaveCount(1);
+        updated.Profile.Interests.Should().Contain("Fotografía");
+    }
+
     private static async Task<StudentDto> CreateStudentAsync(
         HttpClient client,
         string name,
