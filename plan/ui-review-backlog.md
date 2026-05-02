@@ -29,3 +29,4 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 
 | #1010 | 2026-04-28 | ProposalCard: three-button action row (Apply/Dismiss/Modify) is a new pattern in AI-generated cards with no DS spec. Document via Vera discussion before reusing. |
 | #1029 | 2026-05-02 | Atelier proposal card accent color palette (amber=newSession, indigo=student, violet=session, emerald=todo, teal=newStudent) not documented in design-system.md section 11.2. Needs Vera discussion to canonicalize before adding more proposal types. |
+| #1030 | 2026-05-02 | Close-guard fix is purely behavioral (condition logic). review-ui agent confirmed screenshots cannot verify interaction guards. All 5 AC verified via unit tests in AtelierAssistantPanel.test.tsx. No visual finding to track. |

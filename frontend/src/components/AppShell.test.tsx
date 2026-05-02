@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
@@ -11,6 +11,8 @@ vi.mock('../api/assistant', () => ({
   applySessionProposal: vi.fn().mockResolvedValue(undefined),
   applyTodoProposal: vi.fn().mockResolvedValue(undefined),
 }))
+import { proposeAssistant } from '../api/assistant'
+const mockPropose = proposeAssistant as ReturnType<typeof vi.fn>
 
 const mockLogout = vi.fn()
 vi.mock('@auth0/auth0-react', () => ({
@@ -292,8 +294,11 @@ describe('AppShell', () => {
     unmount()
   })
 
-  it('Escape with transcription shows inline discard confirm instead of closing', async () => {
+  it('Escape with pending proposals shows inline discard confirm instead of closing', async () => {
     const user = userEvent.setup()
+    mockPropose.mockResolvedValueOnce({
+      proposals: [{ id: 'p1', type: 'student', field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' }],
+    })
     renderShell()
     const aside = document.querySelector('aside')
     const openBtn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
@@ -301,7 +306,9 @@ describe('AppShell', () => {
     const input = screen.getByTestId('assistant-input')
     await user.type(input, 'Hoy hemos trabajado el subjuntivo')
     await user.click(screen.getByTestId('assistant-send-btn'))
-    // Now there is a transcription — Escape should show confirm, not close
+    // Wait for the pending proposal card to appear
+    await waitFor(() => expect(screen.getByTestId('proposals-list')).toBeInTheDocument())
+    // Pending proposal exists — Escape should show confirm, not close
     await user.keyboard('{Escape}')
     expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
     expect(screen.getByTestId('discard-confirm')).toBeInTheDocument()
