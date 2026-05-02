@@ -140,6 +140,10 @@ public class StudentsController : ControllerBase
         if (patch.CefrLevel is not null) request.CefrLevel = patch.CefrLevel;
         if (patch.Profession is not null) request.Profession = patch.Profession;
         if (patch.CountryOfResidence is not null) request.CountryOfResidence = patch.CountryOfResidence;
+        if (patch.SkillLevelReading is not null) request.SkillLevelOverrides["Reading"] = patch.SkillLevelReading;
+        if (patch.SkillLevelWriting is not null) request.SkillLevelOverrides["Writing"] = patch.SkillLevelWriting;
+        if (patch.SkillLevelSpeaking is not null) request.SkillLevelOverrides["Speaking"] = patch.SkillLevelSpeaking;
+        if (patch.SkillLevelListening is not null) request.SkillLevelOverrides["Listening"] = patch.SkillLevelListening;
 
         try
         {

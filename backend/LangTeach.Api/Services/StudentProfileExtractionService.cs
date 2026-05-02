@@ -69,7 +69,11 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
                 TeachingTodoTexts: ParseStringArray(root, "teachingTodoTexts"),
                 Interests: ParseStringArray(root, "interests"),
                 NewStudentIntent: GetBoolOrDefault(root, "newStudentIntent"),
-                TeachingNotes: GetStringOrNull(root, "teachingNotes")
+                TeachingNotes: GetStringOrNull(root, "teachingNotes"),
+                SkillLevelReading: ParseSkillLevelField(root, "reading"),
+                SkillLevelWriting: ParseSkillLevelField(root, "writing"),
+                SkillLevelSpeaking: ParseSkillLevelField(root, "speaking"),
+                SkillLevelListening: ParseSkillLevelField(root, "listening")
             );
         }
         catch (Exception ex)
@@ -81,7 +85,7 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
     }
 
     private static ExtractedStudentProfileDto Empty() =>
-        new(null, null, null, null, null, null, [], [], null, null, null, [], [], [], [], false, null);
+        new(null, null, null, null, null, null, [], [], null, null, null, [], [], [], [], false, null, null, null, null, null);
 
     private static string? GetStringOrNull(JsonElement root, string key)
     {
@@ -162,6 +166,13 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
             result.Add(new ExtractedDifficultyDto(description, competency, subcategory));
         }
         return result;
+    }
+
+    private static string? ParseSkillLevelField(JsonElement root, string key)
+    {
+        if (!root.TryGetProperty("skillLevel", out var skillLevel) || skillLevel.ValueKind != JsonValueKind.Object)
+            return null;
+        return GetStringOrNull(skillLevel, key);
     }
 
     private static string? GetIsoDateOrNull(JsonElement root, string key)

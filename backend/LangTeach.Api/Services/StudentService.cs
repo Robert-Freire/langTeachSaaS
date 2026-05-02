@@ -39,12 +39,8 @@ public class StudentService : IStudentService
             ["Speaking"] = "Speaking", ["Listening"] = "Listening",
         };
 
-    private static readonly Dictionary<string, string> CanonicalCefrLevels =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            ["A1"] = "A1", ["A2"] = "A2", ["B1"] = "B1",
-            ["B2"] = "B2", ["C1"] = "C1", ["C2"] = "C2",
-        };
+    private static readonly System.Text.RegularExpressions.Regex SkillLevelValueRegex =
+        new(@"^[ABC][12](\.\d+)?[+]?$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
     private readonly AppDbContext _db;
     private readonly ILogger<StudentService> _logger;
@@ -492,9 +488,10 @@ public class StudentService : IStudentService
         {
             if (!CanonicalSkillKeys.TryGetValue(key, out var canonicalKey))
                 throw new ValidationException($"SkillLevelOverrides key '{key}' is not valid. Allowed: {string.Join(", ", CanonicalSkillKeys.Values)}.");
-            if (!CanonicalCefrLevels.TryGetValue(value, out var canonicalValue))
-                throw new ValidationException($"SkillLevelOverrides value '{value}' for key '{key}' is not a valid CEFR level. Allowed: A1, A2, B1, B2, C1, C2.");
-            normalized[canonicalKey] = canonicalValue;
+            var trimmedValue = value?.Trim() ?? "";
+            if (!SkillLevelValueRegex.IsMatch(trimmedValue))
+                throw new ValidationException($"SkillLevelOverrides value '{value}' for key '{key}' is not a valid CEFR level (e.g. A1, B1, B1.2, C1).");
+            normalized[canonicalKey] = trimmedValue;
         }
         return normalized;
     }

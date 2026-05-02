@@ -38,6 +38,18 @@ public class PatchStudentRequest
 
     [MaxLength(64)]
     public string? CountryOfResidence { get; set; }
+
+    [MaxLength(10)]
+    public string? SkillLevelReading { get; set; }
+
+    [MaxLength(10)]
+    public string? SkillLevelWriting { get; set; }
+
+    [MaxLength(10)]
+    public string? SkillLevelSpeaking { get; set; }
+
+    [MaxLength(10)]
+    public string? SkillLevelListening { get; set; }
 }
 
 public class PatchSessionRequest

@@ -464,4 +464,97 @@ public class AssistantControllerTests
         body.Should().NotBeNull();
         body!.Proposals.Should().NotContain(p => p.Type == "newSession");
     }
+
+    // TC-01: "Súbele el nivel de escritura a B1" → student proposal skillLevel.writing = "B1"
+    [Fact]
+    public async Task Propose_TC01_WritingLevelRaised_EmitsSkillLevelWritingProposal()
+    {
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-tc01", "assistant-tc01@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Worked on past perfect. [skill-writing=B1] Add passive voice todo.",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        body!.Proposals.Should().Contain(p =>
+            p.Type == "student" && p.Field == "skillLevel.writing" && p.NewValue == "B1");
+    }
+
+    // TC-03: "bajarle el nivel de lectura a B1.2" → student proposal skillLevel.reading = "B1.2"
+    [Fact]
+    public async Task Propose_TC03_ReadingLevelLowered_EmitsSkillLevelReadingProposalWithSubLevel()
+    {
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-tc03", "assistant-tc03@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Marco today. [skill-reading=B1.2] Add teaching note.",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        body!.Proposals.Should().Contain(p =>
+            p.Type == "student" && p.Field == "skillLevel.reading" && p.NewValue == "B1.2");
+        body.Proposals.Should().NotContain(p =>
+            p.Type == "todo");
+    }
+
+    // TC-07: three per-skill levels, teacher said "nivel global no lo toco"
+    // Seed at B2 so stub CefrLevel=B2 produces no cefrLevel proposal.
+    [Fact]
+    public async Task Propose_TC07_ThreeSkillLevels_EmitsThreeProposalsNoGlobalCefrChange()
+    {
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-tc07", "assistant-tc07@example.com", cefrLevel: "B2");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Nadia. [skill-reading=C1][skill-speaking=B2][skill-writing=B2]",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        body!.Proposals.Should().Contain(p =>
+            p.Type == "student" && p.Field == "skillLevel.reading" && p.NewValue == "C1");
+        body.Proposals.Should().Contain(p =>
+            p.Type == "student" && p.Field == "skillLevel.speaking" && p.NewValue == "B2");
+        body.Proposals.Should().Contain(p =>
+            p.Type == "student" && p.Field == "skillLevel.writing" && p.NewValue == "B2");
+        body.Proposals.Should().NotContain(p =>
+            p.Type == "student" && p.Field == "cefrLevel");
+    }
+
+    // TC-19: "sube el nivel de conversación a B1" → student proposal skillLevel.speaking = "B1"
+    [Fact]
+    public async Task Propose_TC19_SpeakingLevelRaised_EmitsSkillLevelSpeakingProposal()
+    {
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-tc19", "assistant-tc19@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Conversación improved. [skill-speaking=B1]",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        body!.Proposals.Should().Contain(p =>
+            p.Type == "student" && p.Field == "skillLevel.speaking" && p.NewValue == "B1");
+    }
 }

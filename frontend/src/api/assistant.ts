@@ -50,8 +50,13 @@ export async function applyStudentProposal(
   field: string,
   value: string,
 ): Promise<void> {
-  // field is one of: cefrLevel, profession, countryOfResidence — matches PatchStudentRequest
-  await apiClient.patch(`/api/students/${studentId}`, { [field]: value })
+  if (field.startsWith('skillLevel.')) {
+    const subKey = field.split('.')[1]
+    const patchField = 'skillLevel' + subKey.charAt(0).toUpperCase() + subKey.slice(1)
+    await apiClient.patch(`/api/students/${studentId}`, { [patchField]: value })
+  } else {
+    await apiClient.patch(`/api/students/${studentId}`, { [field]: value })
+  }
 }
 
 export async function applyStudentProposalAppend(
