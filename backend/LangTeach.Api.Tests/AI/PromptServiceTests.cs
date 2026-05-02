@@ -3337,6 +3337,8 @@ public class PromptServiceTests
         request.SystemPrompt.Should().Contain("NOT 3");
         // Null-when-no-cue guard (do not default to today).
         request.SystemPrompt.Should().Contain("do NOT default to today");
+        // newSessionTitle must allow retrospective registration (no forward-only restriction).
+        request.SystemPrompt.Should().Contain("retroactively registered");
     }
 
     // --- BuildStudentProfileExtractionPrompt ---
