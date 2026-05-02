@@ -39,6 +39,9 @@ public class StudentService : IStudentService
             ["Speaking"] = "Speaking", ["Listening"] = "Listening",
         };
 
+    // Skill level override values accept sub-levels (e.g. B1.2) for per-skill granularity.
+    // The student's global CefrLevel stays at the standard 6-level set (A1-C2) — kept strict
+    // because curriculum generation maps directly to those 6 levels.
     private static readonly System.Text.RegularExpressions.Regex SkillLevelValueRegex =
         new(@"^[ABC][12](\.\d+)?[+]?$", System.Text.RegularExpressions.RegexOptions.Compiled);
 

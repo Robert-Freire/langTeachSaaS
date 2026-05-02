@@ -12,6 +12,11 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
     private static readonly Regex CefrLevelRegex =
         new(@"^[ABC][12]\+?$", RegexOptions.Compiled);
 
+    // Skill level values may include teacher-assigned sub-levels (e.g. B1.2, B2.1).
+    // The global cefrLevel field intentionally stays at standard 6-level granularity.
+    private static readonly Regex SkillLevelRegex =
+        new(@"^[ABC][12](\.\d+)?[+]?$", RegexOptions.Compiled);
+
     private readonly IClaudeClient _claude;
     private readonly IPromptService _prompts;
     private readonly ILogger<StudentProfileExtractionService> _logger;
@@ -168,11 +173,18 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
         return result;
     }
 
-    private static string? ParseSkillLevelField(JsonElement root, string key)
+    private string? ParseSkillLevelField(JsonElement root, string key)
     {
         if (!root.TryGetProperty("skillLevel", out var skillLevel) || skillLevel.ValueKind != JsonValueKind.Object)
             return null;
-        return GetStringOrNull(skillLevel, key);
+        var raw = GetStringOrNull(skillLevel, key);
+        if (raw is null) return null;
+        if (!SkillLevelRegex.IsMatch(raw))
+        {
+            _logger.LogWarning("Extracted skillLevel.{Key} value '{Value}' does not match expected CEFR pattern; discarding", key, raw);
+            return null;
+        }
+        return raw;
     }
 
     private static string? GetIsoDateOrNull(JsonElement root, string key)
