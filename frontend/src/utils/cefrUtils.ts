@@ -5,9 +5,8 @@ export const CEFR_ORDER: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4, 
 export function toBaseCefrLevel(level: string | undefined): string {
   if (!level) return ''
   const upper = level.toUpperCase().trim()
-  if (upper.length >= 2) {
-    const base = upper.slice(0, 2)
-    if (CEFR_ORDER[base] !== undefined) return base
-  }
+  if (CEFR_ORDER[upper] !== undefined) return upper
+  const match = upper.match(/^(A1|A2|B1|B2|C1|C2)(?:\.[12]|\+)?$/)
+  if (match) return match[1]
   return upper
 }

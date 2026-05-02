@@ -643,6 +643,18 @@ public class StudentsControllerTests
         updated!.Level.SkillLevelOverrides.Should().ContainKey("Reading").WhoseValue.Should().Be("B1.2");
     }
 
+    [Fact]
+    public async Task PatchStudent_InvalidSkillLevel_ReturnsBadRequest()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-skill-invalid", "patch-skill-invalid@example.com");
+        var student = await CreateStudentAsync(client, "InvalidLevelStudent");
+
+        var patch = new PatchStudentRequest { SkillLevelWriting = "Z9" };
+        var patchResponse = await client.PatchAsJsonAsync($"/api/students/{student.Id}", patch);
+
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     private static async Task<StudentDto> CreateStudentAsync(
         HttpClient client,
         string name,

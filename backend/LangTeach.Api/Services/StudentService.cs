@@ -197,7 +197,7 @@ public class StudentService : IStudentService
         student.IsCorporate = request.IsCorporate;
         student.Rate = request.Rate;
         student.SpokenLanguages = Serialize(request.SpokenLanguages);
-        student.SkillLevelOverrides = JsonStorageHelper.Serialize(request.SkillLevelOverrides);
+        student.SkillLevelOverrides = JsonStorageHelper.Serialize(normalizedSkillOverrides);
         student.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);
