@@ -186,12 +186,18 @@ test('atelier assistant: TC-11 new-student utterance returns one newStudent prop
   await context.close()
 })
 
-// Test \1: Apply student proposal patches the student; Dismiss todo creates no followup
+// Test 4: Apply student proposal patches the student; Dismiss todo creates no followup
 test('atelier assistant: Apply student card patches skill level; Dismiss todo creates no followup', async ({ browser }) => {
   const context = await createQAAuthContext(browser)
   const page = await context.newPage()
 
-  const studentId = await upsertStudent(page, ANA)
+  // Fresh per-run student. The controller dedups proposals when oldValue
+  // matches newValue, so reusing the persistent [QA] Ana Proposal across
+  // runs would yield no skillLevel.writing proposal once Writing is B1.
+  const studentId = await upsertStudent(page, {
+    ...ANA,
+    name: `[QA] Ana Apply ${Date.now()}`,
+  })
   const sessionId = await ensureSessionFor(page, studentId)
 
   type Todo = { id: string }
@@ -214,19 +220,35 @@ test('atelier assistant: Apply student card patches skill level; Dismiss todo cr
     sessionId,
   )
 
-  const studentProposal = proposals.find(p => p.type === 'student')
+  const studentProposal = proposals.find(
+    p => p.type === 'student' && p.field === 'skillLevel.writing',
+  )
   const todoProposal = proposals.find(p => p.type === 'todo')
-  expect(studentProposal, 'expected at least one student proposal').toBeTruthy()
+  expect(studentProposal, 'expected a skillLevel.writing student proposal').toBeTruthy()
   expect(todoProposal, 'expected at least one todo proposal').toBeTruthy()
+  expect(studentProposal!.newValue).toBe('B1')
 
-  await apiCall(page, 'PATCH', `/api/students/${studentId}`, {
-    [studentProposal!.field]: studentProposal!.newValue,
-  })
+  // Mirror the frontend transform from frontend/src/api/assistant.ts:
+  // a "skillLevel.<key>" proposal field becomes the "skillLevel<Key>" PATCH key.
+  const patchBody: Record<string, string> = {}
+  if (studentProposal!.field.startsWith('skillLevel.')) {
+    const subKey = studentProposal!.field.split('.')[1]
+    const patchField = 'skillLevel' + subKey.charAt(0).toUpperCase() + subKey.slice(1)
+    patchBody[patchField] = studentProposal!.newValue
+  } else {
+    patchBody[studentProposal!.field] = studentProposal!.newValue
+  }
+  await apiCall(page, 'PATCH', `/api/students/${studentId}`, patchBody)
 
   const student = await apiCall<{
     level: { skillLevelOverrides: Record<string, string> }
   }>(page, 'GET', `/api/students/${studentId}`)
-  expect(student.level.skillLevelOverrides.writing).toBe('B1')
+  // Dictionary key may be Writing or writing depending on serializer config;
+  // accept either case.
+  const overrides = student.level.skillLevelOverrides
+  const writingValue =
+    Object.entries(overrides).find(([k]) => k.toLowerCase() === 'writing')?.[1]
+  expect(writingValue).toBe('B1')
 
   // Dismissing a todo card is a frontend-only state change; no API call.
   // Verify no extra teaching todo was created.
