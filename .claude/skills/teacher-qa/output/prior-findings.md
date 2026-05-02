@@ -197,3 +197,43 @@ Both fields also distinguish from `nextLessonIdeas` (planning ideas without a sc
 **Controller behavior:** If `newSessionTitle` is extracted, a compound `newSession` proposal is emitted. If `newSessionDate` is null (no date inferred), the controller defaults to today's UTC date.
 
 **Verify:** A teacher saying "next Monday I want to do subjunctive" should produce a `newSession` proposal card with a forward-resolved date, not update the past session's `sessionTitle`.
+
+---
+
+## From: #1041 - Negative instruction suppression for cefrLevel (2026-05-02, PR #1044)
+
+### Fix: negative instruction suppression for `levelReassessment`
+
+`levelReassessment` field instruction in `BuildReflectionExtractionPrompt` updated to return `null` when the teacher explicitly states they are NOT changing the level.
+
+**Suppression triggers:** "no toco el nivel", "no quiero cambiar el nivel", "todavía no", "solo tomar nota" — and similar explicit negations.
+
+**Rule:** Set `levelReassessment` to null even when CEFR strings appear elsewhere in the utterance, if a negative instruction is present.
+
+**Verify TC-07:** "Nadia lee muy bien, diría que ya está en C1 de lectura... El nivel global no lo toco." should NOT produce a global level-change proposal. Skill-level overrides (reading=C1) should still be extracted.
+
+**Verify TC-10:** "Todavía no quiero cambiar el nivel, solo tomar nota." should produce null `levelReassessment`.
+
+**Positive regression TC-06:** "Carmen ha mejorado mucho. Creo que ya está en B2.1. Súbele el nivel." must still produce `levelReassessment = "B2.1"`.
+
+---
+
+## From: #1042 - newSession date resolution fixes (2026-05-02, PR #1044)
+
+### Fix: newSession date resolution — weekday and past-date
+
+Two fixes to `newSessionDate` and `newSessionTitle` in `BuildReflectionExtractionPrompt`:
+
+1. **Weekday off-by-one guard:** "el lunes" from a Saturday reference = the next Monday (today + 2, NOT today + 3). The prompt now explicitly states the arithmetic.
+
+2. **Past-date resolution:** `newSessionDate` can resolve backward when the teacher uses past markers ("pasado", "de la semana pasada", "que se me olvidó registrar"). `newSessionTitle` was updated to allow retrospective registration (was forward-only).
+
+3. **Null-when-no-cue guard:** When no date cue is present in the input, `newSessionDate` must return null (controller defaults to today — this is the correct "unspecified" signal).
+
+**Verify TC-28 (Saturday reference):** "Programa una sesión para el lunes sobre los pronombres..." should produce `sessionDate = 2026-05-04` (Monday), NOT 2026-05-05 (Tuesday).
+
+**Verify TC-30:** "Apunta una sesión del lunes pasado sobre los conectores de contraste, que se me olvidó registrarla" should produce a `newSession` proposal (NOT session update proposals) with `sessionDate = 2026-04-27`.
+
+**Regression TC-29:** "Crea una sesión sobre el imperativo" (no date) should produce `newSession` proposal with `sessionDate` defaulting to today via the controller.
+
+**Regression TC-27:** "La semana que viene quiero hacer una sesión sobre el subjuntivo" should still resolve to a future date.
