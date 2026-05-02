@@ -42,11 +42,10 @@ test('@visual atelier-1029 new-session-proposal-card', async ({ browser }) => {
   await expect(page.locator('[data-testid="proposals-list"]')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT })
 
-  // Scroll the date input chip into view so the newSession card is visible in the screenshot
+  // Assert newSession card is present before screenshotting
   const dateInput = page.locator('[data-testid^="session-date-input-"]').first()
-  if (await dateInput.count() > 0) {
-    await dateInput.scrollIntoViewIfNeeded()
-  }
+  await expect(dateInput).toBeVisible({ timeout: UI_TIMEOUT })
+  await dateInput.scrollIntoViewIfNeeded()
 
   await page.screenshot({ path: 'screenshots/atelier-1029-new-session-proposal-card.png', fullPage: true })
 
@@ -80,10 +79,15 @@ test('@visual atelier-1029 new-session-proposal-no-student', async ({ browser })
   await expect(page.locator('[data-testid="proposals-list"]')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT })
 
+  // Assert newSession card disabled state before screenshotting
   const dateInput2 = page.locator('[data-testid^="session-date-input-"]').first()
-  if (await dateInput2.count() > 0) {
-    await dateInput2.scrollIntoViewIfNeeded()
-  }
+  await expect(dateInput2).toBeVisible({ timeout: UI_TIMEOUT })
+  await dateInput2.scrollIntoViewIfNeeded()
+
+  // Verify Apply is disabled and helper text is present
+  const applyBtnLocator = page.locator('[data-testid^="apply-btn-"]').filter({ hasText: /apply/i }).first()
+  await expect(applyBtnLocator).toBeDisabled({ timeout: UI_TIMEOUT })
+  await expect(page.getByText("Open from a student's screen to schedule a session")).toBeVisible({ timeout: UI_TIMEOUT })
 
   await page.screenshot({ path: 'screenshots/atelier-1029-new-session-proposal-no-student.png', fullPage: true })
 

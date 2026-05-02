@@ -331,6 +331,7 @@ export default function AtelierAssistantPanel({
   const noHardware = micError === 'no-hardware'
   const permissionDenied = micError === 'permission-denied'
   const pendingProposals = proposals.filter(p => p.status === 'proposed')
+  const applyAllBlocked = !studentId && pendingProposals.some(p => p.type === 'newSession')
 
   return (
     <Sheet open={open} onOpenChange={handleSheetOpenChange}>
@@ -469,7 +470,8 @@ export default function AtelierAssistantPanel({
           <div className="px-4 pb-3 pt-1 shrink-0 space-y-1.5" data-testid="batch-actions">
             <button
               onClick={onApplyAll}
-              className="w-full py-2.5 rounded-xl font-inter font-semibold text-sm text-white bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] hover:brightness-105 transition-all"
+              disabled={applyAllBlocked}
+              className={`w-full py-2.5 rounded-xl font-inter font-semibold text-sm transition-all ${applyAllBlocked ? 'text-zinc-400 bg-zinc-100 cursor-not-allowed' : 'text-white bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] hover:brightness-105'}`}
               data-testid="apply-all-btn"
             >
               Apply All Remaining

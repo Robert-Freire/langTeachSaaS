@@ -94,7 +94,12 @@ export function useAtelierAssistant(
             )
             if (idx !== -1) {
               if (updated[idx].status === 'proposed') {
-                updated[idx] = { ...updated[idx], newValue: incoming.newValue, oldValue: incoming.oldValue }
+                updated[idx] = {
+                  ...updated[idx],
+                  newValue: incoming.newValue,
+                  oldValue: incoming.oldValue,
+                  payload: incoming.payload ?? updated[idx].payload,
+                }
               }
               // applied/dismissed — leave untouched
             } else {

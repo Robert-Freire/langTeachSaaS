@@ -110,6 +110,7 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
   const isNewSession = proposal.type === 'newSession'
   const newSessionPayload = isNewSession ? (proposal.payload as NewSessionData | null | undefined) : null
   const newSessionApplyDisabled = isNewSession && !studentId
+  const newSessionDateEditable = isNewSession && (proposal.status === 'proposed' || proposal.status === 'error')
 
   return (
     <div
@@ -160,9 +161,10 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
                 <input
                   type="date"
                   value={newSessionPayload?.sessionDate ?? ''}
+                  disabled={!newSessionDateEditable}
                   onChange={e => {
                     const date = e.target.value
-                    if (date && onEditPayload) {
+                    if (date && onEditPayload && newSessionDateEditable) {
                       onEditPayload(proposal.id, {
                         title: newSessionPayload?.title ?? proposal.newValue,
                         sessionDate: date,
@@ -170,7 +172,10 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
                     }
                   }}
                   data-testid={`session-date-input-${proposal.id}`}
-                  className="text-sm font-inter border border-zinc-200 rounded-md px-2 py-0.5 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  className={cn(
+                    'text-sm font-inter border border-zinc-200 rounded-md px-2 py-0.5 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-300',
+                    !newSessionDateEditable && 'cursor-not-allowed opacity-60'
+                  )}
                 />
               </div>
               {newSessionApplyDisabled && (

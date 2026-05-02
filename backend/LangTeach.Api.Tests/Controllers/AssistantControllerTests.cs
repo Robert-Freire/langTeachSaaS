@@ -304,17 +304,20 @@ public class AssistantControllerTests
             Text = "Next class let's do conditionals. [schedule-new-session-no-date]",
             StudentId = studentId,
         };
+        var utcTodayBefore = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
         var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+        var utcTodayAfter = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
         var newSessionProposal = body!.Proposals.FirstOrDefault(p => p.Type == "newSession");
         newSessionProposal.Should().NotBeNull();
 
-        // Payload must have a sessionDate equal to today (UTC date).
+        // Payload sessionDate must match today UTC, resilient to midnight boundary crossing.
         var payloadDoc = System.Text.Json.JsonDocument.Parse(newSessionProposal!.Payload!.Value.GetRawText());
         var sessionDate = payloadDoc.RootElement.GetProperty("sessionDate").GetString();
-        sessionDate.Should().Be(DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd"));
+        sessionDate.Should().BeOneOf(utcTodayBefore, utcTodayAfter);
     }
 
     [Fact]
