@@ -24,7 +24,9 @@ public record ExtractedStudentProfileDto(
     List<ExtractedObjectiveDto> ShortTermObjectives,
     List<ExtractedDifficultyDto> Difficulties,
     List<string> TeachingTodoTexts,
-    List<string> Interests
+    List<string> Interests,
+    bool NewStudentIntent,
+    string? TeachingNotes
 );
 
 public record ExtractedObjectiveDto(string Text, string? TargetDate);

@@ -70,11 +70,10 @@ public class AssistantController : ControllerBase
 
         var proposals = new List<ProposalDto>();
 
-        // Detect new student intent: extracted name is present and differs from current student context
+        // Detect new student intent via LLM flag or absence of context student with a name present.
         var extractedName = studentExtraction.Name?.Trim();
-        bool isNewStudentIntent = !string.IsNullOrWhiteSpace(extractedName)
-            && (student == null
-                || !string.Equals(student.Name.Trim(), extractedName, StringComparison.OrdinalIgnoreCase));
+        bool isNewStudentIntent = studentExtraction.NewStudentIntent
+            || (student == null && !string.IsNullOrWhiteSpace(extractedName));
 
         var camelCaseOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
@@ -105,6 +104,44 @@ public class AssistantController : ControllerBase
             {
                 if (!string.IsNullOrWhiteSpace(todo))
                     proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "todo", "text", "Teaching Todo", null, todo));
+            }
+
+            if (studentExtraction.Interests.Count > 0)
+            {
+                var interestsPayload = new { appendInterests = studentExtraction.Interests };
+                var interestsElement = JsonSerializer.SerializeToElement(interestsPayload, camelCaseOpts);
+                var interestsDisplay = string.Join(", ", studentExtraction.Interests);
+                proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "student", "interests", "Interests",
+                    null, interestsDisplay, interestsElement, "append"));
+            }
+
+            if (studentExtraction.Difficulties.Count > 0)
+            {
+                var diffItems = studentExtraction.Difficulties
+                    .Select(d => new { description = d.Description, competency = d.Competency, subcategory = d.Subcategory })
+                    .ToList();
+                var diffsPayload = new { appendDifficulties = diffItems };
+                var diffsElement = JsonSerializer.SerializeToElement(diffsPayload, camelCaseOpts);
+                var diffsDisplay = string.Join("; ", studentExtraction.Difficulties.Select(d => d.Description));
+                proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "student", "difficulties", "Difficulties",
+                    null, diffsDisplay, diffsElement, "append"));
+            }
+
+            if (studentExtraction.ShortTermObjectives.Count > 0)
+            {
+                var goalsPayload = new { replaceLearningGoals = studentExtraction.ShortTermObjectives.Select(o => o.Text).ToList() };
+                var goalsElement = JsonSerializer.SerializeToElement(goalsPayload, camelCaseOpts);
+                var goalsDisplay = string.Join("; ", studentExtraction.ShortTermObjectives.Select(o => o.Text));
+                proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "student", "learningGoals", "Learning Goals",
+                    null, goalsDisplay, goalsElement, "replace"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(studentExtraction.TeachingNotes))
+            {
+                var notesPayload = new { appendTeachingNotes = studentExtraction.TeachingNotes };
+                var notesElement = JsonSerializer.SerializeToElement(notesPayload, camelCaseOpts);
+                proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "student", "teachingNotes", "Teaching Notes",
+                    student.Profile.TeachingNotes, studentExtraction.TeachingNotes, notesElement, "append"));
             }
         }
 

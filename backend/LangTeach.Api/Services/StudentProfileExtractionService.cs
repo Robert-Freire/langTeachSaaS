@@ -67,7 +67,9 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
                 ShortTermObjectives: ParseObjectives(root),
                 Difficulties: ParseDifficulties(root),
                 TeachingTodoTexts: ParseStringArray(root, "teachingTodoTexts"),
-                Interests: ParseStringArray(root, "interests")
+                Interests: ParseStringArray(root, "interests"),
+                NewStudentIntent: GetBoolOrDefault(root, "newStudentIntent"),
+                TeachingNotes: GetStringOrNull(root, "teachingNotes")
             );
         }
         catch (Exception ex)
@@ -79,7 +81,7 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
     }
 
     private static ExtractedStudentProfileDto Empty() =>
-        new(null, null, null, null, null, null, [], [], null, null, null, [], [], [], []);
+        new(null, null, null, null, null, null, [], [], null, null, null, [], [], [], [], false, null);
 
     private static string? GetStringOrNull(JsonElement root, string key)
     {
@@ -89,6 +91,12 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
             return string.IsNullOrWhiteSpace(value) ? null : value;
         }
         return null;
+    }
+
+    private static bool GetBoolOrDefault(JsonElement root, string key)
+    {
+        if (!root.TryGetProperty(key, out var prop)) return false;
+        return prop.ValueKind == JsonValueKind.True;
     }
 
     private static int? GetIntOrNull(JsonElement root, string key)

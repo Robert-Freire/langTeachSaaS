@@ -176,16 +176,16 @@ public class AssistantControllerTests
     }
 
     [Fact]
-    public async Task Propose_WithStudentIdButDifferentExtractedName_EmitsNewStudentProposal()
+    public async Task Propose_WithStudentIdAndNewStudentIntentFlag_EmitsNewStudentProposal()
     {
-        // Student "Ana" is context; stub extracts "[Extracted] María García" (different name).
+        // Student "Ana" is context; teacher explicitly says "nuevo alumno" → stub sets NewStudentIntent = true.
         // Should emit newStudent proposal alongside Ana's update proposals.
         var (client, studentId) = await SeedTeacherWithStudent(
             "auth0|assistant-diff-name", "assistant-diff-name@example.com", cefrLevel: "A1");
 
         var request = new AssistantProposeRequest
         {
-            Text = "Also I have a new student: María García, engineer, learning English at B2.",
+            Text = "Also I have a new student: María García, engineer, learning English at B2. [new-student-intent]",
             StudentId = studentId,
         };
         var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
@@ -194,11 +194,136 @@ public class AssistantControllerTests
         var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
         body.Should().NotBeNull();
 
-        // newStudent proposal for the new person
+        // newStudent proposal because LLM set NewStudentIntent = true
         body!.Proposals.Should().Contain(p => p.Type == "newStudent" && p.Field == "profile");
 
         // Regular student update proposals for Ana still present
         body.Proposals.Should().Contain(p => p.Type == "student");
+    }
+
+    [Fact]
+    public async Task Propose_WithStudentIdAndDifferentNameButNoIntent_DoesNotEmitNewStudentProposal()
+    {
+        // Student "Ana" is context; stub extracts a different name but NewStudentIntent = false.
+        // Name-diff alone must NOT trigger newStudent (TC-27/TC-10 fix).
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-no-intent", "assistant-no-intent@example.com", cefrLevel: "A1");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Working on Ana's past tense today.",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+
+        body!.Proposals.Should().NotContain(p => p.Type == "newStudent");
+    }
+
+    [Fact]
+    public async Task Propose_WithStudentAndInterests_ReturnsAppendProposal()
+    {
+        // TC-15: "Añade a los intereses de Carmen que le encanta el flamenco..."
+        // Should produce student/interests/append, no newStudent.
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-interests", "assistant-interests@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Añade a los intereses de Carmen que le encanta el flamenco. [has-interests]",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+
+        body!.Proposals.Should().NotContain(p => p.Type == "newStudent");
+        var interestsProp = body.Proposals.FirstOrDefault(p => p.Type == "student" && p.Field == "interests");
+        interestsProp.Should().NotBeNull();
+        interestsProp!.Action.Should().Be("append");
+        interestsProp.NewValue.Should().Contain("Flamenco");
+        interestsProp.Payload.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Propose_WithStudentAndDifficulties_ReturnsAppendProposal()
+    {
+        // TC-16: "Añade a las dificultades de Ana que confunde indefinido con perfecto compuesto..."
+        // Should produce student/difficulties/append, no newStudent.
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-difficulties", "assistant-difficulties@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Ana confunde el indefinido con el perfecto compuesto. [has-difficulties]",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+
+        body!.Proposals.Should().NotContain(p => p.Type == "newStudent");
+        var diffProp = body.Proposals.FirstOrDefault(p => p.Type == "student" && p.Field == "difficulties");
+        diffProp.Should().NotBeNull();
+        diffProp!.Action.Should().Be("append");
+        diffProp.NewValue.Should().Contain("Indefinido");
+        diffProp.Payload.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Propose_WithStudentAndLearningGoals_ReturnsReplaceProposal()
+    {
+        // TC-17: "Los objetivos de Marco han cambiado..." → learningGoals replace
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-goals", "assistant-goals@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Los objetivos de Marco han cambiado. [has-learning-goals]",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+
+        var goalsProp = body!.Proposals.FirstOrDefault(p => p.Type == "student" && p.Field == "learningGoals");
+        goalsProp.Should().NotBeNull();
+        goalsProp!.Action.Should().Be("replace");
+        goalsProp.NewValue.Should().Contain("Presentaciones");
+    }
+
+    [Fact]
+    public async Task Propose_WithStudentAndTeachingNotes_ReturnsAppendProposal()
+    {
+        // TC-18: "Añade una nota de enseñanza para Hans..." → teachingNotes append
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-notes", "assistant-notes@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Hans aprende muy bien a través de la música. [has-teaching-notes]",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+
+        body!.Proposals.Should().NotContain(p => p.Type == "newStudent");
+        var notesProp = body.Proposals.FirstOrDefault(p => p.Type == "student" && p.Field == "teachingNotes");
+        notesProp.Should().NotBeNull();
+        notesProp!.Action.Should().Be("append");
+        notesProp.NewValue.Should().Contain("música");
     }
 
     [Fact]

@@ -1669,8 +1669,10 @@ public class PromptService : IPromptService
                 - competency: string — must be one of: {competencies}
                 - subcategory: string — specific item (e.g. "ser/estar", "subjunctive", "past tense"), free text
               Empty array [] if no difficulties mentioned.
-            - teachingTodoTexts: array of strings — pedagogical ideas or reminders for the teacher regarding this student. Empty array [] if none.
+            - teachingTodoTexts: array of strings — action items or tasks for the teacher to do (e.g. "Send subjunctive exercises", "Prepare business vocabulary list"). Empty array [] if none.
+            - teachingNotes: string or null — observations about how the student learns (learning style, what works, what does not). Null if not mentioned.
             - interests: array of strings — personal interests, hobbies, or topics the student enjoys. Empty array [] if not mentioned.
+            - newStudentIntent: boolean — true ONLY if the teacher explicitly states they want to create a NEW student record (e.g. "nuevo alumno", "dame de alta a", "tengo un nuevo estudiante", "registra un nuevo estudiante"). false in all other cases, including when a student name is mentioned while updating or adding data for an existing student.
 
             Use null for scalar fields that cannot be clearly inferred from the text.
             Keep each value concise.

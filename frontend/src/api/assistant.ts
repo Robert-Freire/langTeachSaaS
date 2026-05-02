@@ -24,7 +24,8 @@ export interface ProposalDto {
   label: string
   oldValue: string | null
   newValue: string
-  payload?: NewStudentData | NewSessionData | null
+  action?: 'replace' | 'append'
+  payload?: NewStudentData | NewSessionData | Record<string, unknown> | null
 }
 
 export interface ProposeResponse {
@@ -51,6 +52,13 @@ export async function applyStudentProposal(
 ): Promise<void> {
   // field is one of: cefrLevel, profession, countryOfResidence — matches PatchStudentRequest
   await apiClient.patch(`/api/students/${studentId}`, { [field]: value })
+}
+
+export async function applyStudentProposalAppend(
+  studentId: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  await apiClient.patch(`/api/students/${studentId}/profile`, payload)
 }
 
 export async function applySessionProposal(
