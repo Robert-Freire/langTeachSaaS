@@ -282,7 +282,7 @@ export default function AtelierAssistantPanel({
       onClose()
       return
     }
-    if (transcription !== null) {
+    if (processing || pendingProposals.length > 0) {
       setPendingClose(true)
     } else {
       onClose()

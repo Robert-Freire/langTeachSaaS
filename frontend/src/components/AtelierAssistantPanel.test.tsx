@@ -248,25 +248,65 @@ describe('AtelierAssistantPanel', () => {
 
   // ---- close / discard --------------------------------------------------------
 
-  it('calls onClose immediately on X click when no transcription', async () => {
+  it('calls onClose immediately when no proposals and not processing', async () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
-    renderPanel({ transcription: null, onClose })
+    renderPanel({ proposals: [], processing: false, onClose })
     await user.click(screen.getByRole('button', { name: /close assistant/i }))
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('shows inline discard confirm on X click when transcription exists', async () => {
+  it('calls onClose immediately when all proposals are dismissed', async () => {
     const user = userEvent.setup()
-    renderPanel({ transcription: 'Some content.' })
+    const onClose = vi.fn()
+    renderPanel({
+      proposals: [makeProposal({ status: 'dismissed' }), makeProposal({ id: 'p2', status: 'dismissed' })],
+      onClose,
+    })
+    await user.click(screen.getByRole('button', { name: /close assistant/i }))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('calls onClose immediately when all proposals are applied', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    renderPanel({
+      proposals: [makeProposal({ status: 'applied' }), makeProposal({ id: 'p2', status: 'applied' })],
+      onClose,
+    })
+    await user.click(screen.getByRole('button', { name: /close assistant/i }))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('calls onClose immediately when proposals are mix of applied and dismissed', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    renderPanel({
+      proposals: [makeProposal({ status: 'applied' }), makeProposal({ id: 'p2', status: 'dismissed' })],
+      onClose,
+    })
+    await user.click(screen.getByRole('button', { name: /close assistant/i }))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('shows discard confirm when at least one proposal is pending', async () => {
+    const user = userEvent.setup()
+    renderPanel({ proposals: [makeProposal({ status: 'proposed' })] })
     await user.click(screen.getByRole('button', { name: /close assistant/i }))
     expect(screen.getByTestId('discard-confirm')).toBeInTheDocument()
   })
 
-  it('calls onCloseDiscarding when Discard pressed', async () => {
+  it('shows discard confirm when processing (LLM call in flight)', async () => {
+    const user = userEvent.setup()
+    renderPanel({ processing: true, proposals: [] })
+    await user.click(screen.getByRole('button', { name: /close assistant/i }))
+    expect(screen.getByTestId('discard-confirm')).toBeInTheDocument()
+  })
+
+  it('calls onCloseDiscarding when Discard pressed with pending proposal', async () => {
     const user = userEvent.setup()
     const onCloseDiscarding = vi.fn()
-    renderPanel({ transcription: 'Some content.', onCloseDiscarding })
+    renderPanel({ proposals: [makeProposal({ status: 'proposed' })], onCloseDiscarding })
     await user.click(screen.getByRole('button', { name: /close assistant/i }))
     await user.click(screen.getByTestId('discard-confirm-yes'))
     expect(onCloseDiscarding).toHaveBeenCalled()
@@ -275,7 +315,7 @@ describe('AtelierAssistantPanel', () => {
   it('hides confirm and keeps panel open when Keep editing pressed', async () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
-    renderPanel({ transcription: 'Some content.', onClose })
+    renderPanel({ proposals: [makeProposal({ status: 'proposed' })], onClose })
     await user.click(screen.getByRole('button', { name: /close assistant/i }))
     await user.click(screen.getByTestId('discard-confirm-cancel'))
     expect(screen.queryByTestId('discard-confirm')).not.toBeInTheDocument()
