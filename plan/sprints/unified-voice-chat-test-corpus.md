@@ -147,6 +147,8 @@ A well-behaved extraction should produce exactly the proposals that match the in
 
 **Isaac's note:** "No quiero cambiar el nivel" is a negative instruction. This tests that the system does not eagerly update CefrLevel. The observation goes to the session log as a difficulty signal, not to the student profile as a level reassessment.
 
+**Known limitation (Haiku):** As of 2026-05-02 this case fails on Claude Haiku 4.5: the model extracts "B2 en comprensión" as a CefrLevel value and does not connect the later "no quiero cambiar el nivel" clause back to the field it has already populated. TC-07 (with the more explicit "El nivel global no lo toco") works. Tracked in #1047. Walkthrough runs may report this as PARTIAL/FAIL until the extraction is promoted to Sonnet or restructured.
+
 ---
 
 ## Group 3: New student creation
@@ -372,6 +374,8 @@ These cases exercise the `newSession` proposal type. The teacher dictates a futu
 
 **Isaac's note:** "El lunes" with no further qualifier conventionally means "the upcoming Monday." Resolution must use request-time as reference, not generation cutoff. Title length is fine (35 chars, well under 120). The grammar topic is a B1 benchmark — pronoun position with infinitive constructions is the typical sub-difficulty (see TC-19).
 
+**Known limitation (Haiku):** As of 2026-05-02 this case is off by one day on Claude Haiku 4.5 (returns Tue 2026-05-05 instead of Mon 2026-05-04). Same failure mode as TC-32. The model can compute past-date offsets (TC-30 works) but the weekday arithmetic from a Saturday reference slips by +1. Tracked in #1047.
+
 ---
 
 ### TC-29 — No date mentioned, default to today
@@ -421,6 +425,8 @@ These cases exercise the `newSession` proposal type. The teacher dictates a futu
 - No teaching todo (the reinforcement is a scheduled session, not a free-floating reminder — these would be redundant)
 
 **Isaac's note:** This is the highest-value case in the new group. It tests that the assistant correctly distinguishes "what just happened" (session update on today's existing log) from "what the teacher wants scheduled" (newSession for Thursday). A common LLM failure mode is to generate either both as session updates or both as new sessions, or to also produce a TeacherFollowup that duplicates the newSession content. The pedagogically correct decomposition: a difficulty observed → logged on today's session; a planned remediation → scheduled as a future session. They are distinct entities.
+
+**Known limitation (Haiku):** As of 2026-05-02 the newSession `sessionDate` is off by one day on Claude Haiku 4.5 (returns Fri 2026-05-08 instead of Thu 2026-05-07). The decomposition into a session update and a newSession card is correct; only the weekday arithmetic slips. Same failure mode as TC-28. Tracked in #1047.
 
 ---
 
