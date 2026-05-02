@@ -236,7 +236,7 @@ export default function AppShell() {
               onClick={toggleAssistant}
               aria-haspopup="dialog"
               aria-expanded={assistantOpen}
-              aria-label="Open Assistant"
+              aria-label={assistantOpen ? 'Close Assistant' : 'Open Assistant'}
               data-testid="open-assistant-btn"
               className={cn(
                 'hidden lg:flex fixed bottom-6 right-6 z-30',
