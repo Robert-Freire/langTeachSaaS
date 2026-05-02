@@ -56,7 +56,8 @@ interface Props {
   onModify: (id: string, newValue: string) => void
   onApplyAll: () => void
   onDismissAll: () => void
-  onEditPayload?: (id: string, payload: import('@/api/assistant').NewStudentData) => void
+  onEditPayload?: (id: string, payload: import('@/api/assistant').NewStudentData | import('@/api/assistant').NewSessionData) => void
+  studentId?: string | null
 }
 
 export default function AtelierAssistantPanel({
@@ -76,6 +77,7 @@ export default function AtelierAssistantPanel({
   onApplyAll,
   onDismissAll,
   onEditPayload,
+  studentId,
 }: Props) {
   const [inputValue, setInputValue] = useState('')
   const [pendingClose, setPendingClose] = useState(false)
@@ -447,6 +449,7 @@ export default function AtelierAssistantPanel({
                         onModify={onModify}
                         onRedirectToChat={handleRedirectToChat}
                         onEditPayload={onEditPayload}
+                        studentId={studentId}
                       />
                     ))}
                   </div>

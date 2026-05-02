@@ -1572,6 +1572,8 @@ public class PromptService : IPromptService
             - durationMinutes: integer or null — session duration in minutes. Null if not mentioned.
             - isCancelled: true | false | null — true only if the session was cancelled or the student did not show up. Null if not mentioned.
             - difficultiesWorkedOn: array of strings — copy verbatim from the student's known difficulties list any difficulty that was explicitly worked on in this session. Empty array if none or if no known difficulties were provided.
+            - newSessionTitle: string or null — concise title (under 60 chars) for a NEW future session the teacher is proposing or scheduling. Set ONLY when the teacher makes a forward-looking scheduling statement (e.g. "next Monday I want to do a session on the subjunctive", "la semana que viene hagamos una sesión sobre el subjuntivo", "let's do conditionals next class"). Leave null when the teacher is describing the current or past session being logged. Distinct from sessionTitle which describes the session already done.
+            - newSessionDate: string or null — ISO 8601 date (YYYY-MM-DD) for the proposed new session from newSessionTitle. Resolve relative dates FORWARD from today: "next Monday" = the next Monday strictly after today, "la semana que viene" = same day next week, "next class" = null (no specific date). Null if newSessionTitle is null.
 
             For suggestedDifficulties, each object must have:
             - description: full sentence describing the difficulty, extracted verbatim from the teacher's language

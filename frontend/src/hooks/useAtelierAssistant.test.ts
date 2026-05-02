@@ -15,6 +15,7 @@ vi.mock('../api/assistant', () => ({
   applyStudentProposal: vi.fn(),
   applySessionProposal: vi.fn(),
   applyTodoProposal: vi.fn(),
+  applyNewSessionProposal: vi.fn(),
 }))
 
 vi.mock('../api/students', () => ({
@@ -28,6 +29,7 @@ const mockPropose = vi.mocked(assistantApi.proposeAssistant)
 const mockApplyStudent = vi.mocked(assistantApi.applyStudentProposal)
 const mockApplySession = vi.mocked(assistantApi.applySessionProposal)
 const mockApplyTodo = vi.mocked(assistantApi.applyTodoProposal)
+const mockApplyNewSession = vi.mocked(assistantApi.applyNewSessionProposal)
 const mockCreateStudent = vi.mocked(studentsApi.createStudent)
 
 const sampleProposals = [
@@ -341,5 +343,35 @@ describe('useAtelierAssistant', () => {
     const cefrCard = result.current.proposals.find(p => p.type === 'student' && p.field === 'cefrLevel')
     expect(cefrCard?.status).toBe('applied')
     expect(cefrCard?.newValue).toBe('B1')
+  })
+
+  it('apply: routes newSession proposal to applyNewSessionProposal and invalidates sessions query', async () => {
+    const sessionPayload = { title: 'Subjunctive', sessionDate: '2026-05-12' }
+    const newSessionProposal = { id: 'ps1', type: 'newSession' as const, field: 'newSession', label: 'New Session', oldValue: null, newValue: 'Subjunctive', payload: sessionPayload }
+    mockPropose.mockResolvedValueOnce({ proposals: [newSessionProposal] })
+    mockApplyNewSession.mockResolvedValueOnce(undefined)
+
+    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('Next Monday I want to do a session on the subjunctive') })
+    await act(async () => { await vi.runAllTimersAsync() })
+    expect(result.current.proposals).toHaveLength(1)
+
+    await act(async () => { await result.current.apply('ps1') })
+    expect(mockApplyNewSession).toHaveBeenCalledWith('student-1', 'Subjunctive', '2026-05-12')
+    expect(result.current.proposals[0].status).toBe('applied')
+  })
+
+  it('apply: newSession fails gracefully with error status when studentId is null', async () => {
+    const sessionPayload = { title: 'Subjunctive', sessionDate: '2026-05-12' }
+    const newSessionProposal = { id: 'ps1', type: 'newSession' as const, field: 'newSession', label: 'New Session', oldValue: null, newValue: 'Subjunctive', payload: sessionPayload }
+    mockPropose.mockResolvedValueOnce({ proposals: [newSessionProposal] })
+
+    const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('Schedule a session') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.apply('ps1') })
+    expect(mockApplyNewSession).not.toHaveBeenCalled()
+    expect(result.current.proposals[0].status).toBe('error')
   })
 })

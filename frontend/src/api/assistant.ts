@@ -11,14 +11,19 @@ export interface NewStudentData {
   reasonForStudying?: string | null
 }
 
+export interface NewSessionData {
+  title: string
+  sessionDate: string
+}
+
 export interface ProposalDto {
   id: string
-  type: 'student' | 'session' | 'todo' | 'newStudent'
+  type: 'student' | 'session' | 'todo' | 'newStudent' | 'newSession'
   field: string
   label: string
   oldValue: string | null
   newValue: string
-  payload?: NewStudentData | null
+  payload?: NewStudentData | NewSessionData | null
 }
 
 export interface ProposeResponse {
@@ -62,4 +67,16 @@ export async function applyTodoProposal(
   text: string,
 ): Promise<void> {
   await apiClient.post(`/api/students/${studentId}/teaching-todos`, { text })
+}
+
+export async function applyNewSessionProposal(
+  studentId: string,
+  title: string,
+  sessionDate: string,
+): Promise<void> {
+  await apiClient.post(`/api/students/${studentId}/sessions`, {
+    title,
+    sessionDate,
+    previousHomeworkStatus: 'NotApplicable',
+  })
 }

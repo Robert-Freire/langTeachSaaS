@@ -44,7 +44,8 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
-                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null);
+                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null,
+                NewSessionTitle: null, NewSessionDate: null);
         }
 
         var dto = ParseResponse(response.Content);
@@ -150,7 +151,9 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 DurationMinutes: GetIntOrNull(root, "durationMinutes"),
                 IsCancelled: GetBoolOrNull(root, "isCancelled"),
                 DifficultiesWorkedOn: ParseStringArray(root, "difficultiesWorkedOn"),
-                SessionStartTime: GetHhMmOrNull(root, "sessionStartTime")
+                SessionStartTime: GetHhMmOrNull(root, "sessionStartTime"),
+                NewSessionTitle: GetStringOrNull(root, "newSessionTitle"),
+                NewSessionDate: GetIsoDateOrNull(root, "newSessionDate")
             );
         }
         catch (Exception ex)
@@ -163,7 +166,8 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
-                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null);
+                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null,
+                NewSessionTitle: null, NewSessionDate: null);
         }
     }
 

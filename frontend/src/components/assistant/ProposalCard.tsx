@@ -3,7 +3,7 @@ import { Calendar, CheckSquare, Loader2, User, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import type { NewStudentData, ProposalWithStatus } from '@/hooks/useAtelierAssistant'
+import type { NewSessionData, NewStudentData, ProposalWithStatus } from '@/hooks/useAtelierAssistant'
 import NewStudentFields from './NewStudentFields'
 
 interface Props {
@@ -14,7 +14,8 @@ interface Props {
   onRetry: (id: string) => void
   onModify: (id: string, newValue: string) => void
   onRedirectToChat: (prefill: string) => void
-  onEditPayload?: (id: string, payload: NewStudentData) => void
+  onEditPayload?: (id: string, payload: NewStudentData | NewSessionData) => void
+  studentId?: string | null
 }
 
 const MULTILINE_FIELDS = new Set(['actualContent', 'generalNotes', 'homeworkAssigned'])
@@ -50,9 +51,15 @@ const TYPE_CONFIG = {
     iconBg: 'bg-teal-100',
     iconColor: 'text-teal-600',
   },
+  newSession: {
+    Icon: Calendar,
+    accent: 'bg-amber-500',
+    iconBg: 'bg-amber-100',
+    iconColor: 'text-amber-600',
+  },
 } as const
 
-export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onModify, onRedirectToChat, onEditPayload }: Props) {
+export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onModify, onRedirectToChat, onEditPayload, studentId }: Props) {
   const config = TYPE_CONFIG[proposal.type]
   const { Icon } = config
 
@@ -100,6 +107,9 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
 
   const isMultiline = MULTILINE_FIELDS.has(proposal.field)
   const isNewStudent = proposal.type === 'newStudent'
+  const isNewSession = proposal.type === 'newSession'
+  const newSessionPayload = isNewSession ? (proposal.payload as NewSessionData | null | undefined) : null
+  const newSessionApplyDisabled = isNewSession && !studentId
 
   return (
     <div
@@ -142,7 +152,32 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
 
         {/* Content */}
         <div className="mb-2.5">
-          {isNewStudent ? (
+          {isNewSession ? (
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-semibold font-inter text-zinc-800">{proposal.newValue}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-inter text-zinc-500">Date:</span>
+                <input
+                  type="date"
+                  value={newSessionPayload?.sessionDate ?? ''}
+                  onChange={e => {
+                    const date = e.target.value
+                    if (date && onEditPayload) {
+                      onEditPayload(proposal.id, {
+                        title: newSessionPayload?.title ?? proposal.newValue,
+                        sessionDate: date,
+                      })
+                    }
+                  }}
+                  data-testid={`session-date-input-${proposal.id}`}
+                  className="text-sm font-inter border border-zinc-200 rounded-md px-2 py-0.5 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                />
+              </div>
+              {newSessionApplyDisabled && (
+                <p className="text-xs text-zinc-500 font-inter">Open from a student's screen to schedule a session.</p>
+              )}
+            </div>
+          ) : isNewStudent ? (
             <NewStudentFields
               payload={proposal.payload as NewStudentData ?? { name: proposal.newValue }}
               proposalId={proposal.id}
@@ -201,9 +236,15 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
           {proposal.status === 'proposed' && !editing && (
             <>
               <button
-                onClick={() => onApply(proposal.id)}
+                onClick={() => !newSessionApplyDisabled && onApply(proposal.id)}
+                disabled={newSessionApplyDisabled}
                 data-testid={`apply-btn-${proposal.id}`}
-                className="text-xs font-semibold font-inter text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded-lg transition-colors"
+                className={cn(
+                  'text-xs font-semibold font-inter px-3 py-1 rounded-lg transition-colors',
+                  newSessionApplyDisabled
+                    ? 'text-zinc-400 bg-zinc-100 cursor-not-allowed'
+                    : 'text-white bg-indigo-600 hover:bg-indigo-700'
+                )}
               >
                 Apply
               </button>
@@ -214,7 +255,7 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
               >
                 Dismiss
               </button>
-              {!isNewStudent && (
+              {!isNewStudent && !isNewSession && (
                 <button
                   onClick={startEdit}
                   data-testid={`modify-btn-${proposal.id}`}

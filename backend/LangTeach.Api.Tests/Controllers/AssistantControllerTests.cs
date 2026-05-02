@@ -233,4 +233,81 @@ public class AssistantControllerTests
         body.Should().NotBeNull();
         body!.Proposals.Should().NotContain(p => p.Type == "student" && p.Field == "cefrLevel");
     }
+
+    [Fact]
+    public async Task Propose_WithSchedulingIntent_EmitsNewSessionProposal()
+    {
+        // StubReflectionExtractionService emits newSession when text contains "[schedule-new-session]".
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-new-session", "assistant-new-session@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Next Monday I want to do a session on the subjunctive. [schedule-new-session]",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        var newSessionProposal = body!.Proposals.FirstOrDefault(p => p.Type == "newSession");
+        newSessionProposal.Should().NotBeNull();
+        newSessionProposal!.Label.Should().Be("New Session");
+        newSessionProposal.NewValue.Should().Be("[Extracted] New Session Title");
+        newSessionProposal.Payload.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Propose_WithSchedulingIntentButNoStudentId_StillEmitsNewSessionProposal()
+    {
+        // newSession proposal is emitted even without student context (frontend handles the disabled state).
+        var client = _factory.CreateAuthenticatedClient("auth0|assistant-new-session-no-student", "no-student@example.com");
+        // Register teacher via a simple student seed then use only the client
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var teacher = new Teacher
+        {
+            Id = Guid.NewGuid(),
+            Auth0UserId = "auth0|assistant-new-session-no-student",
+            Email = "no-student@example.com",
+            DisplayName = "No Student Teacher",
+            IsApproved = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Teachers.Add(teacher);
+        await db.SaveChangesAsync();
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "La semana que viene hagamos una sesión sobre el subjuntivo. [schedule-new-session]",
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        body!.Proposals.Should().Contain(p => p.Type == "newSession");
+    }
+
+    [Fact]
+    public async Task Propose_WithoutSchedulingIntent_DoesNotEmitNewSessionProposal()
+    {
+        // Normal reflection text without "[schedule-new-session]" trigger → no newSession proposal.
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-no-new-session", "assistant-no-new-session@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "We worked on subjunctive today. Great progress.",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        body!.Proposals.Should().NotContain(p => p.Type == "newSession");
+    }
 }

@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
+  applyNewSessionProposal,
   applySessionProposal,
   applyStudentProposal,
   applyTodoProposal,
+  type NewSessionData,
   type NewStudentData,
   type ProposalDto,
   proposeAssistant,
 } from '../api/assistant'
-// Re-export NewStudentData so consumers don't need to import from api/assistant directly
-export type { NewStudentData }
+// Re-export so consumers don't need to import from api/assistant directly
+export type { NewSessionData, NewStudentData }
 import { createStudent } from '../api/students'
 
 export type ProposalStatus = 'proposed' | 'applying' | 'applied' | 'dismissed' | 'error'
@@ -35,7 +37,7 @@ export interface AtelierAssistantActions {
   applyAll: () => void
   dismissAll: () => void
   reset: () => void
-  onEditPayload: (id: string, payload: NewStudentData) => void
+  onEditPayload: (id: string, payload: NewStudentData | NewSessionData) => void
 }
 
 export function useAtelierAssistant(
@@ -152,6 +154,11 @@ export function useAtelierAssistant(
           weaknesses: [],
           difficulties: [],
         })
+      } else if (proposal.type === 'newSession') {
+        if (!studentId) throw new Error('Open from a student\'s screen to schedule a session.')
+        const data = proposal.payload as NewSessionData | null | undefined
+        if (!data?.title?.trim()) throw new Error('Session title is missing.')
+        await applyNewSessionProposal(studentId, data.title, data.sessionDate)
       }
       updateProposal(id, { status: 'applied' })
       // Invalidate relevant queries so the rest of the UI reflects the change
@@ -162,6 +169,8 @@ export function useAtelierAssistant(
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
       } else if (proposal.type === 'newStudent') {
         await queryClient.invalidateQueries({ queryKey: ['students'] })
+      } else if (proposal.type === 'newSession' && studentId) {
+        await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to apply change.'
@@ -207,7 +216,7 @@ export function useAtelierAssistant(
     proposalsRef.current.filter(p => p.status === 'proposed').forEach(p => dismiss(p.id))
   }, [dismiss])
 
-  const onEditPayload = useCallback((id: string, payload: NewStudentData) => {
+  const onEditPayload = useCallback((id: string, payload: NewStudentData | NewSessionData) => {
     setProposals(prev => prev.map(p => p.id === id ? { ...p, payload } : p))
   }, [])
 

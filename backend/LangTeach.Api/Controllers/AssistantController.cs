@@ -112,6 +112,23 @@ public class AssistantController : ControllerBase
         EmitProposal(proposals, "session", "generalNotes", "Areas to Improve", session?.GeneralNotes, reflectionExtraction.AreasToImprove?.Value);
         EmitProposal(proposals, "session", "homeworkAssigned", "Homework Assigned", session?.HomeworkAssigned, reflectionExtraction.HomeworkAssigned?.Value);
 
+        if (!string.IsNullOrWhiteSpace(reflectionExtraction.NewSessionTitle))
+        {
+            var sessionDate = reflectionExtraction.NewSessionDate
+                ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
+            var newSessionPayload = new { title = reflectionExtraction.NewSessionTitle, sessionDate };
+            var opts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var payloadElement = JsonSerializer.SerializeToElement(newSessionPayload, opts);
+            proposals.Add(new ProposalDto(
+                Guid.NewGuid().ToString(),
+                "newSession",
+                "newSession",
+                "New Session",
+                null,
+                reflectionExtraction.NewSessionTitle,
+                payloadElement));
+        }
+
         return Ok(new AssistantProposeResponse(proposals));
     }
 

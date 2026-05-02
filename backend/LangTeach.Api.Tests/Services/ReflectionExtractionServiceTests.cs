@@ -980,5 +980,5 @@ public class ReflectionExtractionServiceTests
             SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
             TopicTags: topicTags ?? [], PreviousHomeworkStatus: null, TeachingTodos: [],
             TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
-            IsCancelled: isCancelled, DifficultiesWorkedOn: [], SessionStartTime: null);
+            IsCancelled: isCancelled, DifficultiesWorkedOn: [], SessionStartTime: null, NewSessionTitle: null, NewSessionDate: null);
 }

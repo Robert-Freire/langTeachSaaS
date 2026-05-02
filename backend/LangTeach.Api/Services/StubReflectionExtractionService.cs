@@ -14,6 +14,13 @@ public class StubReflectionExtractionService : IReflectionExtractionService
     public Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, CancellationToken ct = default)
     {
         _logger.LogInformation("StubReflectionExtractionService.ExtractAsync called with {Length} chars", text.Length);
+
+        // Emit a newSession proposal when the text contains the trigger phrase used in tests.
+        var newSessionTitle = text.Contains("[schedule-new-session]")
+            ? "[Extracted] New Session Title"
+            : null;
+        var newSessionDate = newSessionTitle is not null ? "2026-05-19" : null;
+
         return Task.FromResult(new ExtractedReflectionDto(
             WhatWasCovered: new ExtractedTextFieldDto("[Extracted] What was covered", ExtractionMode.Replace),
             AreasToImprove: new ExtractedTextFieldDto("[Extracted] Areas to improve", ExtractionMode.Replace),
@@ -32,7 +39,9 @@ public class StubReflectionExtractionService : IReflectionExtractionService
             DurationMinutes: null,
             IsCancelled: null,
             DifficultiesWorkedOn: [],
-            SessionStartTime: "09:00"
+            SessionStartTime: "09:00",
+            NewSessionTitle: newSessionTitle,
+            NewSessionDate: newSessionDate
         ));
     }
 }
