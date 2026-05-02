@@ -1,4 +1,5 @@
 import { apiClient } from '../lib/apiClient'
+import { createSession } from './sessionLogs'
 
 export interface NewStudentData {
   name: string
@@ -74,9 +75,5 @@ export async function applyNewSessionProposal(
   title: string,
   sessionDate: string,
 ): Promise<void> {
-  await apiClient.post(`/api/students/${studentId}/sessions`, {
-    title,
-    sessionDate,
-    previousHomeworkStatus: 'NotApplicable',
-  })
+  await createSession(studentId, { title, sessionDate, previousHomeworkStatus: 'NotApplicable' })
 }

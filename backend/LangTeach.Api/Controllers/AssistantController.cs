@@ -76,6 +76,8 @@ public class AssistantController : ControllerBase
             && (student == null
                 || !string.Equals(student.Name.Trim(), extractedName, StringComparison.OrdinalIgnoreCase));
 
+        var camelCaseOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
         if (isNewStudentIntent)
         {
             var newStudentPayload = new
@@ -89,8 +91,7 @@ public class AssistantController : ControllerBase
                 cefrLevel = studentExtraction.CefrLevel,
                 reasonForStudying = studentExtraction.ReasonForStudying,
             };
-            var opts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-            var payloadElement = JsonSerializer.SerializeToElement(newStudentPayload, opts);
+            var payloadElement = JsonSerializer.SerializeToElement(newStudentPayload, camelCaseOpts);
             proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "newStudent", "profile", "New Student", null, extractedName!, payloadElement));
         }
 
@@ -117,8 +118,7 @@ public class AssistantController : ControllerBase
             var sessionDate = reflectionExtraction.NewSessionDate
                 ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
             var newSessionPayload = new { title = reflectionExtraction.NewSessionTitle, sessionDate };
-            var opts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-            var payloadElement = JsonSerializer.SerializeToElement(newSessionPayload, opts);
+            var payloadElement = JsonSerializer.SerializeToElement(newSessionPayload, camelCaseOpts);
             proposals.Add(new ProposalDto(
                 Guid.NewGuid().ToString(),
                 "newSession",
