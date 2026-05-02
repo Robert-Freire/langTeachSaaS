@@ -44,7 +44,23 @@ public class StubStudentProfileExtractionService : IStudentProfileExtractionServ
                 ? ["[Extracted] Flamenco", "[Extracted] Cine de Almodóvar"]
                 : ["[Extracted] Travel", "[Extracted] Cooking"],
             NewStudentIntent: newStudentIntent,
-            TeachingNotes: hasTeachingNotes ? "[Extracted] Aprende bien a través de la música" : null
+            TeachingNotes: hasTeachingNotes ? "[Extracted] Aprende bien a través de la música" : null,
+            SkillLevelReading: ParseSkillMarker(text, "reading"),
+            SkillLevelWriting: ParseSkillMarker(text, "writing"),
+            SkillLevelSpeaking: ParseSkillMarker(text, "speaking"),
+            SkillLevelListening: ParseSkillMarker(text, "listening")
         ));
+    }
+
+    private static string? ParseSkillMarker(string text, string key)
+    {
+        var marker = $"[skill-{key}=";
+        var idx = text.IndexOf(marker, StringComparison.Ordinal);
+        if (idx < 0) return null;
+        var start = idx + marker.Length;
+        var end = text.IndexOf(']', start);
+        if (end < 0) return null;
+        var value = text.Substring(start, end - start).Trim();
+        return string.IsNullOrEmpty(value) ? null : value;
     }
 }

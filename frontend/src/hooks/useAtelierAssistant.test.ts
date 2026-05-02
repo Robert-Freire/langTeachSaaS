@@ -397,4 +397,18 @@ describe('useAtelierAssistant', () => {
     expect(mockApplyNewSession).not.toHaveBeenCalled()
     expect(result.current.proposals[0].status).toBe('error')
   })
+
+  it('apply: routes skillLevel.writing student proposal to applyStudentProposal with dotted field', async () => {
+    const skillProposal = { id: 'psk1', type: 'student' as const, field: 'skillLevel.writing', label: 'Writing Level', oldValue: null, newValue: 'B1' }
+    mockPropose.mockResolvedValueOnce({ proposals: [skillProposal] })
+    mockApplyStudent.mockResolvedValueOnce(undefined)
+
+    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('text') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.apply('psk1') })
+    expect(mockApplyStudent).toHaveBeenCalledWith('student-1', 'skillLevel.writing', 'B1')
+    expect(result.current.proposals[0].status).toBe('applied')
+  })
 })

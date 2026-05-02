@@ -100,6 +100,15 @@ public class AssistantController : ControllerBase
             EmitProposal(proposals, "student", "profession", "Profession", student.Identity.Profession, studentExtraction.Profession);
             EmitProposal(proposals, "student", "countryOfResidence", "Country of Residence", student.Identity.CountryOfResidence, studentExtraction.CountryOfResidence);
 
+            student.Level.SkillLevelOverrides.TryGetValue("Reading", out var curReading);
+            student.Level.SkillLevelOverrides.TryGetValue("Writing", out var curWriting);
+            student.Level.SkillLevelOverrides.TryGetValue("Speaking", out var curSpeaking);
+            student.Level.SkillLevelOverrides.TryGetValue("Listening", out var curListening);
+            EmitProposal(proposals, "student", "skillLevel.reading", "Reading Level", curReading, studentExtraction.SkillLevelReading);
+            EmitProposal(proposals, "student", "skillLevel.writing", "Writing Level", curWriting, studentExtraction.SkillLevelWriting);
+            EmitProposal(proposals, "student", "skillLevel.speaking", "Speaking Level", curSpeaking, studentExtraction.SkillLevelSpeaking);
+            EmitProposal(proposals, "student", "skillLevel.listening", "Listening Level", curListening, studentExtraction.SkillLevelListening);
+
             foreach (var todo in reflectionExtraction.TeachingTodos)
             {
                 if (!string.IsNullOrWhiteSpace(todo))

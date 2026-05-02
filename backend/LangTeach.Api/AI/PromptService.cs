@@ -1672,6 +1672,7 @@ public class PromptService : IPromptService
             - teachingTodoTexts: array of strings — action items or tasks for the teacher to do (e.g. "Send subjunctive exercises", "Prepare business vocabulary list"). Empty array [] if none.
             - teachingNotes: string or null — observations about how the student learns (learning style, what works, what does not). Null if not mentioned.
             - interests: array of strings — personal interests, hobbies, or topics the student enjoys. Empty array [] if not mentioned.
+            - skillLevel: object or null — per-skill CEFR level overrides when the teacher explicitly states a different level for a specific skill. Keys: "reading", "writing", "speaking", "listening". Values must match A1/A2/B1/B2/C1/C2 optionally followed by a dot and digit (e.g. "B1", "C1", "B1.2"). Omit a key if not explicitly mentioned. Null if no per-skill levels mentioned at all.
             - newStudentIntent: boolean — true ONLY if the teacher explicitly states they want to create a NEW student record (e.g. "nuevo alumno", "dame de alta a", "tengo un nuevo estudiante", "I have a new student", "register a new student").
 
             Use null for scalar fields that cannot be clearly inferred from the text.
