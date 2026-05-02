@@ -1,7 +1,7 @@
 /**
- * Atelier Assistant — proposal extraction quality tests
+ * Atelier Assistant proposal extraction quality tests.
  *
- * Real Auth0 + real Claude API. Mirrors the teacher-qa pattern (sequential,
+ * Real Auth0 plus real Claude API. Mirrors the teacher-qa pattern (sequential,
  * 10-minute test timeout, screenshots on failure). NOT for CI: the suite
  * exercises real LLM calls and persistent QA data.
  *
@@ -10,7 +10,7 @@
  *
  * Cases mirror Layer 1 of issue #1035. Test 1 and Test 4 depend on the
  * SkillLevelOverrides proposal type (#1039) and the profile-update append
- * proposals (#1040) being wired up — until those merge they are expected
+ * proposals (#1040) being wired up. Until those merge they are expected
  * to fail.
  */
 import { test, expect, type Page } from '@playwright/test'
@@ -41,7 +41,7 @@ async function apiCall<T>(
     async ({ method, path, body }) => {
       const auth0KeyPrefix = '@@auth0spajs@@'
       const cacheKey = Object.keys(localStorage).find(
-        k => k.startsWith(auth0KeyPrefix) && k.includes('::openid'),
+        k => k.startsWith(auth0KeyPrefix) && !k.endsWith('::@@user@@'),
       )
       if (!cacheKey) throw new Error('Auth0 token cache key not found')
       const raw = localStorage.getItem(cacheKey)
@@ -116,7 +116,7 @@ const ANA = {
   nativeLanguage: 'Portuguese',
 }
 
-// Test 1 — TC-01 baseline: multi-entity proposals
+// Test \1: TC-01 baseline: multi-entity proposals
 test('atelier assistant: TC-01 baseline returns session, student and todo proposals', async ({ browser }) => {
   const context = await createQAAuthContext(browser)
   const page = await context.newPage()
@@ -140,7 +140,7 @@ test('atelier assistant: TC-01 baseline returns session, student and todo propos
   await context.close()
 })
 
-// Test 2 — TC-21 empty result: no proposals for "nothing to log"
+// Test \1: TC-21 empty result: no proposals for "nothing to log"
 test('atelier assistant: TC-21 empty utterance returns zero proposals', async ({ browser }) => {
   const context = await createQAAuthContext(browser)
   const page = await context.newPage()
@@ -158,7 +158,7 @@ test('atelier assistant: TC-21 empty utterance returns zero proposals', async ({
   await context.close()
 })
 
-// Test 3 — TC-11 new student schema
+// Test \1: TC-11 new student schema
 test('atelier assistant: TC-11 new-student utterance returns one newStudent proposal with populated payload', async ({ browser }) => {
   const context = await createQAAuthContext(browser)
   const page = await context.newPage()
@@ -186,7 +186,7 @@ test('atelier assistant: TC-11 new-student utterance returns one newStudent prop
   await context.close()
 })
 
-// Test 4 — Apply student proposal patches the student; Dismiss todo creates no followup
+// Test \1: Apply student proposal patches the student; Dismiss todo creates no followup
 test('atelier assistant: Apply student card patches skill level; Dismiss todo creates no followup', async ({ browser }) => {
   const context = await createQAAuthContext(browser)
   const page = await context.newPage()
@@ -195,14 +195,15 @@ test('atelier assistant: Apply student card patches skill level; Dismiss todo cr
   const sessionId = await ensureSessionFor(page, studentId)
 
   type Todo = { id: string }
-  const initialTodos = await apiCall<{ items?: Todo[] } | Todo[]>(
+  type TodosResponse = { items?: Todo[] } | Todo[]
+  const todoCount = (r: TodosResponse) =>
+    Array.isArray(r) ? r.length : r.items?.length ?? 0
+  const initialTodos = await apiCall<TodosResponse>(
     page,
     'GET',
     `/api/students/${studentId}/teaching-todos`,
-  ).catch(() => [] as Todo[])
-  const initialTodoCount = Array.isArray(initialTodos)
-    ? initialTodos.length
-    : initialTodos.items?.length ?? 0
+  )
+  const initialTodoCount = todoCount(initialTodos)
 
   const proposals = await propose(
     page,
@@ -221,22 +222,18 @@ test('atelier assistant: Apply student card patches skill level; Dismiss todo cr
   })
 
   const student = await apiCall<{
-    level?: { skillLevelOverrides?: { writing?: string } }
-    skillLevelOverrides?: { writing?: string }
+    level: { skillLevelOverrides: Record<string, string> }
   }>(page, 'GET', `/api/students/${studentId}`)
-  const writingOverride =
-    student?.level?.skillLevelOverrides?.writing ?? student?.skillLevelOverrides?.writing
-  expect(writingOverride).toBe('B1')
+  expect(student.level.skillLevelOverrides.writing).toBe('B1')
 
   // Dismissing a todo card is a frontend-only state change; no API call.
   // Verify no extra teaching todo was created.
-  const finalTodos = await apiCall<{ items?: Todo[] } | Todo[]>(
+  const finalTodos = await apiCall<TodosResponse>(
     page,
     'GET',
     `/api/students/${studentId}/teaching-todos`,
-  ).catch(() => [] as Todo[])
-  const finalTodoCount = Array.isArray(finalTodos) ? finalTodos.length : finalTodos.items?.length ?? 0
-  expect(finalTodoCount).toBe(initialTodoCount)
+  )
+  expect(todoCount(finalTodos)).toBe(initialTodoCount)
 
   await context.close()
 })
