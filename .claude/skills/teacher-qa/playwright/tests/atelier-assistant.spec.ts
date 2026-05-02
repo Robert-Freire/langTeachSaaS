@@ -195,15 +195,17 @@ test('atelier assistant: Apply student card patches skill level; Dismiss todo cr
   const sessionId = await ensureSessionFor(page, studentId)
 
   type Todo = { id: string }
-  type TodosResponse = { items?: Todo[] } | Todo[]
-  const todoCount = (r: TodosResponse) =>
-    Array.isArray(r) ? r.length : r.items?.length ?? 0
-  const initialTodos = await apiCall<TodosResponse>(
-    page,
-    'GET',
-    `/api/students/${studentId}/teaching-todos`,
-  )
-  const initialTodoCount = todoCount(initialTodos)
+  // Teaching todos are exposed via student.profile.teachingTodos; the
+  // POST /students/{id}/teaching-todos endpoint creates one but does not list.
+  const fetchTodoCount = async () => {
+    const s = await apiCall<{ profile: { teachingTodos: Todo[] } }>(
+      page,
+      'GET',
+      `/api/students/${studentId}`,
+    )
+    return s.profile.teachingTodos.length
+  }
+  const initialTodoCount = await fetchTodoCount()
 
   const proposals = await propose(
     page,
@@ -228,12 +230,7 @@ test('atelier assistant: Apply student card patches skill level; Dismiss todo cr
 
   // Dismissing a todo card is a frontend-only state change; no API call.
   // Verify no extra teaching todo was created.
-  const finalTodos = await apiCall<TodosResponse>(
-    page,
-    'GET',
-    `/api/students/${studentId}/teaching-todos`,
-  )
-  expect(todoCount(finalTodos)).toBe(initialTodoCount)
+  expect(await fetchTodoCount()).toBe(initialTodoCount)
 
   await context.close()
 })
