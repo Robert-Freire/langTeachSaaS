@@ -14,8 +14,10 @@ public class StubStudentProfileExtractionService : IStudentProfileExtractionServ
     public Task<ExtractedStudentProfileDto> ExtractAsync(string text, CancellationToken ct = default)
     {
         _logger.LogInformation("StubStudentProfileExtractionService.ExtractAsync called with {Length} chars", text.Length);
+        // Suppress student name when only scheduling a new session (avoids spurious newStudent proposals in tests).
+        var suppressName = text.Contains("[schedule-new-session]") || text.Contains("[schedule-new-session-no-date]");
         return Task.FromResult(new ExtractedStudentProfileDto(
-            Name: "[Extracted] María García",
+            Name: suppressName ? null : "[Extracted] María García",
             BirthYear: 1990,
             Profession: "[Extracted] Engineer",
             CountryOfResidence: "[Extracted] Spain",

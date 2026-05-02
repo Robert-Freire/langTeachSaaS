@@ -25,3 +25,7 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 - **Proposal field taxonomy hardcoded in C#** (Sophy): `AssistantController` emits `EmitProposal` calls for 7 hard-coded field/label pairs. `PatchStudentRequest`/`PatchSessionRequest` mirror this whitelist. Long-term: extract to `data/assistant/proposal-fields.json` consumed by both emission loop and patch dispatch. Assess at Part 3+ (#1010).
 - **CEFR regex duplicated** (Sophy): `PatchStudentRequest.CefrLevel` regex `^(A1|A2|B1|B2|C1|C2)$` duplicates `UpdateStudentRequest`. Both should read from `IPedagogyConfigService.AllowedCefrLevels`. Batch with #837-style deduplication in sprint close.
 - **`useAtelierAssistant` uses raw async/await instead of `useMutation`** (arch-reviewer): The multi-card orchestration pattern doesn't fit single-mutation well. Cache invalidation is handled via `invalidateQueries`. Reassess if retry/optimistic-update patterns become complex in Part 3.
+
+## #1029 (2026-05-02)
+
+- **`ExtractedReflectionDto` DTO flattening** (Sophy): `NewSessionTitle` and `NewSessionDate` sit flat alongside `SessionTitle` and `SessionDate` on the same record. Consider nesting as `ProposedNewSession? { Title, Date }` to make the temporal distinction explicit at the type level. Low priority; the prompt already disambiguates. Consider for a DTO-cleanup pass in a future sprint.

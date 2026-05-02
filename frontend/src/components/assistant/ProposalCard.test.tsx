@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect } from 'vitest'
 import ProposalCard from './ProposalCard'
@@ -256,5 +256,73 @@ describe('ProposalCard', () => {
     const lastCall = onEditPayload.mock.calls[onEditPayload.mock.calls.length - 1]
     expect(lastCall[0]).toBe('p1')
     expect(lastCall[1].name).toBe('SofíaX')
+  })
+
+  it('newSession type: uses amber accent', () => {
+    const { container } = renderCard(makeProposal({
+      type: 'newSession', field: 'newSession', label: 'New Session', oldValue: null, newValue: 'Subjunctive',
+      payload: { title: 'Subjunctive', sessionDate: '2026-05-12' },
+    }))
+    expect(container.querySelector('.bg-amber-500')).toBeInTheDocument()
+  })
+
+  it('newSession type: shows title and date chip', () => {
+    renderCard(makeProposal({
+      type: 'newSession', field: 'newSession', label: 'New Session', oldValue: null, newValue: 'Subjunctive',
+      payload: { title: 'Subjunctive', sessionDate: '2026-05-12' },
+    }))
+    expect(screen.getByText('Subjunctive')).toBeInTheDocument()
+    expect(screen.getByTestId('session-date-input-p1')).toBeInTheDocument()
+    expect(screen.getByTestId('session-date-input-p1')).toHaveValue('2026-05-12')
+  })
+
+  it('newSession type: does not show Modify button', () => {
+    renderCard(makeProposal({
+      type: 'newSession', field: 'newSession', label: 'New Session', oldValue: null, newValue: 'Subjunctive',
+      payload: { title: 'Subjunctive', sessionDate: '2026-05-12' },
+    }))
+    expect(screen.queryByTestId('modify-btn-p1')).not.toBeInTheDocument()
+  })
+
+  it('newSession type: Apply is enabled when studentId is provided', () => {
+    const { props } = renderCard(
+      makeProposal({
+        type: 'newSession', field: 'newSession', label: 'New Session', oldValue: null, newValue: 'Subjunctive',
+        payload: { title: 'Subjunctive', sessionDate: '2026-05-12' },
+      }),
+      { studentId: 'student-123' },
+    )
+    const applyBtn = screen.getByTestId('apply-btn-p1')
+    expect(applyBtn).not.toBeDisabled()
+    applyBtn.click()
+    expect(props.onApply).toHaveBeenCalledWith('p1')
+  })
+
+  it('newSession type: Apply is disabled and shows message when no studentId', () => {
+    renderCard(makeProposal({
+      type: 'newSession', field: 'newSession', label: 'New Session', oldValue: null, newValue: 'Subjunctive',
+      payload: { title: 'Subjunctive', sessionDate: '2026-05-12' },
+    }))
+    const applyBtn = screen.getByTestId('apply-btn-p1')
+    expect(applyBtn).toBeDisabled()
+    expect(screen.getByText(/Open from a student's screen/)).toBeInTheDocument()
+  })
+
+  it('newSession type: calls onEditPayload when date chip changes', () => {
+    const onEditPayload = vi.fn()
+    renderCard(
+      makeProposal({
+        type: 'newSession', field: 'newSession', label: 'New Session', oldValue: null, newValue: 'Subjunctive',
+        payload: { title: 'Subjunctive', sessionDate: '2026-05-12' },
+      }),
+      { onEditPayload, studentId: 'student-123' },
+    )
+    const dateInput = screen.getByTestId('session-date-input-p1')
+    fireEvent.change(dateInput, { target: { value: '2026-05-19' } })
+    expect(onEditPayload).toHaveBeenCalled()
+    const lastCall = onEditPayload.mock.calls[onEditPayload.mock.calls.length - 1]
+    expect(lastCall[0]).toBe('p1')
+    expect(lastCall[1].sessionDate).toBe('2026-05-19')
+    expect(lastCall[1].title).toBe('Subjunctive')
   })
 })

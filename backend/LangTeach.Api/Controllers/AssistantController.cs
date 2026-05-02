@@ -76,6 +76,8 @@ public class AssistantController : ControllerBase
             && (student == null
                 || !string.Equals(student.Name.Trim(), extractedName, StringComparison.OrdinalIgnoreCase));
 
+        var camelCaseOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
         if (isNewStudentIntent)
         {
             var newStudentPayload = new
@@ -89,8 +91,7 @@ public class AssistantController : ControllerBase
                 cefrLevel = studentExtraction.CefrLevel,
                 reasonForStudying = studentExtraction.ReasonForStudying,
             };
-            var opts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-            var payloadElement = JsonSerializer.SerializeToElement(newStudentPayload, opts);
+            var payloadElement = JsonSerializer.SerializeToElement(newStudentPayload, camelCaseOpts);
             proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "newStudent", "profile", "New Student", null, extractedName!, payloadElement));
         }
 
@@ -111,6 +112,22 @@ public class AssistantController : ControllerBase
         EmitProposal(proposals, "session", "actualContent", "What Was Covered", session?.ActualContent, reflectionExtraction.WhatWasCovered?.Value);
         EmitProposal(proposals, "session", "generalNotes", "Areas to Improve", session?.GeneralNotes, reflectionExtraction.AreasToImprove?.Value);
         EmitProposal(proposals, "session", "homeworkAssigned", "Homework Assigned", session?.HomeworkAssigned, reflectionExtraction.HomeworkAssigned?.Value);
+
+        if (!string.IsNullOrWhiteSpace(reflectionExtraction.NewSessionTitle))
+        {
+            var sessionDate = reflectionExtraction.NewSessionDate
+                ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
+            var newSessionPayload = new { title = reflectionExtraction.NewSessionTitle, sessionDate };
+            var payloadElement = JsonSerializer.SerializeToElement(newSessionPayload, camelCaseOpts);
+            proposals.Add(new ProposalDto(
+                Guid.NewGuid().ToString(),
+                "newSession",
+                "newSession",
+                "New Session",
+                null,
+                reflectionExtraction.NewSessionTitle,
+                payloadElement));
+        }
 
         return Ok(new AssistantProposeResponse(proposals));
     }
