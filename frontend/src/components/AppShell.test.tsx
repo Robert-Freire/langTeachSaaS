@@ -216,15 +216,15 @@ describe('AppShell', () => {
     expect(sessionsLinks[0].className).not.toContain('border-l-primary')
   })
 
-  it('renders the Open Assistant button in the desktop sidebar', () => {
+  it('renders the Open Assistant FAB at canvas level (not in sidebar)', () => {
     renderShell()
-    const aside = document.querySelector('aside')
-    const btn = aside?.querySelector('[data-testid="open-assistant-btn"]')
+    const btn = document.querySelector('[data-testid="open-assistant-btn"]')
     expect(btn).toBeInTheDocument()
-    expect(btn?.textContent).toContain('Open Assistant')
+    const aside = document.querySelector('aside')
+    expect(aside?.querySelector('[data-testid="open-assistant-btn"]')).not.toBeInTheDocument()
   })
 
-  it('Open Assistant button is outside the main nav element', () => {
+  it('Open Assistant FAB is outside the main nav element', () => {
     renderShell()
     const nav = screen.getByRole('navigation')
     expect(within(nav).queryByTestId('open-assistant-btn')).not.toBeInTheDocument()
@@ -234,8 +234,7 @@ describe('AppShell', () => {
     const user = userEvent.setup()
     renderShell()
     expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
-    const aside = document.querySelector('aside')
-    const btn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    const btn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
     await user.click(btn)
     expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
   })
@@ -243,8 +242,7 @@ describe('AppShell', () => {
   it('closing the assistant panel removes it from the DOM', async () => {
     const user = userEvent.setup()
     renderShell()
-    const aside = document.querySelector('aside')
-    const openBtn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
     await user.click(openBtn)
     const closeBtn = screen.getByRole('button', { name: /close assistant/i })
     await user.click(closeBtn)
@@ -259,8 +257,7 @@ describe('AppShell', () => {
   it('Escape key closes the assistant panel', async () => {
     const user = userEvent.setup()
     renderShell()
-    const aside = document.querySelector('aside')
-    const openBtn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
     await user.click(openBtn)
     expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
     await user.keyboard('{Escape}')
@@ -285,8 +282,7 @@ describe('AppShell', () => {
         </MemoryRouter>
       </QueryClientProvider>
     )
-    const aside = document.querySelector('aside')
-    const openBtn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
     await user.click(openBtn)
     // Should show generic prompt, not "What did you cover with new today?"
     expect(screen.queryByText(/What did you cover with/i)).not.toBeInTheDocument()
@@ -300,8 +296,7 @@ describe('AppShell', () => {
       proposals: [{ id: 'p1', type: 'student', field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' }],
     })
     renderShell()
-    const aside = document.querySelector('aside')
-    const openBtn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
     await user.click(openBtn)
     const input = screen.getByTestId('assistant-input')
     await user.type(input, 'Hoy hemos trabajado el subjuntivo')
@@ -314,12 +309,11 @@ describe('AppShell', () => {
     expect(screen.getByTestId('discard-confirm')).toBeInTheDocument()
   })
 
-  it('Open Assistant button shows active state class when panel is open', async () => {
+  it('Open Assistant FAB shows active state (dimmed) when panel is open', async () => {
     const user = userEvent.setup()
     renderShell()
-    const aside = document.querySelector('aside')
-    const btn = aside?.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    const btn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
     await user.click(btn)
-    expect(btn.className).toContain('brightness-90')
+    expect(btn.className).toContain('brightness-75')
   })
 })

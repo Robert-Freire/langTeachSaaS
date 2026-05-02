@@ -2,12 +2,13 @@ import { useState, useEffect, type ElementType } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useQuery } from '@tanstack/react-query'
-import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings, LogOut, Menu, Sparkles, HelpCircle } from 'lucide-react'
+import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings, LogOut, Menu, Sparkles, HelpCircle, X } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import LangTeachLogo from '@/components/LangTeachLogo'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import AtelierAssistantPanel from '@/components/AtelierAssistantPanel'
 import { useAtelierAssistant } from '@/hooks/useAtelierAssistant'
 import { getStudent } from '@/api/students'
@@ -228,30 +229,37 @@ export default function AppShell() {
       </div>
 
       {/* Atelier Assistant FAB (desktop only; mobile uses top-bar button) */}
-      <button
-        onClick={toggleAssistant}
-        aria-haspopup="dialog"
-        aria-expanded={assistantOpen}
-        aria-label="Open Assistant"
-        title="Open Assistant (⌘K)"
-        data-testid="open-assistant-btn"
-        className={cn(
-          'hidden lg:flex fixed bottom-6 right-6 z-30 group',
-          'h-14 w-14 items-center justify-center rounded-full text-white',
-          'bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)]',
-          'shadow-[0_12px_40px_0_rgb(26_27_34_/_0.10),0_4px_16px_0_rgb(53_37_205_/_0.18)]',
-          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-          'transition-all duration-150',
-          assistantOpen
-            ? 'brightness-90'
-            : 'hover:brightness-105 hover:shadow-[0_16px_48px_0_rgb(53_37_205_/_0.28)] active:brightness-90'
-        )}
-      >
-        <Sparkles className="h-5 w-5" />
-        <span className="absolute right-full mr-3 whitespace-nowrap rounded-md bg-zinc-900/90 px-2 py-1 text-[0.6875rem] font-inter font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none">
-          Open Assistant <kbd className="ml-1 font-inter text-zinc-300">⌘K</kbd>
-        </span>
-      </button>
+      <TooltipProvider delay={500}>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                onClick={toggleAssistant}
+                aria-haspopup="dialog"
+                aria-expanded={assistantOpen}
+                aria-label="Open Assistant"
+                data-testid="open-assistant-btn"
+                className={cn(
+                  'hidden lg:flex fixed bottom-6 right-6 z-30',
+                  'h-14 w-14 items-center justify-center rounded-full text-white',
+                  'bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)]',
+                  'shadow-[0_12px_40px_0_rgb(26_27_34_/_0.10),0_4px_16px_0_rgb(53_37_205_/_0.18)]',
+                  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                  'transition-all duration-150',
+                  assistantOpen
+                    ? 'brightness-75'
+                    : 'hover:brightness-105 hover:shadow-[0_16px_48px_0_rgb(53_37_205_/_0.28)] active:brightness-90'
+                )}
+              />
+            }
+          >
+            {assistantOpen ? <X className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            Open Assistant <kbd data-slot="kbd">⌘K</kbd>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
       {/* Atelier Assistant panel */}
       <AtelierAssistantPanel
