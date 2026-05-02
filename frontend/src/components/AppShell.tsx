@@ -53,13 +53,11 @@ function NavLink({ to, label, icon: Icon, location }: {
   )
 }
 
-function SidebarContent({ user, initials, logout, location, assistantOpen, onToggleAssistant }: {
+function SidebarContent({ user, initials, logout, location }: {
   user: ReturnType<typeof useAuth0>['user']
   initials: string
   logout: ReturnType<typeof useAuth0>['logout']
   location: ReturnType<typeof useLocation>
-  assistantOpen: boolean
-  onToggleAssistant: () => void
 }) {
   return (
     <>
@@ -81,34 +79,8 @@ function SidebarContent({ user, initials, logout, location, assistantOpen, onTog
         ))}
       </nav>
 
-      {/* Open Assistant zone */}
-      <div className="px-3 pb-3 pt-4">
-        <button
-          onClick={onToggleAssistant}
-          aria-haspopup="dialog"
-          aria-expanded={assistantOpen}
-          aria-label="Open Assistant"
-          data-testid="open-assistant-btn"
-          className={cn(
-            'w-full flex items-center gap-2.5 px-5 py-3.5 rounded-xl font-inter font-semibold text-sm text-white',
-            'bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)]',
-            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-            'transition-all duration-150',
-            assistantOpen
-              ? 'brightness-90 shadow-inner'
-              : 'hover:shadow-[0_4px_16px_0_rgb(53_37_205_/_0.22)] hover:brightness-105 active:brightness-90'
-          )}
-        >
-          <Sparkles className="h-4 w-4 shrink-0" />
-          Open Assistant
-        </button>
-        <p className="text-center text-[0.625rem] font-inter text-zinc-400 mt-1.5 tracking-wider select-none">
-          ⌘K
-        </p>
-      </div>
-
       {/* Bottom: Help + Settings (visually separated) + teacher profile with tucked logout */}
-      <div className="px-3 py-4 space-y-3">
+      <div className="px-3 py-4 space-y-3 mt-auto">
         <div className="pt-2 space-y-0.5">
           <NavLink to="/help" label="Help" icon={HelpCircle} location={location} />
           <NavLink to="/settings" label="Settings" icon={Settings} location={location} />
@@ -197,8 +169,6 @@ export default function AppShell() {
           initials={initials}
           logout={logout}
           location={location}
-          assistantOpen={assistantOpen}
-          onToggleAssistant={toggleAssistant}
         />
       </aside>
 
@@ -245,8 +215,6 @@ export default function AppShell() {
               initials={initials}
               logout={logout}
               location={location}
-              assistantOpen={assistantOpen}
-              onToggleAssistant={() => { setDrawerOpen(false); setAssistantOpen(true) }}
             />
           </div>
         </SheetContent>
@@ -258,6 +226,32 @@ export default function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      {/* Atelier Assistant FAB (desktop only; mobile uses top-bar button) */}
+      <button
+        onClick={toggleAssistant}
+        aria-haspopup="dialog"
+        aria-expanded={assistantOpen}
+        aria-label="Open Assistant"
+        title="Open Assistant (⌘K)"
+        data-testid="open-assistant-btn"
+        className={cn(
+          'hidden lg:flex fixed bottom-6 right-6 z-30 group',
+          'h-14 w-14 items-center justify-center rounded-full text-white',
+          'bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)]',
+          'shadow-[0_12px_40px_0_rgb(26_27_34_/_0.10),0_4px_16px_0_rgb(53_37_205_/_0.18)]',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+          'transition-all duration-150',
+          assistantOpen
+            ? 'brightness-90'
+            : 'hover:brightness-105 hover:shadow-[0_16px_48px_0_rgb(53_37_205_/_0.28)] active:brightness-90'
+        )}
+      >
+        <Sparkles className="h-5 w-5" />
+        <span className="absolute right-full mr-3 whitespace-nowrap rounded-md bg-zinc-900/90 px-2 py-1 text-[0.6875rem] font-inter font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none">
+          Open Assistant <kbd className="ml-1 font-inter text-zinc-300">⌘K</kbd>
+        </span>
+      </button>
 
       {/* Atelier Assistant panel */}
       <AtelierAssistantPanel
