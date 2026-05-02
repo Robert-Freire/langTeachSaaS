@@ -129,7 +129,7 @@ public class AssistantController : ControllerBase
 
             if (studentExtraction.ShortTermObjectives.Count > 0)
             {
-                var goalsPayload = new { replaceLearningGoals = studentExtraction.ShortTermObjectives.Select(o => o.Text).ToList() };
+                var goalsPayload = new { learningGoals = studentExtraction.ShortTermObjectives.Select(o => o.Text).ToList() };
                 var goalsElement = JsonSerializer.SerializeToElement(goalsPayload, camelCaseOpts);
                 var goalsDisplay = string.Join("; ", studentExtraction.ShortTermObjectives.Select(o => o.Text));
                 proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "student", "learningGoals", "Learning Goals",

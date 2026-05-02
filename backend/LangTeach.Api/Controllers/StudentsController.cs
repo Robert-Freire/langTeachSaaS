@@ -12,6 +12,10 @@ namespace LangTeach.Api.Controllers;
 [Authorize]
 public class StudentsController : ControllerBase
 {
+    private const string DefaultDifficultySeverity = "medium";
+    private const string DefaultDifficultyTrend = "stable";
+    private const string DefaultDifficultyStatus = "Active";
+
     private readonly IStudentService _studentService;
     private readonly ILessonNoteService _lessonNoteService;
     private readonly IProfileService _profileService;
@@ -182,6 +186,7 @@ public class StudentsController : ControllerBase
     public async Task<IActionResult> PatchStudentProfile(Guid id, [FromBody] PatchStudentProfileRequest patch, CancellationToken cancellationToken)
     {
         if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
         var student = await _studentService.GetByIdAsync(teacherId, id, cancellationToken);
         if (student is null) return NotFound();
@@ -204,16 +209,16 @@ public class StudentsController : ControllerBase
                     Description: d.Description,
                     Competency: d.Competency,
                     Subcategory: d.Subcategory,
-                    Severity: "medium",
-                    Trend: "stable",
-                    Status: "Active"))
+                    Severity: DefaultDifficultySeverity,
+                    Trend: DefaultDifficultyTrend,
+                    Status: DefaultDifficultyStatus))
                 .ToList();
             request.Difficulties = request.Difficulties.Concat(newDiffs).ToList();
         }
 
-        if (patch.ReplaceLearningGoals is { Count: > 0 })
+        if (patch.LearningGoals is { Count: > 0 })
         {
-            request.LearningGoals = patch.ReplaceLearningGoals
+            request.LearningGoals = patch.LearningGoals
                 .Select(text => new LearningGoalDto(Guid.NewGuid().ToString(), text, []))
                 .ToList();
         }
@@ -231,7 +236,7 @@ public class StudentsController : ControllerBase
             if (updated is null) return NotFound();
             return Ok(updated);
         }
-        catch (System.ComponentModel.DataAnnotations.ValidationException ex)
+        catch (ValidationException ex)
         {
             ModelState.AddModelError(string.Empty, ex.Message);
             return BadRequest(ModelState);

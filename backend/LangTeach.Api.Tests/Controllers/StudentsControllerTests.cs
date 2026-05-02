@@ -567,7 +567,7 @@ public class StudentsControllerTests
 
         var patch = new PatchStudentProfileRequest
         {
-            ReplaceLearningGoals = ["Presentaciones en español para clientes alemanes"],
+            LearningGoals = ["Presentaciones en español para clientes alemanes"],
         };
         var response = await client.PatchAsJsonAsync($"/api/students/{student.Id}/profile", patch);
 

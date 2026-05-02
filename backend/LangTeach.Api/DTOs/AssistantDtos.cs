@@ -40,21 +40,6 @@ public class PatchStudentRequest
     public string? CountryOfResidence { get; set; }
 }
 
-public class PatchStudentProfileRequest
-{
-    public List<string>? AppendInterests { get; set; }
-    public List<AppendDifficultyItem>? AppendDifficulties { get; set; }
-    public List<string>? ReplaceLearningGoals { get; set; }
-    public string? AppendTeachingNotes { get; set; }
-}
-
-public class AppendDifficultyItem
-{
-    public string Description { get; set; } = "";
-    public string Competency { get; set; } = "";
-    public string Subcategory { get; set; } = "";
-}
-
 public class PatchSessionRequest
 {
     [MaxLength(120)]
