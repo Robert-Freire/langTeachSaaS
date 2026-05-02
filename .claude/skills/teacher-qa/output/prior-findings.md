@@ -197,3 +197,26 @@ Both fields also distinguish from `nextLessonIdeas` (planning ideas without a sc
 **Controller behavior:** If `newSessionTitle` is extracted, a compound `newSession` proposal is emitted. If `newSessionDate` is null (no date inferred), the controller defaults to today's UTC date.
 
 **Verify:** A teacher saying "next Monday I want to do subjunctive" should produce a `newSession` proposal card with a forward-resolved date, not update the past session's `sessionTitle`.
+
+---
+
+## From: #1040 - Profile-update intents misclassified as newStudent (2026-05-02, PR #1043)
+
+### Fix: newStudentIntent flag + Action field + append proposals
+
+Two bugs fixed in `AssistantController.Propose`:
+
+1. **Name-diff heuristic removed.** `isNewStudentIntent` no longer fires when the extracted name differs from the context student. Replaced with `extractedProfile.NewStudentIntent` (LLM flag) OR `student == null && name present`. The LLM sets `newStudentIntent = true` only for explicit new-student creation utterances.
+
+2. **Append proposals added.** The controller now emits `student` proposals with `action = "append"` for `interests`, `difficulties`, and `teachingNotes`, and `action = "replace"` for `learningGoals`. A new `PATCH /api/students/{id}/profile` endpoint applies these.
+
+**New extraction fields:**
+- `newStudentIntent: bool` on `ExtractedStudentProfileDto`
+- `teachingNotes: string?` on `ExtractedStudentProfileDto` (distinct from `teachingTodoTexts` — observations about how the student learns vs. teacher action items)
+
+**Verify:**
+- "Añade a los intereses de Carmen que le encanta el flamenco" → `student/interests/append` proposal, no `newStudent` proposal (TC-15)
+- "Añade a las dificultades de Ana que confunde indefinido con perfecto compuesto" → `student/difficulties/append`, no `newStudent` (TC-16)
+- "Los objetivos de Marco han cambiado..." → `student/learningGoals/replace` proposal (TC-17)
+- "Añade una nota de enseñanza para Hans: aprende bien a través de la música" → `student/teachingNotes/append` proposal (TC-18)
+- "La semana que viene hagamos subjuntivo con Ana" → `newSession` proposal only, no spurious `newStudent` (TC-27)
