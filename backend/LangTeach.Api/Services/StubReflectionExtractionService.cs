@@ -16,10 +16,11 @@ public class StubReflectionExtractionService : IReflectionExtractionService
         _logger.LogInformation("StubReflectionExtractionService.ExtractAsync called with {Length} chars", text.Length);
 
         // Emit a newSession proposal when the text contains the trigger phrase used in tests.
-        var newSessionTitle = text.Contains("[schedule-new-session]")
+        // "[schedule-new-session-no-date]" simulates when the LLM extracts a title but no date.
+        var newSessionTitle = text.Contains("[schedule-new-session]") || text.Contains("[schedule-new-session-no-date]")
             ? "[Extracted] New Session Title"
             : null;
-        var newSessionDate = newSessionTitle is not null ? "2026-05-19" : null;
+        var newSessionDate = text.Contains("[schedule-new-session]") ? "2026-05-19" : null;
 
         return Task.FromResult(new ExtractedReflectionDto(
             WhatWasCovered: new ExtractedTextFieldDto("[Extracted] What was covered", ExtractionMode.Replace),

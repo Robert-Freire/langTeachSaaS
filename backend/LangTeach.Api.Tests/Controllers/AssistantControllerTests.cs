@@ -292,6 +292,32 @@ public class AssistantControllerTests
     }
 
     [Fact]
+    public async Task Propose_WithSchedulingIntentButNoDate_DefaultsPayloadDateToToday()
+    {
+        // When the LLM extracts a newSessionTitle but no newSessionDate, the controller
+        // defaults the payload date to today (UTC).
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-new-session-no-date", "assistant-new-session-no-date@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Next class let's do conditionals. [schedule-new-session-no-date]",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        var newSessionProposal = body!.Proposals.FirstOrDefault(p => p.Type == "newSession");
+        newSessionProposal.Should().NotBeNull();
+
+        // Payload must have a sessionDate equal to today (UTC date).
+        var payloadDoc = System.Text.Json.JsonDocument.Parse(newSessionProposal!.Payload!.Value.GetRawText());
+        var sessionDate = payloadDoc.RootElement.GetProperty("sessionDate").GetString();
+        sessionDate.Should().Be(DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd"));
+    }
+
+    [Fact]
     public async Task Propose_WithoutSchedulingIntent_DoesNotEmitNewSessionProposal()
     {
         // Normal reflection text without "[schedule-new-session]" trigger → no newSession proposal.
