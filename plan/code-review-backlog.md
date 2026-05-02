@@ -29,3 +29,7 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 ## #1029 (2026-05-02)
 
 - **`ExtractedReflectionDto` DTO flattening** (Sophy): `NewSessionTitle` and `NewSessionDate` sit flat alongside `SessionTitle` and `SessionDate` on the same record. Consider nesting as `ProposedNewSession? { Title, Date }` to make the temporal distinction explicit at the type level. Low priority; the prompt already disambiguates. Consider for a DTO-cleanup pass in a future sprint.
+
+## #1041/#1042 (2026-05-02)
+
+- **Weekday backward-resolution prose duplicated** (prompt-health-reviewer): "el lunes pasado" past-date resolution is stated in both `sessionDate` (line 1563) and `newSessionDate` (line 1576) with slightly different wording. Consider extracting a shared preamble or cross-reference. Minor, no functional risk.
