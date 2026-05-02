@@ -277,12 +277,17 @@ export default function AtelierAssistantPanel({
 
   function handleCloseAttempt() {
     if (micState === 'uploading') return
+    const hasBlockingWork = processing || pendingProposals.length > 0
     if (micState === 'recording') {
       stopMicRecording(true)
-      onClose()
+      if (hasBlockingWork) {
+        setPendingClose(true)
+      } else {
+        onClose()
+      }
       return
     }
-    if (transcription !== null) {
+    if (hasBlockingWork) {
       setPendingClose(true)
     } else {
       onClose()
