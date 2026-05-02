@@ -12,8 +12,9 @@ public class AssistantProposeRequest
     public Guid? SessionId { get; set; }
 }
 
-// Payload carries structured data for compound proposal types (e.g. newStudent).
-// Scalar proposal types (student, session, todo) leave Payload null.
+// Payload carries structured data for compound or append proposal types.
+// Scalar replace proposals leave Payload null.
+// Action is "replace" (default) or "append".
 public record ProposalDto(
     string Id,
     string Type,
@@ -21,7 +22,8 @@ public record ProposalDto(
     string Label,
     string? OldValue,
     string NewValue,
-    JsonElement? Payload = null
+    JsonElement? Payload = null,
+    string Action = "replace"
 );
 
 public record AssistantProposeResponse(List<ProposalDto> Proposals);
@@ -36,6 +38,18 @@ public class PatchStudentRequest
 
     [MaxLength(64)]
     public string? CountryOfResidence { get; set; }
+
+    [MaxLength(10)]
+    public string? SkillLevelReading { get; set; }
+
+    [MaxLength(10)]
+    public string? SkillLevelWriting { get; set; }
+
+    [MaxLength(10)]
+    public string? SkillLevelSpeaking { get; set; }
+
+    [MaxLength(10)]
+    public string? SkillLevelListening { get; set; }
 }
 
 public class PatchSessionRequest

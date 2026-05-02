@@ -3,7 +3,7 @@ import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import type { Student } from '@/api/students'
 import type { SessionLog } from '@/api/sessionLogs'
-import { CEFR_ORDER } from '@/utils/cefrUtils'
+import { CEFR_ORDER, toBaseCefrLevel } from '@/utils/cefrUtils'
 
 interface Props {
   student: Student
@@ -14,15 +14,15 @@ interface Props {
 const SKILL_ORDER = ['Reading', 'Writing', 'Speaking', 'Listening']
 
 function cefrBarWidth(level: string): number {
-  return ((CEFR_ORDER[level] ?? 0) / 6) * 100
+  return ((CEFR_ORDER[toBaseCefrLevel(level)] ?? 0) / 6) * 100
 }
 
 function isAboveOrAtBaseline(skillLevel: string, baselineLevel: string): boolean {
-  return (CEFR_ORDER[skillLevel] ?? 0) >= (CEFR_ORDER[baselineLevel] ?? 0)
+  return (CEFR_ORDER[toBaseCefrLevel(skillLevel)] ?? 0) >= (CEFR_ORDER[toBaseCefrLevel(baselineLevel)] ?? 0)
 }
 
 function isGapTwoOrMore(skillLevel: string, baselineLevel: string): boolean {
-  return (CEFR_ORDER[baselineLevel] ?? 0) - (CEFR_ORDER[skillLevel] ?? 0) >= 2
+  return (CEFR_ORDER[toBaseCefrLevel(baselineLevel)] ?? 0) - (CEFR_ORDER[toBaseCefrLevel(skillLevel)] ?? 0) >= 2
 }
 
 function formatStartDate(dateStr: string): string {

@@ -4,6 +4,7 @@ import {
   applyNewSessionProposal,
   applySessionProposal,
   applyStudentProposal,
+  applyStudentProposalAppend,
   applyTodoProposal,
   type NewSessionData,
   type NewStudentData,
@@ -126,7 +127,11 @@ export function useAtelierAssistant(
 
     try {
       if (proposal.type === 'student' && studentId) {
-        await applyStudentProposal(studentId, proposal.field, proposal.newValue)
+        if (proposal.action === 'append' && proposal.payload) {
+          await applyStudentProposalAppend(studentId, proposal.payload as Record<string, unknown>)
+        } else {
+          await applyStudentProposal(studentId, proposal.field, proposal.newValue)
+        }
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await applySessionProposal(studentId, sessionId, proposal.field, proposal.newValue)
       } else if (proposal.type === 'todo' && studentId) {

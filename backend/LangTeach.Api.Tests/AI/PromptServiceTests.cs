@@ -3311,6 +3311,36 @@ public class PromptServiceTests
         request.SystemPrompt.Should().Contain("you MUST synthesise a prose summary here");
     }
 
+    [Fact]
+    public void BuildReflectionExtractionPrompt_LevelReassessment_ContainsNegativeInstructionSuppression()
+    {
+        var today = new DateOnly(2026, 4, 11);
+        var request = _sut.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(today, "notes"));
+
+        request.SystemPrompt.Should().Contain("no toco el nivel");
+        request.SystemPrompt.Should().Contain("no quiero cambiar el nivel");
+        request.SystemPrompt.Should().Contain("solo tomar nota");
+        // Positive example must still be present so the suppression rule is anchored by contrast.
+        request.SystemPrompt.Should().Contain("súbele el nivel");
+    }
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_NewSessionDate_ContainsPastDateAndWeekdayInstructions()
+    {
+        var today = new DateOnly(2026, 4, 11);
+        var request = _sut.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(today, "notes"));
+
+        // Past-date resolution.
+        request.SystemPrompt.Should().Contain("pasado");
+        request.SystemPrompt.Should().Contain("que se me olvidó registrar");
+        // Weekday off-by-one guard.
+        request.SystemPrompt.Should().Contain("NOT 3");
+        // Null-when-no-cue guard (do not default to today).
+        request.SystemPrompt.Should().Contain("do NOT default to today");
+        // newSessionTitle must allow retrospective registration (no forward-only restriction).
+        request.SystemPrompt.Should().Contain("retroactively registered");
+    }
+
     // --- BuildStudentProfileExtractionPrompt ---
 
     [Fact]

@@ -181,3 +181,19 @@ The reflection extraction prompt now returns a structured object for 4 text fiel
 ### New BuildStudentProfileExtractionPrompt added to PromptService
 
 Fix: New `BuildStudentProfileExtractionPrompt` added to PromptService for student profile voice extraction, Issue #946 (PR #949), Deployed? Yes, merged 2026-04-25
+
+---
+
+## From: #1029 - Atelier Assistant new session proposal (2026-05-02, PR #1033)
+
+### New `newSessionTitle` and `newSessionDate` fields added to reflection extraction
+
+Two new fields added to `BuildReflectionExtractionPrompt` in `PromptService.cs`:
+- `newSessionTitle`: set only for forward-looking scheduling intent (teacher proposes a future session with a topic). Distinct from `sessionTitle` (past session being logged).
+- `newSessionDate`: ISO date resolved FORWARD from today. Null if no specific date can be inferred (e.g. "next class", "soon"). If a date is mentioned without a topic, both fields are null.
+
+Both fields also distinguish from `nextLessonIdeas` (planning ideas without a scheduled appointment). Both can be set simultaneously when the teacher is both scheduling and has broader ideas.
+
+**Controller behavior:** If `newSessionTitle` is extracted, a compound `newSession` proposal is emitted. If `newSessionDate` is null (no date inferred), the controller defaults to today's UTC date.
+
+**Verify:** A teacher saying "next Monday I want to do subjunctive" should produce a `newSession` proposal card with a forward-resolved date, not update the past session's `sessionTitle`.

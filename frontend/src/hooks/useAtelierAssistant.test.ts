@@ -13,6 +13,7 @@ function makeWrapper() {
 vi.mock('../api/assistant', () => ({
   proposeAssistant: vi.fn(),
   applyStudentProposal: vi.fn(),
+  applyStudentProposalAppend: vi.fn(),
   applySessionProposal: vi.fn(),
   applyTodoProposal: vi.fn(),
   applyNewSessionProposal: vi.fn(),
@@ -27,6 +28,7 @@ import * as studentsApi from '../api/students'
 
 const mockPropose = vi.mocked(assistantApi.proposeAssistant)
 const mockApplyStudent = vi.mocked(assistantApi.applyStudentProposal)
+const mockApplyStudentAppend = vi.mocked(assistantApi.applyStudentProposalAppend)
 const mockApplySession = vi.mocked(assistantApi.applySessionProposal)
 const mockApplyTodo = vi.mocked(assistantApi.applyTodoProposal)
 const mockApplyNewSession = vi.mocked(assistantApi.applyNewSessionProposal)
@@ -88,6 +90,27 @@ describe('useAtelierAssistant', () => {
 
     await act(async () => { await result.current.apply('p1') })
     expect(mockApplyStudent).toHaveBeenCalledWith('student-1', 'cefrLevel', 'B1')
+    expect(result.current.proposals[0].status).toBe('applied')
+  })
+
+  it('apply: routes student append proposal to applyStudentProposalAppend', async () => {
+    const appendPayload = { appendInterests: ['Flamenco', 'Cine de Almodóvar'] }
+    const appendProposal = {
+      id: 'pa1', type: 'student' as const, field: 'interests', label: 'Interests',
+      oldValue: null, newValue: 'Flamenco, Cine de Almodóvar', action: 'append' as const,
+      payload: appendPayload,
+    }
+    mockPropose.mockResolvedValueOnce({ proposals: [appendProposal] })
+    mockApplyStudentAppend.mockResolvedValueOnce(undefined)
+    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
+
+    act(() => { result.current.submit('text') })
+    await act(async () => { await vi.runAllTimersAsync() })
+    expect(result.current.proposals).toHaveLength(1)
+
+    await act(async () => { await result.current.apply('pa1') })
+    expect(mockApplyStudentAppend).toHaveBeenCalledWith('student-1', appendPayload)
+    expect(mockApplyStudent).not.toHaveBeenCalled()
     expect(result.current.proposals[0].status).toBe('applied')
   })
 
@@ -373,5 +396,19 @@ describe('useAtelierAssistant', () => {
     await act(async () => { await result.current.apply('ps1') })
     expect(mockApplyNewSession).not.toHaveBeenCalled()
     expect(result.current.proposals[0].status).toBe('error')
+  })
+
+  it('apply: routes skillLevel.writing student proposal to applyStudentProposal with dotted field', async () => {
+    const skillProposal = { id: 'psk1', type: 'student' as const, field: 'skillLevel.writing', label: 'Writing Level', oldValue: null, newValue: 'B1' }
+    mockPropose.mockResolvedValueOnce({ proposals: [skillProposal] })
+    mockApplyStudent.mockResolvedValueOnce(undefined)
+
+    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('text') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.apply('psk1') })
+    expect(mockApplyStudent).toHaveBeenCalledWith('student-1', 'skillLevel.writing', 'B1')
+    expect(result.current.proposals[0].status).toBe('applied')
   })
 })

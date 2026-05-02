@@ -13,7 +13,7 @@ import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { SectionHeader } from './SectionHeader'
 import { formatMonthYear } from '@/utils/formatDate'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { CEFR_ORDER } from '@/utils/cefrUtils'
+import { CEFR_ORDER, toBaseCefrLevel } from '@/utils/cefrUtils'
 import { getDisplayTitle } from '@/lib/sessionUtils'
 import { rotatingPrompt } from '@/utils/rotatingPrompt'
 
@@ -36,7 +36,7 @@ interface Props {
 // ---------------------------------------------------------------------------
 
 function cefrBarWidth(level: string): number {
-  const num = CEFR_ORDER[level.toUpperCase()] ?? 0
+  const num = CEFR_ORDER[toBaseCefrLevel(level)] ?? 0
   return Math.round((num / 6) * 100)
 }
 
