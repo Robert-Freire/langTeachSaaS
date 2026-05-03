@@ -117,16 +117,31 @@ public class SpanishWeekdayResolverTests
         Assert.Contains("2026-05-07", result); // Thursday
     }
 
-    // Same weekday mentioned twice (future) — deduplicated
+    // Bare weekday mentioned twice — deduplicated (same day only once in ambiguous set)
     [Fact]
-    public void BuildWeekdayFactsBlock_SameWeekdayTwice_OnlyOneEntry()
+    public void BuildWeekdayFactsBlock_SameBareWeekdayTwice_OnlyOneAmbiguousEntry()
+    {
+        var result = SpanishWeekdayResolver.BuildWeekdayFactsBlock(
+            "El lunes empezamos y el lunes terminamos.", Saturday);
+
+        Assert.NotNull(result);
+        // Bare "el lunes" produces one "next/previous" line — exactly one occurrence of "next ="
+        var count = result!.Split("next =").Length - 1;
+        Assert.Equal(1, count);
+    }
+
+    // Bare + modified of same day — both entries present (different deduplication buckets)
+    [Fact]
+    public void BuildWeekdayFactsBlock_BareAndModifiedSameDay_BothPresent()
     {
         var result = SpanishWeekdayResolver.BuildWeekdayFactsBlock(
             "El lunes y también el lunes próximo.", Saturday);
 
         Assert.NotNull(result);
-        var count = result!.Split("2026-05-04").Length - 1;
-        Assert.Equal(1, count);
+        // Bare "el lunes" produces "next = ..., previous = ..." and
+        // "el lunes próximo" produces a directed "→ 2026-05-04" line.
+        Assert.Contains("next =", result);
+        Assert.Contains("2026-05-04", result);
     }
 
     // Past and future of same day — both distinct entries
