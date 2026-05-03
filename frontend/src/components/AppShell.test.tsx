@@ -340,6 +340,62 @@ describe('AppShell', () => {
     expect(screen.queryByTestId('proposals-list')).not.toBeInTheDocument()
   })
 
+  it('reopening after applying all proposals shows empty state', async () => {
+    const user = userEvent.setup()
+    mockPropose.mockResolvedValueOnce({
+      proposals: [{ id: 'p1', type: 'student', field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' }],
+    })
+    renderShell()
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+
+    // Open, submit, wait for proposal
+    await user.click(openBtn)
+    const input = screen.getByTestId('assistant-input')
+    await user.type(input, 'Worked on grammar')
+    await user.click(screen.getByTestId('assistant-send-btn'))
+    await waitFor(() => expect(screen.getByTestId('proposals-list')).toBeInTheDocument())
+
+    // Apply the proposal (no pending → close via onClose path)
+    await user.click(screen.getByTestId('apply-btn-p1'))
+    await waitFor(() => expect(screen.queryByTestId('batch-actions')).not.toBeInTheDocument())
+    const closeBtn = screen.getByRole('button', { name: /close assistant/i })
+    await user.click(closeBtn)
+    await waitFor(() => expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument())
+
+    // Reopen — must be empty
+    await user.click(openBtn)
+    expect(screen.getByTestId('assistant-empty-state')).toBeInTheDocument()
+    expect(screen.queryByTestId('transcription-block')).not.toBeInTheDocument()
+  })
+
+  it('reopening after discarding pending proposals shows empty state', async () => {
+    const user = userEvent.setup()
+    mockPropose.mockResolvedValueOnce({
+      proposals: [{ id: 'p1', type: 'student', field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' }],
+    })
+    renderShell()
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+
+    // Open, submit, wait for proposal
+    await user.click(openBtn)
+    const input = screen.getByTestId('assistant-input')
+    await user.type(input, 'Worked on grammar')
+    await user.click(screen.getByTestId('assistant-send-btn'))
+    await waitFor(() => expect(screen.getByTestId('proposals-list')).toBeInTheDocument())
+
+    // Close with pending proposal → discard confirm appears → confirm discard
+    const closeBtn = screen.getByRole('button', { name: /close assistant/i })
+    await user.click(closeBtn)
+    expect(screen.getByTestId('discard-confirm')).toBeInTheDocument()
+    await user.click(screen.getByTestId('discard-confirm-yes'))
+    await waitFor(() => expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument())
+
+    // Reopen — must be empty
+    await user.click(openBtn)
+    expect(screen.getByTestId('assistant-empty-state')).toBeInTheDocument()
+    expect(screen.queryByTestId('transcription-block')).not.toBeInTheDocument()
+  })
+
   it('Open Assistant FAB shows active state (dimmed) when panel is open', async () => {
     const user = userEvent.setup()
     renderShell()
