@@ -12,6 +12,11 @@ namespace LangTeach.Api.Controllers;
 [Authorize]
 public class StudentsController : ControllerBase
 {
+    private const string DefaultDifficultySeverity = "medium";
+    private const string DefaultDifficultyTrend = "stable";
+    private const string DefaultDifficultyStatus = "Active";
+    private const int MaxProfileListCount = 50;
+
     private readonly IStudentService _studentService;
     private readonly ILessonNoteService _lessonNoteService;
     private readonly IProfileService _profileService;
@@ -111,6 +116,141 @@ public class StudentsController : ControllerBase
                 return NotFound();
             }
 
+            return Ok(updated);
+        }
+        catch (ValidationException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
+        }
+    }
+
+    [HttpPatch("{id:guid}")]
+    public async Task<IActionResult> PatchStudent(Guid id, [FromBody] PatchStudentRequest patch, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var student = await _studentService.GetByIdAsync(teacherId, id, cancellationToken);
+        if (student is null) return NotFound();
+
+        // Pre-populate all required fields from current state, then overwrite only provided fields.
+        var request = MapStudentToUpdateRequest(student);
+        if (patch.CefrLevel is not null) request.CefrLevel = patch.CefrLevel;
+        if (patch.Profession is not null) request.Profession = patch.Profession;
+        if (patch.CountryOfResidence is not null) request.CountryOfResidence = patch.CountryOfResidence;
+        if (patch.SkillLevelReading is not null) request.SkillLevelOverrides["Reading"] = patch.SkillLevelReading;
+        if (patch.SkillLevelWriting is not null) request.SkillLevelOverrides["Writing"] = patch.SkillLevelWriting;
+        if (patch.SkillLevelSpeaking is not null) request.SkillLevelOverrides["Speaking"] = patch.SkillLevelSpeaking;
+        if (patch.SkillLevelListening is not null) request.SkillLevelOverrides["Listening"] = patch.SkillLevelListening;
+
+        try
+        {
+            var updated = await _studentService.UpdateAsync(teacherId, id, request, cancellationToken);
+            if (updated is null) return NotFound();
+            return Ok(updated);
+        }
+        catch (ValidationException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
+        }
+    }
+
+    private static UpdateStudentRequest MapStudentToUpdateRequest(StudentDto s) => new()
+    {
+        Name = s.Name,
+        LearningLanguage = s.LearningLanguage,
+        CefrLevel = s.Level.CefrLevel,
+        OfficialCefrLevel = s.Level.OfficialCefrLevel,
+        SkillLevelOverrides = s.Level.SkillLevelOverrides,
+        Interests = s.Profile.Interests,
+        NativeLanguages = s.Languages.NativeLanguages,
+        SpokenLanguages = s.Languages.SpokenLanguages,
+        LearningGoals = s.Profile.LearningGoals,
+        Weaknesses = s.Profile.Weaknesses,
+        Difficulties = s.Profile.Difficulties,
+        PersonalNotes = s.Profile.PersonalNotes,
+        TeachingNotes = s.Profile.TeachingNotes,
+        ShortTermObjectives = s.Profile.ShortTermObjectives,
+        TeachingTodos = s.Profile.TeachingTodos,
+        BirthYear = s.Identity.BirthYear,
+        Profession = s.Identity.Profession,
+        CountryOfOrigin = s.Identity.CountryOfOrigin,
+        CityOfOrigin = s.Identity.CityOfOrigin,
+        CountryOfResidence = s.Identity.CountryOfResidence,
+        CityOfResidence = s.Identity.CityOfResidence,
+        ReasonForStudying = s.Profile.ReasonForStudying,
+        IsActive = s.Commercial.IsActive,
+        IsCorporate = s.Commercial.IsCorporate,
+        Rate = s.Commercial.Rate,
+    };
+
+    [HttpPatch("{id:guid}/profile")]
+    public async Task<IActionResult> PatchStudentProfile(Guid id, [FromBody] PatchStudentProfileRequest patch, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var student = await _studentService.GetByIdAsync(teacherId, id, cancellationToken);
+        if (student is null) return NotFound();
+
+        var request = MapStudentToUpdateRequest(student);
+
+        if (patch.AppendInterests is { Count: > 0 })
+        {
+            var existing = new HashSet<string>(request.Interests, StringComparer.OrdinalIgnoreCase);
+            foreach (var interest in patch.AppendInterests)
+            {
+                if (!string.IsNullOrWhiteSpace(interest) && existing.Add(interest))
+                    request.Interests.Add(interest);
+            }
+            if (request.Interests.Count > MaxProfileListCount)
+            {
+                ModelState.AddModelError(nameof(patch.AppendInterests), $"Cannot exceed {MaxProfileListCount} interests.");
+                return BadRequest(ModelState);
+            }
+        }
+
+        if (patch.AppendDifficulties is { Count: > 0 })
+        {
+            var newDiffs = patch.AppendDifficulties
+                .Select(d => new DifficultyDto(
+                    Id: Guid.NewGuid().ToString(),
+                    Description: d.Description,
+                    Competency: d.Competency,
+                    Subcategory: d.Subcategory,
+                    Severity: DefaultDifficultySeverity,
+                    Trend: DefaultDifficultyTrend,
+                    Status: DefaultDifficultyStatus))
+                .ToList();
+            request.Difficulties = request.Difficulties.Concat(newDiffs).ToList();
+            if (request.Difficulties.Count > MaxProfileListCount)
+            {
+                ModelState.AddModelError(nameof(patch.AppendDifficulties), $"Cannot exceed {MaxProfileListCount} difficulties.");
+                return BadRequest(ModelState);
+            }
+        }
+
+        if (patch.LearningGoals is { Count: > 0 })
+        {
+            request.LearningGoals = patch.LearningGoals
+                .Select(text => new LearningGoalDto(Guid.NewGuid().ToString(), text, []))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(patch.AppendTeachingNotes))
+        {
+            request.TeachingNotes = string.IsNullOrWhiteSpace(request.TeachingNotes)
+                ? patch.AppendTeachingNotes
+                : $"{request.TeachingNotes.TrimEnd()} {patch.AppendTeachingNotes}";
+        }
+
+        try
+        {
+            var updated = await _studentService.UpdateAsync(teacherId, id, request, cancellationToken);
+            if (updated is null) return NotFound();
             return Ok(updated);
         }
         catch (ValidationException ex)

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Brain, Plus, BookOpen } from 'lucide-react'
 import type { Student } from '@/api/students'
@@ -12,7 +13,7 @@ import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { SectionHeader } from './SectionHeader'
 import { formatMonthYear } from '@/utils/formatDate'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { CEFR_ORDER } from '@/utils/cefrUtils'
+import { CEFR_ORDER, toBaseCefrLevel } from '@/utils/cefrUtils'
 import { getDisplayTitle } from '@/lib/sessionUtils'
 import { rotatingPrompt } from '@/utils/rotatingPrompt'
 
@@ -35,14 +36,14 @@ interface Props {
 // ---------------------------------------------------------------------------
 
 function cefrBarWidth(level: string): number {
-  const num = CEFR_ORDER[level.toUpperCase()] ?? 0
+  const num = CEFR_ORDER[toBaseCefrLevel(level)] ?? 0
   return Math.round((num / 6) * 100)
 }
 
 function cefrBarColor(level: string): string {
   const prefix = level[0]?.toUpperCase()
   if (prefix === 'C') return 'bg-[#7E3000]'
-  if (prefix === 'B') return 'bg-indigo-600'
+  if (prefix === 'B') return 'bg-primary'
   return 'bg-indigo-300'
 }
 
@@ -349,14 +350,14 @@ function TeachingNotesPanel({
               />
               {saveError && <p className="text-sm text-red-300">{saveError}</p>}
               <div className="flex gap-2">
-                <button
+                <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-1.5 text-sm font-bold transition-all disabled:opacity-50"
+                  className="rounded-xl px-4 py-1.5 font-bold"
                   data-testid="teaching-notes-save-btn"
                 >
                   Save
-                </button>
+                </Button>
                 <button
                   onClick={() => setEditing(false)}
                   className="rounded-xl bg-white/10 hover:bg-white/20 px-4 py-1.5 text-sm font-medium transition-all"
@@ -381,13 +382,13 @@ function TeachingNotesPanel({
                 </p>
               )}
               {onSaveTeachingNotes && (
-                <button
+                <Button
                   onClick={handleEdit}
-                  className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-2 text-sm font-bold transition-all"
+                  className="rounded-xl px-5 py-2 font-bold"
                   data-testid="add-memory-btn"
                 >
                   Add Memory
-                </button>
+                </Button>
               )}
             </>
           )}

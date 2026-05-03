@@ -43,7 +43,7 @@ export function LastSessionCard({ session, studentId }: Props) {
         </p>
         <Link
           to={`/students/${studentId}/log-session`}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700"
           data-testid="last-session-log-link"
         >
           <NotebookPen className="h-3.5 w-3.5" />
@@ -132,7 +132,7 @@ export function LastSessionCard({ session, studentId }: Props) {
           <div className="mt-4">
             <Link
               to={`/students/${studentId}/sessions/${session.id}/edit`}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700"
               data-testid="last-session-view-link"
             >
               <ExternalLink className="h-3.5 w-3.5" />

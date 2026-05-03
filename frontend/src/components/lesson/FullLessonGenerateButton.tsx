@@ -290,7 +290,6 @@ export function FullLessonGenerateButton({
                 <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleConfirm}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
                   data-testid="confirm-generate-full-lesson"
                 >
                   Generate

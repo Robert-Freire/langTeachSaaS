@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getCourses } from '../../api/courses'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -58,11 +58,11 @@ export function StudentCoursesCard({ studentId }: StudentCoursesCardProps) {
         {!isLoading && (courses?.length ?? 0) > 0 && (
           <div className="space-y-3" data-testid="student-courses-list">
             {courses!.map(course => (
-              <div
+              <Link
                 key={course.id}
-                className="flex items-center justify-between rounded-lg p-3 cursor-pointer bg-[#F4F2FD]/40 hover:bg-[#F4F2FD]/70 transition-colors"
+                to={`/courses/${course.id}`}
+                className="flex items-center justify-between rounded-lg p-3 bg-[#F4F2FD]/40 hover:bg-[#F4F2FD]/70 transition-colors"
                 data-testid={`student-course-row-${course.id}`}
-                onClick={() => navigate(`/courses/${course.id}`)}
               >
                 <div className="min-w-0 space-y-1">
                   <p className="text-sm font-medium text-zinc-900 truncate">{course.name}</p>
@@ -75,7 +75,7 @@ export function StudentCoursesCard({ studentId }: StudentCoursesCardProps) {
                     </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

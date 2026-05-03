@@ -18,12 +18,19 @@ public record ExtractedStudentProfileDto(
     string? ReasonForStudying,
     List<string> NativeLanguages,
     List<string> SpokenLanguages,
+    string? LearningLanguage,
     string? CefrLevel,
     string? OfficialCefrLevel,
     List<ExtractedObjectiveDto> ShortTermObjectives,
     List<ExtractedDifficultyDto> Difficulties,
     List<string> TeachingTodoTexts,
-    List<string> Interests
+    List<string> Interests,
+    bool NewStudentIntent,
+    string? TeachingNotes,
+    string? SkillLevelReading,
+    string? SkillLevelWriting,
+    string? SkillLevelSpeaking,
+    string? SkillLevelListening
 );
 
 public record ExtractedObjectiveDto(string Text, string? TargetDate);

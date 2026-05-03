@@ -26,9 +26,9 @@ public class ReflectionExtractionService : IReflectionExtractionService
         _logger = logger;
     }
 
-    public async Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, CancellationToken ct = default)
+    public async Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, bool hasOpenSession = false, CancellationToken ct = default)
     {
-        var request = _prompts.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(DateOnly.FromDateTime(DateTime.UtcNow), text, knownDifficulties));
+        var request = _prompts.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(DateOnly.FromDateTime(DateTime.UtcNow), text, knownDifficulties, hasOpenSession));
 
         ClaudeResponse response;
         try
@@ -44,18 +44,30 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
-                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null);
+                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null,
+                NewSessionTitle: null, NewSessionDate: null);
         }
 
         var dto = ParseResponse(response.Content);
 
-        if (NeedsWhatWasCoveredFallback(dto))
+        var isRetrospectiveNewSession = !hasOpenSession && !string.IsNullOrWhiteSpace(dto.NewSessionTitle);
+
+        if (!isRetrospectiveNewSession && NeedsWhatWasCoveredFallback(dto))
         {
             var synthesised = await SynthesiseWhatWasCoveredAsync(text, dto, ct);
             if (!string.IsNullOrWhiteSpace(synthesised))
             {
                 dto = dto with { WhatWasCovered = new ExtractedTextFieldDto(synthesised, ExtractionMode.Replace) };
             }
+        }
+
+        if (dto.TopicTags.Count > 0
+            && (dto.WhatWasCovered is null
+                || string.IsNullOrWhiteSpace(dto.WhatWasCovered.Value)))
+        {
+            _logger.LogWarning(
+                "Extraction invariant: topicTags non-empty but whatWasCovered null after extraction and fallback (TagCount={Count})",
+                dto.TopicTags.Count);
         }
 
         return dto;
@@ -141,7 +153,9 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 DurationMinutes: GetIntOrNull(root, "durationMinutes"),
                 IsCancelled: GetBoolOrNull(root, "isCancelled"),
                 DifficultiesWorkedOn: ParseStringArray(root, "difficultiesWorkedOn"),
-                SessionStartTime: GetHhMmOrNull(root, "sessionStartTime")
+                SessionStartTime: GetHhMmOrNull(root, "sessionStartTime"),
+                NewSessionTitle: GetStringOrNull(root, "newSessionTitle"),
+                NewSessionDate: GetIsoDateOrNull(root, "newSessionDate")
             );
         }
         catch (Exception ex)
@@ -154,7 +168,8 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
-                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null);
+                IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null,
+                NewSessionTitle: null, NewSessionDate: null);
         }
     }
 
@@ -305,7 +320,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
             : null;
     }
 
-    private static readonly Regex CefrLevelRegex = new(@"^[ABC][12]\+?$", RegexOptions.Compiled);
+    private static readonly Regex CefrLevelRegex = new(@"^[ABC][12]$", RegexOptions.Compiled);
 
     private static string? ParseCefrLevel(JsonElement root, string key)
     {

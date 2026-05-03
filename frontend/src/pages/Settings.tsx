@@ -110,7 +110,7 @@ export default function Settings() {
             {!validationError && isError && (
               <span className="text-sm text-red-600 font-medium">Save failed. Please try again.</span>
             )}
-            <Button type="submit" form="profile-form" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700">
+            <Button type="submit" form="profile-form" disabled={isPending}>
               {isPending ? 'Saving...' : 'Done'}
             </Button>
           </div>

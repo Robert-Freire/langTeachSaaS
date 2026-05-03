@@ -169,7 +169,7 @@ describe('Onboarding', () => {
 
     // Step indicator shows step 3 as active
     const step3 = screen.getByTestId('step-3')
-    expect(step3).toHaveClass('bg-indigo-600')
+    expect(step3).toHaveClass('bg-primary')
 
     // Step 3 form loads after student is fetched
     await waitFor(() => {
@@ -218,7 +218,7 @@ describe('Onboarding', () => {
     const step2 = screen.getByTestId('step-2')
     const step3 = screen.getByTestId('step-3')
 
-    expect(step1).toHaveClass('bg-indigo-600')
+    expect(step1).toHaveClass('bg-primary')
     expect(step2).toHaveClass('bg-zinc-100')
     expect(step3).toHaveClass('bg-zinc-100')
   })

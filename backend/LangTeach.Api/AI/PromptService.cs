@@ -23,35 +23,35 @@ public class PromptService : IPromptService
 
     public ClaudeRequest BuildLessonPlanPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _pedagogy.PromptFragments);
         var user   = LessonPlanUserPrompt(ctx);
         return BuildRequest("lesson-plan", "lesson-plan", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 8192);
     }
 
     public ClaudeRequest BuildVocabularyPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _pedagogy.PromptFragments);
         var user   = VocabularyUserPrompt(ctx);
         return BuildRequest("vocabulary", "vocabulary", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Haiku, 2048);
     }
 
     public ClaudeRequest BuildGrammarPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _pedagogy.PromptFragments);
         var user   = GrammarUserPrompt(ctx);
         return BuildRequest("grammar", "grammar", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 3000);
     }
 
     public ClaudeRequest BuildExercisesPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _pedagogy.PromptFragments);
         var user   = ExercisesUserPrompt(ctx);
         return BuildRequest("exercises", "practice", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 8192);
     }
 
     public ClaudeRequest BuildConversationPrompt(GenerationContext ctx)
     {
-        var system  = BuildSystemPrompt(ctx);
+        var system  = BuildSystemPrompt(ctx, _pedagogy.PromptFragments);
         var user    = ConversationUserPrompt(ctx);
         var section = ctx.SectionType ?? "conversation";
         return BuildRequest("conversation", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Haiku, 3000);
@@ -59,21 +59,21 @@ public class PromptService : IPromptService
 
     public ClaudeRequest BuildReadingPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _pedagogy.PromptFragments);
         var user   = ReadingUserPrompt(ctx);
         return BuildRequest("reading", "reading", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 4096);
     }
 
     public ClaudeRequest BuildHomeworkPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _pedagogy.PromptFragments);
         var user   = HomeworkUserPrompt(ctx);
         return BuildRequest("homework", "homework", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 1024);
     }
 
     public ClaudeRequest BuildFreeTextPrompt(GenerationContext ctx)
     {
-        var system  = BuildSystemPrompt(ctx);
+        var system  = BuildSystemPrompt(ctx, _pedagogy.PromptFragments);
         var user    = FreeTextUserPrompt(ctx);
         var section = ctx.SectionType ?? "free-text";
         return BuildRequest("free-text", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Haiku, 1024);
@@ -81,7 +81,7 @@ public class PromptService : IPromptService
 
     public ClaudeRequest BuildGuidedWritingPrompt(GenerationContext ctx)
     {
-        var system  = BuildSystemPrompt(ctx);
+        var system  = BuildSystemPrompt(ctx, _pedagogy.PromptFragments);
         var user    = GuidedWritingUserPrompt(ctx);
         var section = ctx.SectionType ?? DefaultSectionType;
         return BuildRequest("guided-writing", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 2048);
@@ -89,14 +89,14 @@ public class PromptService : IPromptService
 
     public ClaudeRequest BuildErrorCorrectionPrompt(GenerationContext ctx)
     {
-        var system = BuildSystemPrompt(ctx);
+        var system = BuildSystemPrompt(ctx, _pedagogy.PromptFragments);
         var user   = ErrorCorrectionUserPrompt(ctx);
         return BuildRequest("error-correction", "practice", ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 3000);
     }
 
     public ClaudeRequest BuildNoticingTaskPrompt(GenerationContext ctx)
     {
-        var system  = BuildSystemPrompt(ctx);
+        var system  = BuildSystemPrompt(ctx, _pedagogy.PromptFragments);
         var user    = NoticingTaskUserPrompt(ctx);
         var section = ctx.SectionType ?? "presentation";
         return BuildRequest("noticing-task", section, ctx.CefrLevel, ctx.TemplateName, system, user, ClaudeModel.Sonnet, 3000);
@@ -375,7 +375,14 @@ public class PromptService : IPromptService
 
     // --- System prompt (shared across all content types) ---
 
-    private static string BuildSystemPrompt(GenerationContext ctx)
+    private static string RenderTemplate(string template, Dictionary<string, string> tokens)
+    {
+        foreach (var (token, value) in tokens)
+            template = template.Replace(token, value, StringComparison.Ordinal);
+        return template;
+    }
+
+    private static string BuildSystemPrompt(GenerationContext ctx, PromptFragmentsConfig fragments)
     {
         var language      = InputSanitizer.Sanitize(ctx.Language);
         var cefrLevel     = InputSanitizer.Sanitize(ctx.CefrLevel);
@@ -391,7 +398,7 @@ public class PromptService : IPromptService
         sb.AppendLine($"You are an expert {language} teacher creating materials for a {cefrLevel} level lesson.");
         sb.AppendLine($"Teaching style: {style}. Topic: {topic}. Duration: {ctx.DurationMinutes} minutes.");
         sb.AppendLine();
-        sb.AppendLine($"Write all examples, sentences, and instructions using vocabulary and grammar appropriate for {cefrLevel}. Do not use structures above this level in examples. Definitions and explanations aimed at the teacher may use higher-level language.");
+        sb.AppendLine(RenderTemplate(fragments.CefrCue, new() { ["{cefrLevel}"] = cefrLevel }));
 
         if (ctx.GrammarConstraints is { Count: > 0 })
         {
@@ -421,9 +428,10 @@ public class PromptService : IPromptService
             if (ctx.StudentNativeLanguage is not null)
             {
                 sb.AppendLine($"- Native language: {nativeLang}");
-                sb.AppendLine($"- For grammar explanations, note where {language} differs from {nativeLang}.");
-                sb.AppendLine($"- Flag false cognates between {nativeLang} and {language} when relevant.");
-                sb.AppendLine($"- Be aware of common errors {nativeLang} speakers make in {language}.");
+                var nativeLangTokens = new Dictionary<string, string>
+                    { ["{targetLanguage}"] = language, ["{nativeLanguage}"] = nativeLang };
+                foreach (var bullet in fragments.NativeLanguageBullets)
+                    sb.AppendLine($"- {RenderTemplate(bullet, nativeLangTokens)}");
             }
 
             if (interests.Length > 0)
@@ -473,9 +481,9 @@ public class PromptService : IPromptService
 
             sb.AppendLine();
             var motivationSuffix = reasonForStudying.Length > 0
-                ? $", and anchor vocabulary to their stated study motivation: {reasonForStudying}"
+                ? RenderTemplate(fragments.MotivationSuffix, new() { ["{reasonForStudying}"] = reasonForStudying })
                 : string.Empty;
-            sb.AppendLine($"Personalize content for this student. Reference their interests in examples{motivationSuffix}.");
+            sb.AppendLine(RenderTemplate(fragments.PersonalisationDirective, new() { ["{motivationSuffix}"] = motivationSuffix }));
 
             if (spokenLangs.Length > 0)
                 sb.AppendLine("Where relevant, leverage cross-language awareness and cognates from the student's other languages.");
@@ -1522,13 +1530,24 @@ public class PromptService : IPromptService
             """
             : string.Empty;
 
+        var weekdayFacts = SpanishWeekdayResolver.BuildWeekdayFactsBlock(teacherText, today);
+        var weekdayFactsSection = weekdayFacts != null ? $"\n            {weekdayFacts}" : string.Empty;
+
+        var sessionContextHint = ctx.HasOpenSession
+            ? string.Empty
+            : """
+
+
+            IMPORTANT CONTEXT: There is no open session in scope. If the teacher describes a class that already happened (past-tense cues: "le di clase", "ayer trabajamos", "trabajamos", "la semana pasada hicimos"), treat it as retrospective session registration: populate newSessionTitle and newSessionDate; sessionTitle and whatWasCovered do not apply.
+            """;
+
         var system = $"""
             You are a tool that helps language teachers structure their post-class notes.
-            Extract structured information from a teacher's free-form reflection text.
+            Extract structured information from a teacher's free-form reflection text.{sessionContextHint}
 
             IMPORTANT: All text values in your response MUST be written in the same language as the teacher's input text. If the teacher writes in Spanish, every string value — including sessionTitle, topicTags, teachingTodos, teacherFollowups, and all summaries — must be in Spanish. Never translate or switch to English.
 
-            Today is {today.DayOfWeek}, {today:yyyy-MM-dd}.
+            Today is {today.DayOfWeek}, {today:yyyy-MM-dd}.{weekdayFactsSection}
             {difficultiesSection}
             Respond ONLY with a valid JSON object using these exact keys:
             - whatWasCovered: object or null. When present, the object has two keys: "value" (string) and "mode" (one of "append", "replace", or "skip").
@@ -1554,21 +1573,23 @@ public class PromptService : IPromptService
                 Return null if no next-session ideas are mentioned.
             - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) of the session being described. Resolve date references using today's date and day of week: "hoy"/"today" = today, "ayer"/"yesterday" = yesterday, "el lunes pasado"/"el pasado lunes" = the most recent Monday before today (not the Monday of this week if today is Monday), "el martes pasado"/"el pasado martes" = the most recent Tuesday before today, and so on for any weekday. Always pick the last occurrence of the named weekday strictly before today. Null if no date is mentioned.
             - sessionStartTime: string or null — 24-hour time (HH:MM) when the session started (e.g. "09:00", "18:30"). Null if not mentioned.
-            - sessionTitle: string or null — a concise title (under 60 chars) for this session derived from what was covered, written in the same language as the teacher's input. Examples (Spanish input): "Subjuntivo en cláusulas temporales", "Pasado compuesto — revisión". Null if no content is mentioned.
+            - sessionTitle: string or null — a concise title (under 60 chars) for this session derived from what was covered, written in the same language as the teacher's input. Examples (Spanish input): "Subjuntivo en cláusulas temporales", "Pasado compuesto — revisión". Null if no content is mentioned. Null when there is no active session (use newSessionTitle instead).
             - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
             - topicTags: array of objects with "tag" (string) and "category" (string or null) — topics, grammar structures, vocabulary areas covered. Each tag as a concise noun phrase. Empty array if none mentioned.
             - previousHomeworkStatus: "done" | "partial" | "notDone" | null — whether the student completed homework from the previous session. Null if not mentioned.
             - teachingTodos: array of strings — pedagogical ideas for future sessions (grammar points to revisit, vocabulary to practise, skills to develop; e.g. "hay que practicar el subjuntivo"). Also triggered by imperative phrases like "apunta como teaching todo [X]", "añade como idea [X]". Empty array if none.
             - teacherFollowups: array of strings — operational actions owed by the teacher (send materials, book a test, contact a school; e.g. "le tengo que mandar ejercicios", "tengo que preparar ejercicios"). Also triggered by imperative phrases like "añade follow up [X]", "apunta follow up [X]", "añade como follow up [X]" — extract the action after the trigger phrase. Empty array if none.
-            - levelReassessment: CEFR level string (e.g. "B1", "B2+") or null — if the teacher mentions reassessing or updating the student's level. Null if not mentioned.
+            - levelReassessment: CEFR level string (e.g. "B1", "B2") or null — if the teacher mentions reassessing or updating the student's level. Null if not mentioned. If the teacher explicitly states they are NOT changing the level (e.g. "no toco el nivel", "no quiero cambiar el nivel", "todavía no", "solo tomar nota"), set to null even when CEFR strings appear elsewhere in the utterance. Examples: "ha mejorado mucho, creo que ya está en B2, súbele el nivel" → "B2" (positive: level change stated); "habla a nivel B2 pero el nivel global no lo toco" → null (negative: level mentioned but suppressed).
             - durationMinutes: integer or null — session duration in minutes. Null if not mentioned.
             - isCancelled: true | false | null — true only if the session was cancelled or the student did not show up. Null if not mentioned.
             - difficultiesWorkedOn: array of strings — copy verbatim from the student's known difficulties list any difficulty that was explicitly worked on in this session. Empty array if none or if no known difficulties were provided.
+            - newSessionTitle: string or null — concise title (under 60 chars) for a NEW session record the teacher is creating, either scheduled for the future or retroactively registered for a past date. Set for explicit scheduling statements ("next Monday I want to do a session on the subjunctive", "la semana que viene hagamos una sesión sobre el subjuntivo") and for retrospective registration when the teacher explicitly says they forgot to register a past session ("que se me olvidó registrarla", "apunta una sesión del lunes pasado sobre X"). Distinct from nextLessonIdeas (planning ideas without a scheduled appointment). Both newSessionTitle and nextLessonIdeas may be set simultaneously if the teacher is scheduling AND has broader ideas.
+            - newSessionDate: string or null — ISO 8601 date (YYYY-MM-DD) for the proposed new session. For future dates: resolve forward from today — "el lunes" or "next Monday" = the next Monday strictly after today (count forward to the first occurrence of that weekday; if today is Saturday, the next Monday is exactly 2 days away, NOT 3). "la semana que viene" = same day next week. For retrospective sessions with explicit past markers ("pasado", "de la semana pasada", "que se me olvidó registrar"): resolve backward — "el lunes pasado" = the most recent Monday before today. Null only when no specific day or date can be inferred (e.g. "next class", "soon") — do NOT default to today when no date cue is present. Null if newSessionTitle is null. If a date is mentioned without a topic, set both fields to null.
 
             For suggestedDifficulties, each object must have:
             - description: full sentence describing the difficulty, extracted verbatim from the teacher's language
             - competency: one of {competencies}
-            - subcategory: specific item (e.g. "ser/estar", "subjunctive", "past tense"), free text
+            - subcategory: specific item (e.g. "ser/estar", "subjuntivo", "tiempos de pasado"), free text
             - severity: {severities} (infer from language: "mucho"/"siempre"/"constantemente" -> high, "a veces"/"sometimes" -> medium, "un poco"/"slightly" -> low; default medium)
 
             Only include difficulties explicitly mentioned. Do not invent. Use null for scalar fields that cannot be inferred.
@@ -1646,7 +1667,8 @@ public class PromptService : IPromptService
             - cityOfResidence: string or null — city where the student currently lives. Null if not mentioned.
             - reasonForStudying: string or null — why the student is learning the language. Null if not mentioned.
             - nativeLanguages: array of strings — student's native or mother tongue(s). Empty array [] if not mentioned.
-            - spokenLanguages: array of strings — other languages the student speaks (not the target language being taught, not the native language). Empty array [] if not mentioned.
+            - spokenLanguages: array of strings — other languages the student speaks (not the target language, not the native language). Empty array [] if not mentioned.
+            - learningLanguage: string or null — the language the student is learning or being taught (e.g. "English", "French", "inglés"). Null if not mentioned.
             - cefrLevel: string or null — teacher's own CEFR assessment of the student (e.g. "B1", "B2+"). Null if not mentioned.
             - officialCefrLevel: string or null — official/exam-certified CEFR level (e.g. from a DELE, DELF certificate). Null if not mentioned.
             - shortTermObjectives: array of objects — near-term learning goals mentioned by the teacher. Each object has:
@@ -1656,10 +1678,13 @@ public class PromptService : IPromptService
             - difficulties: array of objects — student weaknesses or trouble areas explicitly mentioned. Each object has:
                 - description: string — full description of the difficulty
                 - competency: string — must be one of: {competencies}
-                - subcategory: string — specific item (e.g. "ser/estar", "subjunctive", "past tense"), free text
+                - subcategory: string — specific item (e.g. "ser/estar", "subjuntivo", "tiempos de pasado"), free text
               Empty array [] if no difficulties mentioned.
-            - teachingTodoTexts: array of strings — pedagogical ideas or reminders for the teacher regarding this student. Empty array [] if none.
+            - teachingTodoTexts: array of strings — action items or tasks for the teacher to do (e.g. "Send subjunctive exercises", "Prepare business vocabulary list"). Empty array [] if none.
+            - teachingNotes: string or null — observations about how the student learns (learning style, what works, what does not). Null if not mentioned.
             - interests: array of strings — personal interests, hobbies, or topics the student enjoys. Empty array [] if not mentioned.
+            - skillLevel: object or null — per-skill CEFR level overrides when the teacher explicitly states a different level for a specific skill. Keys: "reading", "writing", "speaking", "listening". Values must match A1/A2/B1/B2/C1/C2 optionally followed by a dot and digit (e.g. "B1", "C1", "B1.2"). Omit a key if not explicitly mentioned. Null if no per-skill levels mentioned at all. If the teacher explicitly states they are NOT changing the level (e.g. "no toco el nivel", "no quiero cambiar el nivel", "todavía no", "solo tomar nota"), set skillLevel to null even when CEFR strings appear elsewhere in the utterance. Examples: "Carmen lee a nivel C1, escribe B2" → reading "C1", writing "B2" (positive: per-skill levels stated); "maneja B2 en comprensión, todavía no quiero cambiar el nivel" → null (negative: levels mentioned but suppressed).
+            - newStudentIntent: boolean — true ONLY if the teacher explicitly states they want to create a NEW student record (e.g. "nuevo alumno", "dame de alta a", "tengo un nuevo estudiante", "I have a new student", "register a new student").
 
             Use null for scalar fields that cannot be clearly inferred from the text.
             Keep each value concise.

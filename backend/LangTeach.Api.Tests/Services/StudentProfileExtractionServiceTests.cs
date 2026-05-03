@@ -302,6 +302,62 @@ public class StudentProfileExtractionServiceTests
         captured.Should().NotBeNull();
         captured!.Model.Should().Be(ClaudeModel.Haiku);
     }
+
+    [Fact]
+    public void ParseResponse_ExtractsSkillLevelOverrides()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "skillLevel": { "reading": "C1", "writing": "B2", "speaking": "B2" },
+              "nativeLanguages": [], "spokenLanguages": [], "shortTermObjectives": [],
+              "difficulties": [], "teachingTodoTexts": [], "interests": []
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.SkillLevelReading.Should().Be("C1");
+        result.SkillLevelWriting.Should().Be("B2");
+        result.SkillLevelSpeaking.Should().Be("B2");
+        result.SkillLevelListening.Should().BeNull();
+    }
+
+    [Fact]
+    public void ParseResponse_SkillLevel_AcceptsSubLevels()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "skillLevel": { "reading": "B1.2" },
+              "nativeLanguages": [], "spokenLanguages": [], "shortTermObjectives": [],
+              "difficulties": [], "teachingTodoTexts": [], "interests": []
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.SkillLevelReading.Should().Be("B1.2");
+    }
+
+    [Fact]
+    public void ParseResponse_SkillLevel_NullWhenKeyMissing()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "nativeLanguages": [], "spokenLanguages": [], "shortTermObjectives": [],
+              "difficulties": [], "teachingTodoTexts": [], "interests": []
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.SkillLevelReading.Should().BeNull();
+        result.SkillLevelWriting.Should().BeNull();
+        result.SkillLevelSpeaking.Should().BeNull();
+        result.SkillLevelListening.Should().BeNull();
+    }
 }
 
 file sealed class NullContentSchemas : IContentSchemaService

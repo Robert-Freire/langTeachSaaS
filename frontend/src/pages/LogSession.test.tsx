@@ -170,7 +170,8 @@ describe('LogSession', () => {
   it('date defaults to today', async () => {
     renderLogSession()
     await screen.findByTestId('session-date')
-    const today = new Date().toISOString().split('T')[0]
+    const d = new Date()
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     expect(screen.getByTestId('session-date')).toHaveValue(today)
   })
 
@@ -1038,6 +1039,147 @@ describe('LogSession — edit mode', () => {
     // and the user's in-progress text must remain intact.
     await waitFor(() => {
       expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('User is typing')
+    })
+  })
+
+  it('syncs title field when query refetches with new server value (Atelier Apply flow)', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
+          <Routes>
+            <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+            <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    // Wait for initial populate (title is null in EDIT_SESSION, so input starts empty)
+    await screen.findByTestId('log-session-title-input')
+    expect((screen.getByTestId('log-session-title-input') as HTMLInputElement).value).toBe('')
+    // Simulate Atelier Apply: server returns new title
+    await act(async () => {
+      client.setQueryData(['session', STUDENT_ID, SESSION_ID], {
+        ...EDIT_SESSION,
+        title: 'Subjuntivo',
+        updatedAt: '2026-04-01T12:00:00Z',
+      })
+    })
+    await waitFor(() => {
+      expect((screen.getByTestId('log-session-title-input') as HTMLInputElement).value).toBe('Subjuntivo')
+    })
+  })
+
+  it('does not overwrite locally-edited title when query refetches', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
+          <Routes>
+            <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+            <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    await screen.findByTestId('log-session-title-input')
+    // Teacher types their own title
+    fireEvent.change(screen.getByTestId('log-session-title-input'), { target: { value: 'My own title' } })
+    // Refetch returns a different server title
+    await act(async () => {
+      client.setQueryData(['session', STUDENT_ID, SESSION_ID], {
+        ...EDIT_SESSION,
+        title: 'Server Title',
+        updatedAt: '2026-04-01T12:00:00Z',
+      })
+    })
+    // Teacher's edit must be preserved
+    await waitFor(() => {
+      expect((screen.getByTestId('log-session-title-input') as HTMLInputElement).value).toBe('My own title')
+    })
+  })
+
+  it('syncs actualContent field when query refetches with new server value', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
+          <Routes>
+            <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+            <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    await screen.findByTestId('actual-content')
+    expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Covered irregular preterite')
+    // Simulate Atelier Apply updating actualContent
+    await act(async () => {
+      client.setQueryData(['session', STUDENT_ID, SESSION_ID], {
+        ...EDIT_SESSION,
+        actualContent: 'Hoy hemos trabajado el subjuntivo',
+        updatedAt: '2026-04-01T12:00:00Z',
+      })
+    })
+    await waitFor(() => {
+      expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Hoy hemos trabajado el subjuntivo')
+    })
+  })
+
+  it('syncs homeworkAssigned field when query refetches with new server value', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
+          <Routes>
+            <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+            <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    await screen.findByTestId('homework-assigned')
+    expect((screen.getByTestId('homework-assigned') as HTMLInputElement).value).toBe('Exercises p. 55')
+    await act(async () => {
+      client.setQueryData(['session', STUDENT_ID, SESSION_ID], {
+        ...EDIT_SESSION,
+        homeworkAssigned: 'Workbook page 42',
+        updatedAt: '2026-04-01T12:00:00Z',
+      })
+    })
+    await waitFor(() => {
+      expect((screen.getByTestId('homework-assigned') as HTMLInputElement).value).toBe('Workbook page 42')
+    })
+  })
+
+  it('syncs generalNotes field when query refetches with new server value', async () => {
+    const sessionWithNotes: SessionLog = { ...EDIT_SESSION, generalNotes: 'Initial notes' }
+    vi.mocked(sessionLogsApi.getSession).mockResolvedValue(sessionWithNotes)
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
+          <Routes>
+            <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+            <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    // Open secondary section to reveal general-notes textarea
+    const toggle = await screen.findByTestId('toggle-secondary')
+    fireEvent.click(toggle)
+    const notesField = await screen.findByTestId('general-notes')
+    expect((notesField as HTMLTextAreaElement).value).toBe('Initial notes')
+    await act(async () => {
+      client.setQueryData(['session', STUDENT_ID, SESSION_ID], {
+        ...sessionWithNotes,
+        generalNotes: 'Updated notes from Apply',
+        updatedAt: '2026-04-01T12:00:00Z',
+      })
+    })
+    await waitFor(() => {
+      expect((screen.getByTestId('general-notes') as HTMLTextAreaElement).value).toBe('Updated notes from Apply')
     })
   })
 })

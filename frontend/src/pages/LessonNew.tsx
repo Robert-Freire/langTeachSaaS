@@ -327,7 +327,6 @@ export default function LessonNew() {
             <Button
               onClick={() => doCreate()}
               disabled={!isFormValid || isPending}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
               data-testid="submit-lesson"
             >
               {isPending ? 'Creating...' : 'Create Lesson'}

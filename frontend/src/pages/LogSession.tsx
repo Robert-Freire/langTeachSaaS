@@ -120,7 +120,7 @@ function ToggleSwitch({
       onClick={() => onChange(!checked)}
       data-testid={testId}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-        checked ? 'bg-indigo-600' : 'bg-zinc-300'
+        checked ? 'bg-primary' : 'bg-zinc-300'
       }`}
     >
       <span
@@ -206,6 +206,14 @@ export default function LogSession() {
   // the same session does not wipe the teacher's in-progress edits, but navigation
   // to a different session will re-initialize correctly.
   const initializedForIdRef = useRef<string | null>(null)
+  // Tracks the last values received from the server for the 4 Atelier-patchable fields.
+  // Used by the post-init sync effect to distinguish "user edited" from "server updated".
+  const lastServerValuesRef = useRef<{
+    title: string | undefined
+    actualContent: string
+    generalNotes: string
+    homeworkAssigned: string
+  } | null>(null)
   // Create mode: track whether we've pre-populated actualContent from plannedForToday
   const [didInitContent, setDidInitContent] = useState(false)
 
@@ -258,7 +266,10 @@ export default function LogSession() {
     : null
   const sessionNumber = isEditMode ? (editSessionRank ?? '?') : nonCancelledSessions.length + 1
   const pendingFollowups = allFollowups.filter(f => f.status === 'pending')
-  const activeDifficulties = student?.profile.difficulties.filter(d => d.status === 'Active') ?? []
+  const activeDifficulties = useMemo(
+    () => student?.profile.difficulties.filter(d => d.status === 'Active') ?? [],
+    [student]
+  )
   const pendingTodos = student?.profile.teachingTodos.filter(t => t.status.toLowerCase() === 'pending') ?? []
   const showPrevHomework = (isEditMode && prevHomeworkStatus !== null) || (prevSession !== null && prevSession.homeworkAssigned !== null)
   const plannedForToday = prevSession?.nextSessionTopics ?? null
@@ -301,8 +312,37 @@ export default function LogSession() {
       const parsed = JSON.parse(editSession.suggestedDifficulties || '[]') as unknown[]
       setSuggestedDifficulties(Array.isArray(parsed) ? parsed.filter(isSuggestedDifficulty) : [])
     } catch { setSuggestedDifficulties([]) }
+    lastServerValuesRef.current = {
+      title: editSession.title ?? undefined,
+      actualContent: editSession.actualContent ?? '',
+      generalNotes: editSession.generalNotes ?? '',
+      homeworkAssigned: editSession.homeworkAssigned ?? '',
+    }
     initializedForIdRef.current = editSession.id
   }, [editSession])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Post-init sync: when the Atelier Assistant applies a proposal the server is PATCHed and
+  // the ['session', id, sessionId] query is invalidated. On refetch editSession changes, but
+  // the init effect above won't re-run (initializedForIdRef guard). This effect syncs the 4
+  // patchable fields back to local state for any field the teacher hasn't manually edited.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!editSession) return
+    if (initializedForIdRef.current !== editSession.id) return
+    const prev = lastServerValuesRef.current
+    if (!prev) return
+    const nextTitle = editSession.title ?? undefined
+    const nextActualContent = editSession.actualContent ?? ''
+    const nextGeneralNotes = editSession.generalNotes ?? ''
+    const nextHomeworkAssigned = editSession.homeworkAssigned ?? ''
+    // Each field: only sync if local value matches last server value (user hasn't dirtied it)
+    if (sessionTitle === prev.title && nextTitle !== prev.title) setSessionTitle(nextTitle)
+    if (actualContent === prev.actualContent && nextActualContent !== prev.actualContent) setActualContent(nextActualContent)
+    if (generalNotes === prev.generalNotes && nextGeneralNotes !== prev.generalNotes) setGeneralNotes(nextGeneralNotes)
+    if (homeworkAssigned === prev.homeworkAssigned && nextHomeworkAssigned !== prev.homeworkAssigned) setHomeworkAssigned(nextHomeworkAssigned)
+    lastServerValuesRef.current = { title: nextTitle, actualContent: nextActualContent, generalNotes: nextGeneralNotes, homeworkAssigned: nextHomeworkAssigned }
+  }, [editSession]) // intentionally reads local state without declaring as deps
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Keep durationChoiceRef current so async extraction callbacks read the latest value, not a stale closure
@@ -1335,7 +1375,7 @@ export default function LogSession() {
                         onClick={() => { setPrevHomeworkStatus(s.value); markChangedAndSaveNow({ previousHomeworkStatus: s.value }) }}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                           prevHomeworkStatus === s.value
-                            ? 'bg-indigo-600 text-white'
+                            ? 'bg-primary text-white'
                             : 'bg-[#F4F2FD] text-zinc-600 hover:bg-[#E8E7F1]'
                         }`}
                         data-testid={`prev-hw-${s.value.toLowerCase()}`}
@@ -1479,7 +1519,7 @@ export default function LogSession() {
                         setNewDifficulty({ description: '', competency: '', subcategory: '' })
                         markChangedAndSaveNow({ suggestedDifficulties: next })
                       }}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 disabled:opacity-50"
+                      className="shrink-0"
                       data-testid="add-difficulty-btn"
                     >
                       <Plus className="h-4 w-4" />
@@ -1546,7 +1586,7 @@ export default function LogSession() {
                       className="text-sm bg-white flex-1"
                       data-testid="new-todo-input"
                     />
-                    <Button type="button" size="sm" onClick={addTodo} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                    <Button type="button" size="sm" onClick={addTodo}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>

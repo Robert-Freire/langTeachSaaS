@@ -92,6 +92,15 @@ describe('StudentCoursesCard', () => {
     expect(screen.getByText('3/10 sessions')).toBeInTheDocument()
   })
 
+  it('course row renders as a Link with correct href', async () => {
+    vi.mocked(coursesApi.getCourses).mockResolvedValue(mockCourses)
+    wrapper(<StudentCoursesCard studentId={STUDENT_ID} />)
+
+    const row = await screen.findByTestId('student-course-row-course-1')
+    expect(row.tagName).toBe('A')
+    expect(row).toHaveAttribute('href', '/courses/course-1')
+  })
+
   it('Create Course button navigates to CourseNew with studentId', async () => {
     vi.mocked(coursesApi.getCourses).mockResolvedValue([])
     wrapper(<StudentCoursesCard studentId={STUDENT_ID} />)

@@ -310,7 +310,7 @@ public class TelegramConversationServiceTests : IDisposable
             DurationMinutes: null,
             IsCancelled: null,
             DifficultiesWorkedOn: [],
-            SessionStartTime: null);
+            SessionStartTime: null, NewSessionTitle: null, NewSessionDate: null);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco worked on ser/estar today"), CancellationToken.None);
 
@@ -346,7 +346,7 @@ public class TelegramConversationServiceTests : IDisposable
             DurationMinutes: null,
             IsCancelled: null,
             DifficultiesWorkedOn: [],
-            SessionStartTime: null);
+            SessionStartTime: null, NewSessionTitle: null, NewSessionDate: null);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco trabajamos ser vs estar"), CancellationToken.None);
 
@@ -382,7 +382,7 @@ public class TelegramConversationServiceTests : IDisposable
             DurationMinutes: null,
             IsCancelled: null,
             DifficultiesWorkedOn: [],
-            SessionStartTime: null);
+            SessionStartTime: null, NewSessionTitle: null, NewSessionDate: null);
 
         await _sut.HandleUpdateAsync(TextUpdate(_chatId, "Marco el pasado lunes trabajamos los condicionales"), CancellationToken.None);
 
@@ -420,7 +420,7 @@ public class TelegramConversationServiceTests : IDisposable
         public Exception? ThrowOnNext { get; set; }
         public string? LastInput { get; private set; }
 
-        public Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, CancellationToken ct = default)
+        public Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, bool hasOpenSession = false, CancellationToken ct = default)
         {
             LastInput = text;
             if (ThrowOnNext is not null)
@@ -448,7 +448,7 @@ public class TelegramConversationServiceTests : IDisposable
                 DurationMinutes: null,
                 IsCancelled: null,
                 DifficultiesWorkedOn: [],
-                SessionStartTime: null);
+                SessionStartTime: null, NewSessionTitle: null, NewSessionDate: null);
             return Task.FromResult(result);
         }
     }

@@ -515,8 +515,10 @@ public class ReflectionExtractionServiceTests
 
     [Theory]
     [InlineData("B1", "B1")]
-    [InlineData("A2+", "A2+")]
+    [InlineData("A2", "A2")]
     [InlineData("C1", "C1")]
+    [InlineData("A2+", null)]
+    [InlineData("B2.1", null)]
     [InlineData("Intermediate", null)]
     [InlineData("B3", null)]
     [InlineData("", null)]
@@ -609,6 +611,56 @@ public class ReflectionExtractionServiceTests
         captured.Should().NotBeNull();
         captured!.SystemPrompt.Should().Contain("Subjuntivo en concesivas");
         captured.SystemPrompt.Should().Contain("Ser vs Estar");
+    }
+
+    [Fact]
+    public async Task ExtractAsync_PassesHasOpenSession_False_ToPrompt()
+    {
+        ClaudeRequest? captured = null;
+        var client = new ReflectionClaudeClient(req =>
+        {
+            captured = req;
+            return new ClaudeResponse("""{"suggestedDifficulties":[],"topicTags":[],"teachingTodos":[],"teacherFollowups":[],"difficultiesWorkedOn":[]}""", "claude-haiku", 10, 50);
+        });
+        var realPrompts = new PromptService(
+            new SectionProfileService(NullLogger<SectionProfileService>.Instance),
+            PedagogyService,
+            NullLogger<PromptService>.Instance,
+            NullContentSchemas.Instance);
+        var sut = new ReflectionExtractionService(
+            client,
+            realPrompts,
+            PedagogyService,
+            NullLogger<ReflectionExtractionService>.Instance);
+
+        await sut.ExtractAsync("Le di clase ayer, trabajamos el subjuntivo.", hasOpenSession: false);
+
+        captured!.SystemPrompt.Should().Contain("no open session in scope");
+    }
+
+    [Fact]
+    public async Task ExtractAsync_PassesHasOpenSession_True_ToPrompt()
+    {
+        ClaudeRequest? captured = null;
+        var client = new ReflectionClaudeClient(req =>
+        {
+            captured = req;
+            return new ClaudeResponse("""{"suggestedDifficulties":[],"topicTags":[],"teachingTodos":[],"teacherFollowups":[],"difficultiesWorkedOn":[]}""", "claude-haiku", 10, 50);
+        });
+        var realPrompts = new PromptService(
+            new SectionProfileService(NullLogger<SectionProfileService>.Instance),
+            PedagogyService,
+            NullLogger<PromptService>.Instance,
+            NullContentSchemas.Instance);
+        var sut = new ReflectionExtractionService(
+            client,
+            realPrompts,
+            PedagogyService,
+            NullLogger<ReflectionExtractionService>.Instance);
+
+        await sut.ExtractAsync("Hoy trabajamos el subjuntivo.", hasOpenSession: true);
+
+        captured!.SystemPrompt.Should().NotContain("no open session in scope");
     }
 
     [Fact]
@@ -980,5 +1032,5 @@ public class ReflectionExtractionServiceTests
             SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
             TopicTags: topicTags ?? [], PreviousHomeworkStatus: null, TeachingTodos: [],
             TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
-            IsCancelled: isCancelled, DifficultiesWorkedOn: [], SessionStartTime: null);
+            IsCancelled: isCancelled, DifficultiesWorkedOn: [], SessionStartTime: null, NewSessionTitle: null, NewSessionDate: null);
 }

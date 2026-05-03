@@ -1,11 +1,24 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, within, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AppShell from './AppShell'
 
+vi.mock('../api/assistant', () => ({
+  proposeAssistant: vi.fn().mockResolvedValue({ proposals: [] }),
+  applyStudentProposal: vi.fn().mockResolvedValue(undefined),
+  applySessionProposal: vi.fn().mockResolvedValue(undefined),
+  applyTodoProposal: vi.fn().mockResolvedValue(undefined),
+}))
+import { proposeAssistant } from '../api/assistant'
+const mockPropose = proposeAssistant as ReturnType<typeof vi.fn>
+
 const mockLogout = vi.fn()
+vi.mock('../api/students', () => ({
+  getStudent: vi.fn().mockResolvedValue({ id: '123', name: 'Ana García' }),
+}))
+
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: () => ({
     user: { name: 'Test User', email: 'test@example.com', picture: '' },
@@ -26,15 +39,26 @@ vi.mock('../hooks/useProfile', () => ({
   }),
 }))
 
-function renderShell() {
+function renderShell(initialPath = '/') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialPath]}>
         <AppShell />
       </MemoryRouter>
     </QueryClientProvider>
   )
+}
+
+function renderShellWithRouter(initialPath: string) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const router = createMemoryRouter([{ path: '*', element: <AppShell /> }], { initialEntries: [initialPath] })
+  const utils = render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
+  )
+  return { ...utils, router }
 }
 
 describe('AppShell', () => {
@@ -87,10 +111,9 @@ describe('AppShell', () => {
 
   it('Settings link is outside the main nav element', () => {
     renderShell()
-    // Settings must not be inside the <nav> (main nav group)
     const nav = screen.getByRole('navigation')
     expect(within(nav).queryByRole('link', { name: /^settings$/i })).not.toBeInTheDocument()
-    // Settings must still render as a link in the overall sidebar
+    expect(screen.queryByRole('link', { name: /^help$/i })).not.toBeInTheDocument()
     const settingsLinks = screen.getAllByRole('link', { name: /^settings$/i })
     expect(settingsLinks.length).toBeGreaterThanOrEqual(1)
   })
@@ -134,7 +157,7 @@ describe('AppShell', () => {
     )
     const sessionsLinks = screen.getAllByRole('link', { name: /^sessions$/i })
     const activeLink = sessionsLinks[0]
-    expect(activeLink.className).toContain('border-l-indigo-600')
+    expect(activeLink.className).toContain('border-l-primary')
     expect(activeLink.className).not.toContain('bg-white')
     expect(activeLink.className).not.toContain('bg-indigo')
   })
@@ -188,9 +211,9 @@ describe('AppShell', () => {
       </QueryClientProvider>
     )
     const sessionsLinks = screen.getAllByRole('link', { name: /^sessions$/i })
-    expect(sessionsLinks[0].className).toContain('border-l-indigo-600')
+    expect(sessionsLinks[0].className).toContain('border-l-primary')
     const studentsLinks = screen.getAllByRole('link', { name: /^students$/i })
-    expect(studentsLinks[0].className).not.toContain('border-l-indigo-600')
+    expect(studentsLinks[0].className).not.toContain('border-l-primary')
   })
 
   it('shows Students as active nav when on session edit page reached from student detail', () => {
@@ -203,8 +226,261 @@ describe('AppShell', () => {
       </QueryClientProvider>
     )
     const studentsLinks = screen.getAllByRole('link', { name: /^students$/i })
-    expect(studentsLinks[0].className).toContain('border-l-indigo-600')
+    expect(studentsLinks[0].className).toContain('border-l-primary')
     const sessionsLinks = screen.getAllByRole('link', { name: /^sessions$/i })
-    expect(sessionsLinks[0].className).not.toContain('border-l-indigo-600')
+    expect(sessionsLinks[0].className).not.toContain('border-l-primary')
+  })
+
+  it('renders the Open Assistant FAB at canvas level (not in sidebar)', () => {
+    renderShell()
+    const btn = document.querySelector('[data-testid="open-assistant-btn"]')
+    expect(btn).toBeInTheDocument()
+    const aside = document.querySelector('aside')
+    expect(aside?.querySelector('[data-testid="open-assistant-btn"]')).not.toBeInTheDocument()
+  })
+
+  it('Open Assistant FAB is outside the main nav element', () => {
+    renderShell()
+    const nav = screen.getByRole('navigation')
+    expect(within(nav).queryByTestId('open-assistant-btn')).not.toBeInTheDocument()
+  })
+
+  it('clicking Open Assistant opens the stub panel', async () => {
+    const user = userEvent.setup()
+    renderShell('/students/123')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+    const btn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(btn)
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
+  })
+
+  it('closing the assistant panel removes it from the DOM', async () => {
+    const user = userEvent.setup()
+    renderShell('/students/123')
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(openBtn)
+    const closeBtn = screen.getByRole('button', { name: /close assistant/i })
+    await user.click(closeBtn)
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+  })
+
+  it('renders the Open Assistant mobile button in the top bar', () => {
+    renderShell()
+    expect(screen.getByTestId('open-assistant-mobile-btn')).toBeInTheDocument()
+  })
+
+  it('Escape key closes the assistant panel', async () => {
+    const user = userEvent.setup()
+    renderShell('/students/123')
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(openBtn)
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+  })
+
+  it('Ctrl+K opens the assistant panel on an enabled route', async () => {
+    const user = userEvent.setup()
+    renderShell('/students/123')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+    await user.keyboard('{Control>}k{/Control}')
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
+  })
+
+  it('Ctrl+K does nothing on a disabled route', async () => {
+    const user = userEvent.setup()
+    renderShell('/')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+    await user.keyboard('{Control>}k{/Control}')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+  })
+
+  it('panel is not shown on initial render of a disabled route (timing regression)', () => {
+    renderShell('/')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+    renderShell('/courses')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+    renderShell('/lessons')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+  })
+
+  it('clicking desktop FAB on / does not open panel (regression of #1051)', async () => {
+    const user = userEvent.setup()
+    renderShell('/')
+    const btn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    expect(btn).toHaveAttribute('aria-disabled', 'true')
+    await user.click(btn)
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+  })
+
+  it('launcher is disabled on /students/new (no student anchor yet)', async () => {
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { unmount } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/students/new']}>
+          <AppShell />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    expect(openBtn).toHaveAttribute('aria-disabled', 'true')
+    await user.click(openBtn)
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+    unmount()
+  })
+
+  it('Escape with pending proposals shows inline discard confirm instead of closing', async () => {
+    const user = userEvent.setup()
+    mockPropose.mockResolvedValueOnce({
+      proposals: [{ id: 'p1', type: 'student', field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' }],
+    })
+    renderShell('/students/123')
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(openBtn)
+    const input = screen.getByTestId('assistant-input')
+    await user.type(input, 'Hoy hemos trabajado el subjuntivo')
+    await user.click(screen.getByTestId('assistant-send-btn'))
+    // Wait for the pending proposal card to appear
+    await waitFor(() => expect(screen.getByTestId('proposals-list')).toBeInTheDocument())
+    // Pending proposal exists — Escape should show confirm, not close
+    await user.keyboard('{Escape}')
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
+    expect(screen.getByTestId('discard-confirm')).toBeInTheDocument()
+  })
+
+  it('reopening the panel after close shows empty state (no stale transcription or proposals)', async () => {
+    const user = userEvent.setup()
+    mockPropose.mockResolvedValueOnce({
+      proposals: [{ id: 'p1', type: 'student', field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' }],
+    })
+    renderShell('/students/123')
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+
+    // Open and produce proposals
+    await user.click(openBtn)
+    const input = screen.getByTestId('assistant-input')
+    await user.type(input, 'Hoy hemos trabajado el subjuntivo')
+    await user.click(screen.getByTestId('assistant-send-btn'))
+    await waitFor(() => expect(screen.getByTestId('proposals-list')).toBeInTheDocument())
+    expect(screen.getByTestId('transcription-block')).toBeInTheDocument()
+
+    // Close with no pending prompt (X button — no blocking work if proposals are in non-pending state)
+    // Dismiss all to remove pending proposals, then close cleanly
+    await user.click(screen.getByTestId('dismiss-all-btn'))
+    await waitFor(() => expect(screen.queryByTestId('batch-actions')).not.toBeInTheDocument())
+    const closeBtn = screen.getByRole('button', { name: /close assistant/i })
+    await user.click(closeBtn)
+    await waitFor(() => expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument())
+
+    // Reopen — must show empty state, no stale content
+    await user.click(openBtn)
+    expect(screen.getByTestId('assistant-empty-state')).toBeInTheDocument()
+    expect(screen.queryByTestId('transcription-block')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('proposals-list')).not.toBeInTheDocument()
+  })
+
+  it('reopening after applying all proposals shows empty state', async () => {
+    const user = userEvent.setup()
+    mockPropose.mockResolvedValueOnce({
+      proposals: [{ id: 'p1', type: 'student', field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' }],
+    })
+    renderShell('/students/123')
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+
+    // Open, submit, wait for proposal
+    await user.click(openBtn)
+    const input = screen.getByTestId('assistant-input')
+    await user.type(input, 'Worked on grammar')
+    await user.click(screen.getByTestId('assistant-send-btn'))
+    await waitFor(() => expect(screen.getByTestId('proposals-list')).toBeInTheDocument())
+
+    // Apply the proposal (no pending → close via onClose path)
+    await user.click(screen.getByTestId('apply-btn-p1'))
+    await waitFor(() => expect(screen.queryByTestId('batch-actions')).not.toBeInTheDocument())
+    const closeBtn = screen.getByRole('button', { name: /close assistant/i })
+    await user.click(closeBtn)
+    await waitFor(() => expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument())
+
+    // Reopen — must be empty
+    await user.click(openBtn)
+    expect(screen.getByTestId('assistant-empty-state')).toBeInTheDocument()
+    expect(screen.queryByTestId('transcription-block')).not.toBeInTheDocument()
+  })
+
+  it('reopening after discarding pending proposals shows empty state', async () => {
+    const user = userEvent.setup()
+    mockPropose.mockResolvedValueOnce({
+      proposals: [{ id: 'p1', type: 'student', field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' }],
+    })
+    renderShell('/students/123')
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+
+    // Open, submit, wait for proposal
+    await user.click(openBtn)
+    const input = screen.getByTestId('assistant-input')
+    await user.type(input, 'Worked on grammar')
+    await user.click(screen.getByTestId('assistant-send-btn'))
+    await waitFor(() => expect(screen.getByTestId('proposals-list')).toBeInTheDocument())
+
+    // Close with pending proposal → discard confirm appears → confirm discard
+    const closeBtn = screen.getByRole('button', { name: /close assistant/i })
+    await user.click(closeBtn)
+    expect(screen.getByTestId('discard-confirm')).toBeInTheDocument()
+    await user.click(screen.getByTestId('discard-confirm-yes'))
+    await waitFor(() => expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument())
+
+    // Reopen — must be empty
+    await user.click(openBtn)
+    expect(screen.getByTestId('assistant-empty-state')).toBeInTheDocument()
+    expect(screen.queryByTestId('transcription-block')).not.toBeInTheDocument()
+  })
+
+  it('Open Assistant FAB shows active state (dimmed) when panel is open', async () => {
+    const user = userEvent.setup()
+    renderShell('/students/123')
+    const btn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(btn)
+    expect(btn.className).toContain('brightness-75')
+  })
+
+  describe('launcher enabled/disabled by route', () => {
+    const disabledRoutes = ['/', '/courses', '/courses/abc', '/lessons', '/lessons/abc', '/lessons/abc/study', '/sessions', '/settings']
+    const enabledRoutes = ['/students', '/students/123', '/students/123/edit', '/students/123/log-session', '/students/123/sessions/456/edit']
+
+    for (const route of disabledRoutes) {
+      it(`launcher is disabled on ${route}`, () => {
+        renderShell(route)
+        const btn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+        expect(btn).toHaveAttribute('aria-disabled', 'true')
+        expect(btn.className).toContain('opacity-50')
+      })
+    }
+
+    for (const route of enabledRoutes) {
+      it(`launcher is active on ${route}`, () => {
+        renderShell(route)
+        const btn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+        expect(btn).not.toHaveAttribute('aria-disabled')
+        expect(btn.className).not.toContain('opacity-50')
+      })
+    }
+  })
+
+  it('panel auto-closes and resets when navigating from an enabled to a disabled route', async () => {
+    const user = userEvent.setup()
+    const { router } = renderShellWithRouter('/students/123')
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(openBtn)
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
+
+    await act(async () => { await router.navigate('/') })
+
+    await waitFor(() => expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument())
+    // Navigating back to an enabled route and reopening shows clean state
+    await act(async () => { await router.navigate('/students/123') })
+    const reopenBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(reopenBtn)
+    expect(screen.getByTestId('assistant-empty-state')).toBeInTheDocument()
   })
 })

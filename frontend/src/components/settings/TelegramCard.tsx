@@ -176,7 +176,6 @@ export function TelegramCard() {
         size="sm"
         onClick={() => generate.mutate()}
         disabled={generate.isPending}
-        className="bg-indigo-600 hover:bg-indigo-700"
         data-testid="telegram-connect-btn"
       >
         {generate.isPending ? 'Generating...' : 'Connect Telegram'}

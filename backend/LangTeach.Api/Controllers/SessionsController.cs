@@ -44,7 +44,7 @@ public class SessionsController : ControllerBase
 
         _logger.LogInformation("POST /api/students/{StudentId}/sessions/extract. TeacherId={TeacherId}", studentId, teacherId);
         var knownDifficulties = student.Profile.Difficulties.Select(d => d.Description).ToList();
-        var extracted = await _extractionService.ExtractAsync(request.Text, knownDifficulties, cancellationToken);
+        var extracted = await _extractionService.ExtractAsync(request.Text, knownDifficulties, hasOpenSession: true, cancellationToken);
         return Ok(extracted);
     }
 }

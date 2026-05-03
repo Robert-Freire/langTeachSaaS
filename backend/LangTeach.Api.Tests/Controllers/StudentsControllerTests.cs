@@ -516,6 +516,145 @@ public class StudentsControllerTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact]
+    public async Task PatchStudentProfile_AppendInterests_AddsToExistingList()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-profile-interests", "patch-profile-interests@example.com");
+        var student = await CreateStudentAsync(client, "Carmen");
+
+        var patch = new PatchStudentProfileRequest
+        {
+            AppendInterests = ["Flamenco", "Cine de Almodóvar"],
+        };
+        var response = await client.PatchAsJsonAsync($"/api/students/{student.Id}/profile", patch);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Profile.Interests.Should().Contain("Flamenco");
+        updated.Profile.Interests.Should().Contain("Cine de Almodóvar");
+    }
+
+    [Fact]
+    public async Task PatchStudentProfile_AppendDifficulties_AddsToExistingList()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-profile-diffs", "patch-profile-diffs@example.com");
+        var student = await CreateStudentAsync(client, "Ana");
+
+        var patch = new PatchStudentProfileRequest
+        {
+            AppendDifficulties =
+            [
+                new AppendDifficultyItem
+                {
+                    Description = "Indefinido vs perfecto compuesto",
+                    Competency = "Grammar",
+                    Subcategory = "past tense",
+                },
+            ],
+        };
+        var response = await client.PatchAsJsonAsync($"/api/students/{student.Id}/profile", patch);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Profile.Difficulties.Should().Contain(d => d.Description == "Indefinido vs perfecto compuesto");
+    }
+
+    [Fact]
+    public async Task PatchStudentProfile_ReplaceLearningGoals_ReplacesExistingGoals()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-profile-goals", "patch-profile-goals@example.com");
+        var student = await CreateStudentAsync(client, "Marco");
+
+        var patch = new PatchStudentProfileRequest
+        {
+            LearningGoals = ["Presentaciones en español para clientes alemanes"],
+        };
+        var response = await client.PatchAsJsonAsync($"/api/students/{student.Id}/profile", patch);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Profile.LearningGoals.Should().ContainSingle(g => g.Text == "Presentaciones en español para clientes alemanes");
+    }
+
+    [Fact]
+    public async Task PatchStudentProfile_AppendTeachingNotes_AppendsToExistingNote()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-profile-notes", "patch-profile-notes@example.com");
+        var student = await CreateStudentAsync(client, "Hans");
+
+        var patch = new PatchStudentProfileRequest
+        {
+            AppendTeachingNotes = "Aprende bien a través de la música.",
+        };
+        var response = await client.PatchAsJsonAsync($"/api/students/{student.Id}/profile", patch);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Profile.TeachingNotes.Should().Contain("música");
+    }
+
+    [Fact]
+    public async Task PatchStudentProfile_AppendInterests_DoesNotAddDuplicates()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-profile-nodup", "patch-profile-nodup@example.com");
+        var student = await CreateStudentAsync(client, "Isabel");
+
+        // First append
+        await client.PatchAsJsonAsync($"/api/students/{student.Id}/profile",
+            new PatchStudentProfileRequest { AppendInterests = ["Flamenco"] });
+
+        // Second append with same interest + a new one
+        var response = await client.PatchAsJsonAsync($"/api/students/{student.Id}/profile",
+            new PatchStudentProfileRequest { AppendInterests = ["Flamenco", "Fotografía"] });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Profile.Interests.Where(i => i.Equals("Flamenco", StringComparison.OrdinalIgnoreCase)).Should().HaveCount(1);
+        updated.Profile.Interests.Should().Contain("Fotografía");
+    }
+
+    [Fact]
+    public async Task PatchStudent_SkillLevelFields_UpdatesSkillLevelOverrides()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-skill-levels", "patch-skill-levels@example.com");
+        var student = await CreateStudentAsync(client, "Nadia");
+
+        var patch = new PatchStudentRequest { SkillLevelReading = "C1", SkillLevelWriting = "B2" };
+        var patchResponse = await client.PatchAsJsonAsync($"/api/students/{student.Id}", patch);
+
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await patchResponse.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Level.SkillLevelOverrides.Should().ContainKey("Reading").WhoseValue.Should().Be("C1");
+        updated.Level.SkillLevelOverrides.Should().ContainKey("Writing").WhoseValue.Should().Be("B2");
+        updated.Level.SkillLevelOverrides.Should().NotContainKey("Speaking");
+    }
+
+    [Fact]
+    public async Task PatchStudent_SkillLevelWithSubLevel_StoresSubLevel()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-skill-sublevel", "patch-skill-sublevel@example.com");
+        var student = await CreateStudentAsync(client, "Marco");
+
+        var patch = new PatchStudentRequest { SkillLevelReading = "B1.2" };
+        var patchResponse = await client.PatchAsJsonAsync($"/api/students/{student.Id}", patch);
+
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await patchResponse.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Level.SkillLevelOverrides.Should().ContainKey("Reading").WhoseValue.Should().Be("B1.2");
+    }
+
+    [Fact]
+    public async Task PatchStudent_InvalidSkillLevel_ReturnsBadRequest()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-skill-invalid", "patch-skill-invalid@example.com");
+        var student = await CreateStudentAsync(client, "InvalidLevelStudent");
+
+        var patch = new PatchStudentRequest { SkillLevelWriting = "Z9" };
+        var patchResponse = await client.PatchAsJsonAsync($"/api/students/{student.Id}", patch);
+
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     private static async Task<StudentDto> CreateStudentAsync(
         HttpClient client,
         string name,

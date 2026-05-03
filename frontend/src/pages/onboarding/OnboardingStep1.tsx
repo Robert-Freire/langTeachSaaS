@@ -124,7 +124,7 @@ export default function OnboardingStep1({ onNext }: OnboardingStep1Props) {
       {error && <p className="text-sm text-red-600" data-testid="step1-error">{error}</p>}
 
       <div className="flex justify-end">
-        <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700" data-testid="onboarding-next">
+        <Button type="submit" disabled={isPending} data-testid="onboarding-next">
           {isPending ? 'Saving...' : 'Next'}
         </Button>
       </div>

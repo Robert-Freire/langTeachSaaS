@@ -148,7 +148,7 @@ export default function OnboardingStep2({ onNext, onBack, onSkip }: OnboardingSt
               Skip, I'll do this later
             </button>
           )}
-          <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700" data-testid="onboarding-next">
+          <Button type="submit" disabled={isPending} data-testid="onboarding-next">
             {isPending ? 'Creating...' : 'Next'}
           </Button>
         </div>

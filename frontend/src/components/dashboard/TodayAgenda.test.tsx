@@ -71,7 +71,7 @@ describe('TodayAgenda', () => {
       </MemoryRouter>,
     )
     const link = screen.getByRole('link', { name: /Ana/ })
-    expect(link.className).toContain('border-l-indigo-600')
+    expect(link.className).toContain('border-l-primary')
     expect(screen.getByText('NEXT SESSION')).toBeInTheDocument()
   })
 

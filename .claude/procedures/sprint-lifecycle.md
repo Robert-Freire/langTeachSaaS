@@ -23,7 +23,63 @@ Deploy freeze = Robert does not trigger the merge action. Sprint branch keeps re
 
 ## Sprint close
 
-Four stages:
+Five stages (Stage 0 is the gate; do not proceed to Stage 1 if it produces open fails):
+
+**Stage 0 (Smoke Test) — run before anything else:**
+
+This stage exists because per-PR review and unit tests catch isolated correctness but miss complete teacher flows. Two steps.
+
+**Stage 0A: Issue Coverage Audit**
+
+The sprint story written at sprint start covers the planned scenarios. Mid-sprint additions (discovered bugs, incoming requests merged into the sprint) are often not reflected in those scenarios. Before testing anything, close this gap.
+
+1. Pull every closed issue from the sprint milestone:
+   ```bash
+   gh issue list --milestone "<milestone-name>" --state closed --json number,title,labels --limit 100
+   ```
+2. Read the sprint story at `plan/sprints/<slug>.md`.
+3. For each closed issue, decide: is this issue's behaviour fully covered by a scenario already in the sprint story? Use this rule: if a teacher doing the story walkthrough would naturally exercise this issue's fix or feature, it is covered. If not, it is a gap.
+4. Append a `## Smoke Test Appendix` section to the sprint story file listing every gap as a numbered scenario. Write each scenario as a short user action + expected result (same style as the main story). Do not rewrite the main story; only add the appendix.
+5. If the appendix is empty, note that explicitly in the story file so it is clear the audit was done.
+
+**Stage 0B: Chrome Extension Walkthrough**
+
+Invoke the `smoke-test` skill (via the Skill tool). The skill starts the visual stack if needed, builds the prompt from the live sprint story content, writes it to a temp file, and tells the user the exact `claude --chrome` command to run. The user runs one command; the chrome session does the walkthrough and reports back. No copy-paste required.
+
+The chrome session records a one-line result for each scenario:
+
+- PASS: behaviour matches expectation
+- FAIL: describe what went wrong (one sentence)
+- SKIP: could not test (explain why)
+
+Produce a smoke test result table:
+
+| Scenario | Source | Result | Notes |
+|----------|--------|--------|-------|
+| (scenario title) | Story / Appendix | PASS / FAIL / SKIP | (one line if FAIL or SKIP) |
+
+**Before flagging any FAIL, run this two-check guard.** Smoke-test FAILs trigger fix issues and block Stage 1, so a false positive is expensive. Do NOT mark a scenario FAIL until both checks pass:
+
+1. **Scope check.** Read the original issue body for the AC you are testing. If it has an `## Out of scope` (or `Out of scope:`) section, confirm the screen / component you tested is not listed there. A regression flagged on an out-of-scope screen is invalid — the issue never governed it. Common trap: testing `SessionHistoryTab.tsx` against an AC scoped to `StudentOverviewTab.tsx`, or vice versa. When in doubt, grep the AC for the exact file path.
+2. **Spec check.** When the FAIL claims a design-system violation ("not a ghost button", "wrong border", "missing ring"), open `docs/design-system.md` and quote the actual rule before flagging. Do not infer DS conventions from prior projects or general web design intuition. Specifically: per §2 (No-Line Rule) and §6, Ghost = transparent bg + tonal hover, **no border or ring**; outlined buttons are not in our DS. If the shipped code matches the DS literal text, it is not a regression.
+
+If either check invalidates the FAIL, log it under the appendix as PASS with a one-line note explaining the guard (e.g., "PASS: scope check — issue out-of-scope for this screen") rather than as a FAIL. If a real concern remains (e.g., the screen looks off even though the AC was satisfied), record it as an opportunistic observation, not a regression.
+
+**If a FAIL survives both guards:** open a fix issue, assign it to the current sprint milestone, implement via normal worktree flow, re-run that scenario only. Do not proceed to Stage 1 until all FAILs are resolved or explicitly accepted by the user with a reason.
+
+**Opportunistic observations:** While walking through scenarios, log anything that looks broken, confusing, or improvable but is unrelated to the scenario under test. Append each to `plan/observed-issues.md` using the standard format:
+
+```
+| #smoke-<slug> | <date> | <severity: critical/major/minor> | <one-line description> |
+```
+
+Use `#smoke-<sprint-slug>` as a placeholder issue number (no GitHub issue yet). These feed directly into the Stage 1 backlog triage — do not create issues for them now, just log them.
+
+Stop the e2e stack after the walkthrough.
+
+---
+
+Four remaining stages:
 
 **Stage 1 (PM, main conversation):** Read `plan/code-review-backlog.md`, `plan/ui-review-backlog.md`, `plan/observed-issues.md`, and `plan/ui-review-skipped.md`. Triage each entry as FIX NOW / NEXT SPRINT / DELETE. Present to user. Implement FIX NOW items via normal worktree flow. Batch NEXT SPRINT items into themed GitHub issues. Clear triaged entries.
 

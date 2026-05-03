@@ -176,4 +176,6 @@ public interface IPedagogyConfigService
     /// Returns null if the L1 is unknown, no patterns are defined, or none match the topic and level.
     /// </summary>
     ContrastiveNoteResult? GetContrastivePattern(string nativeLang, string grammarTopic, string level);
+
+    PromptFragmentsConfig PromptFragments { get; }
 }
