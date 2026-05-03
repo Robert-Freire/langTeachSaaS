@@ -14,6 +14,7 @@ import {
 // Re-export so consumers don't need to import from api/assistant directly
 export type { NewSessionData, NewStudentData }
 import { createStudent } from '../api/students'
+import { normalizeLanguage, normalizeLanguages } from '../lib/extractionNormalizer'
 
 export type ProposalStatus = 'proposed' | 'applying' | 'applied' | 'dismissed' | 'error'
 
@@ -150,14 +151,24 @@ export function useAtelierAssistant(
           )
           if (exists) throw new Error(`A student named "${data.name}" already exists.`)
         }
+        const normalizedLearningLanguage = normalizeLanguage(data.learningLanguage)
+        if (!normalizedLearningLanguage) {
+          throw new Error(`Could not recognize learning language: "${data.learningLanguage}". Please edit it before applying.`)
+        }
+        const rawNativeLanguages = data.nativeLanguages ?? []
+        const badLang = rawNativeLanguages.find(lang => !normalizeLanguage(lang))
+        if (badLang) {
+          throw new Error(`Could not recognize language: "${badLang}". Please edit it before applying.`)
+        }
+        const normalizedNativeLanguages = normalizeLanguages(rawNativeLanguages)
         await createStudent({
           name: data.name,
-          learningLanguage: data.learningLanguage,
+          learningLanguage: normalizedLearningLanguage,
           cefrLevel: data.cefrLevel,
           birthYear: data.birthYear ?? null,
           profession: data.profession ?? null,
           cityOfResidence: data.cityOfResidence ?? null,
-          nativeLanguages: data.nativeLanguages ?? [],
+          nativeLanguages: normalizedNativeLanguages,
           reasonForStudying: data.reasonForStudying ?? null,
           interests: [],
           learningGoals: [],

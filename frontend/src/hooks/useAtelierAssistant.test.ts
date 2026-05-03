@@ -222,8 +222,101 @@ describe('useAtelierAssistant', () => {
     expect(result.current.proposals).toHaveLength(1)
 
     await act(async () => { await result.current.apply('p4') })
-    expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({ name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' }))
+    expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({ name: 'Sofía', learningLanguage: 'English', cefrLevel: 'B1' }))
     expect(result.current.proposals[0].status).toBe('applied')
+  })
+
+  it('apply: normalizes Spanish language names to canonical English before creating student', async () => {
+    const studentPayload = { name: 'María', learningLanguage: 'inglés', nativeLanguages: ['castellano'], cefrLevel: 'B1' }
+    const newStudentProposal = { id: 'p5', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'María', payload: studentPayload }
+    mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
+    mockCreateStudent.mockResolvedValueOnce({
+      id: 'new-id', name: 'María', learningLanguage: 'English',
+      level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
+      languages: { nativeLanguages: ['Spanish'], spokenLanguages: [] },
+      identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+      profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
+      commercial: { isActive: true, isCorporate: false, rate: null },
+      createdAt: '', updatedAt: '',
+    })
+
+    const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('Nueva alumna María') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.apply('p5') })
+    expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({
+      learningLanguage: 'English',
+      nativeLanguages: ['Spanish'],
+    }))
+    expect(result.current.proposals[0].status).toBe('applied')
+  })
+
+  it('apply: English-only input passes through without normalization regression', async () => {
+    const studentPayload = { name: 'John', learningLanguage: 'Spanish', nativeLanguages: ['English'], cefrLevel: 'A2' }
+    const newStudentProposal = { id: 'p6', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'John', payload: studentPayload }
+    mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
+    mockCreateStudent.mockResolvedValueOnce({
+      id: 'new-id', name: 'John', learningLanguage: 'Spanish',
+      level: { cefrLevel: 'A2', officialCefrLevel: null, skillLevelOverrides: {} },
+      languages: { nativeLanguages: ['English'], spokenLanguages: [] },
+      identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+      profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
+      commercial: { isActive: true, isCorporate: false, rate: null },
+      createdAt: '', updatedAt: '',
+    })
+
+    const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('New student John') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.apply('p6') })
+    expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({
+      learningLanguage: 'Spanish',
+      nativeLanguages: ['English'],
+    }))
+    expect(result.current.proposals[0].status).toBe('applied')
+  })
+
+  it('apply: mixed Spanish aliases and canonical English in nativeLanguages both normalize correctly', async () => {
+    const studentPayload = { name: 'María', learningLanguage: 'Spanish', nativeLanguages: ['Portuguese', 'castellano'], cefrLevel: 'B2' }
+    const newStudentProposal = { id: 'p8', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'María', payload: studentPayload }
+    mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
+    mockCreateStudent.mockResolvedValueOnce({
+      id: 'new-id', name: 'María', learningLanguage: 'Spanish',
+      level: { cefrLevel: 'B2', officialCefrLevel: null, skillLevelOverrides: {} },
+      languages: { nativeLanguages: ['Portuguese', 'Spanish'], spokenLanguages: [] },
+      identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+      profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
+      commercial: { isActive: true, isCorporate: false, rate: null },
+      createdAt: '', updatedAt: '',
+    })
+
+    const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('Nueva alumna María') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.apply('p8') })
+    expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({
+      learningLanguage: 'Spanish',
+      nativeLanguages: ['Portuguese', 'Spanish'],
+    }))
+    expect(result.current.proposals[0].status).toBe('applied')
+  })
+
+  it('apply: unrecognized language name sets proposal to error with offending value', async () => {
+    const studentPayload = { name: 'Test', learningLanguage: 'klingon', cefrLevel: 'B1' }
+    const newStudentProposal = { id: 'p7', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Test', payload: studentPayload }
+    mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
+
+    const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('Nueva alumna Test') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.apply('p7') })
+    expect(result.current.proposals[0].status).toBe('error')
+    expect(result.current.proposals[0].errorMessage).toContain('klingon')
+    expect(mockCreateStudent).not.toHaveBeenCalled()
   })
 
   it('onEditPayload: updates payload of proposal with matching id', async () => {
