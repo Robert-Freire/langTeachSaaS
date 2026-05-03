@@ -517,6 +517,8 @@ public class ReflectionExtractionServiceTests
     [InlineData("B1", "B1")]
     [InlineData("A2+", "A2+")]
     [InlineData("C1", "C1")]
+    [InlineData("B2.1", "B2.1")]
+    [InlineData("A1.2", "A1.2")]
     [InlineData("Intermediate", null)]
     [InlineData("B3", null)]
     [InlineData("", null)]

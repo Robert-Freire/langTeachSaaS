@@ -320,7 +320,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
             : null;
     }
 
-    private static readonly Regex CefrLevelRegex = new(@"^[ABC][12]\+?$", RegexOptions.Compiled);
+    private static readonly Regex CefrLevelRegex = new(@"^[ABC][12](\.\d+)?\+?$", RegexOptions.Compiled);
 
     private static string? ParseCefrLevel(JsonElement root, string key)
     {
