@@ -2,7 +2,7 @@ import { useState, useEffect, type ElementType } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useQuery } from '@tanstack/react-query'
-import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings, LogOut, Menu, Sparkles, HelpCircle, X } from 'lucide-react'
+import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings, LogOut, Menu, Sparkles, X } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import LangTeachLogo from '@/components/LangTeachLogo'
@@ -80,10 +80,9 @@ function SidebarContent({ user, initials, logout, location }: {
         ))}
       </nav>
 
-      {/* Bottom: Help + Settings (visually separated) + teacher profile with tucked logout */}
+      {/* Bottom: Settings + teacher profile with tucked logout */}
       <div className="px-3 py-4 space-y-3 mt-auto">
         <div className="pt-2 space-y-0.5">
-          <NavLink to="/help" label="Help" icon={HelpCircle} location={location} />
           <NavLink to="/settings" label="Settings" icon={Settings} location={location} />
         </div>
         <div className="bg-white rounded-xl p-3 flex items-center gap-3" data-testid="teacher-profile-card">
