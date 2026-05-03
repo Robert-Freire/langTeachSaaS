@@ -8,3 +8,4 @@ The sprint-close procedure (Stage 1) audits this log and clears it after each sp
 
 | Issue | Date | PR | What changed and why review-ui was skipped |
 |-------|------|----|-------------------------------------------|
+| #1057 | 2026-05-03 | TBD | Zero frontend files changed; backend-only flag added to reflection extraction pipeline |

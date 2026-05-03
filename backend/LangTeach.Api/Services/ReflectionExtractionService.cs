@@ -26,9 +26,9 @@ public class ReflectionExtractionService : IReflectionExtractionService
         _logger = logger;
     }
 
-    public async Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, CancellationToken ct = default)
+    public async Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, bool hasOpenSession = false, CancellationToken ct = default)
     {
-        var request = _prompts.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(DateOnly.FromDateTime(DateTime.UtcNow), text, knownDifficulties));
+        var request = _prompts.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(DateOnly.FromDateTime(DateTime.UtcNow), text, knownDifficulties, hasOpenSession));
 
         ClaudeResponse response;
         try
@@ -50,7 +50,9 @@ public class ReflectionExtractionService : IReflectionExtractionService
 
         var dto = ParseResponse(response.Content);
 
-        if (NeedsWhatWasCoveredFallback(dto))
+        var isRetrospectiveNewSession = !hasOpenSession && !string.IsNullOrWhiteSpace(dto.NewSessionTitle);
+
+        if (!isRetrospectiveNewSession && NeedsWhatWasCoveredFallback(dto))
         {
             var synthesised = await SynthesiseWhatWasCoveredAsync(text, dto, ct);
             if (!string.IsNullOrWhiteSpace(synthesised))

@@ -212,7 +212,7 @@ public class TelegramConversationService : ITelegramConversationService
         ExtractedReflectionDto? extracted = null;
         try
         {
-            extracted = await _extractionService.ExtractAsync(notes, knownDifficulties, ct);
+            extracted = await _extractionService.ExtractAsync(notes, knownDifficulties, hasOpenSession: true, ct);
         }
         catch (OperationCanceledException)
         {

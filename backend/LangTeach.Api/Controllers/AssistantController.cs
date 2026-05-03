@@ -57,7 +57,7 @@ public class AssistantController : ControllerBase
             .ToList() as IReadOnlyList<string>;
 
         var studentTask = _studentExtractionService.ExtractAsync(request.Text, ct);
-        var reflectionTask = _reflectionExtractionService.ExtractAsync(request.Text, knownDifficulties, ct);
+        var reflectionTask = _reflectionExtractionService.ExtractAsync(request.Text, knownDifficulties, hasOpenSession: request.SessionId.HasValue, ct);
 
         await Task.WhenAll(studentTask, reflectionTask);
 
