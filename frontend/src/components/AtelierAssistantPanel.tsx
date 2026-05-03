@@ -129,6 +129,12 @@ export default function AtelierAssistantPanel({
     if (!open) {
       setInputValue('')
       setPendingClose(false)
+      setMicState('idle')
+      setMicError(null)
+      setMicElapsed(0)
+      setTooShortHint(false)
+      setDurationWarning(false)
+      setShowSlowSttCancel(false)
     }
   }, [open])
 
