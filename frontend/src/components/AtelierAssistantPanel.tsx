@@ -81,7 +81,6 @@ export default function AtelierAssistantPanel({
 }: Props) {
   const [inputValue, setInputValue] = useState('')
   const [pendingClose, setPendingClose] = useState(false)
-  const chatInputRef = useRef<HTMLInputElement>(null)
 
   const [micState, setMicState] = useState<MicState>('idle')
   const [micError, setMicError] = useState<MicError>(null)
@@ -332,11 +331,6 @@ export default function AtelierAssistantPanel({
     }
   }
 
-  function handleRedirectToChat(prefill: string) {
-    setInputValue(prefill)
-    setTimeout(() => chatInputRef.current?.focus(), 0)
-  }
-
   const emptyPrompt = studentName
     ? `What did you cover with ${studentName} today?`
     : 'What would you like to cover today?'
@@ -466,7 +460,6 @@ export default function AtelierAssistantPanel({
                         onUndo={onUndo}
                         onRetry={onRetry}
                         onModify={onModify}
-                        onRedirectToChat={handleRedirectToChat}
                         onEditPayload={onEditPayload}
                         studentId={studentId}
                       />
