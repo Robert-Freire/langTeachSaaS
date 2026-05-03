@@ -33,3 +33,5 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 ## #1041/#1042 (2026-05-02)
 
 - **Weekday backward-resolution prose duplicated** (prompt-health-reviewer): "el lunes pasado" past-date resolution is stated in both `sessionDate` (line 1563) and `newSessionDate` (line 1576) with slightly different wording. Consider extracting a shared preamble or cross-reference. Minor, no functional risk.
+
+| #1051 | aria-disabled vs native disabled | AppShell FAB uses aria-disabled + manual onClick guard (not native disabled) to preserve focusability for tooltip. Intentional accessibility trade-off. Other disabled buttons in codebase use native disabled. |

@@ -1,7 +1,7 @@
-import { render, screen, within, waitFor } from '@testing-library/react'
+import { render, screen, within, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AppShell from './AppShell'
 
@@ -15,6 +15,10 @@ import { proposeAssistant } from '../api/assistant'
 const mockPropose = proposeAssistant as ReturnType<typeof vi.fn>
 
 const mockLogout = vi.fn()
+vi.mock('../api/students', () => ({
+  getStudent: vi.fn().mockResolvedValue({ id: '123', name: 'Ana García' }),
+}))
+
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: () => ({
     user: { name: 'Test User', email: 'test@example.com', picture: '' },
@@ -44,6 +48,17 @@ function renderShell(initialPath = '/') {
       </MemoryRouter>
     </QueryClientProvider>
   )
+}
+
+function renderShellWithRouter(initialPath: string) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const router = createMemoryRouter([{ path: '*', element: <AppShell /> }], { initialEntries: [initialPath] })
+  const utils = render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
+  )
+  return { ...utils, router }
 }
 
 describe('AppShell', () => {
@@ -232,7 +247,7 @@ describe('AppShell', () => {
 
   it('clicking Open Assistant opens the stub panel', async () => {
     const user = userEvent.setup()
-    renderShell()
+    renderShell('/students/123')
     expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
     const btn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
     await user.click(btn)
@@ -241,7 +256,7 @@ describe('AppShell', () => {
 
   it('closing the assistant panel removes it from the DOM', async () => {
     const user = userEvent.setup()
-    renderShell()
+    renderShell('/students/123')
     const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
     await user.click(openBtn)
     const closeBtn = screen.getByRole('button', { name: /close assistant/i })
@@ -256,7 +271,7 @@ describe('AppShell', () => {
 
   it('Escape key closes the assistant panel', async () => {
     const user = userEvent.setup()
-    renderShell()
+    renderShell('/students/123')
     const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
     await user.click(openBtn)
     expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
@@ -264,15 +279,23 @@ describe('AppShell', () => {
     expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
   })
 
-  it('Ctrl+K opens the assistant panel', async () => {
+  it('Ctrl+K opens the assistant panel on an enabled route', async () => {
     const user = userEvent.setup()
-    renderShell()
+    renderShell('/students/123')
     expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
     await user.keyboard('{Control>}k{/Control}')
     expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
   })
 
-  it('assistant empty state shows generic prompt on /students/new (not student-specific)', async () => {
+  it('Ctrl+K does nothing on a disabled route', async () => {
+    const user = userEvent.setup()
+    renderShell('/')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+    await user.keyboard('{Control>}k{/Control}')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+  })
+
+  it('launcher is disabled on /students/new (no student anchor yet)', async () => {
     const user = userEvent.setup()
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { unmount } = render(
@@ -283,10 +306,9 @@ describe('AppShell', () => {
       </QueryClientProvider>
     )
     const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    expect(openBtn).toHaveAttribute('aria-disabled', 'true')
     await user.click(openBtn)
-    // Should show generic prompt, not "What did you cover with new today?"
-    expect(screen.queryByText(/What did you cover with/i)).not.toBeInTheDocument()
-    expect(screen.getByText(/What would you like to cover today/i)).toBeInTheDocument()
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
     unmount()
   })
 
@@ -295,7 +317,7 @@ describe('AppShell', () => {
     mockPropose.mockResolvedValueOnce({
       proposals: [{ id: 'p1', type: 'student', field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' }],
     })
-    renderShell()
+    renderShell('/students/123')
     const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
     await user.click(openBtn)
     const input = screen.getByTestId('assistant-input')
@@ -314,7 +336,7 @@ describe('AppShell', () => {
     mockPropose.mockResolvedValueOnce({
       proposals: [{ id: 'p1', type: 'student', field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' }],
     })
-    renderShell()
+    renderShell('/students/123')
     const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
 
     // Open and produce proposals
@@ -345,7 +367,7 @@ describe('AppShell', () => {
     mockPropose.mockResolvedValueOnce({
       proposals: [{ id: 'p1', type: 'student', field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' }],
     })
-    renderShell()
+    renderShell('/students/123')
     const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
 
     // Open, submit, wait for proposal
@@ -373,7 +395,7 @@ describe('AppShell', () => {
     mockPropose.mockResolvedValueOnce({
       proposals: [{ id: 'p1', type: 'student', field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' }],
     })
-    renderShell()
+    renderShell('/students/123')
     const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
 
     // Open, submit, wait for proposal
@@ -398,9 +420,49 @@ describe('AppShell', () => {
 
   it('Open Assistant FAB shows active state (dimmed) when panel is open', async () => {
     const user = userEvent.setup()
-    renderShell()
+    renderShell('/students/123')
     const btn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
     await user.click(btn)
     expect(btn.className).toContain('brightness-75')
+  })
+
+  describe('launcher enabled/disabled by route', () => {
+    const disabledRoutes = ['/', '/courses', '/courses/abc', '/lessons', '/lessons/abc', '/lessons/abc/study', '/sessions', '/settings']
+    const enabledRoutes = ['/students', '/students/123', '/students/123/edit', '/students/123/log-session', '/students/123/sessions/456/edit']
+
+    for (const route of disabledRoutes) {
+      it(`launcher is disabled on ${route}`, () => {
+        renderShell(route)
+        const btn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+        expect(btn).toHaveAttribute('aria-disabled', 'true')
+        expect(btn.className).toContain('opacity-50')
+      })
+    }
+
+    for (const route of enabledRoutes) {
+      it(`launcher is active on ${route}`, () => {
+        renderShell(route)
+        const btn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+        expect(btn).not.toHaveAttribute('aria-disabled')
+        expect(btn.className).not.toContain('opacity-50')
+      })
+    }
+  })
+
+  it('panel auto-closes and resets when navigating from an enabled to a disabled route', async () => {
+    const user = userEvent.setup()
+    const { router } = renderShellWithRouter('/students/123')
+    const openBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(openBtn)
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument()
+
+    await act(async () => { await router.navigate('/') })
+
+    await waitFor(() => expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument())
+    // Navigating back to an enabled route and reopening shows clean state
+    await act(async () => { await router.navigate('/students/123') })
+    const reopenBtn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    await user.click(reopenBtn)
+    expect(screen.getByTestId('assistant-empty-state')).toBeInTheDocument()
   })
 })
