@@ -491,6 +491,20 @@ describe('useAtelierAssistant', () => {
     expect(result.current.proposals[0].status).toBe('error')
   })
 
+  it('apply: session proposal invalidates session-summary query', async () => {
+    const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+    mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[1]] })
+    mockApplySession.mockResolvedValueOnce(undefined)
+    const { result } = renderHook(() => useAtelierAssistant('student-1', 'session-1'), { wrapper: makeWrapper() })
+
+    act(() => { result.current.submit('text') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.apply('p2') })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['session-summary', 'student-1'] })
+    invalidateSpy.mockRestore()
+  })
+
   it('apply: routes skillLevel.writing student proposal to applyStudentProposal with dotted field', async () => {
     const skillProposal = { id: 'psk1', type: 'student' as const, field: 'skillLevel.writing', label: 'Writing Level', oldValue: null, newValue: 'B1' }
     mockPropose.mockResolvedValueOnce({ proposals: [skillProposal] })
