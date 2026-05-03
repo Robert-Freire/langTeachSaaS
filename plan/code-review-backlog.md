@@ -39,3 +39,7 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 ## #1070 (2026-05-03)
 
 - **IMPORTANT CONTEXT preamble contains negative suppression** (prompt-health-reviewer): The preamble says "sessionTitle and whatWasCovered do not apply" when HasOpenSession=false. Now that sessionTitle has a field-level null guard, this negative-bloat clause is redundant. Remove "sessionTitle and whatWasCovered do not apply" from the sessionContextHint block once the existing null guards stabilise. Minor, no functional risk.
+
+## #1075 (2026-05-03)
+
+- **eslint-disable comment style** (arch-reviewer): The new post-init sync `useEffect` in `LogSession.tsx` uses an inline trailing comment on the dep array (`// intentionally reads local state without declaring as deps`) rather than a `// eslint-disable-next-line` line above it. Both are consistent with patterns used elsewhere in the file; cosmetic only, no functional impact.
