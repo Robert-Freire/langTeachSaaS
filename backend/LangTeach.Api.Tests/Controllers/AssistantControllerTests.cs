@@ -384,6 +384,49 @@ public class AssistantControllerTests
     }
 
     [Fact]
+    public async Task Propose_WithStudentAndNoSessionId_NewSessionTrigger_EmitsNewSessionProposal()
+    {
+        // From student-detail (no sessionId), new-session trigger must still produce a newSession proposal.
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-no-session-new", "assistant-no-session-new@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Le di clase ayer, trabajamos el subjuntivo. [schedule-new-session]",
+            StudentId = studentId,
+            SessionId = null, // student-detail context: no open session
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        body!.Proposals.Should().Contain(p => p.Type == "newSession");
+    }
+
+    [Fact]
+    public async Task Propose_WithStudentAndNoSessionId_PassesHasOpenSessionFalse_ToReflectionService()
+    {
+        // Verify hasOpenSession=false is passed when SessionId is null.
+        // The stub ignores hasOpenSession but the real service uses it; we verify no crash and correct proposal shape.
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-no-session-flag", "assistant-no-session-flag@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Normal text without schedule trigger.",
+            StudentId = studentId,
+            SessionId = null,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        body!.Proposals.Should().NotContain(p => p.Type == "newSession");
+    }
+
+    [Fact]
     public async Task Propose_WithSchedulingIntentButNoStudentId_StillEmitsNewSessionProposal()
     {
         // newSession proposal is emitted even without student context (frontend handles the disabled state).

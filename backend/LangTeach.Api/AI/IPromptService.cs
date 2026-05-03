@@ -82,7 +82,7 @@ public record SessionHistoryContext(
     string? LearningStyleNotes
 );
 
-public record ReflectionExtractionContext(DateOnly Today, string TeacherText, IReadOnlyList<string>? KnownDifficulties = null);
+public record ReflectionExtractionContext(DateOnly Today, string TeacherText, IReadOnlyList<string>? KnownDifficulties = null, bool HasOpenSession = false);
 
 public record WhatWasCoveredFallbackContext(
     string OriginalText,

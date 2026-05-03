@@ -1533,9 +1533,17 @@ public class PromptService : IPromptService
         var weekdayFacts = SpanishWeekdayResolver.BuildWeekdayFactsBlock(teacherText, today);
         var weekdayFactsSection = weekdayFacts != null ? $"\n            {weekdayFacts}" : string.Empty;
 
+        var sessionContextHint = ctx.HasOpenSession
+            ? string.Empty
+            : """
+
+
+            IMPORTANT CONTEXT: There is no open session in scope. If the teacher describes a class that already happened (past-tense cues: "le di clase", "ayer trabajamos", "trabajamos", "la semana pasada hicimos", duration + topic statements), treat it as retrospective session registration: populate newSessionTitle and newSessionDate, and leave sessionTitle and whatWasCovered null.
+            """;
+
         var system = $"""
             You are a tool that helps language teachers structure their post-class notes.
-            Extract structured information from a teacher's free-form reflection text.
+            Extract structured information from a teacher's free-form reflection text.{sessionContextHint}
 
             IMPORTANT: All text values in your response MUST be written in the same language as the teacher's input text. If the teacher writes in Spanish, every string value — including sessionTitle, topicTags, teachingTodos, teacherFollowups, and all summaries — must be in Spanish. Never translate or switch to English.
 

@@ -420,7 +420,7 @@ public class TelegramConversationServiceTests : IDisposable
         public Exception? ThrowOnNext { get; set; }
         public string? LastInput { get; private set; }
 
-        public Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, CancellationToken ct = default)
+        public Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, bool hasOpenSession = false, CancellationToken ct = default)
         {
             LastInput = text;
             if (ThrowOnNext is not null)

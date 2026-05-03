@@ -11,7 +11,7 @@ public class StubReflectionExtractionService : IReflectionExtractionService
         _logger = logger;
     }
 
-    public Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, CancellationToken ct = default)
+    public Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, bool hasOpenSession = false, CancellationToken ct = default)
     {
         _logger.LogInformation("StubReflectionExtractionService.ExtractAsync called with {Length} chars", text.Length);
 

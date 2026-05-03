@@ -3363,6 +3363,27 @@ public class PromptServiceTests
         request.SystemPrompt.Should().NotContain("Pre-resolved date references");
     }
 
+    [Fact]
+    public void BuildReflectionExtractionPrompt_HasOpenSession_False_ContainsNoOpenSessionHint()
+    {
+        var today = new DateOnly(2026, 5, 3);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(today, "Le di clase ayer, trabajamos el subjuntivo.", HasOpenSession: false));
+
+        request.SystemPrompt.Should().Contain("no open session in scope");
+        request.SystemPrompt.Should().Contain("retrospective session registration");
+    }
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_HasOpenSession_True_DoesNotContainNoOpenSessionHint()
+    {
+        var today = new DateOnly(2026, 5, 3);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(today, "Hoy trabajamos el subjuntivo.", HasOpenSession: true));
+
+        request.SystemPrompt.Should().NotContain("no open session in scope");
+    }
+
     // --- BuildStudentProfileExtractionPrompt ---
 
     [Fact]

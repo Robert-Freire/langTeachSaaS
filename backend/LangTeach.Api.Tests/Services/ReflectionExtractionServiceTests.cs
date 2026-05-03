@@ -612,6 +612,56 @@ public class ReflectionExtractionServiceTests
     }
 
     [Fact]
+    public async Task ExtractAsync_PassesHasOpenSession_False_ToPrompt()
+    {
+        ClaudeRequest? captured = null;
+        var client = new ReflectionClaudeClient(req =>
+        {
+            captured = req;
+            return new ClaudeResponse("""{"suggestedDifficulties":[],"topicTags":[],"teachingTodos":[],"teacherFollowups":[],"difficultiesWorkedOn":[]}""", "claude-haiku", 10, 50);
+        });
+        var realPrompts = new PromptService(
+            new SectionProfileService(NullLogger<SectionProfileService>.Instance),
+            PedagogyService,
+            NullLogger<PromptService>.Instance,
+            NullContentSchemas.Instance);
+        var sut = new ReflectionExtractionService(
+            client,
+            realPrompts,
+            PedagogyService,
+            NullLogger<ReflectionExtractionService>.Instance);
+
+        await sut.ExtractAsync("Le di clase ayer, trabajamos el subjuntivo.", hasOpenSession: false);
+
+        captured!.SystemPrompt.Should().Contain("no open session in scope");
+    }
+
+    [Fact]
+    public async Task ExtractAsync_PassesHasOpenSession_True_ToPrompt()
+    {
+        ClaudeRequest? captured = null;
+        var client = new ReflectionClaudeClient(req =>
+        {
+            captured = req;
+            return new ClaudeResponse("""{"suggestedDifficulties":[],"topicTags":[],"teachingTodos":[],"teacherFollowups":[],"difficultiesWorkedOn":[]}""", "claude-haiku", 10, 50);
+        });
+        var realPrompts = new PromptService(
+            new SectionProfileService(NullLogger<SectionProfileService>.Instance),
+            PedagogyService,
+            NullLogger<PromptService>.Instance,
+            NullContentSchemas.Instance);
+        var sut = new ReflectionExtractionService(
+            client,
+            realPrompts,
+            PedagogyService,
+            NullLogger<ReflectionExtractionService>.Instance);
+
+        await sut.ExtractAsync("Hoy trabajamos el subjuntivo.", hasOpenSession: true);
+
+        captured!.SystemPrompt.Should().NotContain("no open session in scope");
+    }
+
+    [Fact]
     public void ParseResponse_ParsesModeAppend()
     {
         var sut = CreateSut("{}");
