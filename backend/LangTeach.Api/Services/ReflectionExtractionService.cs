@@ -50,7 +50,9 @@ public class ReflectionExtractionService : IReflectionExtractionService
 
         var dto = ParseResponse(response.Content);
 
-        if (NeedsWhatWasCoveredFallback(dto))
+        var isRetrospectiveNewSession = !hasOpenSession && !string.IsNullOrWhiteSpace(dto.NewSessionTitle);
+
+        if (!isRetrospectiveNewSession && NeedsWhatWasCoveredFallback(dto))
         {
             var synthesised = await SynthesiseWhatWasCoveredAsync(text, dto, ct);
             if (!string.IsNullOrWhiteSpace(synthesised))

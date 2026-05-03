@@ -17,13 +17,13 @@ public class StubReflectionExtractionService : IReflectionExtractionService
 
         // Emit a newSession proposal when the text contains the trigger phrase used in tests.
         // "[schedule-new-session-no-date]" simulates when the LLM extracts a title but no date.
-        var newSessionTitle = text.Contains("[schedule-new-session]") || text.Contains("[schedule-new-session-no-date]")
-            ? "[Extracted] New Session Title"
-            : null;
-        var newSessionDate = text.Contains("[schedule-new-session]") ? "2026-05-19" : null;
+        var isNewSession = !hasOpenSession &&
+            (text.Contains("[schedule-new-session]") || text.Contains("[schedule-new-session-no-date]"));
+        var newSessionTitle = isNewSession ? "[Extracted] New Session Title" : null;
+        var newSessionDate = isNewSession && text.Contains("[schedule-new-session]") ? "2026-05-19" : null;
 
         return Task.FromResult(new ExtractedReflectionDto(
-            WhatWasCovered: new ExtractedTextFieldDto("[Extracted] What was covered", ExtractionMode.Replace),
+            WhatWasCovered: isNewSession ? null : new ExtractedTextFieldDto("[Extracted] What was covered", ExtractionMode.Replace),
             AreasToImprove: new ExtractedTextFieldDto("[Extracted] Areas to improve", ExtractionMode.Replace),
             EmotionalSignals: "[Extracted] Emotional signals",
             HomeworkAssigned: new ExtractedTextFieldDto("[Extracted] Homework assigned", ExtractionMode.Replace),
@@ -31,7 +31,7 @@ public class StubReflectionExtractionService : IReflectionExtractionService
             SessionDate: "2026-01-15",
             SuggestedDifficulties: [],
             RawExtractionJson: null,
-            SessionTitle: "[Extracted] Session title",
+            SessionTitle: isNewSession ? null : "[Extracted] Session title",
             TopicTags: [new TopicTagDto("[Extracted] Topic", null)],
             PreviousHomeworkStatus: null,
             TeachingTodos: [],
