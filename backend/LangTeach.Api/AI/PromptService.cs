@@ -1678,7 +1678,7 @@ public class PromptService : IPromptService
             - difficulties: array of objects — student weaknesses or trouble areas explicitly mentioned. Each object has:
                 - description: string — full description of the difficulty
                 - competency: string — must be one of: {competencies}
-                - subcategory: string — specific item (e.g. "ser/estar", "subjunctive", "past tense"), free text
+                - subcategory: string — specific item (e.g. "ser/estar", "subjuntivo", "tiempos de pasado"), free text
               Empty array [] if no difficulties mentioned.
             - teachingTodoTexts: array of strings — action items or tasks for the teacher to do (e.g. "Send subjunctive exercises", "Prepare business vocabulary list"). Empty array [] if none.
             - teachingNotes: string or null — observations about how the student learns (learning style, what works, what does not). Null if not mentioned.
