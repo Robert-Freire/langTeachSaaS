@@ -1530,13 +1530,16 @@ public class PromptService : IPromptService
             """
             : string.Empty;
 
+        var weekdayFacts = SpanishWeekdayResolver.BuildWeekdayFactsBlock(teacherText, today);
+        var weekdayFactsSection = weekdayFacts != null ? $"\n            {weekdayFacts}" : string.Empty;
+
         var system = $"""
             You are a tool that helps language teachers structure their post-class notes.
             Extract structured information from a teacher's free-form reflection text.
 
             IMPORTANT: All text values in your response MUST be written in the same language as the teacher's input text. If the teacher writes in Spanish, every string value — including sessionTitle, topicTags, teachingTodos, teacherFollowups, and all summaries — must be in Spanish. Never translate or switch to English.
 
-            Today is {today.DayOfWeek}, {today:yyyy-MM-dd}.
+            Today is {today.DayOfWeek}, {today:yyyy-MM-dd}.{weekdayFactsSection}
             {difficultiesSection}
             Respond ONLY with a valid JSON object using these exact keys:
             - whatWasCovered: object or null. When present, the object has two keys: "value" (string) and "mode" (one of "append", "replace", or "skip").

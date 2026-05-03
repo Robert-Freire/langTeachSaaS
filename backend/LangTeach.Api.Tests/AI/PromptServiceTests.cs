@@ -3341,6 +3341,28 @@ public class PromptServiceTests
         request.SystemPrompt.Should().Contain("retroactively registered");
     }
 
+    [Fact]
+    public void BuildReflectionExtractionPrompt_InjectsWeekdayFactsBlock_WhenTranscriptContainsWeekday()
+    {
+        // Saturday reference: "el lunes" should resolve to 2026-05-04
+        var saturday = new DateOnly(2026, 5, 2);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(saturday, "Programa una sesión para el lunes sobre subjuntivo."));
+
+        request.SystemPrompt.Should().Contain("Pre-resolved date references");
+        request.SystemPrompt.Should().Contain("2026-05-04");
+    }
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_NoWeekdayFactsBlock_WhenTranscriptHasNoWeekday()
+    {
+        var today = new DateOnly(2026, 5, 2);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(today, "Hoy hemos trabajado el subjuntivo."));
+
+        request.SystemPrompt.Should().NotContain("Pre-resolved date references");
+    }
+
     // --- BuildStudentProfileExtractionPrompt ---
 
     [Fact]

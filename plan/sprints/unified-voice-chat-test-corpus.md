@@ -147,6 +147,8 @@ A well-behaved extraction should produce exactly the proposals that match the in
 
 **Isaac's note:** "No quiero cambiar el nivel" is a negative instruction. This tests that the system does not eagerly update CefrLevel. The observation goes to the session log as a difficulty signal, not to the student profile as a level reassessment.
 
+**Known Haiku limitation — accepted (2026-05-03):** Three consecutive runs emit `cefrLevel: B1 -> B2`. Root cause: Haiku correctly detects the CEFR string "B2" but fails to propagate the "no quiero cambiar el nivel" suppression constraint across clauses. PM decision (2026-05-03): real teachers rarely produce this exact pattern (positive CEFR mention immediately qualified by an explicit suppression) in a single utterance; the UX safety net (verbatim transcript shown + per-card Apply) catches occasional misfires. No code change for this case. Promoting to Sonnet for a deterministic fix was explicitly rejected (ongoing cost not justified for an infrequent edge case).
+
 ---
 
 ## Group 3: New student creation
