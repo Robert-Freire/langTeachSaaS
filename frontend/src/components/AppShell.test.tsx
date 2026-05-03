@@ -295,6 +295,24 @@ describe('AppShell', () => {
     expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
   })
 
+  it('panel is not shown on initial render of a disabled route (timing regression)', () => {
+    renderShell('/')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+    renderShell('/courses')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+    renderShell('/lessons')
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+  })
+
+  it('clicking desktop FAB on / does not open panel (regression of #1051)', async () => {
+    const user = userEvent.setup()
+    renderShell('/')
+    const btn = document.querySelector('[data-testid="open-assistant-btn"]') as HTMLElement
+    expect(btn).toHaveAttribute('aria-disabled', 'true')
+    await user.click(btn)
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
+  })
+
   it('launcher is disabled on /students/new (no student anchor yet)', async () => {
     const user = userEvent.setup()
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
