@@ -35,3 +35,7 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 - **Weekday backward-resolution prose duplicated** (prompt-health-reviewer): "el lunes pasado" past-date resolution is stated in both `sessionDate` (line 1563) and `newSessionDate` (line 1576) with slightly different wording. Consider extracting a shared preamble or cross-reference. Minor, no functional risk.
 
 | #1051 | aria-disabled vs native disabled | AppShell FAB uses aria-disabled + manual onClick guard (not native disabled) to preserve focusability for tooltip. Intentional accessibility trade-off. Other disabled buttons in codebase use native disabled. |
+
+## #1070 (2026-05-03)
+
+- **IMPORTANT CONTEXT preamble contains negative suppression** (prompt-health-reviewer): The preamble says "sessionTitle and whatWasCovered do not apply" when HasOpenSession=false. Now that sessionTitle has a field-level null guard, this negative-bloat clause is redundant. Remove "sessionTitle and whatWasCovered do not apply" from the sessionContextHint block once the existing null guards stabilise. Minor, no functional risk.
