@@ -123,6 +123,13 @@ function extractSessionId(pathname: string): string | null {
   return match ? match[1] : null
 }
 
+// Returns true only when the route has a concrete entity anchor.
+// `/students` is explicitly OR'd because STUDENT_ID_RE requires a segment
+// after "students" and does not match the list route itself.
+function isAtelierEnabled(pathname: string): boolean {
+  return pathname === '/students' || extractStudentId(pathname) !== null
+}
+
 export default function AppShell() {
   const { user, logout } = useAuth0()
   const location = useLocation()
@@ -131,6 +138,7 @@ export default function AppShell() {
 
   const studentId = extractStudentId(location.pathname)
   const sessionId = extractSessionId(location.pathname)
+  const atelierEnabled = isAtelierEnabled(location.pathname)
 
   const { data: studentData } = useQuery({
     queryKey: ['student', studentId],
@@ -142,24 +150,32 @@ export default function AppShell() {
   const assistant = useAtelierAssistant(studentId, sessionId)
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setDrawerOpen(false) }, [location.pathname])
+  useEffect(() => {
+    setDrawerOpen(false)
+    if (!isAtelierEnabled(location.pathname)) {
+      setAssistantOpen(false)
+      assistant.reset()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        if (!atelierEnabled) return
         e.preventDefault()
         setAssistantOpen(open => !open)
       }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [atelierEnabled])
 
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : '?'
 
-  const toggleAssistant = () => setAssistantOpen(open => !open)
+  const toggleAssistant = () => { if (atelierEnabled) setAssistantOpen(open => !open) }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#FBF8FF]">
@@ -190,16 +206,31 @@ export default function AppShell() {
           <span className="text-primary font-bold text-base tracking-tight font-manrope">LangTeach</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <button
-            onClick={toggleAssistant}
-            aria-label="Open Assistant"
-            aria-haspopup="dialog"
-            aria-expanded={assistantOpen}
-            data-testid="open-assistant-mobile-btn"
-            className="h-8 w-8 rounded-full flex items-center justify-center bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-all"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  onClick={toggleAssistant}
+                  aria-label="Open Assistant"
+                  aria-haspopup={atelierEnabled ? 'dialog' : undefined}
+                  aria-expanded={atelierEnabled ? assistantOpen : undefined}
+                  aria-disabled={!atelierEnabled || undefined}
+                  data-testid="open-assistant-mobile-btn"
+                  className={cn(
+                    'h-8 w-8 rounded-full flex items-center justify-center bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-all',
+                    !atelierEnabled && 'opacity-50 cursor-not-allowed'
+                  )}
+                />
+              }
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {atelierEnabled
+                ? (assistantOpen ? 'Close Assistant' : 'Open Assistant')
+                : 'Open a student or session to use the assistant'}
+            </TooltipContent>
+          </Tooltip>
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.picture} alt={user?.name} />
             <AvatarFallback className="bg-primary text-white text-xs">{initials}</AvatarFallback>
@@ -234,8 +265,9 @@ export default function AppShell() {
           render={
             <button
               onClick={toggleAssistant}
-              aria-haspopup="dialog"
-              aria-expanded={assistantOpen}
+              aria-haspopup={atelierEnabled ? 'dialog' : undefined}
+              aria-expanded={atelierEnabled ? assistantOpen : undefined}
+              aria-disabled={!atelierEnabled || undefined}
               aria-label={assistantOpen ? 'Close Assistant' : 'Open Assistant'}
               data-testid="open-assistant-btn"
               className={cn(
@@ -245,9 +277,11 @@ export default function AppShell() {
                 'shadow-[0_12px_40px_0_rgb(26_27_34_/_0.10),0_4px_16px_0_rgb(53_37_205_/_0.18)]',
                 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                 'transition-all duration-150',
-                assistantOpen
-                  ? 'brightness-75'
-                  : 'hover:brightness-105 hover:shadow-[0_16px_48px_0_rgb(53_37_205_/_0.28)] active:brightness-90'
+                !atelierEnabled
+                  ? 'opacity-50 cursor-not-allowed'
+                  : assistantOpen
+                    ? 'brightness-75'
+                    : 'hover:brightness-105 hover:shadow-[0_16px_48px_0_rgb(53_37_205_/_0.28)] active:brightness-90'
               )}
             />
           }
@@ -255,7 +289,9 @@ export default function AppShell() {
           {assistantOpen ? <X className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
         </TooltipTrigger>
         <TooltipContent side="left">
-          Open Assistant <kbd data-slot="kbd">⌘K</kbd>
+          {atelierEnabled
+            ? <>Open Assistant <kbd data-slot="kbd">⌘K</kbd></>
+            : 'Open a student or session to use the assistant'}
         </TooltipContent>
       </Tooltip>
 
