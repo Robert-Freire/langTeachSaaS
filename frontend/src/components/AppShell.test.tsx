@@ -102,18 +102,18 @@ describe('AppShell', () => {
     expect(allDashboardLinks.length).toBeGreaterThanOrEqual(2)
   })
 
-  it('renders nav items in correct order: Dashboard, Students, Sessions, Courses, Lessons, then Help and Settings separated at bottom', () => {
+  it('renders nav items in correct order: Dashboard, Students, Sessions, Courses, Lessons, then Settings separated at bottom', () => {
     renderShell()
     const links = document.querySelector('aside')?.querySelectorAll('a')
     const labels = Array.from(links ?? []).map(a => a.textContent?.trim())
-    expect(labels).toEqual(['Dashboard', 'Students', 'Sessions', 'Courses', 'Lessons', 'Help', 'Settings'])
+    expect(labels).toEqual(['Dashboard', 'Students', 'Sessions', 'Courses', 'Lessons', 'Settings'])
   })
 
-  it('Settings and Help links are outside the main nav element', () => {
+  it('Settings link is outside the main nav element', () => {
     renderShell()
     const nav = screen.getByRole('navigation')
     expect(within(nav).queryByRole('link', { name: /^settings$/i })).not.toBeInTheDocument()
-    expect(within(nav).queryByRole('link', { name: /^help$/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /^help$/i })).not.toBeInTheDocument()
     const settingsLinks = screen.getAllByRole('link', { name: /^settings$/i })
     expect(settingsLinks.length).toBeGreaterThanOrEqual(1)
   })
@@ -164,7 +164,7 @@ describe('AppShell', () => {
 
   it('sidebar renders the same nav items regardless of route', () => {
     const routes = ['/', '/sessions', '/settings']
-    const expectedLabels = ['Dashboard', 'Students', 'Sessions', 'Courses', 'Lessons', 'Help', 'Settings']
+    const expectedLabels = ['Dashboard', 'Students', 'Sessions', 'Courses', 'Lessons', 'Settings']
 
     for (const route of routes) {
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
