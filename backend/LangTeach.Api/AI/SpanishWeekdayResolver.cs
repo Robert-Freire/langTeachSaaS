@@ -47,6 +47,7 @@ public static class SpanishWeekdayResolver
     /// </summary>
     public static string? BuildWeekdayFactsBlock(string text, DateOnly referenceDate)
     {
+        if (string.IsNullOrWhiteSpace(text)) return null;
         var matches = PhrasesRegex.Matches(text);
         if (matches.Count == 0) return null;
 
