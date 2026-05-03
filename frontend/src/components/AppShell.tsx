@@ -262,7 +262,7 @@ export default function AppShell() {
       {/* Atelier Assistant panel */}
       <AtelierAssistantPanel
         open={assistantOpen}
-        onClose={() => setAssistantOpen(false)}
+        onClose={() => { setAssistantOpen(false); assistant.reset() }}
         onCloseDiscarding={() => { setAssistantOpen(false); assistant.reset() }}
         studentName={studentData}
         transcription={assistant.transcription}

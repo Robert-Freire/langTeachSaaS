@@ -347,6 +347,64 @@ describe('AtelierAssistantPanel', () => {
     expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
   })
 
+  it('input value is cleared when panel closes and reopens', async () => {
+    const user = userEvent.setup()
+    const props = { ...defaultProps }
+    const { rerender } = render(<AtelierAssistantPanel {...props} />)
+
+    const input = screen.getByTestId('assistant-input')
+    await user.type(input, 'some text')
+    expect((input as HTMLInputElement).value).toBe('some text')
+
+    // Close panel
+    rerender(<AtelierAssistantPanel {...props} open={false} />)
+    // Reopen panel
+    rerender(<AtelierAssistantPanel {...props} open={true} />)
+
+    expect((screen.getByTestId('assistant-input') as HTMLInputElement).value).toBe('')
+  })
+
+  it('permission-denied mic error is cleared on close so reopen shows idle input', async () => {
+    const user = userEvent.setup()
+    mockGetUserMedia.mockRejectedValueOnce(Object.assign(new Error('denied'), { name: 'NotAllowedError' }))
+    const props = { ...defaultProps }
+    const { rerender } = render(<AtelierAssistantPanel {...props} />)
+
+    // Trigger permission denied
+    await user.click(screen.getByTestId('mic-btn'))
+    await waitFor(() => expect(screen.getByTestId('mic-permission-error')).toBeInTheDocument())
+
+    // Close and reopen
+    rerender(<AtelierAssistantPanel {...props} open={false} />)
+    rerender(<AtelierAssistantPanel {...props} open={true} />)
+
+    // Must show idle empty state, not permission error
+    expect(screen.queryByTestId('mic-permission-error')).not.toBeInTheDocument()
+    expect(screen.getByTestId('assistant-input')).toBeInTheDocument()
+  })
+
+  it('upload-failed mic error is cleared on close so reopen shows idle input', async () => {
+    vi.useFakeTimers()
+    mockUpload.mockRejectedValue(new Error('network'))
+    const props = { ...defaultProps }
+    const { rerender } = render(<AtelierAssistantPanel {...props} />)
+
+    await act(async () => { fireEvent.click(screen.getByTestId('mic-btn')) })
+    act(() => { vi.advanceTimersByTime(2000) })
+    await act(async () => { fireEvent.click(screen.getByTestId('stop-recording-btn')) })
+    vi.useRealTimers()
+
+    expect(await screen.findByTestId('upload-error')).toBeInTheDocument()
+
+    // Close and reopen
+    rerender(<AtelierAssistantPanel {...props} open={false} />)
+    rerender(<AtelierAssistantPanel {...props} open={true} />)
+
+    // Must show idle input row, not error state
+    expect(screen.queryByTestId('upload-error')).not.toBeInTheDocument()
+    expect(screen.getByTestId('assistant-input')).toBeInTheDocument()
+  })
+
   // ---- voice input tests ------------------------------------------------------
 
   it('renders mic button in idle state', () => {

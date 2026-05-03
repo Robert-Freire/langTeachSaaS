@@ -126,6 +126,19 @@ export default function AtelierAssistantPanel({
   }, [stopInterval])
 
   useEffect(() => {
+    if (!open) {
+      setInputValue('')
+      setPendingClose(false)
+      setMicState('idle')
+      setMicError(null)
+      setMicElapsed(0)
+      setTooShortHint(false)
+      setDurationWarning(false)
+      setShowSlowSttCancel(false)
+    }
+  }, [open])
+
+  useEffect(() => {
     function onVisibilityChange() {
       if (document.hidden && micState === 'recording') {
         stopMicRecording(true)
