@@ -134,11 +134,12 @@ export default function AppShell() {
   const { user, logout } = useAuth0()
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [assistantOpen, setAssistantOpen] = useState(false)
+  const [userWantsOpen, setUserWantsOpen] = useState(false)
 
   const studentId = extractStudentId(location.pathname)
   const sessionId = extractSessionId(location.pathname)
   const atelierEnabled = isAtelierEnabled(location.pathname)
+  const assistantOpen = userWantsOpen && atelierEnabled
 
   const { data: studentData } = useQuery({
     queryKey: ['student', studentId],
@@ -153,7 +154,7 @@ export default function AppShell() {
   useEffect(() => {
     setDrawerOpen(false)
     if (!isAtelierEnabled(location.pathname)) {
-      setAssistantOpen(false)
+      setUserWantsOpen(false)
       assistant.reset()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -164,7 +165,7 @@ export default function AppShell() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         if (!atelierEnabled) return
         e.preventDefault()
-        setAssistantOpen(open => !open)
+        setUserWantsOpen(open => !open)
       }
     }
     document.addEventListener('keydown', handleKeyDown)
@@ -175,7 +176,7 @@ export default function AppShell() {
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : '?'
 
-  const toggleAssistant = () => { if (atelierEnabled) setAssistantOpen(open => !open) }
+  const toggleAssistant = () => { if (atelierEnabled) setUserWantsOpen(open => !open) }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#FBF8FF]">
@@ -298,8 +299,8 @@ export default function AppShell() {
       {/* Atelier Assistant panel */}
       <AtelierAssistantPanel
         open={assistantOpen}
-        onClose={() => { setAssistantOpen(false); assistant.reset() }}
-        onCloseDiscarding={() => { setAssistantOpen(false); assistant.reset() }}
+        onClose={() => { setUserWantsOpen(false); assistant.reset() }}
+        onCloseDiscarding={() => { setUserWantsOpen(false); assistant.reset() }}
         studentName={studentData}
         transcription={assistant.transcription}
         processing={assistant.processing}
